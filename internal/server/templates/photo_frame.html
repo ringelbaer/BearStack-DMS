@@ -1,0 +1,18 @@
+{{define "photo_frame.html"}}
+{{template "head" .}}
+<section class="photo-frame" data-photo-frame data-photo-frame-seconds="{{.PhotoSettings.FrameSeconds}}" data-photo-frame-items-url="/photos/frame/items">
+  <div class="photo-frame-stage">
+    <img alt="" data-photo-frame-image hidden>
+    <video data-photo-frame-video playsinline muted controls hidden></video>
+  </div>
+  <div class="photo-frame-bar" data-photo-frame-bar>
+    <a class="secondary-button" href="{{.PhotoFilter.GalleryURL}}">Galerie</a>
+    <div class="photo-frame-meta">
+      <strong data-photo-frame-title>Fotoframe</strong>
+      <span data-photo-frame-count>Lade Medien</span>
+    </div>
+    <button type="button" class="photo-frame-bar-close" data-photo-frame-bar-close aria-label="Fotoframe-Leiste ausblenden" title="Leiste ausblenden">×</button>
+  </div>
+</section>
+{{template "foot" .}}
+{{end}}

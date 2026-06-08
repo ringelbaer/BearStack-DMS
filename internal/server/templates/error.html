@@ -1,0 +1,9 @@
+{{define "error.html"}}
+{{template "head" .}}
+<section class="empty-state error-state">
+  <h1>Fehler</h1>
+  <p>{{.Error}}</p>
+  <a class="secondary-button" href="{{if .ReturnURL}}{{.ReturnURL}}{{else}}/{{end}}">Zurück</a>
+</section>
+{{template "foot" .}}
+{{end}}

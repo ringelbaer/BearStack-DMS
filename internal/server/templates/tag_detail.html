@@ -1,0 +1,170 @@
+{{define "tag_detail.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>{{formatTag .TagDisplayMode .Tag.Name}}</h1>
+  </div>
+  <div class="page-actions">
+    <a class="secondary-button" href="/tags">Zurück</a>
+    <form method="post" action="/tags/{{.Tag.ID}}/delete" data-password-prompt="Tag {{formatTag .TagDisplayMode .Tag.Name}} löschen? Der Tag wird von allen Dokumenten entfernt und seine Regelsets werden gelöscht. Bitte mit Passwort bestätigen.">
+      <button class="danger" type="submit">Tag löschen</button>
+    </form>
+  </div>
+</section>
+
+<section class="tag-detail-grid">
+  <section class="panel">
+    <h2>Tag</h2>
+    <form class="metadata-form" method="post" action="/tags/{{.Tag.ID}}" data-dirty-form>
+      <div>
+        <span class="tag pill-large" style="{{tagStyle .Tag.Color}}" title="{{.Tag.Description}}">{{formatTag .TagDisplayMode .Tag.Name}}</span>
+      </div>
+      <label>
+        <span>Beschreibung</span>
+        <input type="text" name="description" value="{{.Tag.Description}}">
+      </label>
+      <label>
+        <span>Farbe</span>
+        <input type="color" name="color" value="{{.Tag.Color}}">
+      </label>
+      <fieldset class="tag-options-fieldset">
+        <legend>Eigenschaften</legend>
+        <div class="tag-options-list">
+          {{if .DocumentCloudEnabled}}
+          <label class="checkbox-line">
+            <input type="checkbox" name="primary_tag" value="1" {{if .Tag.PrimaryTag}}checked{{end}}>
+            <span class="checkbox-help-label">Primärer Tag <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Primärer Tag" aria-expanded="false" data-context-help-title="Primärer Tag" data-context-help="Markiert diesen Tag als Hauptkategorie für die Wolke. Primäre Tags bilden dort eigene Wolkenbereiche und werden gleich groß sowie größer als die umgebenden Tags angezeigt.">i</span></span>
+          </label>
+          {{end}}
+          <label class="checkbox-line">
+            <input type="checkbox" name="group_mode" value="1" {{if .Tag.GroupMode}}checked{{end}}>
+            <span class="checkbox-help-label">Gruppenmodus <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Gruppenmodus" aria-expanded="false" data-context-help-title="Gruppenmodus" data-context-help="Verbindet Dokumente mit demselben Gruppentag automatisch. Sie erscheinen auf der Detailseite als gruppierte Dokumente, auch ohne manuelle Verknüpfung.">i</span></span>
+          </label>
+          <label class="checkbox-line">
+            <input type="checkbox" name="list_hidden" value="1" {{if .Tag.ListHidden}}checked{{end}}>
+            <span class="checkbox-help-label">Nur im Detail anzeigen <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Nur im Detail anzeigen" aria-expanded="false" data-context-help-title="Nur im Detail anzeigen" data-context-help="Hält den Tag in Listen kompakt verborgen. Er bleibt suchbar und ist auf Detailseiten sichtbar, überlädt aber die Dokumentliste nicht.">i</span></span>
+          </label>
+          <label class="checkbox-line">
+            <input type="checkbox" name="delete_protected" value="1" {{if .Tag.DeleteProtected}}checked{{end}}>
+            <span class="checkbox-help-label">Löschschutz <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Löschschutz" aria-expanded="false" data-context-help-title="Löschschutz" data-context-help="Verhindert das Löschen von Dokumenten mit diesem Tag. Löschaktionen werden ausgeblendet und direkte Löschversuche serverseitig blockiert.">i</span></span>
+          </label>
+        </div>
+      </fieldset>
+      <button type="submit" class="dirty-submit hidden" data-dirty-submit>Speichern</button>
+    </form>
+  </section>
+
+  <section class="panel rule-panel">
+    <h2>Automatisches Tagging</h2>
+    <form class="rule-form" method="post" action="/tags/{{.Tag.ID}}/rules" data-rule-form data-dirty-form>
+      <div class="rule-list" data-rule-list>
+        {{range .TagRules}}
+        <article class="rule-row" data-rule-row>
+          <input type="hidden" name="rule_id" value="{{.ID}}">
+          <label>
+            <span>Bezeichnung</span>
+            <input type="text" name="rule_label" value="{{.Label}}">
+          </label>
+          <label>
+            <span>Quelle</span>
+            <select name="rule_scope">
+              <option value="both" {{if eq .Scope "both"}}selected{{end}}>Dateiname oder Text</option>
+              <option value="filename" {{if eq .Scope "filename"}}selected{{end}}>Dateiname</option>
+              <option value="text" {{if eq .Scope "text"}}selected{{end}}>Textinhalt</option>
+            </select>
+          </label>
+          <label>
+            <span>Treffer</span>
+            <select name="rule_match_mode">
+              <option value="any" {{if eq .MatchMode "any"}}selected{{end}}>Mindestens eins</option>
+              <option value="all" {{if eq .MatchMode "all"}}selected{{end}}>Alle</option>
+            </select>
+          </label>
+          <label class="rule-keywords">
+            <span>Schlüsselwörter</span>
+            <textarea name="rule_keywords" rows="3">{{.KeywordsText}}</textarea>
+          </label>
+          <label class="rule-excludes">
+            <span>Ausschlüsse</span>
+            <textarea name="rule_excludes" rows="3">{{.ExcludesText}}</textarea>
+          </label>
+          <label class="checkbox-line rule-delete"><input type="checkbox" name="delete_rule" value="{{.ID}}"> Regelset löschen</label>
+        </article>
+        {{else}}
+        <article class="rule-row" data-rule-row>
+          <input type="hidden" name="rule_id" value="">
+          <label>
+            <span>Bezeichnung</span>
+            <input type="text" name="rule_label" value="">
+          </label>
+          <label>
+            <span>Quelle</span>
+            <select name="rule_scope">
+              <option value="both" selected>Dateiname oder Text</option>
+              <option value="filename">Dateiname</option>
+              <option value="text">Textinhalt</option>
+            </select>
+          </label>
+          <label>
+            <span>Treffer</span>
+            <select name="rule_match_mode">
+              <option value="any" selected>Mindestens eins</option>
+              <option value="all">Alle</option>
+            </select>
+          </label>
+          <label class="rule-keywords">
+            <span>Schlüsselwörter</span>
+            <textarea name="rule_keywords" rows="3"></textarea>
+          </label>
+          <label class="rule-excludes">
+            <span>Ausschlüsse</span>
+            <textarea name="rule_excludes" rows="3"></textarea>
+          </label>
+          <span></span>
+        </article>
+        {{end}}
+      </div>
+
+      <template data-rule-template>
+        <article class="rule-row" data-rule-row>
+          <input type="hidden" name="rule_id" value="">
+          <label>
+            <span>Bezeichnung</span>
+            <input type="text" name="rule_label" value="">
+          </label>
+          <label>
+            <span>Quelle</span>
+            <select name="rule_scope">
+              <option value="both" selected>Dateiname oder Text</option>
+              <option value="filename">Dateiname</option>
+              <option value="text">Textinhalt</option>
+            </select>
+          </label>
+          <label>
+            <span>Treffer</span>
+            <select name="rule_match_mode">
+              <option value="any" selected>Mindestens eins</option>
+              <option value="all">Alle</option>
+            </select>
+          </label>
+          <label class="rule-keywords">
+            <span>Schlüsselwörter</span>
+            <textarea name="rule_keywords" rows="3"></textarea>
+          </label>
+          <label class="rule-excludes">
+            <span>Ausschlüsse</span>
+            <textarea name="rule_excludes" rows="3"></textarea>
+          </label>
+          <button type="button" class="secondary-button" data-rule-remove>Entfernen</button>
+        </article>
+      </template>
+
+      <div class="rule-actions">
+        <button type="button" class="secondary-button" data-rule-add>Regelset hinzufügen</button>
+        <button type="submit" class="dirty-submit hidden" data-dirty-submit>Regeln speichern</button>
+      </div>
+    </form>
+  </section>
+</section>
+{{template "foot" .}}
+{{end}}

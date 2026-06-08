@@ -1,0 +1,137 @@
+{{define "help.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>Hilfe</h1>
+    <p>Grundlagen, Abläufe, Anpassung und externe Zugriffe</p>
+  </div>
+</section>
+
+<section class="panel help-docs">
+  <h2>Gliederung</h2>
+  <nav class="help-toc" aria-label="Gliederung">
+    <a href="#grundidee">Grundidee</a>
+    <a href="#aufnahme">Dokumente aufnehmen</a>
+    <a href="#ablauf">Typischer Ablauf</a>
+    <a href="#suche">Suchen und Organisieren</a>
+    <a href="#tags">Tags</a>
+    <a href="#metadaten">Metadaten und Felder</a>
+    <a href="#fotos">Fotos</a>
+    <a href="#anpassung">Anpassung</a>
+    <a href="#mail-import">E-Mail-Import</a>
+    <a href="#papierkorb">Papierkorb und Schutz</a>
+    <a href="#webdav">WebDAV</a>
+    <a href="#backup">Backup</a>
+    <a href="#betrieb">Betrieb</a>
+  </nav>
+
+  <h2 id="grundidee">Grundidee</h2>
+  <div class="endpoint">
+    <p>BearStack ist ein schlankes Dokumentenarchiv für den lokalen Betrieb. Dateien liegen als Originale im Dateisystem, Metadaten, Tags, Regeln, Suchindex und Einstellungen liegen in SQLite.</p>
+    <p>Das optionale Fotomodul rendert ein vorhandenes Fotoverzeichnis als read-only Galerie. Fotos werden nicht in die Dokumentenablage importiert, sondern bleiben an ihrem bestehenden Speicherort.</p>
+    <p>Die Oberfläche ist serverseitig gerendert. Zugriffsschutz erfolgt über die konfigurierte Basic-Auth-Anmeldung; dieselben Zugangsdaten gelten für Weboberfläche, API und WebDAV.</p>
+  </div>
+
+  <h2 id="aufnahme">Dokumente aufnehmen</h2>
+  <div class="endpoint">
+    <p>Dokumente werden über den Upload-Button, Drag and Drop, die HTTP-API oder den E-Mail-Import aufgenommen. Unterstützt werden PDF, PNG, JPEG, GIF, WebP, TXT, Markdown, RTF, DOC, DOCX und Pages.</p>
+    <p>Beim Upload prüft BearStack Dateiname, Dateityp und Größe, speichert das Original mit sicherem Dateinamen, berechnet SHA-256 und erkennt Duplikate. Titel und Dokumentdatum werden soweit möglich aus dem Dateinamen abgeleitet.</p>
+    <p>PDF-Text wird automatisch übernommen, Vorschaubilder werden im Hintergrund erzeugt. Text- und Office-Dokumente werden bei verfügbarem LibreOffice als PDF angezeigt und für die Suche ausgelesen. Für PDFs und Bilder kann OCR manuell gestartet werden; über die Statistik lassen sich OCR-Kandidaten gesammelt einreihen.</p>
+  </div>
+
+  <h2 id="ablauf">Typischer Ablauf</h2>
+  <div class="endpoint">
+    <ol>
+      <li>Dokument hochladen oder per E-Mail/API importieren.</li>
+      <li>Detailseite öffnen und Titel, Dokumentdatum, Notiz, Tags und Felder prüfen.</li>
+      <li>Bei gescannten Dokumenten OCR starten, damit der Volltext durchsuchbar wird.</li>
+      <li>Dokumente über Tags, Suchfavoriten, Ordner oder benutzerdefinierte Spalten wiederfinden.</li>
+      <li>Nicht mehr benötigte Dokumente in den Papierkorb verschieben oder über Export/Download sichern.</li>
+    </ol>
+  </div>
+
+  <h2 id="suche">Suchen und Organisieren</h2>
+  <div class="endpoint">
+    <p>Die Suche läuft über Dateiname, Titel, Notiz, Tags, Textinhalt und benutzerdefinierte Felder. Sie behandelt deutsche Umlaute tolerant, sodass zum Beispiel <code>ä</code> auch <code>ae</code> findet. Datumsfilter, Jahresschnellauswahl, Sortierung und Tag-Filter lassen sich kombinieren.</p>
+    <p>Suchfavoriten speichern wiederkehrende Filter, inklusive dynamischer Zeiträume wie aktueller Monat, letztes Jahr oder letzte 90 Tage. In Ordnern und WebDAV erscheinen Suchfavoriten als eigener virtueller Bereich.</p>
+    <p>Tags sind die wichtigste Strukturierungsebene. Sie erscheinen in der Suche, in den virtuellen Ordnern, in WebDAV und in der Listenansicht. Benutzerdefinierte Felder können zusätzlich ab einer konfigurierten Mindestanzahl von Dokumenten als Wert-Ordner in die virtuelle Ordnerstruktur einfließen.</p>
+    <p>Die Dokument-Wolke ist optional und standardmäßig deaktiviert. Sie kann unter <code>Einstellungen → Dokumente → Dokument-Wolke</code> in der Hauptnavigation und unter <code>/cloud</code> freigeschaltet werden.</p>
+  </div>
+
+  <h2 id="tags">Tags</h2>
+  <div class="endpoint">
+    <p>Ein Tag besteht aus Name, Beschreibung und Farbe. Die Farbe wird für die Tag-Pills in Listen, Detailseiten und Auswahldialogen verwendet; die Beschreibung hilft beim Wiedererkennen ähnlicher Tags.</p>
+    <p>Regelsets vergeben Tags automatisch beim Upload neuer Dokumente. Eine Regel kann Dateiname, Textinhalt oder beides prüfen, wahlweise mit „mindestens ein Schlüsselwort“ oder „alle Schlüsselwörter“. Ausschlüsse verhindern Treffer, wenn bestimmte Wörter vorkommen. Spätere Regeländerungen ändern bestehende Dokumente nicht automatisch.</p>
+    <p>Der Gruppenmodus verbindet Dokumente mit gemeinsamen Gruppentags. Dadurch erscheinen zusammengehörige Dateien auf der Detailseite als gruppierte Dokumente, auch wenn sie nicht manuell verknüpft wurden.</p>
+    <p>Detailtags bleiben in Listen kompakt verborgen und werden nur auf Detailseiten vollständig sichtbar. Das ist sinnvoll für technische oder interne Tags, die bei der Suche helfen, aber die Dokumentliste nicht überladen sollen.</p>
+    <p>Löschschutz verhindert, dass Dokumente mit diesem Tag gelöscht oder endgültig aus dem Papierkorb entfernt werden. Die Löschaktionen werden in der Oberfläche ausgeblendet und direkte Löschversuche werden serverseitig blockiert.</p>
+    <p>Tags können gelöscht werden, das Entfernen eines Tags löscht aber nicht die Dokumente. Der Tag wird von allen Dokumenten entfernt, seine Regelsets werden gelöscht und der Suchindex wird aktualisiert. Deshalb ist das Löschen eines Tags mit einer Passwortbestätigung geschützt.</p>
+  </div>
+
+  <h2 id="metadaten">Metadaten und Felder</h2>
+  <div class="endpoint">
+    <p>Titel, Notiz und Dokumentdatum werden direkt am Dokument gepflegt. Benutzerdefinierte Felder sind global und erscheinen auf jeder Detailseite.</p>
+    <p>Felder können als Listen-Spalten eingeblendet werden. Sie eignen sich für wiederkehrende Angaben wie Kundennummer, Vertragsnummer, Betrag, Aktenzeichen oder Absender.</p>
+    <p>Auto-Vervollständigung bedeutet: Beim Bearbeiten eines Feldwerts schlägt BearStack bereits gespeicherte Werte desselben Feldes vor. Die Vorschläge entstehen aus aktiven Dokumenten, helfen bei einheitlicher Schreibweise und vermeiden Tippfehler. BearStack füllt den Wert nicht automatisch aus; gespeichert wird nur, was im Feld steht.</p>
+    <p>Pro Feld kann festgelegt werden, ob und ab welcher Dokumentanzahl Feldwerte als virtuelle Ordner erscheinen. Zur Auswahl stehen niemals, immer sowie 5, 10, 20 oder 50 Dateien. In der Weboberfläche steht der Wert als Ordnername, der Feldname klein darunter; WebDAV zeigt nur den Wert.</p>
+    <p>Das Löschen eines Feldes entfernt alle gespeicherten Feldwerte dauerhaft, entfernt die Werte aus der Suche und aus der Listenansicht und erfordert deshalb eine Passwortbestätigung.</p>
+  </div>
+
+  <h2 id="fotos">Fotos</h2>
+  <div class="endpoint">
+    <p>Das Fotomodul ist optional. Wenn es aktiviert ist, erscheint <code>Fotos</code> in der Hauptnavigation. BearStack liest ein vorhandenes Fotoverzeichnis, erzeugt eigene Thumbnails und speichert den Fotoindex separat von der Dokumentendatenbank.</p>
+    <p>Unterstützt werden Ordnernavigation, Bild- und Videowiedergabe für gängige Formate wie JPEG, PNG, GIF, WebP, SVG, MP4 und WebM. JPEG-Dateien können über EXIF-Daten Datum, Kamera und GPS-Position liefern; diese Informationen erscheinen in Galerie, Suche und Karte.</p>
+    <p>BearStack liest außerdem Adobe/MWG-XMP-Gesichtsregionen aus eingebettetem JPEG-XMP und XMP-Sidecars wie <code>photo.jpg.xmp</code> oder <code>photo.xmp</code>. Gesichtsnamen und Gesichtsboxen bleiben eigene Fotometadaten und werden nicht automatisch in Foto-Tags umgewandelt.</p>
+    <p>Die Galerie zeigt Ordner mit Vorschaumosaiken, Medienkarten und eine Vollbildansicht. Über die Aktionsauswahl gibt es Zufallsfoto, Fotoframe und ab der zweiten Ordnerebene die Kartenansicht. Der Zufallsfoto-Endpunkt <code>/photos/random</code> liefert direkt ein Medium; mit <code>size=original</code>, <code>size=ordner</code>, <code>size=galerie</code>, <code>size=groß</code> oder <code>size=hd</code> lässt sich die ausgelieferte Größe wählen. Zusätzlich werden Info-Header mitgeliefert: Titel (<code>X-BearStack-Photo-Title</code>), Medienpfad (<code>X-BearStack-Photo-Path</code>), Ordnerpfad/-titel/-link (<code>X-BearStack-Photo-Folder-Path</code>, <code>X-BearStack-Photo-Folder-Title</code>, <code>X-BearStack-Photo-Folder-URL</code> als absolute URL inkl. Domain) sowie ein Parent-Link per <code>Link: &lt;https://.../photos?...&gt;; rel="up"</code>. Die Karte zeigt Fotos mit GPS-Daten, bildet daraus einen konfigurierbaren Foto-Track und kann GPX-Routen als Hinweis anzeigen.</p>
+    <p>Fotos und Fotoordner können eigene BearStack-Tags erhalten. Im Bearbeiten-Modus lassen sich einzelne Medien oder ganze Auswahlen taggen; Foto-Tags sind von Dokument-Tags getrennt verwaltet.</p>
+    <p>Die Fotosuche unterstützt Freitext und Feldfilter wie <code>tag:urlaub</code>, <code>person:"Marie Curie"</code>, <code>face:Marie</code>, <code>date:2024</code>, <code>directory:reise</code>, <code>file_name:img</code>, <code>type:image</code>, <code>type:video</code> und <code>gps:true</code>. Auch hier werden Umlaute und Schreibweisen wie <code>ae</code>, <code>oe</code>, <code>ue</code> oder <code>ss</code> tolerant behandelt. Sortiert werden kann nach Ordnerstandard, Name, Datum oder zufällig.</p>
+    <p>Markdown-Dateien im Fotoverzeichnis können als Blogeinträge erscheinen. Ein Datum kann über einen Markdown-Kommentar gesetzt werden. Ordner lassen sich nach Ordnerstandard, Name, Datum oder zufällig sortieren; die Datumssortierung nutzt das aus dem Ordnernamen erkannte Anzeigedatum.</p>
+    <p>Ein Ordner mit <code>.adminonly</code> ist nur für Admins zugänglich. Admin-only-Inhalte sind auch für Admins standardmäßig in Galerie, Suche, Karte, Zufall, Fotoframe und Foto-Tag-Listen ausgeblendet. Admins können sie im Sortieren-Menü der Galerie per Schalter einblenden; die Auswahl bleibt in der aktuellen Session gespeichert. Direkte Medien- und Thumbnail-URLs bleiben weiterhin nur Admins vorbehalten.</p>
+    <p>Unter <code>Einstellungen → Fotos</code> werden Seitengröße, Thumbnailgrößen, Fotoframe, Vorladen, die Foto-Track-Auflösung der Karte sowie Index- und Thumbnail-Worker konfiguriert. Die Auflösung ist in Stufen von 500 m bis 10 km einstellbar und bestimmt, wie nah GPS-Fotos für den fotobasierten Track zusammengefasst werden. Der Index-Worker scannt das Fotoverzeichnis im Hintergrund und überspringt unveränderte Ordner; der Thumbnail-Worker erzeugt fehlende Vorschaubilder nach.</p>
+  </div>
+
+  <h2 id="anpassung">Anpassung</h2>
+  <div class="endpoint">
+    <p>Die Listenansicht kann über den Spalten-Dialog angepasst werden. Zur Auswahl stehen Standardspalten, Vorschaubild, Aktionen und benutzerdefinierte Felder. Die Seitengröße wird ebenfalls gespeichert.</p>
+    <p>Tags besitzen Name, Beschreibung, Farbe und Optionen. Gruppenmodus verbindet Dokumente mit gemeinsamen Gruppentags. Detailtags bleiben in Listen kompakt verborgen. Löschschutz blendet Löschaktionen für betroffene Dokumente aus und blockiert direkte Löschversuche serverseitig.</p>
+    <p>In den Einstellungen lassen sich Desktop-Vorschau, Tag-Ausgabe, Fotoverhalten und die Papierkorb-Aufbewahrung konfigurieren. Die Aufbewahrung kann auf nie, 30, 60 oder 90 Tage gesetzt werden; geschützte Dokumente werden dabei nicht endgültig gelöscht.</p>
+  </div>
+
+  <h2 id="mail-import">E-Mail-Import</h2>
+  <div class="endpoint">
+    <p>Der E-Mail-Import ruft per IMAP PDF-Anhänge ab. Erlaubte Absender oder Domänen begrenzen, welche Nachrichten verarbeitet werden. Erfolgreich importierte oder abgelehnte Nachrichten werden im Postfach gelöscht.</p>
+    <p>Die Verbindung kann in den Einstellungen getestet werden. Der manuelle Abruf eignet sich zum Prüfen der Konfiguration, bevor der periodische Abruf dauerhaft aktiviert wird.</p>
+  </div>
+
+  <h2 id="papierkorb">Papierkorb und Schutz</h2>
+  <div class="endpoint">
+    <p>Normales Löschen verschiebt ein Dokument in den Papierkorb. Von dort kann es wiederhergestellt oder endgültig gelöscht werden.</p>
+    <p>Tags mit Löschschutz verhindern das Verschieben in den Papierkorb und das endgültige Löschen. Wird ein geschütztes Dokument bereits im Papierkorb markiert, bleibt es dort erhalten, bis der Schutz-Tag entfernt oder das Dokument wiederhergestellt wird.</p>
+    <p>Tags und benutzerdefinierte Felder sind strukturelle Elemente. Ihr Löschen ist deshalb mit einem Passwort-Prompt geschützt.</p>
+  </div>
+
+  <h2 id="webdav">WebDAV</h2>
+  <div class="endpoint">
+    <p>WebDAV stellt BearStack unter <code>{{.WebDAVPath}}/</code> als Dateistruktur bereit. Der Pfad ist ueber <code>webdav.path</code> oder <code>BEARSTACK_WEBDAV_PATH</code> konfigurierbar. Dateimanager wie Dolphin können damit durch virtuelle Ordner navigieren, Dateien öffnen und herauskopieren.</p>
+    <p>Die Ordnerstruktur basiert auf Tags. Auf der obersten Ebene stehen Tags als Ordner; innerhalb eines Tags erscheinen weitere passende Tags, konfigurierte Feldwert-Ordner und die Dokumente der aktuellen Auswahl. Suchfavoriten erscheinen als eigener Ordnerbereich.</p>
+    <p>WebDAV verwendet dieselbe Basic Auth wie die Weboberfläche. <code>PUT</code> ist als reiner Erstellungsweg erlaubt: vorhandene Ziele werden nicht überschrieben, Bearbeiten und Löschen bleiben gesperrt. Methoden wie <code>DELETE</code>, <code>MKCOL</code>, <code>MOVE</code> und <code>COPY</code> sind weiterhin deaktiviert.</p>
+    <p>Beim Upload per <code>PUT</code> übernimmt die neue Datei die Tags der aktuellen Tag-Hierarchie. Uploads im Ordnerbereich <code>00 Suchfavoriten</code> sind nicht erlaubt.</p>
+    <pre><code>webdav://127.0.0.1:8080{{.WebDAVPath}}/</code></pre>
+  </div>
+
+  <h2 id="backup">Backup</h2>
+  <div class="endpoint">
+    <p>Für ein vollständiges Backup müssen Datenbank und Dokumentenordner als zusammengehöriger Stand gesichert werden. Standardmäßig sind das <code>data/bearstack.db</code> und <code>data/documents</code>, sofern die Pfade nicht über Konfiguration oder Umgebungsvariablen geändert wurden.</p>
+    <p>Wenn das Fotomodul aktiv ist, gehören zusätzlich der Foto-Datenbereich mit Thumbnail-Cache und Foto-Indexdatenbank zum BearStack-Backup. Das originale Fotoverzeichnis muss separat gesichert werden, wenn es nicht ohnehin Teil einer bestehenden Fotosicherung ist.</p>
+    <p>Während eines Backups sollte BearStack möglichst nicht gleichzeitig neue Dokumente importieren oder Metadaten schreiben. Am einfachsten ist ein kurzer Service-Stopp, danach Archiv erstellen, anschließend den Service wieder starten. Ein Restore braucht denselben gemeinsamen Stand aus Datenbank und Dateien.</p>
+    <pre><code>tar -czf bearstack-backup.tgz data/bearstack.db data/documents data/photos</code></pre>
+  </div>
+
+  <h2 id="betrieb">Betrieb</h2>
+  <div class="endpoint">
+    <p>BearStack läuft als einzelnes Go-Binary, typischerweise als systemd-Service. Konfiguration erfolgt über JSON-Datei oder <code>BEARSTACK_</code>-Umgebungsvariablen.</p>
+    <p>Die Statistikseite zeigt unter anderem Dokumentbestand, Speicherverteilung, Dateidatum-Verteilung, OCR-/Textstatus, Datenbankzustand und bei aktivem Fotomodul Fotoindex, Medien, Ordner, Tags und Worker-Telemetrie. Das Log zeigt schreibende Aktionen und hilft beim Nachvollziehen von Änderungen.</p>
+  </div>
+</section>
+{{template "foot" .}}
+{{end}}

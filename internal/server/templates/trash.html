@@ -1,0 +1,65 @@
+{{define "trash.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>Papierkorb</h1>
+  </div>
+  {{$canEmptyTrash := false}}{{range .Documents}}{{if not .DeleteProtected}}{{$canEmptyTrash = true}}{{end}}{{end}}
+  {{if $canEmptyTrash}}
+  <form method="post" action="/trash/empty" data-confirm="Alle Dokumente im Papierkorb endgültig löschen?">
+    <button class="danger" type="submit">Papierkorb leeren</button>
+  </form>
+  {{end}}
+</section>
+
+{{if .Documents}}
+<div class="table-wrap">
+    <table class="document-table trash-table">
+    <thead>
+      <tr>
+        {{$nameSort := index .SortLinks "name"}}
+        {{$titleSort := index .SortLinks "title"}}
+        {{$deletedSort := index .SortLinks "deleted_at"}}
+        {{$sizeSort := index .SortLinks "size"}}
+        <th aria-sort="{{$nameSort.AriaSort}}"><a class="sort-link {{if $nameSort.Active}}active{{end}}" href="{{$nameSort.URL}}">Name{{if $nameSort.Active}} <span class="sort-indicator" aria-hidden="true">{{sortIndicator $nameSort}}</span>{{end}}</a></th>
+        <th aria-sort="{{$titleSort.AriaSort}}"><a class="sort-link {{if $titleSort.Active}}active{{end}}" href="{{$titleSort.URL}}">Titel{{if $titleSort.Active}} <span class="sort-indicator" aria-hidden="true">{{sortIndicator $titleSort}}</span>{{end}}</a></th>
+        <th aria-sort="{{$deletedSort.AriaSort}}"><a class="sort-link {{if $deletedSort.Active}}active{{end}}" href="{{$deletedSort.URL}}">Gelöscht{{if $deletedSort.Active}} <span class="sort-indicator" aria-hidden="true">{{sortIndicator $deletedSort}}</span>{{end}}</a></th>
+        <th aria-sort="{{$sizeSort.AriaSort}}"><a class="sort-link {{if $sizeSort.Active}}active{{end}}" href="{{$sizeSort.URL}}">Größe{{if $sizeSort.Active}} <span class="sort-indicator" aria-hidden="true">{{sortIndicator $sizeSort}}</span>{{end}}</a></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Documents}}
+      <tr id="document-{{.ID}}" data-document-id="{{.ID}}" class="{{if eq $.HighlightID .ID}}document-highlight{{end}}">
+        <td data-column="name" data-label="Name"><a class="strong-link" href="/documents/{{.ID}}?return={{queryEscape $.ReturnURL}}">{{.OriginalName}}</a></td>
+        <td data-column="title" data-label="Titel">{{.Title}}{{if .DeleteProtected}} <span class="badge">Löschschutz</span>{{end}}</td>
+        <td data-column="deleted_at" data-label="Gelöscht">{{if .DeletedAt}}{{formatDate .DeletedAt}}{{else}}-{{end}}</td>
+        <td data-column="size" data-label="Größe">{{formatBytes .SizeBytes}}</td>
+        <td class="actions" data-column="actions" data-label="Aktionen">
+          <div class="action-links">
+          <form method="post" action="/documents/{{.ID}}/restore">
+            <input type="hidden" name="return" value="{{$.ReturnURL}}">
+            <button type="submit">Wiederherstellen</button>
+          </form>
+          {{if not .DeleteProtected}}
+          <form method="post" action="/documents/{{.ID}}/purge" data-confirm="Dokument endgültig löschen?">
+            <input type="hidden" name="return" value="{{$.ReturnURL}}">
+            <button class="danger" type="submit">Endgültig löschen</button>
+          </form>
+          {{end}}
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+{{template "pagination" .}}
+{{else}}
+<div class="empty-state">
+  <h2>Leer</h2>
+  <p>Der Papierkorb enthält keine Dokumente.</p>
+</div>
+{{end}}
+{{template "foot" .}}
+{{end}}

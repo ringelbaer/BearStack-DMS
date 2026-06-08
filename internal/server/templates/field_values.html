@@ -1,0 +1,56 @@
+{{define "field_values.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>{{.CustomField.Label}}</h1>
+    <p>{{len .CustomFieldValues}} gespeicherte Wert(e)</p>
+  </div>
+  <a class="secondary-button" href="/fields">Zurück zu Feldern</a>
+</section>
+
+{{if .CustomFieldSuggestions}}
+<section class="panel field-value-suggestions">
+  <h2>Ähnliche Werte</h2>
+  <div class="field-value-suggestion-list">
+    {{range .CustomFieldSuggestions}}
+    <article class="field-value-suggestion">
+      <div>
+        <strong>{{.Value}}</strong>
+        <p>{{.Reason}}</p>
+      </div>
+      <div class="field-value-similar">
+        {{range .Similar}}<span>{{.}}</span>{{end}}
+      </div>
+    </article>
+    {{end}}
+  </div>
+</section>
+{{end}}
+
+<section class="panel field-value-management">
+  {{if .CustomFieldValues}}
+  <div class="field-value-list">
+    {{range .CustomFieldValues}}
+    <form class="field-value-row" method="post" action="/fields/{{$.CustomField.ID}}/values">
+      <input type="hidden" name="old_value" value="{{.Value}}">
+      <div class="field-value-current">
+        <strong>{{.Value}}</strong>
+        <span>{{.Count}} Dokument(e)</span>
+      </div>
+      <label>
+        <span>Neuer Wert</span>
+        <input type="text" name="new_value" value="{{.Value}}" required>
+      </label>
+      <button type="submit" class="secondary-button">Für alle ändern</button>
+    </form>
+    {{end}}
+  </div>
+  {{else}}
+  <div class="empty-state">
+    <h2>Keine Werte</h2>
+    <p>Für dieses Feld sind noch keine Werte in aktiven Dokumenten gespeichert.</p>
+  </div>
+  {{end}}
+</section>
+{{template "foot" .}}
+{{end}}

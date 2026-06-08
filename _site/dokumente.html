@@ -1,0 +1,1027 @@
+
+<!doctype html>
+<html lang="de" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Dokumentablage, Suche, Mail-Import, Tags und virtuelle Ordner.">
+      
+      
+        <meta name="author" content="BearStack">
+      
+      
+      
+        <link rel="prev" href="./index.html">
+      
+      
+        <link rel="next" href="./fotos.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="./assets/images/bearstack.svg">
+      <meta name="generator" content="zensical-0.0.44">
+    
+    
+      
+        <title>Dokumente - BearStack</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="./assets/stylesheets/modern/main.fba56155.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="./assets/stylesheets/modern/palette.dfe2e883.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="./stylesheets/bearstack.css">
+    
+    <script>__md_scope=new URL(".",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-label="Navigation"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#dokumente" class="md-skip">
+          Zum Inhalt
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Kopfzeile">
+    <a href="./index.html" title="BearStack" class="md-header__button md-logo" aria-label="BearStack" data-md-component="logo">
+      
+  <img src="./assets/images/bearstack.svg" alt="BearStack">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            BearStack
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Dokumente
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="green"  aria-label="Zum dunklen Modus wechseln"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Zum dunklen Modus wechseln" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="green"  aria-label="Zum hellen Modus wechseln"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Zum hellen Modus wechseln" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Suche">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Suche">
+  <button type="button" class="md-search__button">
+    Suche
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Hauptnavigation" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./index.html" class="md-tabs__link">
+        
+  
+  Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="dokumente.html" class="md-tabs__link">
+        
+  
+  Dokumente
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./fotos.html" class="md-tabs__link">
+        
+  
+  Fotos
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./installation.html" class="md-tabs__link">
+        
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./benutzer-und-rechte.html" class="md-tabs__link">
+        
+  
+  Benutzer & Rechte
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./architektur.html" class="md-tabs__link">
+        
+  
+  Architektur
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./tests-und-audit.html" class="md-tabs__link">
+        
+  
+  Tests & Audit
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./index.html" title="BearStack" class="md-nav__button md-logo" aria-label="BearStack" data-md-component="logo">
+      
+  <img src="./assets/images/bearstack.svg" alt="BearStack">
+
+    </a>
+    BearStack
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Start
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5M10 9H8M16 13H8M16 17H8"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Dokumente
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="dokumente.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5M10 9H8M16 13H8M16 17H8"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Dokumente
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Inhaltsverzeichnis
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ablage-und-verarbeitung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ablage und Verarbeitung
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#suche-und-ocr" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Suche und OCR
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#e-mail-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        E-Mail-Import
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tags
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dateien-verknupfen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Dateien verknüpfen
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#suchfavoriten" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Suchfavoriten
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wortwolke" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Wortwolke
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benutzerdefinierte-felder" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Benutzerdefinierte Felder
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#virtuelle-ordner" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Virtuelle Ordner
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#berechtigungen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Berechtigungen
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./fotos.html" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-images" viewBox="0 0 24 24"><path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16"/><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><circle cx="13" cy="7" r="1" fill="currentColor"/><rect width="14" height="14" x="8" y="2" rx="2"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Fotos
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./installation.html" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-play" viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Installation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./benutzer-und-rechte.html" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Benutzer & Rechte
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./architektur.html" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-blocks" viewBox="0 0 24 24"><path d="M10 22V7a1 1 0 0 0-1-1H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 0 0-1-1H2"/><rect width="8" height="8" x="14" y="2" rx="1"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Architektur
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./tests-und-audit.html" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Tests & Audit
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Inhaltsverzeichnis
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ablage-und-verarbeitung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ablage und Verarbeitung
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#suche-und-ocr" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Suche und OCR
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#e-mail-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        E-Mail-Import
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tags
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dateien-verknupfen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Dateien verknüpfen
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#suchfavoriten" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Suchfavoriten
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wortwolke" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Wortwolke
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benutzerdefinierte-felder" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Benutzerdefinierte Felder
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#virtuelle-ordner" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Virtuelle Ordner
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#berechtigungen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Berechtigungen
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+<h1 id="dokumente">Dokumente<a class="headerlink" href="#dokumente" title="Permanent link">&para;</a></h1>
+<p>BearStack organisiert Dokumente um die vorhandenen Dateien herum. Die Dateien bleiben unverändert im lokalen Speicher; Metadaten, Volltext, Vorschaudaten und Indexe liegen getrennt davon in SQLite und Cache-Verzeichnissen.</p>
+<h2 id="ablage-und-verarbeitung">Ablage und Verarbeitung<a class="headerlink" href="#ablage-und-verarbeitung" title="Permanent link">&para;</a></h2>
+<p>Dokumente können über die Weboberfläche (<code>POST /upload</code>), die JSON-API (<code>POST /api/upload</code>) oder kompatible <code>PUT</code>-Anfragen importiert werden. BearStack speichert die Originaldatei im konfigurierten <code>storage_dir</code>, legt Metadaten in SQLite ab und führt Text-, Vorschau- und Thumbnail-Verarbeitung asynchron im Hintergrund aus.</p>
+<p>Unterstützt werden PDF, Bilder sowie einfache Text- und Office-Formate. Office-Text und Office-Vorschauen benötigen LibreOffice. Uploads werden nach dem konfigurierten Limit begrenzt, Dateinamen werden normalisiert, unbekannte Dateitypen werden abgelehnt und gespeicherte Pfade immer gegen den Storage-Root aufgelöst. Unerwartete Import- und Vorschaufehler werden für HTTP-Antworten generisch ausgegeben, damit interne Pfade oder Werkzeugdetails nicht im Browser landen.</p>
+<p>Weitere Dokumentfunktionen:</p>
+<ul>
+<li>Detailseiten mit Metadaten, Vorschau, Verknüpfungen und gruppierten Dateien</li>
+<li>E-Mail-Import für PDF-Anhänge aus einem IMAP-Postfach</li>
+<li>Papierkorb, Duplikatübersicht und Exportfunktionen</li>
+<li>Hintergrundverarbeitung mit nachvollziehbaren Statusansichten</li>
+<li>Statistik- und Audit-Ansichten für den Betrieb</li>
+</ul>
+<h2 id="suche-und-ocr">Suche und OCR<a class="headerlink" href="#suche-und-ocr" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Volltextsuche über extrahierte Inhalte</li>
+<li>OCR-Unterstützung für PDFs und Scans</li>
+<li>Filter nach Tags, Feldwerten und Zeiträumen</li>
+<li>Suchfavoriten für wiederkehrende Filter</li>
+<li>Wortwolke für häufige und fachlich zentrale Tags</li>
+<li>virtuelle Ordner für Tags, Felder und Favoriten</li>
+</ul>
+<h2 id="e-mail-import">E-Mail-Import<a class="headerlink" href="#e-mail-import" title="Permanent link">&para;</a></h2>
+<p>Der E-Mail-Import ruft PDF-Anhänge aus einem IMAP-Postfach ab und führt sie durch denselben Dokumentimport wie normale Uploads. Die Originaldateien bleiben dabei unverändert; BearStack übernimmt die PDF-Datei in den Dokumentenspeicher, erkennt Duplikate und startet die weitere Verarbeitung wie Vorschau, Volltext und OCR-Status getrennt davon.</p>
+<p>Konfiguriert wird der Import unter <code>Einstellungen -&gt; E-Mail-Import</code>. Unterstützt werden SSL/TLS, STARTTLS und unverschlüsselte IMAP-Verbindungen; Standardwerte sind Port <code>993</code>, <code>INBOX</code> und ein Abrufintervall von 15 Minuten. Ein Verbindungstest prüft die Zugangsdaten, ein manueller Lauf ruft sofort ab, und bei aktiviertem Import prüft BearStack das Postfach regelmäßig im Hintergrund.</p>
+<p>Die Absenderliste kann leer bleiben oder einzelne Adressen und Domänen enthalten. Eine leere Liste verarbeitet alle Absender. Domänenregeln passen auch auf Subdomains; nicht erlaubte Absender werden abgelehnt, protokolliert und aus dem IMAP-Postfach gelöscht. Erfolgreich verarbeitete E-Mails mit PDF-Anhängen werden ebenfalls gelöscht, damit das Postfach als Eingangskorb funktioniert. E-Mails ohne PDF-Anhang bleiben unberührt.</p>
+<p>Alle Importläufe werden im Audit-Log sichtbar: erfolgreiche Importe, Duplikate, abgelehnte Absender, Verbindungstests und Fehler bekommen eigene Einträge. Die Verwaltung des Mail-Imports erfordert Systemverwaltungsrechte.</p>
+<h2 id="tags">Tags<a class="headerlink" href="#tags" title="Permanent link">&para;</a></h2>
+<p>Tags sind kurze, frei wählbare Markierungen für Dokumente. Sie bleiben als Metadaten in BearStack gespeichert und verändern die Dateien nicht. Tags lassen sich in Listen, Detailseiten, Filtern und Batch-Aktionen nutzen, damit ein Dokument gleichzeitig in mehreren fachlichen Zusammenhängen auffindbar bleibt.</p>
+<p>Benutzer ohne Struktur-Recht können nur vorhandene Dokument-Tags zuweisen. Neue Tags werden bei Dokument-Metadaten, Batch-Tagging und kompatiblen Uploads abgelehnt, wenn die Berechtigung für Struktur-Daten fehlt.</p>
+<p>Dokument-Tags können mehr als nur markieren:</p>
+<table>
+<thead>
+<tr>
+<th>Funktion</th>
+<th>Wirkung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Farbe und Beschreibung</td>
+<td>machen Tags in Listen, Details, Filtern und Auswahlfeldern leichter unterscheidbar</td>
+</tr>
+<tr>
+<td>Automatisches Tagging</td>
+<td>Regelsets vergeben Tags anhand von Dateiname, Textinhalt oder beidem; Regeln können „mindestens eins“ oder „alle“ Treffer verlangen und Ausschlüsse definieren</td>
+</tr>
+<tr>
+<td>Primärer Tag</td>
+<td>markiert fachliche Hauptkategorien für die Wortwolke; primäre Tags bilden dort eigene Bereiche</td>
+</tr>
+<tr>
+<td>Gruppenmodus</td>
+<td>verbindet Dokumente mit demselben Gruppentag automatisch; sie erscheinen auf Detailseiten als gruppierte Dateien, auch ohne manuelle Verknüpfung</td>
+</tr>
+<tr>
+<td>Nur im Detail anzeigen</td>
+<td>hält interne oder sehr technische Tags in Listen kompakt verborgen; sie bleiben suchbar und sind auf Detailseiten sichtbar</td>
+</tr>
+<tr>
+<td>Löschschutz</td>
+<td>verhindert das Löschen von Dokumenten mit diesem Tag; Löschaktionen werden ausgeblendet und direkte Löschversuche serverseitig blockiert</td>
+</tr>
+</tbody>
+</table>
+<h2 id="dateien-verknupfen">Dateien verknüpfen<a class="headerlink" href="#dateien-verknupfen" title="Permanent link">&para;</a></h2>
+<p>BearStack kann Dokumente manuell miteinander verknüpfen. In der Dokumentliste werden dafür mehrere Dateien ausgewählt und anschließend verknüpft. Auf der Detailseite erscheinen diese Dateien im Abschnitt „Verknüpfte und gruppierte Dateien“ mit Vorschau, Titel, Originalname, Datum, Größe, Upload-Weg, Detail-Link und Download.</p>
+<p>Manuelle Verknüpfungen eignen sich für Anlagen, Nachweise, Verträge mit Nachträgen oder mehrteilige Vorgänge. Sie verändern die Originaldateien nicht; die Beziehung liegt als BearStack-Metadatum in der Datenbank. Mit Dokument-Bearbeitungsrechten kann eine manuelle Verknüpfung auf der Detailseite wieder aufgehoben werden.</p>
+<p>Zusätzlich gibt es automatische Gruppierung über Tags im Gruppenmodus. Alle Dokumente mit demselben Gruppentag werden auf der Detailseite zusammen angezeigt. Gruppierte Dateien sind dort erkennbar, lassen sich aber nicht einzeln als Verknüpfung aufheben, weil die Gruppierung aus dem gemeinsamen Tag entsteht. Um die Gruppierung zu ändern, wird der Gruppentag am Dokument angepasst.</p>
+<h2 id="suchfavoriten">Suchfavoriten<a class="headerlink" href="#suchfavoriten" title="Permanent link">&para;</a></h2>
+<p>Suchfavoriten speichern wiederkehrende Suchen als benannte Abkürzungen. Ein Favorit kann Suchtext, Tags, benutzerdefinierte Feldwerte und Zeiträume kombinieren, zum Beispiel „Rechnungen dieses Jahr“ oder „Steuer letzte 30 Tage“. Relative Zeiträume werden beim Aufruf neu berechnet, feste Jahresfilter bleiben stabil.</p>
+<h2 id="wortwolke">Wortwolke<a class="headerlink" href="#wortwolke" title="Permanent link">&para;</a></h2>
+<p>Die Dokument-Wolke ist standardmäßig deaktiviert und kann unter <code>Einstellungen -&gt; Dokument-Wolke</code> eingeschaltet werden. Danach erscheint <code>Wolke</code> in der Hauptnavigation und kann optional als Startseite gewählt werden.</p>
+<p>Die Wolke visualisiert Dokument-Tags nach Häufigkeit. Größere Wörter stehen für häufiger verwendete Tags, jedes Wort führt direkt zur passenden Dokumentliste. Wenn keine primären Tags gesetzt sind, zeigt BearStack eine zentrale Wolke der wichtigsten Tags. Wenn primäre Tags gesetzt sind, entstehen eigene Wolkenbereiche: primäre Tags werden hervorgehoben, und verwandte Tags erscheinen in ihrem Umfeld.</p>
+<p>Die Wortwolke bleibt eine Navigations- und Suchhilfe. Sie verändert keine Dateien, Tags oder Dokumente, sondern nutzt vorhandene Tag-Metadaten und die gleiche Dokumentfilterung wie Listen, Suche und virtuelle Ordner.</p>
+<h2 id="benutzerdefinierte-felder">Benutzerdefinierte Felder<a class="headerlink" href="#benutzerdefinierte-felder" title="Permanent link">&para;</a></h2>
+<p>Benutzerdefinierte Felder ergänzen Dokumente um strukturierte Werte wie Kundennummer, Projekt, Vertragspartner oder Aktenzeichen. Felder können mit Autocomplete arbeiten, in der Filterleiste erscheinen und auf Wunsch Wertordner erzeugen, wenn genügend Dokumente denselben Wert teilen. So entsteht Ordnung über Metadaten, ohne die vorhandene Ablage oder die Dateien selbst umzubauen.</p>
+<h2 id="virtuelle-ordner">Virtuelle Ordner<a class="headerlink" href="#virtuelle-ordner" title="Permanent link">&para;</a></h2>
+<p>Die Ordneransicht ist virtuell: Ordner entstehen aus Dokument-Tags, Feldwerten und Suchfavoriten, nicht aus einem beschreibbaren Dateisystembaum. Sie werden in der Weboberfläche als eigene Ordneransicht angezeigt und führen von dort direkt zu den passenden Dokumentlisten.</p>
+<p>Der WebDAV-kompatible Endpunkt bildet dieselbe virtuelle Struktur ab. <code>PROPFIND</code>, <code>GET</code>, <code>HEAD</code> und <code>PUT</code> sind unterstützt; <code>DELETE</code>, <code>MKCOL</code>, <code>MOVE</code>, <code>COPY</code>, <code>LOCK</code>, <code>UNLOCK</code>, <code>PROPPATCH</code>, <code>PATCH</code> und <code>POST</code> werden als read-only abgelehnt. <code>PUT</code> importiert neue Dateien in den Zielordner und übernimmt vorhandene Tag-Ordner als Initial-Tags, überschreibt aber keine existierenden Ressourcen.</p>
+<h2 id="berechtigungen">Berechtigungen<a class="headerlink" href="#berechtigungen" title="Permanent link">&para;</a></h2>
+<p>Dokumentrechte sind capability-basiert und werden über Rollen oder einzelne Permissions vergeben:</p>
+<table>
+<thead>
+<tr>
+<th>Rolle oder Recht</th>
+<th>Wirkung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>documents_read</code></td>
+<td>Dokumente lesen, herunterladen, suchen, exportieren und WebDAV lesend nutzen</td>
+</tr>
+<tr>
+<td><code>documents_editor</code></td>
+<td>zusätzlich hochladen, Metadaten bearbeiten, OCR starten, Dokumente verknüpfen und vorhandene Tags zuweisen</td>
+</tr>
+<tr>
+<td><code>documents_manager</code></td>
+<td>zusätzlich löschen, wiederherstellen und Struktur-Daten wie Tags, Felder und Suchfavoriten pflegen</td>
+</tr>
+<tr>
+<td><code>api_uploader</code></td>
+<td>Upload über API, ohne Dokumente lesen zu dürfen</td>
+</tr>
+<tr>
+<td><code>admin</code></td>
+<td>vollständige Verwaltung</td>
+</tr>
+</tbody>
+</table>
+<p>Für Sonderfälle können einzelne Permissions wie <code>documents.read</code>, <code>documents.webdav.read</code>, <code>documents.upload</code>, <code>documents.edit</code>, <code>documents.delete</code> und <code>documents.structure</code> kombiniert werden. Die vollständige Matrix steht unter <a href="benutzer-und-rechte.html">Benutzer und Rechte</a>.</p>
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Zurück zum Seitenanfang
+</button>
+        
+      </main>
+      
+        <footer class="bs-footer" aria-label="Website-Footer">
+  <div class="bs-wrap bs-footer__inner">
+    <div>
+      <a class="bs-footer__brand" href="index.html">BearStack</a>
+      <p>Schlankes Archiv. Starke Funktion.</p>
+    </div>
+    <nav class="bs-footer__nav" aria-label="Footer-Navigation">
+      <a href="dokumente.html">Dokumente</a>
+      <a href="fotos.html">Fotos</a>
+      <a href="installation.html">Installation</a>
+      <a href="benutzer-und-rechte.html">Benutzer & Rechte</a>
+      <a href="architektur.html">Architektur</a>
+      <a href="tests-und-audit.html">Tests & Audit</a>
+    </nav>
+    <p class="bs-footer__meta">Version 0.17.5 · Website gebaut mit Zensical</p>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate":null,"base":".","features":["navigation.tabs","navigation.top","toc.follow"],"search":"./assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"In Zwischenablage kopiert","clipboard.copy":"In Zwischenablage kopieren","search.result.more.one":"1 weiteres Suchergebnis auf dieser Seite","search.result.more.other":"# weitere Suchergebnisse auf dieser Seite","search.result.none":"Keine Suchergebnisse","search.result.one":"1 Suchergebnis","search.result.other":"# Suchergebnisse","search.result.placeholder":"Suchbegriff eingeben","search.result.term.missing":"Es fehlt","select.version":"Version auswählen"},"version":null}</script>
+    
+    
+      <script src="./assets/javascripts/bundle.6e5f0216.min.js"></script>
+      
+    
+  </body>
+</html>

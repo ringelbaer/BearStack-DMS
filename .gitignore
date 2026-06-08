@@ -1,0 +1,31 @@
+# Local config / secrets
+.env
+*.local.env
+config.local.json
+bearstack.local.json
+
+# Runtime data
+data/*
+data_photos/*
+
+# Go build/test artifacts
+/bearstack
+*.test
+coverage.out
+*.prof
+
+# Node / Playwright test artifacts
+node_modules/
+playwright-report/
+test-results/
+npm-debug.log*
+
+# Backups / exports
+bearstack-backup*.tgz
+
+# OS files
+.DS_Store
+.codex/AGENTS.md
+pigallery2
+*.tar
+.cache/

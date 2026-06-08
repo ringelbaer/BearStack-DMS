@@ -1,0 +1,50 @@
+{{define "duplicates.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>Duplikate</h1>
+    <p>{{len .Duplicates}} Gruppe(n)</p>
+  </div>
+</section>
+
+{{if .Duplicates}}
+{{range .Duplicates}}
+<section class="panel duplicate-group">
+  <header>
+    <h2>{{.Count}} Dateien</h2>
+    <span>{{formatBytes .TotalBytes}} gesamt · {{shortHash .SHA256}}</span>
+  </header>
+  <div class="table-wrap">
+    <table class="document-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Titel</th>
+          <th>Datum</th>
+          <th>Größe</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Documents}}
+        <tr>
+          <td><a class="strong-link" href="/documents/{{.ID}}">{{.OriginalName}}</a></td>
+          <td>{{.Title}}</td>
+          <td>{{formatDate .DisplayDate}}</td>
+          <td>{{formatBytes .SizeBytes}}</td>
+          <td class="actions"><div class="action-links"><a href="/documents/{{.ID}}">Öffnen</a></div></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</section>
+{{end}}
+{{else}}
+<div class="empty-state">
+  <h2>Keine exakten Duplikate</h2>
+  <p>Beim Upload werden identische Dateien anhand der Prüfsumme übersprungen.</p>
+</div>
+{{end}}
+{{template "foot" .}}
+{{end}}

@@ -1,0 +1,47 @@
+{{define "audit_log.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>Log</h1>
+    <p>Schreibaktionen der letzten 30 Tage</p>
+  </div>
+</section>
+
+{{if .AuditLogs}}
+<section class="panel audit-log-panel">
+  <div class="table-wrap">
+    <table class="document-table audit-table">
+      <thead>
+        <tr>
+          <th>Zeit</th>
+          <th>Aktion</th>
+          <th>Ziel</th>
+          <th>Benutzer</th>
+          <th>Status</th>
+          <th>Pfad</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .AuditLogs}}
+        <tr>
+          <td data-label="Zeit">{{formatDateTime .OccurredAt}}</td>
+          <td data-label="Aktion"><strong>{{.Action}}</strong>{{if .Route}}<div class="muted">{{.Route}}</div>{{end}}</td>
+          <td data-label="Ziel">{{if .Target}}{{.Target}}{{else}}-{{end}}</td>
+          <td data-label="Benutzer">{{.Actor}}{{if .RemoteAddr}}<div class="muted">{{.RemoteAddr}}</div>{{end}}</td>
+          <td data-label="Status"><span class="audit-status {{if ge .Status 400}}error{{else}}ok{{end}}">{{.Status}}</span></td>
+          <td class="audit-path" data-label="Pfad">{{.Path}}{{if .UserAgent}}<div class="muted">{{.UserAgent}}</div>{{end}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</section>
+{{template "pagination" .}}
+{{else}}
+<div class="empty-state">
+  <h2>Keine Logeinträge</h2>
+  <p>Es wurden in den letzten 30 Tagen keine schreibenden Aktionen erfasst.</p>
+</div>
+{{end}}
+{{template "foot" .}}
+{{end}}

@@ -1,0 +1,118 @@
+{{define "api.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>API</h1>
+    <p>HTTP-Schnittstelle für Dokumentlisten, Uploads und Statusprüfungen</p>
+  </div>
+</section>
+
+<section class="panel api-docs">
+  <h2>Authentifizierung</h2>
+  <p class="endpoint">Alle API-Endpunkte verwenden dieselbe Basic-Auth-Konfiguration wie die Weboberfläche.</p>
+
+  <h2>Status</h2>
+  <div class="endpoint">
+    <code>GET /healthz</code>
+    <p>Liefert <code>{"status":"ok"}</code>, wenn der Dienst erreichbar ist.</p>
+  </div>
+
+  <h2>Upload</h2>
+  <div class="endpoint">
+    <code>POST /api/upload</code>
+    <p>Akzeptiert <code>multipart/form-data</code>. Dateien werden über das Feld <code>files</code> übertragen; mehrere Dateien sind möglich.</p>
+    <pre><code>curl -u admin:change-me \
+  -F "files=@rechnung.pdf" \
+  http://127.0.0.1:8080/api/upload</code></pre>
+    <p>Antworten enthalten die Arrays <code>uploaded</code>, <code>duplicates</code> und <code>errors</code>.</p>
+  </div>
+
+  <h2>Tags</h2>
+  <div class="endpoint">
+    <code>GET /api/tags</code>
+    <p>Liefert alle verfügbaren Tags inklusive Beschreibung, Farbe, Gruppenmodus, Detailtag-Status, Löschschutz und aktueller Dokumentanzahl.</p>
+    <pre><code>curl -u admin:change-me \
+  http://127.0.0.1:8080/api/tags</code></pre>
+  </div>
+
+  <h2>Benutzerdefinierte Felder</h2>
+  <div class="endpoint">
+    <code>GET /api/fields</code>
+    <p>Liefert alle Felddefinitionen inklusive ID, Label, Position und Auto-Vervollständigung.</p>
+    <pre><code>curl -u admin:change-me \
+  http://127.0.0.1:8080/api/fields</code></pre>
+  </div>
+
+  <h2>Dokumente</h2>
+  <div class="endpoint">
+    <code>GET /api/documents</code>
+    <p>Liefert eine paginierte Dokumentliste mit denselben Filtern wie die Oberfläche.</p>
+    <pre><code>curl -u admin:change-me \
+  "http://127.0.0.1:8080/api/documents?q=rechnung&amp;tags=steuer&amp;field_3=ACME&amp;from=2026-01-01&amp;to=2026-12-31&amp;sort=date&amp;dir=desc&amp;page=1&amp;page_size=50"</code></pre>
+    <p>Filterparameter: <code>q</code>, wiederholtes <code>tags</code>, <code>field_&lt;id&gt;</code> für Werte benutzerdefinierter Felder, <code>from</code>, <code>to</code>, <code>year</code>, <code>sort</code>, <code>dir</code>, <code>page</code>, <code>page_size</code> und optional <code>trash=1</code>. Suchbegriffe unter drei Zeichen werden wie in der UI ignoriert; Feldwertfilter suchen case-insensitive nach Teiltreffern im jeweiligen Feld.</p>
+    <p>Sortierungen: <code>upload_date</code>, <code>date</code>, <code>name</code>, <code>title</code>, <code>size</code> und <code>deleted_at</code>. Richtungen: <code>asc</code> oder <code>desc</code>.</p>
+  </div>
+
+  <h2>Virtuelle Ordner</h2>
+  <div class="endpoint">
+    <code>GET /api/folders</code>
+    <p>Liefert die tag-basierten virtuellen Ordner fuer externe Clients. Der Endpunkt nutzt wiederholtes <code>tags</code>, <code>page</code> und <code>page_size</code>; Datums-, Such- und Papierkorbfilter werden fuer normale Tag-Pfade ignoriert.</p>
+    <pre><code>curl -u admin:change-me \
+  "http://127.0.0.1:8080/api/folders?tags=steuer&amp;page=1&amp;page_size=500"</code></pre>
+    <p>Ohne Tags enthaelt die Antwort nur weitere Ordner. Wenn Suchfavoriten existieren, ist <code>00 Suchfavoriten</code> der erste Ordner. Mit Tags enthaelt sie weitere passende Ordner und die paginierten Dokumente fuer die Tag-Auswahl.</p>
+    <p>Der virtuelle Pfad <code>tags=00 Suchfavoriten</code> listet Suchfavoriten als Ordner; <code>tags=00 Suchfavoriten&amp;tags=Favoritname</code> liefert die Dokumente des gespeicherten Filtersets.</p>
+    <p>Dokumente enthalten unter anderem <code>document_date</code>, <code>uploaded_at</code>, <code>updated_at</code>, <code>size_bytes</code>, <code>sha256</code>, <code>download_url</code> und <code>thumbnail_url</code>.</p>
+  </div>
+
+  <h2>WebDAV</h2>
+  <div class="endpoint">
+    <code>{{.WebDAVPath}}/</code>
+    <p>WebDAV-Zugriff auf dieselbe virtuelle Ordnerstruktur. Der Pfad ist ueber <code>webdav.path</code> oder <code>BEARSTACK_WEBDAV_PATH</code> konfigurierbar. Lesen bleibt unveraendert moeglich; zusaetzlich ist <code>PUT</code> als reiner Erstellungsweg erlaubt (kein Ueberschreiben). <code>DELETE</code>, <code>MKCOL</code>, <code>MOVE</code>, <code>COPY</code> und weitere Schreibmethoden bleiben gesperrt.</p>
+    <p>Beim Upload per <code>PUT</code> uebernimmt das neue Dokument die Tags der aktuellen Tag-Hierarchie. Uploads in <code>00 Suchfavoriten</code> sind nicht erlaubt.</p>
+    <pre><code>webdav://127.0.0.1:8080{{.WebDAVPath}}/</code></pre>
+  </div>
+
+  <h2>Dokument herunterladen</h2>
+  <div class="endpoint">
+    <code>GET /api/documents/{id}/download</code>
+    <p>Liefert die Originaldatei als Attachment. Dieser API-Alias verwendet dieselbe Authentifizierung wie die Weboberflaeche.</p>
+  </div>
+
+  <h2>Dokument-Vorschaubild</h2>
+  <div class="endpoint">
+    <code>GET /documents/{id}/thumbnail</code>
+    <p>Liefert ein JPEG-Vorschaubild, sofern BearStack eines erzeugen kann. Bilddateien koennen direkt als Inline-Vorschau geliefert werden.</p>
+  </div>
+
+  <h2>Dokument-Tags</h2>
+  <div class="endpoint">
+    <code>POST /documents/{id}/tags</code>
+    <p>Ersetzt die Tags eines aktiven Dokuments. Tags werden als wiederholtes Formularfeld <code>tags</code> gesendet; die Antwort enthält die gespeicherten Tags als JSON.</p>
+    <pre><code>curl -u admin:change-me \
+  -d "tags=steuer" \
+  -d "tags=rechnung" \
+  http://127.0.0.1:8080/documents/12/tags</code></pre>
+  </div>
+
+  <h2>Beispielantwort</h2>
+  <pre><code>{
+  "uploaded": [
+    {
+      "id": 12,
+      "filename": "rechnung.pdf",
+      "title": "rechnung",
+      "upload_way": "web",
+      "content_text_source": "pdf",
+      "content_text_source_label": "PDF-Text extrahiert",
+      "size_bytes": 48213,
+      "document_url": "/documents/12",
+      "download_url": "/documents/12/download",
+      "preview_url": "/documents/12/preview"
+    }
+  ],
+  "duplicates": [],
+  "errors": []
+}</code></pre>
+</section>
+{{template "foot" .}}
+{{end}}

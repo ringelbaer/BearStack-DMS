@@ -1,0 +1,218 @@
+{{define "document_table"}}
+{{if .Auth.CanSystemManage}}
+<dialog class="column-modal" data-columns-modal>
+  <form method="post" action="/settings/columns" data-columns-form>
+    <input type="hidden" name="return" value="{{.ReturnURL}}">
+    <header>
+      <strong>Spalten</strong>
+      <button type="button" class="icon-button" data-columns-close aria-label="Spalten schließen">×</button>
+    </header>
+    <div class="column-modal-body" data-column-sort-list>
+      {{range .ColumnOptions}}
+      <div class="column-sort-item" draggable="true" data-column-sort-item>
+        <span class="column-drag-handle" data-column-drag-handle aria-hidden="true"></span>
+        <input type="hidden" name="column_order" value="{{.Key}}">
+        <div class="column-sort-labels">
+          <label class="checkbox-line"><input type="checkbox" name="columns" data-column-toggle value="{{.Key}}" {{if columnVisible $.VisibleColumns .Key}}checked{{end}}> {{.Label}}</label>
+          {{if eq .Key "document_date"}}
+          <label class="checkbox-line column-sort-option"><input type="checkbox" name="desktop_date_under_title" value="1" {{if $.DesktopDateUnderTitle}}checked{{end}}> Datum auf Desktop unter Titel anzeigen</label>
+          {{end}}
+        </div>
+        <span class="column-sort-controls" role="group" aria-label="Spalte verschieben">
+          <button type="button" class="icon-button column-sort-button" data-column-move="up" aria-label="{{.Label}} nach oben verschieben">↑</button>
+          <button type="button" class="icon-button column-sort-button" data-column-move="down" aria-label="{{.Label}} nach unten verschieben">↓</button>
+        </span>
+      </div>
+      {{end}}
+    </div>
+    <footer>
+      <button type="submit">Speichern</button>
+    </footer>
+  </form>
+</dialog>
+{{end}}
+<div data-document-list>
+{{if .Documents}}
+<form class="table-form" method="get" action="/export">
+  <input type="hidden" name="return" value="{{.ReturnURL}}">
+  <div class="table-actions">
+    <div class="table-actions-left">
+      <label class="checkbox-line"><input type="checkbox" data-select-all> Alle auswählen</label>
+      <div class="selection-actions hidden" data-selection-actions>
+        <details class="document-batch-menu">
+          <summary aria-label="Batch-Aktionen" title="Batch-Aktionen">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </summary>
+          <div class="document-batch-menu-list" aria-label="Batch-Aktionen">
+            <span class="selection-export">
+              <label class="checkbox-line"><input type="checkbox" name="metadata" value="1"> Metadaten einschließen</label>
+              <button type="submit">Exportieren</button>
+            </span>
+            {{if .Auth.CanDocumentsEdit}}
+            <button type="button" data-bulk-tags-open="add">Tags ergänzen</button>
+            <div class="tag-select hidden" data-tag-select data-empty-label="Keine Tags ausgewählt" data-update-url="/documents/tags/add" data-bulk-tags="true" data-bulk-tags-action="add"></div>
+            <button type="button" data-bulk-tags-open="remove">Tags entfernen</button>
+            <div class="tag-select hidden" data-tag-select data-empty-label="Keine Tags ausgewählt" data-update-url="/documents/tags/remove" data-bulk-tags="true" data-bulk-tags-action="remove"></div>
+            {{if .CustomFields}}<button type="button" data-bulk-fields-open>Felder setzen</button>{{end}}
+            <button type="submit" formaction="/documents/link" formmethod="post" data-link-submit data-requires-multiple data-link-prompt="{count} Dokumente verknüpfen?">Verknüpfen</button>
+            {{end}}
+          </div>
+        </details>
+      </div>
+    </div>
+    {{if .Auth.CanSystemManage}}
+    <button type="button" class="secondary-button" data-columns-open>Spalten</button>
+    {{end}}
+  </div>
+  {{if and .CustomFields .Auth.CanDocumentsEdit}}
+  <dialog class="bulk-fields-modal" data-bulk-fields-modal>
+    <header>
+      <strong>Felder setzen</strong>
+      <button type="button" class="icon-button" data-bulk-fields-close aria-label="Felder schließen">×</button>
+    </header>
+    <div class="bulk-fields-modal-body">
+      {{range .CustomFields}}
+      <label>
+        <span>{{.Label}}</span>
+        <input type="text" name="field_{{.ID}}" {{if .AutocompleteEnabled}}list="bulk-field-values-{{.ID}}" data-custom-field-values-url="/fields/{{.ID}}/values" autocomplete="off"{{end}}>
+        {{if .AutocompleteEnabled}}<datalist id="bulk-field-values-{{.ID}}"></datalist>{{end}}
+      </label>
+      {{end}}
+    </div>
+    <footer>
+      <button type="button" class="secondary-button" data-bulk-fields-close>Abbrechen</button>
+      <button type="submit" formaction="/documents/fields" formmethod="post">Übernehmen</button>
+    </footer>
+  </dialog>
+  {{end}}
+  <div class="document-list-layout">
+    <div class="table-wrap">
+      <table class="document-table document-list-table {{if columnVisible .VisibleColumns "thumbnail"}}document-list-table-has-thumbnail{{else}}document-list-table-no-thumbnail{{end}} {{if columnVisible .VisibleColumns "title"}}document-list-table-has-title{{else}}document-list-table-no-title{{end}} {{if and .DesktopDateUnderTitle (columnVisible .VisibleColumns "title")}}document-list-table-desktop-date-under-title{{end}}">
+      <thead>
+        <tr>
+          <th class="select-col"></th>
+          {{range .DocumentColumns}}
+            {{if .SortKey}}
+              {{$sort := index $.SortLinks .SortKey}}
+              <th data-column="{{.Key}}" aria-sort="{{$sort.AriaSort}}"><a class="sort-link {{if $sort.Active}}active{{end}}" href="{{$sort.URL}}">{{.Label}}{{if $sort.Active}} <span class="sort-indicator" aria-hidden="true">{{sortIndicator $sort}}</span>{{end}}</a></th>
+            {{else}}
+              <th data-column="{{.Key}}">{{if ne .Key "actions"}}{{.Label}}{{end}}</th>
+            {{end}}
+          {{end}}
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Documents}}
+        {{$doc := .}}
+        <tr id="document-{{.ID}}" data-document-id="{{.ID}}" class="{{if eq $.HighlightID .ID}}document-highlight{{end}}">
+          <td><input type="checkbox" name="ids" value="{{.ID}}" aria-label="{{.OriginalName}} auswählen"></td>
+          {{range $.DocumentColumns}}
+          {{if eq .Key "thumbnail"}}
+          <td data-column="thumbnail" data-label="Vorschau">
+            {{if $doc.ThumbnailPath}}
+            <button type="button" class="thumb-link" data-preview-url="/documents/{{$doc.ID}}/preview" data-preview-title="{{$doc.OriginalName}}" data-preview-mime="{{$doc.MIMEType}}" aria-label="Vorschau für {{$doc.OriginalName}} öffnen"><img class="document-thumb" src="/documents/{{$doc.ID}}/thumbnail" alt="" loading="lazy" decoding="async"></button>
+            {{else if isImage $doc.MIMEType}}
+            <button type="button" class="thumb-link" data-preview-url="/documents/{{$doc.ID}}/preview" data-preview-title="{{$doc.OriginalName}}" data-preview-mime="{{$doc.MIMEType}}" aria-label="Vorschau für {{$doc.OriginalName}} öffnen"><img class="document-thumb" src="/documents/{{$doc.ID}}/thumbnail" alt="" loading="lazy" decoding="async"></button>
+            {{else if isPreviewableDocument $doc.OriginalName $doc.MIMEType}}
+            <button type="button" class="thumb-link" data-preview-url="/documents/{{$doc.ID}}/preview" data-preview-title="{{$doc.OriginalName}}" data-preview-mime="{{$doc.MIMEType}}" aria-label="Vorschau für {{$doc.OriginalName}} öffnen"><img class="document-thumb" src="/documents/{{$doc.ID}}/thumbnail" alt="" loading="lazy" decoding="async"></button>
+            {{else}}
+            <span class="muted">-</span>
+            {{end}}
+          </td>
+          {{else if eq .Key "name"}}
+          <td data-column="name" data-label="Name">
+            <a class="strong-link" href="/documents/{{$doc.ID}}?return={{queryEscape $.ReturnURL}}">{{$doc.OriginalName}}</a>
+            {{if gt $doc.DuplicateCount 0}}<span class="badge">Duplikat</span>{{end}}
+          </td>
+          {{else if eq .Key "title"}}
+          <td data-column="title" data-label="Titel">
+            <a class="strong-link" href="/documents/{{$doc.ID}}?return={{queryEscape $.ReturnURL}}">{{$doc.Title}}</a>{{if gt $doc.LinkedCount 0}}<span class="document-link-icon" title="{{$doc.LinkedCount}} Verknüpfung(en)" aria-label="{{$doc.LinkedCount}} Verknüpfung(en)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"></path><path d="M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1"></path></svg></span>{{end}}{{if eq $doc.UploadWay "mail"}}<span class="upload-way-icon" title="Upload-Weg: E-Mail" aria-label="Upload-Weg E-Mail">✉</span>{{end}}
+            {{if $.DesktopDateUnderTitle}}
+            <div class="document-title-date" data-label="Dateidatum">
+              {{if $.Auth.CanDocumentsEdit}}
+              <div class="inline-date-edit" data-document-date-editor>
+                <input type="date" value="{{formatDateInput $doc.DocumentDate}}" data-document-date-input data-update-url="/documents/{{$doc.ID}}/document-date" data-initial-value="{{formatDateInput $doc.DocumentDate}}" aria-label="Dateidatum für {{$doc.OriginalName}}">
+                <span class="inline-date-status" data-document-date-status aria-live="polite"></span>
+              </div>
+              {{else}}
+              {{formatDate $doc.DocumentDate}}
+              {{end}}
+            </div>
+            {{end}}
+            {{with index $.DocumentOCRJobs $doc.ID}}
+            <div class="document-ocr-state document-ocr-state-{{.Status}}">
+              <span>OCR {{.LanguageLabel}}: {{.StatusText}}</span>
+              {{if .HasProgress}}<span>{{.CurrentPage}}/{{.TotalPages}}</span>{{end}}
+            </div>
+            {{end}}
+          </td>
+          {{else if eq .Key "tags"}}
+          <td data-column="tags" data-label="Tags">
+            {{if $.Auth.CanDocumentsEdit}}
+            <div class="tag-select tag-select-table" data-tag-select data-empty-label="Keine Tags" data-hide-list-tags="true" data-selected-tags="{{joinTags $doc.Tags}}" data-update-url="/documents/{{$doc.ID}}/tags">
+              <button type="button" class="tag-select-trigger" data-tag-select-trigger aria-label="Tags für {{$doc.OriginalName}} bearbeiten">
+                <span class="tag-select-summary" data-tag-select-summary>
+                  {{$visibleTags := listVisibleTags $doc.Tags $.TagListHidden}}{{$hiddenTags := listHiddenTags $doc.Tags $.TagListHidden}}{{if or $visibleTags $hiddenTags}}{{range $visibleTags}}<span class="tag" style="{{index $.TagStyles .}}" title="{{index $.TagDescriptions .}}">{{formatTag $.TagDisplayMode .}}</span>{{end}}{{if $hiddenTags}}<span class="tag tag-hidden-indicator" title="{{joinDisplayTags $.TagDisplayMode $hiddenTags}}" aria-label="{{joinDisplayTags $.TagDisplayMode $hiddenTags}}">...</span>{{end}}{{else}}<span class="muted">Keine Tags</span>{{end}}
+                </span>
+              </button>
+            </div>
+            {{else}}
+            {{$visibleTags := listVisibleTags $doc.Tags $.TagListHidden}}{{$hiddenTags := listHiddenTags $doc.Tags $.TagListHidden}}{{if or $visibleTags $hiddenTags}}{{range $visibleTags}}<span class="tag" style="{{index $.TagStyles .}}" title="{{index $.TagDescriptions .}}">{{formatTag $.TagDisplayMode .}}</span>{{end}}{{if $hiddenTags}}<span class="tag tag-hidden-indicator" title="{{joinDisplayTags $.TagDisplayMode $hiddenTags}}" aria-label="{{joinDisplayTags $.TagDisplayMode $hiddenTags}}">...</span>{{end}}{{else}}<span class="muted">Keine Tags</span>{{end}}
+            {{end}}
+          </td>
+          {{else if eq .Key "document_date"}}
+          <td data-column="document_date" data-label="Dateidatum">
+            {{if $.Auth.CanDocumentsEdit}}
+            <div class="inline-date-edit" data-document-date-editor>
+              <input type="date" value="{{formatDateInput $doc.DocumentDate}}" data-document-date-input data-update-url="/documents/{{$doc.ID}}/document-date" data-initial-value="{{formatDateInput $doc.DocumentDate}}" aria-label="Dateidatum für {{$doc.OriginalName}}">
+              <span class="inline-date-status" data-document-date-status aria-live="polite"></span>
+            </div>
+            {{else}}
+            {{formatDate $doc.DocumentDate}}
+            {{end}}
+          </td>
+          {{else if eq .Key "upload_date"}}
+          <td data-column="upload_date" data-label="Uploaddatum">{{formatDay $doc.UploadedAt}}</td>
+          {{else if .IsCustom}}
+          <td data-column="{{.Key}}" data-label="{{.Label}}">{{customValue $doc.CustomValues .FieldID}}</td>
+          {{else if eq .Key "size"}}
+          <td data-column="size" data-label="Größe">{{formatBytes $doc.SizeBytes}}</td>
+          {{else if eq .Key "actions"}}
+          <td class="actions" data-column="actions" data-label="Aktionen">
+            <div class="action-links">
+            {{if isPreviewableDocument $doc.OriginalName $doc.MIMEType}}
+            <button type="button" class="action-icon-button preview" data-preview-url="/documents/{{$doc.ID}}/preview" data-preview-title="{{$doc.OriginalName}}" data-preview-mime="{{$doc.MIMEType}}" aria-label="Vorschau für {{$doc.OriginalName}} öffnen" title="Vorschau">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+            {{end}}
+            <a class="action-icon-button" href="/documents/{{$doc.ID}}/download" aria-label="{{$doc.OriginalName}} herunterladen" title="Download">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
+            </a>
+            <button type="button" class="action-icon-button" data-share-url="/documents/{{$doc.ID}}/view" aria-label="Sharing-Link für {{$doc.OriginalName}} kopieren" title="Teilen">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.7 10.7 6.6-3.4"></path><path d="m8.7 13.3 6.6 3.4"></path></svg>
+            </button>
+            <a class="action-icon-button" href="/documents/{{$doc.ID}}?return={{queryEscape $.ReturnURL}}" aria-label="Details für {{$doc.OriginalName}} öffnen" title="Details">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            </a>
+            </div>
+          </td>
+          {{end}}
+          {{end}}
+        </tr>
+        {{end}}
+      </tbody>
+      </table>
+    </div>
+  </div>
+</form>
+{{template "pagination" .}}
+{{else}}
+<div class="empty-state">
+  <h2>Keine Dokumente</h2>
+  <p>Die aktuelle Auswahl enthält keine Einträge.</p>
+</div>
+{{end}}
+</div>
+{{end}}

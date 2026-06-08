@@ -1,0 +1,33 @@
+{{define "login.html"}}
+{{template "head" .}}
+<section class="login-page">
+  <section class="login-card">
+    <header class="login-card-head">
+      <h1>{{.DisplayAppName}}</h1>
+      <p>Melden Sie sich mit Ihren Zugangsdaten an, um fortzufahren.</p>
+    </header>
+    {{if .Error}}
+    <p class="login-error" role="alert">{{.Error}}</p>
+    {{end}}
+    <form method="post" action="/login" class="login-form" autocomplete="off">
+      <input type="hidden" name="return" value="{{.ReturnURL}}">
+      <label class="login-field">
+        <span>Benutzername</span>
+        <input type="text" name="username" autocomplete="username" required autofocus>
+      </label>
+      <label class="login-field">
+        <span>Passwort</span>
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <label class="login-check">
+        <input type="checkbox" name="remember" value="1">
+        <span>Eingeloggt bleiben</span>
+      </label>
+      <div class="login-actions">
+        <button type="submit" class="secondary-button">Anmelden</button>
+      </div>
+    </form>
+  </section>
+</section>
+{{template "foot" .}}
+{{end}}

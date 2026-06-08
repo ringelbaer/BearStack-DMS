@@ -1,0 +1,306 @@
+{{define "head"}}
+<!doctype html>
+<html lang="de" data-theme="{{.ThemeMode}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} - {{.DisplayAppName}}</title>
+  {{range pageCSSAssets .}}<link rel="stylesheet" href="{{assetURL .}}">
+  {{end}}
+  {{if .CustomFavicon.Uploaded}}<link rel="icon" href="{{.CustomFavicon.Href}}" type="{{.CustomFavicon.Type}}">
+  {{else}}<link rel="icon" href="{{assetURL "/static/bearstack.svg"}}" type="image/svg+xml">
+  {{end}}
+  {{range pageJSAssets .}}<script src="{{assetURL .}}" defer></script>
+  {{end}}
+</head>
+<body data-tag-display-mode="{{.TagDisplayMode}}" data-document-delete-protected="{{if .Document.DeleteProtected}}true{{else}}false{{end}}">
+  <header class="topbar">
+    <a class="brand" href="{{.HomeURL}}" aria-label="{{.DisplayAppName}}">
+      {{if .CustomFavicon.Uploaded}}<img class="brand-icon" src="{{.CustomFavicon.Href}}" alt="" aria-hidden="true">
+      {{else}}<img class="brand-icon" src="{{assetURL "/static/bearstack.svg"}}" alt="" aria-hidden="true">
+      {{end}}
+      <span class="brand-label">{{.DisplayAppName}}</span>
+    </a>
+    <nav class="nav" aria-label="Hauptnavigation">
+      {{if .Auth.CanDocumentsRead}}
+      <a href="/documents" class="{{if eq .Active "documents"}}active{{end}}">Dokumente</a>
+      <a href="/folders" class="{{if eq .Active "folders"}}active{{end}}">Ordner</a>
+      {{if .DocumentCloudEnabled}}<a href="/cloud" class="{{if eq .Active "cloud"}}active{{end}}">Wolke</a>{{end}}
+      {{end}}
+      {{if and .PhotoModuleEnabled .Auth.CanPhotosRead}}<a href="/photos" class="{{if eq .Active "photos"}}active{{end}}">Fotos</a>{{end}}
+    </nav>
+    {{if .SystemMenuVisible}}
+    <details class="system-menu">
+      <summary aria-label="Systemmenü öffnen">
+        <span></span>
+        <span></span>
+        <span></span>
+      </summary>
+      <nav class="system-menu-list" aria-label="Systemmenü">
+        {{$systemMenuPrimary := .SystemMenuPrimaryVisible}}
+        {{$systemMenuSecondary := .SystemMenuSecondaryVisible}}
+        {{if or .Auth.CanDocumentsRead .Auth.CanPhotosRead .Auth.CanPhotosManage}}<a href="/tags" class="{{if eq .Active "tags"}}active{{end}}">Tags</a>{{end}}
+        {{if .Auth.CanDocumentsStructure}}
+        <a href="/search-favorites" class="{{if eq .Active "search-favorites"}}active{{end}}">Suchfavoriten</a>
+        <a href="/fields" class="{{if eq .Active "fields"}}active{{end}}">Felder</a>
+        {{end}}
+        {{if .Auth.CanDocumentsRead}}
+        <a href="/duplicates" class="{{if eq .Active "duplicates"}}active{{end}}">Duplikate</a>
+        {{end}}
+        {{if .Auth.CanDocumentsDelete}}
+        <a href="/trash" class="{{if eq .Active "trash"}}active{{end}}">Papierkorb</a>
+        {{end}}
+        {{if and $systemMenuPrimary $systemMenuSecondary}}
+        <span class="system-menu-separator" aria-hidden="true"></span>
+        {{end}}
+        {{if .Auth.CanDocumentsRead}}
+        <a href="/statistics" class="{{if eq .Active "statistics"}}active{{end}}">Statistik</a>
+        {{end}}
+        {{if .Auth.CanSystemManage}}
+        <a href="/settings" class="{{if eq .Active "settings"}}active{{end}}">Einstellungen</a>
+        {{else if .Auth.CanPhotosManage}}
+        <a href="/settings/photos" class="{{if eq .Active "settings"}}active{{end}}">Einstellungen</a>
+        {{end}}
+        {{if .Auth.CanSystemAudit}}
+        <a href="/log" class="{{if eq .Active "log"}}active{{end}}">Log</a>
+        {{end}}
+        {{if or $systemMenuPrimary $systemMenuSecondary}}
+        <span class="system-menu-separator" aria-hidden="true"></span>
+        {{end}}
+        <a href="/help" class="{{if eq .Active "help"}}active{{end}}">Hilfe</a>
+        {{if .SystemMenuAPILinkVisible}}<a href="/api" class="{{if eq .Active "api"}}active{{end}}">API</a>{{end}}
+        {{if .Auth.Username}}
+        <form method="post" action="/logout">
+          <button type="submit">Logout</button>
+        </form>
+        {{end}}
+      </nav>
+    </details>
+    {{end}}
+  </header>
+  <main class="page {{if .InlineDesktopPreview}}page-side-preview-enabled{{end}} {{if .PhotoPage}}photo-page{{end}}" data-preview-mode="{{.DesktopPreviewMode}}">
+    {{if .InlineDesktopPreview}}
+    <aside class="side-preview hidden" data-side-preview>
+      <header>
+        <strong data-side-preview-title>Vorschau</strong>
+        <button type="button" class="icon-button" data-side-preview-close aria-label="Seitenvorschau schließen">×</button>
+      </header>
+      <div class="side-preview-body">
+        <iframe title="Dokumentvorschau" data-side-preview-frame hidden></iframe>
+        <img alt="" data-side-preview-image hidden>
+      </div>
+    </aside>
+    {{end}}
+    {{if and .Notice (ne .Active "settings")}}<div class="notice">{{.Notice}}</div>{{end}}
+{{end}}
+
+{{define "foot"}}
+    {{if not .PhotoFrame}}<footer class="app-footer" aria-label="BearStack-Version">BearStack v{{.AppVersion}}</footer>{{end}}
+  </main>
+  <div class="drop-overlay" data-drop-overlay>
+    <div>Dokumente loslassen zum Hochladen</div>
+  </div>
+  <section class="upload-status hidden" data-upload-status aria-live="polite">
+    <header>
+      <strong>Uploads</strong>
+      <button type="button" class="icon-button" data-upload-minimize aria-label="Uploadstatus minimieren">_</button>
+    </header>
+    <div class="upload-status-body">
+      <progress value="0" max="100" data-upload-progress></progress>
+      <div data-upload-message></div>
+      <ul data-upload-list></ul>
+    </div>
+  </section>
+  <dialog class="preview-modal" data-preview-modal>
+    <header>
+      <strong data-preview-title>Vorschau</strong>
+      <button type="button" class="icon-button" data-preview-close aria-label="Vorschau schließen">×</button>
+    </header>
+    <div class="preview-modal-body">
+      <iframe title="Dokumentvorschau" data-preview-frame hidden></iframe>
+      <img alt="" data-preview-image hidden>
+    </div>
+  </dialog>
+  {{if pageTagAssets .}}
+    <div hidden data-tag-options {{if .PhotoPage}}data-tag-options-url="/photos/tags/options"{{end}}>
+      {{range .Tags}}<span data-tag-option data-name="{{.Name}}" data-display-name="{{formatTag $.TagDisplayMode .Name}}" data-description="{{.Description}}" data-list-hidden="{{.ListHidden}}" data-delete-protected="{{.DeleteProtected}}" style="{{tagStyle .Color}}"></span>{{end}}
+    </div>
+    <dialog class="tag-select-modal" data-tag-select-modal {{if .PhotoPage}}data-tag-options-url="/photos/tags/options"{{end}}>
+      <header>
+        <strong>Tags auswählen</strong>
+        <button type="button" class="icon-button" data-tag-select-close aria-label="Tags schließen">×</button>
+      </header>
+      <div class="tag-select-modal-body">
+        <div class="tag-select-search-row">
+          <label>
+            <span>Suche</span>
+            <input type="search" data-tag-select-search placeholder="Tags filtern oder neuen Tag eingeben" autofocus>
+          </label>
+          {{if or .Auth.CanDocumentsStructure .Auth.CanPhotosEdit}}<button type="button" class="secondary-button" data-tag-create disabled>Tag anlegen</button>{{end}}
+        </div>
+        <div class="tag-select-list" data-tag-select-list></div>
+        <p class="muted tag-select-empty" data-tag-select-empty hidden>Keine Tags gefunden</p>
+        <p class="error-text" data-tag-select-error hidden></p>
+      </div>
+      <footer>
+        <button type="button" class="secondary-button" data-tag-select-clear>Keine Tags</button>
+        <button type="button" data-tag-select-apply>Übernehmen</button>
+      </footer>
+    </dialog>
+  {{end}}
+  <dialog class="app-dialog" data-app-dialog>
+    <form method="dialog">
+      <header>
+        <strong data-app-dialog-title>Hinweis</strong>
+      </header>
+      <div class="app-dialog-body">
+        <p data-app-dialog-message></p>
+        <label class="app-dialog-input hidden" data-app-dialog-input-wrap>
+          <span data-app-dialog-input-label>Passwort</span>
+          <input type="password" data-app-dialog-input autocomplete="current-password">
+        </label>
+      </div>
+      <footer>
+        <button type="button" class="secondary-button" data-app-dialog-cancel>Abbrechen</button>
+        <button type="submit" value="confirm" data-app-dialog-confirm>OK</button>
+      </footer>
+    </form>
+  </dialog>
+</body>
+</html>
+{{end}}
+
+{{define "pagination"}}
+  {{if or .Pagination.PrevURL .Pagination.NextURL .Pagination.DocumentList}}
+<nav class="pagination" aria-label="Seitennavigation">
+  <div class="pagination-nav">
+    {{if .Pagination.PrevURL}}
+    <a class="secondary-button" href="{{.Pagination.PrevURL}}">Zurück</a>
+    {{else}}
+    <span></span>
+    {{end}}
+    <span>Seite {{.Pagination.Page}}</span>
+    {{if .Pagination.NextURL}}
+    <a class="secondary-button" href="{{.Pagination.NextURL}}">Weiter</a>
+    {{else}}
+    <span></span>
+    {{end}}
+  </div>
+  {{if .Pagination.DocumentList}}
+  <div class="pagination-summary">
+    {{if gt .Pagination.Total 0}}{{.Pagination.Start}}-{{.Pagination.End}} von {{.Pagination.Total}} Dokumenten{{else}}0 Dokumente{{end}}
+  </div>
+  {{if .Auth.CanSystemManage}}
+  <form class="pagination-size" method="post" action="/settings/page-size">
+    <input type="hidden" name="return" value="{{.Pagination.PageSizeReturnURL}}">
+    <label>
+      <span>Pro&nbsp;Seite</span>
+      <select name="page_size" data-page-size-select>
+        {{range .Pagination.PerPageOptions}}
+        <option value="{{.}}" {{if eq . $.Pagination.PerPage}}selected{{end}}>{{.}}</option>
+        {{end}}
+      </select>
+    </label>
+  </form>
+  {{end}}
+  {{end}}
+</nav>
+{{end}}
+{{end}}
+
+{{define "filters"}}
+<form class="filters" method="get">
+  <input type="hidden" name="dir" value="{{.Filter.Direction}}">
+  <div class="filter-search {{if .SearchFavorites}}filter-search-with-favorites{{end}}">
+    {{if .SearchFavorites}}
+    <details class="search-favorite-menu">
+      <summary aria-label="Suchfavoriten öffnen" title="Suchfavoriten">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 4.95 11.95"></path><path d="m17 17 4 4"></path><path d="m17 3 1.4 2.8 3.1.45-2.25 2.2.53 3.05L17 11.05l-2.78 1.45.53-3.05-2.25-2.2 3.1-.45Z"></path></svg>
+      </summary>
+      <nav class="search-favorite-menu-list" aria-label="Suchfavoriten">
+        {{range .SearchFavorites}}
+        <a href="{{.URL}}">
+          <strong>{{.Name}}</strong>
+          <span>{{.Summary}}</span>
+        </a>
+        {{end}}
+      </nav>
+    </details>
+    {{end}}
+    <label class="filter-search-field">
+      <span>Suche</span>
+      <input type="search" name="q" value="{{.Filter.Query}}" minlength="3" placeholder="Dateiname, Titel, Volltext">
+    </label>
+  </div>
+  <input class="filter-toggle" id="filter-toggle" type="checkbox">
+  <label class="secondary-button filter-toggle-button" for="filter-toggle" aria-label="Filter ein- und ausklappen"></label>
+  <div class="filter-advanced">
+    <div class="filter-field">
+      <span class="field-label">Tags</span>
+      <div class="tag-select" data-tag-select data-input-name="tags" data-empty-label="Keine Tags" data-submit-on-apply="true">
+        <button type="button" class="tag-select-trigger" data-tag-select-trigger>
+          <span class="tag-select-summary" data-tag-select-summary>
+            {{if .Filter.Tags}}{{range .Filter.Tags}}<span class="tag" style="{{index $.TagStyles .}}" title="{{index $.TagDescriptions .}}">{{formatTag $.TagDisplayMode .}}</span>{{end}}{{else}}<span class="muted">Keine Tags</span>{{end}}
+          </span>
+        </button>
+        <div data-tag-select-inputs hidden>
+          {{range .Filter.Tags}}<input type="hidden" name="tags" value="{{.}}">{{end}}
+        </div>
+      </div>
+    </div>
+    {{range .CustomFields}}
+    <label class="custom-field-filter">
+      <span>{{.Label}}</span>
+      <input type="search" name="field_{{.ID}}" value="{{customFieldFilterValue $.Filter.CustomFields .ID}}" placeholder="Feldwert" {{if .AutocompleteEnabled}}list="filter-custom-field-values-{{.ID}}" data-custom-field-values-url="/fields/{{.ID}}/values" autocomplete="off"{{end}}>
+      {{if .AutocompleteEnabled}}<datalist id="filter-custom-field-values-{{.ID}}"></datalist>{{end}}
+    </label>
+    {{end}}
+    <label>
+      <span>Dateidatum von</span>
+      <input type="date" name="from" value="{{.FilterDates.From}}">
+    </label>
+    <label>
+      <span>Dateidatum bis</span>
+      <input type="date" name="to" value="{{.FilterDates.To}}">
+    </label>
+    <label>
+      <span>Sortierung</span>
+      <select name="sort">
+        <option value="upload_date" {{if eq .Filter.Sort "upload_date"}}selected{{end}}>Uploaddatum</option>
+        <option value="date" {{if eq .Filter.Sort "date"}}selected{{end}}>Dateidatum</option>
+        <option value="name" {{if eq .Filter.Sort "name"}}selected{{end}}>Dateiname</option>
+        <option value="title" {{if eq .Filter.Sort "title"}}selected{{end}}>Titel</option>
+        <option value="size" {{if eq .Filter.Sort "size"}}selected{{end}}>Größe</option>
+      </select>
+    </label>
+    <a class="secondary-button" href="/documents">Zurücksetzen</a>
+  </div>
+  <button class="filter-submit" type="submit">Filtern</button>
+  {{template "date_filter_links" .}}
+</form>
+{{end}}
+
+{{define "date_filter_links"}}
+{{if .DateYearLinks}}
+<div class="filter-years{{if eq .Active "folders"}} folder-date-filter{{end}}">
+  <span>Jahre</span>
+  <div class="filter-year-row">
+    {{range .DateYearLinks}}<a href="{{.URL}}" class="secondary-button {{if .Active}}active{{end}}">{{.Label}}</a>{{end}}
+    {{if .DateOverflowYears}}
+    <details class="filter-year-menu">
+      <summary class="secondary-button" aria-label="Weitere Jahre anzeigen">...</summary>
+      <div>
+        {{range .DateOverflowYears}}<a href="{{.URL}}" class="{{if .Active}}active{{end}}">{{.Label}}</a>{{end}}
+      </div>
+    </details>
+    {{end}}
+    {{if eq .Active "folders"}}<a href="{{.DateResetURL}}" class="secondary-button">Zurücksetzen</a>{{end}}
+  </div>
+  {{if .DateMonthLinks}}
+  <div class="filter-month-row">
+    {{range .DateMonthLinks}}<a href="{{.URL}}" class="secondary-button {{if .Active}}active{{end}}">{{.Label}}</a>{{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}
+{{end}}

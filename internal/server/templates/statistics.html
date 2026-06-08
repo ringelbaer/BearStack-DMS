@@ -1,0 +1,488 @@
+{{define "statistics.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>Statistik</h1>
+  </div>
+</section>
+
+<section class="stat-grid">
+  <article class="stat-card">
+    <span>Dokumente</span>
+    <strong>{{formatNumber .Statistics.ActiveDocuments}}</strong>
+    <p>{{formatNumber .Statistics.TrashDocuments}} im Papierkorb · {{.Statistics.TrashPercent}}%</p>
+  </article>
+  <article class="stat-card">
+    <span>Speicher</span>
+    <strong>{{formatBytes .Statistics.TotalBytes}}</strong>
+    <p>Ø {{formatBytes .Statistics.AverageBytes}} pro Dokument</p>
+  </article>
+  <article class="stat-card">
+    <span>Uploads 30 Tage</span>
+    <strong>{{formatNumber .Statistics.UploadedLast30Days}}</strong>
+    <p>Neue produktive Eingänge</p>
+  </article>
+  <article class="stat-card">
+    <span>OCR-Abdeckung</span>
+    <strong>{{.Statistics.OCRCoveragePercent}}%</strong>
+    <p>{{formatNumber .Statistics.DocumentsWithOCRText}} Dokument(e) mit Textinhalt</p>
+  </article>
+  <article class="stat-card">
+    <span>Dateidatum</span>
+    <strong>{{.Statistics.DocumentDateCoveragePercent}}%</strong>
+    <p>{{formatNumber .Statistics.DocumentsWithDocumentDate}} Dokument(e) gepflegt</p>
+  </article>
+  <article class="stat-card">
+    <span>Duplikate</span>
+    <strong>{{formatNumber .Statistics.DuplicateGroups}}</strong>
+    <p>{{formatNumber .Statistics.DuplicateDocuments}} Dokument(e) in Gruppen</p>
+  </article>
+  <article class="stat-card">
+    <span>Datenbank</span>
+    <strong>{{if .Statistics.Database.UpToDate}}OK{{else}}Prüfen{{end}}</strong>
+    <p>Zielversion {{.Statistics.Database.TargetSearchVersion}}</p>
+  </article>
+  {{if .PhotoModuleEnabled}}
+  <article class="stat-card">
+    <span>Fotos</span>
+    <strong>{{formatNumber .PhotoStatistics.Index.Media}}</strong>
+    <p>{{formatNumber .PhotoStatistics.ImageCount}} Bilder · {{formatNumber .PhotoStatistics.VideoCount}} Videos · {{formatNumber .PhotoStatistics.AudioCount}} Audios</p>
+  </article>
+  <article class="stat-card">
+    <span>Foto-Speicher</span>
+    <strong>{{formatBytes .PhotoStatistics.MediaBytes}}</strong>
+    <p>Ø {{formatBytes .PhotoStatistics.AverageMediaBytes}} pro Medium</p>
+  </article>
+  <article class="stat-card">
+    <span>Foto-GPS</span>
+    <strong>{{.PhotoStatistics.GPSCoveragePercent}}%</strong>
+    <p>{{formatNumber .PhotoStatistics.GPSMediaCount}} Medien mit Koordinaten</p>
+  </article>
+  {{end}}
+</section>
+
+<section class="stats-layout">
+  <section class="panel stats-panel stats-panel-wide">
+    <header>
+      <h2>Uploads pro Monat</h2>
+      <span>Aktive Dokumente</span>
+    </header>
+    <div class="monthly-chart">
+      {{range .Statistics.MonthlyUploads}}
+      <div class="monthly-chart-item">
+        <div class="monthly-chart-track" aria-hidden="true">
+          <div class="monthly-chart-fill" style="{{statBarStyle .Count $.Statistics.MonthlyUploadsMax}}"></div>
+        </div>
+        <strong>{{formatNumber .Count}}</strong>
+        <span>{{.Label}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  {{if .PhotoModuleEnabled}}
+  <section class="panel stats-panel stats-panel-wide">
+    <header>
+      <h2>Fotos</h2>
+      <span>{{if .PhotoStatistics.IndexAvailable}}Index aktiv{{else}}ohne Indexdaten{{end}}</span>
+    </header>
+    <div class="photo-stat-columns">
+      <section class="photo-stat-column" aria-label="Foto-Bestand">
+        <h3>Bestand</h3>
+        <div class="stats-check-list">
+          <div class="stats-check-row">
+            <div>
+              <strong>Medien</strong>
+              <span>{{formatNumber .PhotoStatistics.ImageCount}} Bilder · {{formatNumber .PhotoStatistics.VideoCount}} Videos · {{formatNumber .PhotoStatistics.AudioCount}} Audios</span>
+            </div>
+            <span class="status-pill">{{formatNumber .PhotoStatistics.Index.Media}}</span>
+          </div>
+          <div class="stats-check-row">
+            <div>
+              <strong>Ordner und Blogs</strong>
+              <span>{{formatNumber .PhotoStatistics.Index.Folders}} Ordner · {{formatNumber .PhotoStatistics.Index.Blogs}} Blogs</span>
+            </div>
+            <span class="status-pill">{{formatNumber .PhotoStatistics.PhotoTagCount}} Tags</span>
+          </div>
+          <div class="stats-check-row">
+            <div>
+              <strong>Foto-Tags</strong>
+              <span>{{formatNumber .PhotoStatistics.MediaTagAssignments}} Medien · {{formatNumber .PhotoStatistics.FolderTagAssignments}} Ordner · {{formatNumber .PhotoStatistics.BlogTagAssignments}} Blogs</span>
+            </div>
+            <span class="status-pill">{{formatNumber .PhotoStatistics.TaggedMediaCount}} getaggt</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="photo-stat-column" aria-label="Foto-Metadaten">
+        <h3>Metadaten</h3>
+        <div class="stats-check-list">
+          <div class="stats-check-row">
+            <div>
+              <strong>GPS</strong>
+              <span>{{formatNumber .PhotoStatistics.GPSMediaCount}} von {{formatNumber .PhotoStatistics.Index.Media}} Medien</span>
+            </div>
+            <span class="status-pill">{{.PhotoStatistics.GPSCoveragePercent}}%</span>
+          </div>
+          <div class="stats-check-row">
+            <div>
+              <strong>Auflösung</strong>
+              <span>{{formatNumber .PhotoStatistics.MediaWithDimensions}} Medien · {{formatNumber .PhotoStatistics.PortraitCount}} Hochformat · {{formatNumber .PhotoStatistics.LandscapeCount}} Querformat · {{formatNumber .PhotoStatistics.SquareCount}} quadratisch</span>
+            </div>
+            <span class="status-pill">{{.PhotoStatistics.DimensionCoveragePercent}}%</span>
+          </div>
+          <div class="stats-check-row">
+            <div>
+              <strong>Kameras</strong>
+              <span>{{formatNumber .PhotoStatistics.MediaWithCamera}} Medien · {{formatNumber .PhotoStatistics.DistinctCameraCount}} Kameras · {{formatNumber .PhotoStatistics.MediaWithLens}} mit Objektiv</span>
+            </div>
+            <span class="status-pill">{{.PhotoStatistics.CameraCoveragePercent}}%</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="photo-stat-column" aria-label="Foto-Technik">
+        <h3>Technik</h3>
+        <div class="stats-check-list">
+          <div class="stats-check-row">
+            <div>
+              <strong>Index und Cache</strong>
+              <span>{{formatBytes .PhotoStatistics.IndexDatabaseBytes}} Indexdatenbank · {{formatNumber .PhotoStatistics.ThumbnailCacheFiles}} Thumbnail(s), {{formatBytes .PhotoStatistics.ThumbnailCacheBytes}}</span>
+            </div>
+            <span class="status-pill">{{if .PhotoStatistics.LastIndexedAt.IsZero}}nie{{else}}{{formatDateTime .PhotoStatistics.LastIndexedAt}}{{end}}</span>
+          </div>
+          <div class="stats-check-row">
+            <div>
+              <strong>Thumbnail-Einstellungen</strong>
+              <span>{{.PhotoSettings.FolderThumbnailSize}} px Ordner · {{.PhotoSettings.ThumbnailSize}} px Galerie · {{.PhotoSettings.PreviewSize}} px Vorschau · {{.PhotoSettings.LargePreviewSize}} px HD · {{formatNumber .PhotoSettings.ThumbnailConcurrency}} parallel</span>
+            </div>
+            <span class="status-pill">{{if .PhotoSettings.ThumbnailWorkerEnabled}}Worker aktiv{{else}}Worker aus{{end}}</span>
+          </div>
+          {{range .PhotoStatistics.ThumbnailBackends}}
+          <div class="stats-check-row">
+            <div>
+              <strong>{{.Name}}</strong>
+              <span>{{.Purpose}}{{if .Version}} · {{.Version}}{{end}}{{if .Path}} · <code>{{.Path}}</code>{{end}}</span>
+            </div>
+            <span class="status-pill">{{if .Available}}gefunden{{else}}fehlt{{end}}</span>
+          </div>
+          {{end}}
+        </div>
+      </section>
+    </div>
+    <div class="photo-stat-paths">
+      <div><strong>Root</strong><code>{{.PhotoStatistics.RootPath}}</code></div>
+      <div><strong>Cache</strong><code>{{.PhotoStatistics.CachePath}}</code></div>
+      {{if .PhotoStatistics.IndexDatabasePath}}<div><strong>Index-DB</strong><code>{{.PhotoStatistics.IndexDatabasePath}}</code></div>{{end}}
+    </div>
+  </section>
+
+  <section class="panel stats-panel stats-panel-wide">
+    <header>
+      <h2>Foto-Indexer</h2>
+      <span>{{if .PhotoIndexTelemetry.Running}}läuft{{else}}letzter Lauf{{end}}</span>
+    </header>
+    {{if .PhotoIndexTelemetry.StartedAt.IsZero}}
+    <p class="stats-empty">Noch kein Foto-Indexlauf in dieser Sitzung.</p>
+    {{else}}
+    <div class="stats-check-list">
+      <div class="stats-check-row">
+        <div>
+          <strong>Ordner</strong>
+          <span>{{formatNumber .PhotoIndexTelemetry.ScannedFolders}} gescannt · {{formatNumber .PhotoIndexTelemetry.SkippedFolders}} übersprungen</span>
+        </div>
+        <span class="status-pill">{{formatNumber .PhotoIndexTelemetry.Files}} Datei(en)</span>
+      </div>
+      <div class="stats-check-row">
+        <div>
+          <strong>Durchsatz</strong>
+          <span>{{printf "%.1f" .PhotoIndexTelemetry.FilesPerSecond}} Datei(en)/s · {{formatNumber .PhotoIndexTelemetry.DBWrites}} DB-Write(s)</span>
+        </div>
+        <span class="status-pill">{{formatDuration .PhotoIndexTelemetry.Duration}}</span>
+      </div>
+      <div class="stats-check-row">
+        <div>
+          <strong>Indexbestand</strong>
+          <span>{{formatNumber .PhotoIndexTelemetry.Stats.Media}} Medien · {{formatNumber .PhotoIndexTelemetry.Stats.Folders}} Ordner · {{formatNumber .PhotoIndexTelemetry.Stats.Blogs}} Blogs</span>
+        </div>
+        <span class="status-pill">{{if .PhotoIndexTelemetry.Running}}gestartet{{else}}fertig{{end}}</span>
+      </div>
+      <div class="stats-check-row">
+        <div>
+          <strong>Zeitpunkt</strong>
+          <span>Start {{formatDateTime .PhotoIndexTelemetry.StartedAt}}{{if not .PhotoIndexTelemetry.Running}} · Ende {{formatDateTime .PhotoIndexTelemetry.FinishedAt}}{{end}}</span>
+        </div>
+        <span class="status-pill">{{if .PhotoIndexTelemetry.LastErrors}}{{len .PhotoIndexTelemetry.LastErrors}} Fehler{{else}}OK{{end}}</span>
+      </div>
+    </div>
+    {{if .PhotoIndexTelemetry.LastErrors}}
+    <div class="stats-text-issue-list">
+      {{range .PhotoIndexTelemetry.LastErrors}}
+      <article class="stats-text-issue">
+        <div class="stats-text-issue-head">
+          <span class="status-pill">Fehler</span>
+          <span>{{.}}</span>
+        </div>
+      </article>
+      {{end}}
+    </div>
+    {{end}}
+    {{end}}
+  </section>
+  {{end}}
+
+  <section class="panel stats-panel">
+    <header>
+      <h2>Upload-Weg</h2>
+      <span>{{formatNumber .Statistics.ActiveDocuments}} aktiv</span>
+    </header>
+    {{if .Statistics.UploadWays}}
+    <div class="stats-bar-list">
+      {{range .Statistics.UploadWays}}
+      <div class="stats-bar-row">
+        <div class="stats-bar-label"><span>{{.Label}}</span><strong>{{formatNumber .Count}}</strong></div>
+        <div class="stats-bar-track" aria-hidden="true"><div class="stats-bar-fill" style="{{statBarStyle .Count $.Statistics.UploadWayMax}}"></div></div>
+        <div class="muted">{{formatBytes .Bytes}}</div>
+      </div>
+      {{end}}
+    </div>
+    {{else}}
+    <p class="stats-empty">Noch keine Dokumente.</p>
+    {{end}}
+  </section>
+
+  <section class="panel stats-panel">
+    <header>
+      <h2>Dateitypen</h2>
+      <span>Speicheranteil</span>
+    </header>
+    {{if .Statistics.FileTypes}}
+    <div class="stats-bar-list">
+      {{range .Statistics.FileTypes}}
+      <div class="stats-bar-row">
+        <div class="stats-bar-label"><span>{{.Label}}</span><strong>{{formatNumber .Count}}</strong></div>
+        <div class="stats-bar-track" aria-hidden="true"><div class="stats-bar-fill secondary" style="{{statBarStyle .Count $.Statistics.FileTypeMax}}"></div></div>
+        <div class="muted">{{formatBytes .Bytes}}</div>
+      </div>
+      {{end}}
+    </div>
+    {{else}}
+    <p class="stats-empty">Noch keine Dateitypen vorhanden.</p>
+    {{end}}
+  </section>
+
+  <section class="panel stats-panel">
+    <header>
+      <h2>Dateidatum</h2>
+      <span>Aktive Dokumente nach Jahr</span>
+    </header>
+    {{if .Statistics.DocumentDateYears}}
+    <div class="document-date-chart" data-document-date-chart>
+      <div class="tag-timeline-chart">
+        <svg class="tag-timeline-svg" data-document-date-svg viewBox="0 0 720 260" role="img" aria-label="Aktive Dokumente nach Dateidatum-Jahr"></svg>
+      </div>
+      {{range .Statistics.DocumentDateYears}}
+        {{if ne .Key "missing"}}
+        <span data-document-date-point data-year="{{.Key}}" data-count="{{.Count}}" hidden></span>
+        {{end}}
+      {{end}}
+      {{range .Statistics.DocumentDateYears}}
+        {{if eq .Key "missing"}}
+        <p class="stats-empty">Ohne Dateidatum: {{formatNumber .Count}} Dokument(e)</p>
+        {{end}}
+      {{end}}
+    </div>
+    {{else}}
+    <p class="stats-empty">Noch keine Dateidaten vorhanden.</p>
+    {{end}}
+  </section>
+
+  <section class="panel stats-panel">
+    <header>
+      <h2>Top Tags</h2>
+      <span>Nach Dokumentanzahl</span>
+    </header>
+    {{if .Statistics.TopTags}}
+    <div class="stats-bar-list">
+      {{range .Statistics.TopTags}}
+      <div class="stats-bar-row">
+        <div class="stats-bar-label"><span>{{formatTag $.TagDisplayMode .Label}}</span><strong>{{formatNumber .Count}}</strong></div>
+        <div class="stats-bar-track" aria-hidden="true"><div class="stats-bar-fill accent" style="{{statBarStyle .Count $.Statistics.TopTagMax}}"></div></div>
+        <div class="muted">{{formatBytes .Bytes}}</div>
+      </div>
+      {{end}}
+    </div>
+    {{else}}
+    <p class="stats-empty">Noch keine Tags an aktiven Dokumenten.</p>
+    {{end}}
+  </section>
+
+  <section class="panel stats-panel stats-panel-wide">
+    <header>
+      <h2>Tag-Verlauf</h2>
+      <span>Nach Dateidatum</span>
+    </header>
+    {{if .Statistics.TagUsageYears}}
+    <div class="tag-timeline" data-tag-timeline>
+      <div class="tag-timeline-chart">
+        <svg class="tag-timeline-svg" data-tag-timeline-svg viewBox="0 0 720 260" role="img" aria-label="Tag-Verlauf nach Dateidatum"></svg>
+      </div>
+      <div class="tag-timeline-data" hidden>
+        {{range .Statistics.TagUsageYears}}
+        {{$year := .Year}}
+          {{range .Segments}}
+          <span data-tag-timeline-point data-year="{{$year}}" data-tag="{{.Tag}}" data-count="{{.Count}}"></span>
+          {{end}}
+        {{end}}
+      </div>
+      <div class="tag-timeline-legend">
+        {{range .Statistics.TagUsageTags}}
+        <label class="tag-timeline-toggle">
+          <input type="checkbox" value="{{.}}" data-tag-timeline-toggle checked>
+          <span class="tag" style="{{index $.TagStyles .}}">{{formatTag $.TagDisplayMode .}}</span>
+        </label>
+        {{end}}
+      </div>
+    </div>
+    {{else}}
+    <p class="stats-empty">Noch keine Tags an Dokumenten mit Dateidatum.</p>
+    {{end}}
+  </section>
+
+  <section class="panel stats-panel">
+    <header>
+      <h2>OCR-Status</h2>
+      <span>Letzter Lauf je Dokument</span>
+    </header>
+    {{if .Statistics.OCRStatuses}}
+    <div class="stats-bar-list">
+      {{range .Statistics.OCRStatuses}}
+      <div class="stats-bar-row">
+        <div class="stats-bar-label"><span>{{.Label}}</span><strong>{{formatNumber .Count}}</strong></div>
+        <div class="stats-bar-track" aria-hidden="true"><div class="stats-bar-fill warning" style="{{statBarStyle .Count $.Statistics.OCRStatusMax}}"></div></div>
+      </div>
+      {{end}}
+    </div>
+    {{if .Statistics.OCRAttentionJobs}}
+    <div class="stats-ocr-jobs">
+      <h3>Aktuelle OCR-Jobs</h3>
+      {{range .Statistics.OCRAttentionJobs}}
+      <article class="stats-ocr-job stats-ocr-job-{{.Status}}">
+        <div class="stats-ocr-job-head">
+          <span class="status-pill">{{.StatusText}}</span>
+          <a class="strong-link" href="/documents/{{.DocumentID}}?return={{queryEscape $.ReturnURL}}">{{if .DocumentTitle}}{{.DocumentTitle}}{{else}}{{.DocumentOriginalName}}{{end}}</a>
+        </div>
+        <div class="stats-ocr-job-meta">
+          <span>{{.DocumentOriginalName}}</span>
+          <span>OCR {{.LanguageLabel}}</span>
+          <span>Aktualisiert {{formatDateTime .UpdatedAt}}</span>
+        </div>
+        {{if .HasProgress}}
+        <div class="ocr-progress-row">
+          <progress max="100" value="{{.ProgressPercent}}"></progress>
+          <span>{{.CurrentPage}} von {{.TotalPages}}</span>
+        </div>
+        {{end}}
+        {{if .Error}}
+        <p class="stats-ocr-job-message error">{{.Error}}</p>
+        {{else if .Message}}
+        <p class="stats-ocr-job-message">{{.Message}}</p>
+        {{end}}
+      </article>
+      {{end}}
+    </div>
+    {{end}}
+    {{else}}
+    <p class="stats-empty">Noch keine OCR-Läufe vorhanden.</p>
+    {{end}}
+  </section>
+
+  <section class="panel stats-panel">
+    <header>
+      <h2>Datenbank-Prüfung</h2>
+      <span>Versionsstand</span>
+    </header>
+    <div class="stats-check-list">
+      <div class="stats-check-row">
+        <div>
+          <strong>Dokumentversion</strong>
+          <span>{{if .Statistics.Database.HasDocuments}}Version {{.Statistics.Database.MinSearchVersion}} bis {{.Statistics.Database.MaxSearchVersion}}{{else}}Keine Dokumente{{end}}</span>
+        </div>
+        <span class="status-pill">Ziel {{.Statistics.Database.TargetSearchVersion}}</span>
+      </div>
+      <div class="stats-check-row">
+        <div>
+          <strong>Reindex</strong>
+          <span>{{formatNumber .Statistics.Database.CurrentSearchVersionDocuments}} von {{formatNumber .Statistics.Database.TotalDocuments}} Dokument(en) aktuell</span>
+        </div>
+        <span class="status-pill">{{formatNumber .Statistics.Database.OutdatedSearchVersionDocuments}} offen</span>
+      </div>
+      <div class="stats-check-row">
+        <div>
+          <strong>Suchindex</strong>
+          <span>{{formatNumber .Statistics.Database.SearchIndexDocuments}} von {{formatNumber .Statistics.Database.TotalDocuments}} Dokument(en) im FTS-Index</span>
+        </div>
+        <span class="status-pill">{{if .Statistics.Database.SearchIndexTrigram}}Trigram{{else}}Prüfen{{end}}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel stats-panel stats-panel-wide">
+    <header>
+      <h2>Textqualität</h2>
+      <span>Quelle des Textinhalts</span>
+    </header>
+    {{if .Statistics.ContentTextSources}}
+    <div class="stats-bar-list">
+      {{range .Statistics.ContentTextSources}}
+      <div class="stats-bar-row">
+        <div class="stats-bar-label"><span>{{.Label}}</span><strong>{{formatNumber .Count}}</strong></div>
+        <div class="stats-bar-track" aria-hidden="true"><div class="stats-bar-fill secondary" style="{{statBarStyle .Count $.Statistics.ContentTextSourceMax}}"></div></div>
+      </div>
+      {{end}}
+    </div>
+    {{else}}
+    <p class="stats-empty">Noch keine Textinformationen vorhanden.</p>
+    {{end}}
+
+    <div class="stats-text-issues">
+      <div class="stats-text-issues-head">
+        <div>
+          <h3>OCR empfohlen</h3>
+          <span>{{formatNumber .Statistics.TextIssueDocumentCount}} Datei(en) mit unsicherem oder fehlendem Text</span>
+        </div>
+        {{if and .Auth.CanDocumentsEdit (gt .Statistics.TextIssueDocumentCount 0)}}
+        <div class="stats-text-issue-actions">
+          <form method="post" action="/statistics/text-issues/ocr/de" data-confirm="OCR Deutsch für alle OCR-Kandidaten einreihen?">
+            <button type="submit">OCR Deutsch einreihen</button>
+          </form>
+          <form method="post" action="/statistics/text-issues/ocr/eng" data-confirm="OCR Englisch für alle OCR-Kandidaten einreihen?">
+            <button type="submit" class="secondary-button">OCR Englisch einreihen</button>
+          </form>
+        </div>
+        {{end}}
+      </div>
+      {{if .Statistics.TextIssueDocuments}}
+      <div class="stats-text-issue-list">
+        {{range .Statistics.TextIssueDocuments}}
+        <article class="stats-text-issue stats-text-issue-{{.ContentTextSource}}">
+          <div class="stats-text-issue-head">
+            <span class="status-pill">{{.ContentTextSourceLabel}}</span>
+            <a class="strong-link" href="/documents/{{.ID}}?return={{queryEscape $.ReturnURL}}">{{if .Title}}{{.Title}}{{else}}{{.OriginalName}}{{end}}</a>
+          </div>
+          <div class="stats-text-issue-meta">
+            <span>{{.OriginalName}}</span>
+            <span>{{.MIMEType}}</span>
+            <span>Aktualisiert {{formatDateTime .UpdatedAt}}</span>
+          </div>
+        </article>
+        {{end}}
+      </div>
+      {{else}}
+      <p class="stats-empty">Keine Dateien mit unsicherem oder fehlendem Text.</p>
+      {{end}}
+    </div>
+  </section>
+</section>
+{{template "foot" .}}
+{{end}}

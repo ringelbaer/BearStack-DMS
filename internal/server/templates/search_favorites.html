@@ -1,0 +1,164 @@
+{{define "search_favorites.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>Suchfavoriten</h1>
+    <p>{{if eq (len .SearchFavorites) 1}}1 Suchfavorit{{else}}{{len .SearchFavorites}} Suchfavoriten{{end}}</p>
+  </div>
+</section>
+
+<div class="search-favorite-page">
+  <section class="panel search-favorite-add">
+    <div class="search-favorite-section-head">
+      <h2>Neuer Suchfavorit</h2>
+    </div>
+    <form class="search-favorite-form search-favorite-create-form" method="post" action="/search-favorites">
+      <div class="search-favorite-main-fields">
+        <label class="search-favorite-name-field">
+          <span>Name</span>
+          <input type="text" name="name" placeholder="Rechnungen aktuell" required>
+        </label>
+        <label>
+          <span>Suchwort</span>
+          <input type="search" name="query" minlength="3" placeholder="rechnung">
+        </label>
+        <label>
+          <span>Zeitraum</span>
+          <select name="date_mode" data-search-favorite-date-mode>
+            {{range .SearchFavoriteDates}}
+            <option value="{{.Value}}">{{.Label}}</option>
+            {{end}}
+          </select>
+        </label>
+        <label data-search-favorite-year-field hidden>
+          <span>Festes Jahr</span>
+          <input type="number" name="date_year" min="1900" max="2100" placeholder="2026">
+        </label>
+      </div>
+
+      <div class="search-favorite-filter-fields">
+        <div class="filter-field search-favorite-tags">
+          <span class="field-label">Tags</span>
+          <div class="tag-select" data-tag-select data-input-name="tags" data-empty-label="Keine Tags">
+            <button type="button" class="tag-select-trigger" data-tag-select-trigger>
+              <span class="tag-select-summary" data-tag-select-summary><span class="muted">Keine Tags</span></span>
+            </button>
+            <div data-tag-select-inputs hidden></div>
+          </div>
+        </div>
+        {{if .CustomFields}}
+        <div class="search-favorite-custom-fields">
+          <span class="field-label">Benutzerdefinierte Felder</span>
+          <div class="search-favorite-custom-field-list">
+            {{range .CustomFields}}
+            <label>
+              <span>{{.Label}}</span>
+              <input type="search" name="field_{{.ID}}" placeholder="Feldwert" {{if .AutocompleteEnabled}}list="search-favorite-create-field-values-{{.ID}}" data-custom-field-values-url="/fields/{{.ID}}/values" autocomplete="off"{{end}}>
+              {{if .AutocompleteEnabled}}<datalist id="search-favorite-create-field-values-{{.ID}}"></datalist>{{end}}
+            </label>
+            {{end}}
+          </div>
+        </div>
+        {{end}}
+      </div>
+
+      <div class="search-favorite-form-actions">
+        <button type="submit">Anlegen</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="search-favorite-management">
+    {{if .SearchFavorites}}
+    <div class="search-favorite-list">
+      {{range .SearchFavorites}}
+      {{$favorite := .}}
+      <article class="search-favorite-row">
+        <div class="search-favorite-row-head">
+          <div class="search-favorite-row-summary">
+            <h3>{{.Name}}</h3>
+            <p>{{.Summary}}</p>
+          </div>
+          <div class="search-favorite-row-actions">
+            <a class="secondary-button" href="{{.URL}}">Anwenden</a>
+            <form class="search-favorite-delete-form" method="post" action="/search-favorites/{{.ID}}/delete" data-confirm="Suchfavorit {{.Name}} löschen?">
+              <button type="submit" class="danger">Löschen</button>
+            </form>
+          </div>
+        </div>
+
+        <details class="search-favorite-editor">
+          <summary>Bearbeiten</summary>
+          <form class="search-favorite-form search-favorite-edit-form" method="post" action="/search-favorites/{{.ID}}">
+            <div class="search-favorite-main-fields">
+              <label class="search-favorite-name-field">
+                <span>Name</span>
+                <input type="text" name="name" value="{{.Name}}" required>
+              </label>
+              <label>
+                <span>Suchwort</span>
+                <input type="search" name="query" value="{{.Query}}" minlength="3">
+              </label>
+              <label>
+                <span>Zeitraum</span>
+                <select name="date_mode" data-search-favorite-date-mode>
+                  {{$dateMode := .DateMode}}
+                  {{range $.SearchFavoriteDates}}
+                  <option value="{{.Value}}" {{if eq $dateMode .Value}}selected{{end}}>{{.Label}}</option>
+                  {{end}}
+                </select>
+              </label>
+              <label data-search-favorite-year-field {{if ne .DateMode "year"}}hidden{{end}}>
+                <span>Festes Jahr</span>
+                <input type="number" name="date_year" min="1900" max="2100" value="{{if gt .DateYear 0}}{{.DateYear}}{{end}}">
+              </label>
+            </div>
+
+            <div class="search-favorite-filter-fields">
+              <div class="filter-field search-favorite-tags">
+                <span class="field-label">Tags</span>
+                <div class="tag-select" data-tag-select data-input-name="tags" data-empty-label="Keine Tags">
+                  <button type="button" class="tag-select-trigger" data-tag-select-trigger>
+                    <span class="tag-select-summary" data-tag-select-summary>
+                      {{if .Tags}}{{range .Tags}}<span class="tag" style="{{index $.TagStyles .}}" title="{{index $.TagDescriptions .}}">{{formatTag $.TagDisplayMode .}}</span>{{end}}{{else}}<span class="muted">Keine Tags</span>{{end}}
+                    </span>
+                  </button>
+                  <div data-tag-select-inputs hidden>
+                    {{range .Tags}}<input type="hidden" name="tags" value="{{.}}">{{end}}
+                  </div>
+                </div>
+              </div>
+              {{if $.CustomFields}}
+              <div class="search-favorite-custom-fields">
+                <span class="field-label">Benutzerdefinierte Felder</span>
+                <div class="search-favorite-custom-field-list">
+                  {{range $.CustomFields}}
+                  <label>
+                    <span>{{.Label}}</span>
+                    <input type="search" name="field_{{.ID}}" value="{{customFieldFilterValue $favorite.CustomFields .ID}}" placeholder="Feldwert" {{if .AutocompleteEnabled}}list="search-favorite-{{$favorite.ID}}-field-values-{{.ID}}" data-custom-field-values-url="/fields/{{.ID}}/values" autocomplete="off"{{end}}>
+                    {{if .AutocompleteEnabled}}<datalist id="search-favorite-{{$favorite.ID}}-field-values-{{.ID}}"></datalist>{{end}}
+                  </label>
+                  {{end}}
+                </div>
+              </div>
+              {{end}}
+            </div>
+
+            <div class="search-favorite-form-actions">
+              <button type="submit">Speichern</button>
+            </div>
+          </form>
+        </details>
+      </article>
+      {{end}}
+    </div>
+    {{else}}
+    <div class="empty-state">
+      <h2>Keine Suchfavoriten</h2>
+      <p>Suchfavoriten speichern häufig genutzte Dokumentfilter.</p>
+    </div>
+    {{end}}
+  </section>
+</div>
+{{template "foot" .}}
+{{end}}

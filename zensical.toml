@@ -1,0 +1,50 @@
+[project]
+site_name = "BearStack"
+site_description = "Lokale Dokumenten- und Fotoverwaltung für kleine Server, Raspberry Pi und private Archive."
+site_author = "BearStack"
+copyright = "BearStack 0.17.5"
+docs_dir = "_site-src/docs"
+site_dir = "_site"
+use_directory_urls = false
+extra_css = ["stylesheets/bearstack.css"]
+nav = [
+  { "Start" = "index.md" },
+  { "Dokumente" = "dokumente.md" },
+  { "Fotos" = "fotos.md" },
+  { "Installation" = "installation.md" },
+  { "Benutzer & Rechte" = "benutzer-und-rechte.md" },
+  { "Architektur" = "architektur.md" },
+  { "Tests & Audit" = "tests-und-audit.md" },
+]
+
+[project.theme]
+variant = "modern"
+language = "de"
+font = false
+logo = "assets/images/bearstack.svg"
+favicon = "assets/images/bearstack.svg"
+custom_dir = "_site-src/overrides"
+features = [
+  "navigation.tabs",
+  "navigation.top",
+  "toc.follow",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "teal"
+accent = "green"
+toggle.icon = "lucide/moon"
+toggle.name = "Zum dunklen Modus wechseln"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "teal"
+accent = "green"
+toggle.icon = "lucide/sun"
+toggle.name = "Zum hellen Modus wechseln"
+
+[project.theme.icon]
+repo = "fontawesome/brands/git-alt"

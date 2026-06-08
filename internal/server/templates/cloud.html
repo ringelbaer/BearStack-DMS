@@ -1,0 +1,42 @@
+{{define "cloud.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>Wolke</h1>
+  </div>
+</section>
+
+{{if .TagCloud.Empty}}
+<div class="empty-state">
+  <h2>Keine Tags</h2>
+</div>
+{{else}}
+<section class="panel tag-cloud-panel">
+  {{if .TagCloud.HasPrimaryTags}}
+  <div class="tag-cloud-canvas tag-cloud-canvas-primary">
+    {{range .TagCloud.Clusters}}
+    <section class="tag-cloud-cluster" aria-label="{{formatTag $.TagDisplayMode .Primary.Name}}">
+      <a class="tag-cloud-word tag-cloud-word-primary" href="{{.Primary.URL}}" style="{{.Primary.CloudStyle}}" title="{{.Primary.Count}} Dokument(e)">
+        <span>{{formatTag $.TagDisplayMode .Primary.Name}}</span>
+      </a>
+      {{range .Items}}
+        <a class="tag-cloud-word" href="{{.URL}}" style="{{.CloudStyle}}" title="{{.Count}} Dokument(e)">
+          <span>{{formatTag $.TagDisplayMode .Name}}</span>
+        </a>
+      {{end}}
+    </section>
+    {{end}}
+  </div>
+  {{else}}
+  <div class="tag-cloud-canvas tag-cloud-canvas-central">
+    {{range .TagCloud.Items}}
+    <a class="tag-cloud-word" href="{{.URL}}" style="{{.CloudStyle}}" title="{{.Count}} Dokument(e)">
+      <span>{{formatTag $.TagDisplayMode .Name}}</span>
+    </a>
+    {{end}}
+  </div>
+  {{end}}
+</section>
+{{end}}
+{{template "foot" .}}
+{{end}}

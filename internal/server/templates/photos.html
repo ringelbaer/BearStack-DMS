@@ -1,0 +1,427 @@
+{{define "photos.html"}}
+{{template "head" .}}
+{{$searchActive := ne .PhotoFilter.Query ""}}
+{{$typeActive := ne .PhotoFilter.MediaType ""}}
+{{$filterActive := or $searchActive $typeActive .PhotoFilter.GPSOnly}}
+<section class="page-head">
+  <div>
+    <h1>Fotos</h1>
+    <nav class="folder-breadcrumb" aria-label="Fotopfad">
+      {{range $i, $crumb := .Photos.Breadcrumbs}}
+      {{if $i}}<span class="folder-breadcrumb-separator" aria-hidden="true">›</span>{{end}}
+      {{if and (not $searchActive) (not $.PhotoFilter.MapView) (eq $crumb.Path $.Photos.Path)}}<span class="folder-breadcrumb-current" aria-current="page">{{template "photo_crumb_label" $crumb}}</span>{{else if and $.PhotoFilter.MapView (not $searchActive) (eq $crumb.Path $.Photos.Path)}}<a class="folder-breadcrumb-link" href="{{$.PhotoFilter.GalleryURL}}">{{template "photo_crumb_label" $crumb}}</a>{{else}}<a class="folder-breadcrumb-link" href="/photos{{if $crumb.Path}}?path={{queryEscape $crumb.Path}}{{end}}">{{template "photo_crumb_label" $crumb}}</a>{{end}}
+      {{end}}
+      {{if $searchActive}}<span class="folder-breadcrumb-separator" aria-hidden="true">›</span>{{if .PhotoFilter.MapView}}<a class="folder-breadcrumb-link" href="{{.PhotoFilter.GalleryURL}}">Suchergebnis</a>{{else}}<span class="folder-breadcrumb-current" aria-current="page">Suchergebnis</span>{{end}}{{end}}
+      {{if .PhotoFilter.MapView}}<span class="folder-breadcrumb-separator" aria-hidden="true">›</span><span class="folder-breadcrumb-current" aria-current="page">Karte</span>{{end}}
+    </nav>
+  </div>
+  <div class="page-actions">
+    {{if and .Auth.CanPhotosEdit (not .PhotoFilter.MapView)}}
+    <button type="button" class="photo-mode-toggle" data-photo-mode-toggle aria-pressed="false" aria-label="Bearbeiten einschalten" title="Bearbeiten einschalten">
+      <span class="photo-mode-icon photo-mode-view" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <rect x="4" y="4" width="6" height="6" rx="1.5"></rect>
+          <rect x="14" y="4" width="6" height="6" rx="1.5"></rect>
+          <rect x="4" y="14" width="6" height="6" rx="1.5"></rect>
+          <rect x="14" y="14" width="6" height="6" rx="1.5"></rect>
+        </svg>
+      </span>
+      <span class="photo-mode-icon photo-mode-edit" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0 0-3L17.5 5.5a2.1 2.1 0 0 0-3 0L4 16v4z"></path>
+          <path d="M13.5 6.5l4 4"></path>
+        </svg>
+      </span>
+    </button>
+    {{end}}
+    <details class="photo-filter-menu{{if $filterActive}} is-active{{end}}" data-photo-filter-menu>
+      <summary aria-label="Suche und Filter" title="Suche und Filter">
+        <svg class="photo-filter-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5"></circle>
+          <path d="m16 16 4.5 4.5"></path>
+        </svg>
+      </summary>
+      <form class="photo-filters" method="get" action="/photos">
+        {{if .PhotoFilter.Path}}<input type="hidden" name="path" value="{{.PhotoFilter.Path}}">{{end}}
+        {{if .PhotoFilter.MapView}}<input type="hidden" name="view" value="map">{{end}}
+        <input type="hidden" name="sort" value="{{.PhotoFilter.Sort}}">
+        <label class="photo-search">
+          <span>Suche</span>
+          <input type="search" name="q" value="{{.PhotoFilter.Query}}" placeholder="Datei, Ordner, Tag, tag:urlaub, date:2024">
+        </label>
+        <label>
+          <span>Typ</span>
+          <select name="type">
+            <option value="" {{if eq .PhotoFilter.MediaType ""}}selected{{end}}>Alle</option>
+            <option value="image" {{if eq .PhotoFilter.MediaType "image"}}selected{{end}}>Bilder</option>
+            <option value="video" {{if eq .PhotoFilter.MediaType "video"}}selected{{end}}>Videos</option>
+            <option value="audio" {{if eq .PhotoFilter.MediaType "audio"}}selected{{end}}>Audios</option>
+          </select>
+        </label>
+        <label class="checkbox-line photo-gps-filter">
+          <input type="checkbox" name="gps" value="1" {{if .PhotoFilter.GPSOnly}}checked{{end}}>
+          GPS
+        </label>
+        <div class="photo-filter-actions">
+          <button type="submit">Suchen</button>
+          <a class="secondary-button" href="{{.PhotoFilter.ClearURL}}">Zurücksetzen</a>
+        </div>
+      </form>
+    </details>
+    {{if not .PhotoFilter.MapView}}
+    <details class="photo-sort-menu" data-photo-sort-menu>
+      <summary aria-label="Galerie sortieren" title="Galerie sortieren">
+        <span class="photo-sort-mark" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+        <span class="photo-sort-current" data-photo-sort-current>{{.PhotoFilter.SortLabel}}</span>
+      </summary>
+      <nav class="photo-sort-menu-list" aria-label="Galeriesortierung">
+        {{range .PhotoFilter.SortOptions}}<a href="{{.URL}}" data-photo-sort-option="{{.Value}}" {{if .Active}}aria-current="true"{{end}}>{{.Label}}</a>{{end}}
+        {{if .PhotoFilter.AdminOnlyToggleVisible}}
+        <form class="photo-adminonly-toggle-form" method="post" action="/photos/adminonly">
+          <input type="hidden" name="return" value="{{.ReturnURL}}">
+          <input type="hidden" name="show" value="{{if .PhotoFilter.ShowAdminOnly}}0{{else}}1{{end}}">
+          <button class="photo-adminonly-toggle" type="submit" role="switch" aria-checked="{{if .PhotoFilter.ShowAdminOnly}}true{{else}}false{{end}}" aria-label="{{if .PhotoFilter.ShowAdminOnly}}Admin-only ausblenden{{else}}Admin-only anzeigen{{end}}">
+            <span>Admin-only anzeigen</span>
+            <span class="photo-adminonly-switch" aria-hidden="true"></span>
+          </button>
+        </form>
+        {{end}}
+      </nav>
+    </details>
+    {{end}}
+    <details class="photo-actions-menu">
+      <summary aria-label="Weitere Fotoaktionen" title="Weitere Fotoaktionen">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </summary>
+      <nav class="photo-actions-menu-list" aria-label="Weitere Fotoaktionen">
+        <a href="{{.PhotoFilter.RandomURL}}">Zufall</a>
+        <a href="{{.PhotoFilter.FrameURL}}">Fotoframe</a>
+        {{if .PhotoFilter.MapView}}<a href="{{.PhotoFilter.GalleryURL}}">Galerie</a>{{else if .PhotoFilter.MapAvailable}}<a href="{{.PhotoFilter.MapURL}}">Karte</a>{{end}}
+      </nav>
+    </details>
+  </div>
+</section>
+
+<div class="photo-module" data-photo-module data-photo-mode="view">
+{{if $filterActive}}
+<div class="photo-filter-chips" aria-label="Aktive Fotofilter">
+  {{if $searchActive}}<span class="photo-filter-chip"><span>Suche</span><strong>{{.PhotoFilter.Query}}</strong></span>{{end}}
+  {{if $typeActive}}<span class="photo-filter-chip"><span>Typ</span><strong>{{if eq .PhotoFilter.MediaType "image"}}Bilder{{else if eq .PhotoFilter.MediaType "video"}}Videos{{else if eq .PhotoFilter.MediaType "audio"}}Audios{{else}}{{.PhotoFilter.MediaType}}{{end}}</strong></span>{{end}}
+  {{if .PhotoFilter.GPSOnly}}<span class="photo-filter-chip"><strong>GPS</strong></span>{{end}}
+  <a class="photo-filter-reset" href="{{.PhotoFilter.ClearURL}}">Zurücksetzen</a>
+</div>
+{{end}}
+
+{{if .PhotoListTrace.Enabled}}
+<details class="photo-trace-panel" open>
+  <summary><span>Messung</span><strong>{{formatDuration .PhotoListTrace.TotalDuration}}</strong></summary>
+  <ol class="photo-trace-list">
+    {{range .PhotoListTrace.Steps}}
+    <li>
+      <span class="photo-trace-name">{{.Name}}</span>
+      <strong>{{formatDuration .Duration}}</strong>
+      {{if .Fields}}<small>{{range $i, $field := .Fields}}{{if $i}} · {{end}}{{$field.Key}}={{$field.Value}}{{end}}</small>{{end}}
+    </li>
+    {{end}}
+  </ol>
+</details>
+{{end}}
+
+{{if .Photos.Blogs}}
+<section class="photo-blog-list">
+  {{range .Photos.Blogs}}
+  <article class="photo-blog-post">
+    <header>
+      <h2>{{.Name}}</h2>
+      {{if .Date}}<span>{{formatDate .Date}}</span>{{end}}
+    </header>
+    <div>{{.HTML}}</div>
+  </article>
+  {{end}}
+</section>
+{{end}}
+
+{{if .Photos.Folders}}
+<section class="photo-folder-grid" aria-label="Fotoordner">
+  {{range .Photos.Folders}}
+  <article class="photo-folder-tile">
+    <a href="{{.URL}}" class="photo-folder-link">
+      <span class="photo-folder-preview" aria-hidden="true">
+        {{range .Previews}}
+        <span class="photo-folder-preview-cell {{if or (eq .Type "audio") (and (eq .Type "video") (not .ThumbURL))}}is-loaded{{end}}">
+          <span class="photo-thumb-loader" aria-hidden="true"></span>
+          {{if eq .Type "video"}}
+          <span class="photo-video-placeholder photo-folder-video">Video</span>
+          {{if .ThumbURL}}{{template "photo_thumb_image" .}}{{end}}
+          <span class="photo-play-badge" aria-hidden="true"></span>
+          {{else if eq .Type "audio"}}
+          {{template "photo_audio_placeholder" .}}
+          {{else if .ThumbURL}}
+          {{template "photo_thumb_image" .}}
+          {{else}}
+          <img alt="" loading="lazy" decoding="async" data-photo-thumb-image data-photo-thumb-type="{{.Type}}" data-photo-thumb-src="{{.MediaURL}}">
+          {{end}}
+        </span>
+        {{else}}
+        <span class="photo-folder-preview-empty"></span>
+        {{end}}
+      </span>
+      {{if .AdminOnly}}
+      <span class="photo-folder-admin-badge" aria-label="Nur Admins" title="Nur Admins">
+        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+          <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+        </svg>
+      </span>
+      {{end}}
+      <span class="photo-folder-caption">
+        <strong>{{if .DisplayName}}{{.DisplayName}}{{else}}{{if .DisplayDate}}{{formatDate .DisplayDate}}{{else}}{{.Name}}{{end}}{{end}}</strong>
+        <span title="{{.MediaCountTitle}}">{{if and .DisplayDate .DisplayName}}{{formatDate .DisplayDate}} · {{end}}{{.MediaCountLabel}}</span>
+      </span>
+    </a>
+    {{if $.Auth.CanPhotosEdit}}
+    <div class="tag-select photo-tag-select photo-folder-tag-select photo-edit-only" data-photo-tag-select-deferred data-create-tag-mode="local" data-selected-tags="{{joinTags .Tags}}" data-update-url="/photos/tags?kind=folder&amp;path={{queryEscape .Path}}" data-empty-label="Tags"></div>
+    {{end}}
+  </article>
+  {{end}}
+</section>
+{{end}}
+
+{{if .PhotoFilter.MapView}}
+<section class="photo-map-panel" data-photo-map>
+  <div class="photo-map-canvas" data-photo-map-canvas tabindex="0" aria-label="Interaktive Karte mit Fotostandorten">
+    <div class="photo-map-tile-layer" data-photo-map-tiles aria-hidden="true"></div>
+    <div class="photo-map-controls" role="group" aria-label="Kartensteuerung">
+      <button type="button" data-photo-map-zoom-in aria-label="Karte vergroessern" title="Karte vergroessern">+</button>
+      <button type="button" data-photo-map-zoom-out aria-label="Karte verkleinern" title="Karte verkleinern">-</button>
+    </div>
+    <div class="photo-map-layer-panel" data-photo-map-layer-panel>
+      <strong>Kartenlayer</strong>
+      <label class="photo-map-layer-option">
+        <input type="checkbox" data-photo-layer-toggle data-photo-map-layer="photos" checked {{if eq (len .Photos.Media) 0}}disabled{{end}}>
+        <span class="photo-map-layer-swatch photo-map-layer-photos" aria-hidden="true"></span>
+        <span>Fotos</span>
+        <span class="photo-map-layer-count">{{len .Photos.Media}}</span>
+      </label>
+      {{if gt (len .Photos.RoutePoints) 1}}
+      <label class="photo-map-layer-option">
+        <input type="checkbox" data-photo-layer-toggle data-photo-map-layer="photo-route" checked>
+        <span class="photo-map-layer-swatch photo-map-layer-route" aria-hidden="true"></span>
+        <span>Fotobasierter Track</span>
+        <span class="photo-map-layer-count">{{len .Photos.RoutePoints}}</span>
+      </label>
+      {{end}}
+      {{range $i, $track := .Photos.GPXTracks}}
+      <label class="photo-map-layer-option" style="--gpx-color: {{$track.Color}}">
+        <input type="checkbox" data-photo-layer-toggle data-photo-map-layer="gpx-{{$i}}" checked>
+        <span class="photo-map-layer-swatch" aria-hidden="true"></span>
+        <span>{{$track.Label}}</span>
+        <span class="photo-map-layer-count">{{len $track.Points}}</span>
+      </label>
+      {{end}}
+    </div>
+    <a class="photo-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">(c) OpenStreetMap</a>
+    {{if gt (len .Photos.RoutePoints) 1}}
+    <svg class="photo-map-route" data-photo-map-route aria-hidden="true"></svg>
+    {{range .Photos.RoutePoints}}
+    <button type="button" class="photo-map-route-point" data-photo-route-point data-lat="{{printf "%.6f" .Lat}}" data-lon="{{printf "%.6f" .Lon}}" title="Routepunkt {{.Order}} · {{.Count}} Foto{{if ne .Count 1}}s{{end}} · {{formatDateTime .StartedAt}}">
+      <span>{{.Order}}</span>
+    </button>
+    {{end}}
+    {{end}}
+    {{range .Photos.Media}}{{if .Latitude}}{{if .Longitude}}
+    <button type="button" class="photo-map-marker" data-photo-item data-photo-map-marker data-lat="{{formatCoord .Latitude}}" data-lon="{{formatCoord .Longitude}}" data-photo-path="{{.Path}}" data-photo-thumb="{{.ThumbURL}}" data-photo-type="{{.Type}}" data-photo-title="{{.Name}}" data-photo-lat="{{formatCoord .Latitude}}" data-photo-lon="{{formatCoord .Longitude}}" aria-label="{{.Name}} öffnen" title="{{.Name}}">
+      <span class="photo-map-preview" aria-hidden="true">
+        <span class="photo-map-preview-media">
+          {{if eq .Type "video"}}
+          <span class="photo-video-placeholder photo-map-video">Video</span>
+          {{if .ThumbURL}}{{template "photo_thumb_image" .}}{{end}}
+          <span class="photo-play-badge" aria-hidden="true"></span>
+          {{else if eq .Type "audio"}}
+          {{template "photo_audio_placeholder" .}}
+          {{else if .ThumbURL}}
+          {{template "photo_thumb_image" .}}
+          {{else}}
+          <img alt="" loading="lazy" decoding="async" data-photo-thumb-image data-photo-thumb-type="{{.Type}}" data-photo-thumb-src="{{.MediaURL}}">
+          {{end}}
+        </span>
+        <strong>{{.Name}}</strong>
+      </span>
+    </button>
+    {{end}}{{end}}{{end}}
+    {{range $i, $track := .Photos.GPXTracks}}
+    <svg class="photo-map-gpx-track" data-photo-map-gpx-track data-photo-map-layer="gpx-{{$i}}" data-label="{{$track.Label}}" data-color="{{$track.Color}}" data-points="{{range $track.Points}}{{printf "%.6f,%.6f " .Lat .Lon}}{{end}}" aria-hidden="true" hidden></svg>
+    <span class="photo-map-gpx-label" data-photo-map-gpx-label data-photo-map-layer="gpx-{{$i}}" style="--gpx-color: {{$track.Color}}" hidden>{{$track.Label}}</span>
+    {{end}}
+  </div>
+</section>
+{{else}}
+<form class="photo-bulk-form" data-photo-bulk-form method="post">
+  <input type="hidden" name="return" value="{{.ReturnURL}}">
+  {{if .Auth.CanPhotosEdit}}
+  <div class="photo-edit-toolbar photo-edit-only">
+    <label class="checkbox-line"><input type="checkbox" data-select-all> Alle auswählen</label>
+    <div class="selection-actions hidden" data-selection-actions>
+      <span class="photo-selection-count" data-photo-selection-count>0 ausgewählt</span>
+      <button type="button" data-bulk-tags-open="add" data-empty-selection-message="Bitte mindestens ein Bild auswählen.">Tags ergänzen</button>
+      <div class="tag-select hidden" data-tag-select data-create-tag-mode="local" data-empty-label="Keine Tags ausgewählt" data-update-url="/photos/tags/add" data-bulk-tags="true" data-bulk-tags-action="add"></div>
+      <button type="button" data-bulk-tags-open="remove" data-empty-selection-message="Bitte mindestens ein Bild auswählen.">Tags entfernen</button>
+      <div class="tag-select hidden" data-tag-select data-create-tag-mode="local" data-empty-label="Keine Tags ausgewählt" data-update-url="/photos/tags/remove" data-bulk-tags="true" data-bulk-tags-action="remove"></div>
+    </div>
+  </div>
+  {{end}}
+  <section class="photo-gallery-grid" data-photo-gallery>
+    {{range .PhotoMediaGroups}}
+    {{if .Label}}
+    <div class="photo-date-group" data-photo-date-group data-photo-date-key="{{.Key}}">
+      <h2>{{.Label}}</h2>
+      <span>{{len .Media}} {{if eq (len .Media) 1}}Medium{{else}}Medien{{end}}</span>
+    </div>
+    {{end}}
+    <div class="photo-date-group-media" data-photo-date-group-media>
+    {{range .Media}}
+    <article class="photo-card" data-photo-item data-photo-path="{{.Path}}" data-photo-thumb="{{.ThumbURL}}" data-photo-type="{{.Type}}" data-photo-title="{{.Name}}" data-photo-width="{{.Width}}" data-photo-height="{{.Height}}" {{if eq .Type "audio"}}data-photo-src="{{.MediaURL}}"{{end}}>
+      {{if $.Auth.CanPhotosEdit}}
+      <input class="photo-select-input photo-edit-only" type="checkbox" name="ids" value="{{.Path}}" aria-label="{{.Name}} auswählen">
+      {{end}}
+      <button type="button" class="photo-card-button">
+        <span class="photo-thumb-wrap {{if or (eq .Type "audio") (and (eq .Type "video") (not .ThumbURL))}}is-loaded{{end}}">
+          <span class="photo-thumb-loader" aria-hidden="true"></span>
+          {{if eq .Type "video"}}
+          <span class="photo-video-placeholder">Video</span>
+          {{if .ThumbURL}}{{template "photo_thumb_image" .}}{{end}}
+          <span class="photo-play-badge" aria-hidden="true"></span>
+          {{else if eq .Type "audio"}}
+          {{template "photo_audio_placeholder" .}}
+          {{else if .ThumbURL}}
+          {{template "photo_thumb_image" .}}
+          {{else}}
+          <img alt="" loading="lazy" decoding="async" data-photo-thumb-image data-photo-thumb-type="{{.Type}}" data-photo-thumb-src="{{.MediaURL}}">
+          {{end}}
+        </span>
+        <span class="photo-card-meta photo-edit-only">
+          <strong>{{.Name}}</strong>
+        </span>
+      </button>
+      {{if $.Auth.CanPhotosEdit}}
+      <div class="tag-select photo-tag-select photo-edit-only" data-photo-tag-select-deferred data-create-tag-mode="local" data-selected-tags="{{joinTags .Tags}}" data-update-url="/photos/tags?kind=media&amp;path={{queryEscape .Path}}" data-empty-label="Tags"></div>
+      {{end}}
+    </article>
+    {{end}}
+    </div>
+    {{end}}
+  </section>
+</form>
+{{end}}
+
+{{if or .PhotoFilter.PrevURL .PhotoFilter.NextURL}}
+{{$photoPageCount := pageCount .Photos.Total .Photos.PageSize}}
+<nav class="pagination" aria-label="Fotoseiten">
+  <div class="pagination-nav">
+    {{if .PhotoFilter.PrevURL}}<a class="secondary-button" href="{{.PhotoFilter.PrevURL}}">Zurück</a>{{else}}<span></span>{{end}}
+    {{if .PhotoFilter.PageLinks}}
+    <ol class="pagination-pages" aria-label="Seiten">
+      {{range .PhotoFilter.PageLinks}}
+      {{if .Ellipsis}}
+      <li><span class="pagination-ellipsis" aria-hidden="true">...</span></li>
+      {{else if .Current}}
+      <li><span class="pagination-page is-current" aria-current="page">{{.Page}}</span></li>
+      {{else}}
+      <li><a class="pagination-page" href="{{.URL}}" aria-label="Seite {{.Page}}">{{.Page}}</a></li>
+      {{end}}
+      {{end}}
+    </ol>
+    {{else}}
+    <span>Seite {{.Photos.Page}}{{if gt $photoPageCount 0}} von {{$photoPageCount}}{{end}}</span>
+    {{end}}
+    {{if .PhotoFilter.NextURL}}<a class="secondary-button" href="{{.PhotoFilter.NextURL}}">Weiter</a>{{else}}<span></span>{{end}}
+  </div>
+  <div class="pagination-summary">{{if gt .Photos.Total 0}}{{len .Photos.Media}} von {{.Photos.Total}} Medien{{else}}0 Medien{{end}}</div>
+</nav>
+{{end}}
+
+{{if and (not .Photos.Folders) (not .Photos.Media) (not .Photos.Blogs)}}
+<section class="empty-state">
+  <h2>Keine Fotos gefunden</h2>
+</section>
+{{end}}
+
+  <dialog class="photo-lightbox" data-photo-lightbox data-photo-slideshow-seconds="{{.PhotoSettings.SlideshowSeconds}}" data-photo-preload-adjacent="{{if .PhotoSettings.PreloadAdjacent}}true{{else}}false{{end}}" tabindex="-1">
+  <header>
+    <strong data-photo-title>Foto</strong>
+    <div class="photo-lightbox-actions">
+      <button type="button" class="secondary-button" data-photo-slideshow>Start</button>
+      <button type="button" class="icon-button photo-info-toggle" data-photo-info-toggle aria-label="Informationen anzeigen" aria-pressed="false" title="Informationen">i</button>
+      <button type="button" class="icon-button photo-fullscreen-toggle" data-photo-fullscreen aria-label="Vollbild öffnen" aria-pressed="false" title="Vollbild öffnen">⛶</button>
+      <button type="button" class="icon-button" data-photo-prev aria-label="Vorheriges Foto">‹</button>
+      <button type="button" class="icon-button" data-photo-next aria-label="Nächstes Foto">›</button>
+      <button type="button" class="icon-button" data-photo-close aria-label="Foto schließen">×</button>
+    </div>
+  </header>
+  <div class="photo-lightbox-body">
+    <div class="photo-lightbox-stage">
+      <img alt="" data-photo-image hidden>
+      <video data-photo-video controls playsinline hidden></video>
+      <div class="photo-audio-stage" data-photo-audio-stage hidden>
+        <span class="photo-audio-note" aria-hidden="true">&#9835;</span>
+        <audio data-photo-audio controls preload="metadata"></audio>
+      </div>
+      <div class="photo-lightbox-zoom-controls" data-photo-zoom-controls hidden>
+        <output class="photo-lightbox-zoom-indicator" data-photo-zoom-indicator aria-live="polite">100%</output>
+        <div class="photo-lightbox-zoom-buttons" role="group" aria-label="Zoom-Steuerung">
+          <button type="button" data-photo-zoom-out aria-label="Verkleinern" title="Verkleinern">−</button>
+          <button type="button" data-photo-zoom-reset aria-label="Zoom zurücksetzen" title="Zoom zurücksetzen">100%</button>
+          <button type="button" data-photo-zoom-in aria-label="Vergrößern" title="Vergrößern">+</button>
+        </div>
+      </div>
+    </div>
+    <aside class="photo-info-panel">
+      <header class="photo-info-panel-head">
+        <strong>Info</strong>
+        <button type="button" class="icon-button" data-photo-info-close aria-label="Informationen schließen">×</button>
+      </header>
+      <a class="secondary-button photo-original-download" data-photo-download href="#" download>Original herunterladen</a>
+      <section class="photo-info-map-card" data-photo-info-map hidden>
+        <header>
+          <strong>Karte</strong>
+          <a data-photo-info-map-link href="#" target="_blank" rel="noreferrer">OpenStreetMap</a>
+        </header>
+        <div class="photo-info-map-canvas" data-photo-info-map-canvas aria-label="Aufnahmestandort">
+          <div class="photo-map-tile-layer" data-photo-info-map-tiles aria-hidden="true"></div>
+          <span class="photo-info-map-marker" data-photo-info-map-marker hidden aria-hidden="true"></span>
+        </div>
+      </section>
+      <dl>
+        <dt>Datei</dt><dd data-photo-info-name>-</dd>
+        <dt>Datum</dt><dd data-photo-info-date>-</dd>
+        <dt>Kamera</dt><dd data-photo-info-camera>-</dd>
+        <dt>Objektiv</dt><dd data-photo-info-lens>-</dd>
+        <dt>Bewertung</dt><dd data-photo-info-rating>-</dd>
+        <dt>Größe</dt><dd data-photo-info-size>-</dd>
+        <dt>Auflösung</dt><dd data-photo-info-resolution>-</dd>
+        <dt>GPS</dt><dd data-photo-info-coords>-</dd>
+      </dl>
+    </aside>
+  </div>
+</dialog>
+
+</div>
+
+{{template "foot" .}}
+{{end}}
+
+{{define "photo_thumb_image"}}
+<img alt="" loading="lazy" decoding="async" data-photo-thumb-image data-photo-thumb-type="{{.Type}}" {{if .ThumbReady}}src="{{.ThumbURL}}"{{end}} data-photo-thumb-ready="{{if .ThumbReady}}1{{else}}0{{end}}" data-photo-thumb-src="{{.ThumbURL}}">
+{{end}}
+
+{{define "photo_audio_placeholder"}}
+<span class="photo-audio-placeholder" aria-hidden="true"><span class="photo-audio-note">&#9835;</span></span>
+{{end}}
+
+{{define "photo_crumb_label"}}{{if .DisplayDate}}{{formatDate .DisplayDate}}{{if .DisplayName}} · {{.DisplayName}}{{end}}{{else}}{{if .DisplayName}}{{.DisplayName}}{{else}}{{.Name}}{{end}}{{end}}{{end}}

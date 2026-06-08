@@ -1,0 +1,48 @@
+{{define "folders.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>Ordner</h1>
+    <nav class="folder-breadcrumb" aria-label="Ordnerpfad">
+      {{range $i, $crumb := .FolderBreadcrumb}}
+      {{if $i}}<span class="folder-breadcrumb-separator" aria-hidden="true">›</span>{{end}}
+      {{if $crumb.Current}}<span class="folder-breadcrumb-current" aria-current="page">{{formatFolderCrumb $.TagDisplayMode $crumb}}</span>{{else}}<a class="folder-breadcrumb-link" href="{{$crumb.URL}}">{{formatFolderCrumb $.TagDisplayMode $crumb}}</a>{{end}}
+      {{end}}
+    </nav>
+  </div>
+</section>
+
+{{if not .HideFolderPanel}}
+<section class="panel folder-panel">
+  {{if .FolderTags}}
+  <div class="folder-grid">
+    {{range .FolderTags}}
+    <a class="folder-tile{{if .Kind}} folder-tile-{{.Kind}}{{end}}{{if .SubLabel}} folder-tile-has-meta{{end}}{{if .Redundant}} folder-tile-redundant{{end}}" href="{{.URL}}">
+      <span class="folder-icon{{if .Kind}} folder-icon-{{.Kind}}{{end}}" aria-hidden="true"></span>
+      <span class="folder-name">{{if .Label}}{{.Label}}{{else}}{{formatTag $.TagDisplayMode .Name}}{{end}}</span>
+      {{if .SubLabel}}<span class="folder-meta">{{.SubLabel}}</span>{{end}}
+      <span class="folder-count">{{if .CountLabel}}{{.CountLabel}}{{else}}{{.Count}} Dokument(e){{end}}</span>
+    </a>
+    {{end}}
+  </div>
+  {{else}}
+  <div class="folder-empty">
+    <h2>Keine weiteren Ordner</h2>
+    <p>Für diese Ordnerauswahl gibt es keine weiteren gemeinsamen Ordner.</p>
+  </div>
+  {{end}}
+</section>
+{{end}}
+
+{{if .ShowFolderDocuments}}
+{{template "date_filter_links" .}}
+<section class="page-head folder-documents-head">
+  <div>
+    <h2>Dokumente</h2>
+    <p>{{folderBreadcrumbLabel .TagDisplayMode .FolderBreadcrumb}}</p>
+  </div>
+</section>
+{{template "document_table" .}}
+{{end}}
+{{template "foot" .}}
+{{end}}

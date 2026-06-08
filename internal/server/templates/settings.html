@@ -1,0 +1,313 @@
+{{define "settings.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>Einstellungen</h1>
+  </div>
+</section>
+{{if .Notice}}<div class="notice">{{.Notice}}</div>{{end}}
+
+<section class="panel settings-panel">
+  <div class="settings-tabs">
+    <nav class="settings-tab-list" aria-label="Einstellungen">
+      {{if .Auth.CanSystemManage}}
+      <a class="settings-tab-button {{if eq .SettingsTab "main"}}active{{end}}" href="/settings">Dokumente</a>
+      <a class="settings-tab-button {{if eq .SettingsTab "mail_import"}}active{{end}}" href="/settings/mail-import">E-Mail-Import</a>
+      {{end}}
+      {{if and .PhotoModuleEnabled .Auth.CanPhotosManage}}<a class="settings-tab-button {{if eq .SettingsTab "photos"}}active{{end}}" href="/settings/photos">Fotos</a>{{end}}
+    </nav>
+
+    {{if eq .SettingsTab "photos"}}
+    <section class="settings-tab-panel">
+      <header class="settings-section-head">
+        <h2>Fotos</h2>
+        <p>Darstellung, Vorschauen und Thumbnail-Erzeugung</p>
+      </header>
+      {{if .Error}}<div class="notice error-state">{{.Error}}</div>{{end}}
+      <form class="settings-form photo-settings-form" method="post" action="/settings/photos">
+        <div class="settings-fieldset">
+          <h3>Galerie</h3>
+          <fieldset>
+            <legend>Bildgrößen</legend>
+            <label>
+              <span class="label-help-row">Bilder pro Seite <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Bilder pro Seite" aria-expanded="false" data-context-help-title="Bilder pro Seite" data-context-help="Begrenzt, wie viele Medienkarten pro Galerieseite geladen werden. Größere Werte reduzieren Seitenwechsel, erhöhen aber Render- und Ladeaufwand.">i</span></span>
+              <input type="number" name="photo_page_size" min="1" max="1000" value="{{.PhotoSettings.PageSize}}">
+            </label>
+            <label>
+              <span class="label-help-row">Previewbilder pro Ordner <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Previewbilder pro Ordner" aria-expanded="false" data-context-help-title="Previewbilder pro Ordner" data-context-help="Legt fest, wie viele Bilder ein Ordnermosaik maximal zeigt. Weniger Bilder laden schneller, mehr Bilder geben einen besseren Eindruck vom Ordnerinhalt.">i</span></span>
+              <input type="number" name="folder_preview_count" min="1" max="4" value="{{.PhotoSettings.FolderPreviewCount}}">
+            </label>
+            <label>
+              <span class="label-help-row">Ordner-Previews <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Ordner-Previews" aria-expanded="false" data-context-help-title="Ordner-Previews" data-context-help="Pixelgröße der Vorschaubilder in Ordnermosaiken. Kleinere Werte sparen Speicher und Bandbreite, größere wirken auf hochauflösenden Displays schärfer.">i</span></span>
+              <input type="number" name="folder_thumbnail_size" min="64" max="640" value="{{.PhotoSettings.FolderThumbnailSize}}">
+            </label>
+            <label>
+              <span class="label-help-row">Galerie-Thumbnails <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Galerie-Thumbnails" aria-expanded="false" data-context-help-title="Galerie-Thumbnails" data-context-help="Pixelgröße der Medienkarten-Thumbnails in der Galerie. Höhere Werte verbessern die Schärfe, erzeugen aber größere Thumbnail-Dateien.">i</span></span>
+              <input type="number" name="thumbnail_size" min="64" max="1200" step="20" value="{{.PhotoSettings.ThumbnailSize}}">
+            </label>
+            <label>
+              <span class="label-help-row">Große Vorschau <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Große Vorschau" aria-expanded="false" data-context-help-title="Große Vorschau" data-context-help="Maximale Kantenlänge der normalen Bildvorschau im Betrachter. Sie ist der Standard für schnelles Öffnen und Blättern.">i</span></span>
+              <input type="number" name="preview_size" min="640" max="1920" step="80" value="{{.PhotoSettings.PreviewSize}}">
+            </label>
+            <label>
+              <span class="label-help-row">HD-Vorschau <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu HD-Vorschau" aria-expanded="false" data-context-help-title="HD-Vorschau" data-context-help="Maximale Kantenlänge der hochauflösenden Vorschau. Sie eignet sich für größere Displays, braucht aber mehr Speicherplatz und Rechenzeit beim Erzeugen.">i</span></span>
+              <input type="number" name="large_preview_size" min="1920" max="3840" step="160" value="{{.PhotoSettings.LargePreviewSize}}">
+            </label>
+          </fieldset>
+          <fieldset>
+            <legend>Navigation</legend>
+            <label>
+              <span>Slideshow Sekunden</span>
+              <input type="number" name="slideshow_seconds" min="2" max="60" value="{{.PhotoSettings.SlideshowSeconds}}">
+            </label>
+            <label>
+              <span>Fotoframe Sekunden</span>
+              <input type="number" name="frame_seconds" min="3" max="300" value="{{.PhotoSettings.FrameSeconds}}">
+            </label>
+            <label class="checkbox-line">
+              <input type="checkbox" name="preload_adjacent" value="1" {{if .PhotoSettings.PreloadAdjacent}}checked{{end}}>
+              <span class="checkbox-help-label">Nächstes und vorheriges Bild vorladen <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Nächstes und vorheriges Bild vorladen" aria-expanded="false" data-context-help-title="Nächstes und vorheriges Bild vorladen" data-context-help="Lädt beim Betrachten eines Fotos die angrenzenden Bilder vor. Die Navigation wirkt schneller, erzeugt aber zusätzliche Vorschau-Anfragen.">i</span></span>
+            </label>
+          </fieldset>
+          <fieldset>
+            <legend>Karte</legend>
+            <label>
+              <span>Foto-Track-Auflösung</span>
+              <select name="photo_map_track_resolution_meters">
+                <option value="500" {{if eq .PhotoSettings.MapTrackResolutionMeters 500}}selected{{end}}>500 m</option>
+                <option value="1000" {{if eq .PhotoSettings.MapTrackResolutionMeters 1000}}selected{{end}}>1 km</option>
+                <option value="1500" {{if eq .PhotoSettings.MapTrackResolutionMeters 1500}}selected{{end}}>1,5 km</option>
+                <option value="2000" {{if eq .PhotoSettings.MapTrackResolutionMeters 2000}}selected{{end}}>2 km</option>
+                <option value="3000" {{if eq .PhotoSettings.MapTrackResolutionMeters 3000}}selected{{end}}>3 km</option>
+                <option value="5000" {{if eq .PhotoSettings.MapTrackResolutionMeters 5000}}selected{{end}}>5 km</option>
+                <option value="7500" {{if eq .PhotoSettings.MapTrackResolutionMeters 7500}}selected{{end}}>7,5 km</option>
+                <option value="10000" {{if eq .PhotoSettings.MapTrackResolutionMeters 10000}}selected{{end}}>10 km</option>
+              </select>
+            </label>
+          </fieldset>
+          <h3>Worker</h3>
+          <fieldset>
+            <legend>Index-Worker</legend>
+            <label class="checkbox-line">
+              <input type="checkbox" name="index_worker_enabled" value="1" {{if .PhotoSettings.IndexWorkerEnabled}}checked{{end}}>
+              <span class="checkbox-help-label">Root-Ordner im Hintergrund indexieren <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Root-Ordner im Hintergrund indexieren" aria-expanded="false" data-context-help-title="Root-Ordner im Hintergrund indexieren" data-context-help="Durchsucht den Foto-Root regelmäßig im Hintergrund und aktualisiert den Index für neue, geänderte oder entfernte Dateien.">i</span></span>
+            </label>
+            <label>
+              <span>Lauf alle Minuten</span>
+              <input type="number" name="index_worker_interval_minutes" min="1" max="10080" value="{{.PhotoSettings.IndexWorkerIntervalMinutes}}">
+            </label>
+            <label>
+              <span>Pause pro gescanntem Ordner (ms)</span>
+              <input type="number" name="index_worker_delay_millis" min="50" max="5000" step="50" value="{{.PhotoSettings.IndexWorkerDelayMillis}}">
+            </label>
+            <div class="settings-actions"><button type="submit" class="secondary-button" form="photo-index-run-form">Jetzt indexieren</button></div>
+          </fieldset>
+          <fieldset>
+            <legend>Thumbnail-Worker</legend>
+            <label class="checkbox-line">
+              <input type="checkbox" name="thumbnail_worker_enabled" value="1" {{if .PhotoSettings.ThumbnailWorkerEnabled}}checked{{end}}>
+              <span class="checkbox-help-label">Fehlende Foto-Thumbnails im Hintergrund erzeugen <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Fehlende Foto-Thumbnails im Hintergrund erzeugen" aria-expanded="false" data-context-help-title="Fehlende Foto-Thumbnails im Hintergrund erzeugen" data-context-help="Erzeugt fehlende Galerie-Thumbnails in regelmäßigen Batches. Ohne Worker entstehen fehlende Thumbnails erst bei Bedarf.">i</span></span>
+            </label>
+            <label>
+              <span>Lauf alle Minuten</span>
+              <input type="number" name="thumbnail_worker_interval_minutes" min="1" max="1440" value="{{.PhotoSettings.ThumbnailWorkerIntervalMinutes}}">
+            </label>
+            <label>
+              <span>Thumbnails pro Lauf</span>
+              <input type="number" name="thumbnail_worker_batch_size" min="1" max="1000" value="{{.PhotoSettings.ThumbnailWorkerBatchSize}}">
+            </label>
+            <label>
+              <span>Parallele Thumbnail-Jobs</span>
+              <input type="number" name="thumbnail_concurrency" min="1" max="4" value="{{.PhotoSettings.ThumbnailConcurrency}}">
+            </label>
+            <div class="settings-actions"><button type="submit" class="secondary-button" form="photo-thumbnail-run-form">Fehlende Thumbs jetzt erstellen</button></div>
+          </fieldset>
+        </div>
+        <p class="muted mail-import-note">Der Index-Worker aktualisiert den Metadatenindex für den Foto-Root. Der Thumbnail-Worker erzeugt Galerie-Thumbnails in kleinen Batches; Ordner-Previews und große Vorschauen entstehen bei Bedarf. Die Parallelität begrenzt auch Thumbnails, die beim ersten Aufruf erzeugt werden. Die Foto-Track-Auflösung steuert, wie nah GPS-Fotos auf der Karte zu einem Trackpunkt zusammengefasst werden.</p>
+        <div class="settings-actions">
+          <button type="submit">Speichern</button>
+        </div>
+      </form>
+      <form id="photo-index-run-form" method="post" action="/settings/photos/index/run"></form>
+      <form id="photo-thumbnail-run-form" method="post" action="/settings/photos/thumbnails/run"></form>
+    </section>
+    {{else if eq .SettingsTab "mail_import"}}
+    <section class="settings-tab-panel">
+      <header class="settings-section-head">
+        <h2>E-Mail-Import</h2>
+        <p>IMAP-Abruf für PDF-Anhänge</p>
+      </header>
+      {{if .Error}}<div class="notice error-state">{{.Error}}</div>{{end}}
+      <form class="settings-form mail-import-form" method="post" action="/settings/mail-import">
+        <label class="checkbox-line mail-enabled">
+          <input type="checkbox" name="enabled" value="1" {{if .MailImport.Enabled}}checked{{end}}>
+          <span class="checkbox-help-label">Aktiviert <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu E-Mail-Import aktiviert" aria-expanded="false" data-context-help-title="E-Mail-Import aktiviert" data-context-help="Schaltet den automatischen IMAP-Abruf ein. Testlauf und manueller Abruf bleiben eigene Aktionen in diesem Formular.">i</span></span>
+        </label>
+
+        <div class="mail-import-grid">
+          <label>
+            <span>IMAP-Server</span>
+            <input type="text" name="host" value="{{.MailImport.Host}}" placeholder="imap.example.com" autocomplete="off">
+          </label>
+          <label>
+            <span>Port</span>
+            <input type="number" name="port" min="1" max="65535" value="{{.MailImport.Port}}">
+          </label>
+          <label>
+            <span>Verschlüsselung</span>
+            <select name="security">
+              <option value="tls" {{if eq .MailImport.Security "tls"}}selected{{end}}>SSL/TLS</option>
+              <option value="starttls" {{if eq .MailImport.Security "starttls"}}selected{{end}}>STARTTLS</option>
+              <option value="none" {{if eq .MailImport.Security "none"}}selected{{end}}>Keine</option>
+            </select>
+          </label>
+          <label>
+            <span>Postfach</span>
+            <input type="text" name="mailbox" value="{{.MailImport.Mailbox}}" placeholder="INBOX">
+          </label>
+          <label>
+            <span>Benutzername</span>
+            <input type="text" name="username" value="{{.MailImport.Username}}" autocomplete="username">
+          </label>
+          <label>
+            <span>Passwort</span>
+            <input type="password" name="password" value="" placeholder="{{if .MailPasswordSet}}Gespeichert{{end}}" autocomplete="new-password">
+          </label>
+          <label>
+            <span>Abruf alle Minuten</span>
+            <input type="number" name="poll_interval_minutes" min="1" max="1440" value="{{.MailImport.PollIntervalMinutes}}">
+          </label>
+        </div>
+
+        <label>
+          <span>Erlaubte Absender oder Domänen</span>
+          <textarea name="allowed_senders" rows="8" placeholder="rechnung@example.com&#10;example.org">{{.MailImport.AllowedSenders}}</textarea>
+        </label>
+
+        <p class="muted mail-import-note">Ist die Liste leer, werden alle Absender verarbeitet. Nicht erlaubte E-Mails werden geloggt und im IMAP-Postfach gelöscht.</p>
+        <p class="muted mail-import-note">Bearbeitete E-Mails werden nach erfolgreichem PDF-Import im IMAP-Postfach gelöscht.</p>
+        <div class="mail-import-actions">
+          <button type="submit">Speichern</button>
+          <button type="submit" class="secondary-button" formaction="/settings/mail-import/test">Einstellungen prüfen</button>
+          <button type="submit" class="secondary-button" form="mail-import-run-form">Jetzt E-Mails abrufen</button>
+        </div>
+      </form>
+      <form id="mail-import-run-form" method="post" action="/settings/mail-import/run"></form>
+    </section>
+    {{else}}
+    <section class="settings-tab-panel" aria-label="Dokument-Einstellungen">
+      <header class="settings-section-head">
+        <h2>Dokumente</h2>
+        <p>Vorschau, Favicon, Tag-Darstellung und Papierkorb</p>
+      </header>
+      <form class="settings-form" method="post" action="/settings">
+        <div class="settings-fieldset">
+          <fieldset>
+            <legend>Oberfläche</legend>
+            <label>
+              <span>Name</span>
+              <input type="text" name="app_name" maxlength="80" value="{{.DisplayAppName}}">
+            </label>
+            <div class="theme-choice-list">
+              {{range .ThemeOptions}}
+              <label class="theme-choice theme-choice-{{.Value}}">
+                <input type="radio" name="theme_mode" value="{{.Value}}" {{if eq $.ThemeMode .Value}}checked{{end}}>
+                <span class="theme-choice-preview" aria-hidden="true"></span>
+                <span class="theme-choice-copy">
+                  <strong>{{.Label}}</strong>
+                  <span>{{.Description}}</span>
+                </span>
+              </label>
+              {{end}}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Startseite</legend>
+            {{range .HomePageOptions}}
+            <label class="radio-line">
+              <input type="radio" name="home_page" value="{{.Value}}" {{if eq $.HomePage .Value}}checked{{end}}>
+              {{.Label}}
+            </label>
+            {{end}}
+          </fieldset>
+          <fieldset>
+            <legend>Dokument-Wolke</legend>
+            <label class="checkbox-line">
+              <input type="checkbox" name="document_cloud_enabled" value="1" {{if .DocumentCloudEnabled}}checked{{end}}>
+              <span class="checkbox-help-label">Wolke anzeigen <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Wolke anzeigen" aria-expanded="false" data-context-help-title="Wolke anzeigen" data-context-help="Schaltet die Dokument-Wolke in der Hauptnavigation und unter /cloud frei. Standardmäßig ist sie deaktiviert.">i</span></span>
+            </label>
+          </fieldset>
+          <fieldset>
+            <legend>Desktop-Vorschau</legend>
+            <label class="radio-line">
+              <input type="radio" name="desktop_preview_mode" value="modal" {{if ne .DesktopPreviewMode "inline"}}checked{{end}}>
+              Modal
+            </label>
+            <label class="radio-line">
+              <input type="radio" name="desktop_preview_mode" value="inline" {{if eq .DesktopPreviewMode "inline"}}checked{{end}}>
+              Seitenvorschau
+            </label>
+          </fieldset>
+          <fieldset>
+            <legend>Tag-Ausgabe</legend>
+            {{range .TagDisplayOptions}}
+            <label class="radio-line">
+              <input type="radio" name="tag_display_mode" value="{{.Value}}" {{if eq $.TagDisplayMode .Value}}checked{{end}}>
+              {{.Label}}
+            </label>
+            {{end}}
+          </fieldset>
+          <fieldset>
+            <legend>Ordner</legend>
+            <label>
+              <span class="label-help-row">Tag-Ordner ab Dokumenten <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Tag-Ordner ab Dokumenten" aria-expanded="false" data-context-help-title="Tag-Ordner ab Dokumenten" data-context-help="Legt fest, ab welcher Dokumentanzahl ein Tag in der ersten Ordnerebene erscheint. 0 zeigt alle Tag-Ordner; Unterordner bleiben unabhängig davon sichtbar.">i</span></span>
+              <input type="number" name="folder_tag_min_documents" min="0" max="100000" value="{{.FolderTagMinDocuments}}">
+            </label>
+          </fieldset>
+          <fieldset>
+            <legend>Papierkorb-Aufbewahrung</legend>
+            <label>
+              <span>Endgültig löschen</span>
+              <select name="trash_retention_days">
+                {{range .TrashRetentionOptions}}
+                <option value="{{.Value}}" {{if eq $.TrashRetentionDays .Value}}selected{{end}}>{{.Label}}</option>
+                {{end}}
+              </select>
+            </label>
+          </fieldset>
+        </div>
+        <div class="settings-actions">
+          <button type="submit">Speichern</button>
+        </div>
+      </form>
+      <form class="settings-form" method="post" action="/settings/favicon" enctype="multipart/form-data">
+        <div class="settings-fieldset">
+          <fieldset>
+            <legend>Favicon</legend>
+            {{if .CustomFavicon.Uploaded}}
+            <div class="favicon-current">
+              <img src="{{.CustomFavicon.Href}}" alt="">
+              <span>{{.CustomFavicon.Filename}} · {{formatBytes .CustomFavicon.SizeBytes}}</span>
+            </div>
+            {{else}}
+            <p class="muted">Standard-Favicon aktiv</p>
+            {{end}}
+            <label>
+              <span>Alternatives Favicon</span>
+              <input type="file" name="favicon" accept=".ico,image/x-icon,image/vnd.microsoft.icon,image/png,image/jpeg,image/gif,image/webp">
+            </label>
+            <p class="muted">PNG, JPEG, GIF, WebP oder ICO bis 256 KB.</p>
+            <div class="settings-actions">
+              <button type="submit">Favicon hochladen</button>
+              {{if .CustomFavicon.Uploaded}}<button type="submit" class="secondary-button" form="favicon-reset-form">Standard verwenden</button>{{end}}
+            </div>
+          </fieldset>
+        </div>
+      </form>
+      {{if .CustomFavicon.Uploaded}}<form id="favicon-reset-form" method="post" action="/settings/favicon/reset"></form>{{end}}
+    </section>
+    {{end}}
+  </div>
+</section>
+{{template "foot" .}}
+{{end}}

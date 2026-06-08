@@ -1,0 +1,24 @@
+{{define "index.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>Dokumente</h1>
+  </div>
+  {{if .Auth.CanDocumentsUpload}}
+  <form class="upload-box" method="post" action="/upload" enctype="multipart/form-data" data-upload-form>
+    <input id="file-upload" type="file" name="files" accept=".pdf,image/png,image/jpeg,image/gif,image/webp" multiple>
+    <label for="file-upload" class="upload-icon-button" aria-label="Dateien hochladen">
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M12 3v12"></path>
+        <path d="m7 8 5-5 5 5"></path>
+        <path d="M5 15v4h14v-4"></path>
+      </svg>
+    </label>
+  </form>
+  {{end}}
+</section>
+
+{{template "filters" .}}
+{{template "document_table" .}}
+{{template "foot" .}}
+{{end}}

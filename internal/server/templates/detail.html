@@ -1,0 +1,251 @@
+{{define "detail.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1><span data-document-title>{{.Document.Title}}</span>{{if eq .Document.UploadWay "mail"}}<span class="upload-way-icon" title="Upload-Weg: E-Mail" aria-label="Upload-Weg E-Mail">✉</span>{{end}}</h1>
+    <p>{{.Document.OriginalName}}</p>
+  </div>
+  <div class="head-actions">
+    <a class="secondary-button" href="{{.ReturnURL}}">Zurück</a>
+    <a class="secondary-button" href="/documents/{{.Document.ID}}/download">Download</a>
+    <button type="button" class="secondary-button" data-share-url="/documents/{{.Document.ID}}/view">Teilen</button>
+    <details class="document-menu">
+      <summary aria-label="Dokumentaktionen öffnen">...</summary>
+      <div class="document-menu-list">
+        <a class="secondary-button" href="/export?ids={{.Document.ID}}&metadata=1">Export</a>
+        {{if not .DocumentReadOnlyView}}
+          {{if .Document.IsDeleted}}
+            {{if .Auth.CanDocumentsDelete}}
+            <form method="post" action="/documents/{{.Document.ID}}/restore">
+              <input type="hidden" name="return" value="{{.ReturnURL}}">
+              <button type="submit" class="secondary-button">Wiederherstellen</button>
+            </form>
+            {{if not .Document.DeleteProtected}}
+            <form method="post" action="/documents/{{.Document.ID}}/purge" data-confirm="Dokument endgültig löschen?">
+              <input type="hidden" name="return" value="{{.ReturnURL}}">
+              <button class="danger" type="submit">Endgültig löschen</button>
+            </form>
+            {{end}}
+            {{end}}
+          {{else}}
+            {{if .Auth.CanDocumentsEdit}}
+              {{if or (isPDF .Document.MIMEType) (isImage .Document.MIMEType)}}
+              <form method="post" action="/documents/{{.Document.ID}}/ocr/de">
+                <input type="hidden" name="return" value="{{.ReturnURL}}">
+                <button type="submit" class="secondary-button">OCR ausführen Deutsch</button>
+              </form>
+              <form method="post" action="/documents/{{.Document.ID}}/ocr/eng">
+                <input type="hidden" name="return" value="{{.ReturnURL}}">
+                <button type="submit" class="secondary-button">OCR ausführen Englisch</button>
+              </form>
+              {{end}}
+            {{end}}
+            {{if .Auth.CanDocumentsDelete}}
+              {{if not .Document.DeleteProtected}}
+              <form method="post" action="/documents/{{.Document.ID}}/delete" data-confirm="Dokument in den Papierkorb verschieben?">
+                <input type="hidden" name="return" value="{{.ReturnURL}}">
+                <button class="danger" type="submit">Löschen</button>
+              </form>
+              {{end}}
+            {{end}}
+          {{end}}
+        {{end}}
+      </div>
+    </details>
+  </div>
+</section>
+
+{{if .OCRJob}}
+<section class="panel ocr-status ocr-status-{{.OCRJob.Status}}" data-ocr-status data-ocr-status-url="/documents/{{.Document.ID}}/ocr/status" data-ocr-job-id="{{.OCRJob.ID}}" data-ocr-active="{{if .OCRJob.Active}}1{{else}}0{{end}}" data-ocr-terminal="{{if .OCRJob.Terminal}}1{{else}}0{{end}}" aria-live="polite">
+  <header>
+    <div>
+      <strong>OCR</strong>
+      <span>{{.OCRJob.LanguageLabel}}</span>
+    </div>
+    <span class="ocr-status-actions">
+      <span class="status-pill" data-ocr-state>{{.OCRJob.StatusText}}</span>
+      <button type="button" class="icon-button" data-ocr-dismiss aria-label="OCR-Status schließen" {{if not .OCRJob.Terminal}}hidden{{end}}>×</button>
+    </span>
+  </header>
+  <div class="ocr-progress-row" data-ocr-progress-row {{if not .OCRJob.HasProgress}}hidden{{end}}>
+    <progress max="100" value="{{.OCRJob.ProgressPercent}}" data-ocr-progress></progress>
+    <span data-ocr-progress-text>{{.OCRJob.CurrentPage}} von {{.OCRJob.TotalPages}}</span>
+  </div>
+  <p class="muted" data-ocr-message>
+    {{if .OCRJob.Error}}{{.OCRJob.Error}}{{else if eq .OCRJob.Status "completed"}}{{.OCRJob.TextLength}} Zeichen wurden in den Textinhalt übernommen.{{else if .OCRJob.Message}}{{.OCRJob.Message}}{{else if .OCRJob.Active}}Der OCR-Vorgang wird verarbeitet.{{else}}Zuletzt aktualisiert: {{formatDateTime .OCRJob.UpdatedAt}}{{end}}
+  </p>
+</section>
+{{end}}
+
+<section class="detail-grid">
+  <div class="panel preview-panel">
+    <div class="detail-tabs" data-tabs>
+      <div class="tab-list" role="tablist" aria-label="Dokumentansicht">
+        <button type="button" class="tab-button active" role="tab" aria-selected="true" data-tab-target="pdf">Vorschau</button>
+        <button type="button" class="tab-button" role="tab" aria-selected="false" data-tab-target="text">Textinhalt</button>
+      </div>
+      <section class="tab-panel active" data-tab-panel="pdf" role="tabpanel">
+        {{if isPDF .Document.MIMEType}}
+        <iframe title="Vorschau {{.Document.OriginalName}}" src="/documents/{{.Document.ID}}/preview"></iframe>
+        {{else if isImage .Document.MIMEType}}
+        <img alt="{{.Document.OriginalName}}" src="/documents/{{.Document.ID}}/preview">
+        {{else if isPreviewableDocument .Document.OriginalName .Document.MIMEType}}
+        <iframe title="Vorschau {{.Document.OriginalName}}" src="/documents/{{.Document.ID}}/preview"></iframe>
+        {{else}}
+        <div class="empty-state">
+          <h2>Keine Vorschau</h2>
+          <p>Für diesen Dateityp ist keine Vorschau verfügbar.</p>
+        </div>
+        {{end}}
+      </section>
+      <section class="tab-panel text-panel" data-tab-panel="text" role="tabpanel" hidden>
+        {{if .Document.ContentText}}
+        <pre>{{.Document.ContentText}}</pre>
+        {{else}}
+        <div class="empty-state">
+          <h2>Kein Textinhalt</h2>
+          <p>Für dieses Dokument wurde kein maschinenlesbarer Text gefunden.</p>
+        </div>
+        {{end}}
+      </section>
+    </div>
+  </div>
+
+  <aside class="panel metadata-panel">
+    {{if and .Auth.CanDocumentsEdit (not .DocumentReadOnlyView)}}
+    <form method="post" action="/documents/{{.Document.ID}}/metadata" class="metadata-form" data-metadata-form>
+      <input type="hidden" name="return" value="{{.ReturnURL}}">
+      <label>
+        <span>Titel</span>
+        <input type="text" name="title" value="{{.Document.Title}}" required>
+      </label>
+      <label>
+        <span>Dokumentdatum</span>
+        <input type="date" name="document_date" value="{{formatDateInput .Document.DocumentDate}}">
+      </label>
+      <label>
+        <span>Notiz</span>
+        <textarea name="description" rows="6">{{.Document.Description}}</textarea>
+      </label>
+      {{if .CustomFields}}
+      <div class="field-group custom-field-group">
+        <span>Benutzerdefinierte Felder</span>
+        {{range .CustomFields}}
+        <label>
+          <span>{{.Label}}</span>
+          <input type="text" name="field_{{.ID}}" value="{{customValue $.Document.CustomValues .ID}}" {{if .AutocompleteEnabled}}list="custom-field-values-{{.ID}}" data-custom-field-values-url="/fields/{{.ID}}/values" autocomplete="off"{{end}}>
+          {{if .AutocompleteEnabled}}<datalist id="custom-field-values-{{.ID}}"></datalist>{{end}}
+        </label>
+        {{end}}
+      </div>
+      {{end}}
+
+      <div class="field-group">
+        <span>Tags</span>
+        <div class="tag-select" data-tag-select data-input-name="tags" data-empty-label="Keine Tags">
+          <button type="button" class="tag-select-trigger" data-tag-select-trigger>
+            <span class="tag-select-summary" data-tag-select-summary>
+              {{if .Document.Tags}}{{range .Document.Tags}}<span class="tag" style="{{index $.TagStyles .}}" title="{{index $.TagDescriptions .}}">{{formatTag $.TagDisplayMode .}}</span>{{end}}{{else}}<span class="muted">Keine Tags</span>{{end}}
+            </span>
+          </button>
+          <div data-tag-select-inputs hidden>
+            {{range .Document.Tags}}<input type="hidden" name="tags" value="{{.}}">{{end}}
+          </div>
+        </div>
+      </div>
+
+      <button type="submit">Speichern</button>
+      <p class="form-message" data-metadata-message hidden></p>
+    </form>
+    {{else}}
+    <div class="metadata-form">
+      <div>
+        <span>Titel</span>
+        <strong>{{.Document.Title}}</strong>
+      </div>
+      <div>
+        <span>Dokumentdatum</span>
+        <strong>{{formatDate .Document.DocumentDate}}</strong>
+      </div>
+      {{if .Document.Description}}
+      <div>
+        <span>Notiz</span>
+        <p>{{.Document.Description}}</p>
+      </div>
+      {{end}}
+      {{if .CustomFields}}
+      <div class="field-group custom-field-group">
+        <span>Benutzerdefinierte Felder</span>
+        {{range .CustomFields}}
+        <div>
+          <span>{{.Label}}</span>
+          <strong>{{customValue $.Document.CustomValues .ID}}</strong>
+        </div>
+        {{end}}
+      </div>
+      {{end}}
+      <div class="field-group">
+        <span>Tags</span>
+        <div>
+          {{if .Document.Tags}}{{range .Document.Tags}}<span class="tag" style="{{index $.TagStyles .}}" title="{{index $.TagDescriptions .}}">{{formatTag $.TagDisplayMode .}}</span>{{end}}{{else}}<span class="muted">Keine Tags</span>{{end}}
+        </div>
+      </div>
+    </div>
+    {{end}}
+
+    <dl class="facts">
+      <div><dt>Dateityp</dt><dd>{{.Document.MIMEType}}</dd></div>
+      <div><dt>Textquelle</dt><dd>{{.Document.ContentTextSourceLabel}}</dd></div>
+      <div><dt>Größe</dt><dd>{{formatBytes .Document.SizeBytes}}</dd></div>
+      <div><dt>Dokumentdatum</dt><dd data-document-date>{{formatDate .Document.DocumentDate}}</dd></div>
+      <div><dt>Upload</dt><dd>{{formatDateTime .Document.UploadedAt}}</dd></div>
+      <div><dt>Upload-Weg</dt><dd>{{.Document.UploadWayLabel}}</dd></div>
+      {{if .Document.DeleteProtected}}<div><dt>Löschschutz</dt><dd>Aktiv</dd></div>{{end}}
+      <div><dt>Prüfsumme</dt><dd>{{shortHash .Document.SHA256}}</dd></div>
+    </dl>
+
+  </aside>
+</section>
+
+{{if .RelatedDocuments}}
+<section class="panel linked-documents">
+  <header>
+    <h2>Verknüpfte und gruppierte Dateien</h2>
+    <span>{{len .RelatedDocuments}}</span>
+  </header>
+  <ul class="linked-document-list">
+    {{range .RelatedDocuments}}
+    <li class="linked-document-item">
+      <a class="linked-document-thumb-link" href="/documents/{{.ID}}?return={{queryEscape $.CurrentURL}}" aria-label="Details für {{.OriginalName}} öffnen">
+        {{if or .ThumbnailPath (isImage .MIMEType)}}
+        <img class="document-thumb" src="/documents/{{.ID}}/thumbnail" alt="" loading="lazy" decoding="async">
+        {{else}}
+        <span class="linked-document-thumb-placeholder">-</span>
+        {{end}}
+      </a>
+      <div class="linked-document-body">
+        <a class="strong-link" href="/documents/{{.ID}}?return={{queryEscape $.CurrentURL}}">{{.Title}}</a>{{if .IsDeleted}} <span class="badge">Papierkorb</span>{{end}}{{range .GroupTags}} <span class="tag grouped-tag" style="{{index $.TagStyles .}}" title="{{index $.TagDescriptions .}}">{{formatTag $.TagDisplayMode .}}</span>{{end}}
+        <div class="linked-document-name">{{.OriginalName}}</div>
+        <div class="linked-document-meta">
+          <span>{{formatDate .DisplayDate}}</span>
+          <span>{{formatBytes .SizeBytes}}</span>
+          <span>{{.UploadWayLabel}}</span>
+        </div>
+      </div>
+      <div class="linked-document-actions">
+        <a href="/documents/{{.ID}}?return={{queryEscape $.CurrentURL}}">Details</a>
+        <a href="/documents/{{.ID}}/download">Download</a>
+        {{if and .IsLinked $.Auth.CanDocumentsEdit (not $.DocumentReadOnlyView)}}
+        <form method="post" action="/documents/{{$.Document.ID}}/links/{{.ID}}/delete" data-confirm="Verknüpfung zu {{.OriginalName}} aufheben?">
+          <input type="hidden" name="return" value="{{$.ReturnURL}}">
+          <button type="submit" class="link-button">Verknüpfung aufheben</button>
+        </form>
+        {{end}}
+      </div>
+    </li>
+    {{end}}
+  </ul>
+</section>
+{{end}}
+{{template "foot" .}}
+{{end}}

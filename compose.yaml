@@ -1,0 +1,28 @@
+services:
+  bearstack:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bearstack:local
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${BEARSTACK_PORT:-8080}:8080"
+    environment:
+      BEARSTACK_ADDR: 0.0.0.0:8080
+      BEARSTACK_DATA_DIR: /var/lib/bearstack
+      BEARSTACK_AUTH_USER: ${BEARSTACK_AUTH_USER:-admin}
+      BEARSTACK_AUTH_PASSWORD: ${BEARSTACK_AUTH_PASSWORD:-}
+      BEARSTACK_AUTH_PASSWORD_HASH: ${BEARSTACK_AUTH_PASSWORD_HASH:-}
+      BEARSTACK_AUTH_REALM: ${BEARSTACK_AUTH_REALM:-BearStack}
+      BEARSTACK_WEBDAV_PATH: ${BEARSTACK_WEBDAV_PATH:-}
+      BEARSTACK_PHOTOS_ENABLED: ${BEARSTACK_PHOTOS_ENABLED:-false}
+      BEARSTACK_PHOTOS_DIR: ${BEARSTACK_PHOTOS_DIR:-/srv/photos}
+      BEARSTACK_PHOTOS_DATA_DIR: /var/lib/bearstack/photos
+    volumes:
+      - bearstack-data:/var/lib/bearstack
+      # Bei aktiviertem Fotomodul ein lokales Fotoverzeichnis read-only einbinden:
+      # - /pfad/zu/fotos:/srv/photos:ro
+
+volumes:
+  bearstack-data:
