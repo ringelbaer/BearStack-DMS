@@ -287,15 +287,19 @@ Vor Updates ein Datenbackup erstellen. Für systemd-Installationen liegt ein Upd
 ```sh
 cd /opt/bearstack-src/BearStack
 ./update.sh
+# Alternativ den Alpha-Branch installieren:
+./update.sh --alpha
 ```
 
-`update.sh` führt im aktuellen Stand `git fetch --all --tags`, `git pull --ff-only`, `go test ./...` und einen Build in ein temporäres Artefakt aus. Danach stoppt es den systemd-Dienst, installiert das neue Binary, startet den Dienst wieder und zeigt `systemctl status`. Ein Binary-Backup, automatischer `/healthz`-Check und Rollback sind im Skript nicht aktiv; den Smoke-Test deshalb nach dem Lauf manuell ausführen.
+`update.sh` führt im aktuellen Stand `git fetch --all --tags` aus, wechselt auf den Update-Branch (`main` als Standard, `Alpha` mit `--alpha` oder frei per `--branch NAME`), führt `git pull --ff-only origin BRANCH`, `go test ./...` und einen Build in ein temporäres Artefakt aus. Danach stoppt es den systemd-Dienst, installiert das neue Binary, startet den Dienst wieder und zeigt `systemctl status`. Ein Binary-Backup, automatischer `/healthz`-Check und Rollback sind im Skript nicht aktiv; den Smoke-Test deshalb nach dem Lauf manuell ausführen.
 
 Variablen für das Skript:
 
 | Variable | Standard |
 | --- | --- |
 | `BEARSTACK_REPO_DIR` | Verzeichnis des Skripts |
+| `BEARSTACK_UPDATE_BRANCH` | `main` |
+| `BEARSTACK_GIT_REMOTE` | `origin` |
 | `BEARSTACK_SERVICE` | `bearstack.service` |
 | `BEARSTACK_INSTALL_PATH` | `/usr/local/bin/bearstack` |
 

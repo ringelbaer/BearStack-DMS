@@ -83,15 +83,19 @@
 .table-actions-left {
   align-items: center;
   display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   gap: 10px;
+  min-width: 0;
 }
 
 .selection-actions {
   align-items: center;
   display: inline-flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   gap: 10px;
+  min-width: 0;
 }
 
 .selection-export {
@@ -103,23 +107,23 @@
 
 .document-batch-menu {
   display: inline-flex;
+  flex: 1 1 auto;
+  min-width: 0;
   position: relative;
 }
 
-.document-batch-menu summary {
+.document-batch-menu-toggle {
   display: none;
 }
 
-.document-batch-menu summary::-webkit-details-marker {
-  display: none;
-}
-
-.document-batch-menu-list,
-.document-batch-menu:not([open]) > .document-batch-menu-list {
+.document-batch-menu-list {
   align-items: center;
   display: inline-flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   gap: 10px;
+  min-width: 0;
+  width: 100%;
 }
 
 .pagination {

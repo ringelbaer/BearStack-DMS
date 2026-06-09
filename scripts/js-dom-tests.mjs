@@ -163,6 +163,10 @@ class TestElement extends TestEventTarget {
     return this.attributes.get(name) ?? null;
   }
 
+  hasAttribute(name) {
+    return this.getAttribute(name) !== null;
+  }
+
   removeAttribute(name) {
     this.attributes.delete(name);
     if (name.startsWith("data-")) {
@@ -668,6 +672,49 @@ function testBulkSelectionControllerUpdatesActionsAndRanges() {
   assert.deepEqual([first.checked, second.checked, third.checked], [false, false, false]);
 }
 
+function testDocumentBatchMenuUsesDesktopAndCompactStates() {
+  const document = new TestDocument();
+  const menu = el("div", { "data-document-batch-menu": "", class: "document-batch-menu" }, [
+    el("button", { type: "button", "data-document-batch-menu-toggle": "", "aria-expanded": "false" }),
+    el("div", { class: "document-batch-menu-list" }),
+  ]);
+  document.body.append(el("form", { class: "table-form" }, [menu]));
+
+  const context = loadCore(document);
+  const mediaQueries = new Map();
+  context.matchMedia = (query) => {
+    if (!mediaQueries.has(query)) {
+      const mediaQuery = {
+        matches: query === "(min-width: 961px)",
+        listeners: [],
+        addEventListener(type, listener) {
+          if (type === "change") this.listeners.push(listener);
+        },
+      };
+      mediaQueries.set(query, mediaQuery);
+    }
+    return mediaQueries.get(query);
+  };
+
+  runScripts(context, ["app-documents.js", "app-preview.js"]);
+  assert.equal(menu.hasAttribute("open"), false);
+
+  const compactQuery = mediaQueries.get("(max-width: 960px)");
+  compactQuery.matches = true;
+  compactQuery.listeners.forEach((listener) => listener({ matches: true }));
+  assert.equal(menu.hasAttribute("open"), false);
+
+  const toggle = menu.querySelector("[data-document-batch-menu-toggle]");
+  toggle.dispatchEvent({ type: "click" });
+  assert.equal(menu.hasAttribute("open"), true);
+  assert.equal(toggle.getAttribute("aria-expanded"), "true");
+
+  compactQuery.matches = false;
+  compactQuery.listeners.forEach((listener) => listener({ matches: false }));
+  assert.equal(menu.hasAttribute("open"), false);
+  assert.equal(toggle.getAttribute("aria-expanded"), "false");
+}
+
 function testDocumentThumbnailLoaderStopsAfterLoad() {
   const document = new TestDocument();
   const loading = el("img", { class: "document-thumb" });
@@ -770,6 +817,7 @@ const tests = [
   testUploadLifecycleUsesXHRBoundary,
   testRuleFormsUseCoreScript,
   testBulkSelectionControllerUpdatesActionsAndRanges,
+  testDocumentBatchMenuUsesDesktopAndCompactStates,
   testDocumentThumbnailLoaderStopsAfterLoad,
   testDocumentThumbnailLoaderUsesThumbLinkOverlay,
   testShareButtonCopiesReadOnlyLinkAndShowsToast,

@@ -981,10 +981,11 @@
   }
 
   .document-batch-menu {
+    flex: 0 0 auto;
     position: static;
   }
 
-  .document-batch-menu summary {
+  .document-batch-menu-toggle {
     align-items: center;
     background: var(--surface);
     border: 1px solid var(--line);
@@ -1000,7 +1001,7 @@
     width: 42px;
   }
 
-  .document-batch-menu summary span {
+  .document-batch-menu-toggle span {
     background: currentColor;
     border-radius: 999px;
     display: block;
@@ -1008,9 +1009,9 @@
     width: 4px;
   }
 
-  .document-batch-menu[open] summary,
-  .document-batch-menu summary:hover,
-  .document-batch-menu summary:focus-visible {
+  .document-batch-menu[open] .document-batch-menu-toggle,
+  .document-batch-menu-toggle:hover,
+  .document-batch-menu-toggle:focus-visible {
     border-color: var(--primary);
     color: var(--text);
   }

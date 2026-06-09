@@ -1,4 +1,7 @@
 const documentSelectionControllers = new WeakMap();
+const documentBatchMenuMedia =
+  typeof window.matchMedia === "function" ? window.matchMedia("(max-width: 960px)") : null;
+let documentBatchMenuMediaInitialized = false;
 
 function documentSelectionController(form) {
   let controller = documentSelectionControllers.get(form);
@@ -13,7 +16,56 @@ function selectedDocumentCount(form) {
   return documentSelectionController(form).selectedCount();
 }
 
+function setDocumentBatchMenuOpen(menu, open) {
+  if (open) {
+    menu.setAttribute("open", "");
+  } else {
+    menu.removeAttribute("open");
+  }
+  const toggle = menu.querySelector("[data-document-batch-menu-toggle]");
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+}
+
+function syncDocumentBatchMenu(menu) {
+  const compact = documentBatchMenuMedia && documentBatchMenuMedia.matches;
+  if (!compact) {
+    setDocumentBatchMenuOpen(menu, false);
+    return;
+  }
+  setDocumentBatchMenuOpen(menu, menu.hasAttribute("open"));
+}
+
+function syncDocumentBatchMenus(root = document) {
+  root.querySelectorAll("[data-document-batch-menu]").forEach(syncDocumentBatchMenu);
+}
+
+function initializeDocumentBatchMenus(root = document) {
+  syncDocumentBatchMenus(root);
+  initializeOnce(root, "[data-document-batch-menu-toggle]", (button) => {
+    button.addEventListener("click", () => {
+      const menu = button.closest("[data-document-batch-menu]");
+      if (!menu) return;
+      setDocumentBatchMenuOpen(menu, !menu.hasAttribute("open"));
+    });
+  });
+
+  if (documentBatchMenuMediaInitialized || !documentBatchMenuMedia) return;
+
+  const handleChange = () => syncDocumentBatchMenus(document);
+  if (typeof documentBatchMenuMedia.addEventListener === "function") {
+    documentBatchMenuMedia.addEventListener("change", handleChange);
+    documentBatchMenuMediaInitialized = true;
+  } else if (typeof documentBatchMenuMedia.addListener === "function") {
+    documentBatchMenuMedia.addListener(handleChange);
+    documentBatchMenuMediaInitialized = true;
+  }
+}
+
 function initializeSelectionControls(root = document) {
+  initializeDocumentBatchMenus(root);
+
   initializeOnce(root, "[data-page-size-select]", (select) => {
     select.addEventListener("change", () => {
       const form = select.closest("form");
