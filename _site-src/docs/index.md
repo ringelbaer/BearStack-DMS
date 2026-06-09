@@ -14,8 +14,7 @@ hide:
       <p class="bs-kicker">Schlankes Archiv. Starke Funktion.</p>
       <h1>BearStack</h1>
       <p class="bs-lead">
-        BearStack organisiert Dokumente und Fotos und ergänzt Ansicht, OCR, Suche und viele weitere Funktionen um deine vorhandenen
-        Dateien herum. Metadaten landen lokal in SQLite, die Dateien selbst bleiben unverändert im Dateisystem.
+        Finde Dokumente und Fotos schnell wieder, ohne deine Ablage in eine Cloud oder ein proprietäres System umzuziehen.
       </p>
       <div class="bs-actions">
         <a class="md-button md-button--primary" href="installation.html">Loslegen</a>
@@ -33,7 +32,7 @@ hide:
       <h2>Ein Archiv, schnell und schlank und trotzdem mit umfassenden Funktionen.</h2>
     </div>
     <p>
-      BearStack ist für Menschen gebaut, die ihre Unterlagen und Medien nicht in einer Blackbox verlieren wollen. Die App ermöglicht Ordnung über Indexe, Tags und Volltext, ohne die abgelegten Dateien umzuschreiben. 
+      BearStack ist für Menschen gebaut, die ihre Unterlagen und Medien nicht in einer Blackbox verlieren wollen. Die App ermöglicht Ordnung über Indexe, Tags und Volltext, ohne die abgelegten Dateien umzuschreiben.
     </p>
   </div>
 </section>
@@ -47,13 +46,13 @@ hide:
     <div class="bs-feature-grid">
       <article class="bs-feature">
         <span class="bs-feature__icon">01</span>
-        <h3>Unveränderte Dateien</h3>
-        <p>BearStack ergänzt Metadaten, Tags und Suche, ohne deine Dateien in ein proprietäres Format zu verwandeln.</p>
+        <h3>Deine Dateien bleiben deine Dateien</h3>
+        <p>BearStack legt Indexe, Tags und Metadaten neben deine Ablage, statt Dokumente in ein proprietäres Archiv zu verschieben.</p>
       </article>
       <article class="bs-feature">
         <span class="bs-feature__icon">02</span>
         <h3>Volltext finden</h3>
-        <p>Text-Extraktion, OCR-Jobs, Suchfavoriten und eine Tag-basierte, virtuelle Ordnerstruktur machen Dokumente intuitiv auffindbar.</p>
+        <p>OCR, Volltextsuche, Filter und Suchfavoriten helfen dir, Rechnungen, Verträge, Notizen und gescannte Dokumente schnell zu finden.</p>
       </article>
       <article class="bs-feature">
         <span class="bs-feature__icon">03</span>
@@ -84,6 +83,19 @@ hide:
   </div>
 </section>
 
+<section class="bs-band bs-band--quiet" aria-label="Lokal und transparent">
+  <div class="bs-wrap bs-intro">
+    <div>
+      <p class="bs-kicker">Lokal und transparent</p>
+      <h2>Keine Blackbox, kein Cloud-Zwang, kein proprietäres Archivformat.</h2>
+    </div>
+    <p>
+      BearStack nutzt dein Dateisystem als Quelle der Wahrheit. Strukturierte Daten liegen in SQLite,
+      erzeugte Vorschauen und Indexe bleiben getrennt von den Originaldateien.
+    </p>
+  </div>
+</section>
+
 <section class="bs-band" aria-label="Schnellstart">
   <div class="bs-wrap bs-command">
     <div>
@@ -101,7 +113,7 @@ go run ./cmd/bearstack</code></pre>
   <div class="bs-wrap bs-cta">
     <div>
       <p class="bs-kicker">Bereit zum Einrichten</p>
-      <h2>Starte lokal und zieh BearStack danach auf Pi, NAS oder Server um.</h2>
+      <h2>Teste BearStack lokal und betreibe es später dort, wo deine Dateien liegen sollen.</h2>
     </div>
     <a class="md-button md-button--primary" href="installation.html">Installation lesen</a>
   </div>
