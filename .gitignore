@@ -29,3 +29,4 @@ bearstack-backup*.tgz
 pigallery2
 *.tar
 .cache/
+,venv

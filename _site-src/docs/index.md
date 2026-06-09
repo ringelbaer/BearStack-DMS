@@ -32,7 +32,7 @@ hide:
       <h2>Ein Archiv, schnell und schlank und trotzdem mit umfassenden Funktionen.</h2>
     </div>
     <p>
-      BearStack ist für Menschen gebaut, die ihre Unterlagen und Medien nicht in einer Blackbox verlieren wollen. Die App ermöglicht Ordnung über Indexe, Tags und Volltext, ohne die abgelegten Dateien umzuschreiben. 
+      BearStack ist für Menschen gebaut, die ihre Unterlagen und Medien nicht in einer Blackbox verlieren wollen. Die App ermöglicht Ordnung über Indexe, Tags und Volltext, ohne die abgelegten Dateien umzuschreiben.
     </p>
   </div>
 </section>
@@ -113,7 +113,7 @@ go run ./cmd/bearstack</code></pre>
   <div class="bs-wrap bs-cta">
     <div>
       <p class="bs-kicker">Bereit zum Einrichten</p>
-      <h2>Teste BearStack lokal und betreibe es später dort, wo deine Dateien liegen.</h2>
+      <h2>Teste BearStack lokal und betreibe es später dort, wo deine Dateien liegen sollen.</h2>
     </div>
     <a class="md-button md-button--primary" href="installation.html">Installation lesen</a>
   </div>
