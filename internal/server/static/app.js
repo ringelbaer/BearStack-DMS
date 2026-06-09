@@ -580,6 +580,7 @@ function closeOpenMenusOutside(target) {
   document.querySelectorAll(".system-menu[open], .document-menu[open], .filter-year-menu[open], .document-batch-menu[open], .photo-filter-menu[open], .photo-sort-menu[open], .photo-actions-menu[open]").forEach((menu) => {
     if (!menu.contains(target)) {
       menu.open = false;
+      menu.removeAttribute("open");
     }
   });
 }

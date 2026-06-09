@@ -39,12 +39,12 @@
     <div class="table-actions-left">
       <label class="checkbox-line"><input type="checkbox" data-select-all> Alle auswählen</label>
       <div class="selection-actions hidden" data-selection-actions>
-        <details class="document-batch-menu">
-          <summary aria-label="Batch-Aktionen" title="Batch-Aktionen">
+        <div class="document-batch-menu" data-document-batch-menu>
+          <button type="button" class="document-batch-menu-toggle" data-document-batch-menu-toggle aria-label="Batch-Aktionen" title="Batch-Aktionen" aria-expanded="false">
             <span aria-hidden="true"></span>
             <span aria-hidden="true"></span>
             <span aria-hidden="true"></span>
-          </summary>
+          </button>
           <div class="document-batch-menu-list" aria-label="Batch-Aktionen">
             <span class="selection-export">
               <label class="checkbox-line"><input type="checkbox" name="metadata" value="1"> Metadaten einschließen</label>
@@ -59,7 +59,7 @@
             <button type="submit" formaction="/documents/link" formmethod="post" data-link-submit data-requires-multiple data-link-prompt="{count} Dokumente verknüpfen?">Verknüpfen</button>
             {{end}}
           </div>
-        </details>
+        </div>
       </div>
     </div>
     {{if .Auth.CanSystemManage}}

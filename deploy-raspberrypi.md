@@ -511,6 +511,8 @@ Das Update-Skript im Repo aktualisiert den Checkout, fuehrt `go test ./...` aus,
 ```sh
 cd /opt/bearstack-src/BearStack
 ./update.sh
+# Alternativ den Alpha-Branch installieren:
+./update.sh --alpha
 curl -I -u admin:mein-passwort http://127.0.0.1:8080/
 ```
 
@@ -519,6 +521,8 @@ Wenn das Passwort nicht in der Shell-History landen soll, den Smoke-Test interak
 Anpassbare Variablen:
 
 - `BEARSTACK_REPO_DIR`: Checkout-Verzeichnis, standardmaessig Verzeichnis des Skripts.
+- `BEARSTACK_UPDATE_BRANCH`: Update-Branch, standardmaessig `main`.
+- `BEARSTACK_GIT_REMOTE`: Git-Remote, standardmaessig `origin`.
 - `BEARSTACK_SERVICE`: systemd-Dienst, standardmaessig `bearstack.service`.
 - `BEARSTACK_INSTALL_PATH`: Installationspfad, standardmaessig `/usr/local/bin/bearstack`.
 
