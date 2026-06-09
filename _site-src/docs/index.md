@@ -3,7 +3,6 @@ title: BearStack
 description: Lokale Dokumenten- und Fotoverwaltung für kleine Server.
 template: landing.html
 hide:
-  - navigation
   - toc
   - path
 ---

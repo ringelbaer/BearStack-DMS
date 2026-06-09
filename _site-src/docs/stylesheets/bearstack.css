@@ -35,6 +35,12 @@
   padding: 0;
 }
 
+@media screen and (min-width: 76.25em) {
+  .md-main__inner:has(.bs-home) > .md-sidebar--primary {
+    display: none;
+  }
+}
+
 .bs-home {
   width: 100%;
   hyphens: none;
