@@ -284,6 +284,26 @@ a.tag:hover {
   text-align: left;
 }
 
+.filters .tag-select-trigger {
+  max-width: 100%;
+  overflow: hidden;
+  width: 100%;
+}
+
+.filters .tag-select-summary {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+.filters .tag-select-summary .tag {
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .link-button {
   background: transparent;
   border: 0;
