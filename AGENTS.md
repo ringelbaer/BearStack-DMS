@@ -9,6 +9,7 @@ BearStack uses semantic versioning from the root `VERSION` file. Any agent or ma
 - `MAJOR`: intentional incompatible changes to documented HTTP/API/WebDAV contracts, configuration, data formats, permissions, or manual/incompatible migrations that reasonably require users, operators, or client code to change.
 - When multiple categories apply, use the highest required bump.
 - Do not treat every HTTP status/header/body change as `MAJOR`. If a change fixes a bug, removes an unnecessary redirect while preserving the endpoint's purpose, corrects headers, or otherwise improves an existing response without requiring client rework, prefer `PATCH`.
+- Static project website-only changes do not require a BearStack version bump. This covers the Zensical website sources under `_site-src/` and generated website output under `_site/` when the BearStack application, its shipped web UI, API, configuration, data formats, and runtime behavior are otherwise unchanged.
 - Docs-only and test-only changes do not require a version bump.
 - While BearStack is in `0.x`, the first true major change bumps to `1.0.0`.
 
