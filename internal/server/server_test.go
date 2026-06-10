@@ -4186,6 +4186,9 @@ func TestTagsListDoesNotRenderDeleteAction(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), fmt.Sprintf(`/tags/%d/delete`, tagID)) {
 		t.Fatalf("tag detail does not render delete action: %s", rec.Body.String())
 	}
+	if !strings.Contains(rec.Body.String(), `name="name" value="steuer" required`) {
+		t.Fatalf("tag detail does not render rename input: %s", rec.Body.String())
+	}
 	if !strings.Contains(rec.Body.String(), `name="primary_tag" value="1" checked`) {
 		t.Fatalf("tag detail does not render primary checkbox checked: %s", rec.Body.String())
 	}
@@ -4236,7 +4239,7 @@ func TestPrimaryTagCheckboxHiddenWhenDocumentCloudDisabled(t *testing.T) {
 		t.Fatalf("tag detail renders primary checkbox while cloud disabled: %s", rec.Body.String())
 	}
 
-	form := url.Values{"description": {"Unterlagen"}, "color": {"#2f855a"}}
+	form := url.Values{"name": {"Steuer"}, "description": {"Unterlagen"}, "color": {"#2f855a"}}
 	req = httptest.NewRequest(http.MethodPost, fmt.Sprintf("/tags/%d", tagID), strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.SetPathValue("id", strconv.FormatInt(tagID, 10))
@@ -4301,7 +4304,7 @@ func TestHandleSaveAndUpdateTagPrimaryFlag(t *testing.T) {
 		t.Fatalf("primary tag not saved: %#v", tag)
 	}
 
-	form = url.Values{"description": {"Unterlagen"}, "color": {"#2f855a"}}
+	form = url.Values{"name": {"Steuer"}, "description": {"Unterlagen"}, "color": {"#2f855a"}}
 	req = httptest.NewRequest(http.MethodPost, fmt.Sprintf("/tags/%d", tag.ID), strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.SetPathValue("id", strconv.FormatInt(tag.ID, 10))
@@ -4316,6 +4319,89 @@ func TestHandleSaveAndUpdateTagPrimaryFlag(t *testing.T) {
 	}
 	if tag.PrimaryTag {
 		t.Fatalf("primary tag not cleared: %#v", tag)
+	}
+}
+
+func TestHandleUpdateTagRenamesDocumentTag(t *testing.T) {
+	ctx := context.Background()
+	repo, err := repository.Open(ctx, filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer repo.Close()
+	tagID, err := repo.SaveTag(ctx, "Steuer", "Alt", "#176b87", false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.SaveTag(ctx, "Privat", "", "#2f855a", false, false); err != nil {
+		t.Fatal(err)
+	}
+	docID, err := repo.CreateDocument(ctx, document.Document{
+		OriginalName: "scan.pdf",
+		StoredPath:   "rename/scan.pdf",
+		Title:        "Dokument",
+		Tags:         []string{"steuer"},
+		MIMEType:     "application/pdf",
+		SizeBytes:    10,
+		SHA256:       "server-tag-rename",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	templates, err := parseTemplates()
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := &Server{
+		repo:      repo,
+		templates: templates,
+		log:       slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+
+	form := url.Values{"name": {"Abgabe"}, "description": {"Neu"}, "color": {"#2f855a"}}
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/tags/%d", tagID), strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetPathValue("id", strconv.FormatInt(tagID, 10))
+	rec := httptest.NewRecorder()
+	server.handleUpdateTag(rec, req)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("rename status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	tag, err := repo.GetTag(ctx, tagID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tag.Name != "abgabe" || tag.Description != "Neu" || tag.Color != "#2f855a" {
+		t.Fatalf("renamed tag = %#v", tag)
+	}
+	doc, err := repo.GetDocument(ctx, docID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hasNew, hasOld := false, false
+	for _, name := range doc.Tags {
+		hasNew = hasNew || name == "abgabe"
+		hasOld = hasOld || name == "steuer"
+	}
+	if !hasNew || hasOld {
+		t.Fatalf("document tags = %#v", doc.Tags)
+	}
+
+	form = url.Values{"name": {"Privat"}, "description": {"Konflikt"}, "color": {"#176b87"}}
+	req = httptest.NewRequest(http.MethodPost, fmt.Sprintf("/tags/%d", tagID), strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetPathValue("id", strconv.FormatInt(tagID, 10))
+	rec = httptest.NewRecorder()
+	server.handleUpdateTag(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("conflict status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	tag, err = repo.GetTag(ctx, tagID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tag.Name != "abgabe" {
+		t.Fatalf("tag renamed after conflict: %#v", tag)
 	}
 }
 

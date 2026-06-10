@@ -26,6 +26,11 @@ const (
 	defaultTagCloudRelatedLimit = 18
 )
 
+var (
+	ErrTagNameExists  = errors.New("Tag existiert bereits")
+	ErrTagNameMissing = errors.New("Tagname fehlt")
+)
+
 func (r *Repository) ListTags(ctx context.Context) ([]document.Tag, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT t.id, t.name, t.description, t.color, t.primary_tag, t.group_mode, t.list_hidden, t.delete_protected, COUNT(d.id)
@@ -287,9 +292,9 @@ func (r *Repository) GetTagByName(ctx context.Context, name string) (document.Ta
 }
 
 func (r *Repository) SaveTag(ctx context.Context, name, description, color string, groupMode, listHidden bool, tagFlags ...bool) (int64, error) {
-	name = strings.TrimSpace(strings.ToLower(name))
+	name = cleanSingleTagName(name)
 	if name == "" {
-		return 0, errors.New("Tagname fehlt")
+		return 0, ErrTagNameMissing
 	}
 	color = tagutil.NormalizeColor(color)
 	deleteProtected := false
@@ -336,6 +341,89 @@ func (r *Repository) SaveTag(ctx context.Context, name, description, color strin
 	return id, nil
 }
 
+func (r *Repository) RenameTag(ctx context.Context, id int64, name, description, color string, groupMode, listHidden bool, tagFlags ...bool) (document.Tag, error) {
+	if id <= 0 {
+		return document.Tag{}, sql.ErrNoRows
+	}
+	name = cleanSingleTagName(name)
+	if name == "" {
+		return document.Tag{}, ErrTagNameMissing
+	}
+	color = tagutil.NormalizeColor(color)
+	deleteProtected := false
+	if len(tagFlags) > 0 {
+		deleteProtected = tagFlags[0]
+	}
+	primaryTag := false
+	if len(tagFlags) > 1 {
+		primaryTag = tagFlags[1]
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return document.Tag{}, err
+	}
+	defer tx.Rollback()
+
+	current, err := tagByIDTx(ctx, tx, id)
+	if err != nil {
+		return document.Tag{}, err
+	}
+	nameChanged := current.Name != name
+	if nameChanged {
+		if err := ensureTagNameAvailableTx(ctx, tx, id, name); err != nil {
+			return document.Tag{}, err
+		}
+	}
+
+	var affectedDocIDs []int64
+	if nameChanged {
+		affectedDocIDs, err = documentIDsForTagTx(ctx, tx, id)
+		if err != nil {
+			return document.Tag{}, err
+		}
+	}
+
+	result, err := tx.ExecContext(ctx, `
+		UPDATE tags
+		SET name = ?, description = ?, color = ?, primary_tag = ?, group_mode = ?, list_hidden = ?, delete_protected = ?
+		WHERE id = ?`,
+		name,
+		strings.TrimSpace(description),
+		color,
+		primaryTag,
+		groupMode,
+		listHidden,
+		deleteProtected,
+		id,
+	)
+	if err != nil {
+		return document.Tag{}, err
+	}
+	if err := requireAffected(result); err != nil {
+		return document.Tag{}, err
+	}
+
+	if nameChanged {
+		now := formatTime(time.Now().UTC())
+		if err := renameSearchFavoriteTagTx(ctx, tx, current.Name, name, now); err != nil {
+			return document.Tag{}, err
+		}
+		if err := reindexDocumentsByIDTx(ctx, tx, affectedDocIDs, now); err != nil {
+			return document.Tag{}, err
+		}
+	}
+
+	updated, err := tagByIDTx(ctx, tx, id)
+	if err != nil {
+		return document.Tag{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return document.Tag{}, err
+	}
+	return updated, nil
+}
+
 func (r *Repository) DeleteTag(ctx context.Context, id int64) (document.Tag, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -343,39 +431,13 @@ func (r *Repository) DeleteTag(ctx context.Context, id int64) (document.Tag, err
 	}
 	defer tx.Rollback()
 
-	var tag document.Tag
-	if err := tx.QueryRowContext(ctx, `
-		SELECT t.id, t.name, t.description, t.color, t.primary_tag, t.group_mode, t.list_hidden, t.delete_protected, COUNT(d.id)
-		FROM tags t
-		LEFT JOIN document_tags dt ON dt.tag_id = t.id
-		LEFT JOIN documents d ON d.id = dt.document_id AND d.deleted_at IS NULL
-		WHERE t.id = ?
-		GROUP BY t.id, t.name, t.description, t.color, t.primary_tag, t.group_mode, t.list_hidden, t.delete_protected`, id).
-		Scan(&tag.ID, &tag.Name, &tag.Description, &tag.Color, &tag.PrimaryTag, &tag.GroupMode, &tag.ListHidden, &tag.DeleteProtected, &tag.Count); err != nil {
-		return document.Tag{}, err
-	}
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT document_id
-		FROM document_tags
-		WHERE tag_id = ?`, id)
+	tag, err := tagByIDTx(ctx, tx, id)
 	if err != nil {
 		return document.Tag{}, err
 	}
-	var affectedDocIDs []int64
-	for rows.Next() {
-		var docID int64
-		if err := rows.Scan(&docID); err != nil {
-			_ = rows.Close()
-			return document.Tag{}, err
-		}
-		affectedDocIDs = append(affectedDocIDs, docID)
-	}
-	if err := rows.Err(); err != nil {
-		_ = rows.Close()
-		return document.Tag{}, err
-	}
-	if err := rows.Close(); err != nil {
+
+	affectedDocIDs, err := documentIDsForTagTx(ctx, tx, id)
+	if err != nil {
 		return document.Tag{}, err
 	}
 
@@ -563,6 +625,118 @@ func tagIDsByNameTx(ctx context.Context, tx *sql.Tx, tags []string) ([]int64, er
 		ids = append(ids, id)
 	}
 	return ids, rows.Err()
+}
+
+func tagByIDTx(ctx context.Context, tx *sql.Tx, id int64) (document.Tag, error) {
+	if id <= 0 {
+		return document.Tag{}, sql.ErrNoRows
+	}
+	var tag document.Tag
+	err := tx.QueryRowContext(ctx, `
+		SELECT t.id, t.name, t.description, t.color, t.primary_tag, t.group_mode, t.list_hidden, t.delete_protected, COUNT(d.id)
+		FROM tags t
+		LEFT JOIN document_tags dt ON dt.tag_id = t.id
+		LEFT JOIN documents d ON d.id = dt.document_id AND d.deleted_at IS NULL
+		WHERE t.id = ?
+		GROUP BY t.id, t.name, t.description, t.color, t.primary_tag, t.group_mode, t.list_hidden, t.delete_protected`, id).
+		Scan(&tag.ID, &tag.Name, &tag.Description, &tag.Color, &tag.PrimaryTag, &tag.GroupMode, &tag.ListHidden, &tag.DeleteProtected, &tag.Count)
+	return tag, err
+}
+
+func ensureTagNameAvailableTx(ctx context.Context, tx *sql.Tx, id int64, name string) error {
+	var existingID int64
+	err := tx.QueryRowContext(ctx, `
+		SELECT id
+		FROM tags
+		WHERE name = ?
+		  AND id != ?`, name, id).Scan(&existingID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return ErrTagNameExists
+}
+
+func documentIDsForTagTx(ctx context.Context, tx *sql.Tx, tagID int64) ([]int64, error) {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT document_id
+		FROM document_tags
+		WHERE tag_id = ?`, tagID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
+func renameSearchFavoriteTagTx(ctx context.Context, tx *sql.Tx, oldName, newName, updatedAt string) error {
+	if oldName == newName {
+		return nil
+	}
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id, tags
+		FROM search_favorites`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	type favoriteTagUpdate struct {
+		id   int64
+		tags string
+	}
+	var updates []favoriteTagUpdate
+	for rows.Next() {
+		var id int64
+		var tagsJSON string
+		if err := rows.Scan(&id, &tagsJSON); err != nil {
+			return err
+		}
+		tags := searchFavoriteTagsFromJSON(tagsJSON)
+		changed := false
+		for i, tag := range tags {
+			if tag != oldName {
+				continue
+			}
+			tags[i] = newName
+			changed = true
+		}
+		if !changed {
+			continue
+		}
+		nextTagsJSON, err := searchFavoriteTagsJSON(cleanTagNames(tags))
+		if err != nil {
+			return err
+		}
+		updates = append(updates, favoriteTagUpdate{id: id, tags: nextTagsJSON})
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+
+	for _, update := range updates {
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE search_favorites
+			SET tags = ?, updated_at = ?
+			WHERE id = ?`, update.tags, updatedAt, update.id); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func appendMissingTags(existing, additional []string) []string {
@@ -795,4 +969,12 @@ func idSet(values []int64) map[int64]struct{} {
 
 func cleanTagNames(values []string) []string {
 	return tagutil.Normalize(values)
+}
+
+func cleanSingleTagName(value string) string {
+	tags := cleanTagNames([]string{value})
+	if len(tags) == 0 {
+		return ""
+	}
+	return tags[0]
 }

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"bearstack/internal/repository"
 )
 
 func (s *Server) handleTags(w http.ResponseWriter, r *http.Request) {
@@ -189,20 +191,36 @@ func (s *Server) handleUpdateTag(w http.ResponseWriter, r *http.Request) {
 		s.renderTagHTTPError(w, r, err)
 		return
 	}
-	setAuditTarget(r, tagAuditTargetFor(tag))
 	if !s.parseFormOrRenderError(w, r) {
 		return
 	}
+	name := firstNormalizedTag(r.FormValue("name"))
+	if name == "" {
+		s.renderErrorWithReturn(w, r, http.StatusBadRequest, repository.ErrTagNameMissing, tagDetailReturnURL(tag.ID))
+		return
+	}
+	setAuditTarget(r, tagAuditTargetFor(tag))
 	primaryTag, err := s.primaryTagFromRequest(r, tag.PrimaryTag)
 	if err != nil {
 		s.renderTagHTTPError(w, r, err)
 		return
 	}
-	if _, err := s.repo.SaveTag(r.Context(), tag.Name, r.FormValue("description"), r.FormValue("color"), r.FormValue("group_mode") == "1", r.FormValue("list_hidden") == "1", r.FormValue("delete_protected") == "1", primaryTag); err != nil {
+	updated, err := s.repo.RenameTag(r.Context(), tag.ID, name, r.FormValue("description"), r.FormValue("color"), r.FormValue("group_mode") == "1", r.FormValue("list_hidden") == "1", r.FormValue("delete_protected") == "1", primaryTag)
+	if err != nil {
+		if errors.Is(err, repository.ErrTagNameExists) || errors.Is(err, repository.ErrTagNameMissing) {
+			s.renderErrorWithReturn(w, r, http.StatusBadRequest, err, tagDetailReturnURL(tag.ID))
+			return
+		}
 		s.renderTagHTTPError(w, r, err)
 		return
 	}
-	redirectWithNotice(w, r, fmt.Sprintf("/tags/%d", tag.ID), "Tag gespeichert.")
+	s.invalidateDocumentCountCache()
+	if updated.Name != tag.Name {
+		setAuditTarget(r, namedAuditTarget("Tag", updated.ID, tag.Name+" -> "+updated.Name))
+	} else {
+		setAuditTarget(r, tagAuditTargetFor(updated))
+	}
+	redirectWithNotice(w, r, fmt.Sprintf("/tags/%d", updated.ID), "Tag gespeichert.")
 }
 
 func (s *Server) primaryTagFromRequest(r *http.Request, current bool) (bool, error) {

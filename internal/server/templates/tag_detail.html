@@ -20,6 +20,10 @@
         <span class="tag pill-large" style="{{tagStyle .Tag.Color}}" title="{{.Tag.Description}}">{{formatTag .TagDisplayMode .Tag.Name}}</span>
       </div>
       <label>
+        <span>Tag</span>
+        <input type="text" name="name" value="{{.Tag.Name}}" required>
+      </label>
+      <label>
         <span>Beschreibung</span>
         <input type="text" name="description" value="{{.Tag.Description}}">
       </label>

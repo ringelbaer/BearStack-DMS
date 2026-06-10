@@ -2307,6 +2307,102 @@ func TestRepositoryTagDescriptions(t *testing.T) {
 	}
 }
 
+func TestRepositoryRenameTagKeepsDocumentsAndFavorites(t *testing.T) {
+	ctx := context.Background()
+	repo, err := Open(ctx, filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer repo.Close()
+
+	tagID, err := repo.SaveTag(ctx, "Steuer", "Alt", "#176b87", false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	docID, err := repo.CreateDocument(ctx, document.Document{
+		OriginalName: "scan.pdf",
+		StoredPath:   "rename/steuer.pdf",
+		Title:        "Dokument",
+		Tags:         []string{"steuer", "privat"},
+		MIMEType:     "application/pdf",
+		SizeBytes:    10,
+		SHA256:       "tag-rename",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	favoriteID, err := repo.CreateSearchFavorite(ctx, document.SearchFavorite{Name: "Steuer", Tags: []string{"steuer", "privat"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	renamed, err := repo.RenameTag(ctx, tagID, "Abgabe", "Neu", "#2f855a", true, true, false, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if renamed.ID != tagID || renamed.Name != "abgabe" || renamed.Description != "Neu" || renamed.Color != "#2f855a" || !renamed.PrimaryTag || !renamed.GroupMode || !renamed.ListHidden || renamed.Count != 1 {
+		t.Fatalf("renamed tag = %#v", renamed)
+	}
+	if _, err := repo.GetTagByName(ctx, "steuer"); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("old tag lookup err = %v", err)
+	}
+	doc, err := repo.GetDocument(ctx, docID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsTag(doc.Tags, "abgabe") || containsTag(doc.Tags, "steuer") {
+		t.Fatalf("document tags = %#v", doc.Tags)
+	}
+	docs, err := repo.ListDocuments(ctx, document.ListFilter{Query: "abgabe"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(docs) != 1 || docs[0].ID != docID {
+		t.Fatalf("renamed tag not searchable: %#v", docs)
+	}
+	oldDocs, err := repo.ListDocuments(ctx, document.ListFilter{Query: "steuer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(oldDocs) != 0 {
+		t.Fatalf("old tag still searchable: %#v", oldDocs)
+	}
+	favorite, err := repo.GetSearchFavorite(ctx, favoriteID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsTag(favorite.Tags, "abgabe") || containsTag(favorite.Tags, "steuer") {
+		t.Fatalf("favorite tags = %#v", favorite.Tags)
+	}
+}
+
+func TestRepositoryRenameTagRejectsExistingName(t *testing.T) {
+	ctx := context.Background()
+	repo, err := Open(ctx, filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer repo.Close()
+
+	tagID, err := repo.SaveTag(ctx, "Steuer", "", "#176b87", false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.SaveTag(ctx, "Privat", "", "#2f855a", false, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.RenameTag(ctx, tagID, "Privat", "", "#176b87", false, false); !errors.Is(err, ErrTagNameExists) {
+		t.Fatalf("rename err = %v", err)
+	}
+	tag, err := repo.GetTag(ctx, tagID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tag.Name != "steuer" {
+		t.Fatalf("tag renamed after conflict: %#v", tag)
+	}
+}
+
 func TestRepositoryTagCloudCentralAndPrimaryClusters(t *testing.T) {
 	ctx := context.Background()
 	repo, err := Open(ctx, filepath.Join(t.TempDir(), "test.db"))
