@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"path"
@@ -211,6 +212,13 @@ func readConfigFile(path string, cfg *Config) error {
 
 	dec := json.NewDecoder(f)
 	if err := dec.Decode(cfg); err != nil {
+		return fmt.Errorf("decode config file: %w", err)
+	}
+	var extra json.RawMessage
+	if err := dec.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("decode config file: multiple JSON documents")
+		}
 		return fmt.Errorf("decode config file: %w", err)
 	}
 	return nil

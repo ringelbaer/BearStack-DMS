@@ -280,6 +280,20 @@ func TestLoadIgnoresUnknownConfigFields(t *testing.T) {
 	}
 }
 
+func TestLoadRejectsTrailingConfigJSON(t *testing.T) {
+	clearBearStackEnv(t)
+	path := filepath.Join(t.TempDir(), "bearstack.json")
+	data := []byte(`{"addr":"127.0.0.1:8080"}{"auth":{"username":"admin","password":"secret"}}`)
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BEARSTACK_CONFIG", path)
+
+	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "multiple JSON documents") {
+		t.Fatalf("Load() err = %v", err)
+	}
+}
+
 func TestLoadRejectsNonPositiveMaxUploadBytes(t *testing.T) {
 	clearBearStackEnv(t)
 	t.Setenv("BEARSTACK_MAX_UPLOAD_BYTES", "0")
