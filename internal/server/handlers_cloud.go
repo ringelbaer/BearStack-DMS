@@ -18,8 +18,6 @@ const (
 	tagCloudRelatedLimit        = 18
 	tagCloudCentralLayoutWidth  = 920
 	tagCloudCentralLayoutHeight = 380
-	tagCloudClusterLayoutWidth  = 460
-	tagCloudClusterLayoutHeight = 260
 	tagCloudCentralMinSizeRem   = 0.62
 	tagCloudCentralMaxSizeRem   = 2.55
 	tagCloudRelatedMinSizeRem   = 0.62
@@ -74,12 +72,6 @@ func tagCloudViewFrom(cloud document.TagCloud, tags []document.Tag) TagCloudView
 					tagCloudRelatedMaxSizeRem,
 					cluster.Primary.Tag,
 				),
-			}
-			layout := append([]TagCloudItemView{view.Clusters[i].Primary}, view.Clusters[i].Items...)
-			tagCloudLayoutItems(layout, tagCloudClusterLayoutWidth, tagCloudClusterLayoutHeight)
-			if len(layout) > 0 {
-				view.Clusters[i].Primary = layout[0]
-				view.Clusters[i].Items = layout[1:]
 			}
 		}
 		view.Empty = len(view.Clusters) == 0

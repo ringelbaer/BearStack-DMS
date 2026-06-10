@@ -4124,13 +4124,14 @@ func TestHandleCloudRendersCentralAndPrimaryLinks(t *testing.T) {
 		}
 		body := rec.Body.String()
 		if !strings.Contains(body, `tag-cloud-word-primary`) ||
+			!strings.Contains(body, `tag-cloud-cluster-words`) ||
 			!strings.Contains(body, `href="/documents?tags=arbeit"`) ||
 			!strings.Contains(body, `href="/documents?tags=projekt"`) ||
 			!strings.Contains(body, `href="/documents?tags=arbeit&amp;tags=kunde"`) ||
-			!strings.Contains(body, `--cloud-left:`) ||
 			strings.Count(body, `tag-cloud-word tag-cloud-word-primary`) != 2 ||
 			strings.Count(body, `--cloud-size: 2.65rem`) != 2 ||
 			!strings.Contains(body, `--cloud-size: 1.90rem`) ||
+			strings.Contains(body, `--cloud-left:`) ||
 			strings.Contains(body, "<small") {
 			t.Fatalf("primary cloud not rendered as expected: %s", body)
 		}

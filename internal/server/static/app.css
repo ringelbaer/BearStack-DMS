@@ -3042,19 +3042,32 @@ label span {
 }
 
 .tag-cloud-canvas-primary {
-  align-items: stretch;
+  align-items: start;
   display: grid;
-  gap: 26px;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 22px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   min-height: 0;
   position: static;
 }
 
 .tag-cloud-cluster {
-  min-height: 260px;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   min-width: 0;
   padding: 8px;
-  position: relative;
+  text-align: center;
+}
+
+.tag-cloud-cluster-words {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  justify-content: center;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .tag-cloud-word {
@@ -3077,6 +3090,24 @@ label span {
   white-space: nowrap;
 }
 
+.tag-cloud-word span {
+  min-width: 0;
+}
+
+.tag-cloud-canvas-primary .tag-cloud-word {
+  flex: 0 1 auto;
+  left: auto;
+  max-inline-size: 100%;
+  position: static;
+  top: auto;
+  transform: none;
+  white-space: normal;
+}
+
+.tag-cloud-canvas-primary .tag-cloud-word:not(.tag-cloud-word-primary) {
+  font-size: clamp(0.82rem, var(--cloud-size, 1rem), 1.42rem);
+}
+
 .tag-cloud-word:hover,
 .tag-cloud-word:focus-visible {
   color: var(--primary);
@@ -3088,6 +3119,14 @@ label span {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 7px 12px;
+}
+
+.tag-cloud-canvas-primary .tag-cloud-word-primary {
+  font-size: clamp(1.25rem, var(--cloud-size, 2rem), 2.05rem);
+  justify-content: center;
+  line-height: 1.08;
+  max-inline-size: min(100%, 34rem);
+  padding: 8px 13px;
 }
 
 @media (max-width: 720px) {
@@ -3106,18 +3145,17 @@ label span {
 
   .tag-cloud-canvas-primary {
     display: grid;
-    gap: 18px;
+    gap: 16px;
     grid-template-columns: 1fr;
   }
 
   .tag-cloud-cluster {
-    align-content: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 12px;
-    justify-content: center;
-    min-height: 0;
-    padding: 6px 0 14px;
+    gap: 10px;
+    padding: 6px 0 12px;
+  }
+
+  .tag-cloud-cluster-words {
+    gap: 8px 10px;
   }
 
   .tag-cloud-word {
