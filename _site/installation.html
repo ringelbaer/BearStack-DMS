@@ -1204,8 +1204,10 @@
 <p>Vor Updates ein Datenbackup erstellen. Für systemd-Installationen liegt ein Update-Skript im Repo:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nb">cd</span><span class="w"> </span>/opt/bearstack-src/BearStack
 </span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>./update.sh
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="c1"># Alternativ den Alpha-Branch installieren:</span>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>./update.sh<span class="w"> </span>--alpha
 </span></code></pre></div>
-<p><code>update.sh</code> führt im aktuellen Stand <code>git fetch --all --tags</code>, <code>git pull --ff-only</code>, <code>go test ./...</code> und einen Build in ein temporäres Artefakt aus. Danach stoppt es den systemd-Dienst, installiert das neue Binary, startet den Dienst wieder und zeigt <code>systemctl status</code>. Ein Binary-Backup, automatischer <code>/healthz</code>-Check und Rollback sind im Skript nicht aktiv; den Smoke-Test deshalb nach dem Lauf manuell ausführen.</p>
+<p><code>update.sh</code> führt im aktuellen Stand <code>git fetch --all --tags</code> aus, wechselt auf den Update-Branch (<code>main</code> als Standard, <code>Alpha</code> mit <code>--alpha</code> oder frei per <code>--branch NAME</code>), führt <code>git pull --ff-only origin BRANCH</code>, <code>go test ./...</code> und einen Build in ein temporäres Artefakt aus. Danach stoppt es den systemd-Dienst, installiert das neue Binary, startet den Dienst wieder und zeigt <code>systemctl status</code>. Ein Binary-Backup, automatischer <code>/healthz</code>-Check und Rollback sind im Skript nicht aktiv; den Smoke-Test deshalb nach dem Lauf manuell ausführen.</p>
 <p>Variablen für das Skript:</p>
 <table>
 <thead>
@@ -1218,6 +1220,14 @@
 <tr>
 <td><code>BEARSTACK_REPO_DIR</code></td>
 <td>Verzeichnis des Skripts</td>
+</tr>
+<tr>
+<td><code>BEARSTACK_UPDATE_BRANCH</code></td>
+<td><code>main</code></td>
+</tr>
+<tr>
+<td><code>BEARSTACK_GIT_REMOTE</code></td>
+<td><code>origin</code></td>
 </tr>
 <tr>
 <td><code>BEARSTACK_SERVICE</code></td>

@@ -25,8 +25,7 @@ bearstack-backup*.tgz
 
 # OS files
 .DS_Store
-.codex/AGENTS.md
 pigallery2
 *.tar
 .cache/
-,venv
+.venv
