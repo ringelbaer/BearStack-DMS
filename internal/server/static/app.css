@@ -153,7 +153,7 @@ button,
   min-height: var(--control-height);
   padding: 0 14px;
   font: inherit;
-  font-weight: 650;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -226,7 +226,7 @@ button.danger {
   border-radius: 999px;
   display: inline-flex;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   margin: 2px 4px 2px 0;
   padding: 3px 8px;
 }
@@ -354,7 +354,7 @@ label span {
   display: block;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: 4px;
   text-transform: uppercase;
 }
@@ -396,7 +396,7 @@ label span {
   color: var(--text);
   display: inline-flex;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
   gap: 8px;
   letter-spacing: 0;
 }
@@ -527,7 +527,7 @@ label span {
   cursor: pointer;
   display: inline-flex;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
   height: 38px;
   justify-content: center;
   line-height: 1;
@@ -896,7 +896,7 @@ label span {
 .filter-years > span {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -958,7 +958,7 @@ label span {
   border-radius: var(--radius-sm);
   color: var(--text);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 7px 9px;
   text-decoration: none;
 }
@@ -1025,7 +1025,7 @@ label span {
   border-radius: var(--radius-sm);
   display: inline-flex;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   height: 36px;
   justify-content: center;
   min-width: 36px;
@@ -1209,7 +1209,7 @@ label span {
 .photo-sort-current {
   display: block;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   max-width: 170px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1251,7 +1251,7 @@ label span {
 .photo-sort-menu-list a[aria-current="true"] {
   background: var(--active-row-bg);
   color: var(--primary-dark);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .photo-sort-menu-list a[aria-current="true"]::after {
@@ -1507,7 +1507,7 @@ label span {
 .photo-filter-chip span {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   margin: 0;
   text-transform: uppercase;
 }
@@ -1523,7 +1523,7 @@ label span {
 .photo-filter-reset {
   color: var(--primary);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -1553,7 +1553,7 @@ label span {
 .photo-trace-panel summary span {
   color: var(--muted);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -1791,7 +1791,7 @@ label span {
 .photo-date-group h2 {
   color: var(--text);
   font-size: 16px;
-  font-weight: 750;
+  font-weight: 700;
   letter-spacing: 0;
   margin: 0;
 }
@@ -1836,7 +1836,7 @@ label span {
 
 .photo-selection-count {
   color: var(--muted);
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .photo-card {
@@ -1936,7 +1936,7 @@ label span {
   background: var(--surface-2);
   color: var(--muted);
   display: flex;
-  font-weight: 800;
+  font-weight: 700;
   height: 100%;
   justify-content: center;
   min-height: 120px;
@@ -1965,7 +1965,7 @@ label span {
   color: rgba(255, 255, 255, 0.88);
   display: inline-flex;
   font-size: 36px;
-  font-weight: 800;
+  font-weight: 700;
   height: 72px;
   justify-content: center;
   line-height: 1;
@@ -2147,7 +2147,7 @@ label span {
   color: #18212f;
   display: inline-flex;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 800;
   height: 34px;
   justify-content: center;
   min-height: 0;
@@ -2299,7 +2299,7 @@ label span {
   box-shadow: 0 2px 9px rgba(6, 9, 13, 0.16);
   color: #18212f;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.2;
   max-width: 170px;
   overflow: hidden;
@@ -2321,7 +2321,7 @@ label span {
   color: #18140b;
   display: inline-flex;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   height: 26px;
   justify-content: center;
   min-height: 0;
@@ -2592,7 +2592,7 @@ label span {
   color: #18212f;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   min-width: 64px;
   padding: 6px 10px;
@@ -2619,7 +2619,7 @@ label span {
   color: #18212f;
   display: inline-flex;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   height: 36px;
   justify-content: center;
   min-height: 0;
@@ -2764,7 +2764,7 @@ label span {
 .photo-info-panel dt {
   color: rgba(255, 255, 255, 0.65);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -2836,7 +2836,7 @@ label span {
   border-radius: 999px;
   color: var(--on-primary);
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   height: 28px;
   min-height: 28px;
   padding: 0;
@@ -2865,7 +2865,7 @@ label span {
   border-radius: 999px;
   display: inline-flex;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.2;
   min-height: 32px;
   padding: 6px 11px;
@@ -2890,7 +2890,7 @@ label span {
 .folder-breadcrumb-separator {
   color: var(--muted);
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -3008,7 +3008,7 @@ label span {
 }
 
 .folder-name {
-  font-weight: 750;
+  font-weight: 700;
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -3095,7 +3095,7 @@ label span {
   color: var(--text);
   display: inline-flex;
   font-size: var(--cloud-size, 1rem);
-  font-weight: var(--cloud-weight, 700);
+  font-weight: var(--cloud-weight, 00);
   left: var(--cloud-left, 50%);
   line-height: 1.05;
   max-width: 100%;
@@ -3251,7 +3251,7 @@ label span {
   box-shadow: var(--shadow);
   color: var(--text);
   display: inline-flex;
-  font-weight: 700;
+  font-weight: 600;
   gap: 10px;
   left: 50%;
   max-width: min(360px, calc(100% - 32px));
