@@ -434,6 +434,7 @@
       frame = 0;
       cancelDeferred();
       galleries.forEach(function (gallery) {
+        gallery.classList.add("is-justified");
         var width = photoGalleryContentWidth(gallery);
         if (width <= 0) return;
         var containers = photoGalleryCardContainers(gallery);
