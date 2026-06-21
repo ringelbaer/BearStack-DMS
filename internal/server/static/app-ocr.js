@@ -57,6 +57,12 @@ function markOCRDismissed(jobID) {
   }
 }
 
+function markCompletedOCRDisplayed(jobID, status, hidden) {
+  if (status === "completed" && !hidden) {
+    markOCRDismissed(jobID);
+  }
+}
+
 function renderOCRStatus(job) {
   if (!ocrStatus || !job) return;
   const state = ocrStatus.querySelector("[data-ocr-state]");
@@ -70,7 +76,8 @@ function renderOCRStatus(job) {
   ocrStatus.dataset.ocrJobId = jobID;
   ocrStatus.dataset.ocrActive = job.active ? "1" : "0";
   ocrStatus.dataset.ocrTerminal = job.terminal ? "1" : "0";
-  ocrStatus.hidden = job.terminal && isOCRDismissed(jobID);
+  const hidden = job.terminal && isOCRDismissed(jobID);
+  ocrStatus.hidden = hidden;
   ["queued", "running", "completed", "failed", "interrupted"].forEach((status) => {
     ocrStatus.classList.toggle(`ocr-status-${status}`, job.status === status);
   });
@@ -90,6 +97,7 @@ function renderOCRStatus(job) {
   if (dismiss) {
     dismiss.hidden = !job.terminal;
   }
+  markCompletedOCRDisplayed(jobID, job.status, hidden);
 }
 
 function pollOCRStatus() {
@@ -128,6 +136,8 @@ if (ocrStatus) {
   const terminal = ocrStatus.dataset.ocrTerminal === "1";
   if (terminal && isOCRDismissed(jobID)) {
     ocrStatus.hidden = true;
+  } else if (terminal && ocrStatus.classList.contains("ocr-status-completed")) {
+    markCompletedOCRDisplayed(jobID, "completed", ocrStatus.hidden);
   }
   dismiss?.addEventListener("click", () => {
     markOCRDismissed(ocrStatus.dataset.ocrJobId || "");
