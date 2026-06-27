@@ -114,6 +114,7 @@ class TestElement extends TestEventTarget {
     this.offsetWidth = 0;
     this.offsetHeight = 0;
     this._textContent = "";
+    this.cookieStore = new Map();
   }
 
   set textContent(value) {
@@ -247,8 +248,8 @@ class TestElement extends TestEventTarget {
 
   focus() {}
 
-  requestSubmit() {
-    this.dispatchEvent({ type: "submit" });
+  requestSubmit(submitter = null) {
+    this.dispatchEvent({ type: "submit", submitter });
   }
 
   submit() {}
@@ -313,6 +314,26 @@ class TestDocument extends TestElement {
     this.body = new TestElement("body");
     this.documentElement.append(this.body);
     this.append(this.documentElement);
+  }
+
+  get cookie() {
+    return Array.from(this.cookieStore.entries())
+      .map(([name, value]) => `${name}=${value}`)
+      .join("; ");
+  }
+
+  set cookie(value) {
+    const parts = String(value || "").split(";").map((part) => part.trim());
+    const pair = parts.shift() || "";
+    const separator = pair.indexOf("=");
+    if (separator < 1) return;
+    const name = pair.slice(0, separator);
+    const cookieValue = pair.slice(separator + 1);
+    if (parts.some((part) => part.toLowerCase() === "max-age=0")) {
+      this.cookieStore.delete(name);
+      return;
+    }
+    this.cookieStore.set(name, cookieValue);
   }
 
   createElement(tagName) {
@@ -425,6 +446,8 @@ class FakeXMLHttpRequest extends TestEventTarget {
 
 function createContext(document = new TestDocument()) {
   FakeXMLHttpRequest.instances = [];
+  const intervals = new Map();
+  let nextIntervalID = 1;
   const context = {
     AbortController,
     Array,
@@ -463,7 +486,11 @@ function createContext(document = new TestDocument()) {
         this.reloadCalled = true;
       },
     },
-    setInterval: () => 0,
+    setInterval: (callback) => {
+      const id = nextIntervalID++;
+      intervals.set(id, callback);
+      return id;
+    },
     setTimeout: () => 0,
     navigator: {
       clipboard: {
@@ -478,6 +505,14 @@ function createContext(document = new TestDocument()) {
   context.self = context;
   context.globalThis = context;
   context.addEventListener = () => {};
+  context.__runIntervals = () => {
+    for (const callback of Array.from(intervals.values())) {
+      callback();
+    }
+  };
+  context.clearInterval = (id) => {
+    intervals.delete(id);
+  };
   context.requestAnimationFrame = (callback) => {
     callback();
     return 0;
@@ -715,6 +750,34 @@ function testDocumentBatchMenuUsesDesktopAndCompactStates() {
   assert.equal(toggle.getAttribute("aria-expanded"), "false");
 }
 
+function testDocumentExportDownloadCookieClearsBatchBusy() {
+  const document = new TestDocument();
+  const form = el("form", { class: "table-form", method: "get", action: "/export" }, [
+    el("input", { type: "checkbox", name: "ids", value: "1", checked: true }),
+    el("button", { type: "submit", text: "Exportieren" }),
+  ]);
+  document.body.append(form);
+
+  const context = loadCore(document);
+  runScripts(context, ["app-documents.js", "app-preview.js"]);
+
+  const submit = form.querySelector('button[type="submit"]');
+  form.dispatchEvent({ type: "submit", submitter: submit });
+
+  assert.equal(form.classList.contains("batch-busy"), true);
+  assert.equal(submit.disabled, true);
+  const token = form.querySelector('input[name="download_token"]').value;
+  assert.match(token, /^bs-/);
+
+  document.cookie = `bearstack_export_download=${token}; Path=/`;
+  context.__runIntervals();
+
+  assert.equal(form.classList.contains("batch-busy"), false);
+  assert.equal(submit.disabled, false);
+  assert.equal(form.querySelector("[data-batch-loader]"), null);
+  assert.equal(document.cookie.includes("bearstack_export_download"), false);
+}
+
 function testDocumentThumbnailLoaderStopsAfterLoad() {
   const document = new TestDocument();
   const loading = el("img", { class: "document-thumb" });
@@ -818,6 +881,7 @@ const tests = [
   testRuleFormsUseCoreScript,
   testBulkSelectionControllerUpdatesActionsAndRanges,
   testDocumentBatchMenuUsesDesktopAndCompactStates,
+  testDocumentExportDownloadCookieClearsBatchBusy,
   testDocumentThumbnailLoaderStopsAfterLoad,
   testDocumentThumbnailLoaderUsesThumbLinkOverlay,
   testShareButtonCopiesReadOnlyLinkAndShowsToast,

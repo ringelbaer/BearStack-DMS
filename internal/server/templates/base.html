@@ -273,7 +273,7 @@
         <option value="size" {{if eq .Filter.Sort "size"}}selected{{end}}>Größe</option>
       </select>
     </label>
-    <a class="secondary-button" href="/documents">Zurücksetzen</a>
+    <a class="secondary-button filter-reset-button" href="/documents">Zurücksetzen</a>
   </div>
   <button class="filter-submit" type="submit">Filtern</button>
   {{template "date_filter_links" .}}

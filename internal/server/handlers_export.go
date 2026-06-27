@@ -25,6 +25,9 @@ type exportDocumentFile struct {
 const (
 	maxExportDocuments = 500
 	maxExportBytes     = 1 << 30
+
+	exportDownloadCookieName = "bearstack_export_download"
+	exportDownloadTokenParam = "download_token"
 )
 
 var (
@@ -85,12 +88,50 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filename := "bearstack-export-" + time.Now().Format("20060102-150405") + ".zip"
+	writeExportDownloadCookie(w, r, r.URL.Query().Get(exportDownloadTokenParam))
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", contentDisposition("attachment", filename))
 
 	if err := writeExportZip(w, files, metadata); err != nil {
 		s.log.Warn("export stream failed", "error", err)
 	}
+}
+
+func writeExportDownloadCookie(w http.ResponseWriter, r *http.Request, token string) {
+	if !validExportDownloadToken(token) {
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     exportDownloadCookieName,
+		Value:    token,
+		Path:     "/",
+		Expires:  time.Now().Add(time.Minute),
+		MaxAge:   60,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   requestUsesHTTPS(r),
+	})
+}
+
+func validExportDownloadToken(token string) bool {
+	if len(token) < 8 || len(token) > 96 {
+		return false
+	}
+	for _, char := range token {
+		if char >= 'a' && char <= 'z' {
+			continue
+		}
+		if char >= 'A' && char <= 'Z' {
+			continue
+		}
+		if char >= '0' && char <= '9' {
+			continue
+		}
+		if char == '_' || char == '-' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func exportReturnURL(r *http.Request) string {

@@ -1,6 +1,9 @@
 const documentSelectionControllers = new WeakMap();
 const documentBatchMenuMedia =
   typeof window.matchMedia === "function" ? window.matchMedia("(max-width: 960px)") : null;
+const documentExportDownloadWaiters = new WeakMap();
+const exportDownloadCookieName = "bearstack_export_download";
+const exportDownloadTokenFieldName = "download_token";
 let documentBatchMenuMediaInitialized = false;
 
 function documentSelectionController(form) {
@@ -14,6 +17,83 @@ function documentSelectionController(form) {
 
 function selectedDocumentCount(form) {
   return documentSelectionController(form).selectedCount();
+}
+
+function documentSubmitAction(form, submitter) {
+  return submitter?.getAttribute("formaction") || submitter?.formAction || form.getAttribute("action") || form.action || "";
+}
+
+function isDocumentExportSubmit(form, submitter) {
+  const action = documentSubmitAction(form, submitter);
+  if (!action) return false;
+  try {
+    return new URL(action, window.location.href).pathname === "/export";
+  } catch {
+    return action === "/export" || action.endsWith("/export");
+  }
+}
+
+function createExportDownloadToken() {
+  const randomValues = new Uint32Array(2);
+  if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+    window.crypto.getRandomValues(randomValues);
+  } else {
+    randomValues[0] = Math.floor(Math.random() * 0xffffffff);
+    randomValues[1] = Math.floor(Math.random() * 0xffffffff);
+  }
+  return `bs-${Date.now().toString(36)}-${randomValues[0].toString(36)}-${randomValues[1].toString(36)}`;
+}
+
+function exportDownloadCookieValue() {
+  return document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${exportDownloadCookieName}=`))
+    ?.slice(exportDownloadCookieName.length + 1) || "";
+}
+
+function clearExportDownloadCookie() {
+  document.cookie = `${exportDownloadCookieName}=; Max-Age=0; Path=/; SameSite=Lax`;
+}
+
+function setExportDownloadToken(form, token) {
+  let input = form.querySelector(`input[type="hidden"][name="${exportDownloadTokenFieldName}"]`);
+  if (!input) {
+    input = document.createElement("input");
+    input.type = "hidden";
+    input.name = exportDownloadTokenFieldName;
+    form.append(input);
+  }
+  input.value = token;
+}
+
+function clearDocumentExportDownloadWait(form) {
+  const waiter = documentExportDownloadWaiters.get(form);
+  if (!waiter) return;
+  window.clearInterval(waiter.interval);
+  window.clearTimeout(waiter.timeout);
+  documentExportDownloadWaiters.delete(form);
+}
+
+function waitForDocumentExportDownload(form) {
+  const token = createExportDownloadToken();
+  setExportDownloadToken(form, token);
+  clearDocumentExportDownloadWait(form);
+
+  const finish = (matched) => {
+    clearDocumentExportDownloadWait(form);
+    if (matched) {
+      clearExportDownloadCookie();
+    }
+    clearBatchBusy(form);
+  };
+  const interval = window.setInterval(() => {
+    if (exportDownloadCookieValue() === token) {
+      finish(true);
+    }
+  }, 250);
+  const timeout = window.setTimeout(() => finish(false), 5 * 60 * 1000);
+  documentExportDownloadWaiters.set(form, { interval, timeout });
 }
 
 function setDocumentBatchMenuOpen(menu, open) {
@@ -81,8 +161,11 @@ function initializeSelectionControls(root = document) {
   root.querySelectorAll(".table-form").forEach((form) => {
     if (form.dataset.batchSubmitInitialized !== "true") {
       form.dataset.batchSubmitInitialized = "true";
-      form.addEventListener("submit", () => {
+      form.addEventListener("submit", (event) => {
         setBatchBusy(form, "Auswahl wird verarbeitet...");
+        if (isDocumentExportSubmit(form, event.submitter)) {
+          waitForDocumentExportDownload(form);
+        }
       });
     }
     if (form.dataset.selectionInitialized !== "true") {

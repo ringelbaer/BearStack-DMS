@@ -6402,13 +6402,17 @@ func TestHandleExportWritesSelectedDocumentsAndMetadata(t *testing.T) {
 		log:       slog.New(slog.NewTextHandler(io.Discard, nil)),
 		templates: templates,
 	}
-	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/export?ids=%d&metadata=1", mainID), nil)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/export?ids=%d&metadata=1&download_token=export-done-123", mainID), nil)
 	rec := httptest.NewRecorder()
 
 	server.handleExport(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	cookie := testCookieByName(t, rec.Result().Cookies(), exportDownloadCookieName)
+	if cookie.Value != "export-done-123" || cookie.Path != "/" || cookie.MaxAge != 60 {
+		t.Fatalf("export download cookie = %#v", cookie)
 	}
 	zr, err := zip.NewReader(bytes.NewReader(rec.Body.Bytes()), int64(rec.Body.Len()))
 	if err != nil {
