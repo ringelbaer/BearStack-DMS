@@ -135,7 +135,7 @@
     <section class="settings-tab-panel">
       <header class="settings-section-head">
         <h2>E-Mail-Import</h2>
-        <p>IMAP-Abruf für PDF-Anhänge</p>
+        <p>IMAP-Abruf für PDF-Anhänge und angehängte EML-Archive</p>
       </header>
       {{if .Error}}<div class="notice error-state">{{.Error}}</div>{{end}}
       <form class="settings-form mail-import-form" method="post" action="/settings/mail-import">
@@ -185,7 +185,7 @@
         </label>
 
         <p class="muted mail-import-note">Ist die Liste leer, werden alle Absender verarbeitet. Nicht erlaubte E-Mails werden geloggt und im IMAP-Postfach gelöscht.</p>
-        <p class="muted mail-import-note">Bearbeitete E-Mails werden nach erfolgreichem PDF-Import im IMAP-Postfach gelöscht.</p>
+        <p class="muted mail-import-note">Bearbeitete E-Mails werden nach erfolgreichem PDF- oder EML-Archiv-Import im IMAP-Postfach gelöscht.</p>
         <div class="mail-import-actions">
           <button type="submit">Speichern</button>
           <button type="submit" class="secondary-button" formaction="/settings/mail-import/test">Einstellungen prüfen</button>

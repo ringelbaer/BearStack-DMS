@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="./assets/images/bearstack.svg">
-      <meta name="generator" content="zensical-0.0.45">
+      <meta name="generator" content="zensical-0.0.46">
     
     
       
@@ -34,7 +34,7 @@
       
         
       
-      <link rel="stylesheet" href="./assets/stylesheets/modern/main.fba56155.min.css">
+      <link rel="stylesheet" href="./assets/stylesheets/modern/main.19d3147f.min.css">
       
         
           
@@ -877,7 +877,7 @@
 <p>Weitere Dokumentfunktionen:</p>
 <ul>
 <li>Detailseiten mit Metadaten, Vorschau, Verknüpfungen und gruppierten Dateien</li>
-<li>E-Mail-Import für PDF-Anhänge aus einem IMAP-Postfach</li>
+<li>E-Mail-Import für PDF-Anhänge und EML-Archive aus einem IMAP-Postfach</li>
 <li>Papierkorb, Duplikatübersicht und Exportfunktionen</li>
 <li>Hintergrundverarbeitung mit nachvollziehbaren Statusansichten</li>
 <li>Statistik- und Audit-Ansichten für den Betrieb</li>
@@ -892,9 +892,10 @@
 <li>virtuelle Ordner für Tags, Felder und Favoriten</li>
 </ul>
 <h2 id="e-mail-import">E-Mail-Import<a class="headerlink" href="#e-mail-import" title="Permanent link">&para;</a></h2>
-<p>Der E-Mail-Import ruft PDF-Anhänge aus einem IMAP-Postfach ab und führt sie durch denselben Dokumentimport wie normale Uploads. Die Originaldateien bleiben dabei unverändert; BearStack übernimmt die PDF-Datei in den Dokumentenspeicher, erkennt Duplikate und startet die weitere Verarbeitung wie Vorschau, Volltext und OCR-Status getrennt davon.</p>
+<p>Der E-Mail-Import ruft PDF-Anhänge und angehängte <code>.eml</code>-Dateien aus einem IMAP-Postfach ab und führt sie durch denselben Dokumentimport wie normale Uploads. PDF-Anhänge bleiben dabei unverändert; BearStack übernimmt die PDF-Datei in den Dokumentenspeicher, erkennt Duplikate und startet die weitere Verarbeitung wie Vorschau, Volltext und OCR-Status getrennt davon.</p>
+<p>EML-Anhänge werden als eigenständige E-Mail-Archive importiert. BearStack erzeugt dafür ein PDF mit Metadaten-Deckblatt, sicherer Textabbildung der E-Mail und anschließenden PDF-Anhängen aus der EML. Nicht-PDF-Anhänge innerhalb der EML werden auf dem Deckblatt mit Name, Typ und Größe gelistet, aber nicht eingebettet.</p>
 <p>Konfiguriert wird der Import unter <code>Einstellungen -&gt; E-Mail-Import</code>. Unterstützt werden SSL/TLS, STARTTLS und unverschlüsselte IMAP-Verbindungen; Standardwerte sind Port <code>993</code>, <code>INBOX</code> und ein Abrufintervall von 15 Minuten. Ein Verbindungstest prüft die Zugangsdaten, ein manueller Lauf ruft sofort ab, und bei aktiviertem Import prüft BearStack das Postfach regelmäßig im Hintergrund.</p>
-<p>Die Absenderliste kann leer bleiben oder einzelne Adressen und Domänen enthalten. Eine leere Liste verarbeitet alle Absender. Domänenregeln passen auch auf Subdomains; nicht erlaubte Absender werden abgelehnt, protokolliert und aus dem IMAP-Postfach gelöscht. Erfolgreich verarbeitete E-Mails mit PDF-Anhängen werden ebenfalls gelöscht, damit das Postfach als Eingangskorb funktioniert. E-Mails ohne PDF-Anhang bleiben unberührt.</p>
+<p>Die Absenderliste kann leer bleiben oder einzelne Adressen und Domänen enthalten. Eine leere Liste verarbeitet alle Absender. Domänenregeln passen auch auf Subdomains; nicht erlaubte Absender werden abgelehnt, protokolliert und aus dem IMAP-Postfach gelöscht. Die Prüfung bezieht sich auf die Import-Nachricht im IMAP-Postfach. Erfolgreich verarbeitete E-Mails mit PDF- oder EML-Anhängen werden ebenfalls gelöscht, damit das Postfach als Eingangskorb funktioniert. E-Mails ohne verarbeitbare Anhänge bleiben unberührt.</p>
 <p>Alle Importläufe werden im Audit-Log sichtbar: erfolgreiche Importe, Duplikate, abgelehnte Absender, Verbindungstests und Fehler bekommen eigene Einträge. Die Verwaltung des Mail-Imports erfordert Systemverwaltungsrechte.</p>
 <h2 id="tags">Tags<a class="headerlink" href="#tags" title="Permanent link">&para;</a></h2>
 <p>Tags sind kurze, frei wählbare Markierungen für Dokumente. Sie bleiben als Metadaten in BearStack gespeichert und verändern die Dateien nicht. Tags lassen sich in Listen, Detailseiten, Filtern und Batch-Aktionen nutzen, damit ein Dokument gleichzeitig in mehreren fachlichen Zusammenhängen auffindbar bleibt.</p>
@@ -1043,10 +1044,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate":null,"base":".","features":["navigation.tabs","navigation.top","toc.follow"],"search":"./assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"In Zwischenablage kopiert","clipboard.copy":"In Zwischenablage kopieren","search.result.more.one":"1 weiteres Suchergebnis auf dieser Seite","search.result.more.other":"# weitere Suchergebnisse auf dieser Seite","search.result.none":"Keine Suchergebnisse","search.result.one":"1 Suchergebnis","search.result.other":"# Suchergebnisse","search.result.placeholder":"Suchbegriff eingeben","search.result.term.missing":"Es fehlt","select.version":"Version auswählen"},"version":null}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":".","features":["navigation.tabs","navigation.top","toc.follow"],"search":"./assets/javascripts/workers/search.b6b7e04f.min.js","tags":null,"translations":{"clipboard.copied":"In Zwischenablage kopiert","clipboard.copy":"In Zwischenablage kopieren","search.result.more.one":"1 weiteres Suchergebnis auf dieser Seite","search.result.more.other":"# weitere Suchergebnisse auf dieser Seite","search.result.none":"Keine Suchergebnisse","search.result.one":"1 Suchergebnis","search.result.other":"# Suchergebnisse","search.result.placeholder":"Suchbegriff eingeben","search.result.term.missing":"Es fehlt","select.version":"Version auswählen"},"version":null}</script>
     
     
-      <script src="./assets/javascripts/bundle.6e5f0216.min.js"></script>
+      <script src="./assets/javascripts/bundle.ee611ef6.min.js"></script>
       
     
   </body>

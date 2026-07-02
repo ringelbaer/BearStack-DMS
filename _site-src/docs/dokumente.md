@@ -17,7 +17,7 @@ Unterstützt werden PDF, Bilder sowie einfache Text- und Office-Formate. Office-
 Weitere Dokumentfunktionen:
 
 - Detailseiten mit Metadaten, Vorschau, Verknüpfungen und gruppierten Dateien
-- E-Mail-Import für PDF-Anhänge aus einem IMAP-Postfach
+- E-Mail-Import für PDF-Anhänge und EML-Archive aus einem IMAP-Postfach
 - Papierkorb, Duplikatübersicht und Exportfunktionen
 - Hintergrundverarbeitung mit nachvollziehbaren Statusansichten
 - Statistik- und Audit-Ansichten für den Betrieb
@@ -33,11 +33,13 @@ Weitere Dokumentfunktionen:
 
 ## E-Mail-Import
 
-Der E-Mail-Import ruft PDF-Anhänge aus einem IMAP-Postfach ab und führt sie durch denselben Dokumentimport wie normale Uploads. Die Originaldateien bleiben dabei unverändert; BearStack übernimmt die PDF-Datei in den Dokumentenspeicher, erkennt Duplikate und startet die weitere Verarbeitung wie Vorschau, Volltext und OCR-Status getrennt davon.
+Der E-Mail-Import ruft PDF-Anhänge und angehängte `.eml`-Dateien aus einem IMAP-Postfach ab und führt sie durch denselben Dokumentimport wie normale Uploads. PDF-Anhänge bleiben dabei unverändert; BearStack übernimmt die PDF-Datei in den Dokumentenspeicher, erkennt Duplikate und startet die weitere Verarbeitung wie Vorschau, Volltext und OCR-Status getrennt davon.
+
+EML-Anhänge werden als eigenständige E-Mail-Archive importiert. BearStack erzeugt dafür ein PDF mit Metadaten-Deckblatt, sicherer Textabbildung der E-Mail und anschließenden PDF-Anhängen aus der EML. Nicht-PDF-Anhänge innerhalb der EML werden auf dem Deckblatt mit Name, Typ und Größe gelistet, aber nicht eingebettet.
 
 Konfiguriert wird der Import unter `Einstellungen -> E-Mail-Import`. Unterstützt werden SSL/TLS, STARTTLS und unverschlüsselte IMAP-Verbindungen; Standardwerte sind Port `993`, `INBOX` und ein Abrufintervall von 15 Minuten. Ein Verbindungstest prüft die Zugangsdaten, ein manueller Lauf ruft sofort ab, und bei aktiviertem Import prüft BearStack das Postfach regelmäßig im Hintergrund.
 
-Die Absenderliste kann leer bleiben oder einzelne Adressen und Domänen enthalten. Eine leere Liste verarbeitet alle Absender. Domänenregeln passen auch auf Subdomains; nicht erlaubte Absender werden abgelehnt, protokolliert und aus dem IMAP-Postfach gelöscht. Erfolgreich verarbeitete E-Mails mit PDF-Anhängen werden ebenfalls gelöscht, damit das Postfach als Eingangskorb funktioniert. E-Mails ohne PDF-Anhang bleiben unberührt.
+Die Absenderliste kann leer bleiben oder einzelne Adressen und Domänen enthalten. Eine leere Liste verarbeitet alle Absender. Domänenregeln passen auch auf Subdomains; nicht erlaubte Absender werden abgelehnt, protokolliert und aus dem IMAP-Postfach gelöscht. Die Prüfung bezieht sich auf die Import-Nachricht im IMAP-Postfach. Erfolgreich verarbeitete E-Mails mit PDF- oder EML-Anhängen werden ebenfalls gelöscht, damit das Postfach als Eingangskorb funktioniert. E-Mails ohne verarbeitbare Anhänge bleiben unberührt.
 
 Alle Importläufe werden im Audit-Log sichtbar: erfolgreiche Importe, Duplikate, abgelehnte Absender, Verbindungstests und Fehler bekommen eigene Einträge. Die Verwaltung des Mail-Imports erfordert Systemverwaltungsrechte.
 

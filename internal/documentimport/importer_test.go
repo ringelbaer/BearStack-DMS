@@ -72,6 +72,41 @@ func TestImporterImportCandidateWithTagsPassesInitialTags(t *testing.T) {
 	}
 }
 
+func TestImporterImportCandidateWithOptionsAppliesMetadata(t *testing.T) {
+	repo := &fakeRepository{}
+	store := &fakeStore{storedPath: "2026/05/mail.pdf"}
+	importer := NewImporter(repo, store, nil, nil)
+	docDate := time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)
+
+	result := importer.ImportCandidateWithOptions(context.Background(), storage.Candidate{
+		OriginalName: "mail.pdf",
+		SafeName:     "mail.pdf",
+		TempPath:     filepath.Join(t.TempDir(), "missing.pdf"),
+		MIMEType:     "application/pdf",
+		SizeBytes:    10,
+		SHA256:       "sum-options",
+	}, ImportOptions{
+		UploadWay:    document.UploadWayMail,
+		Title:        "Rechnung Juli",
+		Description:  "E-Mail-Archiv",
+		DocumentDate: &docDate,
+		Tags:         []string{"mail"},
+	})
+
+	if result.Error != nil {
+		t.Fatal(result.Error)
+	}
+	if repo.created.UploadWay != document.UploadWayMail || repo.created.Title != "Rechnung Juli" || repo.created.Description != "E-Mail-Archiv" {
+		t.Fatalf("created metadata = %#v", repo.created)
+	}
+	if repo.created.DocumentDate == nil || !repo.created.DocumentDate.Equal(docDate) {
+		t.Fatalf("document date = %#v", repo.created.DocumentDate)
+	}
+	if len(repo.created.Tags) != 1 || repo.created.Tags[0] != "mail" {
+		t.Fatalf("tags = %#v", repo.created.Tags)
+	}
+}
+
 func TestPostProcessorUpdatesSearchTextAndThumbnail(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "note.txt")

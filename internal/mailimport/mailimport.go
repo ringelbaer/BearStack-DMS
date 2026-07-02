@@ -33,6 +33,7 @@ type Message struct {
 	Subject  string
 	From     string
 	PDFs     int
+	EMLs     int
 	Rejected bool
 }
 
@@ -134,6 +135,10 @@ func DeleteMessage(c *Client, uid uint32) error {
 }
 
 func ImportPDFsFromMessage(r io.Reader, allowedSenders string, maxUploadBytes int64, handle func(Attachment) error) (Message, error) {
+	return ImportAttachmentsFromMessage(r, allowedSenders, maxUploadBytes, handle, nil)
+}
+
+func ImportAttachmentsFromMessage(r io.Reader, allowedSenders string, maxUploadBytes int64, handlePDF func(Attachment) error, handleEML func(Attachment) error) (Message, error) {
 	r = &limitReader{
 		r:         r,
 		remaining: uploadlimit.EnvelopeLimit(maxUploadBytes),
@@ -153,12 +158,18 @@ func ImportPDFsFromMessage(r io.Reader, allowedSenders string, maxUploadBytes in
 	}
 
 	header := textproto.MIMEHeader(msg.Header)
-	err = WalkPDFs(header, msg.Body, func(att Attachment) error {
+	err = WalkAttachments(header, msg.Body, func(att Attachment) error {
 		result.PDFs++
-		if handle == nil {
+		if handlePDF == nil {
 			return nil
 		}
-		return handle(att)
+		return handlePDF(att)
+	}, func(att Attachment) error {
+		result.EMLs++
+		if handleEML == nil {
+			return nil
+		}
+		return handleEML(att)
 	})
 	return result, err
 }
@@ -186,8 +197,19 @@ func (r *limitReader) Read(p []byte) (int, error) {
 }
 
 func WalkPDFs(header textproto.MIMEHeader, body io.Reader, handle func(Attachment) error) error {
+	return WalkAttachments(header, body, handle, nil)
+}
+
+func WalkAttachments(header textproto.MIMEHeader, body io.Reader, handlePDF func(Attachment) error, handleEML func(Attachment) error) error {
 	mediaType, params := mediaType(header)
 	body = transferReader(header, body)
+
+	if filename, ok := emlAttachmentFilename(header, mediaType, params); ok {
+		if handleEML == nil {
+			return nil
+		}
+		return handleEML(Attachment{Filename: filename, Reader: body})
+	}
 
 	if strings.HasPrefix(mediaType, "multipart/") {
 		boundary := params["boundary"]
@@ -203,7 +225,7 @@ func WalkPDFs(header textproto.MIMEHeader, body io.Reader, handle func(Attachmen
 			if err != nil {
 				return err
 			}
-			if err := WalkPDFs(part.Header, part, handle); err != nil {
+			if err := WalkAttachments(part.Header, part, handlePDF, handleEML); err != nil {
 				_ = part.Close()
 				return err
 			}
@@ -217,10 +239,10 @@ func WalkPDFs(header textproto.MIMEHeader, body io.Reader, handle func(Attachmen
 	if !ok {
 		return nil
 	}
-	if handle == nil {
+	if handlePDF == nil {
 		return nil
 	}
-	return handle(Attachment{Filename: filename, Reader: body})
+	return handlePDF(Attachment{Filename: filename, Reader: body})
 }
 
 func mediaType(header textproto.MIMEHeader) (string, map[string]string) {
@@ -250,6 +272,28 @@ func pdfAttachmentFilename(header textproto.MIMEHeader, mediaType string, params
 		filename = "attachment.pdf"
 	} else if filepath.Ext(filename) == "" && strings.EqualFold(mediaType, "application/pdf") {
 		filename += ".pdf"
+	}
+	if disposition != "" && !strings.EqualFold(disposition, "attachment") && !strings.EqualFold(disposition, "inline") {
+		return "", false
+	}
+	return filename, true
+}
+
+func emlAttachmentFilename(header textproto.MIMEHeader, mediaType string, params map[string]string) (string, bool) {
+	disposition, dispositionParams, _ := mime.ParseMediaType(header.Get("Content-Disposition"))
+	filename := dispositionParams["filename"]
+	if filename == "" && params != nil {
+		filename = params["name"]
+	}
+	filename = strings.TrimSpace(decodeHeader(filename))
+	isEML := strings.EqualFold(mediaType, "message/rfc822") || strings.EqualFold(filepath.Ext(filename), ".eml")
+	if !isEML {
+		return "", false
+	}
+	if filename == "" {
+		filename = "message.eml"
+	} else if filepath.Ext(filename) == "" && strings.EqualFold(mediaType, "message/rfc822") {
+		filename += ".eml"
 	}
 	if disposition != "" && !strings.EqualFold(disposition, "attachment") && !strings.EqualFold(disposition, "inline") {
 		return "", false

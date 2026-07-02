@@ -44,6 +44,19 @@ func TestPlainTextPDFEscapesAndWrapsContent(t *testing.T) {
 	}
 }
 
+func TestPlainTextPDFSectionsStartSeparatePages(t *testing.T) {
+	pdf, err := PlainTextPDFSections([]string{"Deckblatt", "Nachricht"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Count(pdf, []byte("/Type /Page /Parent")) != 2 {
+		t.Fatalf("expected two pages in PDF: %s", string(pdf))
+	}
+	if !bytes.Contains(pdf, []byte("Deckblatt")) || !bytes.Contains(pdf, []byte("Nachricht")) {
+		t.Fatalf("section text missing: %s", string(pdf))
+	}
+}
+
 func TestConvertPlainTextToPDFWritesFile(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "note.md")

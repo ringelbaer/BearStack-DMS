@@ -99,7 +99,8 @@
 
   <h2 id="mail-import">E-Mail-Import</h2>
   <div class="endpoint">
-    <p>Der E-Mail-Import ruft per IMAP PDF-Anhänge ab. Erlaubte Absender oder Domänen begrenzen, welche Nachrichten verarbeitet werden. Erfolgreich importierte oder abgelehnte Nachrichten werden im Postfach gelöscht.</p>
+    <p>Der E-Mail-Import ruft per IMAP PDF-Anhänge und angehängte EML-Dateien ab. Erlaubte Absender oder Domänen begrenzen, welche Import-Nachrichten verarbeitet werden. PDF-Anhänge werden wie bisher einzeln importiert; jede EML-Datei wird als eigenes Archiv-PDF mit Deckblatt, sicherer Mailabbildung und PDF-Anhängen aus der EML abgelegt.</p>
+    <p>Nicht-PDF-Anhänge innerhalb einer EML werden im Deckblatt aufgeführt, aber nicht eingebettet. Erfolgreich importierte oder abgelehnte Nachrichten werden im Postfach gelöscht; Nachrichten ohne verarbeitbare Anhänge bleiben unberührt.</p>
     <p>Die Verbindung kann in den Einstellungen getestet werden. Der manuelle Abruf eignet sich zum Prüfen der Konfiguration, bevor der periodische Abruf dauerhaft aktiviert wird.</p>
   </div>
 

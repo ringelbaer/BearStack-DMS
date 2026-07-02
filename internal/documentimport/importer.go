@@ -38,6 +38,14 @@ type Importer struct {
 	AfterCreate func(document.Document)
 }
 
+type ImportOptions struct {
+	UploadWay    string
+	Title        string
+	Description  string
+	DocumentDate *time.Time
+	Tags         []string
+}
+
 type Result struct {
 	Created   *Created
 	Duplicate *Duplicate
@@ -63,10 +71,14 @@ func NewImporter(repo Repository, store Store, log *slog.Logger, afterCreate fun
 }
 
 func (i Importer) ImportCandidate(ctx context.Context, candidate storage.Candidate, uploadWay string) Result {
-	return i.ImportCandidateWithTags(ctx, candidate, uploadWay, nil)
+	return i.ImportCandidateWithOptions(ctx, candidate, ImportOptions{UploadWay: uploadWay})
 }
 
 func (i Importer) ImportCandidateWithTags(ctx context.Context, candidate storage.Candidate, uploadWay string, tags []string) Result {
+	return i.ImportCandidateWithOptions(ctx, candidate, ImportOptions{UploadWay: uploadWay, Tags: tags})
+}
+
+func (i Importer) ImportCandidateWithOptions(ctx context.Context, candidate storage.Candidate, options ImportOptions) Result {
 	existing, ok, err := i.Repo.FindActiveByChecksum(ctx, candidate.SHA256)
 	if err != nil {
 		i.Store.RemoveTemp(candidate)
@@ -81,6 +93,13 @@ func (i Importer) ImportCandidateWithTags(ctx context.Context, candidate storage
 	}
 
 	title, documentDate := textmeta.FromFilename(candidate.OriginalName)
+	if strings.TrimSpace(options.Title) != "" {
+		title = strings.TrimSpace(options.Title)
+	}
+	description := strings.TrimSpace(options.Description)
+	if options.DocumentDate != nil {
+		documentDate = options.DocumentDate
+	}
 	now := time.Now().UTC()
 	storedPath, err := i.Store.Commit(candidate, now)
 	if err != nil {
@@ -91,9 +110,10 @@ func (i Importer) ImportCandidateWithTags(ctx context.Context, candidate storage
 	doc := document.Document{
 		OriginalName:      candidate.OriginalName,
 		StoredPath:        storedPath,
-		UploadWay:         uploadWay,
+		UploadWay:         options.UploadWay,
 		Title:             title,
-		Tags:              append([]string(nil), tags...),
+		Description:       description,
+		Tags:              append([]string(nil), options.Tags...),
 		MIMEType:          candidate.MIMEType,
 		SizeBytes:         candidate.SizeBytes,
 		SHA256:            candidate.SHA256,

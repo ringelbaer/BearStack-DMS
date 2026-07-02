@@ -114,7 +114,7 @@ func manualMailImportNotice(result mailImportRunResult) string {
 	if result.Messages == 0 {
 		return "Keine E-Mails zum Abrufen gefunden."
 	}
-	notice := fmt.Sprintf("%d Mail(s) geprüft, %d PDF(s) importiert, %d Duplikat(e), %d abgelehnt, %d gelöscht", result.Messages, result.Uploaded, result.Duplicates, result.Rejected, result.Deleted)
+	notice := fmt.Sprintf("%d Mail(s) geprüft, %d PDF(s) importiert, %d E-Mail-Archiv(e), %d Duplikat(e), %d abgelehnt, %d gelöscht", result.Messages, result.Uploaded, result.Archived, result.Duplicates, result.Rejected, result.Deleted)
 	if result.Errors > 0 {
 		notice = fmt.Sprintf("%s, %d Fehler", notice, result.Errors)
 	}

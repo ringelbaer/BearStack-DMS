@@ -37,9 +37,12 @@ func ConvertPlainTextToPDF(source, target string) error {
 }
 
 func PlainTextPDF(text string) ([]byte, error) {
-	lines := wrapPlainTextLines(text, plainPDFMaxCharsPerLine())
-	if len(lines) == 0 {
-		lines = []string{""}
+	return PlainTextPDFSections([]string{text})
+}
+
+func PlainTextPDFSections(sections []string) ([]byte, error) {
+	if len(sections) == 0 {
+		sections = []string{""}
 	}
 	linesPerPage := int(math.Floor((plainPDFPageHeight - 2*plainPDFMargin) / plainPDFLeading))
 	if linesPerPage < 1 {
@@ -47,13 +50,19 @@ func PlainTextPDF(text string) ([]byte, error) {
 	}
 
 	var pages [][]string
-	for len(lines) > 0 {
-		n := linesPerPage
-		if len(lines) < n {
-			n = len(lines)
+	for _, section := range sections {
+		lines := wrapPlainTextLines(section, plainPDFMaxCharsPerLine())
+		if len(lines) == 0 {
+			lines = []string{""}
 		}
-		pages = append(pages, lines[:n])
-		lines = lines[n:]
+		for len(lines) > 0 {
+			n := linesPerPage
+			if len(lines) < n {
+				n = len(lines)
+			}
+			pages = append(pages, lines[:n])
+			lines = lines[n:]
+		}
 	}
 
 	objectCount := 3 + len(pages)*2

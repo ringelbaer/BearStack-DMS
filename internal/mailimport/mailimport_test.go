@@ -1,6 +1,7 @@
 package mailimport
 
 import (
+	"encoding/base64"
 	"errors"
 	"io"
 	"net/textproto"
@@ -61,6 +62,64 @@ func TestImportPDFsFromMessageFiltersSenderAndDecodesAttachment(t *testing.T) {
 	}
 	if len(attachments) != 1 || attachments[0].Filename != "rechnung.pdf" {
 		t.Fatalf("attachments = %#v", attachments)
+	}
+}
+
+func TestImportAttachmentsFromMessageFindsPDFsAndEMLAttachments(t *testing.T) {
+	innerEML := strings.Join([]string{
+		"From: original@example.com",
+		"Subject: Original",
+		"Content-Type: application/pdf",
+		"",
+		"%PDF-inside-eml",
+	}, "\r\n")
+	raw := strings.Join([]string{
+		"From: Scanner <scanner@example.com>",
+		"Subject: Import",
+		"Content-Type: multipart/mixed; boundary=mail-boundary",
+		"",
+		"--mail-boundary",
+		"Content-Type: application/pdf; name=\"rechnung.pdf\"",
+		"Content-Disposition: attachment; filename=\"rechnung.pdf\"",
+		"",
+		"%PDF-outer",
+		"--mail-boundary",
+		"Content-Type: message/rfc822; name=\"original.eml\"",
+		"Content-Disposition: attachment; filename=\"original.eml\"",
+		"Content-Transfer-Encoding: base64",
+		"",
+		base64.StdEncoding.EncodeToString([]byte(innerEML)),
+		"--mail-boundary--",
+		"",
+	}, "\r\n")
+
+	var pdfs []Attachment
+	var emls []Attachment
+	message, err := ImportAttachmentsFromMessage(strings.NewReader(raw), "@example.com", 1<<20, func(att Attachment) error {
+		pdfs = append(pdfs, att)
+		return nil
+	}, func(att Attachment) error {
+		emls = append(emls, att)
+		content, readErr := io.ReadAll(att.Reader)
+		if readErr != nil {
+			return readErr
+		}
+		if !strings.Contains(string(content), "Subject: Original") {
+			t.Fatalf("eml content = %q", string(content))
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if message.PDFs != 1 || message.EMLs != 1 || message.Rejected {
+		t.Fatalf("message = %#v", message)
+	}
+	if len(pdfs) != 1 || pdfs[0].Filename != "rechnung.pdf" {
+		t.Fatalf("pdfs = %#v", pdfs)
+	}
+	if len(emls) != 1 || emls[0].Filename != "original.eml" {
+		t.Fatalf("emls = %#v", emls)
 	}
 }
 

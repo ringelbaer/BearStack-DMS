@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -74,6 +75,278 @@ func TestImportPDFsFromMailImportsPDFAttachment(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(docs) != 1 || docs[0].OriginalName != "rechnung.pdf" || docs[0].MIMEType != "application/pdf" || docs[0].UploadWay != document.UploadWayMail {
+		t.Fatalf("docs = %#v", docs)
+	}
+}
+
+func TestImportPDFsFromMailImportsPDFAndEMLArchive(t *testing.T) {
+	installFakePDFUnite(t)
+	ctx := context.Background()
+	repo, err := repository.Open(ctx, filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer repo.Close()
+	store, err := storage.New(filepath.Join(t.TempDir(), "documents"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := &Server{
+		cfg:   config.Config{MaxUploadBytes: 1 << 20},
+		repo:  repo,
+		store: store,
+		log:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+
+	pdf := []byte("%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n")
+	attachedEML := strings.Join([]string{
+		"From: Original <original@example.com>",
+		"To: archive@example.com",
+		"Subject: Kunde",
+		"Date: Wed, 01 Jul 2026 10:20:00 +0200",
+		"MIME-Version: 1.0",
+		`Content-Type: multipart/mixed; boundary="eml"`,
+		"",
+		"--eml",
+		"Content-Type: text/plain; charset=utf-8",
+		"",
+		"Bitte archivieren.",
+		"--eml",
+		`Content-Type: application/pdf; name="anlage.pdf"`,
+		`Content-Disposition: attachment; filename="anlage.pdf"`,
+		"Content-Transfer-Encoding: base64",
+		"",
+		base64.StdEncoding.EncodeToString(pdf),
+		"--eml--",
+		"",
+	}, "\r\n")
+	message := strings.NewReader(strings.Join([]string{
+		"From: sender@example.com",
+		"To: inbox@example.com",
+		"Subject: Import",
+		"MIME-Version: 1.0",
+		`Content-Type: multipart/mixed; boundary="bearstack-test"`,
+		"",
+		"--bearstack-test",
+		`Content-Type: application/pdf; name="rechnung.pdf"`,
+		`Content-Disposition: attachment; filename="rechnung.pdf"`,
+		"Content-Transfer-Encoding: base64",
+		"",
+		base64.StdEncoding.EncodeToString(pdf),
+		"--bearstack-test",
+		`Content-Type: message/rfc822; name="kunde.eml"`,
+		`Content-Disposition: attachment; filename="kunde.eml"`,
+		"Content-Transfer-Encoding: base64",
+		"",
+		base64.StdEncoding.EncodeToString([]byte(attachedEML)),
+		"--bearstack-test--",
+		"",
+	}, "\r\n"))
+
+	result, err := server.importPDFsFromMail(ctx, message, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.PDFs != 1 || result.EMLs != 1 || result.Uploaded != 1 || result.Archived != 1 || result.Errors != 0 {
+		t.Fatalf("result = %#v", result)
+	}
+
+	docs, err := repo.ListDocuments(ctx, document.ListFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(docs) != 2 {
+		t.Fatalf("docs = %#v", docs)
+	}
+	var archive document.Document
+	for _, doc := range docs {
+		if strings.Contains(doc.OriginalName, "Kunde") {
+			archive = doc
+			break
+		}
+	}
+	if archive.ID == 0 || archive.Title != "Kunde" || archive.UploadWay != document.UploadWayMail || archive.DocumentDate == nil || archive.DocumentDate.Format("2006-01-02") != "2026-07-01" {
+		t.Fatalf("archive doc = %#v", archive)
+	}
+}
+
+func TestImportPDFsFromMailImportsMultipleEMLArchives(t *testing.T) {
+	ctx := context.Background()
+	repo, err := repository.Open(ctx, filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer repo.Close()
+	store, err := storage.New(filepath.Join(t.TempDir(), "documents"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := &Server{
+		cfg:   config.Config{MaxUploadBytes: 1 << 20},
+		repo:  repo,
+		store: store,
+		log:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+
+	message := strings.NewReader(strings.Join([]string{
+		"From: sender@example.com",
+		"Subject: Import",
+		"MIME-Version: 1.0",
+		`Content-Type: multipart/mixed; boundary="bearstack-test"`,
+		"",
+		"--bearstack-test",
+		`Content-Type: message/rfc822; name="one.eml"`,
+		`Content-Disposition: attachment; filename="one.eml"`,
+		"Content-Transfer-Encoding: base64",
+		"",
+		base64.StdEncoding.EncodeToString([]byte("Subject: Eins\r\n\r\nErste Mail")),
+		"--bearstack-test",
+		`Content-Type: message/rfc822; name="two.eml"`,
+		`Content-Disposition: attachment; filename="two.eml"`,
+		"Content-Transfer-Encoding: base64",
+		"",
+		base64.StdEncoding.EncodeToString([]byte("Subject: Zwei\r\n\r\nZweite Mail")),
+		"--bearstack-test--",
+		"",
+	}, "\r\n"))
+
+	result, err := server.importPDFsFromMail(ctx, message, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.EMLs != 2 || result.Archived != 2 || result.Uploaded != 0 || result.Errors != 0 {
+		t.Fatalf("result = %#v", result)
+	}
+	docs, err := repo.ListDocuments(ctx, document.ListFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(docs) != 2 {
+		t.Fatalf("docs = %#v", docs)
+	}
+}
+
+func TestImportPDFsFromMailDetectsDuplicateEMLArchiveContent(t *testing.T) {
+	ctx := context.Background()
+	repo, err := repository.Open(ctx, filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer repo.Close()
+	store, err := storage.New(filepath.Join(t.TempDir(), "documents"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := &Server{
+		cfg:   config.Config{MaxUploadBytes: 1 << 20},
+		repo:  repo,
+		store: store,
+		log:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+
+	eml := []byte("Subject: Gleich\r\n\r\nGleicher Inhalt")
+	message := strings.NewReader(strings.Join([]string{
+		"From: sender@example.com",
+		"Subject: Import",
+		"MIME-Version: 1.0",
+		`Content-Type: multipart/mixed; boundary="bearstack-test"`,
+		"",
+		"--bearstack-test",
+		`Content-Type: message/rfc822; name="one.eml"`,
+		`Content-Disposition: attachment; filename="one.eml"`,
+		"Content-Transfer-Encoding: base64",
+		"",
+		base64.StdEncoding.EncodeToString(eml),
+		"--bearstack-test",
+		`Content-Type: message/rfc822; name="renamed.eml"`,
+		`Content-Disposition: attachment; filename="renamed.eml"`,
+		"Content-Transfer-Encoding: base64",
+		"",
+		base64.StdEncoding.EncodeToString(eml),
+		"--bearstack-test--",
+		"",
+	}, "\r\n"))
+
+	result, err := server.importPDFsFromMail(ctx, message, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.EMLs != 2 || result.Archived != 1 || result.Duplicates != 1 || result.Errors != 0 {
+		t.Fatalf("result = %#v", result)
+	}
+	docs, err := repo.ListDocuments(ctx, document.ListFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(docs) != 1 {
+		t.Fatalf("docs = %#v", docs)
+	}
+}
+
+func TestImportPDFsFromMailReportsEMLArchiveErrorWhenPDFUniteMissing(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	ctx := context.Background()
+	repo, err := repository.Open(ctx, filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer repo.Close()
+	store, err := storage.New(filepath.Join(t.TempDir(), "documents"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := &Server{
+		cfg:   config.Config{MaxUploadBytes: 1 << 20},
+		repo:  repo,
+		store: store,
+		log:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+
+	attachedEML := strings.Join([]string{
+		"Subject: PDF innen",
+		"MIME-Version: 1.0",
+		`Content-Type: multipart/mixed; boundary="eml"`,
+		"",
+		"--eml",
+		"Content-Type: text/plain; charset=utf-8",
+		"",
+		"Text",
+		"--eml",
+		`Content-Type: application/pdf; name="anlage.pdf"`,
+		`Content-Disposition: attachment; filename="anlage.pdf"`,
+		"",
+		"%PDF-1.4",
+		"--eml--",
+		"",
+	}, "\r\n")
+	message := strings.NewReader(strings.Join([]string{
+		"From: sender@example.com",
+		"Subject: Import",
+		"MIME-Version: 1.0",
+		`Content-Type: multipart/mixed; boundary="bearstack-test"`,
+		"",
+		"--bearstack-test",
+		`Content-Type: message/rfc822; name="pdf-innen.eml"`,
+		`Content-Disposition: attachment; filename="pdf-innen.eml"`,
+		"Content-Transfer-Encoding: base64",
+		"",
+		base64.StdEncoding.EncodeToString([]byte(attachedEML)),
+		"--bearstack-test--",
+		"",
+	}, "\r\n"))
+
+	result, err := server.importPDFsFromMail(ctx, message, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.EMLs != 1 || result.Archived != 0 || result.Errors != 1 {
+		t.Fatalf("result = %#v", result)
+	}
+	docs, err := repo.ListDocuments(ctx, document.ListFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(docs) != 0 {
 		t.Fatalf("docs = %#v", docs)
 	}
 }
@@ -295,4 +568,15 @@ func TestMailSenderAllowedMatchesAddressAndDomain(t *testing.T) {
 			t.Fatalf("mailimport.SenderAllowed(%q) = %v, want %v", sender, got, want)
 		}
 	}
+}
+
+func installFakePDFUnite(t *testing.T) {
+	t.Helper()
+	dir := t.TempDir()
+	script := filepath.Join(dir, "pdfunite")
+	content := "#!/bin/sh\nlast=\"\"\nfor arg in \"$@\"; do last=\"$arg\"; done\n/bin/cp \"$1\" \"$last\"\n"
+	if err := os.WriteFile(script, []byte(content), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
 }

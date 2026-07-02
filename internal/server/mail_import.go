@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"bearstack/internal/document"
+	"bearstack/internal/documentimport"
+	"bearstack/internal/mailarchive"
 	"bearstack/internal/mailimport"
 	"bearstack/internal/repository"
 	"bearstack/internal/storage"
@@ -52,6 +55,8 @@ type mailImportRunResult struct {
 	Processed  int
 	Deleted    int
 	Uploaded   int
+	Archived   int
+	EMLs       int
 	Duplicates int
 	Rejected   int
 	Errors     int
@@ -61,7 +66,9 @@ type mailMessageImportResult struct {
 	Subject    string
 	From       string
 	PDFs       int
+	EMLs       int
 	Uploaded   int
+	Archived   int
 	Duplicates int
 	Rejected   bool
 	Errors     int
@@ -108,7 +115,7 @@ func (m *mailImportService) runIfDue(ctx context.Context, lastRun *time.Time) {
 		return
 	}
 	if result.Processed > 0 || result.Rejected > 0 || result.Errors > 0 {
-		target := fmt.Sprintf("%d Mail(s), %d PDF(s) importiert, %d Duplikat(e), %d abgelehnt, %d gelöscht", result.Processed, result.Uploaded, result.Duplicates, result.Rejected, result.Deleted)
+		target := fmt.Sprintf("%d Mail(s), %d PDF(s) importiert, %d E-Mail-Archiv(e), %d Duplikat(e), %d abgelehnt, %d gelöscht", result.Processed, result.Uploaded, result.Archived, result.Duplicates, result.Rejected, result.Deleted)
 		status := httpStatusOK
 		action := "E-Mail-Import abgeschlossen"
 		if result.Errors > 0 {
@@ -168,12 +175,14 @@ func (m *mailImportService) ImportPDFs(ctx context.Context, settings document.Ma
 			m.RecordAudit(ctx, "E-Mail-Absender abgelehnt", mailMessageAuditTarget(uid, messageResult), httpStatusOK)
 			continue
 		}
-		if messageResult.PDFs == 0 {
+		if messageResult.PDFs == 0 && messageResult.EMLs == 0 {
 			continue
 		}
 
 		result.Processed++
 		result.Uploaded += messageResult.Uploaded
+		result.Archived += messageResult.Archived
+		result.EMLs += messageResult.EMLs
 		result.Duplicates += messageResult.Duplicates
 		result.Errors += messageResult.Errors
 		if messageResult.Errors > 0 {
@@ -229,7 +238,7 @@ func (s *Server) importPDFsFromMail(ctx context.Context, r io.Reader, allowedSen
 
 func (m *mailImportService) importPDFsFromMail(ctx context.Context, r io.Reader, allowedSenders string) (mailMessageImportResult, error) {
 	var result mailMessageImportResult
-	message, err := mailimport.ImportPDFsFromMessage(r, allowedSenders, m.maxUploadBytes, func(att mailimport.Attachment) error {
+	message, err := mailimport.ImportAttachmentsFromMessage(r, allowedSenders, m.maxUploadBytes, func(att mailimport.Attachment) error {
 		candidate, err := m.store.ReceiveReader(att.Filename, att.Reader, m.maxUploadBytes)
 		if err != nil {
 			result.Errors++
@@ -254,10 +263,57 @@ func (m *mailImportService) importPDFsFromMail(ctx context.Context, r io.Reader,
 			result.Details = append(result.Details, att.Filename+": unbekannter Importstatus")
 		}
 		return nil
+	}, func(att mailimport.Attachment) error {
+		archive, err := mailarchive.Build(ctx, att.Filename, att.Reader, mailarchive.Options{MaxBytes: m.maxUploadBytes})
+		if err != nil {
+			result.Errors++
+			result.Details = append(result.Details, att.Filename+": "+err.Error())
+			return nil
+		}
+		defer archive.Cleanup()
+
+		file, err := os.Open(archive.Path)
+		if err != nil {
+			result.Errors++
+			result.Details = append(result.Details, att.Filename+": "+err.Error())
+			return nil
+		}
+		defer file.Close()
+
+		candidate, err := m.store.ReceiveReader(archive.Filename, file, m.maxUploadBytes)
+		if err != nil {
+			result.Errors++
+			result.Details = append(result.Details, archive.Filename+": "+friendlyUploadError(err))
+			return nil
+		}
+
+		importResult := m.importer.ImportCandidateWithOptions(ctx, candidate, documentimport.ImportOptions{
+			UploadWay:    document.UploadWayMail,
+			Title:        archive.Title,
+			Description:  archive.Description,
+			DocumentDate: archive.DocumentDate,
+		})
+		switch {
+		case importResult.Created != nil:
+			result.Archived++
+			result.Details = append(result.Details, "archiviert "+importResult.Created.Document.OriginalName)
+		case importResult.Duplicate != nil:
+			result.Duplicates++
+			result.Details = append(result.Details, "Duplikat "+importResult.Duplicate.Filename)
+		case importResult.Error != nil:
+			result.Errors++
+			logWarn(m.log, "mail archive import failed", "filename", att.Filename, "error", importResult.Error)
+			result.Details = append(result.Details, archive.Filename+": "+friendlyImportError(importResult.Error))
+		default:
+			result.Errors++
+			result.Details = append(result.Details, archive.Filename+": unbekannter Importstatus")
+		}
+		return nil
 	})
 	result.Subject = message.Subject
 	result.From = message.From
 	result.PDFs = message.PDFs
+	result.EMLs = message.EMLs
 	result.Rejected = message.Rejected
 	if err != nil {
 		return result, err
@@ -297,7 +353,7 @@ func mailMessageAuditTarget(uid uint32, result mailMessageImportResult) string {
 		parts = append(parts, "Absender nicht erlaubt")
 		return strings.Join(parts, ": ")
 	}
-	parts = append(parts, fmt.Sprintf("%d PDF(s), %d importiert, %d Duplikat(e)", result.PDFs, result.Uploaded, result.Duplicates))
+	parts = append(parts, fmt.Sprintf("%d PDF(s), %d EML(s), %d PDF(s) importiert, %d E-Mail-Archiv(e), %d Duplikat(e)", result.PDFs, result.EMLs, result.Uploaded, result.Archived, result.Duplicates))
 	if result.Errors > 0 {
 		parts = append(parts, fmt.Sprintf("%d Fehler", result.Errors))
 	}
