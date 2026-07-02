@@ -20,6 +20,7 @@ import (
 )
 
 const mailImportCheckInterval = time.Minute
+const mailImportAuditDetailLimit = 900
 
 type mailImportService struct {
 	maxUploadBytes int64
@@ -264,7 +265,7 @@ func (m *mailImportService) importPDFsFromMail(ctx context.Context, r io.Reader,
 		}
 		return nil
 	}, func(att mailimport.Attachment) error {
-		tempDir, err := m.store.EnsureDir(".tmp")
+		tempDir, err := m.store.EnsureDir("mailarchive-tmp")
 		if err != nil {
 			result.Errors++
 			result.Details = append(result.Details, att.Filename+": "+err.Error())
@@ -362,6 +363,34 @@ func mailMessageAuditTarget(uid uint32, result mailMessageImportResult) string {
 	parts = append(parts, fmt.Sprintf("%d PDF(s), %d EML(s), %d PDF(s) importiert, %d E-Mail-Archiv(e), %d Duplikat(e)", result.PDFs, result.EMLs, result.Uploaded, result.Archived, result.Duplicates))
 	if result.Errors > 0 {
 		parts = append(parts, fmt.Sprintf("%d Fehler", result.Errors))
+		if details := mailImportAuditDetails(result.Details); details != "" {
+			parts = append(parts, "Details "+details)
+		}
 	}
 	return strings.Join(parts, ": ")
+}
+
+func mailImportAuditDetails(details []string) string {
+	clean := make([]string, 0, len(details))
+	for _, detail := range details {
+		detail = strings.TrimSpace(detail)
+		if detail != "" {
+			clean = append(clean, detail)
+		}
+	}
+	if len(clean) == 0 {
+		return ""
+	}
+	return truncateMailImportAuditDetail(strings.Join(clean, "; "))
+}
+
+func truncateMailImportAuditDetail(value string) string {
+	if len(value) <= mailImportAuditDetailLimit {
+		return value
+	}
+	runes := []rune(value)
+	if len(runes) <= mailImportAuditDetailLimit {
+		return value
+	}
+	return string(runes[:mailImportAuditDetailLimit]) + "..."
 }

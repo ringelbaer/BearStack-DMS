@@ -41,8 +41,9 @@ func TestBuildRendersHTMLPartAndListsNonPDFAttachments(t *testing.T) {
 		"",
 	}, "\r\n")
 	renderer := &captureHTMLRenderer{}
+	merger := &capturePDFMerger{}
 
-	result, err := Build(context.Background(), "original.eml", strings.NewReader(raw), Options{MaxBytes: 1 << 20, RenderHTML: renderer.render})
+	result, err := Build(context.Background(), "original.eml", strings.NewReader(raw), Options{MaxBytes: 1 << 20, RenderHTML: renderer.render, MergePDFs: merger.merge})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,8 +61,14 @@ func TestBuildRendersHTMLPartAndListsNonPDFAttachments(t *testing.T) {
 	if len(result.OtherAttachments) != 1 || result.OtherAttachments[0].Filename != "logo.png" || result.PDFs != 0 {
 		t.Fatalf("attachments = pdfs:%d other:%#v", result.PDFs, result.OtherAttachments)
 	}
-	if !strings.Contains(renderer.html, "<strong>HTML body</strong>") || strings.Contains(renderer.html, "Plain body wins.") || !strings.Contains(renderer.html, "logo.png") {
+	if !strings.Contains(renderer.html, "<strong>HTML body</strong>") || strings.Contains(renderer.html, "Plain body wins.") || strings.Contains(renderer.html, "logo.png") || strings.Contains(renderer.html, "E-Mail-Archiv") {
 		t.Fatalf("rendered html = %s", renderer.html)
+	}
+	if len(merger.inputs) != 2 || filepath.Base(merger.inputs[0]) != "cover.pdf" || filepath.Base(merger.inputs[1]) != "message.pdf" {
+		t.Fatalf("merge inputs = %#v", merger.inputs)
+	}
+	if got := readFileString(t, merger.inputs[0]); !strings.Contains(got, "E-Mail-Archiv") || !strings.Contains(got, "logo.png") {
+		t.Fatalf("cover pdf = %s", got)
 	}
 }
 
@@ -74,8 +81,9 @@ func TestBuildRendersSafeHTML(t *testing.T) {
 		"<style>body{display:none}</style><script>alert(1)</script><p>Hallo <b>Welt</b> &amp; Archiv</p>",
 	}, "\r\n")
 	renderer := &captureHTMLRenderer{}
+	merger := &capturePDFMerger{}
 
-	result, err := Build(context.Background(), "html.eml", strings.NewReader(raw), Options{MaxBytes: 1 << 20, RenderHTML: renderer.render})
+	result, err := Build(context.Background(), "html.eml", strings.NewReader(raw), Options{MaxBytes: 1 << 20, RenderHTML: renderer.render, MergePDFs: merger.merge})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,6 +97,35 @@ func TestBuildRendersSafeHTML(t *testing.T) {
 	}
 }
 
+func TestBuildRendersHTMLCoverSeparatelyFromMailStyles(t *testing.T) {
+	raw := strings.Join([]string{
+		"From: sender@example.com",
+		"Subject: Global CSS",
+		"Content-Type: text/html; charset=utf-8",
+		"",
+		"<style>body{display:none}.cover{display:none}</style><p>Mailinhalt</p>",
+	}, "\r\n")
+	renderer := &captureHTMLRenderer{}
+	merger := &capturePDFMerger{}
+
+	result, err := Build(context.Background(), "global-css.eml", strings.NewReader(raw), Options{MaxBytes: 1 << 20, RenderHTML: renderer.render, MergePDFs: merger.merge})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer result.Cleanup()
+
+	if len(merger.inputs) != 2 || filepath.Base(merger.inputs[0]) != "cover.pdf" || filepath.Base(merger.inputs[1]) != "message.pdf" {
+		t.Fatalf("merge inputs = %#v", merger.inputs)
+	}
+	if strings.Contains(renderer.html, "E-Mail-Archiv") || strings.Contains(renderer.html, "PDF-Anhaenge") {
+		t.Fatalf("mail html contains cover content: %s", renderer.html)
+	}
+	cover := readFileString(t, merger.inputs[0])
+	if !strings.Contains(cover, "E-Mail-Archiv") || strings.Contains(cover, "display:none") || strings.Contains(cover, ".cover") {
+		t.Fatalf("cover pdf = %s", cover)
+	}
+}
+
 func TestBuildRendersPlainTextThatContainsHTML(t *testing.T) {
 	raw := strings.Join([]string{
 		"From: sender@example.com",
@@ -98,8 +135,9 @@ func TestBuildRendersPlainTextThatContainsHTML(t *testing.T) {
 		"Hallo<br/><span style=\"font-weight: 500;\">Welt</span>",
 	}, "\r\n")
 	renderer := &captureHTMLRenderer{}
+	merger := &capturePDFMerger{}
 
-	result, err := Build(context.Background(), "plain-html.eml", strings.NewReader(raw), Options{MaxBytes: 1 << 20, RenderHTML: renderer.render})
+	result, err := Build(context.Background(), "plain-html.eml", strings.NewReader(raw), Options{MaxBytes: 1 << 20, RenderHTML: renderer.render, MergePDFs: merger.merge})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,4 +251,13 @@ type captureHTMLRenderer struct {
 func (r *captureHTMLRenderer) render(_ context.Context, htmlContent, output, _ string) error {
 	r.html = htmlContent
 	return os.WriteFile(output, []byte("%PDF-rendered\n"+htmlContent), 0o600)
+}
+
+type capturePDFMerger struct {
+	inputs []string
+}
+
+func (m *capturePDFMerger) merge(_ context.Context, output string, inputs []string) error {
+	m.inputs = append([]string(nil), inputs...)
+	return os.WriteFile(output, []byte("%PDF-merged"), 0o600)
 }

@@ -109,26 +109,48 @@ func Build(ctx context.Context, _ string, r io.Reader, opts Options) (Result, er
 		return Result{}, err
 	}
 
-	messagePDF := filepath.Join(tempDir, "message.pdf")
 	if msg.BodyHTML != "" {
+		coverPDF := filepath.Join(tempDir, "cover.pdf")
+		if err := writePlainTextPDF(coverPDF, []string{coverText(msg)}); err != nil {
+			return Result{}, err
+		}
+
+		messagePDF := filepath.Join(tempDir, "message.pdf")
 		render := opts.RenderHTML
 		if render == nil {
 			render = renderHTMLWithChromium
 		}
-		if err := render(ctx, archiveHTML(msg), messagePDF, tempDir); err != nil {
+		if err := render(ctx, archiveMailHTML(msg), messagePDF, tempDir); err != nil {
 			return Result{}, err
 		}
 		if err := ensureFileHasContent(messagePDF); err != nil {
 			return Result{}, err
 		}
-	} else {
-		pdf, err := documentconvert.PlainTextPDFSections([]string{coverText(msg), bodyText(msg)})
-		if err != nil {
+
+		merge := opts.MergePDFs
+		if merge == nil {
+			merge = mergePDFsWithPDFUnite
+		}
+		outputPath := filepath.Join(tempDir, "archive.pdf")
+		inputs := make([]string, 0, len(msg.PDFs)+2)
+		inputs = append(inputs, coverPDF, messagePDF)
+		for _, pdf := range msg.PDFs {
+			inputs = append(inputs, pdf.Path)
+		}
+		if err := merge(ctx, outputPath, inputs); err != nil {
 			return Result{}, err
 		}
-		if err := os.WriteFile(messagePDF, pdf, 0o600); err != nil {
+		if err := ensureFileHasContent(outputPath); err != nil {
 			return Result{}, err
 		}
+		result := buildResult(msg, outputPath, tempDir)
+		cleanup = false
+		return result, nil
+	}
+
+	messagePDF := filepath.Join(tempDir, "message.pdf")
+	if err := writePlainTextPDF(messagePDF, []string{coverText(msg), bodyText(msg)}); err != nil {
+		return Result{}, err
 	}
 
 	outputPath := messagePDF
@@ -151,7 +173,21 @@ func Build(ctx context.Context, _ string, r io.Reader, opts Options) (Result, er
 		}
 	}
 
-	result := Result{
+	result := buildResult(msg, outputPath, tempDir)
+	cleanup = false
+	return result, nil
+}
+
+func writePlainTextPDF(path string, sections []string) error {
+	pdf, err := documentconvert.PlainTextPDFSections(sections)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, pdf, 0o600)
+}
+
+func buildResult(msg messageData, outputPath, tempDir string) Result {
+	return Result{
 		Path:             outputPath,
 		Filename:         archiveFilename(msg),
 		Title:            archiveTitle(msg),
@@ -162,8 +198,6 @@ func Build(ctx context.Context, _ string, r io.Reader, opts Options) (Result, er
 		BodySource:       msg.BodySource,
 		tempDir:          tempDir,
 	}
-	cleanup = false
-	return result, nil
 }
 
 func parseMessage(r io.Reader, tempDir string, maxBytes int64) (messageData, error) {
@@ -366,7 +400,7 @@ func bodyText(msg messageData) string {
 	return b.String()
 }
 
-func archiveHTML(msg messageData) string {
+func archiveMailHTML(msg messageData) string {
 	styles, body := sanitizeHTMLForArchive(msg.BodyHTML)
 	var b strings.Builder
 	b.WriteString("<!doctype html><html><head><meta charset=\"utf-8\">")
@@ -380,32 +414,7 @@ func archiveHTML(msg messageData) string {
 		b.WriteString(styles)
 	}
 	b.WriteString("</head><body>")
-	b.WriteString("<section class=\"cover\"><h1>E-Mail-Archiv</h1><dl>")
-	writeHTMLField(&b, "Betreff", msg.Subject)
-	writeHTMLField(&b, "Von", msg.From)
-	writeHTMLField(&b, "An", msg.To)
-	writeHTMLField(&b, "Cc", msg.Cc)
-	writeHTMLField(&b, "Datum", msg.Date)
-	writeHTMLField(&b, "Message-ID", msg.MessageID)
-	writeHTMLField(&b, "Textquelle", msg.BodySource)
-	writeHTMLField(&b, "PDF-Anhaenge", fmt.Sprintf("%d", len(msg.PDFs)))
-	writeHTMLField(&b, "Weitere Anhaenge", fmt.Sprintf("%d", len(msg.OtherAttachments)))
-	b.WriteString("</dl>")
-	if len(msg.PDFs) > 0 {
-		b.WriteString("<h2>PDF-Anhaenge im Archiv</h2><ul>")
-		for _, att := range msg.PDFs {
-			writeHTMLAttachment(&b, att.AttachmentInfo)
-		}
-		b.WriteString("</ul>")
-	}
-	if len(msg.OtherAttachments) > 0 {
-		b.WriteString("<h2>Nicht eingebettete Anhaenge</h2><ul>")
-		for _, att := range msg.OtherAttachments {
-			writeHTMLAttachment(&b, att)
-		}
-		b.WriteString("</ul>")
-	}
-	b.WriteString("</section><section class=\"mail\"><header class=\"mail-head\"><h1>E-Mail-Abbildung</h1><dl>")
+	b.WriteString("<section class=\"mail\"><header class=\"mail-head\"><h1>E-Mail-Abbildung</h1><dl>")
 	writeHTMLField(&b, "Betreff", msg.Subject)
 	writeHTMLField(&b, "Von", msg.From)
 	writeHTMLField(&b, "An", msg.To)
@@ -418,7 +427,7 @@ func archiveHTML(msg messageData) string {
 }
 
 func archiveHTMLCSS() string {
-	return `@page{size:A4;margin:18mm}*{box-sizing:border-box}body{margin:0;color:#171717;background:#fff;font:14px/1.45 Arial,Helvetica,sans-serif}.cover{break-after:page}.cover h1,.mail-head h1{font-size:24px;margin:0 0 18px}.cover h2{font-size:16px;margin:24px 0 8px}dl{display:grid;grid-template-columns:34mm 1fr;gap:7px 14px;margin:0}dt{font-weight:700;color:#555}dd{margin:0;overflow-wrap:anywhere}ul{margin:0;padding-left:20px}.mail-head{border-bottom:1px solid #ddd;margin-bottom:18px;padding-bottom:12px}.mail-body{overflow-wrap:anywhere}.mail-body img{max-width:100%;height:auto}.mail-body table{max-width:100%;border-collapse:collapse}.mail-body pre{white-space:pre-wrap}`
+	return `@page{size:A4;margin:18mm}*{box-sizing:border-box}body{margin:0;color:#171717;background:#fff;font:14px/1.45 Arial,Helvetica,sans-serif}.mail-head h1{font-size:24px;margin:0 0 18px}dl{display:grid;grid-template-columns:34mm 1fr;gap:7px 14px;margin:0}dt{font-weight:700;color:#555}dd{margin:0;overflow-wrap:anywhere}.mail-head{border-bottom:1px solid #ddd;margin-bottom:18px;padding-bottom:12px}.mail-body{overflow-wrap:anywhere}.mail-body img{max-width:100%;height:auto}.mail-body table{max-width:100%;border-collapse:collapse}.mail-body pre{white-space:pre-wrap}`
 }
 
 func writeHTMLField(b *strings.Builder, label, value string) {
@@ -427,15 +436,6 @@ func writeHTMLField(b *strings.Builder, label, value string) {
 	b.WriteString("</dt><dd>")
 	b.WriteString(html.EscapeString(emptyDash(value)))
 	b.WriteString("</dd>")
-}
-
-func writeHTMLAttachment(b *strings.Builder, att AttachmentInfo) {
-	b.WriteString("<li>")
-	b.WriteString(html.EscapeString(att.Filename))
-	b.WriteString(" (")
-	b.WriteString(html.EscapeString(emptyDash(att.MIMEType)))
-	fmt.Fprintf(b, ", %d Byte)", att.SizeBytes)
-	b.WriteString("</li>")
 }
 
 func writeField(b *strings.Builder, label, value string) {
