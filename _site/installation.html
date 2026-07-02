@@ -918,7 +918,8 @@
 <p>Für Entwicklung und Build wird Go <code>1.25.x</code> oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich <code>node</code> dazu. Die optionalen Playwright-Smoke-Tests brauchen <code>npm</code> und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.</p>
 <p>Vorschau, OCR und Medienfunktionen nutzen externe Werkzeuge nur dort, wo sie gebraucht werden:</p>
 <ul>
-<li><code>poppler-utils</code> für PDF-Vorschau und OCR-Vorbereitung</li>
+<li><code>poppler-utils</code> für PDF-Vorschau, PDF-Merge bei EML-Archiven und OCR-Vorbereitung</li>
+<li><code>chromium</code> für gerenderte EML-Mailabbildungen</li>
 <li>LibreOffice, konkret <code>soffice</code>, für Office-Vorschau und Volltextextraktion</li>
 <li><code>tesseract</code> mit Sprachpaketen für OCR</li>
 <li><code>ffmpeg</code> für Video- und Fallback-Thumbnails</li>
@@ -1020,7 +1021,7 @@
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nv">BEARSTACK_AUTH_PASSWORD_HASH</span><span class="o">=</span><span class="s1">&#39;$2a$10$...&#39;</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build
 </span></code></pre></div>
 <p>Der Container lauscht intern auf <code>0.0.0.0:8080</code> und speichert Daten unter <code>/var/lib/bearstack</code>. Deshalb muss Auth im Container gesetzt sein. <code>compose.yaml</code> nutzt standardmäßig <code>admin</code> als Benutzer, reicht <code>BEARSTACK_AUTH_PASSWORD</code> und <code>BEARSTACK_AUTH_PASSWORD_HASH</code> durch und veröffentlicht den Host-Port über <code>BEARSTACK_PORT</code> oder sonst <code>8080</code>.</p>
-<p>Das Runtime-Image basiert auf <code>debian:trixie-slim</code>, die Build-Stage auf <code>golang:1.26-trixie</code>. Das Beispiel-Image enthält <code>ffmpeg</code>, <code>libreoffice-writer</code>, <code>poppler-utils</code>, <code>tesseract-ocr</code>, <code>tesseract-ocr-deu</code> und <code>tesseract-ocr-eng</code>, damit Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach <code>/srv/photos</code> gemountet werden.</p>
+<p>Das Runtime-Image basiert auf <code>debian:trixie-slim</code>, die Build-Stage auf <code>golang:1.26-trixie</code>. Das Beispiel-Image enthält <code>chromium</code>, <code>ffmpeg</code>, <code>libreoffice-writer</code>, <code>poppler-utils</code>, <code>tesseract-ocr</code>, <code>tesseract-ocr-deu</code> und <code>tesseract-ocr-eng</code>, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach <code>/srv/photos</code> gemountet werden.</p>
 <p>Alle Docker-relevanten Umgebungsvariablen:</p>
 <table>
 <thead>

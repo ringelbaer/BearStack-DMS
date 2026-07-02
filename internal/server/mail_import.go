@@ -264,7 +264,13 @@ func (m *mailImportService) importPDFsFromMail(ctx context.Context, r io.Reader,
 		}
 		return nil
 	}, func(att mailimport.Attachment) error {
-		archive, err := mailarchive.Build(ctx, att.Filename, att.Reader, mailarchive.Options{MaxBytes: m.maxUploadBytes})
+		tempDir, err := m.store.EnsureDir(".tmp")
+		if err != nil {
+			result.Errors++
+			result.Details = append(result.Details, att.Filename+": "+err.Error())
+			return nil
+		}
+		archive, err := mailarchive.Build(ctx, att.Filename, att.Reader, mailarchive.Options{MaxBytes: m.maxUploadBytes, TempDir: tempDir})
 		if err != nil {
 			result.Errors++
 			result.Details = append(result.Details, att.Filename+": "+err.Error())

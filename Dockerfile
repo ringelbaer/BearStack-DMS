@@ -19,6 +19,7 @@ FROM debian:trixie-slim AS runtime
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
 		ca-certificates \
+		chromium \
 		ffmpeg \
 		libreoffice-writer \
 		poppler-utils \

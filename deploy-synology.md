@@ -147,7 +147,7 @@ Warum doppelte Dollarzeichen? Docker Compose interpretiert `$` in YAML-Werten al
 8. Web-Portal-Einstellungen zunaechst ueberspringen.
 9. Projekt erstellen.
 
-Beim ersten Start baut die Synology das Image aus dem Dockerfile. Das kann auf einer NAS mehrere Minuten dauern, weil Go, Debian-Pakete, `ffmpeg`, `poppler-utils` und `tesseract` in das Image einbezogen werden.
+Beim ersten Start baut die Synology das Image aus dem Dockerfile. Das kann auf einer NAS mehrere Minuten dauern, weil Go, Debian-Pakete, `chromium`, `ffmpeg`, `poppler-utils` und `tesseract` in das Image einbezogen werden.
 
 ## 7. Start pruefen
 
@@ -312,4 +312,4 @@ services:
 - Browser erreicht BearStack nicht: Port-Mapping pruefen, zum Beispiel `8088:8080`, und DSM-Firewall pruefen.
 - Build bricht bei `apt-get` oder `go mod download` ab: NAS hat keinen Internetzugang oder DNS/Proxy ist falsch konfiguriert.
 - Fotomodul startet nicht: `/srv/photos` existiert im Container nicht oder der gemountete Foto-Share ist fuer UID `10001` nicht lesbar.
-- OCR, PDF- oder Office-Vorschau fehlt: Image neu bauen; das Dockerfile installiert `libreoffice-writer`, `poppler-utils`, `tesseract-ocr`, `tesseract-ocr-deu`, `tesseract-ocr-eng` und `ffmpeg`.
+- OCR, PDF-, EML-Archiv- oder Office-Vorschau fehlt: Image neu bauen; das Dockerfile installiert `chromium`, `libreoffice-writer`, `poppler-utils`, `tesseract-ocr`, `tesseract-ocr-deu`, `tesseract-ocr-eng` und `ffmpeg`.

@@ -12,7 +12,8 @@ Für Entwicklung und Build wird Go `1.25.x` oder eine kompatible neuere Version 
 
 Vorschau, OCR und Medienfunktionen nutzen externe Werkzeuge nur dort, wo sie gebraucht werden:
 
-- `poppler-utils` für PDF-Vorschau und OCR-Vorbereitung
+- `poppler-utils` für PDF-Vorschau, PDF-Merge bei EML-Archiven und OCR-Vorbereitung
+- `chromium` für gerenderte EML-Mailabbildungen
 - LibreOffice, konkret `soffice`, für Office-Vorschau und Volltextextraktion
 - `tesseract` mit Sprachpaketen für OCR
 - `ffmpeg` für Video- und Fallback-Thumbnails
@@ -140,7 +141,7 @@ BEARSTACK_AUTH_PASSWORD_HASH='$2a$10$...' docker compose up -d --build
 
 Der Container lauscht intern auf `0.0.0.0:8080` und speichert Daten unter `/var/lib/bearstack`. Deshalb muss Auth im Container gesetzt sein. `compose.yaml` nutzt standardmäßig `admin` als Benutzer, reicht `BEARSTACK_AUTH_PASSWORD` und `BEARSTACK_AUTH_PASSWORD_HASH` durch und veröffentlicht den Host-Port über `BEARSTACK_PORT` oder sonst `8080`.
 
-Das Runtime-Image basiert auf `debian:trixie-slim`, die Build-Stage auf `golang:1.26-trixie`. Das Beispiel-Image enthält `ffmpeg`, `libreoffice-writer`, `poppler-utils`, `tesseract-ocr`, `tesseract-ocr-deu` und `tesseract-ocr-eng`, damit Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach `/srv/photos` gemountet werden.
+Das Runtime-Image basiert auf `debian:trixie-slim`, die Build-Stage auf `golang:1.26-trixie`. Das Beispiel-Image enthält `chromium`, `ffmpeg`, `libreoffice-writer`, `poppler-utils`, `tesseract-ocr`, `tesseract-ocr-deu` und `tesseract-ocr-eng`, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach `/srv/photos` gemountet werden.
 
 Alle Docker-relevanten Umgebungsvariablen:
 

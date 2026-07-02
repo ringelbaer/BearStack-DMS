@@ -14,6 +14,7 @@ import (
 	"mime/quotedprintable"
 	"net/mail"
 	"net/textproto"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -31,12 +32,15 @@ import (
 
 var ErrMessageTooLarge = errors.New("EML-Anhang überschreitet das konfigurierte Größenlimit")
 var ErrPDFUniteUnavailable = errors.New("pdfunite ist lokal nicht installiert oder nicht im PATH")
+var ErrHTMLRendererUnavailable = errors.New("chromium ist lokal nicht installiert oder nicht im PATH")
 
 const mailBodyTextLimit = 2 << 20
 
 type Options struct {
-	MaxBytes  int64
-	MergePDFs func(context.Context, string, []string) error
+	MaxBytes   int64
+	TempDir    string
+	MergePDFs  func(context.Context, string, []string) error
+	RenderHTML func(context.Context, string, string, string) error
 }
 
 type Result struct {
@@ -77,6 +81,7 @@ type messageData struct {
 	MessageID        string
 	DocumentDate     *time.Time
 	BodyText         string
+	BodyHTML         string
 	BodySource       string
 	PDFs             []pdfAttachment
 	OtherAttachments []AttachmentInfo
@@ -88,7 +93,7 @@ func Build(ctx context.Context, _ string, r io.Reader, opts Options) (Result, er
 		return Result{}, err
 	}
 
-	tempDir, err := os.MkdirTemp("", "bearstack-mailarchive-*")
+	tempDir, err := os.MkdirTemp(opts.TempDir, "bearstack-mailarchive-*")
 	if err != nil {
 		return Result{}, err
 	}
@@ -104,16 +109,29 @@ func Build(ctx context.Context, _ string, r io.Reader, opts Options) (Result, er
 		return Result{}, err
 	}
 
-	mailPDF := filepath.Join(tempDir, "message.pdf")
-	pdf, err := documentconvert.PlainTextPDFSections([]string{coverText(msg), bodyText(msg)})
-	if err != nil {
-		return Result{}, err
-	}
-	if err := os.WriteFile(mailPDF, pdf, 0o600); err != nil {
-		return Result{}, err
+	messagePDF := filepath.Join(tempDir, "message.pdf")
+	if msg.BodyHTML != "" {
+		render := opts.RenderHTML
+		if render == nil {
+			render = renderHTMLWithChromium
+		}
+		if err := render(ctx, archiveHTML(msg), messagePDF, tempDir); err != nil {
+			return Result{}, err
+		}
+		if err := ensureFileHasContent(messagePDF); err != nil {
+			return Result{}, err
+		}
+	} else {
+		pdf, err := documentconvert.PlainTextPDFSections([]string{coverText(msg), bodyText(msg)})
+		if err != nil {
+			return Result{}, err
+		}
+		if err := os.WriteFile(messagePDF, pdf, 0o600); err != nil {
+			return Result{}, err
+		}
 	}
 
-	outputPath := mailPDF
+	outputPath := messagePDF
 	if len(msg.PDFs) > 0 {
 		merge := opts.MergePDFs
 		if merge == nil {
@@ -121,7 +139,7 @@ func Build(ctx context.Context, _ string, r io.Reader, opts Options) (Result, er
 		}
 		outputPath = filepath.Join(tempDir, "archive.pdf")
 		inputs := make([]string, 0, len(msg.PDFs)+1)
-		inputs = append(inputs, mailPDF)
+		inputs = append(inputs, messagePDF)
 		for _, pdf := range msg.PDFs {
 			inputs = append(inputs, pdf.Path)
 		}
@@ -174,6 +192,10 @@ func parseMessage(r io.Reader, tempDir string, maxBytes int64) (messageData, err
 	if strings.TrimSpace(data.BodyText) == "" {
 		data.BodyText = "Kein lesbarer Nachrichtentext."
 		data.BodySource = "none"
+	}
+	if data.BodyHTML == "" && looksLikeHTML(data.BodyText) {
+		data.BodyHTML = data.BodyText
+		data.BodySource = "text/plain-html"
 	}
 	return data, nil
 }
@@ -240,15 +262,20 @@ func walkPart(header textproto.MIMEHeader, body io.Reader, data *messageData, te
 		}
 		if strings.TrimSpace(text) != "" {
 			data.BodyText = text
-			data.BodySource = "text/plain"
+			if data.BodyHTML == "" {
+				data.BodySource = "text/plain"
+			}
 		}
 	case "text/html":
 		text, err := readTextBody(body, params)
 		if err != nil {
 			return err
 		}
-		if data.BodySource != "text/plain" && strings.TrimSpace(text) != "" {
-			data.BodyText = htmlToText(text)
+		if strings.TrimSpace(text) != "" {
+			data.BodyHTML = text
+			if strings.TrimSpace(data.BodyText) == "" {
+				data.BodyText = htmlToText(text)
+			}
 			data.BodySource = "text/html"
 		}
 	default:
@@ -337,6 +364,78 @@ func bodyText(msg messageData) string {
 	b.WriteString(strings.TrimSpace(msg.BodyText))
 	b.WriteByte('\n')
 	return b.String()
+}
+
+func archiveHTML(msg messageData) string {
+	styles, body := sanitizeHTMLForArchive(msg.BodyHTML)
+	var b strings.Builder
+	b.WriteString("<!doctype html><html><head><meta charset=\"utf-8\">")
+	b.WriteString(`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; media-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">`)
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(archiveTitle(msg)))
+	b.WriteString("</title><style>")
+	b.WriteString(archiveHTMLCSS())
+	b.WriteString("</style>")
+	if styles != "" {
+		b.WriteString(styles)
+	}
+	b.WriteString("</head><body>")
+	b.WriteString("<section class=\"cover\"><h1>E-Mail-Archiv</h1><dl>")
+	writeHTMLField(&b, "Betreff", msg.Subject)
+	writeHTMLField(&b, "Von", msg.From)
+	writeHTMLField(&b, "An", msg.To)
+	writeHTMLField(&b, "Cc", msg.Cc)
+	writeHTMLField(&b, "Datum", msg.Date)
+	writeHTMLField(&b, "Message-ID", msg.MessageID)
+	writeHTMLField(&b, "Textquelle", msg.BodySource)
+	writeHTMLField(&b, "PDF-Anhaenge", fmt.Sprintf("%d", len(msg.PDFs)))
+	writeHTMLField(&b, "Weitere Anhaenge", fmt.Sprintf("%d", len(msg.OtherAttachments)))
+	b.WriteString("</dl>")
+	if len(msg.PDFs) > 0 {
+		b.WriteString("<h2>PDF-Anhaenge im Archiv</h2><ul>")
+		for _, att := range msg.PDFs {
+			writeHTMLAttachment(&b, att.AttachmentInfo)
+		}
+		b.WriteString("</ul>")
+	}
+	if len(msg.OtherAttachments) > 0 {
+		b.WriteString("<h2>Nicht eingebettete Anhaenge</h2><ul>")
+		for _, att := range msg.OtherAttachments {
+			writeHTMLAttachment(&b, att)
+		}
+		b.WriteString("</ul>")
+	}
+	b.WriteString("</section><section class=\"mail\"><header class=\"mail-head\"><h1>E-Mail-Abbildung</h1><dl>")
+	writeHTMLField(&b, "Betreff", msg.Subject)
+	writeHTMLField(&b, "Von", msg.From)
+	writeHTMLField(&b, "An", msg.To)
+	writeHTMLField(&b, "Cc", msg.Cc)
+	writeHTMLField(&b, "Datum", msg.Date)
+	b.WriteString("</dl></header><main class=\"mail-body\">")
+	b.WriteString(body)
+	b.WriteString("</main></section></body></html>")
+	return b.String()
+}
+
+func archiveHTMLCSS() string {
+	return `@page{size:A4;margin:18mm}*{box-sizing:border-box}body{margin:0;color:#171717;background:#fff;font:14px/1.45 Arial,Helvetica,sans-serif}.cover{break-after:page}.cover h1,.mail-head h1{font-size:24px;margin:0 0 18px}.cover h2{font-size:16px;margin:24px 0 8px}dl{display:grid;grid-template-columns:34mm 1fr;gap:7px 14px;margin:0}dt{font-weight:700;color:#555}dd{margin:0;overflow-wrap:anywhere}ul{margin:0;padding-left:20px}.mail-head{border-bottom:1px solid #ddd;margin-bottom:18px;padding-bottom:12px}.mail-body{overflow-wrap:anywhere}.mail-body img{max-width:100%;height:auto}.mail-body table{max-width:100%;border-collapse:collapse}.mail-body pre{white-space:pre-wrap}`
+}
+
+func writeHTMLField(b *strings.Builder, label, value string) {
+	b.WriteString("<dt>")
+	b.WriteString(html.EscapeString(label))
+	b.WriteString("</dt><dd>")
+	b.WriteString(html.EscapeString(emptyDash(value)))
+	b.WriteString("</dd>")
+}
+
+func writeHTMLAttachment(b *strings.Builder, att AttachmentInfo) {
+	b.WriteString("<li>")
+	b.WriteString(html.EscapeString(att.Filename))
+	b.WriteString(" (")
+	b.WriteString(html.EscapeString(emptyDash(att.MIMEType)))
+	fmt.Fprintf(b, ", %d Byte)", att.SizeBytes)
+	b.WriteString("</li>")
 }
 
 func writeField(b *strings.Builder, label, value string) {
@@ -458,12 +557,46 @@ func decodeBytes(raw []byte, charset string) (string, error) {
 }
 
 var (
-	scriptStyleRE = regexp.MustCompile(`(?is)<(script|style)[^>]*>.*?</\s*(script|style)\s*>`)
-	blockTagRE    = regexp.MustCompile(`(?i)</?(br|p|div|section|article|header|footer|table|tr|li|ul|ol|h[1-6])[^>]*>`)
-	tagRE         = regexp.MustCompile(`(?s)<[^>]+>`)
-	spaceLineRE   = regexp.MustCompile(`[ \t]+`)
-	blankLineRE   = regexp.MustCompile(`\n{3,}`)
+	scriptStyleRE     = regexp.MustCompile(`(?is)<(script|style)[^>]*>.*?</\s*(script|style)\s*>`)
+	blockTagRE        = regexp.MustCompile(`(?i)</?(br|p|div|section|article|header|footer|table|tr|li|ul|ol|h[1-6])[^>]*>`)
+	tagRE             = regexp.MustCompile(`(?s)<[^>]+>`)
+	spaceLineRE       = regexp.MustCompile(`[ \t]+`)
+	blankLineRE       = regexp.MustCompile(`\n{3,}`)
+	htmlSignalRE      = regexp.MustCompile(`(?is)<\s*(html|body|table|tr|td|div|span|p|br|strong|b|style|img|a)\b`)
+	archiveUnsafeRE   = regexp.MustCompile(`(?is)<(script|iframe|frame|object|embed|applet|form|input|button|textarea|select|video|audio|source|canvas|svg|math)[^>]*>.*?</\s*(script|iframe|frame|object|embed|applet|form|input|button|textarea|select|video|audio|source|canvas|svg|math)\s*>`)
+	archiveSingleRE   = regexp.MustCompile(`(?is)<(meta|link|base)[^>]*>`)
+	archiveStyleRE    = regexp.MustCompile(`(?is)<style[^>]*>.*?</\s*style\s*>`)
+	archiveHeadRE     = regexp.MustCompile(`(?is)<head[^>]*>.*?</\s*head\s*>`)
+	archiveBodyRE     = regexp.MustCompile(`(?is)<body[^>]*>(.*)</\s*body\s*>`)
+	archiveDocTypeRE  = regexp.MustCompile(`(?is)<!doctype[^>]*>`)
+	archiveShellTagRE = regexp.MustCompile(`(?is)</?(html|head|body|title)[^>]*>`)
+	archiveEventRE    = regexp.MustCompile(`(?is)\s+on[a-z0-9_-]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)`)
 )
+
+func looksLikeHTML(value string) bool {
+	return htmlSignalRE.MatchString(value)
+}
+
+func sanitizeHTMLForArchive(value string) (string, string) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", ""
+	}
+	value = archiveUnsafeRE.ReplaceAllString(value, " ")
+	value = archiveSingleRE.ReplaceAllString(value, " ")
+	value = archiveEventRE.ReplaceAllString(value, "")
+
+	styles := strings.Join(archiveStyleRE.FindAllString(value, -1), "\n")
+	value = archiveStyleRE.ReplaceAllString(value, " ")
+	if matches := archiveBodyRE.FindStringSubmatch(value); len(matches) > 1 {
+		value = matches[1]
+	} else {
+		value = archiveHeadRE.ReplaceAllString(value, " ")
+	}
+	value = archiveDocTypeRE.ReplaceAllString(value, " ")
+	value = archiveShellTagRE.ReplaceAllString(value, " ")
+	return styles, strings.TrimSpace(value)
+}
 
 func htmlToText(value string) string {
 	value = scriptStyleRE.ReplaceAllString(value, " ")
@@ -555,6 +688,74 @@ func copyLimited(w io.Writer, r io.Reader, maxBytes int64) (int64, error) {
 
 func drainLimited(r io.Reader, maxBytes int64) (int64, error) {
 	return copyLimited(io.Discard, r, maxBytes)
+}
+
+func renderHTMLWithChromium(ctx context.Context, htmlContent, output, tempDir string) error {
+	command, err := chromiumCommand()
+	if err != nil {
+		return err
+	}
+	htmlPath := filepath.Join(tempDir, "message.html")
+	if err := os.WriteFile(htmlPath, []byte(htmlContent), 0o600); err != nil {
+		return err
+	}
+	profileDir, err := os.MkdirTemp(tempDir, "chromium-profile-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(profileDir)
+
+	htmlURL := (&url.URL{Scheme: "file", Path: filepath.ToSlash(htmlPath)}).String()
+	args := []string{
+		"--headless",
+		"--disable-gpu",
+		"--no-sandbox",
+		"--disable-dev-shm-usage",
+		"--disable-background-networking",
+		"--disable-default-apps",
+		"--disable-extensions",
+		"--disable-sync",
+		"--disable-javascript",
+		"--no-pdf-header-footer",
+		"--user-data-dir=" + profileDir,
+		"--print-to-pdf=" + output,
+		htmlURL,
+	}
+	cmd := exec.CommandContext(ctx, command, args...)
+	combined, err := cmd.CombinedOutput()
+	if err != nil {
+		if ctx.Err() != nil {
+			return fmt.Errorf("chromium: %w", ctx.Err())
+		}
+		return fmt.Errorf("chromium: %w: %s", err, strings.TrimSpace(string(combined)))
+	}
+	return normalizeBrowserPDF(output)
+}
+
+func chromiumCommand() (string, error) {
+	for _, name := range []string{"chromium", "chromium-browser", "google-chrome", "google-chrome-stable"} {
+		if path, err := exec.LookPath(name); err == nil {
+			return path, nil
+		}
+	}
+	if _, err := os.Stat("/snap/bin/chromium"); err == nil {
+		return "/snap/bin/chromium", nil
+	}
+	return "", ErrHTMLRendererUnavailable
+}
+
+var browserPDFDateRE = regexp.MustCompile(`D:\d{14}`)
+
+func normalizeBrowserPDF(path string) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	normalized := browserPDFDateRE.ReplaceAll(content, []byte("D:20000101000000"))
+	if bytes.Equal(content, normalized) {
+		return nil
+	}
+	return os.WriteFile(path, normalized, 0o600)
 }
 
 func mergePDFsWithPDFUnite(ctx context.Context, output string, inputs []string) error {

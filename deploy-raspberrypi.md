@@ -26,12 +26,13 @@ sudo reboot
 Nach dem Neustart:
 
 ```sh
-sudo apt install -y git ca-certificates curl apache2-utils ffmpeg libreoffice-writer poppler-utils tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng
+sudo apt install -y git ca-certificates curl apache2-utils chromium ffmpeg libreoffice-writer poppler-utils tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng
 ```
 
 Pakete:
 
 - `apache2-utils`: `htpasswd` zum Erzeugen eines bcrypt-Passwort-Hashes.
+- `chromium`: gerenderte Mailabbildungen fuer EML-Archive im E-Mail-Import.
 - `ffmpeg`: Vorschaubilder fuer Videos im Fotomodul.
 - `libreoffice-writer`: `soffice` fuer Text-/Office-Vorschau und Volltextextraktion von TXT, Markdown, RTF, DOC, DOCX und Pages.
 - `poppler-utils`: `pdftoppm` und `pdfinfo` fuer Vorschaubilder und OCR-Vorbereitung.

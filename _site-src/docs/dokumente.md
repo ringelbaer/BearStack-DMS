@@ -35,7 +35,7 @@ Weitere Dokumentfunktionen:
 
 Der E-Mail-Import ruft PDF-Anhänge und angehängte `.eml`-Dateien aus einem IMAP-Postfach ab und führt sie durch denselben Dokumentimport wie normale Uploads. PDF-Anhänge bleiben dabei unverändert; BearStack übernimmt die PDF-Datei in den Dokumentenspeicher, erkennt Duplikate und startet die weitere Verarbeitung wie Vorschau, Volltext und OCR-Status getrennt davon.
 
-EML-Anhänge werden als eigenständige E-Mail-Archive importiert. BearStack erzeugt dafür ein PDF mit Metadaten-Deckblatt, sicherer Textabbildung der E-Mail und anschließenden PDF-Anhängen aus der EML. Nicht-PDF-Anhänge innerhalb der EML werden auf dem Deckblatt mit Name, Typ und Größe gelistet, aber nicht eingebettet.
+EML-Anhänge werden als eigenständige E-Mail-Archive importiert. BearStack erzeugt dafür ein PDF mit Metadaten-Deckblatt, gerenderter sicherer HTML-/Textabbildung der E-Mail und anschließenden PDF-Anhängen aus der EML. Nicht-PDF-Anhänge innerhalb der EML werden auf dem Deckblatt mit Name, Typ und Größe gelistet, aber nicht eingebettet. Für die gerenderte Mailabbildung wird `chromium` benötigt; für PDF-Anhänge innerhalb der EML nutzt BearStack `pdfunite` aus `poppler-utils`.
 
 Konfiguriert wird der Import unter `Einstellungen -> E-Mail-Import`. Unterstützt werden SSL/TLS, STARTTLS und unverschlüsselte IMAP-Verbindungen; Standardwerte sind Port `993`, `INBOX` und ein Abrufintervall von 15 Minuten. Ein Verbindungstest prüft die Zugangsdaten, ein manueller Lauf ruft sofort ab, und bei aktiviertem Import prüft BearStack das Postfach regelmäßig im Hintergrund.
 

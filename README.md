@@ -49,7 +49,7 @@ go run ./cmd/bearstack
 
 Eine `.env`-Datei im Arbeitsverzeichnis wird automatisch gelesen. Zusaetzlich kann `BEARSTACK_ENV_FILE` auf eine weitere Env-Datei zeigen. Bereits gesetzte Prozess-Umgebungsvariablen haben Vorrang vor Werten aus Env-Dateien; Werte aus `.env` haben fuer denselben Key Vorrang vor `BEARSTACK_ENV_FILE`.
 
-Externe Werkzeuge sind je nach Funktion optional: `pdftoppm`/`pdfinfo` aus `poppler-utils` fuer PDF-Vorschau und OCR-Vorbereitung, `soffice` aus LibreOffice fuer Text-/Office-Vorschau und Volltextextraktion, `tesseract` plus Sprachpakete fuer OCR, `ffmpeg` fuer Video- und Fallback-Bild-Thumbnails sowie optional `vipsthumbnail` fuer Bild-Thumbnails.
+Externe Werkzeuge sind je nach Funktion optional: `pdftoppm`/`pdfinfo`/`pdfunite` aus `poppler-utils` fuer PDF-Vorschau, E-Mail-Archiv-Merge und OCR-Vorbereitung, `chromium` fuer gerenderte EML-Mailabbildungen, `soffice` aus LibreOffice fuer Text-/Office-Vorschau und Volltextextraktion, `tesseract` plus Sprachpakete fuer OCR, `ffmpeg` fuer Video- und Fallback-Bild-Thumbnails sowie optional `vipsthumbnail` fuer Bild-Thumbnails.
 
 ## Tests
 
@@ -131,7 +131,7 @@ Alternativ mit Passwort-Hash:
 BEARSTACK_AUTH_PASSWORD_HASH='$2a$10$...' docker compose up -d --build
 ```
 
-Der Container lauscht intern auf `0.0.0.0:8080` und speichert Daten unter `/var/lib/bearstack`. Deshalb muss Auth im Container gesetzt sein; `compose.yaml` nutzt standardmaessig `admin` als Benutzer, reicht `BEARSTACK_AUTH_PASSWORD` und `BEARSTACK_AUTH_PASSWORD_HASH` durch und veroeffentlicht den Port ueber `BEARSTACK_PORT` oder sonst `8080`. Das Runtime-Image basiert auf `debian:trixie-slim`, die Build-Stage auf `golang:1.26-trixie`. Das Beispiel-Image enthaelt `ffmpeg`, `libreoffice-writer`, `poppler-utils`, `tesseract-ocr`, `tesseract-ocr-deu` und `tesseract-ocr-eng`, damit Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach `/srv/photos` gemountet werden.
+Der Container lauscht intern auf `0.0.0.0:8080` und speichert Daten unter `/var/lib/bearstack`. Deshalb muss Auth im Container gesetzt sein; `compose.yaml` nutzt standardmaessig `admin` als Benutzer, reicht `BEARSTACK_AUTH_PASSWORD` und `BEARSTACK_AUTH_PASSWORD_HASH` durch und veroeffentlicht den Port ueber `BEARSTACK_PORT` oder sonst `8080`. Das Runtime-Image basiert auf `debian:trixie-slim`, die Build-Stage auf `golang:1.26-trixie`. Das Beispiel-Image enthaelt `chromium`, `ffmpeg`, `libreoffice-writer`, `poppler-utils`, `tesseract-ocr`, `tesseract-ocr-deu` und `tesseract-ocr-eng`, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach `/srv/photos` gemountet werden.
 
 Eine detaillierte Anleitung fuer Synology DSM mit Container Manager steht in [`deploy-synology.md`](deploy-synology.md).
 
@@ -230,7 +230,7 @@ Dokumente werden ueber die Weboberflaeche (`POST /upload`), die JSON-API (`POST 
 
 Uploads werden nach dem konfigurierten Limit begrenzt, Dateinamen werden normalisiert, unbekannte Dateitypen werden abgelehnt und gespeicherte Pfade werden immer gegen den Storage-Root aufgeloest. Unerwartete Import- und Vorschaufehler werden fuer HTTP-Antworten generisch ausgegeben, damit interne Pfade oder Werkzeugdetails nicht im Browser landen.
 
-Der E-Mail-Import verarbeitet erlaubte IMAP-Nachrichten mit PDF-Anhaengen oder angehaengten `.eml`-Dateien. PDF-Anhaenge werden wie normale Uploads importiert. Jede EML-Datei wird zu einem Archiv-PDF mit Metadaten-Deckblatt, sicherer Mailabbildung und anschliessenden PDF-Anhaengen aus der EML; andere Anhaenge werden auf dem Deckblatt gelistet. Das Zusammenfuehren mit PDF-Anhaengen benoetigt `pdfunite` aus `poppler-utils`.
+Der E-Mail-Import verarbeitet erlaubte IMAP-Nachrichten mit PDF-Anhaengen oder angehaengten `.eml`-Dateien. PDF-Anhaenge werden wie normale Uploads importiert. Jede EML-Datei wird zu einem Archiv-PDF mit Metadaten-Deckblatt, gerenderter sicherer Mailabbildung und anschliessenden PDF-Anhaengen aus der EML; andere Anhaenge werden auf dem Deckblatt gelistet. Die Mailabbildung benoetigt `chromium`; das Zusammenfuehren mit PDF-Anhaengen benoetigt `pdfunite` aus `poppler-utils`.
 
 Berechtigungen sind capability-basiert. `documents_read` darf lesen und WebDAV lesen, `documents_editor` darf zusaetzlich hochladen und Metadaten bearbeiten, `documents_manager` darf ausserdem loeschen und Struktur-Daten wie Tags, Felder und Suchfavoriten pflegen. Benutzer ohne Struktur-Recht koennen nur vorhandene Dokument-Tags zuweisen; neue Tags werden bei Dokument-Metadaten, Batch-Tagging und WebDAV-Uploads abgelehnt.
 

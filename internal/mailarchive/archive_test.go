@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func TestBuildPrefersPlainTextAndListsNonPDFAttachments(t *testing.T) {
+func TestBuildRendersHTMLPartAndListsNonPDFAttachments(t *testing.T) {
 	raw := strings.Join([]string{
 		"From: Billing <billing@example.com>",
 		"To: archive@example.com",
@@ -40,14 +40,15 @@ func TestBuildPrefersPlainTextAndListsNonPDFAttachments(t *testing.T) {
 		"--mixed--",
 		"",
 	}, "\r\n")
+	renderer := &captureHTMLRenderer{}
 
-	result, err := Build(context.Background(), "original.eml", strings.NewReader(raw), Options{MaxBytes: 1 << 20})
+	result, err := Build(context.Background(), "original.eml", strings.NewReader(raw), Options{MaxBytes: 1 << 20, RenderHTML: renderer.render})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer result.Cleanup()
 
-	if result.Title != "Rechnung Juli" || result.BodySource != "text/plain" {
+	if result.Title != "Rechnung Juli" || result.BodySource != "text/html" {
 		t.Fatalf("result title/source = %q/%q", result.Title, result.BodySource)
 	}
 	if result.DocumentDate == nil || result.DocumentDate.Format("2006-01-02") != "2026-07-01" {
@@ -59,13 +60,12 @@ func TestBuildPrefersPlainTextAndListsNonPDFAttachments(t *testing.T) {
 	if len(result.OtherAttachments) != 1 || result.OtherAttachments[0].Filename != "logo.png" || result.PDFs != 0 {
 		t.Fatalf("attachments = pdfs:%d other:%#v", result.PDFs, result.OtherAttachments)
 	}
-	content := readFileString(t, result.Path)
-	if !strings.Contains(content, "Plain body wins.") || strings.Contains(content, "HTML body") {
-		t.Fatalf("pdf content = %s", content)
+	if !strings.Contains(renderer.html, "<strong>HTML body</strong>") || strings.Contains(renderer.html, "Plain body wins.") || !strings.Contains(renderer.html, "logo.png") {
+		t.Fatalf("rendered html = %s", renderer.html)
 	}
 }
 
-func TestBuildFallsBackToSafeHTMLText(t *testing.T) {
+func TestBuildRendersSafeHTML(t *testing.T) {
 	raw := strings.Join([]string{
 		"From: sender@example.com",
 		"Subject: HTML",
@@ -73,8 +73,9 @@ func TestBuildFallsBackToSafeHTMLText(t *testing.T) {
 		"",
 		"<style>body{display:none}</style><script>alert(1)</script><p>Hallo <b>Welt</b> &amp; Archiv</p>",
 	}, "\r\n")
+	renderer := &captureHTMLRenderer{}
 
-	result, err := Build(context.Background(), "html.eml", strings.NewReader(raw), Options{MaxBytes: 1 << 20})
+	result, err := Build(context.Background(), "html.eml", strings.NewReader(raw), Options{MaxBytes: 1 << 20, RenderHTML: renderer.render})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,9 +84,32 @@ func TestBuildFallsBackToSafeHTMLText(t *testing.T) {
 	if result.BodySource != "text/html" {
 		t.Fatalf("body source = %q", result.BodySource)
 	}
-	content := readFileString(t, result.Path)
-	if !strings.Contains(content, "Hallo Welt & Archiv") || strings.Contains(content, "alert") || strings.Contains(content, "display:none") {
-		t.Fatalf("pdf content = %s", content)
+	if !strings.Contains(renderer.html, "<p>Hallo <b>Welt</b> &amp; Archiv</p>") || strings.Contains(renderer.html, "alert") {
+		t.Fatalf("rendered html = %s", renderer.html)
+	}
+}
+
+func TestBuildRendersPlainTextThatContainsHTML(t *testing.T) {
+	raw := strings.Join([]string{
+		"From: sender@example.com",
+		"Subject: Plain HTML",
+		"Content-Type: text/plain; charset=utf-8",
+		"",
+		"Hallo<br/><span style=\"font-weight: 500;\">Welt</span>",
+	}, "\r\n")
+	renderer := &captureHTMLRenderer{}
+
+	result, err := Build(context.Background(), "plain-html.eml", strings.NewReader(raw), Options{MaxBytes: 1 << 20, RenderHTML: renderer.render})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer result.Cleanup()
+
+	if result.BodySource != "text/plain-html" {
+		t.Fatalf("body source = %q", result.BodySource)
+	}
+	if !strings.Contains(renderer.html, "Hallo<br/><span style=\"font-weight: 500;\">Welt</span>") {
+		t.Fatalf("rendered html = %s", renderer.html)
 	}
 }
 
@@ -153,6 +177,26 @@ func TestArchiveFilenameWithoutDateUsesSubject(t *testing.T) {
 	}
 }
 
+func TestNormalizeBrowserPDFStabilizesDates(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "browser.pdf")
+	raw := "%PDF\n/CreationDate (D:20260702131648+00'00')\n/ModDate (D:20260702131649+00'00')\n%%EOF\n"
+	if err := os.WriteFile(path, []byte(raw), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := normalizeBrowserPDF(path); err != nil {
+		t.Fatal(err)
+	}
+
+	content := readFileString(t, path)
+	if strings.Contains(content, "20260702131648") || strings.Contains(content, "20260702131649") {
+		t.Fatalf("pdf dates were not normalized: %s", content)
+	}
+	if strings.Count(content, "D:20000101000000") != 2 {
+		t.Fatalf("normalized dates missing: %s", content)
+	}
+}
+
 func readFileString(t *testing.T, path string) string {
 	t.Helper()
 	content, err := os.ReadFile(path)
@@ -160,4 +204,13 @@ func readFileString(t *testing.T, path string) string {
 		t.Fatal(err)
 	}
 	return string(content)
+}
+
+type captureHTMLRenderer struct {
+	html string
+}
+
+func (r *captureHTMLRenderer) render(_ context.Context, htmlContent, output, _ string) error {
+	r.html = htmlContent
+	return os.WriteFile(output, []byte("%PDF-rendered\n"+htmlContent), 0o600)
 }
