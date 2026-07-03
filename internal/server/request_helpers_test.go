@@ -80,6 +80,32 @@ func TestFilterFromRequestCustomFields(t *testing.T) {
 	}
 }
 
+func TestDocumentFilterActive(t *testing.T) {
+	if documentFilterActive(document.ListFilter{Sort: document.ListSortName, Direction: document.ListDirectionAscending}) {
+		t.Fatal("sort-only filter should not be active")
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/?q=abc", nil)
+	if !documentFilterActive(filterFromRequest(req, false, defaultDocumentPageSize)) {
+		t.Fatal("query filter should be active")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/?tags=steuer", nil)
+	if !documentFilterActive(filterFromRequest(req, false, defaultDocumentPageSize)) {
+		t.Fatal("tag filter should be active")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/?year=2026&month=5", nil)
+	if !documentFilterActive(filterFromRequest(req, false, defaultDocumentPageSize)) {
+		t.Fatal("date filter should be active")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/?field_7=ACME", nil)
+	if !documentFilterActive(filterFromRequest(req, false, defaultDocumentPageSize)) {
+		t.Fatal("custom field filter should be active")
+	}
+}
+
 func TestDocumentSortLinksToggleDirectionAndKeepFilters(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/?q=abc&tags=steuer&sort=name&dir=asc&page=4&notice=ok&highlight=9", nil)
 	filter := filterFromRequest(req, false, defaultDocumentPageSize)

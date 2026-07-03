@@ -58,6 +58,7 @@ func (builder documentListPageBuilder) Build(ctx context.Context, r *http.Reques
 		TagStyles:            tagStyleMap(tags),
 		TagListHidden:        tagListHiddenMap(tags),
 		Filter:               filter,
+		DocumentFilterActive: documentFilterActive(filter),
 		FilterDates:          datesForFilter(filter),
 		DesktopPreviewMode:   desktopPreviewMode,
 		InlineDesktopPreview: desktopPreviewMode == desktopPreviewModeInline,

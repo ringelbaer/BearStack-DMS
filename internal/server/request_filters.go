@@ -220,6 +220,21 @@ func dateFilterResetURL(r *http.Request) string {
 	return pathWithQuery(r.URL.Path, q)
 }
 
+func documentFilterActive(filter document.ListFilter) bool {
+	if filter.Query != "" || filter.From != nil || filter.To != nil {
+		return true
+	}
+	if len(normalizeTagValues(filter.Tags, "")) > 0 {
+		return true
+	}
+	for _, customField := range filter.CustomFields {
+		if customField.FieldID > 0 && document.CleanCustomFieldFilterValue(customField.Value) != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func germanMonthShort(month time.Month) string {
 	names := [...]string{"Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"}
 	if month < time.January || month > time.December {

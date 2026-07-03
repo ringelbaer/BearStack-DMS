@@ -209,7 +209,7 @@
 {{end}}
 
 {{define "filters"}}
-<form class="filters" method="get">
+<form class="filters{{if .DocumentFilterActive}} has-active-filter{{end}}" method="get">
   <input type="hidden" name="dir" value="{{.Filter.Direction}}">
   <div class="filter-search {{if .SearchFavorites}}filter-search-with-favorites{{end}}">
     {{if .SearchFavorites}}
@@ -273,9 +273,15 @@
         <option value="size" {{if eq .Filter.Sort "size"}}selected{{end}}>Größe</option>
       </select>
     </label>
-    <a class="secondary-button filter-reset-button" href="/documents">Zurücksetzen</a>
   </div>
-  <button class="filter-submit" type="submit">Filtern</button>
+  <div class="filter-actions">
+    <button class="filter-submit" type="submit">Filtern</button>
+    {{if .DocumentFilterActive}}
+    <a class="secondary-button filter-reset-button" href="/documents">Zurücksetzen</a>
+    {{else}}
+    <button class="secondary-button filter-reset-button" type="button" disabled>Zurücksetzen</button>
+    {{end}}
+  </div>
   {{template "date_filter_links" .}}
 </form>
 {{end}}

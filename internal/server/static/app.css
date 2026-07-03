@@ -185,6 +185,14 @@ button:disabled:hover {
   text-decoration: none;
 }
 
+.secondary-button:disabled,
+.secondary-button:disabled:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+  color: var(--primary);
+  text-decoration: none;
+}
+
 .filter-reset-button {
   align-self: end;
   font-size: 13px;
@@ -888,6 +896,18 @@ label span {
 
 .filter-advanced {
   display: contents;
+}
+
+.filter-actions {
+  align-items: center;
+  align-self: end;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.filter-actions > .filter-reset-button {
+  min-height: var(--control-height);
 }
 
 .filter-years {

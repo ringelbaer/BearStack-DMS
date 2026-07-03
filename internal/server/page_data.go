@@ -62,6 +62,7 @@ type PageData struct {
 	DesktopDateUnderTitle  bool
 	FolderTagMinDocuments  int
 	Filter                 document.ListFilter
+	DocumentFilterActive   bool
 	FilterDates            filterDates
 	DateYears              []int
 	DateYearLinks          []DateLink
