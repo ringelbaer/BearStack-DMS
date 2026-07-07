@@ -7,13 +7,17 @@ import (
 	"context"
 	"crypto/rand"
 	"embed"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
 	"log/slog"
 	"mime"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -45,6 +49,8 @@ type Server struct {
 
 const pageSize = 100
 const defaultDocumentPageSize = 100
+const authSessionKeyFileName = "auth-session.key"
+const authSessionKeyBytes = 32
 const defaultAppName = "BearStack"
 const appNameSettingKey = "app_name"
 const documentColumnsSettingKey = "document_columns"
@@ -95,11 +101,11 @@ func New(cfg config.Config, repo *repository.Repository, store *storage.Store, l
 	}
 	cfg.WebDAV.Path = webDAVPath
 
-	authKey, err := randomAuthKey()
+	authState, err := newAuthState(cfg.Auth)
 	if err != nil {
 		return nil, err
 	}
-	authState, err := newAuthState(cfg.Auth)
+	authKey, err := authSessionKey(cfg.DataDir)
 	if err != nil {
 		return nil, err
 	}
@@ -282,9 +288,65 @@ func isCompressibleStaticPath(name string) bool {
 }
 
 func randomAuthKey() ([]byte, error) {
-	key := make([]byte, 32)
+	key := make([]byte, authSessionKeyBytes)
 	if _, err := rand.Read(key); err != nil {
 		return nil, fmt.Errorf("generate auth session key: %w", err)
+	}
+	return key, nil
+}
+
+func authSessionKey(dataDir string) ([]byte, error) {
+	dataDir = strings.TrimSpace(dataDir)
+	if dataDir == "" {
+		return randomAuthKey()
+	}
+	keyPath := filepath.Join(dataDir, authSessionKeyFileName)
+	key, err := readAuthSessionKey(keyPath)
+	if err == nil {
+		return key, nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+	return createAuthSessionKey(keyPath)
+}
+
+func readAuthSessionKey(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	key, err := hex.DecodeString(strings.TrimSpace(string(data)))
+	if err != nil || len(key) != authSessionKeyBytes {
+		return nil, fmt.Errorf("invalid auth session key file %s", path)
+	}
+	return key, nil
+}
+
+func createAuthSessionKey(path string) ([]byte, error) {
+	key, err := randomAuthKey()
+	if err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+		return nil, fmt.Errorf("create auth session key directory: %w", err)
+	}
+	data := make([]byte, hex.EncodedLen(len(key))+1)
+	hex.Encode(data, key)
+	data[len(data)-1] = '\n'
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if errors.Is(err, os.ErrExist) {
+		return readAuthSessionKey(path)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("write auth session key: %w", err)
+	}
+	if _, err := file.Write(data); err != nil {
+		_ = file.Close()
+		return nil, fmt.Errorf("write auth session key: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		return nil, fmt.Errorf("write auth session key: %w", err)
 	}
 	return key, nil
 }

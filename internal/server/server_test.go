@@ -71,6 +71,51 @@ func TestTemplatesParse(t *testing.T) {
 	}
 }
 
+func TestNewPersistsAuthSessionKey(t *testing.T) {
+	dataDir := t.TempDir()
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	cfg := config.Config{
+		DataDir: dataDir,
+		Auth: config.AuthConfig{
+			Username: "admin",
+			Password: "secret",
+		},
+	}
+	server1, err := New(cfg, nil, nil, logger)
+	if err != nil {
+		t.Fatal(err)
+	}
+	session, err := server1.signAuthSession(authSessionPayload{
+		User:    "admin",
+		Expires: time.Now().Add(time.Hour).Unix(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server2, err := New(cfg, nil, nil, logger)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(server1.authKey, server2.authKey) {
+		t.Fatal("auth session key changed across server restart")
+	}
+	payload, ok := server2.verifyAuthSession(session)
+	if !ok {
+		t.Fatal("session cookie did not verify after restart")
+	}
+	if payload.User != "admin" {
+		t.Fatalf("session user = %q", payload.User)
+	}
+	keyInfo, err := os.Stat(filepath.Join(dataDir, authSessionKeyFileName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := keyInfo.Mode().Perm(); got != 0o600 {
+		t.Fatalf("auth session key mode = %o, want 600", got)
+	}
+}
+
 func TestTemplateAssetsAreScopedByPage(t *testing.T) {
 	templates, err := parseTemplates()
 	if err != nil {
