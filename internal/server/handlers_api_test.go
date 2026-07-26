@@ -16,10 +16,29 @@ import (
 	"testing"
 	"time"
 
+	"bearstack"
 	"bearstack/internal/document"
 	"bearstack/internal/repository"
 	"bearstack/internal/storage"
 )
+
+func TestHandleOpenAPIServesEmbeddedDescription(t *testing.T) {
+	server := &Server{log: slog.New(slog.NewTextHandler(io.Discard, nil))}
+	req := httptest.NewRequest(http.MethodGet, "/api/openapi.yaml", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	if got := rec.Header().Get("Content-Type"); got != "application/yaml; charset=utf-8" {
+		t.Fatalf("content type = %q", got)
+	}
+	if rec.Body.String() != bearstack.OpenAPISpec() {
+		t.Fatal("response body does not match embedded OpenAPI description")
+	}
+}
 
 func TestHandleAPIDocumentsUsesUIFilters(t *testing.T) {
 	ctx := context.Background()

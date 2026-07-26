@@ -4,8 +4,11 @@ package server
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
+
+	"bearstack"
 )
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -19,6 +22,14 @@ func (s *Server) handleAPI(w http.ResponseWriter, r *http.Request) {
 		Title:  "API",
 		Active: "api",
 	})
+}
+
+func (s *Server) handleOpenAPI(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
+	w.Header().Set("Content-Disposition", `inline; filename="openapi.yaml"`)
+	w.Header().Set("Cache-Control", "private, max-age=3600")
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.WriteString(w, bearstack.OpenAPISpec())
 }
 
 type documentListPageOptions struct {

@@ -8,6 +8,7 @@ var coreRouteSpecs = []routeSpec{
 	{pattern: "GET /favicon/custom", capabilities: 0, handler: (*Server).handleCustomFavicon},
 	{pattern: "GET /healthz", capabilities: 0, handler: (*Server).handleHealth},
 	{pattern: "GET /api", capabilities: authCapDocumentsRead | authCapDocumentsUpload | authCapDocumentsWebDAVRead | authCapPhotosRead, requireAny: true, handler: (*Server).handleAPI},
+	{pattern: "GET /api/openapi.yaml", capabilities: authCapDocumentsRead | authCapDocumentsUpload | authCapDocumentsWebDAVRead | authCapPhotosRead, requireAny: true, handler: (*Server).handleOpenAPI},
 	{pattern: "GET /help", capabilities: 0, handler: (*Server).handleHelp},
 	{pattern: "GET /log", capabilities: authCapSystemAudit, handler: (*Server).handleAuditLog},
 }

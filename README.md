@@ -228,6 +228,8 @@ Weitere projektnahe Variablen:
 
 Dokumente werden ueber die Weboberflaeche (`POST /upload`), die JSON-API (`POST /api/upload`) oder WebDAV-`PUT` importiert. BearStack speichert die Originaldatei im konfigurierten `storage_dir`, legt Metadaten in SQLite ab und fuehrt Text-/Vorschau-/Thumbnail-Verarbeitung asynchron im Hintergrund aus. Unterstuetzt werden PDF, Bilder sowie einfache Text- und Office-Formate; Office-Text und Office-Vorschauen benoetigen LibreOffice.
 
+Die maschinenlesbare API-Beschreibung liegt im Repository als `openapi.yaml` und wird von einer laufenden Instanz authentifiziert unter `GET /api/openapi.yaml` ausgeliefert. Sie verwendet OpenAPI 3.1 und beschreibt die oeffentlichen JSON-, Upload- und Dokumentmedien-Endpunkte.
+
 Uploads werden nach dem konfigurierten Limit begrenzt, Dateinamen werden normalisiert, unbekannte Dateitypen werden abgelehnt und gespeicherte Pfade werden immer gegen den Storage-Root aufgeloest. Unerwartete Import- und Vorschaufehler werden fuer HTTP-Antworten generisch ausgegeben, damit interne Pfade oder Werkzeugdetails nicht im Browser landen.
 
 Der E-Mail-Import verarbeitet erlaubte IMAP-Nachrichten mit PDF-Anhaengen oder angehaengten `.eml`-Dateien. PDF-Anhaenge werden wie normale Uploads importiert. Jede EML-Datei wird zu einem Archiv-PDF mit unabhaengig erzeugtem Metadaten-Deckblatt, gerenderter sicherer Mailabbildung und anschliessenden PDF-Anhaengen aus der EML; andere Anhaenge werden auf dem Deckblatt gelistet. Die Mailabbildung benoetigt `chromium`; das Zusammenfuehren von Deckblatt, Mailabbildung und PDF-Anhaengen benoetigt `pdfunite` aus `poppler-utils`.

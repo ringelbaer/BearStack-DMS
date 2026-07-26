@@ -1,0 +1,1253 @@
+openapi: 3.1.0
+info:
+  title: BearStack HTTP API
+  version: 0.21.0
+  description: |
+    Programmatic HTTP interface for documents, uploads, tags, custom fields,
+    virtual folders and document media.
+
+    BearStack accepts HTTP Basic authentication with the configured credentials.
+    A browser session cookie obtained through the web login is accepted as well.
+    When authentication is disabled in the server configuration, the security
+    requirements are not enforced.
+
+    Write operations require the capabilities stated in their descriptions.
+    API clients using form endpoints should send `Accept: application/json`.
+servers:
+  - url: /
+    description: Current BearStack instance
+security:
+  - basicAuth: []
+  - sessionCookie: []
+tags:
+  - name: System
+    description: Service status and API description.
+  - name: Documents
+    description: Document search, metadata and file delivery.
+  - name: Upload
+    description: Document import.
+  - name: Structure
+    description: Tags, custom fields and virtual folders.
+
+paths:
+  /healthz:
+    get:
+      tags: [System]
+      operationId: getHealth
+      summary: Check service health
+      description: Requires authentication when authentication is enabled.
+      responses:
+        "200":
+          description: The HTTP service is available.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+              example:
+                status: ok
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/openapi.yaml:
+    get:
+      tags: [System]
+      operationId: getOpenAPIDescription
+      summary: Download this OpenAPI description
+      description: |
+        Returns the OpenAPI description embedded in the running BearStack
+        version. Requires any document or photo API capability.
+      responses:
+        "200":
+          description: OpenAPI description in YAML format.
+          content:
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/upload:
+    post:
+      tags: [Upload]
+      operationId: uploadDocuments
+      summary: Upload one or more documents
+      description: |
+        Imports every file part as a document. Files exceeding the configured
+        upload limit, unsupported file types and duplicates are reported per
+        item. Requires the `documents.upload` capability.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+                    format: binary
+            encoding:
+              files:
+                style: form
+                explode: true
+      responses:
+        "201":
+          description: |
+            The request was processed and at least one file was imported, was a
+            duplicate, or did not produce a per-file error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResult"
+        "400":
+          description: No document was imported and at least one error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/documents:
+    get:
+      tags: [Documents]
+      operationId: listDocuments
+      summary: Search and list documents
+      description: |
+        Returns a paginated list using the same filters as the web interface.
+        Search strings shorter than three Unicode characters are ignored.
+        Requires the `documents.read` capability.
+
+        Custom field filters use dynamic query parameter names in the form
+        `field_{id}`, for example `field_3=ACME`. The first non-empty value per
+        field is used and matching is case-insensitive.
+      parameters:
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/TagsQuery"
+        - name: field_{id}
+          in: query
+          description: |
+            Custom field value filter. Replace `{id}` in the parameter name
+            with a positive custom field ID, for example `field_3`.
+          schema:
+            type: string
+        - name: from
+          in: query
+          description: Earliest document date. Ignored when `year` is valid.
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          description: Latest document date. Ignored when `year` is valid.
+          schema:
+            type: string
+            format: date
+        - name: year
+          in: query
+          description: Document year; takes precedence over `from` and `to`.
+          schema:
+            type: integer
+            minimum: 1900
+            maximum: 2100
+        - name: month
+          in: query
+          description: Optional month when a valid `year` is supplied.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: sort
+          in: query
+          description: Unknown values fall back to `upload_date`.
+          schema:
+            type: string
+            enum: [upload_date, date, name, title, size, deleted_at]
+            default: upload_date
+        - name: dir
+          in: query
+          description: |
+            Sort direction. Defaults to `asc` for name/title and `desc` for all
+            other sort keys.
+          schema:
+            type: string
+            enum: [asc, desc]
+        - name: trash
+          in: query
+          description: |
+            Lists deleted documents for `1`, `true`, `yes` or `ja`
+            (case-insensitive).
+          schema:
+            oneOf:
+              - type: boolean
+              - type: string
+                enum: ["1", "true", "yes", "ja"]
+            default: false
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated document result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/documents/{id}/download:
+    get:
+      tags: [Documents]
+      operationId: downloadDocumentFromAPI
+      summary: Download an original document through the API alias
+      description: Requires the `documents.read` capability.
+      parameters:
+        - $ref: "#/components/parameters/DocumentID"
+      responses:
+        "200":
+          $ref: "#/components/responses/DocumentFile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Document or stored file not found.
+
+  /api/fields:
+    get:
+      tags: [Structure]
+      operationId: listCustomFields
+      summary: List custom field definitions
+      description: Requires the `documents.read` capability.
+      responses:
+        "200":
+          description: Custom field definitions in display order.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [fields]
+                properties:
+                  fields:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CustomField"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/folders:
+    get:
+      tags: [Structure]
+      operationId: listVirtualFolder
+      summary: List a virtual folder
+      description: |
+        Traverses BearStack's virtual hierarchy of tags, custom field values and
+        saved searches. Requires the `documents.read` capability.
+
+        `path` is the preferred representation and accepts repeated segments:
+        `tag:{name}` or `field:{fieldId}:{exactValue}`. When `path` is absent,
+        repeated `tags` values provide the legacy tags-only representation.
+
+        At the root only child folders are returned. Documents are returned once
+        at least one normal path segment is selected. The special legacy path
+        `tags=00 Suchfavoriten` lists saved searches, and a second tag selects
+        one. Search, date and trash query filters are ignored for normal virtual
+        folders.
+      parameters:
+        - name: path
+          in: query
+          description: Ordered virtual path segments.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              pattern: "^(tag:.+|field:[1-9][0-9]*:.+)$"
+        - $ref: "#/components/parameters/TagsQuery"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Child folders and documents at the selected path.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FolderResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/tags:
+    get:
+      tags: [Structure]
+      operationId: listTags
+      summary: List document tags
+      description: Requires the `documents.read` capability.
+      responses:
+        "200":
+          description: All document tags.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tags]
+                properties:
+                  tags:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Tag"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /documents/{id}/download:
+    get:
+      tags: [Documents]
+      operationId: downloadDocument
+      summary: Download an original document
+      description: Requires the `documents.read` capability.
+      parameters:
+        - $ref: "#/components/parameters/DocumentID"
+      responses:
+        "200":
+          $ref: "#/components/responses/DocumentFile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Document or stored file not found.
+
+  /documents/{id}/preview:
+    get:
+      tags: [Documents]
+      operationId: previewDocument
+      summary: Retrieve an inline document preview
+      description: |
+        Returns the original PDF/image or a generated PDF for supported office
+        and text formats. Requires the `documents.read` capability.
+      parameters:
+        - $ref: "#/components/parameters/DocumentID"
+      responses:
+        "200":
+          description: Inline original or generated preview.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Document not found.
+        "415":
+          description: This document type cannot be previewed.
+        "503":
+          description: Preview dependency is unavailable.
+
+  /documents/{id}/thumbnail:
+    get:
+      tags: [Documents]
+      operationId: getDocumentThumbnail
+      summary: Retrieve a document thumbnail
+      description: |
+        Generates the thumbnail on demand when possible. Requires the
+        `documents.read` capability.
+      parameters:
+        - $ref: "#/components/parameters/DocumentID"
+      responses:
+        "200":
+          description: JPEG thumbnail.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: private, max-age=86400
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Document or thumbnail not found.
+
+  /documents/{id}/tags:
+    post:
+      tags: [Documents]
+      operationId: replaceDocumentTags
+      summary: Replace all tags on a document
+      description: |
+        Existing tags can be assigned with `documents.edit`. Creating a new tag
+        additionally requires `documents.structure`. Deleted documents cannot be
+        changed. Send `Accept: application/json`.
+      parameters:
+        - $ref: "#/components/parameters/DocumentID"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  items:
+                    type: string
+            encoding:
+              tags:
+                style: form
+                explode: true
+      responses:
+        "200":
+          description: Normalized, stored tag names.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentTags"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /documents/{id}/metadata:
+    post:
+      tags: [Documents]
+      operationId: updateDocumentMetadata
+      summary: Update document metadata
+      description: |
+        Replaces title, description, date, tags and custom field values.
+        Custom fields use form field names `field_{id}`, for example `field_3`.
+        Existing tags can be assigned with `documents.edit`; creating a new tag
+        additionally requires `documents.structure`. Send
+        `Accept: application/json`.
+      parameters:
+        - $ref: "#/components/parameters/DocumentID"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                document_date:
+                  description: Empty to clear the date.
+                  oneOf:
+                    - type: string
+                      format: date
+                    - type: string
+                      maxLength: 0
+                tags:
+                  type: array
+                  items:
+                    type: string
+                new_tags:
+                  type: string
+                  description: Additional comma-separated tags.
+                field_{id}:
+                  type: string
+                  description: |
+                    Custom field value. Replace `{id}` in the form field name
+                    with a positive custom field ID.
+              additionalProperties:
+                type: string
+            encoding:
+              tags:
+                style: form
+                explode: true
+      responses:
+        "200":
+          description: Selected values from the updated metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetadataUpdateResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /documents/{id}/document-date:
+    post:
+      tags: [Documents]
+      operationId: updateDocumentDate
+      summary: Update only the document date
+      description: Requires `documents.edit` and always returns JSON.
+      parameters:
+        - $ref: "#/components/parameters/DocumentID"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                document_date:
+                  description: Empty to clear the date.
+                  oneOf:
+                    - type: string
+                      format: date
+                    - type: string
+                      maxLength: 0
+      responses:
+        "200":
+          description: Formatted updated date.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentDateUpdateResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /documents/{id}/ocr/status:
+    get:
+      tags: [Documents]
+      operationId: getDocumentOCRStatus
+      summary: Get the latest OCR job
+      description: Requires the `documents.read` capability.
+      parameters:
+        - $ref: "#/components/parameters/DocumentID"
+      responses:
+        "200":
+          description: Latest OCR job, or `null` when none exists.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OCRStatus"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Credentials configured for the BearStack instance.
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: bearstack_session
+      description: Signed session cookie created by the web login.
+
+  parameters:
+    DocumentID:
+      name: id
+      in: path
+      required: true
+      description: Positive document ID.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    SearchQuery:
+      name: q
+      in: query
+      description: Full-text search; values shorter than three characters are ignored.
+      schema:
+        type: string
+    TagsQuery:
+      name: tags
+      in: query
+      description: Repeated tag names; all selected tags must match.
+      style: form
+      explode: true
+      schema:
+        type: array
+        items:
+          type: string
+    Page:
+      name: page
+      in: query
+      description: One-based page number. Invalid values fall back to 1.
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: page_size
+      in: query
+      description: |
+        Number of documents per page. When omitted, the instance setting is
+        used. Other values are rejected.
+      schema:
+        type: integer
+        enum: [25, 50, 100, 200, 500]
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or form data.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Missing or invalid authentication.
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+          example: Basic realm="BearStack", charset="UTF-8"
+      content:
+        text/plain:
+          schema:
+            type: string
+    Forbidden:
+      description: The authenticated account lacks the required capability.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Requested resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: Internal error with implementation details masked.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: Interner Serverfehler
+    DocumentFile:
+      description: Original document file.
+      headers:
+        Content-Disposition:
+          description: Attachment filename in ASCII and RFC 5987 form.
+          schema:
+            type: string
+        X-Content-Type-Options:
+          schema:
+            type: string
+            const: nosniff
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: ok
+
+    UploadResult:
+      type: object
+      required: [uploaded, duplicates, errors]
+      properties:
+        uploaded:
+          type: array
+          items:
+            $ref: "#/components/schemas/UploadedDocument"
+        duplicates:
+          type: array
+          items:
+            $ref: "#/components/schemas/DuplicateDocument"
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/UploadError"
+
+    UploadedDocument:
+      type: object
+      required:
+        - id
+        - filename
+        - title
+        - upload_way
+        - content_text_source
+        - content_text_source_label
+        - size_bytes
+        - document_url
+        - download_url
+        - preview_url
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        filename:
+          type: string
+        title:
+          type: string
+        upload_way:
+          type: string
+          const: api
+        content_text_source:
+          $ref: "#/components/schemas/ContentTextSource"
+        content_text_source_label:
+          type: string
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 0
+        document_url:
+          type: string
+        download_url:
+          type: string
+        preview_url:
+          type: string
+        document_date:
+          type: string
+          format: date
+
+    DuplicateDocument:
+      type: object
+      required: [filename, existing_id, existing_filename, document_url]
+      properties:
+        filename:
+          type: string
+        existing_id:
+          type: integer
+          format: int64
+          minimum: 1
+        existing_filename:
+          type: string
+        document_url:
+          type: string
+
+    UploadError:
+      type: object
+      required: [filename, error]
+      properties:
+        filename:
+          type: string
+        error:
+          type: string
+
+    DocumentList:
+      type: object
+      required: [documents, filter, pagination]
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/Document"
+        filter:
+          $ref: "#/components/schemas/DocumentFilter"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    Document:
+      type: object
+      required:
+        - id
+        - original_name
+        - title
+        - description
+        - tags
+        - custom_values
+        - mime_type
+        - size_bytes
+        - sha256
+        - upload_way
+        - upload_way_label
+        - content_text_source
+        - content_text_source_label
+        - uploaded_at
+        - updated_at
+        - duplicate_count
+        - linked_count
+        - document_url
+        - download_url
+        - preview_url
+        - thumbnail_url
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        original_name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        custom_values:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentCustomValue"
+        mime_type:
+          type: string
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 0
+        sha256:
+          type: string
+        upload_way:
+          type: string
+          enum: [web, api, mail, webdav]
+        upload_way_label:
+          type: string
+        content_text_source:
+          $ref: "#/components/schemas/ContentTextSource"
+        content_text_source_label:
+          type: string
+        document_date:
+          type: string
+          format: date
+        uploaded_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+        duplicate_count:
+          type: integer
+          minimum: 0
+        linked_count:
+          type: integer
+          minimum: 0
+        document_url:
+          type: string
+        download_url:
+          type: string
+        preview_url:
+          type: string
+        thumbnail_url:
+          type: string
+
+    ContentTextSource:
+      type: string
+      enum: [pdf, file, raw, ocr, none, unknown]
+
+    DocumentCustomValue:
+      type: object
+      required: [field_id, label, value]
+      properties:
+        field_id:
+          type: integer
+          format: int64
+          minimum: 1
+        label:
+          type: string
+        value:
+          type: string
+
+    DocumentFilter:
+      type: object
+      required:
+        - query
+        - tags
+        - custom_fields
+        - sort
+        - direction
+        - trash
+      properties:
+        query:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        custom_fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomFieldFilter"
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        year:
+          type: integer
+          minimum: 1900
+          maximum: 2100
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        sort:
+          type: string
+          enum: [upload_date, date, name, title, size, deleted_at]
+        direction:
+          type: string
+          enum: [asc, desc]
+        trash:
+          type: boolean
+
+    CustomFieldFilter:
+      type: object
+      required: [field_id, value]
+      properties:
+        field_id:
+          type: integer
+          format: int64
+          minimum: 1
+        value:
+          type: string
+
+    Pagination:
+      type: object
+      required: [page, per_page, total, start, end, has_prev, has_next]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        per_page:
+          type: integer
+          enum: [25, 50, 100, 200, 500]
+        total:
+          type: integer
+          minimum: 0
+        start:
+          type: integer
+          minimum: 0
+        end:
+          type: integer
+          minimum: 0
+        has_prev:
+          type: boolean
+        has_next:
+          type: boolean
+
+    CustomField:
+      type: object
+      required:
+        - id
+        - label
+        - position
+        - autocomplete_enabled
+        - value_folder_min_documents
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        label:
+          type: string
+        position:
+          type: integer
+          minimum: 0
+        autocomplete_enabled:
+          type: boolean
+        value_folder_min_documents:
+          description: |
+            `0` disables value folders, `1` always shows them, and higher
+            values are the minimum matching document count.
+          type: integer
+          enum: [0, 1, 5, 10, 20, 50]
+
+    FolderResult:
+      type: object
+      required: [selected_tags, folders, documents, pagination]
+      properties:
+        selected_tags:
+          type: array
+          items:
+            type: string
+        selected_path:
+          description: |
+            Present for normal tag/field paths. Legacy saved-search responses
+            omit this property.
+          type: array
+          items:
+            $ref: "#/components/schemas/FolderPathSegment"
+        folders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Folder"
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/Document"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    FolderPathSegment:
+      type: object
+      required: [kind, label]
+      properties:
+        kind:
+          type: string
+          enum: [tag, field]
+        tag:
+          type: string
+        field_id:
+          type: integer
+          format: int64
+          minimum: 1
+        field_label:
+          type: string
+        value:
+          type: string
+        label:
+          type: string
+
+    Folder:
+      allOf:
+        - $ref: "#/components/schemas/Tag"
+        - type: object
+          description: |
+            A tag, custom-field-value or saved-search folder. Folder-specific
+            properties are populated according to `kind`.
+          properties:
+            kind:
+              type: string
+              enum: [field_value, search_favorites_root, search_favorite]
+            favorite_id:
+              type: integer
+              format: int64
+              minimum: 1
+            field_id:
+              type: integer
+              format: int64
+              minimum: 1
+            field_label:
+              type: string
+            value:
+              type: string
+
+    Tag:
+      type: object
+      required:
+        - id
+        - name
+        - display_name
+        - description
+        - color
+        - primary_tag
+        - group_mode
+        - list_hidden
+        - delete_protected
+        - style
+        - count
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 0
+        name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+        primary_tag:
+          type: boolean
+        group_mode:
+          type: boolean
+        list_hidden:
+          type: boolean
+        delete_protected:
+          type: boolean
+        style:
+          type: string
+        count:
+          type: integer
+          minimum: 0
+
+    DocumentTags:
+      type: object
+      required: [tags]
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+
+    MetadataUpdateResult:
+      type: object
+      required: [title, document_date, document_date_input, tags, notice]
+      properties:
+        title:
+          type: string
+        document_date:
+          type: string
+          description: Localized display date (`DD.MM.YYYY`) or an empty string.
+        document_date_input:
+          type: string
+          description: ISO date (`YYYY-MM-DD`) or an empty string.
+        tags:
+          type: array
+          items:
+            type: string
+        notice:
+          type: string
+
+    DocumentDateUpdateResult:
+      type: object
+      required: [document_date, document_date_input, notice]
+      properties:
+        document_date:
+          type: string
+          description: Localized display date (`DD.MM.YYYY`) or an empty string.
+        document_date_input:
+          type: string
+          description: ISO date (`YYYY-MM-DD`) or an empty string.
+        notice:
+          type: string
+
+    OCRStatus:
+      type: object
+      required: [job]
+      properties:
+        job:
+          oneOf:
+            - $ref: "#/components/schemas/OCRJob"
+            - type: "null"
+
+    OCRJob:
+      type: object
+      required:
+        - id
+        - document_id
+        - language
+        - language_label
+        - status
+        - status_text
+        - active
+        - terminal
+        - current_page
+        - total_pages
+        - progress_percent
+        - text_length
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        document_id:
+          type: integer
+          format: int64
+          minimum: 1
+        language:
+          type: string
+        language_label:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, completed, failed, interrupted]
+        status_text:
+          type: string
+        active:
+          type: boolean
+        terminal:
+          type: boolean
+        current_page:
+          type: integer
+          minimum: 0
+        total_pages:
+          type: integer
+          minimum: 0
+        progress_percent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        text_length:
+          type: integer
+          minimum: 0
+        message:
+          type: string
+        error:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
