@@ -173,6 +173,69 @@ dialog:not([open]) {
   width: 100%;
 }
 
+.pdf-preview-viewer {
+  background: #20262d;
+  color: #f4f6f8;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.pdf-preview-viewer[hidden] { display: none; }
+
+.pdf-preview-toolbar {
+  align-items: center;
+  background: #151a20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+}
+
+.pdf-preview-toolbar .icon-button { color: inherit; }
+.pdf-preview-toolbar .compact { font-size: .82rem; min-height: 34px; padding: 6px 9px; }
+.pdf-toolbar-spacer { flex: 1 1 12px; }
+.pdf-toolbar-separator { border-left: 1px solid #59636e; height: 24px; }
+.pdf-page-control { align-items: center; display: inline-flex; gap: 5px; }
+.pdf-page-control input { padding: 4px; text-align: center; width: 4.5rem; }
+.pdf-zoom-label { min-width: 3.8rem; text-align: center; }
+.pdf-preview-status { background: #29323b; padding: 6px 12px; }
+.pdf-preview-scroll { align-items: flex-start; display: flex; justify-content: center; min-height: 0; overflow: auto; padding: 16px; }
+.pdf-preview-page { background: white; box-shadow: 0 4px 18px #0008; position: relative; }
+.pdf-preview-page canvas { display: block; inset: 0; position: absolute; z-index: 1; }
+
+.pdf-preview-page .textLayer {
+  inset: 0;
+  line-height: 1;
+  overflow: hidden;
+  position: absolute;
+  text-align: initial;
+  text-size-adjust: none;
+  transform-origin: 0 0;
+  z-index: 2;
+}
+
+.pdf-preview-page .textLayer :is(span, br) {
+  color: transparent;
+  cursor: text;
+  margin: 0;
+  position: absolute;
+  transform-origin: 0 0;
+  white-space: pre;
+}
+
+.pdf-preview-page .textLayer .markedContent { height: 0; top: 0; }
+.pdf-preview-page .textLayer ::selection { background: rgb(0 100 255 / 35%); }
+.pdf-preview-page .annotationLayer { inset: 0; pointer-events: none; position: absolute; z-index: 3; }
+.pdf-preview-page .annotationLayer section { pointer-events: auto; position: absolute; transform-origin: 0 0; }
+.pdf-preview-page .annotationLayer .linkAnnotation > a { inset: 0; position: absolute; }
+.pdf-preview-page .annotationLayer .linkAnnotation > a:hover { background: rgb(255 255 0 / 18%); }
+
+.side-preview .pdf-preview-toolbar .pdf-toolbar-spacer { display: none; }
+.side-preview .pdf-preview-toolbar { align-content: flex-start; }
+
 .facts {
   border-top: 1px solid var(--line);
   margin: 18px 0;

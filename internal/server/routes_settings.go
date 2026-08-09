@@ -21,6 +21,7 @@ var settingsRouteSpecs = []routeSpec{
 	{pattern: "POST /settings/users/{id}/enable", capabilities: authCapSystemUsersManage, handler: (*Server).handleEnableUser},
 	{pattern: "POST /settings/users/{id}/disable", capabilities: authCapSystemUsersManage, handler: (*Server).handleDisableUser},
 	{pattern: "POST /settings/users/{id}/delete", capabilities: authCapSystemUsersManage, handler: (*Server).handleDeleteUser},
+	{pattern: "POST /settings/users/preferences", capabilities: authCapSystemUsersManage, handler: (*Server).handleChangeUserPreferences},
 }
 
 var photoSettingsRouteSpecs = []routeSpec{

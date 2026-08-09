@@ -52,6 +52,21 @@
             <ul>{{range .EffectivePermissions}}<li>{{.Label}}</li>{{end}}</ul>
           </details>
           {{end}}
+          {{if .CanManagePreferences}}
+          <form class="user-preference-form" method="post" action="/settings/users/preferences" novalidate>
+            <input type="hidden" name="account_source" value="{{.Source}}">
+            <input type="hidden" name="account_subject" value="{{.Subject}}">
+            <input type="hidden" name="preference_version" value="{{.PreferenceVersion}}">
+            <label class="checkbox-row">
+              <input type="checkbox" name="custom_pdf_preview_enabled" value="true" {{if .CustomPDFPreviewEnabled}}checked{{end}} {{if .PreferenceError}}aria-invalid="true" aria-describedby="user-preference-error"{{end}}>
+              <span>BearStack PDF-Vorschau</span>
+            </label>
+            {{if .PreferenceError}}<span class="field-error" id="user-preference-error">{{.PreferenceError}}</span>{{end}}
+            <button type="submit" class="secondary-button">Vorschau speichern</button>
+          </form>
+          {{else}}
+          <p class="muted user-pdf-preference-status">BearStack PDF-Vorschau: {{if .CustomPDFPreviewEnabled}}aktiv{{else}}aus{{end}}</p>
+          {{end}}
           <footer class="user-card-actions">
             {{if .Editable}}<a class="secondary-button" href="/settings/users/{{.ID}}">Bearbeiten</a>
             {{else if eq .Source "config"}}<span class="muted">Durch Konfiguration verwaltet</span>

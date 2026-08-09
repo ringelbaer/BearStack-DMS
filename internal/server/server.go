@@ -33,21 +33,23 @@ import (
 var webFS embed.FS
 
 type Server struct {
-	cfg         config.Config
-	repo        *repository.Repository
-	store       *storage.Store
-	photos      *photos.Library
-	log         *slog.Logger
-	templates   *template.Template
-	static      http.Handler
-	authKey     []byte
-	auth        *authState
-	authInitMu  sync.Mutex
-	authWriteMu sync.Mutex
-	earlyAudit  auditRejectionLimiter
-	apps        serverApplications
-	jobCtxMu    sync.RWMutex
-	jobCtx      context.Context
+	cfg               config.Config
+	repo              *repository.Repository
+	store             *storage.Store
+	photos            *photos.Library
+	log               *slog.Logger
+	templates         *template.Template
+	static            http.Handler
+	authKey           []byte
+	auth              *authState
+	preferences       *accountPreferenceState
+	authInitMu        sync.Mutex
+	authWriteMu       sync.Mutex
+	preferenceWriteMu sync.Mutex
+	earlyAudit        auditRejectionLimiter
+	apps              serverApplications
+	jobCtxMu          sync.RWMutex
+	jobCtx            context.Context
 }
 
 const pageSize = 100
@@ -116,6 +118,10 @@ func New(cfg config.Config, repo *repository.Repository, store *storage.Store, l
 	if config.AddrRequiresAuth(cfg.Addr) && (snapshot == nil || snapshot.activeCredentials == 0) {
 		return nil, errors.New("at least one active authentication account is required when addr listens on non-loopback interfaces")
 	}
+	preferenceState, err := newAccountPreferenceState(context.Background(), repo)
+	if err != nil {
+		return nil, fmt.Errorf("load account preferences: %w", err)
+	}
 
 	tmpl, err := parseTemplates()
 	if err != nil {
@@ -133,15 +139,16 @@ func New(cfg config.Config, repo *repository.Repository, store *storage.Store, l
 		}
 	}
 	s := &Server{
-		cfg:       cfg,
-		repo:      repo,
-		store:     store,
-		photos:    photoLibrary,
-		log:       logger,
-		templates: tmpl,
-		static:    cacheStaticAssets(staticFS),
-		authKey:   authKey,
-		auth:      authState,
+		cfg:         cfg,
+		repo:        repo,
+		store:       store,
+		photos:      photoLibrary,
+		log:         logger,
+		templates:   tmpl,
+		static:      cacheStaticAssets(staticFS),
+		authKey:     authKey,
+		auth:        authState,
+		preferences: preferenceState,
 	}
 	s.apps.photo.jobs = make(chan struct{}, 1)
 	s.apps.documents.thumbnails = newThumbnailService(repo, store, logger, make(chan struct{}, 1))
@@ -287,7 +294,7 @@ func acceptEncodingQuality(params string) (float64, bool) {
 
 func isCompressibleStaticPath(name string) bool {
 	switch strings.ToLower(path.Ext(name)) {
-	case ".css", ".js", ".html", ".json", ".svg", ".txt", ".xml":
+	case ".css", ".js", ".mjs", ".html", ".json", ".svg", ".txt", ".xml":
 		return true
 	default:
 		return false

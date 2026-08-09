@@ -14,6 +14,8 @@ Dokumente können über die Weboberfläche (`POST /upload`), die JSON-API (`POST
 
 Unterstützt werden PDF, Bilder sowie einfache Text- und Office-Formate. Office-Text und Office-Vorschauen benötigen LibreOffice. Uploads werden nach dem konfigurierten Limit begrenzt, Dateinamen werden normalisiert, unbekannte Dateitypen werden abgelehnt und gespeicherte Pfade immer gegen den Storage-Root aufgelöst. Unerwartete Import- und Vorschaufehler werden für HTTP-Antworten generisch ausgegeben, damit interne Pfade oder Werkzeugdetails nicht im Browser landen.
 
+PDFs werden standardmäßig im Viewer des Browsers angezeigt. Jeder Nutzer kann unter `Konto -> Darstellung` stattdessen den integrierten BearStack-PDF-Viewer aktivieren. Er bietet Seitennavigation, Zoom, Anpassung an Breite oder Seite, Textauswahl, Links und den direkten Wechsel zum Browser-Viewer beziehungsweise Originaldownload. Die Präferenz gilt auch für als PDF erzeugte Office-/Textvorschauen, wird geräteübergreifend gespeichert und lädt PDF.js erst beim Öffnen einer Vorschau. Kann PDF.js ein Dokument nicht darstellen, fällt BearStack automatisch auf den Browser-Viewer zurück.
+
 Weitere Dokumentfunktionen:
 
 - Detailseiten mit Metadaten, Vorschau, Verknüpfungen und gruppierten Dateien

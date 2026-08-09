@@ -10,6 +10,11 @@ const sidePreviewImage = document.querySelector("[data-side-preview-image]");
 const sidePreviewClose = document.querySelector("[data-side-preview-close]");
 const columnsModal = document.querySelector("[data-columns-modal]");
 const columnsClose = document.querySelector("[data-columns-close]");
+const customPDFPreviewEnabled = document.body?.dataset.customPdfPreview === "true";
+
+function pdfPreviewForFrame(frame) {
+  return frame?.parentElement?.querySelector("[data-pdf-preview]") || null;
+}
 
 function resetPreviewTargets(frame, image) {
   if (frame) {
@@ -21,6 +26,10 @@ function resetPreviewTargets(frame, image) {
     image.removeAttribute("src");
     image.alt = "";
   }
+  const pdfPreview = pdfPreviewForFrame(frame);
+  if (pdfPreview && window.bearStackPDFPreview) {
+    window.bearStackPDFPreview.destroy(pdfPreview);
+  }
 }
 
 function loadPreviewTarget(frame, image, url, mime, title) {
@@ -29,6 +38,21 @@ function loadPreviewTarget(frame, image, url, mime, title) {
     image.src = url;
     image.alt = title;
     image.hidden = false;
+    return;
+  }
+  const pdfPreview = pdfPreviewForFrame(frame);
+  if (customPDFPreviewEnabled && pdfPreview && window.bearStackPDFPreview) {
+    const downloadURL = url.replace(/\/preview(?:\?.*)?$/, "/download");
+    window.bearStackPDFPreview.load(pdfPreview, url, title, downloadURL).catch(() => {
+      window.bearStackPDFPreview.destroy(pdfPreview);
+      if (frame) {
+        frame.src = url;
+        frame.hidden = false;
+      }
+      if (typeof window.showAppToast === "function") {
+        window.showAppToast("BearStack-Vorschau nicht verfügbar; Browser-Viewer wird verwendet.");
+      }
+    });
     return;
   }
   if (frame) {

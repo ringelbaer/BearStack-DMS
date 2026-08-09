@@ -2,6 +2,18 @@
 
 Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
+## 0.23.0 - 2026-08-09
+
+### Hinzugefügt
+
+- Optionaler, selbst gehosteter BearStack-PDF-Viewer mit Seitennavigation, Zoom, Einpassen, Text- und Link-Layer.
+- Geräteübergreifende PDF-Vorschaupräferenz für SQLite- und Konfigurationskonten im Selbstservice und in der Nutzerverwaltung.
+
+### Geändert
+
+- PDF.js 6.2.108 wird lokal und verzögert geladen; bei Darstellungsfehlern bleibt der native Browser-Viewer als automatischer Rückfall erhalten.
+- Datenbankschema 16 speichert versionierte Konto-Präferenzen unabhängig von Zugangsdaten und Sitzungen.
+
 ## 0.22.0 - 2026-08-09
 
 ### Hinzugefügt

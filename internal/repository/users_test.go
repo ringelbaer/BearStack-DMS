@@ -375,8 +375,8 @@ func TestRepositoryMigratesVersion14AndCreatesUserSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !found || version != 15 || repositorySchemaVersion != 15 {
-		t.Fatalf("repository schema version = %d, found %v, supported %d; want 15", version, found, repositorySchemaVersion)
+	if !found || version != 16 || repositorySchemaVersion != 16 {
+		t.Fatalf("repository schema version = %d, found %v, supported %d; want 16", version, found, repositorySchemaVersion)
 	}
 
 	wantColumns := map[string]bool{
@@ -415,6 +415,10 @@ func TestRepositoryMigratesVersion14AndCreatesUserSchema(t *testing.T) {
 	}
 	if permissionsTable != "user_permissions" {
 		t.Fatalf("permissions table = %q", permissionsTable)
+	}
+	var preferencesTable string
+	if err := repo.db.QueryRowContext(ctx, `SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'account_preferences'`).Scan(&preferencesTable); err != nil {
+		t.Fatal(err)
 	}
 
 	user := createUserForTest(t, repo, "migrated-user", mustUserHash(t, "migrated schema password"), account.RoleCustom, []string{account.PermissionDocumentsRead}, true)

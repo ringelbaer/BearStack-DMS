@@ -746,6 +746,12 @@
 }
 
 @media (max-width: 640px) {
+
+  .pdf-preview-toolbar { gap: 4px; }
+
+  .pdf-preview-toolbar .compact { flex: 1 1 auto; }
+
+  .pdf-preview-scroll { padding: 8px; }
   button,
   .secondary-button,
   .upload-box label {

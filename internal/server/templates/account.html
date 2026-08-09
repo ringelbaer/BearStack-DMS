@@ -23,6 +23,20 @@
     </details>
   </section>
 
+  <section class="panel account-preferences" aria-labelledby="account-preferences-heading">
+    <h2 id="account-preferences-heading">Darstellung</h2>
+    <form method="post" action="/account/preferences" novalidate>
+      <input type="hidden" name="preference_version" value="{{.Account.PreferenceVersion}}">
+      <label class="checkbox-row">
+        <input type="checkbox" name="custom_pdf_preview_enabled" value="true" {{if .Account.CustomPDFPreviewEnabled}}checked{{end}} {{with .Account.FieldError "preferences"}}aria-invalid="true" aria-describedby="account-preferences-error"{{end}}>
+        <span>BearStack PDF-Vorschau verwenden</span>
+      </label>
+      <p class="muted">Zeigt PDFs und erzeugte Dokumentvorschauen mit der integrierten BearStack-Oberfläche. Bei Problemen wird automatisch der Browser-Viewer verwendet.</p>
+      {{with .Account.FieldError "preferences"}}<span class="field-error" id="account-preferences-error">{{.}}</span>{{end}}
+      <button type="submit">Darstellung speichern</button>
+    </form>
+  </section>
+
   <section class="panel account-password" aria-labelledby="account-password-heading">
     <h2 id="account-password-heading">Passwort</h2>
     {{if .Account.CanChangePassword}}

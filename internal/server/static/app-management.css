@@ -1321,6 +1321,20 @@ label .context-help-trigger:focus-visible,
   padding-top: 12px;
 }
 
+.user-preference-form {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.user-preference-form .checkbox-row { flex: 1 1 240px; margin: 0; }
+.user-pdf-preference-status { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
+.account-preferences .checkbox-row { margin-bottom: 8px; }
+
 .user-form-layout {
   display: grid;
   gap: 18px;

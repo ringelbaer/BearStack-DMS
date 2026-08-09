@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 
 	"bearstack/internal/account"
@@ -21,22 +22,27 @@ func (s *Server) userManagementListView(users []account.User, actor authPrincipa
 		CurrentUserID:     actor.AccountID,
 	}
 	for _, user := range users {
-		result.Users = append(result.Users, managedUserView(user, actor))
+		result.Users = append(result.Users, s.managedUserView(user, actor))
 	}
 	for _, configured := range configuredAccounts {
 		effective := permissionLabelsForCapabilities(configured.Capabilities)
+		preference := s.accountPreference(configured.Source, configured.Subject)
 		result.Users = append(result.Users, ManagedUserView{
 			Username:    configured.Username,
 			Source:      authSourceConfig,
+			Subject:     configured.Subject,
 			SourceLabel: "Konfiguration",
 			Role:        configured.Role,
 			RoleLabel:   roleLabel(configured.Role),
 			Active:      configured.Enabled,
 			Current: actor.Username == configured.Username &&
 				(actor.Source == "" || (actor.Source == authSourceConfig && actor.Subject == configured.Subject)),
-			Editable:             false,
-			ExtraPermissions:     permissionLabels(configured.Permissions),
-			EffectivePermissions: effective,
+			Editable:                false,
+			CanManagePreferences:    actorCanManageConfigPreference(actor, configured),
+			CustomPDFPreviewEnabled: preference.CustomPDFPreviewEnabled,
+			PreferenceVersion:       preference.RowVersion,
+			ExtraPermissions:        permissionLabels(configured.Permissions),
+			EffectivePermissions:    effective,
 		})
 	}
 	sort.Slice(result.Users, func(i, j int) bool {
@@ -48,22 +54,29 @@ func (s *Server) userManagementListView(users []account.User, actor authPrincipa
 	return result
 }
 
-func managedUserView(user account.User, actor authPrincipal) ManagedUserView {
+func (s *Server) managedUserView(user account.User, actor authPrincipal) ManagedUserView {
 	effective, _ := account.EffectivePermissionNames(user.Role, user.Permissions)
+	subject := strconv.FormatInt(user.ID, 10)
+	preference := s.accountPreference(authSourceDatabase, subject)
+	current := actor.Username == user.Username &&
+		(actor.Source == "" || (actor.Source == authSourceDatabase && actor.AccountID == user.ID))
 	return ManagedUserView{
-		ID:          user.ID,
-		Username:    user.Username,
-		Source:      authSourceDatabase,
-		SourceLabel: "BearStack-Datenbank",
-		Role:        user.Role,
-		RoleLabel:   roleLabel(user.Role),
-		Active:      user.Enabled,
-		Current: actor.Username == user.Username &&
-			(actor.Source == "" || (actor.Source == authSourceDatabase && actor.AccountID == user.ID)),
-		Editable:             actorCanManageUser(actor, user),
-		Version:              user.RowVersion,
-		ExtraPermissions:     permissionLabels(user.Permissions),
-		EffectivePermissions: permissionLabels(effective),
+		ID:                      user.ID,
+		Username:                user.Username,
+		Source:                  authSourceDatabase,
+		Subject:                 subject,
+		SourceLabel:             "BearStack-Datenbank",
+		Role:                    user.Role,
+		RoleLabel:               roleLabel(user.Role),
+		Active:                  user.Enabled,
+		Current:                 current,
+		Editable:                actorCanManageUser(actor, user),
+		CanManagePreferences:    current || actorCanManageUser(actor, user),
+		CustomPDFPreviewEnabled: preference.CustomPDFPreviewEnabled,
+		PreferenceVersion:       preference.RowVersion,
+		Version:                 user.RowVersion,
+		ExtraPermissions:        permissionLabels(user.Permissions),
+		EffectivePermissions:    permissionLabels(effective),
 	}
 }
 
@@ -184,30 +197,36 @@ func (s *Server) accountViewForPrincipal(r *http.Request, principal authPrincipa
 	}
 	if found {
 		effective, _ := account.EffectivePermissionNames(user.Role, user.Permissions)
+		preference := s.accountPreference(principal.Source, principal.Subject)
 		return AccountView{
-			Username:             user.Username,
-			Source:               "database",
-			SourceLabel:          "BearStack-Datenbank",
-			Role:                 user.Role,
-			RoleLabel:            roleLabel(user.Role),
-			CanChangePassword:    true,
-			EffectivePermissions: permissionLabels(effective),
-			FieldErrors:          fieldErrors,
+			Username:                user.Username,
+			Source:                  "database",
+			SourceLabel:             "BearStack-Datenbank",
+			Role:                    user.Role,
+			RoleLabel:               roleLabel(user.Role),
+			CanChangePassword:       true,
+			CustomPDFPreviewEnabled: preference.CustomPDFPreviewEnabled,
+			PreferenceVersion:       preference.RowVersion,
+			EffectivePermissions:    permissionLabels(effective),
+			FieldErrors:             fieldErrors,
 		}, nil
 	}
 	for _, configured := range s.authConfigAccountViews() {
 		if configured.Source != principal.Source || configured.Subject != principal.Subject {
 			continue
 		}
+		preference := s.accountPreference(principal.Source, principal.Subject)
 		return AccountView{
-			Username:             configured.Username,
-			Source:               authSourceConfig,
-			SourceLabel:          "Konfiguration",
-			Role:                 configured.Role,
-			RoleLabel:            roleLabel(configured.Role),
-			CanChangePassword:    false,
-			EffectivePermissions: permissionLabelsForCapabilities(configured.Capabilities),
-			FieldErrors:          fieldErrors,
+			Username:                configured.Username,
+			Source:                  authSourceConfig,
+			SourceLabel:             "Konfiguration",
+			Role:                    configured.Role,
+			RoleLabel:               roleLabel(configured.Role),
+			CanChangePassword:       false,
+			CustomPDFPreviewEnabled: preference.CustomPDFPreviewEnabled,
+			PreferenceVersion:       preference.RowVersion,
+			EffectivePermissions:    permissionLabelsForCapabilities(configured.Capabilities),
+			FieldErrors:             fieldErrors,
 		}, nil
 	}
 	return AccountView{}, sqlErrNoAccount

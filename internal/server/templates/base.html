@@ -13,7 +13,7 @@
   {{range pageJSAssets .}}<script src="{{assetURL .}}" defer></script>
   {{end}}
 </head>
-<body data-tag-display-mode="{{.TagDisplayMode}}" data-document-delete-protected="{{if .Document.DeleteProtected}}true{{else}}false{{end}}">
+<body data-tag-display-mode="{{.TagDisplayMode}}" data-document-delete-protected="{{if .Document.DeleteProtected}}true{{else}}false{{end}}" data-custom-pdf-preview="{{if .CustomPDFPreviewEnabled}}true{{else}}false{{end}}">
   <header class="topbar">
     <a class="brand" href="{{.HomeURL}}" aria-label="{{.DisplayAppName}}">
       {{if .CustomFavicon.Uploaded}}<img class="brand-icon" src="{{.CustomFavicon.Href}}" alt="" aria-hidden="true">
@@ -91,6 +91,7 @@
       <div class="side-preview-body">
         <iframe title="Dokumentvorschau" data-side-preview-frame hidden></iframe>
         <img alt="" data-side-preview-image hidden>
+        {{template "pdf-preview-viewer" .}}
       </div>
     </aside>
     {{end}}
@@ -122,6 +123,7 @@
     <div class="preview-modal-body">
       <iframe title="Dokumentvorschau" data-preview-frame hidden></iframe>
       <img alt="" data-preview-image hidden>
+      {{template "pdf-preview-viewer" .}}
     </div>
   </dialog>
   {{if pageTagAssets .}}
@@ -171,6 +173,33 @@
   </dialog>
 </body>
 </html>
+{{end}}
+
+{{define "pdf-preview-viewer"}}
+<section class="pdf-preview-viewer" data-pdf-preview hidden aria-label="PDF-Vorschau">
+  <div class="pdf-preview-toolbar" role="toolbar" aria-label="PDF-Werkzeuge">
+    <button type="button" class="icon-button" data-pdf-previous aria-label="Vorherige Seite" title="Vorherige Seite">‹</button>
+    <label class="pdf-page-control"><span class="visually-hidden">Seite</span><input type="number" min="1" value="1" inputmode="numeric" data-pdf-page aria-label="Seitennummer"><span aria-hidden="true">/</span><span data-pdf-pages>–</span></label>
+    <button type="button" class="icon-button" data-pdf-next aria-label="Nächste Seite" title="Nächste Seite">›</button>
+    <span class="pdf-toolbar-separator" aria-hidden="true"></span>
+    <button type="button" class="icon-button" data-pdf-zoom-out aria-label="Verkleinern" title="Verkleinern">−</button>
+    <span class="pdf-zoom-label" data-pdf-zoom aria-live="polite">100 %</span>
+    <button type="button" class="icon-button" data-pdf-zoom-in aria-label="Vergrößern" title="Vergrößern">+</button>
+    <button type="button" class="secondary-button compact" data-pdf-fit-width>Breite</button>
+    <button type="button" class="secondary-button compact" data-pdf-fit-page>Seite</button>
+    <span class="pdf-toolbar-spacer"></span>
+    <a class="secondary-button compact" data-pdf-native target="_blank" rel="noopener">Im Browser öffnen</a>
+    <a class="secondary-button compact" data-pdf-download>Original</a>
+  </div>
+  <div class="pdf-preview-status" data-pdf-status role="status" aria-live="polite">PDF wird geladen …</div>
+  <div class="pdf-preview-scroll" data-pdf-scroll tabindex="0" aria-label="PDF-Dokument">
+    <div class="pdf-preview-page" data-pdf-page-container>
+      <canvas data-pdf-canvas aria-label="Gerenderte PDF-Seite"></canvas>
+      <div class="textLayer" data-pdf-text-layer></div>
+      <div class="annotationLayer" data-pdf-annotation-layer></div>
+    </div>
+  </div>
+</section>
 {{end}}
 
 {{define "pagination"}}

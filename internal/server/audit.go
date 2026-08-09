@@ -179,7 +179,9 @@ func isAccountAuditPattern(pattern string) bool {
 		"POST /settings/users/{id}/enable",
 		"POST /settings/users/{id}/disable",
 		"POST /settings/users/{id}/delete",
-		"POST /account/password":
+		"POST /settings/users/preferences",
+		"POST /account/password",
+		"POST /account/preferences":
 		return true
 	default:
 		return false
@@ -187,13 +189,13 @@ func isAccountAuditPattern(pattern string) bool {
 }
 
 func (s *Server) rejectedAccountAuditTarget(r *http.Request, pattern, actor string) string {
-	if pattern == "POST /account/password" || pattern == "POST /logout" {
+	if pattern == "POST /account/password" || pattern == "POST /account/preferences" || pattern == "POST /logout" {
 		if actor != "" && actor != "anonymous" {
 			return "Benutzer:" + actor
 		}
 		return ""
 	}
-	if pattern == "POST /login" || pattern == "POST /settings/users" {
+	if pattern == "POST /login" || pattern == "POST /settings/users" || pattern == "POST /settings/users/preferences" {
 		// The target username exists only in the rejected form body. Password
 		// fields and form data are intentionally never parsed by audit code.
 		return ""
@@ -400,8 +402,12 @@ func auditActionTarget(r *http.Request) (string, string) {
 		return "Benutzer deaktivieren", ""
 	case "POST /settings/users/{id}/delete":
 		return "Benutzer löschen", ""
+	case "POST /settings/users/preferences":
+		return "PDF-Vorschaupräferenz ändern", ""
 	case "POST /account/password":
 		return "Eigenes Passwort ändern", ""
+	case "POST /account/preferences":
+		return "Eigene PDF-Vorschaupräferenz ändern", ""
 	case "POST /upload":
 		return "Dokumente hochladen", ""
 	case "POST /api/upload":

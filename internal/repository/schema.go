@@ -14,7 +14,7 @@ import (
 
 const (
 	repositorySchemaComponent = "repository"
-	repositorySchemaVersion   = 15
+	repositorySchemaVersion   = 16
 )
 
 type repositorySchemaMigration struct {
@@ -66,6 +66,9 @@ var repositorySchemaMigrations = []repositorySchemaMigration{
 	}},
 	{Version: 15, Name: "users", Apply: func(ctx context.Context, r *Repository) error {
 		return r.ensureUserTables(ctx)
+	}},
+	{Version: 16, Name: "account_preferences", Apply: func(ctx context.Context, r *Repository) error {
+		return r.ensureAccountPreferenceTable(ctx)
 	}},
 }
 
@@ -223,6 +226,16 @@ func (r *Repository) ensureSchema(ctx context.Context) error {
 			permission TEXT NOT NULL,
 			PRIMARY KEY(user_id, permission)
 		)`,
+		`CREATE TABLE IF NOT EXISTS account_preferences (
+			account_source TEXT NOT NULL CHECK(account_source IN ('config', 'database')),
+			account_subject TEXT NOT NULL,
+			custom_pdf_preview_enabled INTEGER NOT NULL DEFAULT 0 CHECK(custom_pdf_preview_enabled IN (0, 1)),
+			row_version INTEGER NOT NULL DEFAULT 1 CHECK(row_version > 0),
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			PRIMARY KEY(account_source, account_subject),
+			CHECK(length(account_subject) > 0)
+		)`,
 		`CREATE TABLE IF NOT EXISTS ocr_jobs (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
@@ -279,6 +292,20 @@ func (r *Repository) ensureUserTables(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (r *Repository) ensureAccountPreferenceTable(ctx context.Context) error {
+	_, err := r.db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS account_preferences (
+		account_source TEXT NOT NULL CHECK(account_source IN ('config', 'database')),
+		account_subject TEXT NOT NULL,
+		custom_pdf_preview_enabled INTEGER NOT NULL DEFAULT 0 CHECK(custom_pdf_preview_enabled IN (0, 1)),
+		row_version INTEGER NOT NULL DEFAULT 1 CHECK(row_version > 0),
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL,
+		PRIMARY KEY(account_source, account_subject),
+		CHECK(length(account_subject) > 0)
+	)`)
+	return err
 }
 
 func (r *Repository) runSchemaMigrations(ctx context.Context) error {

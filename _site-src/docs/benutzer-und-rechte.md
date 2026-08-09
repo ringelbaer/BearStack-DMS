@@ -157,6 +157,12 @@ Ein Audit-Konto, das nur das Betriebslog lesen darf:
 }
 ```
 
+## Persönliche PDF-Vorschau
+
+Unter `Konto -> Darstellung` kann jeder angemeldete Nutzer die integrierte BearStack-PDF-Vorschau aktivieren. Die Präferenz wird in der BearStack-Datenbank anhand von Kontoquelle und stabiler Konto-ID gespeichert und funktioniert deshalb sowohl für SQLite- als auch für JSON-/Env-Konten geräteübergreifend. Nutzerverwalter können sie außerdem für Konten ändern, die sie nach den bestehenden Delegationsregeln verwalten dürfen; nur echte Admins dürfen dies bei Admins und weiteren Nutzerverwaltern. Die Änderung benötigt keine Passwortbestätigung, verändert keine Rechte oder Sitzungen und wird bei fremden Konten auditiert.
+
+Ohne gespeicherte Aktivierung bleibt der native Browser-Viewer erhalten. Der integrierte Viewer wird erst beim Öffnen einer PDF geladen und gilt ebenfalls für von BearStack erzeugte PDF-Vorschauen. Fehlerhafte, passwortgeschützte oder im eingebetteten Viewer nicht unterstützte PDFs wechseln automatisch zurück zum Browser-Viewer.
+
 ## Sessions und Betrieb
 
 Nach erfolgreichem Login setzt BearStack ein signiertes HttpOnly-Session-Cookie. Normale Sessions laufen nach 12 Stunden ab; mit „Eingeloggt bleiben“ nach 30 Tagen. Der Signierschlüssel liegt geschützt im Datenverzeichnis, sodass Sitzungen einen Neustart überstehen. Beim Upgrade auf 0.22.0 erfordert das neue, kontogebundene Sessionformat einmalig eine erneute Anmeldung. Basic Auth funktioniert weiterhin für API, WebDAV und Automationen. WebDAV antwortet ohne gültige Session mit einem Basic-Auth-Challenge.
@@ -170,4 +176,4 @@ Passwort-, Rollen-, Rechte- und Statusänderungen widerrufen bestehende Sitzunge
 - `admin` sparsam vergeben, weil diese Rolle auch Systemverwaltung, Audit-Zugriff und `.adminonly`-Fotoordner umfasst.
 - Passworthashes in JSON oder Env-Dateien sorgfältig quoten, weil bcrypt-Hashes `$` enthalten.
 - Für Backups das gesamte BearStack-Datenverzeichnis mit `bearstack.db` und `auth-session.key` sowie weiterhin verwendete Konfigurationsdateien sichern.
-- Vor einem Downgrade die zur älteren Version passende Datenbanksicherung wiederherstellen; die Schema-Migration auf Version 15 ist automatisch, aber ältere BearStack-Versionen lehnen neuere Schemata ab.
+- Vor einem Downgrade die zur älteren Version passende Datenbanksicherung wiederherstellen; die Schema-Migration auf Version 16 ist automatisch, aber ältere BearStack-Versionen lehnen neuere Schemata ab.

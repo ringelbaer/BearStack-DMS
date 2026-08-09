@@ -17,18 +17,23 @@ type UserManagementView struct {
 }
 
 type ManagedUserView struct {
-	ID                   int64
-	Username             string
-	Source               string
-	SourceLabel          string
-	Role                 string
-	RoleLabel            string
-	Active               bool
-	Current              bool
-	Editable             bool
-	Version              int64
-	ExtraPermissions     []UserPermissionLabelView
-	EffectivePermissions []UserPermissionLabelView
+	ID                      int64
+	Username                string
+	Source                  string
+	Subject                 string
+	SourceLabel             string
+	Role                    string
+	RoleLabel               string
+	Active                  bool
+	Current                 bool
+	Editable                bool
+	Version                 int64
+	CanManagePreferences    bool
+	CustomPDFPreviewEnabled bool
+	PreferenceVersion       int64
+	PreferenceError         string
+	ExtraPermissions        []UserPermissionLabelView
+	EffectivePermissions    []UserPermissionLabelView
 }
 
 type ManagedUserFormView struct {
@@ -93,14 +98,16 @@ type UserPermissionLabelView struct {
 
 // AccountView enthält die nicht geheimen Informationen der Selbstverwaltung.
 type AccountView struct {
-	Username             string
-	Source               string
-	SourceLabel          string
-	Role                 string
-	RoleLabel            string
-	CanChangePassword    bool
-	EffectivePermissions []UserPermissionLabelView
-	FieldErrors          map[string]string
+	Username                string
+	Source                  string
+	SourceLabel             string
+	Role                    string
+	RoleLabel               string
+	CanChangePassword       bool
+	CustomPDFPreviewEnabled bool
+	PreferenceVersion       int64
+	EffectivePermissions    []UserPermissionLabelView
+	FieldErrors             map[string]string
 }
 
 func (a AccountView) FieldError(name string) string {

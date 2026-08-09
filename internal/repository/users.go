@@ -260,6 +260,9 @@ func (r *Repository) DeleteUser(ctx context.Context, id, expectedRowVersion int6
 			return account.User{}, err
 		}
 	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM account_preferences WHERE account_source = ? AND account_subject = ?`, AccountSourceDatabase, fmt.Sprint(id)); err != nil {
+		return account.User{}, err
+	}
 	result, err := tx.ExecContext(ctx, `DELETE FROM users WHERE id = ? AND row_version = ?`, id, expectedRowVersion)
 	if err != nil {
 		return account.User{}, err

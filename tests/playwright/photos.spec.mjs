@@ -41,7 +41,7 @@ test("document upload, preview, columns and metadata work", async ({ browser }) 
     await page.locator("#file-upload").setInputFiles({
       name: filename,
       mimeType: "application/pdf",
-      buffer: Buffer.from("%PDF-1.7\nplaywright document\n%%EOF\n"),
+      buffer: multiPagePDF(["Playwright Seite 1", "Playwright Seite 2"]),
     });
     expect((await uploadResponsePromise).status()).toBe(201);
 
@@ -52,8 +52,40 @@ test("document upload, preview, columns and metadata work", async ({ browser }) 
     await row.locator("[data-preview-url]").first().click();
     await expect(page.locator("[data-preview-modal]")).toBeVisible();
     await expect(page.locator("[data-preview-modal] [data-preview-title]")).toHaveText(filename);
+    await expect(page.locator("[data-preview-modal] [data-preview-frame]")).toBeVisible();
     await page.locator("[data-preview-close]").click();
     await expect(page.locator("[data-preview-modal]")).not.toBeVisible();
+
+    await page.goto(`${fixture.baseURL}/account`);
+    const preferenceForm = page.locator('form[action="/account/preferences"]');
+    await preferenceForm.locator('input[name="custom_pdf_preview_enabled"]').check();
+    await Promise.all([
+      page.waitForURL((url) => url.pathname === "/account" && url.searchParams.has("notice")),
+      preferenceForm.getByRole("button", { name: "Darstellung speichern" }).click(),
+    ]);
+    await expect(page.locator("body")).toHaveAttribute("data-custom-pdf-preview", "true");
+
+    await page.goto(`${fixture.baseURL}/documents`);
+    const customRow = page.locator("[data-document-list] tr", { hasText: filename }).first();
+    await customRow.locator("[data-preview-url]").first().click();
+    const pdfViewer = page.locator("[data-preview-modal] [data-pdf-preview]");
+    await expect(pdfViewer).toBeVisible();
+    await expect(pdfViewer.locator("[data-pdf-pages]")).toHaveText("2");
+    await expect.poll(() => pdfViewer.locator("[data-pdf-canvas]").evaluate((canvas) => canvas.width)).toBeGreaterThan(0);
+    await pdfViewer.locator("[data-pdf-next]").click();
+    await expect(pdfViewer.locator("[data-pdf-page]")).toHaveValue("2");
+    const zoomBefore = await pdfViewer.locator("[data-pdf-zoom]").textContent();
+    await pdfViewer.locator("[data-pdf-zoom-in]").click();
+    await expect(pdfViewer.locator("[data-pdf-zoom]")).not.toHaveText(zoomBefore || "");
+    await expect(pdfViewer.locator("[data-pdf-native]")).toHaveAttribute("href", /\/documents\/\d+\/preview$/);
+    await expect(pdfViewer.locator("[data-pdf-download]")).toHaveAttribute("href", /\/documents\/\d+\/download$/);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+    const viewerBox = await pdfViewer.boundingBox();
+    expect(viewerBox).toBeTruthy();
+    expect(viewerBox.x + viewerBox.width).toBeLessThanOrEqual(390);
+    await page.locator("[data-preview-close]").click();
+    await page.setViewportSize({ width: 1280, height: 720 });
 
     await page.locator("[data-columns-open]").click();
     await expect(page.locator("[data-columns-modal]")).toBeVisible();
@@ -871,4 +903,40 @@ async function freePort() {
       server.close(() => resolve(address.port));
     });
   });
+}
+
+function multiPagePDF(labels) {
+  const objects = [];
+  const pageObjectNumbers = [];
+  const contentObjectNumbers = [];
+  for (let index = 0; index < labels.length; index += 1) {
+    pageObjectNumbers.push(3 + index * 2);
+    contentObjectNumbers.push(4 + index * 2);
+  }
+  const fontObjectNumber = 3 + labels.length * 2;
+  objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+  objects[2] = `<< /Type /Pages /Kids [${pageObjectNumbers.map((number) => `${number} 0 R`).join(" ")}] /Count ${labels.length} >>`;
+  labels.forEach((label, index) => {
+    const pageNumber = pageObjectNumbers[index];
+    const contentNumber = contentObjectNumbers[index];
+    const escaped = label.replace(/([\\()])/g, "\\$1");
+    const stream = `BT /F1 24 Tf 72 720 Td (${escaped}) Tj ET`;
+    objects[pageNumber] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontObjectNumber} 0 R >> >> /Contents ${contentNumber} 0 R >>`;
+    objects[contentNumber] = `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`;
+  });
+  objects[fontObjectNumber] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+
+  let body = "%PDF-1.7\n%âãÏÓ\n";
+  const offsets = [0];
+  for (let number = 1; number < objects.length; number += 1) {
+    offsets[number] = Buffer.byteLength(body, "binary");
+    body += `${number} 0 obj\n${objects[number]}\nendobj\n`;
+  }
+  const xrefOffset = Buffer.byteLength(body, "binary");
+  body += `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+  for (let number = 1; number < objects.length; number += 1) {
+    body += `${String(offsets[number]).padStart(10, "0")} 00000 n \n`;
+  }
+  body += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+  return Buffer.from(body, "binary");
 }

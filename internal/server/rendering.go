@@ -116,6 +116,9 @@ func pageJSAssets(data PageData) []string {
 			"/static/app-documents.js",
 			"/static/app-preview.js",
 		)
+		if data.CustomPDFPreviewEnabled {
+			assets = append(assets, "/static/app-pdf-preview.js")
+		}
 	}
 	if pageAssets.OCR {
 		assets = append(assets, "/static/app-ocr.js")
@@ -347,6 +350,9 @@ func (s *Server) withRenderSettings(r *http.Request, data PageData) PageData {
 		data.WebDAVPath = s.webDAVPath()
 	}
 	data.Auth = authPermissionsForRequest(s, r)
+	if principal, ok := authPrincipalFromContext(r.Context()); ok {
+		data.CustomPDFPreviewEnabled = s.customPDFPreviewForRequest(principal)
+	}
 	data.PhotoModuleEnabled = s.photos != nil
 	if data.AppName == "" {
 		data.AppName = defaultAppName

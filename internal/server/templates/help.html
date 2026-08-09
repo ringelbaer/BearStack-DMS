@@ -37,6 +37,7 @@
     <p>Dokumente werden über den Upload-Button, Drag and Drop, die HTTP-API oder den E-Mail-Import aufgenommen. Unterstützt werden PDF, PNG, JPEG, GIF, WebP, TXT, Markdown, RTF, DOC, DOCX und Pages.</p>
     <p>Beim Upload prüft BearStack Dateiname, Dateityp und Größe, speichert das Original mit sicherem Dateinamen, berechnet SHA-256 und erkennt Duplikate. Titel und Dokumentdatum werden soweit möglich aus dem Dateinamen abgeleitet.</p>
     <p>PDF-Text wird automatisch übernommen, Vorschaubilder werden im Hintergrund erzeugt. Text- und Office-Dokumente werden bei verfügbarem LibreOffice als PDF angezeigt und für die Suche ausgelesen. Für PDFs und Bilder kann OCR manuell gestartet werden; über die Statistik lassen sich OCR-Kandidaten gesammelt einreihen.</p>
+    <p>Unter <code>Konto → Darstellung</code> lässt sich pro Nutzer die integrierte BearStack-PDF-Vorschau aktivieren. Sie bietet Seitennavigation, Zoom, Einpassen, Textauswahl und Links für PDFs sowie erzeugte Office-Vorschauen. Der Viewer wird erst beim Öffnen geladen; bei nicht unterstützten oder passwortgeschützten PDFs verwendet BearStack automatisch den Browser-Viewer.</p>
   </div>
 
   <h2 id="ablauf">Typischer Ablauf</h2>
@@ -95,7 +96,7 @@
     <p>Die Listenansicht kann über den Spalten-Dialog angepasst werden. Zur Auswahl stehen Standardspalten, Vorschaubild, Aktionen und benutzerdefinierte Felder. Die Seitengröße wird ebenfalls gespeichert.</p>
     <p>Tags besitzen Name, Beschreibung, Farbe und Optionen. Gruppenmodus verbindet Dokumente mit gemeinsamen Gruppentags. Detailtags bleiben in Listen kompakt verborgen. Löschschutz blendet Löschaktionen für betroffene Dokumente aus und blockiert direkte Löschversuche serverseitig.</p>
     <p>In den Einstellungen lassen sich Desktop-Vorschau, Tag-Ausgabe, Fotoverhalten und die Papierkorb-Aufbewahrung konfigurieren. Die Aufbewahrung kann auf nie, 30, 60 oder 90 Tage gesetzt werden; geschützte Dokumente werden dabei nicht endgültig gelöscht.</p>
-    <p>Unter <code>Einstellungen → Benutzer</code> verwalten Admins zusätzliche SQLite-Konten, Rollen, Einzelrechte, Status und Passwort-Resets. Konten aus JSON oder Env werden zur Unterscheidung angezeigt, bleiben dort aber schreibgeschützt. Angemeldete UI-Konten ändern ihr eigenes Passwort über den Kontolink im Systemmenü.</p>
+    <p>Unter <code>Einstellungen → Benutzer</code> verwalten Admins zusätzliche SQLite-Konten, Rollen, Einzelrechte, Status, Passwort-Resets und die PDF-Vorschaupräferenz. Konten aus JSON oder Env werden zur Unterscheidung angezeigt; ihre Zugangsdaten bleiben schreibgeschützt, die lokale Darstellungspräferenz kann jedoch gespeichert werden. Angemeldete Nutzer ändern Passwort und Darstellung über den Kontolink im Systemmenü.</p>
   </div>
 
   <h2 id="mail-import">E-Mail-Import</h2>

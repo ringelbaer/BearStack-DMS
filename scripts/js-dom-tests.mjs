@@ -838,6 +838,100 @@ async function testShareButtonCopiesReadOnlyLinkAndShowsToast() {
   assert.equal(toastMessage, "Sharing-Link kopiert.");
 }
 
+function pdfViewerTestRoot() {
+  return el("section", { "data-pdf-preview": "", hidden: true }, [
+    el("button", { "data-pdf-previous": "" }),
+    el("button", { "data-pdf-next": "" }),
+    el("button", { "data-pdf-zoom-out": "" }),
+    el("button", { "data-pdf-zoom-in": "" }),
+    el("button", { "data-pdf-fit-width": "" }),
+    el("button", { "data-pdf-fit-page": "" }),
+    el("input", { "data-pdf-page": "", value: "1" }),
+    el("span", { "data-pdf-pages": "" }),
+    el("span", { "data-pdf-zoom": "" }),
+    el("a", { "data-pdf-native": "" }),
+    el("a", { "data-pdf-download": "" }),
+    el("div", { "data-pdf-status": "" }),
+    el("div", { "data-pdf-scroll": "" }, [
+      el("div", { "data-pdf-page-container": "" }, [
+        el("canvas", { "data-pdf-canvas": "" }),
+        el("div", { "data-pdf-text-layer": "" }),
+        el("div", { "data-pdf-annotation-layer": "" }),
+      ]),
+    ]),
+  ]);
+}
+
+async function testPDFPreviewIsSelectedLazilyOnlyWhenEnabled() {
+  const document = new TestDocument();
+  document.body.setAttribute("data-custom-pdf-preview", "true");
+  const frame = el("iframe", { "data-preview-frame": "", hidden: true });
+  const image = el("img", { "data-preview-image": "", hidden: true });
+  const pdfRoot = pdfViewerTestRoot();
+  const modal = el("dialog", { "data-preview-modal": "" }, [
+    el("span", { "data-preview-title": "" }),
+    el("button", { "data-preview-close": "" }),
+    el("div", {}, [frame, image, pdfRoot]),
+  ]);
+  const button = el("button", {
+    "data-preview-url": "/documents/42/preview",
+    "data-preview-mime": "application/pdf",
+    "data-preview-title": "Test.pdf",
+  });
+  document.body.append(modal, button);
+  const context = loadCore(document);
+  runScripts(context, ["app-documents.js", "app-preview.js"]);
+  const calls = [];
+  context.window.bearStackPDFPreview = {
+    destroy(root) { calls.push(["destroy", root]); },
+    load(root, url, title, download) {
+      calls.push(["load", root, url, title, download]);
+      return Promise.resolve();
+    },
+  };
+  button.dispatchEvent({ type: "click" });
+  assert.equal(frame.hidden, true);
+  assert.deepEqual(calls.at(-1).slice(0, 5), ["load", pdfRoot, "/documents/42/preview", "Test.pdf", "/documents/42/download"]);
+
+  context.window.bearStackPDFPreview.load = () => Promise.reject(new Error("unsupported PDF"));
+  button.dispatchEvent({ type: "click" });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(frame.hidden, false);
+  assert.equal(frame.src, "/documents/42/preview");
+}
+
+async function testPDFPreviewControlsAndDestroyCancelWork() {
+  const document = new TestDocument();
+  const root = pdfViewerTestRoot();
+  document.body.append(root);
+  const context = createContext(document);
+  runScripts(context, ["app-pdf-preview.js"]);
+  const controller = new context.window.BearStackPDFPreviewController(root);
+  controller.pdf = { numPages: 3 };
+  let renders = 0;
+  controller.renderPage = () => { renders += 1; return Promise.resolve(); };
+  root.querySelector("[data-pdf-next]").dispatchEvent({ type: "click" });
+  assert.equal(controller.pageNumber, 2);
+  root.querySelector("[data-pdf-zoom-in]").dispatchEvent({ type: "click" });
+  assert.equal(controller.scaleMode, "manual");
+  assert.ok(controller.scale > 1);
+  root.querySelector("[data-pdf-fit-page]").dispatchEvent({ type: "click" });
+  assert.equal(controller.scaleMode, "page-fit");
+  assert.equal(renders, 3);
+
+  let renderCancelled = false;
+  let textCancelled = false;
+  let loadingDestroyed = false;
+  controller.renderTask = { cancel() { renderCancelled = true; } };
+  controller.textTask = { cancel() { textCancelled = true; } };
+  controller.loadingTask = { async destroy() { loadingDestroyed = true; } };
+  await controller.destroy();
+  assert.equal(renderCancelled, true);
+  assert.equal(textCancelled, true);
+  assert.equal(loadingDestroyed, true);
+  assert.equal(root.hidden, true);
+}
+
 function testPhotoHelpersExposeLightboxInputs() {
   const document = new TestDocument();
   const context = createContext(document);
@@ -885,6 +979,8 @@ const tests = [
   testDocumentThumbnailLoaderStopsAfterLoad,
   testDocumentThumbnailLoaderUsesThumbLinkOverlay,
   testShareButtonCopiesReadOnlyLinkAndShowsToast,
+  testPDFPreviewIsSelectedLazilyOnlyWhenEnabled,
+  testPDFPreviewControlsAndDestroyCancelWork,
   testPhotoHelpersExposeLightboxInputs,
 ];
 

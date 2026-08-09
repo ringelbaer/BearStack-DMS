@@ -406,9 +406,12 @@ func (s *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 	externalManagers := s.configActiveUserManagerCount()
 	err := s.withAuthWrite(r.Context(), func() error {
+		s.preferenceWriteMu.Lock()
+		defer s.preferenceWriteMu.Unlock()
 		if _, deleteErr := s.repo.DeleteUser(r.Context(), user.ID, form.Version, externalManagers); deleteErr != nil {
 			return deleteErr
 		}
+		s.removeAccountPreferenceSnapshotLocked(authSourceDatabase, strconv.FormatInt(user.ID, 10))
 		return s.reloadAuthSnapshot(r.Context())
 	})
 	setAuditTarget(r, "Benutzer:"+user.Username)
@@ -435,6 +438,169 @@ func (s *Server) handleAccount(w http.ResponseWriter, r *http.Request) {
 		Active:  "account",
 		Notice:  r.URL.Query().Get("notice"),
 		Account: view,
+	})
+}
+
+func (s *Server) handleChangeOwnPreferences(w http.ResponseWriter, r *http.Request) {
+	principal, ok := authPrincipalFromContext(r.Context())
+	if !ok {
+		s.renderForbidden(w, r)
+		return
+	}
+	setAuditTarget(r, "Benutzer:"+principal.Username)
+	if err := r.ParseForm(); err != nil {
+		s.renderErrorWithReturn(w, r, http.StatusBadRequest, errors.New("Ungültige Formulardaten."), "/account")
+		return
+	}
+	version, err := accountPreferenceVersionFromRequest(r)
+	if err != nil {
+		view, viewErr := s.accountViewForPrincipal(r, principal, map[string]string{"preferences": "Das Formular ist ungültig. Bitte laden Sie die Seite neu."})
+		if viewErr != nil {
+			s.renderHTTPError(w, r, viewErr)
+			return
+		}
+		s.renderAccountForm(w, r, http.StatusConflict, view, "Das Formular ist veraltet. Bitte laden Sie die Seite neu.")
+		return
+	}
+	err = s.withAuthWrite(r.Context(), func() error {
+		_, saveErr := s.saveAccountPreference(r.Context(), repository.SaveAccountPreferenceParams{
+			Source: principal.Source, Subject: principal.Subject,
+			CustomPDFPreviewEnabled: preferenceEnabledFromRequest(r),
+			ExpectedRowVersion:      version,
+		})
+		return saveErr
+	})
+	if err != nil {
+		status := http.StatusInternalServerError
+		message := "Die Vorschau-Einstellung konnte nicht gespeichert werden."
+		fieldErrors := map[string]string{"preferences": message}
+		if errors.Is(err, repository.ErrAccountPreferenceConflict) || errors.Is(err, errAuthPrincipalStale) {
+			status = http.StatusConflict
+			message = "Die Einstellung wurde zwischenzeitlich geändert. Bitte laden Sie die Seite neu."
+			fieldErrors["preferences"] = message
+		}
+		view, viewErr := s.accountViewForPrincipal(r, principal, fieldErrors)
+		if viewErr != nil {
+			s.renderHTTPError(w, r, viewErr)
+			return
+		}
+		s.renderAccountForm(w, r, status, view, message)
+		return
+	}
+	redirectWithNotice(w, r, "/account", "PDF-Vorschau-Einstellung wurde gespeichert.")
+}
+
+func (s *Server) handleChangeUserPreferences(w http.ResponseWriter, r *http.Request) {
+	principal, ok := authPrincipalFromContext(r.Context())
+	if !ok {
+		s.renderForbidden(w, r)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		s.renderUsersWithError(w, r, http.StatusBadRequest, "Ungültige Formulardaten.")
+		return
+	}
+	source := strings.TrimSpace(r.FormValue("account_source"))
+	subject := strings.TrimSpace(r.FormValue("account_subject"))
+	username, databaseUser, configuredUser, err := s.preferenceTarget(r.Context(), source, subject)
+	if err != nil {
+		s.renderUsersWithError(w, r, http.StatusNotFound, "Nutzer nicht gefunden.")
+		return
+	}
+	setAuditTarget(r, "Benutzer:"+username)
+	allowed := false
+	if source == authSourceDatabase {
+		allowed = principal.Source == authSourceDatabase && principal.AccountID == databaseUser.ID
+		allowed = allowed || actorCanManageUser(principal, databaseUser)
+	} else {
+		allowed = actorCanManageConfigPreference(principal, configuredUser)
+	}
+	if !allowed {
+		s.renderForbidden(w, r)
+		return
+	}
+	version, err := accountPreferenceVersionFromRequest(r)
+	if err != nil {
+		s.renderUsersPreferenceError(w, r, http.StatusConflict, "Das Formular ist veraltet. Bitte laden Sie die Seite neu.", source, subject, preferenceEnabledFromRequest(r))
+		return
+	}
+	err = s.withAuthWrite(r.Context(), func() error {
+		_, currentDatabaseUser, currentConfiguredUser, targetErr := s.preferenceTarget(r.Context(), source, subject)
+		if targetErr != nil {
+			return repository.ErrAccountPreferenceConflict
+		}
+		currentAllowed := false
+		if source == authSourceDatabase {
+			currentAllowed = principal.Source == authSourceDatabase && principal.AccountID == currentDatabaseUser.ID
+			currentAllowed = currentAllowed || actorCanManageUser(principal, currentDatabaseUser)
+		} else {
+			currentAllowed = actorCanManageConfigPreference(principal, currentConfiguredUser)
+		}
+		if !currentAllowed {
+			return errAuthPrincipalStale
+		}
+		_, saveErr := s.saveAccountPreference(r.Context(), repository.SaveAccountPreferenceParams{
+			Source: source, Subject: subject,
+			CustomPDFPreviewEnabled: preferenceEnabledFromRequest(r),
+			ExpectedRowVersion:      version,
+		})
+		return saveErr
+	})
+	if err != nil {
+		if errors.Is(err, repository.ErrAccountPreferenceConflict) || errors.Is(err, errAuthPrincipalStale) {
+			s.renderUsersPreferenceError(w, r, http.StatusConflict, "Die Einstellung wurde zwischenzeitlich geändert. Bitte laden Sie die Seite neu.", source, subject, preferenceEnabledFromRequest(r))
+			return
+		}
+		s.renderUsersPreferenceError(w, r, http.StatusInternalServerError, "Die Vorschau-Einstellung konnte nicht gespeichert werden.", source, subject, preferenceEnabledFromRequest(r))
+		return
+	}
+	redirectWithNotice(w, r, "/settings/users", "PDF-Vorschau für "+username+" wurde gespeichert.")
+}
+
+func accountPreferenceVersionFromRequest(r *http.Request) (int64, error) {
+	raw := strings.TrimSpace(r.FormValue("preference_version"))
+	version, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || version < 0 || strconv.FormatInt(version, 10) != raw {
+		return 0, repository.ErrAccountPreferenceConflict
+	}
+	return version, nil
+}
+
+func preferenceEnabledFromRequest(r *http.Request) bool {
+	for _, value := range r.Form["custom_pdf_preview_enabled"] {
+		switch strings.ToLower(strings.TrimSpace(value)) {
+		case "1", "true", "on", "yes":
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Server) renderUsersWithError(w http.ResponseWriter, r *http.Request, status int, message string) {
+	s.renderUsersPreferenceError(w, r, status, message, "", "", false)
+}
+
+func (s *Server) renderUsersPreferenceError(w http.ResponseWriter, r *http.Request, status int, message, source, subject string, attemptedEnabled bool) {
+	users, err := s.repo.ListUsers(r.Context())
+	if err != nil {
+		s.renderHTTPError(w, r, err)
+		return
+	}
+	principal, _ := authPrincipalFromContext(r.Context())
+	view := s.userManagementListView(users, principal)
+	for index := range view.Users {
+		if view.Users[index].Source == source && view.Users[index].Subject == subject {
+			view.Users[index].CustomPDFPreviewEnabled = attemptedEnabled
+			view.Users[index].PreferenceError = message
+		}
+	}
+	view.Bootstrap = s.userBootstrapAllowed(r, users)
+	view.CanCreate = view.Bootstrap || view.CanCreate
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	s.render(w, r, "users.html", PageData{
+		Title: "Nutzerverwaltung", Active: "settings", SettingsTab: "users",
+		Error: message, UserManagement: view,
 	})
 }
 

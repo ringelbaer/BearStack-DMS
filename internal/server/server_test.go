@@ -142,7 +142,15 @@ func TestTemplateAssetsAreScopedByPage(t *testing.T) {
 				"/static/app-preview.js",
 				"/static/app-upload.js",
 			},
-			notWant: []string{"/static/app-photos.js", "/static/app-charts.js"},
+			notWant: []string{"/static/app-photos.js", "/static/app-charts.js", "/static/app-pdf-preview.js"},
+		},
+		{
+			name: "documents with custom pdf preview",
+			tpl:  "index.html",
+			data: PageData{Title: "Dokumente", Active: "documents", CustomPDFPreviewEnabled: true,
+				Pagination: PaginationData{DocumentList: true}},
+			want:    []string{"/static/app-preview.js", "/static/app-pdf-preview.js"},
+			notWant: []string{"/static/app-photos.js"},
 		},
 		{
 			name:    "statistics",
