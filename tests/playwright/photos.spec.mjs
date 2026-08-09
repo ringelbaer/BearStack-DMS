@@ -100,6 +100,8 @@ test("document upload, preview, columns and metadata work", async ({ browser }) 
     await expect(detailPDFViewer).toBeVisible();
     await expect(detailPDFViewer.locator("[data-pdf-pages]")).toHaveText("2");
     await expect.poll(() => detailPDFViewer.locator("[data-pdf-canvas]").evaluate((canvas) => canvas.width)).toBeGreaterThan(0);
+    await detailPDFViewer.locator("[data-pdf-fit-page]").click();
+    await expect(page.locator("[data-preview-modal]")).not.toBeVisible();
     await expect(page.locator("[data-metadata-form]")).toBeVisible();
     await page.locator('[data-metadata-form] input[name="title"]').fill("Playwright Dokument");
 

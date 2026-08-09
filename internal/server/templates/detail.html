@@ -89,7 +89,7 @@
         <img alt="{{.Document.OriginalName}}" src="/documents/{{.Document.ID}}/preview">
         {{else if or (isPDF .Document.MIMEType) (isPreviewableDocument .Document.OriginalName .Document.MIMEType)}}
         {{if .CustomPDFPreviewEnabled}}
-        <div class="detail-preview-target" data-detail-preview data-preview-url="/documents/{{.Document.ID}}/preview" data-preview-mime="{{.Document.MIMEType}}" data-preview-title="{{.Document.OriginalName}}">
+        <div class="detail-preview-target" data-detail-preview data-detail-preview-url="/documents/{{.Document.ID}}/preview" data-detail-preview-mime="{{.Document.MIMEType}}" data-detail-preview-title="{{.Document.OriginalName}}">
           <iframe title="Vorschau {{.Document.OriginalName}}" data-detail-preview-frame hidden></iframe>
           {{template "pdf-preview-viewer" .}}
           <noscript><iframe title="Vorschau {{.Document.OriginalName}}" src="/documents/{{.Document.ID}}/preview"></iframe></noscript>

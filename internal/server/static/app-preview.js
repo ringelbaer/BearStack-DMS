@@ -159,14 +159,14 @@ function initializePreviewButtons(root = document) {
 function initializeDetailPreview(root = document) {
   initializeOnce(root, "[data-detail-preview]", (target) => {
     const frame = target.querySelector("[data-detail-preview-frame]");
-    const url = target.dataset.previewUrl || "";
+    const url = target.dataset.detailPreviewUrl || "";
     if (!frame || !url) return;
     loadPreviewTarget(
       frame,
       null,
       url,
-      target.dataset.previewMime || "",
-      target.dataset.previewTitle || "Vorschau"
+      target.dataset.detailPreviewMime || "",
+      target.dataset.detailPreviewTitle || "Vorschau"
     );
   });
 }

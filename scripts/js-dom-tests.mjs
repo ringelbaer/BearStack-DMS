@@ -907,9 +907,9 @@ function testDocumentDetailUsesCustomPDFPreview() {
   const pdfRoot = pdfViewerTestRoot();
   const target = el("div", {
     "data-detail-preview": "",
-    "data-preview-url": "/documents/1234/preview",
-    "data-preview-mime": "application/pdf",
-    "data-preview-title": "Detail.pdf",
+    "data-detail-preview-url": "/documents/1234/preview",
+    "data-detail-preview-mime": "application/pdf",
+    "data-detail-preview-title": "Detail.pdf",
   }, [frame, pdfRoot]);
   document.body.append(target);
 
@@ -932,6 +932,9 @@ function testDocumentDetailUsesCustomPDFPreview() {
     "Detail.pdf",
     "/documents/1234/download",
   ]);
+
+  target.dispatchEvent({ type: "click", target: pdfRoot.querySelector("[data-pdf-fit-page]") });
+  assert.equal(calls.filter(([action]) => action === "load").length, 1);
 }
 
 async function testPDFPreviewControlsAndDestroyCancelWork() {
