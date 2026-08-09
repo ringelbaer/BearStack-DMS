@@ -156,6 +156,21 @@ function initializePreviewButtons(root = document) {
   });
 }
 
+function initializeDetailPreview(root = document) {
+  initializeOnce(root, "[data-detail-preview]", (target) => {
+    const frame = target.querySelector("[data-detail-preview-frame]");
+    const url = target.dataset.previewUrl || "";
+    if (!frame || !url) return;
+    loadPreviewTarget(
+      frame,
+      null,
+      url,
+      target.dataset.previewMime || "",
+      target.dataset.previewTitle || "Vorschau"
+    );
+  });
+}
+
 function absoluteShareURL(rawURL) {
   if (!rawURL) return "";
   try {
@@ -465,6 +480,7 @@ function initializeDocumentList(root = document) {
   }
   initializeDocumentThumbnails(root);
   initializePreviewButtons(root);
+  initializeDetailPreview(root);
   initializeShareButtons(root);
   initializeColumnOpenButtons(root);
   initializeBulkFieldButtons(root);

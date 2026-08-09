@@ -85,12 +85,18 @@
         <button type="button" class="tab-button" role="tab" aria-selected="false" data-tab-target="text">Textinhalt</button>
       </div>
       <section class="tab-panel active" data-tab-panel="pdf" role="tabpanel">
-        {{if isPDF .Document.MIMEType}}
-        <iframe title="Vorschau {{.Document.OriginalName}}" src="/documents/{{.Document.ID}}/preview"></iframe>
-        {{else if isImage .Document.MIMEType}}
+        {{if isImage .Document.MIMEType}}
         <img alt="{{.Document.OriginalName}}" src="/documents/{{.Document.ID}}/preview">
-        {{else if isPreviewableDocument .Document.OriginalName .Document.MIMEType}}
+        {{else if or (isPDF .Document.MIMEType) (isPreviewableDocument .Document.OriginalName .Document.MIMEType)}}
+        {{if .CustomPDFPreviewEnabled}}
+        <div class="detail-preview-target" data-detail-preview data-preview-url="/documents/{{.Document.ID}}/preview" data-preview-mime="{{.Document.MIMEType}}" data-preview-title="{{.Document.OriginalName}}">
+          <iframe title="Vorschau {{.Document.OriginalName}}" data-detail-preview-frame hidden></iframe>
+          {{template "pdf-preview-viewer" .}}
+          <noscript><iframe title="Vorschau {{.Document.OriginalName}}" src="/documents/{{.Document.ID}}/preview"></iframe></noscript>
+        </div>
+        {{else}}
         <iframe title="Vorschau {{.Document.OriginalName}}" src="/documents/{{.Document.ID}}/preview"></iframe>
+        {{end}}
         {{else}}
         <div class="empty-state">
           <h2>Keine Vorschau</h2>

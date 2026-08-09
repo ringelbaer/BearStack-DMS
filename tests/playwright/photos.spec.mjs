@@ -96,6 +96,10 @@ test("document upload, preview, columns and metadata work", async ({ browser }) 
       page.waitForURL(/\/documents\/\d+/),
       row.locator('td[data-column="name"] a.strong-link').click(),
     ]);
+    const detailPDFViewer = page.locator('[data-tab-panel="pdf"] [data-pdf-preview]');
+    await expect(detailPDFViewer).toBeVisible();
+    await expect(detailPDFViewer.locator("[data-pdf-pages]")).toHaveText("2");
+    await expect.poll(() => detailPDFViewer.locator("[data-pdf-canvas]").evaluate((canvas) => canvas.width)).toBeGreaterThan(0);
     await expect(page.locator("[data-metadata-form]")).toBeVisible();
     await page.locator('[data-metadata-form] input[name="title"]').fill("Playwright Dokument");
 

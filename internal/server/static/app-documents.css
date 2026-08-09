@@ -660,6 +660,18 @@
   width: 100%;
 }
 
+.detail-preview-target {
+  height: 100%;
+  width: 100%;
+}
+
+.detail-preview-target > noscript,
+.detail-preview-target > noscript > iframe {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
 .text-panel {
   background: var(--surface);
   overflow: auto;

@@ -114,11 +114,11 @@ func pageJSAssets(data PageData) []string {
 		assets = append(assets,
 			"/static/app-upload.js",
 			"/static/app-documents.js",
-			"/static/app-preview.js",
 		)
 		if data.CustomPDFPreviewEnabled {
 			assets = append(assets, "/static/app-pdf-preview.js")
 		}
+		assets = append(assets, "/static/app-preview.js")
 	}
 	if pageAssets.OCR {
 		assets = append(assets, "/static/app-ocr.js")

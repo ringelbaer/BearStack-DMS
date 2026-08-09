@@ -900,6 +900,40 @@ async function testPDFPreviewIsSelectedLazilyOnlyWhenEnabled() {
   assert.equal(frame.src, "/documents/42/preview");
 }
 
+function testDocumentDetailUsesCustomPDFPreview() {
+  const document = new TestDocument();
+  document.body.setAttribute("data-custom-pdf-preview", "true");
+  const frame = el("iframe", { "data-detail-preview-frame": "", hidden: true });
+  const pdfRoot = pdfViewerTestRoot();
+  const target = el("div", {
+    "data-detail-preview": "",
+    "data-preview-url": "/documents/1234/preview",
+    "data-preview-mime": "application/pdf",
+    "data-preview-title": "Detail.pdf",
+  }, [frame, pdfRoot]);
+  document.body.append(target);
+
+  const context = loadCore(document);
+  const calls = [];
+  context.window.bearStackPDFPreview = {
+    destroy(root) { calls.push(["destroy", root]); },
+    load(root, url, title, download) {
+      calls.push(["load", root, url, title, download]);
+      return Promise.resolve();
+    },
+  };
+  runScripts(context, ["app-documents.js", "app-preview.js"]);
+
+  assert.equal(frame.hidden, true);
+  assert.deepEqual(calls.at(-1), [
+    "load",
+    pdfRoot,
+    "/documents/1234/preview",
+    "Detail.pdf",
+    "/documents/1234/download",
+  ]);
+}
+
 async function testPDFPreviewControlsAndDestroyCancelWork() {
   const document = new TestDocument();
   const root = pdfViewerTestRoot();
@@ -980,6 +1014,7 @@ const tests = [
   testDocumentThumbnailLoaderUsesThumbLinkOverlay,
   testShareButtonCopiesReadOnlyLinkAndShowsToast,
   testPDFPreviewIsSelectedLazilyOnlyWhenEnabled,
+  testDocumentDetailUsesCustomPDFPreview,
   testPDFPreviewControlsAndDestroyCancelWork,
   testPhotoHelpersExposeLightboxInputs,
 ];
