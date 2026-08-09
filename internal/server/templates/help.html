@@ -95,6 +95,7 @@
     <p>Die Listenansicht kann über den Spalten-Dialog angepasst werden. Zur Auswahl stehen Standardspalten, Vorschaubild, Aktionen und benutzerdefinierte Felder. Die Seitengröße wird ebenfalls gespeichert.</p>
     <p>Tags besitzen Name, Beschreibung, Farbe und Optionen. Gruppenmodus verbindet Dokumente mit gemeinsamen Gruppentags. Detailtags bleiben in Listen kompakt verborgen. Löschschutz blendet Löschaktionen für betroffene Dokumente aus und blockiert direkte Löschversuche serverseitig.</p>
     <p>In den Einstellungen lassen sich Desktop-Vorschau, Tag-Ausgabe, Fotoverhalten und die Papierkorb-Aufbewahrung konfigurieren. Die Aufbewahrung kann auf nie, 30, 60 oder 90 Tage gesetzt werden; geschützte Dokumente werden dabei nicht endgültig gelöscht.</p>
+    <p>Unter <code>Einstellungen → Benutzer</code> verwalten Admins zusätzliche SQLite-Konten, Rollen, Einzelrechte, Status und Passwort-Resets. Konten aus JSON oder Env werden zur Unterscheidung angezeigt, bleiben dort aber schreibgeschützt. Angemeldete UI-Konten ändern ihr eigenes Passwort über den Kontolink im Systemmenü.</p>
   </div>
 
   <h2 id="mail-import">E-Mail-Import</h2>
@@ -122,10 +123,10 @@
 
   <h2 id="backup">Backup</h2>
   <div class="endpoint">
-    <p>Für ein vollständiges Backup müssen Datenbank und Dokumentenordner als zusammengehöriger Stand gesichert werden. Standardmäßig sind das <code>data/bearstack.db</code> und <code>data/documents</code>, sofern die Pfade nicht über Konfiguration oder Umgebungsvariablen geändert wurden.</p>
-    <p>Wenn das Fotomodul aktiv ist, gehören zusätzlich der Foto-Datenbereich mit Thumbnail-Cache und Foto-Indexdatenbank zum BearStack-Backup. Das originale Fotoverzeichnis muss separat gesichert werden, wenn es nicht ohnehin Teil einer bestehenden Fotosicherung ist.</p>
+    <p>Für ein vollständiges Backup muss das gesamte BearStack-Datenverzeichnis als zusammengehöriger Stand gesichert werden. Dazu gehören insbesondere <code>bearstack.db</code>, <code>auth-session.key</code>, Dokumente und der BearStack-eigene Foto-Datenbereich. Weiterhin verwendete JSON-/Env-Konfigurationen gehören ebenfalls zur Sicherung.</p>
+    <p>Liegt der Dokumentenspeicher oder das originale Fotoverzeichnis außerhalb des Datenverzeichnisses, muss dieser Pfad separat gesichert werden.</p>
     <p>Während eines Backups sollte BearStack möglichst nicht gleichzeitig neue Dokumente importieren oder Metadaten schreiben. Am einfachsten ist ein kurzer Service-Stopp, danach Archiv erstellen, anschließend den Service wieder starten. Ein Restore braucht denselben gemeinsamen Stand aus Datenbank und Dateien.</p>
-    <pre><code>tar -czf bearstack-backup.tgz data/bearstack.db data/documents data/photos</code></pre>
+    <pre><code>tar -czf bearstack-backup.tgz data</code></pre>
   </div>
 
   <h2 id="betrieb">Betrieb</h2>

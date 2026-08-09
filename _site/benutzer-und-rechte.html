@@ -536,6 +536,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Benutzer anlegen">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#benutzer-in-der-weboberflache" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Benutzer in der Weboberfläche
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
 </li>
       
         <li class="md-nav__item">
@@ -706,6 +723,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Benutzer anlegen">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#benutzer-in-der-weboberflache" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Benutzer in der Weboberfläche
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
 </li>
       
         <li class="md-nav__item">
@@ -782,7 +816,7 @@
 
 
 <h1 id="benutzer-und-rechte">Benutzer und Rechte<a class="headerlink" href="#benutzer-und-rechte" title="Permanent link">&para;</a></h1>
-<p>BearStack schützt Weboberfläche, API und WebDAV mit derselben Basic-Auth-Konfiguration. Die Rechte sind capability-basiert: Eine Rolle ist nur ein vordefiniertes Bündel aus Einzelrechten. Für spezielle Konten können zusätzlich oder stattdessen einzelne <code>permissions</code> gesetzt werden.</p>
+<p>BearStack schützt Weboberfläche, API und WebDAV mit denselben Konten. Die Rechte sind capability-basiert: Eine Rolle ist nur ein vordefiniertes Bündel aus Einzelrechten. Für spezielle Konten können zusätzlich oder stattdessen einzelne <code>permissions</code> gesetzt werden.</p>
 <p>Ohne Auth ist BearStack nur für lokale Entwicklung gedacht. Auf Loopback-Adressen wie <code>127.0.0.1:8080</code> darf BearStack ohne Login starten; nicht-lokale Listener wie <code>0.0.0.0:8080</code> oder <code>:8080</code> erfordern Auth. Wenn Auth deaktiviert ist, behandelt BearStack alle Anfragen wie vollständig berechtigt.</p>
 <h2 id="benutzer-anlegen">Benutzer anlegen<a class="headerlink" href="#benutzer-anlegen" title="Permanent link">&para;</a></h2>
 <p>Die einfache Env-Konfiguration legt genau einen Admin-Benutzer an:</p>
@@ -819,6 +853,11 @@
 </span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="p">}</span>
 </span></code></pre></div>
 <p><code>password_hash</code> hat Vorrang vor <code>password</code>. Für produktive Installationen ist ein bcrypt-Hash empfehlenswert; Klartextpasswörter eignen sich vor allem für lokale Tests. Fehlt bei einem Eintrag sowohl <code>role</code> als auch <code>permissions</code>, wird der Benutzer als <code>admin</code> behandelt.</p>
+<h3 id="benutzer-in-der-weboberflache">Benutzer in der Weboberfläche<a class="headerlink" href="#benutzer-in-der-weboberflache" title="Permanent link">&para;</a></h3>
+<p>Admins verwalten zusätzliche Konten unter <strong>Einstellungen → Benutzer</strong>. Diese Konten werden in <code>bearstack.db</code> gespeichert; Passwörter liegen dort ausschließlich als bcrypt-Hash. Neue Passwörter benötigen mindestens 12 Zeichen und dürfen höchstens 72 UTF-8-Bytes umfassen.</p>
+<p>JSON- und Env-Konten bleiben parallel aktiv und erscheinen in der Liste mit der Quelle <strong>Konfiguration</strong>. Sie sind im UI schreibgeschützt, damit bestehende Deployments und Notfallzugänge nicht unbemerkt überschrieben werden. UI- und Konfigurationskonten dürfen nicht denselben Benutzernamen verwenden. Benutzernamen sind case-sensitive und nach dem Anlegen nicht änderbar.</p>
+<p>Ein Konto kann deaktiviert, mit neuen Rechten versehen oder mit einem neuen Passwort ausgestattet werden. Jede Administratoraktion verlangt zur Bestätigung das aktuelle Passwort des handelnden Kontos. UI-Konten können ihr eigenes Passwort über <strong>Konto</strong> ändern; Konfigurationskonten werden weiterhin in JSON oder Env gepflegt.</p>
+<p>Läuft BearStack ohne Auth ausschließlich auf Loopback, muss das erste UI-Konto ein aktiver Admin sein. Nach dessen Anlage kann die Instanz auch ohne Config-Konto betrieben werden. Für einen Notfallzugang lässt sich jederzeit ein temporäres Config-Admin-Konto mit einem noch nicht verwendeten Benutzernamen ergänzen und BearStack neu starten.</p>
 <h2 id="rollen">Rollen<a class="headerlink" href="#rollen" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -832,7 +871,7 @@
 <tr>
 <td><code>admin</code></td>
 <td>alle Rechte</td>
-<td>Vollständige Verwaltung, Systemkonfiguration, Audit-Log und <code>.adminonly</code>-Fotoordner</td>
+<td>Vollständige Verwaltung, Benutzerverwaltung, Systemkonfiguration, Audit-Log und <code>.adminonly</code>-Fotoordner</td>
 </tr>
 <tr>
 <td><code>documents_read</code></td>
@@ -868,6 +907,11 @@
 <td><code>api_uploader</code></td>
 <td><code>documents.upload</code></td>
 <td>Scanner, Automationen und Importjobs, die Dateien hochladen, aber keine Dokumente lesen sollen</td>
+</tr>
+<tr>
+<td><code>custom</code></td>
+<td>nur explizit gewählte Einzelrechte</td>
+<td>Delegierte Nutzerverwalter und eng zugeschnittene Spezialkonten</td>
 </tr>
 </tbody>
 </table>
@@ -923,6 +967,10 @@
 <td>Systemeinstellungen, Mail-Import, Spalten, Seitengrößen und Favicon verwalten</td>
 </tr>
 <tr>
+<td><code>system.users.manage</code></td>
+<td>gewöhnliche Benutzer innerhalb der eigenen Fachrechte verwalten; Admins und weitere Nutzerverwalter bleiben der Rolle <code>admin</code> vorbehalten</td>
+</tr>
+<tr>
 <td><code>system.audit</code></td>
 <td>Audit-Log unter <code>/log</code> lesen</td>
 </tr>
@@ -971,15 +1019,16 @@
 </span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">}</span>
 </span></code></pre></div>
 <h2 id="sessions-und-betrieb">Sessions und Betrieb<a class="headerlink" href="#sessions-und-betrieb" title="Permanent link">&para;</a></h2>
-<p>Nach erfolgreichem Login setzt BearStack ein signiertes HttpOnly-Session-Cookie. Normale Sessions laufen nach 12 Stunden ab; mit „Eingeloggt bleiben“ nach 30 Tagen. Basic Auth funktioniert weiterhin für API, WebDAV und Automationen. WebDAV antwortet ohne gültige Session mit einem Basic-Auth-Challenge.</p>
-<p>Konfigurationsänderungen an Benutzern und Rechten werden beim Start geladen. Nach einem Neustart sind bestehende Sessions ungültig, weil BearStack den Session-Schlüssel neu erzeugt. Für entfernte Benutzer gilt außerdem: Eine vorhandene Session wird nur akzeptiert, wenn der Benutzer in der aktuellen Auth-Konfiguration noch existiert.</p>
+<p>Nach erfolgreichem Login setzt BearStack ein signiertes HttpOnly-Session-Cookie. Normale Sessions laufen nach 12 Stunden ab; mit „Eingeloggt bleiben“ nach 30 Tagen. Der Signierschlüssel liegt geschützt im Datenverzeichnis, sodass Sitzungen einen Neustart überstehen. Beim Upgrade auf 0.22.0 erfordert das neue, kontogebundene Sessionformat einmalig eine erneute Anmeldung. Basic Auth funktioniert weiterhin für API, WebDAV und Automationen. WebDAV antwortet ohne gültige Session mit einem Basic-Auth-Challenge.</p>
+<p>Passwort-, Rollen-, Rechte- und Statusänderungen widerrufen bestehende Sitzungen des betroffenen UI-Kontos sofort. Konfigurationsänderungen an Passwort oder Rechten werden beim Start erkannt und machen ebenfalls ältere Sitzungen dieses Kontos ungültig. Entfernte oder deaktivierte Benutzer können vorhandene Cookies nicht weiterverwenden. Nach fünf Fehlversuchen innerhalb von 15 Minuten begrenzt BearStack weitere Anmeldeversuche für den betreffenden Benutzernamen bis zum Ende dieses Zeitfensters.</p>
 <h2 id="praxisempfehlungen">Praxisempfehlungen<a class="headerlink" href="#praxisempfehlungen" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Für öffentlich erreichbare Installationen immer Auth aktiv lassen, auch hinter einem Reverse Proxy, sofern der Proxy keine eigene Zugriffskontrolle erzwingt.</li>
 <li>Für Menschen eher Rollen verwenden; für Scanner, Dashboards und Spezialfälle gezielte <code>permissions</code> setzen.</li>
 <li><code>admin</code> sparsam vergeben, weil diese Rolle auch Systemverwaltung, Audit-Zugriff und <code>.adminonly</code>-Fotoordner umfasst.</li>
 <li>Passworthashes in JSON oder Env-Dateien sorgfältig quoten, weil bcrypt-Hashes <code>$</code> enthalten.</li>
-<li>Für Backups die Konfigurationsdatei mit sichern; dort liegen bei mehreren Benutzern die Accounts und Rechte.</li>
+<li>Für Backups das gesamte BearStack-Datenverzeichnis mit <code>bearstack.db</code> und <code>auth-session.key</code> sowie weiterhin verwendete Konfigurationsdateien sichern.</li>
+<li>Vor einem Downgrade die zur älteren Version passende Datenbanksicherung wiederherstellen; die Schema-Migration auf Version 15 ist automatisch, aber ältere BearStack-Versionen lehnen neuere Schemata ab.</li>
 </ul>
 
 
@@ -1029,7 +1078,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.17.6 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.22.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

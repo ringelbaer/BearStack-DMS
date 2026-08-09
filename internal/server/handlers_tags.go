@@ -83,8 +83,8 @@ func (s *Server) handleDeletePhotoTag(w http.ResponseWriter, r *http.Request) {
 	if !s.parseFormOrRenderError(w, r) {
 		return
 	}
-	if !s.authPasswordOK(r, r.FormValue("password")) {
-		s.renderErrorWithReturn(w, r, http.StatusForbidden, errors.New("Passwortbestätigung fehlt oder ist ungültig."), photoTagsReturnURL)
+	if status, confirmationErr := s.passwordConfirmationFailure(w, r, r.FormValue("password")); confirmationErr != nil {
+		s.renderErrorWithReturn(w, r, status, confirmationErr, photoTagsReturnURL)
 		return
 	}
 	deleted, err := s.photos.DeleteTag(r.Context(), r.FormValue("name"))
@@ -244,8 +244,8 @@ func (s *Server) handleDeleteTag(w http.ResponseWriter, r *http.Request) {
 	if !s.parseFormOrRenderError(w, r) {
 		return
 	}
-	if !s.authPasswordOK(r, r.FormValue("password")) {
-		s.renderErrorWithReturn(w, r, http.StatusForbidden, errors.New("Passwortbestätigung fehlt oder ist ungültig."), tagDetailReturnURL(tag.ID))
+	if status, confirmationErr := s.passwordConfirmationFailure(w, r, r.FormValue("password")); confirmationErr != nil {
+		s.renderErrorWithReturn(w, r, status, confirmationErr, tagDetailReturnURL(tag.ID))
 		return
 	}
 	deleted, err := s.repo.DeleteTag(r.Context(), tag.ID)

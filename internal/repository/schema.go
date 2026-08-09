@@ -14,7 +14,7 @@ import (
 
 const (
 	repositorySchemaComponent = "repository"
-	repositorySchemaVersion   = 14
+	repositorySchemaVersion   = 15
 )
 
 type repositorySchemaMigration struct {
@@ -63,6 +63,9 @@ var repositorySchemaMigrations = []repositorySchemaMigration{
 	}},
 	{Version: 14, Name: "tags.primary_tag", Apply: func(ctx context.Context, r *Repository) error {
 		return r.ensureTagPrimaryTagColumn(ctx)
+	}},
+	{Version: 15, Name: "users", Apply: func(ctx context.Context, r *Repository) error {
+		return r.ensureUserTables(ctx)
 	}},
 }
 
@@ -204,6 +207,22 @@ func (r *Repository) ensureSchema(ctx context.Context) error {
 			user_agent TEXT NOT NULL DEFAULT ''
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_audit_logs_occurred_at ON audit_logs(occurred_at DESC, id DESC)`,
+		`CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			username TEXT NOT NULL UNIQUE,
+			password_hash TEXT NOT NULL,
+			role TEXT NOT NULL,
+			enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0, 1)),
+			session_version INTEGER NOT NULL DEFAULT 1 CHECK(session_version > 0),
+			row_version INTEGER NOT NULL DEFAULT 1 CHECK(row_version > 0),
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL
+		)`,
+		`CREATE TABLE IF NOT EXISTS user_permissions (
+			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			permission TEXT NOT NULL,
+			PRIMARY KEY(user_id, permission)
+		)`,
 		`CREATE TABLE IF NOT EXISTS ocr_jobs (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
@@ -233,6 +252,33 @@ func (r *Repository) ensureSchema(ctx context.Context) error {
 		return err
 	}
 	return sqlutil.RecordSchemaVersion(ctx, r.db, repositorySchemaComponent, repositorySchemaVersion)
+}
+
+func (r *Repository) ensureUserTables(ctx context.Context) error {
+	statements := []string{
+		`CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			username TEXT NOT NULL UNIQUE,
+			password_hash TEXT NOT NULL,
+			role TEXT NOT NULL,
+			enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0, 1)),
+			session_version INTEGER NOT NULL DEFAULT 1 CHECK(session_version > 0),
+			row_version INTEGER NOT NULL DEFAULT 1 CHECK(row_version > 0),
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL
+		)`,
+		`CREATE TABLE IF NOT EXISTS user_permissions (
+			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			permission TEXT NOT NULL,
+			PRIMARY KEY(user_id, permission)
+		)`,
+	}
+	for _, statement := range statements {
+		if _, err := r.db.ExecContext(ctx, statement); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *Repository) runSchemaMigrations(ctx context.Context) error {

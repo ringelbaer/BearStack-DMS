@@ -9,6 +9,8 @@ import (
 	"bearstack/internal/document"
 )
 
+const auditLogMaxEntries = 50_000
+
 func (r *Repository) SaveAuditLog(ctx context.Context, entry document.AuditLogEntry) error {
 	if entry.OccurredAt.IsZero() {
 		entry.OccurredAt = time.Now().UTC()
@@ -43,7 +45,11 @@ func (r *Repository) PruneAuditLogs(ctx context.Context, before time.Time) error
 	if before.IsZero() {
 		return nil
 	}
-	_, err := r.db.ExecContext(ctx, `DELETE FROM audit_logs WHERE occurred_at < ?`, formatTime(before))
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM audit_logs
+		WHERE occurred_at < ?
+		   OR id <= COALESCE((SELECT MAX(id) FROM audit_logs), 0) - ?`,
+		formatTime(before), auditLogMaxEntries)
 	return err
 }
 

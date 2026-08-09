@@ -92,6 +92,8 @@ type PageData struct {
 	WebDAVPath             string
 	Auth                   AuthPermissions
 	CustomFavicon          CustomFaviconView
+	UserManagement         UserManagementView
+	Account                AccountView
 }
 
 type PageAssets struct {
@@ -238,6 +240,7 @@ func (d PageData) SystemMenuPrimaryVisible() bool {
 func (d PageData) SystemMenuSecondaryVisible() bool {
 	return d.Auth.CanDocumentsRead ||
 		d.Auth.CanSystemManage ||
+		d.Auth.CanSystemUsersManage ||
 		d.Auth.CanPhotosManage ||
 		d.Auth.CanSystemAudit
 }

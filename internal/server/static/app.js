@@ -679,6 +679,38 @@ function initializeSubmitPrompts(root = document) {
   });
 }
 
+function initializeUserPermissionEditors(root = document) {
+  initializeOnce(root, "[data-user-access-form]", (form) => {
+    const role = form.querySelector("[data-user-role]");
+    if (!role) return;
+    const permissions = Array.from(form.querySelectorAll("[data-user-permission]"));
+
+    function updateRolePermissions() {
+      const selected = role.options[role.selectedIndex];
+      const granted = new Set((selected?.dataset.rolePermissions || "").split(",").filter(Boolean));
+      permissions.forEach((input) => {
+        const inherited = granted.has(input.value);
+        const assignable = input.dataset.assignable === "true";
+        input.checked = inherited || input.dataset.additionalSelected === "true";
+        input.disabled = inherited || !assignable;
+        const option = input.closest("[data-user-permission-option]");
+        option?.classList.toggle("permission-option-disabled", input.disabled);
+        const badge = option?.querySelector("[data-role-granted-badge]");
+        if (badge) badge.hidden = !inherited;
+      });
+    }
+
+    permissions.forEach((input) => {
+      input.addEventListener("change", () => {
+        if (!input.disabled) input.dataset.additionalSelected = input.checked ? "true" : "false";
+      });
+    });
+    role.addEventListener("change", updateRolePermissions);
+    updateRolePermissions();
+  });
+}
+
 initializeTabs();
 initializeContextHelp();
 initializeSubmitPrompts();
+initializeUserPermissionEditors();

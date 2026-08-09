@@ -93,7 +93,7 @@ func run(logger *slog.Logger) error {
 		if cfg.TLS.Enabled {
 			scheme = "https"
 		}
-		logger.Info("BearStack listening", "scheme", scheme, "addr", cfg.Addr, "db_path", cfg.DBPath, "storage_dir", store.Root(), "max_upload_bytes", cfg.MaxUploadBytes, "auth_enabled", cfg.Auth.Enabled(), "tls_enabled", cfg.TLS.Enabled, "photos_enabled", cfg.Photos.Active(), "photos_dir", cfg.Photos.RootDir, "photos_data_dir", cfg.Photos.DataDir, "photos_db_path", cfg.Photos.DBPath)
+		logger.Info("BearStack listening", "scheme", scheme, "addr", cfg.Addr, "db_path", cfg.DBPath, "storage_dir", store.Root(), "max_upload_bytes", cfg.MaxUploadBytes, "auth_enabled", app.AuthEnabled(), "tls_enabled", cfg.TLS.Enabled, "photos_enabled", cfg.Photos.Active(), "photos_dir", cfg.Photos.RootDir, "photos_data_dir", cfg.Photos.DataDir, "photos_db_path", cfg.Photos.DBPath)
 		if cfg.TLS.Enabled {
 			logger.Info("HTTP redirect listening", "scheme", "http", "addr", cfg.Addr, "redirect_to", cfg.Addr, "same_port", true)
 		}

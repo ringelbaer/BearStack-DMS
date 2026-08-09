@@ -20,7 +20,8 @@ func (s *Server) Handler() http.Handler {
 	s.registerPhotoRoutes(mux)
 	s.registerWebDAVRoutes(mux)
 
-	return s.securityHeaders(s.basicAuth(s.sameOriginUnsafeRequests(s.auditWriteActions(mux))))
+	secured := s.basicAuth(s.sameOriginUnsafeRequests(s.auditWriteActions(mux)))
+	return s.securityHeaders(s.auditRejectedAccountActions(mux, secured))
 }
 
 func (s *Server) registerRouteSpecs(mux *http.ServeMux, routes []routeSpec) {

@@ -965,7 +965,7 @@
 </tr>
 </tbody>
 </table>
-<p>Ohne vollständige Auth-Konfiguration ist Basic Auth auf Loopback-Adressen wie <code>127.0.0.1:8080</code> für lokale Entwicklung deaktiviert. Listener auf nicht-lokalen Interfaces wie <code>0.0.0.0:8080</code> oder <code>:8080</code> starten nur mit Benutzer plus Passwort oder Passwort-Hash.</p>
+<p>Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie <code>127.0.0.1:8080</code> für die Ersteinrichtung deaktiviert. Listener auf nicht-lokalen Interfaces wie <code>0.0.0.0:8080</code> oder <code>:8080</code> starten nur mit mindestens einem aktiven Konto; dieses darf vollständig aus der SQLite-Datenbank stammen.</p>
 <h2 id="lokale-entwicklung">Lokale Entwicklung<a class="headerlink" href="#lokale-entwicklung" title="Permanent link">&para;</a></h2>
 <p>Der lokale Start nutzt standardmäßig das Repo-nahe Verzeichnis <code>data/</code>:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>go<span class="w"> </span>run<span class="w"> </span>./cmd/bearstack
@@ -1149,7 +1149,7 @@
 <p>Den Hash in JSON direkt eintragen oder in Shell-/Env-Dateien wegen der <code>$</code>-Zeichen quoten:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>BEARSTACK_AUTH_PASSWORD_HASH=&#39;$2a$10$...&#39;
 </span></code></pre></div>
-<p>Wenn <code>password_hash</code> gesetzt ist, hat er Vorrang vor <code>password</code>. Nach erfolgreichem Basic-Auth-Login setzt BearStack ein signiertes HttpOnly-Session-Cookie für 12 Stunden. Mit der Login-Checkbox „Eingeloggt bleiben“ wird die Session auf 30 Tage verlängert. Nach einem Neustart werden bestehende Sessions ungültig.</p>
+<p>Wenn <code>password_hash</code> gesetzt ist, hat er Vorrang vor <code>password</code>. Nach erfolgreichem Basic-Auth-Login setzt BearStack ein signiertes HttpOnly-Session-Cookie für 12 Stunden. Mit der Login-Checkbox „Eingeloggt bleiben“ wird die Session auf 30 Tage verlängert. Der Signierschlüssel liegt im Datenverzeichnis, sodass unveränderte Konten nach einem Neustart angemeldet bleiben. Beim Upgrade auf 0.22.0 ist wegen des neuen Sessionformats einmalig eine erneute Anmeldung nötig.</p>
 <p>Für einen einzelnen Benutzer reichen <code>BEARSTACK_AUTH_USER</code> und <code>BEARSTACK_AUTH_PASSWORD_HASH</code>; dieser Benutzer bekommt die Rolle <code>admin</code>. Mehrere Benutzer werden in der JSON-Konfiguration über <code>auth.credentials</code> definiert. Sobald diese Liste gesetzt ist, werden <code>auth.username</code>, <code>auth.password</code> und <code>auth.password_hash</code> ignoriert:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nt">&quot;auth&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">&quot;realm&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BearStack&quot;</span><span class="p">,</span>
@@ -1160,9 +1160,10 @@
 </span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span><span class="p">]</span>
 </span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>Rollen und Einzelrechte sind capability-basiert. Verfügbare Rollen sind <code>admin</code>, <code>documents_read</code>, <code>documents_editor</code>, <code>documents_manager</code>, <code>photos_read</code>, <code>photos_editor</code>, <code>photos_manager</code> und <code>api_uploader</code>. Statt oder zusätzlich zu <code>role</code> können <code>permissions</code> gesetzt werden, zum Beispiel <code>documents.read</code>, <code>documents.webdav.read</code>, <code>documents.upload</code>, <code>documents.edit</code>, <code>documents.delete</code>, <code>documents.structure</code>, <code>photos.read</code>, <code>photos.edit</code>, <code>photos.manage</code>, <code>system.manage</code> oder <code>system.audit</code>.</p>
+<p>Rollen und Einzelrechte sind capability-basiert. Verfügbare Rollen sind <code>admin</code>, <code>documents_read</code>, <code>documents_editor</code>, <code>documents_manager</code>, <code>photos_read</code>, <code>photos_editor</code>, <code>photos_manager</code> und <code>api_uploader</code>. Statt oder zusätzlich zu <code>role</code> können <code>permissions</code> gesetzt werden, zum Beispiel <code>documents.read</code>, <code>documents.webdav.read</code>, <code>documents.upload</code>, <code>documents.edit</code>, <code>documents.delete</code>, <code>documents.structure</code>, <code>photos.read</code>, <code>photos.edit</code>, <code>photos.manage</code>, <code>system.manage</code>, <code>system.users.manage</code> oder <code>system.audit</code>.</p>
+<p>Zusätzliche Konten lassen sich unter <strong>Einstellungen → Benutzer</strong> anlegen. Sie werden mit bcrypt-Hash in <code>bearstack.db</code> gespeichert. JSON-/Env-Konten bleiben parallel aktiv, erscheinen dort aber schreibgeschützt; gleiche Benutzernamen in beiden Quellen verhindern den Start. Sobald ein aktiver SQLite-Admin existiert, kann BearStack nach Entfernung der Config-Zugangsdaten auch auf einem nicht-lokalen Listener ausschließlich mit den Datenbankkonten starten. Für Backups deshalb das gesamte Datenverzeichnis sowie weiterhin verwendete Konfigurationsdateien sichern.</p>
 <p>Die ausführliche Rollen- und Rechteübersicht steht unter <a href="benutzer-und-rechte.html">Benutzer und Rechte</a>.</p>
-<p>BearStack startet ohne Auth nur auf Loopback-Adressen. Bei <code>BEARSTACK_ADDR=0.0.0.0:8080</code>, <code>:8080</code> oder einem anderen nicht-lokalen Host muss Auth vollständig gesetzt sein. Auch bei einem Reverse Proxy vor <code>127.0.0.1:8080</code> sollte Auth aktiv bleiben, wenn der Proxy keine eigene Zugriffskontrolle übernimmt.</p>
+<p>BearStack startet ohne aktives Konto nur auf Loopback-Adressen. Bei <code>BEARSTACK_ADDR=0.0.0.0:8080</code>, <code>:8080</code> oder einem anderen nicht-lokalen Host muss mindestens ein aktives Config- oder SQLite-Konto vorhanden sein. Auch bei einem Reverse Proxy vor <code>127.0.0.1:8080</code> sollte Auth aktiv bleiben, wenn der Proxy keine eigene Zugriffskontrolle übernimmt.</p>
 <h2 id="tls">TLS<a class="headerlink" href="#tls" title="Permanent link">&para;</a></h2>
 <p>Für produktiven Betrieb ist meist am einfachsten: BearStack nur auf <code>127.0.0.1:8080</code> lauschen lassen und TLS in nginx oder Caddy terminieren.</p>
 <p>Direktes HTTPS in BearStack ist möglich:</p>
@@ -1259,13 +1260,13 @@
 <h2 id="typische-fehler">Typische Fehler<a class="headerlink" href="#typische-fehler" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>401 Unauthorized</code>: Auth ist aktiv; mit Basic-Auth-Daten anmelden.</li>
-<li>Start bricht mit <code>auth username and password or password_hash are required when addr listens on non-loopback interfaces</code> ab: Auth setzen oder <code>BEARSTACK_ADDR</code> auf <code>127.0.0.1:8080</code>/<code>localhost:8080</code> beschränken.</li>
-<li>Dienst startet ohne Auth-Warnung im Log: <code>BEARSTACK_AUTH_USER</code> plus Passwort oder Hash fehlt; das ist nur für rein lokale Tests geeignet.</li>
+<li>Start bricht mit <code>at least one active authentication account is required when addr listens on non-loopback interfaces</code> ab: Ein aktives Config-/SQLite-Konto bereitstellen oder <code>BEARSTACK_ADDR</code> auf <code>127.0.0.1:8080</code>/<code>localhost:8080</code> beschränken.</li>
+<li>Das Log meldet <code>auth_enabled=false</code>: Es gibt weder ein aktives Config- noch ein aktives SQLite-Konto. Dieser Zustand ist nur auf Loopback zur Ersteinrichtung zulässig.</li>
 <li><code>open config file</code> oder <code>decode config file</code>: <code>BEARSTACK_CONFIG</code>-Pfad und JSON-Syntax prüfen.</li>
 <li><code>permission denied</code> bei Datenbank oder Dokumenten: Besitzer/Rechte und <code>ReadWritePaths</code> der Unit prüfen.</li>
 <li><code>address already in use</code>: Port mit <code>sudo ss -ltnp | grep ':8080'</code> prüfen.</li>
 <li>Upload scheitert mit <code>413</code>: <code>max_upload_bytes</code> und <code>client_max_body_size</code> im Reverse Proxy angleichen.</li>
-<li>Docker-Container startet wegen fehlender Auth nicht: <code>BEARSTACK_AUTH_PASSWORD</code> oder <code>BEARSTACK_AUTH_PASSWORD_HASH</code> setzen.</li>
+<li>Ein frischer Docker-Container startet auf einem nicht-lokalen Listener wegen fehlender Auth nicht: ein Config-Konto bereitstellen oder zuerst auf Loopback ein SQLite-Admin-Konto anlegen; bestehende DB-Konten im Daten-Volume werden ebenfalls akzeptiert.</li>
 <li><code>make test-js</code> bricht mit <code>node is required...</code> ab: Node installieren oder <code>NODE=/pfad/zu/node make test-js</code> verwenden.</li>
 <li><code>make test-playwright</code> scheitert beim Abruf des Test-Runners: <code>npm</code>-Zugang, Netzwerk oder Proxy prüfen und mit lokalem Cache erneut starten.</li>
 <li><code>make test-playwright</code> findet keinen Browser: Chrome installieren oder <code>npx playwright install chromium</code> ausführen und mit <code>PLAYWRIGHT_BROWSER_CHANNEL=chromium make test-playwright</code> starten.</li>
@@ -1325,7 +1326,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.17.6 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.22.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

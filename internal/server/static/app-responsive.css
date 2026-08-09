@@ -47,6 +47,25 @@
     padding: 16px;
   }
 
+  .user-section-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .user-list,
+  .account-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .user-password-grid,
+  .user-danger-zone form {
+    grid-template-columns: 1fr;
+  }
+
+  .user-danger-zone form button {
+    justify-self: start;
+  }
+
   .stat-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

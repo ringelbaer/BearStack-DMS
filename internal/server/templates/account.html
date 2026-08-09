@@ -1,0 +1,56 @@
+{{define "account.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>Mein Konto</h1>
+    <p>Persönliche Zugangsdaten und Berechtigungen</p>
+  </div>
+</section>
+{{if .Notice}}<div class="notice" role="status">{{.Notice}}</div>{{end}}
+{{if .Error}}<div class="notice error-state" role="alert">{{.Error}}</div>{{end}}
+
+<div class="account-layout">
+  <section class="panel account-summary" aria-labelledby="account-summary-heading">
+    <h2 id="account-summary-heading">Kontoinformationen</h2>
+    <dl>
+      <div><dt>Benutzername</dt><dd>{{.Account.Username}}</dd></div>
+      <div><dt>Quelle</dt><dd>{{.Account.SourceLabel}}</dd></div>
+      <div><dt>Rolle</dt><dd>{{.Account.RoleLabel}}</dd></div>
+    </dl>
+    <details>
+      <summary>Effektive Rechte ({{len .Account.EffectivePermissions}})</summary>
+      {{if .Account.EffectivePermissions}}<ul>{{range .Account.EffectivePermissions}}<li>{{.Label}}</li>{{end}}</ul>{{else}}<p class="muted">Keine Rechte zugewiesen.</p>{{end}}
+    </details>
+  </section>
+
+  <section class="panel account-password" aria-labelledby="account-password-heading">
+    <h2 id="account-password-heading">Passwort</h2>
+    {{if .Account.CanChangePassword}}
+    <form method="post" action="/account/password" novalidate>
+      <label>
+        <span>Aktuelles Passwort</span>
+        <input type="password" name="current_password" value="" autocomplete="current-password" required {{with .Account.FieldError "current_password"}}aria-invalid="true" aria-describedby="account-current-password-error"{{end}}>
+        {{with .Account.FieldError "current_password"}}<span class="field-error" id="account-current-password-error">{{.}}</span>{{end}}
+      </label>
+      <label>
+        <span>Neues Passwort</span>
+        <input type="password" name="new_password" value="" minlength="12" maxlength="72" autocomplete="new-password" required {{with .Account.FieldError "new_password"}}aria-invalid="true" aria-describedby="account-new-password-error"{{end}}>
+        {{with .Account.FieldError "new_password"}}<span class="field-error" id="account-new-password-error">{{.}}</span>{{end}}
+      </label>
+      <label>
+        <span>Neues Passwort wiederholen</span>
+        <input type="password" name="new_password_confirmation" value="" minlength="12" maxlength="72" autocomplete="new-password" required {{with .Account.FieldError "new_password_confirmation"}}aria-invalid="true" aria-describedby="account-new-password-confirmation-error"{{end}}>
+        {{with .Account.FieldError "new_password_confirmation"}}<span class="field-error" id="account-new-password-confirmation-error">{{.}}</span>{{end}}
+      </label>
+      <p class="muted user-password-hint">Mindestens 12 Zeichen und höchstens 72 UTF-8-Bytes. Die aktuelle Sitzung bleibt bestehen; andere Sitzungen werden beendet.</p>
+      <button type="submit">Passwort ändern</button>
+    </form>
+    {{else}}
+    <div class="notice">
+      Dieses Konto wird durch die BearStack-Konfiguration verwaltet. Ändern Sie das Passwort in der Konfiguration und starten Sie BearStack anschließend neu.
+    </div>
+    {{end}}
+  </section>
+</div>
+{{template "foot" .}}
+{{end}}

@@ -12,7 +12,12 @@ BearStack uses semantic versioning from the root `VERSION` file. Any agent or ma
 - Static project website-only changes do not require a BearStack version bump. This covers the Zensical website sources under `_site-src/` and generated website output under `_site/` when the BearStack application, its shipped web UI, API, configuration, data formats, and runtime behavior are otherwise unchanged.
 - Docs-only and test-only changes do not require a version bump.
 - While BearStack is in `0.x`, the first true major change bumps to `1.0.0`.
+- Aktualisiere README, _site und CHANGELOG.
 
 ## Performance,
 
 - Achte bei allen Änderungen und Funktionsergänzungen auf die Performance-Implikationen, prüfe und suche die beste Umsetzung für eine herausragende Performance, auch bei vielen Dateien, Ordnern oder Bildern.
+
+## Productionreadiness
+
+- Achte bei alle Änderungen und Funktionen auf eine sichere und Production-ready Umsetzung. Sichere durch ausführliche Tests ab. 

@@ -5,6 +5,8 @@ var coreRouteSpecs = []routeSpec{
 	{pattern: "GET /login", capabilities: 0, handler: (*Server).handleLogin},
 	{pattern: "POST /login", capabilities: 0, handler: (*Server).handleLogin},
 	{pattern: "POST /logout", capabilities: 0, handler: (*Server).handleLogout},
+	{pattern: "GET /account", capabilities: 0, handler: (*Server).handleAccount},
+	{pattern: "POST /account/password", capabilities: 0, handler: (*Server).handleChangeOwnPassword},
 	{pattern: "GET /favicon/custom", capabilities: 0, handler: (*Server).handleCustomFavicon},
 	{pattern: "GET /healthz", capabilities: 0, handler: (*Server).handleHealth},
 	{pattern: "GET /api", capabilities: authCapDocumentsRead | authCapDocumentsUpload | authCapDocumentsWebDAVRead | authCapPhotosRead, requireAny: true, handler: (*Server).handleAPI},

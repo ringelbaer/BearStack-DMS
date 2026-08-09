@@ -303,12 +303,19 @@ func TestLoadRejectsNonPositiveMaxUploadBytes(t *testing.T) {
 	}
 }
 
-func TestLoadRejectsPublicBindWithoutAuth(t *testing.T) {
+func TestLoadDefersPublicBindAuthValidationUntilDatabaseIsOpen(t *testing.T) {
 	clearBearStackEnv(t)
 	t.Setenv("BEARSTACK_ADDR", "0.0.0.0:8080")
 
-	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "auth username") {
-		t.Fatalf("err = %v", err)
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Auth.Enabled() {
+		t.Fatal("config auth should remain disabled; SQLite accounts are evaluated after repository open")
+	}
+	if !AddrRequiresAuth(cfg.Addr) {
+		t.Fatal("public address should require effective authentication")
 	}
 }
 

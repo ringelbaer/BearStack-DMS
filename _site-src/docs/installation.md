@@ -38,7 +38,7 @@ Standardwerte:
 | Fotos | deaktiviert, Root bei Aktivierung `data/photos` |
 | Upload-Limit | `50 MiB` |
 
-Ohne vollständige Auth-Konfiguration ist Basic Auth auf Loopback-Adressen wie `127.0.0.1:8080` für lokale Entwicklung deaktiviert. Listener auf nicht-lokalen Interfaces wie `0.0.0.0:8080` oder `:8080` starten nur mit Benutzer plus Passwort oder Passwort-Hash.
+Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie `127.0.0.1:8080` für die Ersteinrichtung deaktiviert. Listener auf nicht-lokalen Interfaces wie `0.0.0.0:8080` oder `:8080` starten nur mit mindestens einem aktiven Konto; dieses darf vollständig aus der SQLite-Datenbank stammen.
 
 ## Lokale Entwicklung
 
@@ -201,7 +201,7 @@ Den Hash in JSON direkt eintragen oder in Shell-/Env-Dateien wegen der `$`-Zeich
 BEARSTACK_AUTH_PASSWORD_HASH='$2a$10$...'
 ```
 
-Wenn `password_hash` gesetzt ist, hat er Vorrang vor `password`. Nach erfolgreichem Basic-Auth-Login setzt BearStack ein signiertes HttpOnly-Session-Cookie für 12 Stunden. Mit der Login-Checkbox „Eingeloggt bleiben“ wird die Session auf 30 Tage verlängert. Nach einem Neustart werden bestehende Sessions ungültig.
+Wenn `password_hash` gesetzt ist, hat er Vorrang vor `password`. Nach erfolgreichem Basic-Auth-Login setzt BearStack ein signiertes HttpOnly-Session-Cookie für 12 Stunden. Mit der Login-Checkbox „Eingeloggt bleiben“ wird die Session auf 30 Tage verlängert. Der Signierschlüssel liegt im Datenverzeichnis, sodass unveränderte Konten nach einem Neustart angemeldet bleiben. Beim Upgrade auf 0.22.0 ist wegen des neuen Sessionformats einmalig eine erneute Anmeldung nötig.
 
 Für einen einzelnen Benutzer reichen `BEARSTACK_AUTH_USER` und `BEARSTACK_AUTH_PASSWORD_HASH`; dieser Benutzer bekommt die Rolle `admin`. Mehrere Benutzer werden in der JSON-Konfiguration über `auth.credentials` definiert. Sobald diese Liste gesetzt ist, werden `auth.username`, `auth.password` und `auth.password_hash` ignoriert:
 
@@ -216,11 +216,13 @@ Für einen einzelnen Benutzer reichen `BEARSTACK_AUTH_USER` und `BEARSTACK_AUTH_
 }
 ```
 
-Rollen und Einzelrechte sind capability-basiert. Verfügbare Rollen sind `admin`, `documents_read`, `documents_editor`, `documents_manager`, `photos_read`, `photos_editor`, `photos_manager` und `api_uploader`. Statt oder zusätzlich zu `role` können `permissions` gesetzt werden, zum Beispiel `documents.read`, `documents.webdav.read`, `documents.upload`, `documents.edit`, `documents.delete`, `documents.structure`, `photos.read`, `photos.edit`, `photos.manage`, `system.manage` oder `system.audit`.
+Rollen und Einzelrechte sind capability-basiert. Verfügbare Rollen sind `admin`, `documents_read`, `documents_editor`, `documents_manager`, `photos_read`, `photos_editor`, `photos_manager` und `api_uploader`. Statt oder zusätzlich zu `role` können `permissions` gesetzt werden, zum Beispiel `documents.read`, `documents.webdav.read`, `documents.upload`, `documents.edit`, `documents.delete`, `documents.structure`, `photos.read`, `photos.edit`, `photos.manage`, `system.manage`, `system.users.manage` oder `system.audit`.
+
+Zusätzliche Konten lassen sich unter **Einstellungen → Benutzer** anlegen. Sie werden mit bcrypt-Hash in `bearstack.db` gespeichert. JSON-/Env-Konten bleiben parallel aktiv, erscheinen dort aber schreibgeschützt; gleiche Benutzernamen in beiden Quellen verhindern den Start. Sobald ein aktiver SQLite-Admin existiert, kann BearStack nach Entfernung der Config-Zugangsdaten auch auf einem nicht-lokalen Listener ausschließlich mit den Datenbankkonten starten. Für Backups deshalb das gesamte Datenverzeichnis sowie weiterhin verwendete Konfigurationsdateien sichern.
 
 Die ausführliche Rollen- und Rechteübersicht steht unter [Benutzer und Rechte](benutzer-und-rechte.md).
 
-BearStack startet ohne Auth nur auf Loopback-Adressen. Bei `BEARSTACK_ADDR=0.0.0.0:8080`, `:8080` oder einem anderen nicht-lokalen Host muss Auth vollständig gesetzt sein. Auch bei einem Reverse Proxy vor `127.0.0.1:8080` sollte Auth aktiv bleiben, wenn der Proxy keine eigene Zugriffskontrolle übernimmt.
+BearStack startet ohne aktives Konto nur auf Loopback-Adressen. Bei `BEARSTACK_ADDR=0.0.0.0:8080`, `:8080` oder einem anderen nicht-lokalen Host muss mindestens ein aktives Config- oder SQLite-Konto vorhanden sein. Auch bei einem Reverse Proxy vor `127.0.0.1:8080` sollte Auth aktiv bleiben, wenn der Proxy keine eigene Zugriffskontrolle übernimmt.
 
 ## TLS
 
@@ -332,13 +334,13 @@ curl -fsS -u admin:mein-passwort http://127.0.0.1:8080/healthz
 ## Typische Fehler
 
 - `401 Unauthorized`: Auth ist aktiv; mit Basic-Auth-Daten anmelden.
-- Start bricht mit `auth username and password or password_hash are required when addr listens on non-loopback interfaces` ab: Auth setzen oder `BEARSTACK_ADDR` auf `127.0.0.1:8080`/`localhost:8080` beschränken.
-- Dienst startet ohne Auth-Warnung im Log: `BEARSTACK_AUTH_USER` plus Passwort oder Hash fehlt; das ist nur für rein lokale Tests geeignet.
+- Start bricht mit `at least one active authentication account is required when addr listens on non-loopback interfaces` ab: Ein aktives Config-/SQLite-Konto bereitstellen oder `BEARSTACK_ADDR` auf `127.0.0.1:8080`/`localhost:8080` beschränken.
+- Das Log meldet `auth_enabled=false`: Es gibt weder ein aktives Config- noch ein aktives SQLite-Konto. Dieser Zustand ist nur auf Loopback zur Ersteinrichtung zulässig.
 - `open config file` oder `decode config file`: `BEARSTACK_CONFIG`-Pfad und JSON-Syntax prüfen.
 - `permission denied` bei Datenbank oder Dokumenten: Besitzer/Rechte und `ReadWritePaths` der Unit prüfen.
 - `address already in use`: Port mit `sudo ss -ltnp | grep ':8080'` prüfen.
 - Upload scheitert mit `413`: `max_upload_bytes` und `client_max_body_size` im Reverse Proxy angleichen.
-- Docker-Container startet wegen fehlender Auth nicht: `BEARSTACK_AUTH_PASSWORD` oder `BEARSTACK_AUTH_PASSWORD_HASH` setzen.
+- Ein frischer Docker-Container startet auf einem nicht-lokalen Listener wegen fehlender Auth nicht: ein Config-Konto bereitstellen oder zuerst auf Loopback ein SQLite-Admin-Konto anlegen; bestehende DB-Konten im Daten-Volume werden ebenfalls akzeptiert.
 - `make test-js` bricht mit `node is required...` ab: Node installieren oder `NODE=/pfad/zu/node make test-js` verwenden.
 - `make test-playwright` scheitert beim Abruf des Test-Runners: `npm`-Zugang, Netzwerk oder Proxy prüfen und mit lokalem Cache erneut starten.
 - `make test-playwright` findet keinen Browser: Chrome installieren oder `npx playwright install chromium` ausführen und mit `PLAYWRIGHT_BROWSER_CHANNEL=chromium make test-playwright` starten.

@@ -817,8 +817,8 @@
 </span></code></pre></div>
 <p>Die Benchmarks sind als Regressionsschutz gedacht. Absolute Zahlen hängen stark von CPU, Speicher, Dateisystem, SQLite-I/O und Go-Version ab; vergleichbar werden sie erst auf demselben System mit mehreren Wiederholungen.</p>
 <h2 id="audit-log-in-bearstack">Audit-Log in BearStack<a class="headerlink" href="#audit-log-in-bearstack" title="Permanent link">&para;</a></h2>
-<p>BearStack protokolliert schreibende Aktionen im Laufzeit-Audit-Log. Erfasst werden unter anderem Zeitpunkt, Benutzer, HTTP-Methode, Pfad, Route, Aktion, Ziel, Status, Remote-Adresse und User-Agent. Das Log ist über <code>/log</code> erreichbar und erfordert die Permission <code>system.audit</code>; die Rolle <code>admin</code> enthält diese Berechtigung.</p>
-<p>Das Audit-Log speichert Schreibmethoden wie <code>POST</code>, <code>PUT</code>, <code>PATCH</code> und <code>DELETE</code>. Handler können das Ziel genauer benennen, zum Beispiel ein Dokument, einen Tag, ein Feld oder einen Suchfavoriten. Einträge werden auf die letzten 30 Tage begrenzt.</p>
+<p>BearStack protokolliert schreibende Aktionen im Laufzeit-Audit-Log. Erfasst werden unter anderem Zeitpunkt, Benutzer, HTTP-Methode, Pfad, Route, Aktion, Ziel, Status, Remote-Adresse und User-Agent. Dazu gehören auch das Anlegen, Ändern, Aktivieren, Deaktivieren und Löschen von Benutzern sowie Passwortänderungen; Passwörter und Hashes werden niemals übernommen. Das Log ist über <code>/log</code> erreichbar und erfordert die Permission <code>system.audit</code>; die Rolle <code>admin</code> enthält diese Berechtigung.</p>
+<p>Das Audit-Log speichert Schreibmethoden wie <code>POST</code>, <code>PUT</code>, <code>PATCH</code> und <code>DELETE</code>. Handler können das Ziel genauer benennen, zum Beispiel ein Dokument, einen Tag, ein Feld oder einen Suchfavoriten. Einträge werden auf die letzten 30 Tage und zusätzlich auf höchstens 50.000 Datensätze begrenzt. Abgewiesene Kontoaktionen werden nur mit einem begrenzten In-Memory-Budget protokolliert, damit fehlerhafte oder anonyme Requests weder SQLite noch den Datenträger fluten können; erfolgreiche Kontoänderungen werden unabhängig davon erfasst.</p>
 <h2 id="manuelle-audits">Manuelle Audits<a class="headerlink" href="#manuelle-audits" title="Permanent link">&para;</a></h2>
 <p>Die Audits in <code>.codex/AUDIT.md</code> sind nach Themen gruppiert:</p>
 <ul>
@@ -880,7 +880,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.17.6 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.22.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

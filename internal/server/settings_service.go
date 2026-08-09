@@ -468,6 +468,28 @@ func homePageURL(page string) string {
 	}
 }
 
+func homeURLForPermissions(page string, auth AuthPermissions, photosEnabled bool) string {
+	if auth.CanDocumentsRead {
+		return homePageURL(page)
+	}
+	if photosEnabled && auth.CanPhotosRead {
+		return "/photos"
+	}
+	if auth.CanSystemManage {
+		return "/settings"
+	}
+	if photosEnabled && auth.CanPhotosManage {
+		return "/settings/photos"
+	}
+	if auth.CanSystemUsersManage {
+		return "/settings/users"
+	}
+	if auth.CanSystemAudit {
+		return "/log"
+	}
+	return "/help"
+}
+
 func (s *Server) resolvedHomePage(ctx context.Context, auth AuthPermissions) (string, error) {
 	page := homePageDocuments
 	cloudEnabled := false

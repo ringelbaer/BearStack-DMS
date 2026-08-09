@@ -58,8 +58,10 @@
         {{end}}
         {{if .Auth.CanSystemManage}}
         <a href="/settings" class="{{if eq .Active "settings"}}active{{end}}">Einstellungen</a>
-        {{else if .Auth.CanPhotosManage}}
+        {{else if and .PhotoModuleEnabled .Auth.CanPhotosManage}}
         <a href="/settings/photos" class="{{if eq .Active "settings"}}active{{end}}">Einstellungen</a>
+        {{else if .Auth.CanSystemUsersManage}}
+        <a href="/settings/users" class="{{if eq .Active "settings"}}active{{end}}">Einstellungen</a>
         {{end}}
         {{if .Auth.CanSystemAudit}}
         <a href="/log" class="{{if eq .Active "log"}}active{{end}}">Log</a>
@@ -70,6 +72,7 @@
         <a href="/help" class="{{if eq .Active "help"}}active{{end}}">Hilfe</a>
         {{if .SystemMenuAPILinkVisible}}<a href="/api" class="{{if eq .Active "api"}}active{{end}}">API</a>{{end}}
         {{if .Auth.Username}}
+        <a href="/account" class="{{if eq .Active "account"}}active{{end}}">Konto · {{.Auth.Username}}</a>
         <form method="post" action="/logout">
           <button type="submit">Logout</button>
         </form>
@@ -91,7 +94,7 @@
       </div>
     </aside>
     {{end}}
-    {{if and .Notice (ne .Active "settings")}}<div class="notice">{{.Notice}}</div>{{end}}
+    {{if and .Notice (ne .Active "settings") (ne .Active "account")}}<div class="notice">{{.Notice}}</div>{{end}}
 {{end}}
 
 {{define "foot"}}

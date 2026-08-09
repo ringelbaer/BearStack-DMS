@@ -57,8 +57,8 @@ func (s *Server) handleDeleteField(w http.ResponseWriter, r *http.Request) {
 	if !s.parseFormOrRenderError(w, r) {
 		return
 	}
-	if !s.authPasswordOK(r, r.FormValue("password")) {
-		s.renderErrorWithReturn(w, r, http.StatusForbidden, errors.New("Passwortbestätigung fehlt oder ist ungültig."), "/fields")
+	if status, confirmationErr := s.passwordConfirmationFailure(w, r, r.FormValue("password")); confirmationErr != nil {
+		s.renderErrorWithReturn(w, r, status, confirmationErr, "/fields")
 		return
 	}
 	if err := s.repo.DeleteCustomField(r.Context(), id); err != nil {

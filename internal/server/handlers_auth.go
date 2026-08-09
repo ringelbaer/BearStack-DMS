@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -15,6 +16,7 @@ func (s *Server) renderLogin(w http.ResponseWriter, r *http.Request, status int,
 	if status == 0 {
 		status = http.StatusUnauthorized
 	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if status > 0 {
 		w.WriteHeader(status)
 	}
@@ -37,17 +39,30 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		returnURL = safeReturnURL(r.FormValue("return"))
-		username := strings.TrimSpace(r.FormValue("username"))
+		username := r.FormValue("username")
 		password := r.FormValue("password")
-		principal, ok := s.authenticateBasic(username, password)
+		principal, ok, retryAfter := s.authenticateBasicCheck(username, password)
+		if retryAfter > 0 {
+			w.Header().Set("Retry-After", strconv.FormatInt(retryAfterSeconds(retryAfter), 10))
+			s.renderLogin(w, r, http.StatusTooManyRequests, "Zu viele Anmeldeversuche. Bitte versuchen Sie es später erneut.", returnURL)
+			return
+		}
 		if !ok {
 			s.renderLogin(w, r, http.StatusUnauthorized, "Login fehlgeschlagen. Bitte prüfen Sie Benutzername und Passwort.", returnURL)
 			return
 		}
+		setAuditActor(r, principal.Username)
+		setAuditTarget(r, "Benutzer:"+principal.Username)
 		if truthy(r.FormValue("remember")) {
-			s.setRememberedAuthSession(w, r, principal.Username)
+			if !s.setAuthSessionForPrincipal(w, r, principal, authRememberSessionDuration) {
+				s.renderLogin(w, r, http.StatusUnauthorized, "Die Anmeldedaten wurden zwischenzeitlich geändert. Bitte melden Sie sich erneut an.", returnURL)
+				return
+			}
 		} else {
-			s.setAuthSession(w, r, principal.Username)
+			if !s.setAuthSessionForPrincipal(w, r, principal, authSessionDuration) {
+				s.renderLogin(w, r, http.StatusUnauthorized, "Die Anmeldedaten wurden zwischenzeitlich geändert. Bitte melden Sie sich erneut an.", returnURL)
+				return
+			}
 		}
 		if returnURL == "/" || !s.loginReturnAllowed(principal, returnURL) {
 			returnURL = defaultAuthLandingURL(principal)
@@ -64,6 +79,9 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	if principal, ok := authPrincipalFromContext(r.Context()); ok {
+		setAuditTarget(r, "Benutzer:"+principal.Username)
+	}
 	clearAuthSession(w, r)
 	redirect(w, r, "/login")
 }
@@ -74,6 +92,9 @@ func defaultAuthLandingURL(principal authPrincipal) string {
 	}
 	if principal.hasAny(authCapPhotosRead | authCapPhotosEdit | authCapPhotosManage) {
 		return "/photos"
+	}
+	if principal.hasAll(authCapSystemUsersManage) {
+		return "/settings/users"
 	}
 	if principal.hasAny(authCapSystemManage | authCapSystemAudit) {
 		return "/settings"
@@ -105,6 +126,9 @@ func (s *Server) loginReturnAllowed(principal authPrincipal, target string) bool
 	case strings.HasPrefix(path, "/documents"):
 		return principal.hasAll(authCapDocumentsRead)
 	case strings.HasPrefix(path, "/settings"):
+		if strings.HasPrefix(path, "/settings/users") {
+			return principal.hasAll(authCapSystemUsersManage)
+		}
 		if strings.HasPrefix(path, "/settings/photos") {
 			return s.photos != nil && principal.hasAny(authCapPhotosManage)
 		}
@@ -117,6 +141,8 @@ func (s *Server) loginReturnAllowed(principal authPrincipal, target string) bool
 		return true
 	case path == "/healthz" || path == "/login":
 		return true
+	case path == "/account":
+		return strings.TrimSpace(principal.Username) != ""
 	case strings.HasPrefix(path, "/log"):
 		return principal.hasAll(authCapSystemAudit)
 	default:

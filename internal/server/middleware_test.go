@@ -329,7 +329,7 @@ func TestBasicAuthPositiveCache(t *testing.T) {
 	if len(server.auth.cache.entries) != 1 {
 		t.Fatalf("cache entries = %d", len(server.auth.cache.entries))
 	}
-	server.auth.credentials["dav"].passwordHash = []byte("not-a-bcrypt-hash")
+	server.authSnapshot().byUsername["dav"].passwordHash = []byte("not-a-bcrypt-hash")
 
 	principal, ok = server.authenticateBasic("dav", "cache-secret")
 	if !ok || principal.Username != "dav" {

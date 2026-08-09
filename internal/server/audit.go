@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"bearstack/internal/document"
@@ -14,16 +17,30 @@ import (
 
 const auditLogRetention = 30 * 24 * time.Hour
 
+const (
+	auditRejectionLimit  = 60
+	auditRejectionWindow = time.Minute
+)
+
 type auditResponseWriter struct {
 	http.ResponseWriter
 	status int
 }
 
 type auditRequestData struct {
-	target string
+	target   string
+	actor    string
+	recorded bool
 }
 
 type auditRequestDataKey struct{}
+
+type auditRejectionLimiter struct {
+	mu          sync.Mutex
+	windowStart time.Time
+	events      int
+	now         func() time.Time
+}
 
 func (w *auditResponseWriter) WriteHeader(status int) {
 	if w.status != 0 {
@@ -58,18 +75,146 @@ func (s *Server) auditWriteActions(next http.Handler) http.Handler {
 			return
 		}
 
-		auditData := &auditRequestData{}
-		r = r.WithContext(context.WithValue(r.Context(), auditRequestDataKey{}, auditData))
+		auditData, r := requestAuditData(r)
 		recorder := &auditResponseWriter{ResponseWriter: w}
 		occurredAt := time.Now().UTC()
 		next.ServeHTTP(recorder, r)
+		if auditData.recorded {
+			return
+		}
+		auditData.recorded = true
+		status := recorder.statusCode()
+		if status >= http.StatusBadRequest && isAccountAuditPattern(r.Pattern) && !s.earlyAudit.allow() {
+			return
+		}
 
-		entry := auditLogEntryForRequest(r, recorder.statusCode(), occurredAt)
+		entry := auditLogEntryForRequest(r, status, occurredAt)
+		if actor := strings.TrimSpace(auditData.actor); actor != "" {
+			entry.Actor = actor
+		}
 		if target := strings.TrimSpace(auditData.target); target != "" {
 			entry.Target = target
 		}
 		s.recordAuditLog(r.Context(), entry)
 	})
+}
+
+// auditRejectedAccountActions covers account mutations that authentication or
+// same-origin checks reject before they reach auditWriteActions. It deliberately
+// limits the outer audit layer to account routes: arbitrary unauthenticated
+// writes must not turn the audit database into an amplification primitive.
+func (s *Server) auditRejectedAccountActions(mux *http.ServeMux, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !isWriteMethod(r.Method) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		_, pattern := mux.Handler(r)
+		if !isAccountAuditPattern(pattern) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		auditData, r := requestAuditData(r)
+		recorder := &auditResponseWriter{ResponseWriter: w}
+		occurredAt := time.Now().UTC()
+		next.ServeHTTP(recorder, r)
+		if auditData.recorded {
+			return
+		}
+		auditData.recorded = true
+		if !s.earlyAudit.allow() {
+			return
+		}
+
+		auditRequest := r.Clone(r.Context())
+		auditRequest.Pattern = pattern
+		entry := auditLogEntryForRequest(auditRequest, recorder.statusCode(), occurredAt)
+		if principal, ok := s.authSessionPrincipal(r); ok {
+			entry.Actor = principal.Username
+		}
+		if target := s.rejectedAccountAuditTarget(r, pattern, entry.Actor); target != "" {
+			entry.Target = target
+		}
+		s.recordAuditLog(r.Context(), entry)
+	})
+}
+
+func requestAuditData(r *http.Request) (*auditRequestData, *http.Request) {
+	if auditData, ok := r.Context().Value(auditRequestDataKey{}).(*auditRequestData); ok && auditData != nil {
+		return auditData, r
+	}
+	auditData := &auditRequestData{}
+	return auditData, r.WithContext(context.WithValue(r.Context(), auditRequestDataKey{}, auditData))
+}
+
+func (limiter *auditRejectionLimiter) allow() bool {
+	if limiter == nil {
+		return false
+	}
+	limiter.mu.Lock()
+	defer limiter.mu.Unlock()
+	now := time.Now()
+	if limiter.now != nil {
+		now = limiter.now()
+	}
+	if limiter.windowStart.IsZero() || !now.Before(limiter.windowStart.Add(auditRejectionWindow)) {
+		limiter.windowStart = now
+		limiter.events = 0
+	}
+	if limiter.events >= auditRejectionLimit {
+		return false
+	}
+	limiter.events++
+	return true
+}
+
+func isAccountAuditPattern(pattern string) bool {
+	switch pattern {
+	case "POST /login",
+		"POST /logout",
+		"POST /settings/users",
+		"POST /settings/users/{id}",
+		"POST /settings/users/{id}/password",
+		"POST /settings/users/{id}/enable",
+		"POST /settings/users/{id}/disable",
+		"POST /settings/users/{id}/delete",
+		"POST /account/password":
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *Server) rejectedAccountAuditTarget(r *http.Request, pattern, actor string) string {
+	if pattern == "POST /account/password" || pattern == "POST /logout" {
+		if actor != "" && actor != "anonymous" {
+			return "Benutzer:" + actor
+		}
+		return ""
+	}
+	if pattern == "POST /login" || pattern == "POST /settings/users" {
+		// The target username exists only in the rejected form body. Password
+		// fields and form data are intentionally never parsed by audit code.
+		return ""
+	}
+	remainder := strings.TrimPrefix(r.URL.EscapedPath(), "/settings/users/")
+	rawID := strings.SplitN(remainder, "/", 2)[0]
+	decodedID, err := url.PathUnescape(rawID)
+	if err != nil {
+		return "Benutzer"
+	}
+	numericID, err := strconv.ParseInt(decodedID, 10, 64)
+	if err != nil || numericID < 1 {
+		return "Benutzer"
+	}
+	id := strconv.FormatInt(numericID, 10)
+	if snapshot := s.authSnapshot(); snapshot != nil {
+		if credential := snapshot.bySubject[authSubjectKey(authSourceDatabase, id)]; credential != nil {
+			return "Benutzer:" + credential.username
+		}
+	}
+	return "Benutzer-ID:" + id
 }
 
 func setAuditTarget(r *http.Request, target string) {
@@ -78,6 +223,14 @@ func setAuditTarget(r *http.Request, target string) {
 		return
 	}
 	auditData.target = strings.TrimSpace(target)
+}
+
+func setAuditActor(r *http.Request, actor string) {
+	auditData, ok := r.Context().Value(auditRequestDataKey{}).(*auditRequestData)
+	if !ok || auditData == nil {
+		return
+	}
+	auditData.actor = strings.TrimSpace(actor)
 }
 
 func (s *Server) recordAuditLog(ctx context.Context, entry document.AuditLogEntry) {
@@ -191,6 +344,10 @@ func auditActionTarget(r *http.Request) (string, string) {
 		return "Dokument per WebDAV hochladen", ""
 	}
 	switch r.Pattern {
+	case "POST /login":
+		return "Anmeldung", ""
+	case "POST /logout":
+		return "Abmeldung", ""
 	case "POST /tags":
 		return "Tag speichern", ""
 	case "POST /tags/{id}":
@@ -231,6 +388,20 @@ func auditActionTarget(r *http.Request) (string, string) {
 		return "E-Mail-Import-Einstellungen prüfen", ""
 	case "POST /settings/mail-import/run":
 		return "E-Mails manuell abrufen", ""
+	case "POST /settings/users":
+		return "Benutzer anlegen", ""
+	case "POST /settings/users/{id}":
+		return "Benutzerrechte ändern", ""
+	case "POST /settings/users/{id}/password":
+		return "Benutzerpasswort zurücksetzen", ""
+	case "POST /settings/users/{id}/enable":
+		return "Benutzer aktivieren", ""
+	case "POST /settings/users/{id}/disable":
+		return "Benutzer deaktivieren", ""
+	case "POST /settings/users/{id}/delete":
+		return "Benutzer löschen", ""
+	case "POST /account/password":
+		return "Eigenes Passwort ändern", ""
 	case "POST /upload":
 		return "Dokumente hochladen", ""
 	case "POST /api/upload":

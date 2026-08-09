@@ -218,11 +218,18 @@ func (s *Server) setPhotoAdminOnlyVisibilitySession(w http.ResponseWriter, r *ht
 	}
 	now := time.Now()
 	payload, ok := s.authSessionFromRequest(r)
+	principal, principalOK := authPrincipalFromContext(r.Context())
+	if !principalOK {
+		return false
+	}
+	credential := s.authCredentialForPrincipal(principal)
+	if credential == nil {
+		return false
+	}
 	if !ok {
-		payload.Expires = now.Add(authSessionDuration).Unix()
-		if principal, principalOK := authPrincipalFromContext(r.Context()); principalOK {
-			payload.User = principal.Username
-		}
+		payload = authSessionPayloadForCredential(credential, now.Add(authSessionDuration))
+	} else if payload.Source != principal.Source || payload.Subject != principal.Subject || payload.Revision != principal.Revision || payload.User != principal.Username {
+		return false
 	}
 	if payload.Expires <= now.Unix() {
 		payload.Expires = now.Add(authSessionDuration).Unix()

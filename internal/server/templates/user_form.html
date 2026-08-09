@@ -1,0 +1,140 @@
+{{define "user_form.html"}}
+{{template "head" .}}
+<section class="page-head user-form-page-head">
+  <div>
+    <h1>{{if .UserManagement.Creating}}Nutzer anlegen{{else}}Nutzer bearbeiten{{end}}</h1>
+    <p><a href="/settings/users">Zurück zur Nutzerverwaltung</a></p>
+  </div>
+</section>
+{{if .Notice}}<div class="notice" role="status">{{.Notice}}</div>{{end}}
+{{if .Error}}<div class="notice error-state" role="alert">{{.Error}}</div>{{end}}
+
+<section class="panel user-form-layout">
+  <form class="user-editor-form" method="post" action="{{if .UserManagement.Creating}}/settings/users{{else}}/settings/users/{{.UserManagement.Form.ID}}{{end}}" novalidate data-user-access-form>
+    {{if not .UserManagement.Creating}}<input type="hidden" name="version" value="{{.UserManagement.Form.Version}}">{{end}}
+    <fieldset>
+      <legend>Konto</legend>
+      <label>
+        <span>Benutzername</span>
+        <input type="text" name="username" value="{{.UserManagement.Form.Username}}" minlength="1" maxlength="64" autocomplete="off" required {{if not .UserManagement.Creating}}readonly aria-readonly="true"{{end}} {{with .UserManagement.Form.FieldError "username"}}aria-invalid="true" aria-describedby="username-error"{{end}}>
+        {{with .UserManagement.Form.FieldError "username"}}<span class="field-error" id="username-error">{{.}}</span>{{end}}
+      </label>
+      {{if .UserManagement.Creating}}
+      <div class="user-password-grid">
+        <label>
+          <span>Passwort</span>
+          <input type="password" name="new_password" value="" minlength="12" maxlength="72" autocomplete="new-password" required {{with .UserManagement.Form.FieldError "new_password"}}aria-invalid="true" aria-describedby="new-password-error"{{end}}>
+          {{with .UserManagement.Form.FieldError "new_password"}}<span class="field-error" id="new-password-error">{{.}}</span>{{end}}
+        </label>
+        <label>
+          <span>Passwort wiederholen</span>
+          <input type="password" name="new_password_confirmation" value="" minlength="12" maxlength="72" autocomplete="new-password" required {{with .UserManagement.Form.FieldError "new_password_confirmation"}}aria-invalid="true" aria-describedby="new-password-confirmation-error"{{end}}>
+          {{with .UserManagement.Form.FieldError "new_password_confirmation"}}<span class="field-error" id="new-password-confirmation-error">{{.}}</span>{{end}}
+        </label>
+      </div>
+      <p class="muted user-password-hint">Mindestens 12 Zeichen und höchstens 72 UTF-8-Bytes.</p>
+      {{end}}
+    </fieldset>
+
+    <fieldset>
+      <legend>Zugriff</legend>
+      {{if .UserManagement.Bootstrap}}
+      <input type="hidden" name="role" value="admin">
+      <div class="notice" role="status">Das erste lokale Konto wird als aktiver Administrator mit allen Berechtigungen angelegt.</div>
+      {{else}}
+      <label>
+        <span>Rolle</span>
+        <select name="role" required data-user-role {{with .UserManagement.Form.FieldError "role"}}aria-invalid="true" aria-describedby="role-error"{{end}}>
+          {{range .UserManagement.Roles}}<option value="{{.Value}}" data-role-permissions="{{.GrantedPermissions}}" {{if eq $.UserManagement.Form.Role .Value}}selected{{end}} {{if .Disabled}}disabled{{end}}>{{.Label}}</option>{{end}}
+        </select>
+        {{with .UserManagement.Form.FieldError "role"}}<span class="field-error" id="role-error">{{.}}</span>{{end}}
+      </label>
+      <details class="permission-editor" open {{with .UserManagement.Form.FieldError "permissions"}}aria-invalid="true" aria-describedby="permissions-error"{{end}}>
+        <summary>Zusätzliche Einzelrechte</summary>
+        <p class="muted">Rollenrechte gelten automatisch. Ausgewählte Einzelrechte werden zusätzlich vergeben.</p>
+        {{range .UserManagement.PermissionGroups}}
+        <fieldset class="permission-group">
+          <legend>{{.Label}}</legend>
+          {{range .Permissions}}
+          <label class="permission-option {{if .Disabled}}permission-option-disabled{{end}}" data-user-permission-option>
+            <input type="checkbox" name="permissions" value="{{.Value}}" data-user-permission data-assignable="{{if .Assignable}}true{{else}}false{{end}}" data-additional-selected="{{if $.UserManagement.Form.PermissionSelected .Value}}true{{else}}false{{end}}" {{if $.UserManagement.Form.PermissionSelected .Value}}checked{{end}} {{if .Disabled}}disabled{{end}}>
+            <span><strong>{{.Label}}</strong> <span class="badge" data-role-granted-badge {{if not .RoleGranted}}hidden{{end}}>Durch Rolle</span>{{if .Description}}<small>{{.Description}}</small>{{end}}</span>
+          </label>
+          {{end}}
+        </fieldset>
+        {{end}}
+        {{with .UserManagement.Form.FieldError "permissions"}}<span class="field-error" id="permissions-error" role="alert">{{.}}</span>{{end}}
+      </details>
+      {{end}}
+    </fieldset>
+
+    {{if not .UserManagement.Bootstrap}}
+    <label class="user-confirm-password">
+      <span>Ihr aktuelles Passwort zur Bestätigung</span>
+      <input type="password" name="current_password" value="" autocomplete="current-password" required {{if .UserManagement.Form.ActionIs "access"}}{{with .UserManagement.Form.FieldError "current_password"}}aria-invalid="true" aria-describedby="access-current-password-error"{{end}}{{end}}>
+      {{if .UserManagement.Form.ActionIs "access"}}{{with .UserManagement.Form.FieldError "current_password"}}<span class="field-error" id="access-current-password-error">{{.}}</span>{{end}}{{end}}
+    </label>
+    {{end}}
+    <div class="settings-actions">
+      <button type="submit">{{if .UserManagement.Creating}}Nutzer anlegen{{else}}Zugriff speichern{{end}}</button>
+      <a class="secondary-button" href="/settings/users">Abbrechen</a>
+    </div>
+  </form>
+
+  {{if and (not .UserManagement.Creating) .UserManagement.Form.CanResetPassword}}
+  <form class="user-editor-form" method="post" action="/settings/users/{{.UserManagement.Form.ID}}/password" novalidate>
+    <input type="hidden" name="version" value="{{.UserManagement.Form.Version}}">
+    <fieldset>
+      <legend>Passwort zurücksetzen</legend>
+      <div class="user-password-grid">
+        <label>
+          <span>Neues Passwort</span>
+          <input type="password" name="new_password" value="" minlength="12" maxlength="72" autocomplete="new-password" required {{if .UserManagement.Form.ActionIs "password"}}{{with .UserManagement.Form.FieldError "new_password"}}aria-invalid="true" aria-describedby="reset-new-password-error"{{end}}{{end}}>
+          {{if .UserManagement.Form.ActionIs "password"}}{{with .UserManagement.Form.FieldError "new_password"}}<span class="field-error" id="reset-new-password-error">{{.}}</span>{{end}}{{end}}
+        </label>
+        <label>
+          <span>Passwort wiederholen</span>
+          <input type="password" name="new_password_confirmation" value="" minlength="12" maxlength="72" autocomplete="new-password" required {{if .UserManagement.Form.ActionIs "password"}}{{with .UserManagement.Form.FieldError "new_password_confirmation"}}aria-invalid="true" aria-describedby="reset-new-password-confirmation-error"{{end}}{{end}}>
+          {{if .UserManagement.Form.ActionIs "password"}}{{with .UserManagement.Form.FieldError "new_password_confirmation"}}<span class="field-error" id="reset-new-password-confirmation-error">{{.}}</span>{{end}}{{end}}
+        </label>
+      </div>
+      <label class="user-confirm-password">
+        <span>Ihr aktuelles Passwort zur Bestätigung</span>
+        <input type="password" name="current_password" value="" autocomplete="current-password" required {{if .UserManagement.Form.ActionIs "password"}}{{with .UserManagement.Form.FieldError "current_password"}}aria-invalid="true" aria-describedby="reset-current-password-error"{{end}}{{end}}>
+        {{if .UserManagement.Form.ActionIs "password"}}{{with .UserManagement.Form.FieldError "current_password"}}<span class="field-error" id="reset-current-password-error">{{.}}</span>{{end}}{{end}}
+      </label>
+      <div class="settings-actions"><button type="submit">Passwort zurücksetzen</button></div>
+    </fieldset>
+  </form>
+  {{end}}
+
+  {{if and (not .UserManagement.Creating) (or .UserManagement.Form.CanChangeStatus .UserManagement.Form.CanDelete)}}
+  <section class="user-danger-zone" aria-labelledby="user-danger-heading">
+    <h2 id="user-danger-heading">Kontostatus</h2>
+    {{if .UserManagement.Form.CanChangeStatus}}
+    <form method="post" action="/settings/users/{{.UserManagement.Form.ID}}/{{if .UserManagement.Form.Active}}disable{{else}}enable{{end}}">
+      <input type="hidden" name="version" value="{{.UserManagement.Form.Version}}">
+      <label>
+        <span>Ihr aktuelles Passwort zur Bestätigung</span>
+        <input type="password" name="current_password" value="" autocomplete="current-password" required {{if .UserManagement.Form.ActionIs "status"}}{{with .UserManagement.Form.FieldError "current_password"}}aria-invalid="true" aria-describedby="status-current-password-error"{{end}}{{end}}>
+        {{if .UserManagement.Form.ActionIs "status"}}{{with .UserManagement.Form.FieldError "current_password"}}<span class="field-error" id="status-current-password-error">{{.}}</span>{{end}}{{end}}
+      </label>
+      <button type="submit" class="{{if .UserManagement.Form.Active}}danger{{end}}">Konto {{if .UserManagement.Form.Active}}deaktivieren{{else}}aktivieren{{end}}</button>
+    </form>
+    {{end}}
+    {{if .UserManagement.Form.CanDelete}}
+    <form method="post" action="/settings/users/{{.UserManagement.Form.ID}}/delete">
+      <input type="hidden" name="version" value="{{.UserManagement.Form.Version}}">
+      <label>
+        <span>Ihr aktuelles Passwort zur Bestätigung</span>
+        <input type="password" name="current_password" value="" autocomplete="current-password" required {{if .UserManagement.Form.ActionIs "delete"}}{{with .UserManagement.Form.FieldError "current_password"}}aria-invalid="true" aria-describedby="delete-current-password-error"{{end}}{{end}}>
+        {{if .UserManagement.Form.ActionIs "delete"}}{{with .UserManagement.Form.FieldError "current_password"}}<span class="field-error" id="delete-current-password-error">{{.}}</span>{{end}}{{end}}
+      </label>
+      <button type="submit" class="danger">Konto endgültig löschen</button>
+    </form>
+    {{end}}
+  </section>
+  {{end}}
+</section>
+{{template "foot" .}}
+{{end}}

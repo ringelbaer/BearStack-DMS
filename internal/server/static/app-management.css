@@ -1191,6 +1191,292 @@ label .context-help-trigger:focus-visible,
   padding: 5px 10px;
 }
 
+.user-section-head {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.user-list {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.user-card {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.user-card-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.user-card-head h3,
+.user-card-head p {
+  margin: 0;
+}
+
+.user-card-head h3 {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 17px;
+  gap: 7px;
+  overflow-wrap: anywhere;
+}
+
+.user-card-head p {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+.user-status {
+  border: 1px solid;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 8px;
+}
+
+.user-status-active {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+
+.user-status-disabled {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+.user-summary,
+.account-summary dl {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+}
+
+.user-summary > div,
+.account-summary dl > div {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: minmax(120px, 0.42fr) minmax(0, 1fr);
+}
+
+.user-summary dt,
+.account-summary dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.user-summary dd,
+.account-summary dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.permission-labels {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.user-effective-permissions summary,
+.account-summary details summary,
+.permission-editor > summary {
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.user-effective-permissions ul,
+.account-summary details ul {
+  columns: 2;
+  margin: 9px 0 0;
+  padding-left: 20px;
+}
+
+.user-card-actions {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  display: flex;
+  min-height: 44px;
+  padding-top: 12px;
+}
+
+.user-form-layout {
+  display: grid;
+  gap: 18px;
+  margin-inline: auto;
+  max-width: 920px;
+}
+
+.user-editor-form,
+.user-danger-zone,
+.account-password form {
+  display: grid;
+  gap: 16px;
+}
+
+.user-editor-form > fieldset,
+.user-danger-zone {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  min-width: 0;
+  padding: 16px;
+}
+
+.user-editor-form > fieldset > legend,
+.permission-group > legend {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 5px;
+  text-transform: uppercase;
+}
+
+.user-editor-form label,
+.account-password label,
+.user-danger-zone label {
+  display: grid;
+  gap: 5px;
+}
+
+.user-password-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.user-password-hint {
+  margin: 0;
+}
+
+.field-error {
+  color: var(--danger);
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+input[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.permission-editor {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.permission-editor > p {
+  margin: 8px 0 12px;
+}
+
+.permission-group {
+  border: 0;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 7px;
+  margin: 14px 0 0;
+  min-width: 0;
+  padding: 12px 0 0;
+}
+
+.permission-option {
+  align-items: flex-start;
+  cursor: pointer;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.permission-option input {
+  height: 17px;
+  margin: 3px 0 0;
+  min-height: 0;
+  width: 17px;
+}
+
+.permission-option strong {
+  font-size: 14px;
+}
+
+.permission-option small {
+  color: var(--muted);
+  display: block;
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.permission-option-disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.user-confirm-password {
+  max-width: 460px;
+}
+
+.user-danger-zone {
+  border-color: var(--danger-border);
+}
+
+.user-danger-zone h2 {
+  color: var(--danger);
+  font-size: 18px;
+  margin: 0;
+}
+
+.user-danger-zone form {
+  align-items: end;
+  border-top: 1px solid var(--danger-border);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  padding-top: 14px;
+}
+
+.account-layout {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(320px, 1.2fr);
+}
+
+.account-summary,
+.account-password {
+  display: grid;
+  gap: 16px;
+}
+
+.account-summary h2,
+.account-password h2 {
+  font-size: 20px;
+  margin: 0;
+}
+
 .hidden {
   display: none !important;
 }

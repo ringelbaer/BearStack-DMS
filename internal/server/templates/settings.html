@@ -9,13 +9,7 @@
 
 <section class="panel settings-panel">
   <div class="settings-tabs">
-    <nav class="settings-tab-list" aria-label="Einstellungen">
-      {{if .Auth.CanSystemManage}}
-      <a class="settings-tab-button {{if eq .SettingsTab "main"}}active{{end}}" href="/settings">Dokumente</a>
-      <a class="settings-tab-button {{if eq .SettingsTab "mail_import"}}active{{end}}" href="/settings/mail-import">E-Mail-Import</a>
-      {{end}}
-      {{if and .PhotoModuleEnabled .Auth.CanPhotosManage}}<a class="settings-tab-button {{if eq .SettingsTab "photos"}}active{{end}}" href="/settings/photos">Fotos</a>{{end}}
-    </nav>
+    {{template "settings-tab-list" .}}
 
     {{if eq .SettingsTab "photos"}}
     <section class="settings-tab-panel">

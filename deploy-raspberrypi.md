@@ -158,10 +158,10 @@ Hinweise:
 - `auth.password` ist nur fuer einfache lokale Tests gedacht.
 - Wenn `password_hash` gesetzt ist, wird `password` ignoriert.
 - Optional ersetzt `auth.credentials` den einzelnen Benutzer durch mehrere Credentials mit Rollen wie `admin`, `documents_read`, `photos_read` oder `api_uploader`.
-- Wenn Benutzername oder Passwort/Hash fehlen, ist Basic Auth deaktiviert. Das ist im Netzwerk ein Sicherheitsproblem.
-- BearStack verweigert nicht-lokale Listener wie `0.0.0.0:8080` oder `:8080` ohne vollstaendige Auth-Konfiguration.
+- Ohne Config-Zugangsdaten und ohne aktives SQLite-Konto ist Auth deaktiviert. Das ist im Netzwerk ein Sicherheitsproblem.
+- BearStack verweigert nicht-lokale Listener wie `0.0.0.0:8080` oder `:8080`, wenn weder ein aktives Config- noch ein aktives SQLite-Konto vorhanden ist.
 - Bei Reverse-Proxy-Betrieb auf `127.0.0.1:8080` sollte Auth trotzdem gesetzt bleiben, wenn der Proxy keine eigene Zugriffskontrolle uebernimmt.
-- Nach erfolgreichem Login setzt BearStack ein signiertes HttpOnly-Session-Cookie fuer 12 Stunden. Mit der Login-Checkbox "Eingeloggt bleiben" wird die Session auf 30 Tage verlaengert. Nach Neustart des Dienstes sind bestehende Sessions ungueltig.
+- Nach erfolgreichem Login setzt BearStack ein signiertes HttpOnly-Session-Cookie fuer 12 Stunden. Mit der Login-Checkbox "Eingeloggt bleiben" wird die Session auf 30 Tage verlaengert. Der Signierschluessel liegt im Datenverzeichnis, sodass unveraenderte Konten einen Neustart ueberstehen; beim Upgrade auf 0.22.0 ist wegen des neuen Sessionformats einmalig eine erneute Anmeldung erforderlich.
 - Unbekannte Felder in der JSON-Datei werden ignoriert, damit Installationen mit zusaetzlichen oder kuenftigen Parametern weiter starten.
 
 Beispiel fuer mehrere Credentials:
@@ -601,10 +601,10 @@ sudo ss -ltnp | grep ':8080'
 
 Auth deaktiviert:
 
-- Im Log steht `basic auth disabled...`.
-- `auth.username` und `auth.password_hash` oder `auth.password` pruefen.
+- Im Start-Log steht `auth_enabled=false`.
+- Config-Zugangsdaten oder die aktiven SQLite-Konten in der Nutzerverwaltung pruefen.
 - Bei systemd pruefen, ob `BEARSTACK_CONFIG` auf die richtige Datei zeigt.
-- Wenn der Dienst mit `auth username and password or password_hash are required when addr listens on non-loopback interfaces` abbricht, ist `addr` nicht auf Loopback beschraenkt und Auth fehlt.
+- Wenn der Dienst mit `at least one active authentication account is required when addr listens on non-loopback interfaces` abbricht, ist `addr` nicht auf Loopback beschraenkt und es fehlt ein aktives Config- oder SQLite-Konto.
 
 `401 Unauthorized`:
 

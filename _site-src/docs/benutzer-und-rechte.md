@@ -6,7 +6,7 @@ icon: lucide/shield-check
 
 # Benutzer und Rechte
 
-BearStack schützt Weboberfläche, API und WebDAV mit derselben Basic-Auth-Konfiguration. Die Rechte sind capability-basiert: Eine Rolle ist nur ein vordefiniertes Bündel aus Einzelrechten. Für spezielle Konten können zusätzlich oder stattdessen einzelne `permissions` gesetzt werden.
+BearStack schützt Weboberfläche, API und WebDAV mit denselben Konten. Die Rechte sind capability-basiert: Eine Rolle ist nur ein vordefiniertes Bündel aus Einzelrechten. Für spezielle Konten können zusätzlich oder stattdessen einzelne `permissions` gesetzt werden.
 
 Ohne Auth ist BearStack nur für lokale Entwicklung gedacht. Auf Loopback-Adressen wie `127.0.0.1:8080` darf BearStack ohne Login starten; nicht-lokale Listener wie `0.0.0.0:8080` oder `:8080` erfordern Auth. Wenn Auth deaktiviert ist, behandelt BearStack alle Anfragen wie vollständig berechtigt.
 
@@ -53,11 +53,21 @@ Mehrere Benutzer werden in der JSON-Konfiguration unter `auth.credentials` gepfl
 
 `password_hash` hat Vorrang vor `password`. Für produktive Installationen ist ein bcrypt-Hash empfehlenswert; Klartextpasswörter eignen sich vor allem für lokale Tests. Fehlt bei einem Eintrag sowohl `role` als auch `permissions`, wird der Benutzer als `admin` behandelt.
 
+### Benutzer in der Weboberfläche
+
+Admins verwalten zusätzliche Konten unter **Einstellungen → Benutzer**. Diese Konten werden in `bearstack.db` gespeichert; Passwörter liegen dort ausschließlich als bcrypt-Hash. Neue Passwörter benötigen mindestens 12 Zeichen und dürfen höchstens 72 UTF-8-Bytes umfassen.
+
+JSON- und Env-Konten bleiben parallel aktiv und erscheinen in der Liste mit der Quelle **Konfiguration**. Sie sind im UI schreibgeschützt, damit bestehende Deployments und Notfallzugänge nicht unbemerkt überschrieben werden. UI- und Konfigurationskonten dürfen nicht denselben Benutzernamen verwenden. Benutzernamen sind case-sensitive und nach dem Anlegen nicht änderbar.
+
+Ein Konto kann deaktiviert, mit neuen Rechten versehen oder mit einem neuen Passwort ausgestattet werden. Jede Administratoraktion verlangt zur Bestätigung das aktuelle Passwort des handelnden Kontos. UI-Konten können ihr eigenes Passwort über **Konto** ändern; Konfigurationskonten werden weiterhin in JSON oder Env gepflegt.
+
+Läuft BearStack ohne Auth ausschließlich auf Loopback, muss das erste UI-Konto ein aktiver Admin sein. Nach dessen Anlage kann die Instanz auch ohne Config-Konto betrieben werden. Für einen Notfallzugang lässt sich jederzeit ein temporäres Config-Admin-Konto mit einem noch nicht verwendeten Benutzernamen ergänzen und BearStack neu starten.
+
 ## Rollen
 
 | Rolle | Enthaltene Rechte | Geeignet für |
 | --- | --- | --- |
-| `admin` | alle Rechte | Vollständige Verwaltung, Systemkonfiguration, Audit-Log und `.adminonly`-Fotoordner |
+| `admin` | alle Rechte | Vollständige Verwaltung, Benutzerverwaltung, Systemkonfiguration, Audit-Log und `.adminonly`-Fotoordner |
 | `documents_read` | `documents.read`, `documents.webdav.read` | Dokumente suchen, ansehen, herunterladen und per WebDAV lesen |
 | `documents_editor` | `documents_read` plus `documents.upload`, `documents.edit` | Dokumente hochladen, Metadaten bearbeiten, OCR starten, Dokumente verknüpfen und vorhandene Tags zuweisen |
 | `documents_manager` | `documents_editor` plus `documents.delete`, `documents.structure` | Dokumente löschen/wiederherstellen und Struktur-Daten wie Tags, Suchfavoriten und benutzerdefinierte Felder verwalten |
@@ -65,6 +75,7 @@ Mehrere Benutzer werden in der JSON-Konfiguration unter `auth.credentials` gepfl
 | `photos_editor` | `photos_read` plus `photos.edit` | Foto- und Ordner-Tags zuweisen oder entfernen |
 | `photos_manager` | `photos_editor` plus `photos.manage` | Fotoeinstellungen, Foto-Tag-Bibliothek, Index-Worker und Thumbnail-Worker verwalten |
 | `api_uploader` | `documents.upload` | Scanner, Automationen und Importjobs, die Dateien hochladen, aber keine Dokumente lesen sollen |
+| `custom` | nur explizit gewählte Einzelrechte | Delegierte Nutzerverwalter und eng zugeschnittene Spezialkonten |
 
 Die Rolle `admin` ist mehr als nur eine Summe sichtbarer Menüpunkte: Admin-only-Fotoordner mit `.adminonly` sind nur für Benutzer mit der Rolle `admin` zugänglich. Ein Benutzer mit einzeln gesetzten Vollrechten, aber ohne Rolle `admin`, sieht diese Inhalte nicht.
 
@@ -84,6 +95,7 @@ Einzelrechte werden als `permissions` gesetzt. Wenn `role` und `permissions` gem
 | `photos.edit` | Tags auf Fotos und Fotoordnern setzen oder entfernen |
 | `photos.manage` | Fotoeinstellungen ändern, Index- und Thumbnail-Worker starten und Foto-Tag-Bibliothek pflegen |
 | `system.manage` | Systemeinstellungen, Mail-Import, Spalten, Seitengrößen und Favicon verwalten |
+| `system.users.manage` | gewöhnliche Benutzer innerhalb der eigenen Fachrechte verwalten; Admins und weitere Nutzerverwalter bleiben der Rolle `admin` vorbehalten |
 | `system.audit` | Audit-Log unter `/log` lesen |
 
 Benutzer ohne `documents.structure` können bei Dokumenten nur bereits vorhandene Tags zuweisen. Neue Dokument-Tags werden bei Metadatenbearbeitung, Batch-Tagging und kompatiblen Uploads abgelehnt. So können Redakteure arbeiten, ohne die globale Struktur des Archivs ungeplant zu verändern.
@@ -147,9 +159,9 @@ Ein Audit-Konto, das nur das Betriebslog lesen darf:
 
 ## Sessions und Betrieb
 
-Nach erfolgreichem Login setzt BearStack ein signiertes HttpOnly-Session-Cookie. Normale Sessions laufen nach 12 Stunden ab; mit „Eingeloggt bleiben“ nach 30 Tagen. Basic Auth funktioniert weiterhin für API, WebDAV und Automationen. WebDAV antwortet ohne gültige Session mit einem Basic-Auth-Challenge.
+Nach erfolgreichem Login setzt BearStack ein signiertes HttpOnly-Session-Cookie. Normale Sessions laufen nach 12 Stunden ab; mit „Eingeloggt bleiben“ nach 30 Tagen. Der Signierschlüssel liegt geschützt im Datenverzeichnis, sodass Sitzungen einen Neustart überstehen. Beim Upgrade auf 0.22.0 erfordert das neue, kontogebundene Sessionformat einmalig eine erneute Anmeldung. Basic Auth funktioniert weiterhin für API, WebDAV und Automationen. WebDAV antwortet ohne gültige Session mit einem Basic-Auth-Challenge.
 
-Konfigurationsänderungen an Benutzern und Rechten werden beim Start geladen. Nach einem Neustart sind bestehende Sessions ungültig, weil BearStack den Session-Schlüssel neu erzeugt. Für entfernte Benutzer gilt außerdem: Eine vorhandene Session wird nur akzeptiert, wenn der Benutzer in der aktuellen Auth-Konfiguration noch existiert.
+Passwort-, Rollen-, Rechte- und Statusänderungen widerrufen bestehende Sitzungen des betroffenen UI-Kontos sofort. Konfigurationsänderungen an Passwort oder Rechten werden beim Start erkannt und machen ebenfalls ältere Sitzungen dieses Kontos ungültig. Entfernte oder deaktivierte Benutzer können vorhandene Cookies nicht weiterverwenden. Nach fünf Fehlversuchen innerhalb von 15 Minuten begrenzt BearStack weitere Anmeldeversuche für den betreffenden Benutzernamen bis zum Ende dieses Zeitfensters.
 
 ## Praxisempfehlungen
 
@@ -157,4 +169,5 @@ Konfigurationsänderungen an Benutzern und Rechten werden beim Start geladen. Na
 - Für Menschen eher Rollen verwenden; für Scanner, Dashboards und Spezialfälle gezielte `permissions` setzen.
 - `admin` sparsam vergeben, weil diese Rolle auch Systemverwaltung, Audit-Zugriff und `.adminonly`-Fotoordner umfasst.
 - Passworthashes in JSON oder Env-Dateien sorgfältig quoten, weil bcrypt-Hashes `$` enthalten.
-- Für Backups die Konfigurationsdatei mit sichern; dort liegen bei mehreren Benutzern die Accounts und Rechte.
+- Für Backups das gesamte BearStack-Datenverzeichnis mit `bearstack.db` und `auth-session.key` sowie weiterhin verwendete Konfigurationsdateien sichern.
+- Vor einem Downgrade die zur älteren Version passende Datenbanksicherung wiederherstellen; die Schema-Migration auf Version 15 ist automatisch, aber ältere BearStack-Versionen lehnen neuere Schemata ab.

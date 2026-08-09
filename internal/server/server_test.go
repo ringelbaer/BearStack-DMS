@@ -36,7 +36,11 @@ func authenticatedTestRequest(server *Server, req *http.Request, username string
 	if server == nil || !server.authEnabled() {
 		return req
 	}
-	credential := server.auth.credentials[username]
+	snapshot := server.authSnapshot()
+	if snapshot == nil {
+		return req
+	}
+	credential := snapshot.byUsername[username]
 	if credential == nil {
 		return req
 	}
@@ -85,10 +89,9 @@ func TestNewPersistsAuthSessionKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	session, err := server1.signAuthSession(authSessionPayload{
-		User:    "admin",
-		Expires: time.Now().Add(time.Hour).Unix(),
-	})
+	session, err := server1.signAuthSession(authSessionPayloadForCredential(
+		server1.authSnapshot().byUsername["admin"], time.Now().Add(time.Hour),
+	))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -5505,7 +5508,7 @@ func TestHandleHelpRendersDocumentation(t *testing.T) {
 		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
 	}
 	body := rec.Body.String()
-	for _, want := range []string{"Gliederung", "Regelsets", "Gruppenmodus", "Detailtags", "Auto-Vervollständigung", "Fotos", "Fotoframe", "tag:urlaub", ".adminonly", "Fotoindex", "Backup", "data/bearstack.db", "WebDAV", "Löschschutz", "/webdav/"} {
+	for _, want := range []string{"Gliederung", "Regelsets", "Gruppenmodus", "Detailtags", "Auto-Vervollständigung", "Fotos", "Fotoframe", "tag:urlaub", ".adminonly", "Fotoindex", "Backup", "auth-session.key", "tar -czf bearstack-backup.tgz data", "WebDAV", "Löschschutz", "/webdav/"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("help page missing %q in body %s", want, body)
 		}

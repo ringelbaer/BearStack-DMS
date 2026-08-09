@@ -12,6 +12,15 @@ var settingsRouteSpecs = []routeSpec{
 	{pattern: "POST /settings/mail-import/run", capabilities: authCapSystemManage, handler: (*Server).handleRunMailImportNow},
 	{pattern: "POST /settings/columns", capabilities: authCapSystemManage, handler: (*Server).handleSaveColumns},
 	{pattern: "POST /settings/page-size", capabilities: authCapSystemManage, handler: (*Server).handleSavePageSize},
+	{pattern: "GET /settings/users", capabilities: authCapSystemUsersManage, handler: (*Server).handleUsers},
+	{pattern: "GET /settings/users/new", capabilities: authCapSystemUsersManage, handler: (*Server).handleNewUser},
+	{pattern: "POST /settings/users", capabilities: authCapSystemUsersManage, handler: (*Server).handleCreateUser},
+	{pattern: "GET /settings/users/{id}", capabilities: authCapSystemUsersManage, handler: (*Server).handleEditUser},
+	{pattern: "POST /settings/users/{id}", capabilities: authCapSystemUsersManage, handler: (*Server).handleUpdateUser},
+	{pattern: "POST /settings/users/{id}/password", capabilities: authCapSystemUsersManage, handler: (*Server).handleResetUserPassword},
+	{pattern: "POST /settings/users/{id}/enable", capabilities: authCapSystemUsersManage, handler: (*Server).handleEnableUser},
+	{pattern: "POST /settings/users/{id}/disable", capabilities: authCapSystemUsersManage, handler: (*Server).handleDisableUser},
+	{pattern: "POST /settings/users/{id}/delete", capabilities: authCapSystemUsersManage, handler: (*Server).handleDeleteUser},
 }
 
 var photoSettingsRouteSpecs = []routeSpec{

@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -25,20 +26,27 @@ type authActorContextKey struct{}
 type authPrincipalContextKey struct{}
 
 type authSessionPayload struct {
+	Version             int    `json:"v"`
+	Source              string `json:"s"`
+	Subject             string `json:"sub"`
+	Revision            string `json:"r"`
 	User                string `json:"u"`
 	Expires             int64  `json:"e"`
 	PhotoAdminOnlyShown bool   `json:"pao,omitempty"`
 }
 
 func (s *Server) basicAuth(next http.Handler) http.Handler {
-	if !s.authEnabled() {
-		s.log.Warn("basic auth disabled because auth username and password or password hash are not fully configured")
-		return next
-	}
-
-	realm := s.auth.realm
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Authentication can become enabled after the first loopback bootstrap.
+		// Consult the current snapshot for every request instead of permanently
+		// bypassing middleware based on the state at Handler construction.
+		if !s.authEnabled() {
+			next.ServeHTTP(w, r)
+			return
+		}
+		state := s.ensureAuthState()
+		realm := state.realm
+
 		if isPublicAssetPath(r.URL.Path) || isWebDAVWellKnownPath(r.URL.Path) || isLoginPath(r.URL.Path) {
 			next.ServeHTTP(w, r)
 			return
@@ -50,13 +58,24 @@ func (s *Server) basicAuth(next http.Handler) http.Handler {
 				return
 			}
 
-			user, pass, ok := r.BasicAuth()
-			principal, authOK := s.authenticateBasic(user, pass)
-			if !ok || !authOK {
+			user, pass, provided := r.BasicAuth()
+			if !provided {
 				writeBasicAuthUnauthorized(w, realm)
 				return
 			}
-			s.setAuthSession(w, r, user)
+			principal, authOK, retryAfter := s.authenticateBasicCheck(user, pass)
+			if retryAfter > 0 {
+				writeBasicAuthRateLimited(w, realm, retryAfter)
+				return
+			}
+			if !authOK {
+				writeBasicAuthUnauthorized(w, realm)
+				return
+			}
+			if !s.setAuthSessionForPrincipal(w, r, principal, authSessionDuration) {
+				writeBasicAuthUnauthorized(w, realm)
+				return
+			}
 			next.ServeHTTP(w, withAuthPrincipal(r, principal))
 			return
 		}
@@ -66,9 +85,8 @@ func (s *Server) basicAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		user, pass, ok := r.BasicAuth()
-		principal, authOK := s.authenticateBasic(user, pass)
-		if !ok || !authOK {
+		user, pass, provided := r.BasicAuth()
+		if !provided {
 			if isHTMLRequest(r) {
 				s.renderLogin(w, r, http.StatusUnauthorized, "", safeReturnURL(r.URL.RequestURI()))
 				return
@@ -76,7 +94,23 @@ func (s *Server) basicAuth(next http.Handler) http.Handler {
 			writeBasicAuthUnauthorized(w, realm)
 			return
 		}
-		s.setAuthSession(w, r, user)
+		principal, authOK, retryAfter := s.authenticateBasicCheck(user, pass)
+		if retryAfter > 0 {
+			writeBasicAuthRateLimited(w, realm, retryAfter)
+			return
+		}
+		if !authOK {
+			if isHTMLRequest(r) {
+				s.renderLogin(w, r, http.StatusUnauthorized, "", safeReturnURL(r.URL.RequestURI()))
+				return
+			}
+			writeBasicAuthUnauthorized(w, realm)
+			return
+		}
+		if !s.setAuthSessionForPrincipal(w, r, principal, authSessionDuration) {
+			writeBasicAuthUnauthorized(w, realm)
+			return
+		}
 		next.ServeHTTP(w, withAuthPrincipal(r, principal))
 	})
 }
@@ -139,6 +173,20 @@ func writeBasicAuthUnauthorized(w http.ResponseWriter, realm string) {
 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
 }
 
+func writeBasicAuthRateLimited(w http.ResponseWriter, realm string, retryAfter time.Duration) {
+	w.Header().Set("WWW-Authenticate", basicAuthChallenge(realm))
+	w.Header().Set("Retry-After", strconv.FormatInt(retryAfterSeconds(retryAfter), 10))
+	http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
+}
+
+func retryAfterSeconds(duration time.Duration) int64 {
+	seconds := int64((duration + time.Second - 1) / time.Second)
+	if seconds < 1 {
+		return 1
+	}
+	return seconds
+}
+
 func basicAuthChallenge(realm string) string {
 	return "Basic realm=" + strconv.Quote(cleanAuthRealm(realm)) + `, charset="UTF-8"`
 }
@@ -158,38 +206,19 @@ func cleanAuthRealm(realm string) string {
 	return realm
 }
 
-func (s *Server) authPasswordOK(r *http.Request, password string) bool {
-	if !s.authEnabled() {
+func (s *Server) setAuthSessionForPrincipal(w http.ResponseWriter, r *http.Request, principal authPrincipal, duration time.Duration) bool {
+	credential := s.authCredentialForPrincipal(principal)
+	if credential == nil {
 		return false
 	}
-	principal, ok := authPrincipalFromContext(r.Context())
-	if !ok {
-		return false
-	}
-	credential, ok := s.auth.credentials[principal.Username]
-	return ok && credential.passwordOK(password)
-}
-
-func (s *Server) setAuthSession(w http.ResponseWriter, r *http.Request, user string) {
-	s.setAuthSessionWithDuration(w, r, user, authSessionDuration)
-}
-
-func (s *Server) setRememberedAuthSession(w http.ResponseWriter, r *http.Request, user string) {
-	s.setAuthSessionWithDuration(w, r, user, authRememberSessionDuration)
-}
-
-func (s *Server) setAuthSessionWithDuration(w http.ResponseWriter, r *http.Request, user string, duration time.Duration) {
 	if len(s.authKey) == 0 {
-		return
+		return true
 	}
 	if duration <= 0 {
 		duration = authSessionDuration
 	}
-	expires := time.Now().Add(duration)
-	s.writeAuthSessionCookie(w, r, authSessionPayload{
-		User:    user,
-		Expires: expires.Unix(),
-	})
+	s.writeAuthSessionCookie(w, r, authSessionPayloadForCredential(credential, time.Now().Add(duration)))
+	return true
 }
 
 func (s *Server) writeAuthSessionCookie(w http.ResponseWriter, r *http.Request, payload authSessionPayload) {
@@ -240,8 +269,12 @@ func (s *Server) authSessionPrincipal(r *http.Request) (authPrincipal, bool) {
 	if !ok {
 		return authPrincipal{}, false
 	}
-	credential, ok := s.auth.credentials[payload.User]
-	if !ok {
+	snapshot := s.authSnapshot()
+	if snapshot == nil {
+		return authPrincipal{}, false
+	}
+	credential, ok := snapshot.bySubject[authSubjectKey(payload.Source, payload.Subject)]
+	if !ok || !credential.enabled || credential.revision != payload.Revision || credential.username != payload.User {
 		return authPrincipal{}, false
 	}
 	return credential.principal(), true
@@ -263,6 +296,9 @@ func (s *Server) authSessionFromRequest(r *http.Request) (authSessionPayload, bo
 }
 
 func (s *Server) signAuthSession(payload authSessionPayload) (string, error) {
+	if !validAuthSessionPayload(payload) {
+		return "", errors.New("invalid authentication session payload")
+	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return "", err
@@ -292,7 +328,50 @@ func (s *Server) verifyAuthSession(value string) (authSessionPayload, bool) {
 	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
 		return authSessionPayload{}, false
 	}
+	if !validAuthSessionPayload(payload) {
+		return authSessionPayload{}, false
+	}
 	return payload, true
+}
+
+func validAuthSessionPayload(payload authSessionPayload) bool {
+	return payload.Version == 2 &&
+		(payload.Source == authSourceConfig || payload.Source == authSourceDatabase) &&
+		payload.Subject != "" && payload.Revision != "" && payload.User != "" && payload.Expires > 0
+}
+
+func authSessionPayloadForCredential(credential *authCredential, expires time.Time) authSessionPayload {
+	return authSessionPayload{
+		Version: 2, Source: credential.source, Subject: credential.subject,
+		Revision: credential.revision, User: credential.username, Expires: expires.Unix(),
+	}
+}
+
+func (s *Server) authCredentialForPrincipal(principal authPrincipal) *authCredential {
+	snapshot := s.authSnapshot()
+	if snapshot == nil {
+		return nil
+	}
+	credential := snapshot.bySubject[authSubjectKey(principal.Source, principal.Subject)]
+	if credential == nil || !credential.enabled || credential.username != principal.Username || credential.revision != principal.Revision {
+		return nil
+	}
+	return credential
+}
+
+func (s *Server) authPrincipalForDatabaseRevision(id int64, username string, revision int64) (authPrincipal, bool) {
+	if id <= 0 || revision < 1 {
+		return authPrincipal{}, false
+	}
+	snapshot := s.authSnapshot()
+	if snapshot == nil {
+		return authPrincipal{}, false
+	}
+	credential := snapshot.bySubject[authSubjectKey(authSourceDatabase, strconv.FormatInt(id, 10))]
+	if credential == nil || !credential.enabled || credential.username != username || credential.revision != strconv.FormatInt(revision, 10) {
+		return authPrincipal{}, false
+	}
+	return credential.principal(), true
 }
 
 func authSessionSignature(key, payload []byte) []byte {

@@ -33,18 +33,21 @@ import (
 var webFS embed.FS
 
 type Server struct {
-	cfg       config.Config
-	repo      *repository.Repository
-	store     *storage.Store
-	photos    *photos.Library
-	log       *slog.Logger
-	templates *template.Template
-	static    http.Handler
-	authKey   []byte
-	auth      *authState
-	apps      serverApplications
-	jobCtxMu  sync.RWMutex
-	jobCtx    context.Context
+	cfg         config.Config
+	repo        *repository.Repository
+	store       *storage.Store
+	photos      *photos.Library
+	log         *slog.Logger
+	templates   *template.Template
+	static      http.Handler
+	authKey     []byte
+	auth        *authState
+	authInitMu  sync.Mutex
+	authWriteMu sync.Mutex
+	earlyAudit  auditRejectionLimiter
+	apps        serverApplications
+	jobCtxMu    sync.RWMutex
+	jobCtx      context.Context
 }
 
 const pageSize = 100
@@ -101,13 +104,17 @@ func New(cfg config.Config, repo *repository.Repository, store *storage.Store, l
 	}
 	cfg.WebDAV.Path = webDAVPath
 
-	authState, err := newAuthState(cfg.Auth)
-	if err != nil {
-		return nil, err
-	}
 	authKey, err := authSessionKey(cfg.DataDir)
 	if err != nil {
 		return nil, err
+	}
+	authState, err := newAuthState(context.Background(), cfg.Auth, repo, authKey)
+	if err != nil {
+		return nil, err
+	}
+	snapshot := authState.snapshot.Load()
+	if config.AddrRequiresAuth(cfg.Addr) && (snapshot == nil || snapshot.activeCredentials == 0) {
+		return nil, errors.New("at least one active authentication account is required when addr listens on non-loopback interfaces")
 	}
 
 	tmpl, err := parseTemplates()

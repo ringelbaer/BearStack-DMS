@@ -394,7 +394,7 @@ func (s *Server) withRenderSettings(r *http.Request, data PageData) PageData {
 		data.HomePage = normalizeAvailableHomePage(data.HomePage, s.photos != nil, data.DocumentCloudEnabled)
 	}
 	if data.HomeURL == "" {
-		data.HomeURL = homePageURL(data.HomePage)
+		data.HomeURL = homeURLForPermissions(data.HomePage, data.Auth, s.photos != nil)
 	}
 	if data.ThemeMode == "" {
 		data.ThemeMode = renderSettings.ThemeMode

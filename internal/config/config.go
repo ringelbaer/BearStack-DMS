@@ -136,10 +136,6 @@ func Load() (Config, error) {
 	if cfg.Photos.PageSize <= 0 {
 		return Config{}, errors.New("photos page_size must be greater than zero")
 	}
-	if !cfg.Auth.Enabled() && addrRequiresAuth(cfg.Addr) {
-		return Config{}, errors.New("auth username and password or password_hash are required when addr listens on non-loopback interfaces")
-	}
-
 	return cfg, nil
 }
 
@@ -363,6 +359,11 @@ func addrRequiresAuth(addr string) bool {
 	ip := net.ParseIP(host)
 	return ip == nil || !ip.IsLoopback()
 }
+
+// AddrRequiresAuth reports whether an address can accept non-loopback traffic.
+// Effective authentication may come from configuration or SQLite and is
+// therefore validated only after the repository has been opened.
+func AddrRequiresAuth(addr string) bool { return addrRequiresAuth(addr) }
 
 func addrHost(addr string) string {
 	addr = strings.TrimSpace(addr)

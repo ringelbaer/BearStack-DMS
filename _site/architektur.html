@@ -839,6 +839,7 @@
 </span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>Die vollständige Liste der Laufzeit- und Docker-Umgebungsvariablen steht im Abschnitt <a href="installation.html#docker-und-compose">Docker und Compose</a>. So bleibt die variable Referenz an einer Stelle gepflegt; diese Architektur-Seite konzentriert sich auf Struktur, Priorität und JSON-Form.</p>
+<p>Zusätzlich zur Startkonfiguration speichert BearStack über die Weboberfläche angelegte Konten in der Hauptdatenbank. Beim Start werden beide Quellen validiert und zu einem unveränderlichen Auth-Snapshot zusammengeführt. Authentifizierung und Session-Prüfung lesen diesen Snapshot ohne Datenbankzugriff; Kontoänderungen ersetzen ihn nach erfolgreicher SQLite-Transaktion atomar. Konfigurationskonten bleiben schreibgeschützt, und doppelte Benutzernamen über beide Quellen werden abgelehnt.</p>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
 <p>BearStack trennt Dokumente und Fotodaten, nutzt Caches für aufwendige Medienarbeit und führt OCR sowie Vorschau-Erzeugung im Hintergrund aus. Das ist besonders wichtig, wenn Archive über die Zeit wachsen oder viele Bilder in einem bestehenden Fotoverzeichnis liegen.</p>
 <h2 id="performance-benchmark">Performance-Benchmark<a class="headerlink" href="#performance-benchmark" title="Permanent link">&para;</a></h2>
@@ -905,7 +906,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.17.6 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.22.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

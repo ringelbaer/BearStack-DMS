@@ -71,6 +71,8 @@ Beim Start werden zuerst `.env` und danach `BEARSTACK_ENV_FILE` in die Prozessum
 
 Die vollständige Liste der Laufzeit- und Docker-Umgebungsvariablen steht im Abschnitt [Docker und Compose](installation.md#docker-und-compose). So bleibt die variable Referenz an einer Stelle gepflegt; diese Architektur-Seite konzentriert sich auf Struktur, Priorität und JSON-Form.
 
+Zusätzlich zur Startkonfiguration speichert BearStack über die Weboberfläche angelegte Konten in der Hauptdatenbank. Beim Start werden beide Quellen validiert und zu einem unveränderlichen Auth-Snapshot zusammengeführt. Authentifizierung und Session-Prüfung lesen diesen Snapshot ohne Datenbankzugriff; Kontoänderungen ersetzen ihn nach erfolgreicher SQLite-Transaktion atomar. Konfigurationskonten bleiben schreibgeschützt, und doppelte Benutzernamen über beide Quellen werden abgelehnt.
+
 ## Performance
 
 BearStack trennt Dokumente und Fotodaten, nutzt Caches für aufwendige Medienarbeit und führt OCR sowie Vorschau-Erzeugung im Hintergrund aus. Das ist besonders wichtig, wenn Archive über die Zeit wachsen oder viele Bilder in einem bestehenden Fotoverzeichnis liegen.

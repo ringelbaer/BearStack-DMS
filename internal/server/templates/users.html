@@ -1,0 +1,73 @@
+{{define "users.html"}}
+{{template "head" .}}
+<section class="page-head">
+  <div>
+    <h1>Einstellungen</h1>
+  </div>
+</section>
+{{if .Notice}}<div class="notice" role="status">{{.Notice}}</div>{{end}}
+{{if .Error}}<div class="notice error-state" role="alert">{{.Error}}</div>{{end}}
+
+<section class="panel settings-panel">
+  <div class="settings-tabs">
+    {{template "settings-tab-list" .}}
+    <section class="settings-tab-panel" aria-labelledby="users-heading">
+      <header class="settings-section-head user-section-head">
+        <div>
+          <h2 id="users-heading">Nutzer</h2>
+          <p>Konten, Rollen und zusätzliche Berechtigungen verwalten</p>
+        </div>
+        {{if .UserManagement.CanCreate}}<a class="secondary-button" href="/settings/users/new">Nutzer anlegen</a>{{end}}
+      </header>
+
+      {{if .UserManagement.Bootstrap}}
+      <div class="notice" role="status">
+        Es gibt noch kein lokales Administratorkonto. Legen Sie das erste Konto direkt auf diesem Gerät an.
+      </div>
+      {{end}}
+
+      {{if .UserManagement.Users}}
+      <div class="user-list" role="list">
+        {{range .UserManagement.Users}}
+        <article class="user-card" role="listitem">
+          <header class="user-card-head">
+            <div>
+              <h3>{{.Username}} {{if .Current}}<span class="badge">Sie</span>{{end}}</h3>
+              <p>{{.SourceLabel}}</p>
+            </div>
+            {{if .Active}}<span class="user-status user-status-active">Aktiv</span>{{else}}<span class="user-status user-status-disabled">Deaktiviert</span>{{end}}
+          </header>
+          <dl class="user-summary">
+            <div><dt>Rolle</dt><dd>{{.RoleLabel}}</dd></div>
+            <div>
+              <dt>Zusätzliche Rechte</dt>
+              <dd class="permission-labels">
+                {{if .ExtraPermissions}}{{range .ExtraPermissions}}<span class="badge">{{.Label}}</span>{{end}}{{else}}<span class="muted">Keine</span>{{end}}
+              </dd>
+            </div>
+          </dl>
+          {{if .EffectivePermissions}}
+          <details class="user-effective-permissions">
+            <summary>Effektive Rechte ({{len .EffectivePermissions}})</summary>
+            <ul>{{range .EffectivePermissions}}<li>{{.Label}}</li>{{end}}</ul>
+          </details>
+          {{end}}
+          <footer class="user-card-actions">
+            {{if .Editable}}<a class="secondary-button" href="/settings/users/{{.ID}}">Bearbeiten</a>
+            {{else if eq .Source "config"}}<span class="muted">Durch Konfiguration verwaltet</span>
+            {{else}}<span class="muted">Keine Bearbeitung erlaubt</span>{{end}}
+          </footer>
+        </article>
+        {{end}}
+      </div>
+      {{else}}
+      <div class="empty-state">
+        <h2>Noch keine Nutzer</h2>
+        <p>Lokale Konten können hier angelegt werden. Konten aus der Konfiguration erscheinen automatisch.</p>
+      </div>
+      {{end}}
+    </section>
+  </div>
+</section>
+{{template "foot" .}}
+{{end}}
