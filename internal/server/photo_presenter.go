@@ -276,6 +276,7 @@ type photoMediaAPIResponse struct {
 	Thumb         string                 `json:"thumb"`
 	Type          string                 `json:"type"`
 	Date          string                 `json:"date"`
+	DateTime      string                 `json:"date_time"`
 	Camera        string                 `json:"camera"`
 	Lens          string                 `json:"lens"`
 	Rating        string                 `json:"rating"`
@@ -339,6 +340,7 @@ func photoMediaAPIResponseFrom(item PhotoMediaView) photoMediaAPIResponse {
 		Thumb:        item.ThumbURL,
 		Type:         item.Type,
 		Date:         formatDate(item.CapturedAt),
+		DateTime:     formatPhotoDateTime(item.CapturedAt),
 		Camera:       item.Camera,
 		Lens:         item.Lens,
 		Rating:       formatRatingData(item.Rating),
@@ -356,6 +358,13 @@ func photoMediaAPIResponseFrom(item PhotoMediaView) photoMediaAPIResponse {
 	response.Lon = formatCoord(item.Longitude)
 	response.ThumbnailSize = photoURLSize(item.ThumbURL)
 	return response
+}
+
+func formatPhotoDateTime(capturedAt *time.Time) string {
+	if capturedAt == nil {
+		return "-"
+	}
+	return formatDateTime(*capturedAt)
 }
 
 func photoFaceAPIResponsesFrom(faces []photos.Face) []photoFaceAPIResponse {

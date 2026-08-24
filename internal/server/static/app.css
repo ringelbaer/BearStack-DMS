@@ -1007,6 +1007,24 @@ label span {
   width: 100%;
 }
 
+.photo-map-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.photo-map-body > .topbar {
+  flex: 0 0 auto;
+}
+
+.photo-map-page {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .photo-page > .page-head,
 .photo-page .photo-filter-chips,
 .photo-page .photo-blog-list,
@@ -1090,6 +1108,13 @@ label span {
 
 .photo-module {
   width: 100%;
+}
+
+.photo-map-module {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 320px;
 }
 
 .photo-module[data-photo-mode="view"] .photo-edit-only {
@@ -2102,6 +2127,13 @@ label span {
   overflow: hidden;
 }
 
+.photo-map-module .photo-map-panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 320px;
+}
+
 .photo-map-canvas {
   background:
     linear-gradient(90deg, rgba(23, 107, 135, 0.08) 1px, transparent 1px),
@@ -2113,6 +2145,12 @@ label span {
   overflow: hidden;
   position: relative;
   touch-action: none;
+}
+
+.photo-map-module .photo-map-canvas {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 320px;
 }
 
 .photo-map-canvas.is-dragging {

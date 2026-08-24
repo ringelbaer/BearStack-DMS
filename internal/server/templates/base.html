@@ -13,7 +13,7 @@
   {{range pageJSAssets .}}<script src="{{assetURL .}}" defer></script>
   {{end}}
 </head>
-<body data-tag-display-mode="{{.TagDisplayMode}}" data-document-delete-protected="{{if .Document.DeleteProtected}}true{{else}}false{{end}}" data-custom-pdf-preview="{{if .CustomPDFPreviewEnabled}}true{{else}}false{{end}}">
+<body class="{{if .PhotoFilter.MapView}}photo-map-body{{end}}" data-tag-display-mode="{{.TagDisplayMode}}" data-document-delete-protected="{{if .Document.DeleteProtected}}true{{else}}false{{end}}" data-custom-pdf-preview="{{if .CustomPDFPreviewEnabled}}true{{else}}false{{end}}">
   <header class="topbar">
     <a class="brand" href="{{.HomeURL}}" aria-label="{{.DisplayAppName}}">
       {{if .CustomFavicon.Uploaded}}<img class="brand-icon" src="{{.CustomFavicon.Href}}" alt="" aria-hidden="true">
@@ -81,7 +81,7 @@
     </details>
     {{end}}
   </header>
-  <main class="page {{if .InlineDesktopPreview}}page-side-preview-enabled{{end}} {{if .PhotoPage}}photo-page{{end}}" data-preview-mode="{{.DesktopPreviewMode}}">
+  <main class="page {{if .InlineDesktopPreview}}page-side-preview-enabled{{end}} {{if .PhotoPage}}photo-page{{end}} {{if .PhotoFilter.MapView}}photo-map-page{{end}}" data-preview-mode="{{.DesktopPreviewMode}}">
     {{if .InlineDesktopPreview}}
     <aside class="side-preview hidden" data-side-preview>
       <header>

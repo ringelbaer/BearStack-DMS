@@ -860,6 +860,12 @@
     height: clamp(260px, 54vh, 460px);
   }
 
+  .photo-map-module,
+  .photo-map-module .photo-map-panel,
+  .photo-map-module .photo-map-canvas {
+    min-height: 260px;
+  }
+
   .photo-page > .page-head {
     align-items: center;
     display: grid;

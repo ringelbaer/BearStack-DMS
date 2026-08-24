@@ -42,6 +42,7 @@
       type: type,
       title: node.dataset.photoTitle || "Foto",
       date: node.dataset.photoDate || "-",
+      dateTime: node.dataset.photoDateTime || "-",
       camera: node.dataset.photoCamera || "-",
       lens: node.dataset.photoLens || "-",
       rating: node.dataset.photoRating || "",
@@ -68,6 +69,7 @@
     item.type = data.type || item.type || "image";
     item.title = data.title || data.name || item.title || "Foto";
     item.date = data.date || item.date || "-";
+    item.dateTime = data.date_time || data.dateTime || item.date || item.dateTime || "-";
     item.camera = data.camera || "-";
     item.lens = data.lens || "-";
     item.rating = data.rating || "";
@@ -1132,7 +1134,7 @@
       }
       applyImageTransform(false);
       setText("[data-photo-info-name]", item.title);
-      setText("[data-photo-info-date]", item.date);
+      setText("[data-photo-info-date]", item.dateTime || item.date);
       setText("[data-photo-info-camera]", item.camera);
       setText("[data-photo-info-lens]", item.lens);
       setText("[data-photo-info-rating]", formatPhotoRating(item.rating));

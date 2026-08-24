@@ -284,6 +284,7 @@ test("photo lightbox opens from gallery", async ({ browser }) => {
 
     await page.locator("[data-photo-info-toggle]").click();
     await expect(page.locator("[data-photo-lightbox] [data-photo-info-name]")).toHaveText("public-a.png");
+    await expect(page.locator("[data-photo-lightbox] [data-photo-info-date]")).toHaveText(/^01\.06\.2024 \d{2}:00$/);
     await expect(page.locator("[data-photo-lightbox] [data-photo-info-rating]")).toHaveText("4 Sterne");
   } finally {
     await context.close();
@@ -601,6 +602,7 @@ test("admin can reveal admin-only content from sort menu for the session", async
 test("photo map renders gpx tracks with layer toggles", async ({ browser }) => {
   const { context, page } = await editorPage(browser);
   try {
+    await page.setViewportSize({ width: 1440, height: 1200 });
     await page.route("https://tile.openstreetmap.org/**", async (route) => {
       await route.fulfill({ status: 200, contentType: "image/png", body: tinyPNG });
     });
@@ -616,6 +618,14 @@ test("photo map renders gpx tracks with layer toggles", async ({ browser }) => {
     await expect(panel).toContainText("01.06.2024");
     await expect(panel).toContainText("wanderung.gpx");
     await expect(page.locator("[data-photo-layer-toggle]")).toHaveCount(3);
+
+    const mapBox = await page.locator("[data-photo-map-canvas]").boundingBox();
+    expect(mapBox).toBeTruthy();
+    expect(mapBox.height).toBeGreaterThan(700);
+    const footerBox = await page.locator(".app-footer").boundingBox();
+    expect(footerBox).toBeTruthy();
+    expect(footerBox.y + footerBox.height).toBeGreaterThan(1100);
+    expect(footerBox.y + footerBox.height).toBeLessThanOrEqual(1200);
 
     const firstTrack = page.locator('[data-photo-map-gpx-track][data-photo-map-layer="gpx-0"]');
     const firstLabel = page.locator('[data-photo-map-gpx-label][data-photo-map-layer="gpx-0"]');

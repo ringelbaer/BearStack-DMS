@@ -820,7 +820,7 @@
 <li>Medienformate <code>jpg</code>, <code>jpeg</code>, <code>png</code>, <code>gif</code>, <code>webp</code>, <code>svg</code>, <code>mp4</code>, <code>webm</code>, <code>ogv</code> und <code>ogg</code></li>
 <li>On-demand-Thumbnails für JPEG, PNG und GIF</li>
 <li>separate SQLite-Foto-DB für den Metadatenindex</li>
-<li>EXIF-Datum, Kamera und GPS für JPEGs</li>
+<li>EXIF-Aufnahmedatum und -zeit, Kamera und GPS für JPEGs</li>
 <li>Adobe/MWG-XMP-Gesichtsregionen</li>
 <li>BearStack-Tags auf Ordnern und Medien</li>
 <li>Umlaut-tolerante Suche mit Feldfiltern wie <code>date:2024</code>, <code>directory:Urlaub</code>, <code>file_name:IMG</code>, <code>type:image</code>, <code>gps:true</code>, <code>tag:urlaub</code>, <code>person:"Marie Curie"</code> und <code>face:Marie</code></li>
@@ -832,8 +832,10 @@
 <p>Zusätzlich liefert der Endpunkt Metadaten als Response-Header: <code>X-BearStack-Photo-Title</code>, <code>X-BearStack-Photo-Path</code>, <code>X-BearStack-Photo-Folder-Path</code>, <code>X-BearStack-Photo-Folder-URL</code>, <code>X-BearStack-Photo-Folder-Title</code> sowie <code>Link: &lt;https://.../photos?...&gt;; rel="up"</code> als standardisierter Parent-Link.</p>
 <h2 id="gesichter-und-xmp">Gesichter und XMP<a class="headerlink" href="#gesichter-und-xmp" title="Permanent link">&para;</a></h2>
 <p>Gesichtsdaten werden aus eingebettetem JPEG-XMP sowie XMP-Sidecars gelesen: <code>photo.jpg.xmp</code>, <code>photo.jpg.XMP</code>, <code>photo.xmp</code> und <code>photo.XMP</code>. BearStack speichert Namen und normalisierte Gesichtsboxen im Fotoindex und liefert sie in der Foto-JSON-API aus. Sie bleiben eigene Metadaten: Gesichtsnamen werden nicht automatisch zu Foto-Tags, erscheinen nicht in Tag-Listen und sind gezielt über <code>person:</code> oder <code>face:</code> suchbar.</p>
+<p>In der Vollansicht zeigt die Info-Seitenleiste den vollständigen Aufnahmezeitpunkt mit Datum und Uhrzeit an.</p>
 <h2 id="index-und-worker">Index und Worker<a class="headerlink" href="#index-und-worker" title="Permanent link">&para;</a></h2>
 <p>Unter <code>Einstellungen -&gt; Fotos</code> kann die Foto-Track-Auflösung der Karte in sinnvollen Stufen von 500 m bis 10 km eingestellt werden. Sie legt fest, wie nah GPS-Fotos liegen müssen, um im fotobasierten Karten-Track zu einem Trackpunkt zusammengefasst zu werden.</p>
+<p>Die Kartenansicht passt ihre Höhe an das Browserfenster an und nutzt den zwischen Navigation, Filtern und Footer verfügbaren Bereich vollständig aus. Auf kleinen oder sehr kurzen Fenstern bleibt eine bedienbare Mindesthöhe erhalten.</p>
 <p>Dort kann auch ein Index-Worker aktiviert werden. Er crawlt den Foto-Root ordnerweise im Hintergrund, überspringt unveränderte Ordner anhand ihres letzten Scan-Zeitpunkts und entfernt nicht mehr vorhandene Foto-, Ordner- und Blogeinträge ordnerlokal aus dem Index. Standardmäßig ist er deaktiviert; bei Aktivierung läuft er alle 60 Minuten mit niedriger I/O-Priorität, falls vom System unterstützt, und 250 ms Pause pro gescanntem Ordner.</p>
 <p>Der separate Thumbnail-Worker ist ebenfalls standardmäßig deaktiviert. Bei Aktivierung läuft er alle 15 Minuten, erzeugt standardmäßig bis zu 15 fehlende Thumbnails pro Lauf und nutzt standardmäßig eine Thumbnail-Parallelität von 1.</p>
 <h2 id="foto-ordner">Foto-Ordner<a class="headerlink" href="#foto-ordner" title="Permanent link">&para;</a></h2>
@@ -924,7 +926,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.23.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.23.2 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

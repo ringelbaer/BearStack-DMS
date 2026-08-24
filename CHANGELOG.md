@@ -2,6 +2,18 @@
 
 Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
+## 0.23.2 - 2026-08-24
+
+### Behoben
+
+- Die Foto-Kartenansicht nutzt auf hohen Browserfenstern den verfügbaren Bereich bis zum Footer aus, statt ihre Höhe bei 640 px zu begrenzen.
+
+## 0.23.1 - 2026-08-24
+
+### Behoben
+
+- Die Info-Seitenleiste der Foto-Vollansicht zeigt neben dem Aufnahmedatum wieder die Aufnahmezeit an.
+
 ## 0.23.0 - 2026-08-09
 
 ### Hinzugefügt

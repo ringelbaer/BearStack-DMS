@@ -108,7 +108,7 @@
   </div>
 </section>
 
-<div class="photo-module" data-photo-module data-photo-mode="view">
+<div class="photo-module{{if .PhotoFilter.MapView}} photo-map-module{{end}}" data-photo-module data-photo-mode="view">
 {{if $filterActive}}
 <div class="photo-filter-chips" aria-label="Aktive Fotofilter">
   {{if $searchActive}}<span class="photo-filter-chip"><span>Suche</span><strong>{{.PhotoFilter.Query}}</strong></span>{{end}}
@@ -399,7 +399,7 @@
       </section>
       <dl>
         <dt>Datei</dt><dd data-photo-info-name>-</dd>
-        <dt>Datum</dt><dd data-photo-info-date>-</dd>
+        <dt>Aufgenommen</dt><dd data-photo-info-date>-</dd>
         <dt>Kamera</dt><dd data-photo-info-camera>-</dd>
         <dt>Objektiv</dt><dd data-photo-info-lens>-</dd>
         <dt>Bewertung</dt><dd data-photo-info-rating>-</dd>

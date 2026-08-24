@@ -1,1 +1,2 @@
-zensical==0.0.44
+zensical==0.0.46
+pygments==2.20.0

@@ -337,6 +337,23 @@ func TestPhotoFrameMediaAPIResponseUsesCleanTitle(t *testing.T) {
 	}
 }
 
+func TestPhotoMediaAPIResponseIncludesCaptureTime(t *testing.T) {
+	capturedAt := time.Date(2026, time.May, 18, 14, 37, 0, 0, time.Local)
+	response := photoMediaAPIResponseFrom(PhotoMediaView{Media: photos.Media{
+		Name:       "photo.jpg",
+		Path:       "photo.jpg",
+		Type:       photos.MediaTypeImage,
+		CapturedAt: &capturedAt,
+	}})
+
+	if response.Date != "18.05.2026" {
+		t.Fatalf("photo date = %q, want 18.05.2026", response.Date)
+	}
+	if response.DateTime != "18.05.2026 14:37" {
+		t.Fatalf("photo date time = %q, want 18.05.2026 14:37", response.DateTime)
+	}
+}
+
 func TestTemplatesHideReadOnlyActions(t *testing.T) {
 	templates, err := parseTemplates()
 	if err != nil {
@@ -1482,6 +1499,11 @@ func TestPhotoMapOnlyAvailableFromSecondFolderLevel(t *testing.T) {
 	secondLevelMapBody := render("/photos?path=album%2Ftrip&view=map")
 	if !strings.Contains(secondLevelMapBody, `class="photo-map-panel" data-photo-map`) {
 		t.Fatalf("second-level map request should render map: %s", secondLevelMapBody)
+	}
+	for _, want := range []string{`class="photo-map-body"`, `photo-map-page`, `class="photo-module photo-map-module"`} {
+		if !strings.Contains(secondLevelMapBody, want) {
+			t.Fatalf("second-level map request missing viewport layout class %q: %s", want, secondLevelMapBody)
+		}
 	}
 	if !strings.Contains(secondLevelMapBody, `href="/photos?path=album%2Ftrip">Galerie</a>`) {
 		t.Fatalf("second-level map request should offer gallery action: %s", secondLevelMapBody)
