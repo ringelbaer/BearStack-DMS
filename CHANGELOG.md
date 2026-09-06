@@ -2,6 +2,13 @@
 
 Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
+## 0.23.3 - 2026-09-06
+
+### Geändert
+
+- Foto-Ordnerthumbnails zeigen Bilder an den Positionen 20 %, 40 %, 60 % und 80 % in absteigender Datumsreihenfolge. Kleine Ordner zeigen jedes Bild höchstens einmal; Ordner ohne Bilder behalten Medienvorschauen.
+- Bestehende Ordner-Vorschauzuordnungen werden automatisch ersetzt. Die Auswahl berücksichtigt die sichtbaren Bilder einschließlich Unterordnern und wird für Ansichten mit und ohne Admin-only-Inhalte getrennt zwischengespeichert.
+
 ## 0.23.2 - 2026-08-24
 
 ### Behoben

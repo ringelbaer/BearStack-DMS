@@ -304,7 +304,7 @@ func (l *Library) directFolderSummary(ctx context.Context, rel, abs string, incl
 			seen++
 			if limit > 0 && seen > limit {
 				result.Approximate = true
-				result.Previews = selectFolderPreviewMedia(rel, previewCandidates, folderPreviewSize)
+				result.Previews = selectFolderPreviewMedia(previewCandidates, folderPreviewSize)
 				return result, nil
 			}
 			name := entry.Name()
@@ -328,7 +328,7 @@ func (l *Library) directFolderSummary(ctx context.Context, rel, abs string, incl
 			}
 		}
 		if errors.Is(err, io.EOF) {
-			result.Previews = selectFolderPreviewMedia(rel, previewCandidates, folderPreviewSize)
+			result.Previews = selectFolderPreviewMedia(previewCandidates, folderPreviewSize)
 			return result, nil
 		}
 		if err != nil {

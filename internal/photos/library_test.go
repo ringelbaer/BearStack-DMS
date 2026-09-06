@@ -792,25 +792,23 @@ func TestOpenIndexDBMigratesIndexCountAndOrderColumns(t *testing.T) {
 	}
 }
 
-func TestLibraryFolderPreviewsPreferDiverseRatedSubfolders(t *testing.T) {
+func TestLibraryFolderPreviewsSampleAcrossSubfolders(t *testing.T) {
 	root := t.TempDir()
-	for _, item := range []struct {
-		path   string
-		rating float64
-		color  color.RGBA
-	}{
-		{"album/a/best-a.jpg", 5, color.RGBA{R: 220, A: 255}},
-		{"album/a/second-a.jpg", 4, color.RGBA{R: 180, A: 255}},
-		{"album/b/best-b.jpg", 3, color.RGBA{G: 220, A: 255}},
-		{"album/c/best-c.jpg", 2, color.RGBA{B: 220, A: 255}},
-		{"album/d/best-d.jpg", 1, color.RGBA{R: 120, G: 120, A: 255}},
-	} {
-		abs := filepath.Join(root, filepath.FromSlash(item.path))
+	for i := 1; i <= 10; i++ {
+		group := "a"
+		if i > 8 {
+			group = "b"
+		}
+		abs := filepath.Join(root, "album", group, fmt.Sprintf("photo-%02d.jpg", i))
 		if err := os.MkdirAll(filepath.Dir(abs), 0o750); err != nil {
 			t.Fatal(err)
 		}
-		writeJPEG(t, abs, item.color)
-		writeXMPRating(t, abs, item.rating)
+		writeJPEG(t, abs, color.RGBA{R: 220, A: 255})
+		writeXMPRating(t, abs, float64(i%6))
+		mod := time.Date(2025, 1, 20, 12, 0, 0, 0, time.UTC).Add(-time.Duration(i) * time.Hour)
+		if err := os.Chtimes(abs, mod, mod); err != nil {
+			t.Fatal(err)
+		}
 	}
 	lib, err := New(root, filepath.Join(t.TempDir(), "cache"), filepath.Join(t.TempDir(), "photos.db"), 50)
 	if err != nil {
@@ -818,7 +816,7 @@ func TestLibraryFolderPreviewsPreferDiverseRatedSubfolders(t *testing.T) {
 	}
 	defer lib.Close()
 
-	want := []string{"album/a/best-a.jpg", "album/b/best-b.jpg", "album/c/best-c.jpg", "album/d/best-d.jpg"}
+	want := []string{"album/a/photo-02.jpg", "album/a/photo-04.jpg", "album/a/photo-06.jpg", "album/a/photo-08.jpg"}
 	assertFolderPreviewPaths(t, lib, "filesystem-single", ListOptions{FullFilesystem: true, FolderPreviewSize: 1}, want[:1])
 
 	lib, err = New(root, filepath.Join(t.TempDir(), "cache"), filepath.Join(t.TempDir(), "photos.db"), 50)
@@ -841,8 +839,8 @@ func TestLibraryFolderPreviewsPreferDiverseRatedSubfolders(t *testing.T) {
 	if err := lib.index.db.QueryRow(`SELECT COUNT(*) FROM folder_preview_index WHERE folder_path = ?`, "album").Scan(&persisted); err != nil {
 		t.Fatal(err)
 	}
-	if persisted != len(want) {
-		t.Fatalf("persisted previews = %d, want %d", persisted, len(want))
+	if persisted != 2*len(want) {
+		t.Fatalf("persisted previews = %d, want %d (public and admin)", persisted, 2*len(want))
 	}
 	assertFolderPreviewPaths(t, lib, "index", ListOptions{}, want)
 	if _, err := lib.index.db.Exec(`UPDATE media_index SET keywords = '["keyword"]', tags = '["tag"]', faces = '[{"Name":"Ada","X":0.1,"Y":0.2,"Width":0.3,"Height":0.4}]' WHERE path = ?`, want[0]); err != nil {

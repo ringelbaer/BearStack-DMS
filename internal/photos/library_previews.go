@@ -55,7 +55,7 @@ func (l *Library) populateFolderPreviews(ctx context.Context, folders []Folder, 
 			finishMissing(ListTraceInt("folders_with_preview", len(previews)), ListTraceInt("preview_items", previewMapItemCount(previews)))
 			indexPreviews = previews
 			finishSave := StartListTraceStep(ctx, "photos.previews.cache_save", ListTraceInt("folders", len(missingPaths)))
-			_ = l.saveFolderPreviewIndexBatch(ctx, missingPaths, previews)
+			_ = l.saveFolderPreviewIndexBatch(ctx, missingPaths, previews, includeAdminOnly)
 			finishSave()
 		}
 	}
@@ -157,144 +157,70 @@ func (l *Library) indexFolderPreviewMediaBatch(ctx context.Context, folders []Fo
 }
 
 func (l *Library) indexDirectFolderPreviewMediaBatch(ctx context.Context, folders []Folder, limit int, includeAdminOnly bool) (map[string][]Media, error) {
-	previews := make(map[string][]Media, len(folders))
-	if limit <= 0 || len(folders) == 0 {
-		return previews, nil
-	}
-	for start := 0; start < len(folders); start += folderPreviewIndexBatchSize {
-		end := start + folderPreviewIndexBatchSize
-		if end > len(folders) {
-			end = len(folders)
-		}
-		values := make([]string, 0, end-start)
-		args := make([]any, 0, end-start+1)
-		for _, folder := range folders[start:end] {
-			values = append(values, "(?)")
-			args = append(args, folder.Path)
-		}
-		args = append(args, limit)
-		adminFilter := ""
-		if !includeAdminOnly {
-			adminFilter = " AND mi.admin_only = 0"
-		}
-		rows, err := l.index.db.QueryContext(ctx, `
-			WITH requested(path) AS (
-				VALUES `+strings.Join(values, ",")+`
-			),
-			ranked AS (
-				SELECT requested.path AS folder_path, `+mediaIndexColumnsWithMetadata(`mi`, false)+`,
-					ROW_NUMBER() OVER (
-						PARTITION BY requested.path
-						ORDER BY CASE WHEN mi.type = 'image' THEN 0 ELSE 1 END,
-							COALESCE(mi.rating, 0) DESC, mi.captured_at DESC, mi.mod_time_unix_nano DESC, mi.path DESC
-					) AS preview_rank
-				FROM requested
-				JOIN media_index mi ON mi.directory = requested.path`+adminFilter+`
-			)
-			SELECT folder_path, `+mediaIndexColumnsWithMetadata(``, false)+`
-			FROM ranked
-			WHERE preview_rank <= ?
-			ORDER BY folder_path ASC, preview_rank ASC`, args...)
-		if err != nil {
-			return nil, err
-		}
-		for rows.Next() {
-			var folderPath string
-			media, err := scanIndexedMediaWithPrefixAndMetadata(rows, &folderPath, false)
-			if err != nil {
-				_ = rows.Close()
-				return nil, err
-			}
-			previews[folderPath] = append(previews[folderPath], media)
-		}
-		if err := rows.Err(); err != nil {
-			_ = rows.Close()
-			return nil, err
-		}
-		if err := rows.Close(); err != nil {
-			return nil, err
-		}
-	}
-	return previews, nil
+	return l.indexFolderPreviewSamples(ctx, folders, limit, includeAdminOnly, false)
 }
 
 func (l *Library) indexRecursiveFolderPreviewMediaBatch(ctx context.Context, folders []Folder, limit int, includeAdminOnly bool) (map[string][]Media, error) {
+	return l.indexFolderPreviewSamples(ctx, folders, limit, includeAdminOnly, true)
+}
+
+func (l *Library) indexFolderPreviewSamples(ctx context.Context, folders []Folder, limit int, includeAdminOnly, recursive bool) (map[string][]Media, error) {
 	previews := make(map[string][]Media, len(folders))
 	if limit <= 0 || len(folders) == 0 {
 		return previews, nil
 	}
+	limit = NormalizeFolderPreviewCount(limit)
 	for start := 0; start < len(folders); start += folderPreviewIndexBatchSize {
-		end := start + folderPreviewIndexBatchSize
-		if end > len(folders) {
-			end = len(folders)
-		}
+		end := min(start+folderPreviewIndexBatchSize, len(folders))
 		values := make([]string, 0, end-start)
-		args := make([]any, 0, (end-start)*3+2)
+		args := make([]any, 0, (end-start)*3)
 		for _, folder := range folders[start:end] {
-			rel := folder.Path
-			prefixStart, prefixEnd := "", string(rune(0x10ffff))
-			if rel != "" {
-				prefixStart, prefixEnd = prefixRange(rel + "/")
-			}
+			prefixStart, prefixEnd := prefixRange(folder.Path + "/")
 			values = append(values, "(?, ?, ?)")
-			args = append(args, rel, prefixStart, prefixEnd)
+			args = append(args, folder.Path, prefixStart, prefixEnd)
 		}
-		args = append(args, limit, limit)
-		adminFilter := ""
+		join := "mi.directory = requested.path"
+		if recursive {
+			join = "(requested.path = '' OR mi.directory = requested.path OR (mi.directory >= requested.prefix_start AND mi.directory < requested.prefix_end))"
+		}
 		if !includeAdminOnly {
-			adminFilter = " AND mi.admin_only = 0"
+			join += " AND mi.admin_only = 0"
 		}
+		// Rank only paths and sort keys; load presentation fields for the four
+		// selected rows afterwards, keeping large folder scans lightweight.
 		rows, err := l.index.db.QueryContext(ctx, `
 			WITH requested(path, prefix_start, prefix_end) AS (
 				VALUES `+strings.Join(values, ",")+`
 			),
-			candidates AS (
-				SELECT requested.path AS folder_path, `+mediaIndexColumnsWithMetadata(`mi`, false)+`,
-					CASE
-						WHEN requested.path = '' THEN
-							CASE
-								WHEN mi.directory = '' THEN ''
-								WHEN instr(mi.directory, '/') = 0 THEN mi.directory
-								ELSE substr(mi.directory, 1, instr(mi.directory, '/') - 1)
-							END
-						WHEN mi.directory = requested.path THEN ''
-						ELSE
-							CASE
-								WHEN instr(substr(mi.directory, length(requested.path) + 2), '/') = 0 THEN substr(mi.directory, length(requested.path) + 2)
-								ELSE substr(substr(mi.directory, length(requested.path) + 2), 1, instr(substr(mi.directory, length(requested.path) + 2), '/') - 1)
-							END
-					END AS preview_group
+			ranked AS (
+				SELECT requested.path AS folder_path, mi.path,
+					ROW_NUMBER() OVER (
+						PARTITION BY requested.path
+						ORDER BY CASE WHEN mi.type = 'image' THEN 0 ELSE 1 END,
+							mi.captured_at DESC, mi.mod_time_unix_nano DESC, mi.path DESC
+					) AS preview_rank,
+					COUNT(*) OVER (PARTITION BY requested.path) AS media_count,
+					SUM(CASE WHEN mi.type = 'image' THEN 1 ELSE 0 END)
+						OVER (PARTITION BY requested.path) AS image_count
 				FROM requested
-				JOIN media_index mi ON (
-					requested.path = ''
-					OR mi.directory = requested.path
-					OR (mi.directory >= requested.prefix_start AND mi.directory < requested.prefix_end)
-				)`+adminFilter+`
+				JOIN media_index mi ON `+join+`
 			),
-			source_ranked AS (
-				SELECT *,
-					ROW_NUMBER() OVER (
-						PARTITION BY folder_path, preview_group
-						ORDER BY CASE WHEN type = 'image' THEN 0 ELSE 1 END,
-							COALESCE(rating, 0) DESC, captured_at DESC, mod_time_unix_nano DESC, path DESC
-					) AS source_rank
-				FROM candidates
-			),
-			preview_ranked AS (
-				SELECT *,
-					ROW_NUMBER() OVER (
-						PARTITION BY folder_path
-						ORDER BY source_rank ASC,
-							CASE WHEN type = 'image' THEN 0 ELSE 1 END,
-							COALESCE(rating, 0) DESC, captured_at DESC, mod_time_unix_nano DESC, path DESC
-					) AS preview_rank
-				FROM source_ranked
-				WHERE source_rank <= ?
+			counted AS (
+				SELECT *, CASE WHEN image_count > 0 THEN image_count ELSE media_count END AS preview_count
+				FROM ranked
 			)
-			SELECT folder_path, `+mediaIndexColumnsWithMetadata(``, false)+`
-			FROM preview_ranked
-			WHERE preview_rank <= ?
-			ORDER BY folder_path ASC, preview_rank ASC`, args...)
+			SELECT sampled.folder_path, `+mediaIndexColumnsWithMetadata(`mi`, false)+`
+			FROM counted sampled
+			JOIN media_index mi ON mi.path = sampled.path
+			WHERE sampled.preview_rank <= sampled.preview_count AND (
+				sampled.preview_count <= 4 OR sampled.preview_rank IN (
+					(sampled.preview_count + 4) / 5,
+					(sampled.preview_count * 2 + 4) / 5,
+					(sampled.preview_count * 3 + 4) / 5,
+					(sampled.preview_count * 4 + 4) / 5
+				)
+			)
+			ORDER BY sampled.folder_path ASC, sampled.preview_rank ASC`, args...)
 		if err != nil {
 			return nil, err
 		}
@@ -305,7 +231,9 @@ func (l *Library) indexRecursiveFolderPreviewMediaBatch(ctx context.Context, fol
 				_ = rows.Close()
 				return nil, err
 			}
-			previews[folderPath] = append(previews[folderPath], media)
+			if len(previews[folderPath]) < limit {
+				previews[folderPath] = append(previews[folderPath], media)
+			}
 		}
 		if err := rows.Err(); err != nil {
 			_ = rows.Close()
@@ -345,7 +273,7 @@ func (l *Library) filesystemDirectFolderPreviewMedia(ctx context.Context, rel st
 			}
 			seen++
 			if seen > fastFolderSummaryEntryLimit {
-				return selectFolderPreviewMedia(rel, candidates, limit), nil
+				return selectFolderPreviewMedia(candidates, limit), nil
 			}
 			if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || ignoredName(entry.Name()) {
 				continue
@@ -361,7 +289,7 @@ func (l *Library) filesystemDirectFolderPreviewMedia(ctx context.Context, rel st
 			candidates = append(candidates, l.quickMediaFromPathInfo(joinPath(rel, entry.Name()), info, kind, adminOnly))
 		}
 		if errors.Is(err, io.EOF) {
-			return selectFolderPreviewMedia(rel, candidates, limit), nil
+			return selectFolderPreviewMedia(candidates, limit), nil
 		}
 		if err != nil {
 			return nil, err
@@ -399,64 +327,43 @@ func (l *Library) filesystemFolderPreviewMedia(ctx context.Context, rel string, 
 	if err != nil {
 		return nil, err
 	}
-	return selectFolderPreviewMedia(rel, candidates, limit), nil
+	return selectFolderPreviewMedia(candidates, limit), nil
 }
 
-func selectFolderPreviewMedia(rel string, candidates []Media, limit int) []Media {
+// Folder previews use the nearest rank at 20%, 40%, 60% and 80% in
+// descending date order. Small folders show each image once. A smaller UI
+// limit takes the first samples, so filesystem and cached previews agree.
+func selectFolderPreviewMedia(candidates []Media, limit int) []Media {
 	if limit <= 0 || len(candidates) == 0 {
 		return nil
 	}
 	candidates = append([]Media(nil), candidates...)
-	sort.SliceStable(candidates, func(i, j int) bool {
+	sort.Slice(candidates, func(i, j int) bool {
 		return folderPreviewMediaLess(candidates[i], candidates[j])
 	})
-	selected := make([]Media, 0, min(limit, len(candidates)))
-	selectedPaths := make(map[string]struct{}, limit)
-	usedGroups := map[string]struct{}{}
-	for _, media := range candidates {
-		group := folderPreviewGroup(rel, media.Path)
-		if _, ok := usedGroups[group]; ok {
-			continue
-		}
-		selected = append(selected, media)
-		selectedPaths[media.Path] = struct{}{}
-		usedGroups[group] = struct{}{}
-		if len(selected) >= limit {
-			return selected
-		}
+	imageCount := 0
+	for imageCount < len(candidates) && candidates[imageCount].Type == MediaTypeImage {
+		imageCount++
 	}
-	for _, media := range candidates {
-		if _, ok := selectedPaths[media.Path]; ok {
-			continue
-		}
-		selected = append(selected, media)
-		if len(selected) >= limit {
-			return selected
-		}
+	// Keep video/audio previews for folders without images.
+	if imageCount > 0 {
+		candidates = candidates[:imageCount]
+	}
+	limit = NormalizeFolderPreviewCount(limit)
+	if len(candidates) <= MaxFolderPreviewCount {
+		return candidates[:min(limit, len(candidates))]
+	}
+	selected := make([]Media, 0, limit)
+	for slot := 1; slot <= limit; slot++ {
+		index := (len(candidates)*slot+4)/5 - 1
+		selected = append(selected, candidates[index])
 	}
 	return selected
 }
 
 func folderPreviewMediaLess(left, right Media) bool {
-	leftType, rightType := 1, 1
-	if left.Type == MediaTypeImage {
-		leftType = 0
-	}
-	if right.Type == MediaTypeImage {
-		rightType = 0
-	}
-	if leftType != rightType {
-		return leftType < rightType
-	}
-	leftRating, rightRating := 0.0, 0.0
-	if left.Rating != nil {
-		leftRating = *left.Rating
-	}
-	if right.Rating != nil {
-		rightRating = *right.Rating
-	}
-	if leftRating != rightRating {
-		return leftRating > rightRating
+	if (left.Type == MediaTypeImage) != (right.Type == MediaTypeImage) {
+		return left.Type == MediaTypeImage
 	}
 	leftDate, rightDate := mediaDate(left), mediaDate(right)
 	if !leftDate.Equal(rightDate) {
@@ -466,30 +373,4 @@ func folderPreviewMediaLess(left, right Media) bool {
 		return left.ModTime.After(right.ModTime)
 	}
 	return left.Path > right.Path
-}
-
-func folderPreviewGroup(rel, mediaPath string) string {
-	directory := parentPath(mediaPath)
-	if rel != "" {
-		if directory == rel {
-			return ""
-		}
-		prefix := rel + "/"
-		if strings.HasPrefix(directory, prefix) {
-			return firstPathSegment(strings.TrimPrefix(directory, prefix))
-		}
-		return directory
-	}
-	return firstPathSegment(directory)
-}
-
-func firstPathSegment(value string) string {
-	value = strings.Trim(value, "/")
-	if value == "" {
-		return ""
-	}
-	if index := strings.Index(value, "/"); index >= 0 {
-		return value[:index]
-	}
-	return value
 }

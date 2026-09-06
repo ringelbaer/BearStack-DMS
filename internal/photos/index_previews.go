@@ -9,12 +9,26 @@ import (
 	"bearstack/internal/sqlutil"
 )
 
+// Reserve rank ranges for the selection algorithm and visibility scope. Legacy
+// previews used ranks 0..3; they are ignored and replaced lazily without
+// rebuilding the photo index or changing its schema. Each scope stores at most
+// four paths so hidden images cannot skew the public percentage positions.
+const folderPreviewCacheRankBase = 2 * MaxFolderPreviewCount
+
+func folderPreviewCacheRankStart(includeAdminOnly bool) int {
+	if includeAdminOnly {
+		return folderPreviewCacheRankBase + MaxFolderPreviewCount
+	}
+	return folderPreviewCacheRankBase
+}
+
 func (l *Library) loadFolderPreviewIndexBatch(ctx context.Context, folders []Folder, limit int, includeAdminOnly bool) (map[string][]Media, error) {
 	previews := make(map[string][]Media, len(folders))
 	if l == nil || !l.index.available() || len(folders) == 0 {
 		return previews, nil
 	}
 	limit = NormalizeFolderPreviewCount(limit)
+	rankStart := folderPreviewCacheRankStart(includeAdminOnly)
 	for start := 0; start < len(folders); start += folderPreviewIndexBatchSize {
 		end := start + folderPreviewIndexBatchSize
 		if end > len(folders) {
@@ -24,13 +38,15 @@ func (l *Library) loadFolderPreviewIndexBatch(ctx context.Context, folders []Fol
 		for _, folder := range folders[start:end] {
 			pathArgs = append(pathArgs, folder.Path)
 		}
-		args := make([]any, 0, len(pathArgs))
+		args := make([]any, 0, len(pathArgs)+2)
 		args = append(args, pathArgs...)
+		args = append(args, rankStart, rankStart+limit)
 		rows, err := l.index.db.QueryContext(ctx, `
 				SELECT fpi.folder_path, `+mediaIndexColumnsWithMetadata(`mi`, false)+`
 				FROM folder_preview_index fpi
 				CROSS JOIN media_index mi
 				WHERE fpi.folder_path IN (`+sqlutil.Placeholders(len(pathArgs))+`)
+					AND fpi.rank >= ? AND fpi.rank < ?
 					AND mi.path = fpi.media_path
 				ORDER BY fpi.folder_path ASC, fpi.rank ASC`, args...)
 		if err != nil {
@@ -94,12 +110,14 @@ func (l *Library) refreshFolderPreviewIndex(ctx context.Context, affected map[st
 		for _, path := range paths[start:end] {
 			folders = append(folders, Folder{Path: path, DirCount: dirCounts[path]})
 		}
-		previews, err := l.indexFolderPreviewMediaBatch(ctx, folders, folderPreviewSize, true)
-		if err != nil {
-			return err
-		}
-		if err := l.saveFolderPreviewIndexBatch(ctx, paths[start:end], previews); err != nil {
-			return err
+		for _, includeAdminOnly := range []bool{false, true} {
+			previews, err := l.indexFolderPreviewMediaBatch(ctx, folders, folderPreviewSize, includeAdminOnly)
+			if err != nil {
+				return err
+			}
+			if err := l.saveFolderPreviewIndexBatch(ctx, paths[start:end], previews, includeAdminOnly); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -130,7 +148,7 @@ func (l *Library) folderDirCounts(ctx context.Context, paths []string) (map[stri
 	return counts, rows.Err()
 }
 
-func (l *Library) saveFolderPreviewIndexBatch(ctx context.Context, paths []string, previews map[string][]Media) error {
+func (l *Library) saveFolderPreviewIndexBatch(ctx context.Context, paths []string, previews map[string][]Media, includeAdminOnly bool) error {
 	if len(paths) == 0 {
 		return nil
 	}
@@ -143,7 +161,11 @@ func (l *Library) saveFolderPreviewIndexBatch(ctx context.Context, paths []strin
 	for _, path := range paths {
 		args = append(args, path)
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM folder_preview_index WHERE folder_path IN (`+sqlutil.Placeholders(len(args))+`)`, args...); err != nil {
+	rankStart := folderPreviewCacheRankStart(includeAdminOnly)
+	args = append(args, folderPreviewCacheRankBase, rankStart, rankStart+MaxFolderPreviewCount)
+	if _, err := tx.ExecContext(ctx, `DELETE FROM folder_preview_index
+		WHERE folder_path IN (`+sqlutil.Placeholders(len(paths))+`)
+		AND (rank < ? OR (rank >= ? AND rank < ?))`, args...); err != nil {
 		return err
 	}
 	type previewRow struct {
@@ -153,11 +175,11 @@ func (l *Library) saveFolderPreviewIndexBatch(ctx context.Context, paths []strin
 	}
 	rows := make([]previewRow, 0, len(paths)*folderPreviewSize)
 	for _, path := range paths {
-		for rank, media := range previews[path] {
+		for rank, media := range limitFolderPreviewMedia(previews[path], folderPreviewSize) {
 			if media.Path == "" {
 				continue
 			}
-			rows = append(rows, previewRow{folderPath: path, rank: rank, mediaPath: media.Path})
+			rows = append(rows, previewRow{folderPath: path, rank: rankStart + rank, mediaPath: media.Path})
 		}
 	}
 	for start := 0; start < len(rows); start += searchWriteChunkSize {
