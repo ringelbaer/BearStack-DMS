@@ -13,6 +13,169 @@
     return document.querySelector("[data-photo-module]");
   }
 
+  function initPhotoScrollRestoration() {
+    var module = photoModule();
+    if (!module || module.classList.contains("photo-map-module")) return;
+    var storageKey = "bearstackPhotoNavigation:v1";
+    var historyKey = "bearstackPhotoScroll";
+    var currentURL = photoURL(window.location.href);
+    var positions = [];
+    var pendingURL = "";
+    var departure = null;
+    var interacted = false;
+
+    function photoURL(value) {
+      try {
+        var url = new URL(value, window.location.href);
+        if (url.origin !== window.location.origin || url.pathname !== "/photos" || url.hash || url.searchParams.get("view") === "map") return null;
+        url.searchParams.sort();
+        return url;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    if (!currentURL) return;
+    var currentPath = currentURL.searchParams.get("path") || "";
+    var currentAddress = currentURL.pathname + currentURL.search;
+    var historyEntry = window.history.state && window.history.state[historyKey];
+    if (!historyEntry || historyEntry.url !== currentAddress || typeof historyEntry.id !== "string") {
+      historyEntry = { url: currentAddress, id: Date.now().toString(36) + Math.random().toString(36).slice(2) };
+      try {
+        var state = Object.assign({}, window.history.state || {});
+        state[historyKey] = historyEntry;
+        window.history.replaceState(state, "");
+      } catch (_) {}
+    }
+
+    function validPosition(position) {
+      return position && typeof position.id === "string" && typeof position.url === "string" && photoURL(position.url) &&
+        Number.isFinite(position.x) && Number.isFinite(position.y) && position.x >= 0 && position.y >= 0;
+    }
+
+    function readNavigation() {
+      try {
+        var stored = JSON.parse(window.sessionStorage.getItem(storageKey) || "null");
+        if (stored && Array.isArray(stored.positions)) {
+          return {
+            positions: stored.positions.slice(-50).filter(validPosition),
+            pendingURL: typeof stored.pendingURL === "string" ? stored.pendingURL : ""
+          };
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    var stored = readNavigation();
+    if (stored) {
+      positions = stored.positions;
+      pendingURL = stored.pendingURL;
+    }
+
+    function persist(nextURL) {
+      try {
+        window.sessionStorage.setItem(storageKey, JSON.stringify({ positions: positions, pendingURL: nextURL || "" }));
+      } catch (_) {}
+    }
+
+    function remember(position) {
+      // A page revived from the browser cache may hold an older copy than the
+      // child pages visited since it was suspended.
+      var latest = readNavigation();
+      if (latest) positions = latest.positions;
+      positions = positions.filter(function (saved) { return saved.id !== historyEntry.id; });
+      positions.push(position);
+      positions = positions.slice(-50);
+    }
+
+    function capture(link) {
+      return {
+        id: historyEntry.id,
+        url: currentAddress,
+        x: window.scrollX,
+        y: window.scrollY,
+        anchor: link ? link.getAttribute("href") : "",
+        offset: link ? link.getBoundingClientRect().top : 0
+      };
+    }
+
+    // Restore the visited parent URL as well, retaining its sort, filters and
+    // page. The bounded tab history avoids work proportional to the photo tree.
+    document.querySelectorAll('.folder-breadcrumb[aria-label="Fotopfad"] a').forEach(function (link) {
+      var destination = photoURL(link.href);
+      if (!destination) return;
+      var path = destination.searchParams.get("path") || "";
+      if (path === currentPath) return;
+      for (var i = positions.length - 1; i >= 0; i -= 1) {
+        var savedURL = photoURL(positions[i].url);
+        if ((savedURL.searchParams.get("path") || "") === path) {
+          link.href = positions[i].url;
+          break;
+        }
+      }
+    });
+
+    document.addEventListener("click", function (event) {
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      var link = event.target.closest("a[href]");
+      if (!link || link.hasAttribute("download") || (link.target && link.target !== "_self")) return;
+      var breadcrumb = link.closest('.folder-breadcrumb[aria-label="Fotopfad"]');
+      var folder = link.matches(".photo-folder-link");
+      var destination = photoURL(link.href);
+      if (!destination || (!folder && !breadcrumb)) return;
+      departure = capture(folder ? link : null);
+      remember(departure);
+      pendingURL = breadcrumb ? destination.pathname + destination.search : "";
+      persist(pendingURL);
+    });
+
+    window.addEventListener("pagehide", function () {
+      remember(departure || capture(null));
+      persist(pendingURL);
+    });
+
+    function restore(position) {
+      if (!validPosition(position) || position.url !== currentAddress) return;
+      function apply() {
+        if (interacted) return;
+        var y = position.y;
+        if (typeof position.anchor === "string" && position.anchor && Number.isFinite(position.offset)) {
+          var link = module.querySelector('.photo-folder-link[href="' + CSS.escape(position.anchor) + '"]');
+          if (link) y = window.scrollY + link.getBoundingClientRect().top - position.offset;
+        }
+        window.scrollTo({ left: position.x, top: Math.max(0, y), behavior: "instant" });
+      }
+      // Wait for the gallery's initial layout and the browser's own history
+      // restoration. Thumbnail boxes already reserve their final dimensions.
+      window.requestAnimationFrame(function () {
+        apply();
+        window.requestAnimationFrame(apply);
+      });
+    }
+
+    var initialPosition = positions.find(function (saved) { return saved.id === historyEntry.id; });
+    if (pendingURL === currentAddress) {
+      initialPosition = positions.slice().reverse().find(function (saved) { return saved.url === currentAddress; }) || initialPosition;
+    }
+    pendingURL = "";
+    persist("");
+    restore(initialPosition);
+    window.addEventListener("pageshow", function (event) {
+      departure = null;
+      pendingURL = "";
+      if (event.persisted) {
+        interacted = false;
+        var latest = readNavigation();
+        restore(latest && latest.positions.find(function (saved) { return saved.id === historyEntry.id; }));
+      } else {
+        restore(initialPosition);
+      }
+    });
+    ["wheel", "touchstart", "pointerdown", "keydown"].forEach(function (name) {
+      window.addEventListener(name, function () { interacted = true; }, { passive: true });
+    });
+  }
+
   function isPhotoEditMode() {
     var module = photoModule();
     return module && module.dataset.photoMode === "edit";
@@ -1572,5 +1735,6 @@
     initLightbox();
     if (photoMap.init) photoMap.init();
     initPhotoFilterMenuFocus();
+    initPhotoScrollRestoration();
   });
 })();

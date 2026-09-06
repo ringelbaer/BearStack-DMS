@@ -147,6 +147,100 @@ test("photo gallery loads and starts thumbnail queue", async ({ browser }) => {
   }
 });
 
+test("photo folder breadcrumb restores scroll position and sorting", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  try {
+    await page.goto(`${fixture.baseURL}/photos?path=scroll&sort=ascending_name`);
+    const folder = page.locator('.photo-folder-link[href="/photos?path=scroll%2Ffolder-45"]');
+    await folder.evaluate((link) => link.scrollIntoView({ block: "center" }));
+    const before = await folder.boundingBox();
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(1000);
+    await folder.click();
+    await expect(page).toHaveURL(/path=scroll%2Ffolder-45/);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    await page.locator('.folder-breadcrumb-link[href="/photos?path=scroll&sort=ascending_name"]').click();
+    await expect(page).toHaveURL(/path=scroll&sort=ascending_name$/);
+    await expect.poll(async () => Math.abs((await folder.boundingBox()).y - before.y)).toBeLessThanOrEqual(2);
+    await expect(page.locator("[data-photo-sort-current]")).toHaveText("Name aufsteigend");
+
+    // Changed sorting is a new view and must not reuse the saved position.
+    await page.goto(`${fixture.baseURL}/photos?path=scroll&sort=descending_name`);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("photo folder history restores independent positions through nested navigation", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  try {
+    await page.goto(`${fixture.baseURL}/photos?path=scroll&sort=ascending_name`);
+    const folder = page.locator('.photo-folder-link[href="/photos?path=scroll%2Ffolder-45"]');
+    await folder.evaluate((link) => link.scrollIntoView({ block: "center" }));
+    const outerY = await page.evaluate(() => window.scrollY);
+    await folder.click();
+    const child = page.locator('.photo-folder-link[href="/photos?path=scroll%2Ffolder-45%2Fchild-40"]');
+    await child.evaluate((link) => link.scrollIntoView({ block: "center" }));
+    const innerY = await page.evaluate(() => window.scrollY);
+    expect(innerY).toBeGreaterThan(1000);
+    await child.click();
+    await page.waitForURL(/path=scroll%2Ffolder-45%2Fchild-40$/);
+    await page.goBack();
+    await page.waitForURL(/path=scroll%2Ffolder-45$/);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(innerY, 0);
+    await page.goBack();
+    await page.waitForURL(/path=scroll&sort=ascending_name$/);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(outerY, 0);
+    await page.goForward();
+    await page.waitForURL(/path=scroll%2Ffolder-45$/);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(innerY, 0);
+
+    await page.reload();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(innerY, 0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("photo folder return keeps the folder visible after viewport changes", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  try {
+    await page.goto(`${fixture.baseURL}/photos?path=scroll&sort=ascending_name`);
+    const folder = page.locator('.photo-folder-link[href="/photos?path=scroll%2Ffolder-45"]');
+    await folder.evaluate((link) => link.scrollIntoView({ block: "center" }));
+    const before = await folder.boundingBox();
+    await folder.click();
+    await page.setViewportSize({ width: 390, height: 720 });
+    await page.locator('.folder-breadcrumb-link[href="/photos?path=scroll&sort=ascending_name"]').click();
+    await expect.poll(async () => Math.abs((await folder.boundingBox()).y - before.y)).toBeLessThanOrEqual(2);
+  } finally {
+    await context.close();
+  }
+});
+
+test("photo folder browser back works when session storage is unavailable", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  try {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "sessionStorage", { get() { throw new DOMException("Blocked", "SecurityError"); } });
+    });
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`${fixture.baseURL}/photos?path=scroll&sort=ascending_name`);
+    const folder = page.locator('.photo-folder-link[href="/photos?path=scroll%2Ffolder-45"]');
+    await folder.evaluate((link) => link.scrollIntoView({ block: "center" }));
+    const y = await page.evaluate(() => window.scrollY);
+    await folder.click();
+    await page.waitForURL(/path=scroll%2Ffolder-45$/);
+    await page.goBack();
+    await page.waitForURL(/path=scroll&sort=ascending_name$/);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(y, 0);
+    expect(errors).toEqual([]);
+  } finally {
+    await context.close();
+  }
+});
+
 test("photo filter menu applies search and shows compact chips", async ({ browser }) => {
   const { context, page } = await editorPage(browser);
   try {
@@ -769,6 +863,14 @@ async function createPhotoFixture() {
   await mkdir(dataDir, { recursive: true });
   await mkdir(photoDataDir, { recursive: true });
   await mkdir(toolsDir, { recursive: true });
+  for (let i = 0; i < 60; i += 1) {
+    const folder = path.join(photosRoot, "scroll", `folder-${String(i).padStart(2, "0")}`);
+    const child = path.join(photosRoot, "scroll", "folder-45", `child-${String(i).padStart(2, "0")}`);
+    await mkdir(folder, { recursive: true });
+    await mkdir(child, { recursive: true });
+    await writeFile(path.join(folder, "photo.png"), tinyPNG);
+    await writeFile(path.join(child, "photo.png"), tinyPNG);
+  }
 
   await writeFile(path.join(photosRoot, ".order_ascending_name.pg2conf"), "");
   await writeFile(path.join(photosRoot, "public-a.png"), tinyPNG);

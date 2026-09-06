@@ -2,6 +2,12 @@
 
 Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
+## 0.23.4 - 2026-09-06
+
+### Behoben
+
+- Beim Zurückkehren aus einem Foto-Unterordner wird die vorherige Scrollposition wiederhergestellt, sowohl über den Fotopfad als auch über Browser-Zurück/Vorwärts. Pfadlinks übernehmen die zuvor besuchte Sortierung, Filter und Seite; bei geänderter Fensterbreite bleibt der betretene Ordner an seiner bisherigen Bildschirmposition.
+
 ## 0.23.3 - 2026-09-06
 
 ### Geändert
