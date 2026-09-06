@@ -93,4 +93,7 @@ func (w BackgroundWorkers) Start(ctx context.Context) {
 	start(w.runTrashRetention)
 	start(w.runPhotoIndexWorker)
 	start(w.runPhotoThumbnailWorker)
+	if w.server != nil {
+		start(w.server.RunFaceWorker)
+	}
 }

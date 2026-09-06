@@ -30,7 +30,11 @@ func (l *Library) MediaContext(ctx context.Context, rel string) (Media, error) {
 	if !ok || !isMediaKind(kind) {
 		return Media{}, os.ErrNotExist
 	}
-	return l.mediaFromPath(ctx, clean)
+	media, err := l.mediaFromPath(ctx, clean)
+	if err == nil && l.index.available() && !media.AdminOnly {
+		media.AutomaticFaces, err = l.AutomaticFaces(ctx, clean)
+	}
+	return media, err
 }
 
 func (l *Library) mediaFromPath(ctx context.Context, rel string) (Media, error) {

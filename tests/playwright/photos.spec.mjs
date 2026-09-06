@@ -318,6 +318,48 @@ test("photo gallery defaults to ascending date groups", async ({ browser }) => {
   }
 });
 
+test("photo lightbox stops at both ends and finishes the slideshow", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  try {
+    await page.goto(`${fixture.baseURL}/photos?sort=ascending_name`);
+    const cards = page.locator("[data-photo-item] .photo-card-button");
+    const count = await cards.count();
+    expect(count).toBeGreaterThan(1);
+    await cards.first().click();
+    const lightbox = page.locator("[data-photo-lightbox]");
+    const title = lightbox.locator("[data-photo-title]");
+    const prev = lightbox.locator("[data-photo-prev]");
+    const next = lightbox.locator("[data-photo-next]");
+    const slideshow = lightbox.locator("[data-photo-slideshow]");
+    const firstTitle = await title.textContent();
+    await expect(prev).toBeDisabled();
+    await expect(next).toBeEnabled();
+    await page.keyboard.press("ArrowLeft");
+    await expect(title).toHaveText(firstTitle);
+
+    for (let index = 1; index < count - 1; index += 1) {
+      await page.keyboard.press("ArrowRight");
+    }
+    await page.clock.install();
+    await slideshow.focus();
+    await slideshow.press("Enter");
+    await page.clock.fastForward(60_000);
+    await expect(next).toBeDisabled();
+    await expect(prev).toBeEnabled();
+    await expect(slideshow).toBeDisabled();
+    await expect(slideshow).toHaveText("Start");
+    const lastTitle = await title.textContent();
+    await page.keyboard.press("ArrowRight");
+    await page.clock.fastForward(60_000);
+    await expect(title).toHaveText(lastTitle);
+    await page.keyboard.press("ArrowLeft");
+    await expect(next).toBeEnabled();
+    await expect(slideshow).toBeEnabled();
+  } finally {
+    await context.close();
+  }
+});
+
 test("photo lightbox opens from gallery", async ({ browser }) => {
   const { context, page } = await editorPage(browser);
   try {
@@ -450,6 +492,55 @@ test("photo lightbox toggles fullscreen mode", async ({ browser }) => {
   }
 });
 
+test("photo info panel fits below the image on mobile and remains scrollable", async ({ browser }) => {
+  const { context, page } = await editorPage(browser, {
+    hasTouch: true,
+    isMobile: true,
+    viewport: { width: 390, height: 844 },
+  });
+  try {
+    await page.goto(`${fixture.baseURL}/photos?sort=ascending_name`);
+    await photoItem(page, "public-a.png").locator(".photo-card-button").tap();
+    const lightbox = page.locator("[data-photo-lightbox]");
+    const panel = lightbox.locator(".photo-info-panel");
+    const stage = lightbox.locator(".photo-lightbox-stage");
+    await lightbox.locator("[data-photo-info-toggle]").tap();
+
+    for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+      await page.setViewportSize(viewport);
+      await expect(panel).toBeVisible();
+      const panelBox = await panel.boundingBox();
+      const stageBox = await stage.boundingBox();
+      expect(panelBox.width).toBeCloseTo(viewport.width, 0);
+      expect(stageBox.width).toBeCloseTo(viewport.width, 0);
+      expect(panelBox.y).toBeGreaterThanOrEqual(stageBox.y + stageBox.height - 1);
+      expect(panelBox.y + panelBox.height).toBeLessThanOrEqual(viewport.height + 1);
+      expect(panelBox.height).toBeLessThanOrEqual(viewport.height * 0.34 + 1);
+      expect(stageBox.height).toBeGreaterThan(viewport.height * 0.6);
+      expect(await lightbox.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      await panel.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+      expect(await panel.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+      const closeBox = await panel.locator("[data-photo-info-close]").boundingBox();
+      expect(closeBox.y).toBeGreaterThanOrEqual(panelBox.y);
+      expect(closeBox.y + closeBox.height).toBeLessThanOrEqual(panelBox.y + panelBox.height);
+    }
+
+    await panel.locator("[data-photo-info-close]").tap();
+    await expect(panel).toBeHidden();
+    expect((await stage.boundingBox()).height).toBeCloseTo(390, 0);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await lightbox.locator("[data-photo-info-toggle]").focus();
+    await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await expect(panel).toBeVisible();
+    const panelBox = await panel.boundingBox();
+    const stageBox = await stage.boundingBox();
+    expect(panelBox.x).toBeGreaterThanOrEqual(stageBox.x + stageBox.width - 1);
+    expect(panelBox.height).toBeCloseTo(800, 0);
+  } finally {
+    await context.close();
+  }
+});
+
 test("photo lightbox controls work with touch", async ({ browser }) => {
   const { context, page } = await editorPage(browser, {
     hasTouch: true,
@@ -526,8 +617,9 @@ test("photo lightbox video supports touch controls after controls are hidden", a
     await page.touchscreen.tap(stageBox.x + stageBox.width / 2, stageBox.y + stageBox.height / 2);
     await expect.poll(async () => await lightboxHeaderOpacity(page)).toBeGreaterThan(0.9);
 
-    await lightbox.locator("[data-photo-next]").tap();
-    await expect(lightbox.locator("[data-photo-title]")).toHaveText("public-a.png");
+    await expect(lightbox.locator("[data-photo-next]")).toBeDisabled();
+    await lightbox.locator("[data-photo-prev]").tap();
+    await expect(lightbox.locator("[data-photo-title]")).not.toHaveText("public-video.mp4");
 
     await expect.poll(async () => await lightboxHeaderOpacity(page)).toBeGreaterThan(0.9);
     await lightbox.locator("[data-photo-close]").tap();
@@ -966,7 +1058,7 @@ async function startBearStack(currentFixture) {
       ...process.env,
       BEARSTACK_CONFIG: currentFixture.configPath,
       BEARSTACK_E2E_THUMBNAIL: currentFixture.thumbnailFixture,
-      GOCACHE: path.join(currentFixture.root, "go-cache"),
+      GOCACHE: process.env.GOCACHE || path.join(currentFixture.root, "go-cache"),
       PATH: `${currentFixture.toolsDir}${path.delimiter}${process.env.PATH || ""}`,
     },
     stdio: ["ignore", "pipe", "pipe"],

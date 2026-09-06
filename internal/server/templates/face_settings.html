@@ -1,0 +1,17 @@
+{{define "face_settings.html"}}
+{{template "head" .}}
+<section class="page-head"><h1>Gesichtserkennung</h1><a class="button" href="/photos/people">Personen</a></section>
+{{template "settings-tab-list" .}}
+{{if .Notice}}<div class="notice">{{.Notice}}</div>{{end}}
+<section class="card"><h2>Lokale Verarbeitung</h2><p>Gesichter werden auf deinem Server erkannt und gruppiert. Originalbilder und XMP-Dateien bleiben unverändert. Geschützte .adminonly-Ordner werden nicht analysiert.</p>
+{{if not .FaceSettings.Configured}}<p>Der lokale Erkennungsdienst ist noch nicht konfiguriert. Hinterlege Dienstadresse und Token in der Serverkonfiguration.</p>{{end}}
+<p data-face-worker-error role="alert" {{if not .FaceSettings.Error}}hidden{{end}}>{{.FaceSettings.Error}}</p>
+<p data-face-worker-state>{{if .FaceSettings.Running}}Verarbeitung läuft{{else if .FaceSettings.Settings.Enabled}}Aktiviert – wartet auf nächsten Lauf{{else}}Pausiert / ausgeschaltet{{end}}</p>
+<dl><dt>Ausstehend</dt><dd data-face-count="queued">{{.FaceSettings.Status.Queued}}</dd><dt>Verarbeitet</dt><dd data-face-count="done">{{.FaceSettings.Status.Done}}</dd><dt>Fehlgeschlagen</dt><dd data-face-count="failed">{{.FaceSettings.Status.Failed}}</dd><dt>Gesichter</dt><dd data-face-count="faces">{{.FaceSettings.Status.Faces}}</dd><dt>Personengruppen</dt><dd data-face-count="people">{{.FaceSettings.Status.People}}</dd></dl>
+{{if .FaceSettings.Status.Errors}}<details><summary>Letzte Dateifehler</summary><ul>{{range .FaceSettings.Status.Errors}}<li>{{.Path}}: {{.Error}} ({{.Attempts}} Versuche)</li>{{end}}</ul></details>{{end}}
+<form method="post" action="/settings/photos/faces" class="form-grid"><label><input type="checkbox" name="enabled" value="1" {{if .FaceSettings.Settings.Enabled}}checked{{end}}> Gesichtserkennung aktivieren</label><label>Bilder pro Lauf <input type="number" name="batch_size" min="1" max="1000" value="{{.FaceSettings.Settings.BatchSize}}"></label><label>Pause zwischen Bildern (ms) <input type="number" name="delay_millis" min="100" max="60000" value="{{.FaceSettings.Settings.DelayMillis}}"></label><label>Wartezeit zwischen Läufen (Minuten) <input type="number" name="interval_minutes" min="1" max="1440" value="{{.FaceSettings.Settings.IntervalMinutes}}"></label><button>Speichern</button></form>
+<div class="page-actions"><form method="post" action="/settings/photos/faces/pause"><button>Pausieren</button></form><form method="post" action="/settings/photos/faces/resume"><button>Fortsetzen</button></form><form method="post" action="/settings/photos/faces/retry"><button>Fehlgeschlagene wiederholen</button></form></div></section>
+<section class="card"><h2>Gesichtsdaten löschen</h2><p>Entfernt erzeugte Gesichter, Personengruppen und manuelle Korrekturen und schaltet die Verarbeitung aus. Vorhandene XMP-Gesichtsdaten bleiben erhalten.</p><form method="post" action="/settings/photos/faces/clear"><label><input type="checkbox" name="confirm" value="delete" required> Ich möchte alle erzeugten Gesichtsdaten löschen.</label><button>Gesichtsdaten löschen</button></form></section>
+<script src="{{assetURL "/static/app-face-status.js"}}" defer></script>
+{{template "foot" .}}
+{{end}}

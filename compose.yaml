@@ -16,6 +16,8 @@ services:
       BEARSTACK_AUTH_PASSWORD_HASH: ${BEARSTACK_AUTH_PASSWORD_HASH:-}
       BEARSTACK_AUTH_REALM: ${BEARSTACK_AUTH_REALM:-BearStack}
       BEARSTACK_WEBDAV_PATH: ${BEARSTACK_WEBDAV_PATH:-}
+      BEARSTACK_PHOTOS_FACE_SERVICE_URL: ${BEARSTACK_PHOTOS_FACE_SERVICE_URL:-http://faces:8091}
+      BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN: ${BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN:-}
       BEARSTACK_PHOTOS_ENABLED: ${BEARSTACK_PHOTOS_ENABLED:-false}
       BEARSTACK_PHOTOS_DIR: ${BEARSTACK_PHOTOS_DIR:-/srv/photos}
       BEARSTACK_PHOTOS_DATA_DIR: /var/lib/bearstack/photos
@@ -23,6 +25,24 @@ services:
       - bearstack-data:/var/lib/bearstack
       # Bei aktiviertem Fotomodul ein lokales Fotoverzeichnis read-only einbinden:
       # - /pfad/zu/fotos:/srv/photos:ro
+
+  faces:
+    profiles: [faces]
+    build:
+      context: .
+      dockerfile: services/faces/Dockerfile
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    cpus: 0.5
+    mem_limit: 1g
+    pids_limit: 64
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    environment:
+      BEARSTACK_FACE_SERVICE_TOKEN: ${BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN:-}
 
 volumes:
   bearstack-data:

@@ -271,6 +271,72 @@ Ordner koennen nach Ordnerstandard, Name, Datum oder zufaellig sortiert werden. 
 
 Ein Ordner mit der Datei `.adminonly` ist nur fuer Benutzer mit der Rolle `admin` zugaenglich. Admin-only-Inhalte sind auch fuer Admins standardmaessig in Galerie, Suche, Zufall, Fotoframe, Kartenansicht und Foto-Tag-Listen ausgeblendet. Admins koennen sie im Sortieren-Menue der Galerie per Schalter einblenden; die Auswahl bleibt in der aktuellen Session gespeichert. Direkte Medien- und Thumbnail-URLs bleiben weiterhin nur Admins vorbehalten.
 
+### Optionale lokale Gesichtserkennung
+
+Ab 0.24.0 kann BearStack Gesichter automatisch erkennen und ähnliche Gesichter zu
+Personen gruppieren. Die Funktion ist standardmäßig aus. Unter **Fotos → Personen**
+sehen Fotoleser die Gruppen; Foto-Verwalter (`photos.manage`) können Namen vergeben,
+Gruppen zusammenführen, ausgewählte Gesichter in andere oder neue Gruppen verschieben
+und Fehlfunde ignorieren. Die Fotoinfo verlinkt erkannte Personen. `person:Juergen`
+und `face:"Marie Curie"` suchen sowohl XMP-Namen als auch benannte automatische Gruppen.
+
+Die Verarbeitung erfolgt in einem separaten lokalen Dienst mit OpenCV/YuNet/SFace.
+Bilder verlassen die eigene Infrastruktur nicht. Der Dienst hat weder Zugriff auf
+das Fotoverzeichnis noch auf die Datenbank. BearStack sendet ausgerichtete, auf
+höchstens 1.600 Pixel verkleinerte JPEGs. Modelle werden beim Image-Build mit festen
+SHA-256-Prüfsummen geladen und beim Start geprüft; im Betrieb gibt es keine Downloads.
+
+**Einrichtung mit Compose:**
+
+1. Einen zufälligen Token erzeugen, beispielsweise mit `openssl rand -hex 32`.
+2. In `.env` `BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN` auf diesen Token setzen.
+3. Fotomodul und Fotoverzeichnis wie oben konfigurieren und
+   `docker compose --profile faces up -d --build` starten.
+4. Unter **Einstellungen → Gesichtserkennung** die Verarbeitung einschalten.
+   Aktivierung ist nur bei erreichbarem, kompatiblem Dienst möglich.
+
+Compose verwendet intern `http://faces:8091`, ohne veröffentlichten Dienstport.
+Die native Installation und die Diensttests sind in `services/faces/README.md`
+beschrieben. Eine eigene Dienstadresse lässt sich über folgende optionale Werte setzen:
+
+| JSON-Feld unter `photos` | Umgebungsvariable | Bedeutung |
+| --- | --- | --- |
+| `face_service_url` | `BEARSTACK_PHOTOS_FACE_SERVICE_URL` | HTTP(S)-Adresse des eigenen Erkennungsdienstes. |
+| `face_service_token` | `BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN` | Gemeinsamer geheimer Token, mindestens 32 Zeichen. |
+
+**Schonender Betrieb:** Ein Worker verarbeitet standardmäßig 100 Bilder, mit einer
+Sekunde Pause pro Bild und 15 Minuten Wartezeit zwischen Läufen. Der Dienst nutzt
+einen Inferenzthread; Compose begrenzt ihn auf 0,5 CPU-Kerne und 1 GiB RAM. Die
+Einstellungen erlauben 1–1.000 Bilder pro Lauf, 100–60.000 ms Pause und 1–1.440 Minuten
+Wartezeit. Der Erstlauf holt die Sammlung schrittweise nach. Wenn der separate
+Fotoindex-Worker aus ist, nutzt die Gesichtserkennung dessen Scanmechanismus stündlich.
+Nach dem Erstlauf entstehen neue Aufträge direkt bei Indexänderungen. Unveränderte
+Bilder einschließlich Ergebnissen ohne Gesicht werden nicht erneut analysiert.
+Fehler werden mit zunehmender Wartezeit bis zu fünfmal versucht und können manuell
+zurückgesetzt werden. Neustarts setzen die persistente Warteschlange fort.
+
+**Metadaten und Korrekturen:** Eindeutige XMP-Gesichtsregionen liefern Namen und
+Referenzen. Manuelle Zuordnungen haben Vorrang. XMP und automatische Gesichter werden
+getrennt gespeichert; Originale und Sidecars werden nicht verändert. Die Foto-DB
+migriert automatisch auf Schema 18. Ihre Sicherung muss die erzeugten Gesichtsdaten
+und manuellen Korrekturen einschließen. Ein Index-Neuaufbau erhält die Korrekturen
+unveränderter Bilder; Dateiaustausch und Löschung entfernen veraltete Analysen.
+Bei einem Modellwechsel werden manuelle Zuordnungen nur auf eindeutig wiedergefundene
+Regionen übertragen. Unsichere Treffer bleiben getrennt. Das Zusammenführen bestehender
+Gruppen erfolgt ausschließlich manuell; die Erkennung stellt keine sichere Identitätsfeststellung dar.
+
+**Sichtbarkeit und Aufbewahrung:** `.adminonly`-Fotos sind von automatischer Analyse
+und Personengruppen ausgeschlossen. Nachträgliche Schutzmarkierungen entfernen deren
+automatische Ergebnisse und Referenzen. Gesichtsvorschauen prüfen die aktuellen Rechte.
+Pausieren oder Ausschalten behält bisherige Ergebnisse. Die separate, ausdrücklich
+zu bestätigende Löschaktion entfernt erzeugte Gesichtsdaten, Gruppen und Korrekturen
+und schaltet die Verarbeitung aus; importierte XMP-Gesichtsdaten bleiben erhalten.
+Merkmalsvektoren erscheinen weder in HTTP-Antworten an Browser noch in Logs.
+
+V1 unterstützt JPEG, PNG, WebP und das erste GIF-Bild. Videos und SVG werden nicht
+analysiert. Bilder über 40 Megapixel werden zur Begrenzung des Speichers zurückgewiesen;
+sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können fehlen.
+
 ## Auth
 
 Fuer den Betrieb wird Basic Auth mit bcrypt-Hash empfohlen:

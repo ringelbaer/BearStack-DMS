@@ -11,15 +11,24 @@ import (
 )
 
 type indexQueryPlan struct {
-	SQLTerms    []queryTerm
-	FTSQuery    string
-	PostFilter  bool
-	Disjunctive bool
+	ExpressionSQL  string
+	ExpressionArgs []any
+	SQLTerms       []queryTerm
+	FTSQuery       string
+	PostFilter     bool
+	Disjunctive    bool
 }
 
 func indexQueryPlanFor(query string) indexQueryPlan {
 	expression := parseQueryExpression(query)
 	plan := indexQueryPlan{}
+	if queryHasPerson(query) {
+		if sql, args, ok := personExpressionSQL(expression); ok {
+			plan.ExpressionSQL = sql
+			plan.ExpressionArgs = args
+			return plan
+		}
+	}
 	if expression.HasOR {
 		plan.PostFilter = true
 		plan.Disjunctive = true
@@ -58,10 +67,7 @@ func applyIndexQueryNode(plan *indexQueryPlan, ftsTerms *[]string, term queryTer
 	case "type", "gps", "directory", "file_name", "date", "orientation", "resolution", "tag":
 		plan.SQLTerms = append(plan.SQLTerms, term)
 	case "person":
-		plan.PostFilter = true
-		if fts, safe := searchtext.FTSQueryTerm(term.Value); safe && fts != "" {
-			*ftsTerms = append(*ftsTerms, fts)
-		}
+		plan.SQLTerms = append(plan.SQLTerms, term)
 	case "":
 		if fts, safe := searchtext.FTSQueryTerm(term.Value); safe && fts != "" {
 			*ftsTerms = append(*ftsTerms, fts)
@@ -79,7 +85,7 @@ func applyIndexQueryNode(plan *indexQueryPlan, ftsTerms *[]string, term queryTer
 
 func indexTermCanUseSQL(term queryTerm) bool {
 	switch term.Field {
-	case "type", "gps", "directory", "file_name", "date", "orientation", "resolution", "tag":
+	case "type", "gps", "directory", "file_name", "date", "orientation", "resolution", "tag", "person":
 		return true
 	default:
 		return false
@@ -98,6 +104,9 @@ func disjunctiveMediaFTSQueryForExpression(expression queryExpression) string {
 				continue
 			}
 			term := node.Term
+			if term.Field == "person" {
+				return ""
+			}
 			if term.Negated || !mediaSearchIncludesField(term.Field) {
 				continue
 			}
@@ -122,7 +131,7 @@ func disjunctiveMediaFTSQueryForExpression(expression queryExpression) string {
 
 func mediaSearchIncludesField(field string) bool {
 	switch field {
-	case "gps", "resolution":
+	case "gps", "resolution", "person":
 		return false
 	default:
 		return true
@@ -241,4 +250,61 @@ func prefixRange(prefix string) (string, string) {
 	runes := []rune(prefix)
 	runes[len(runes)-1]++
 	return prefix, string(runes)
+}
+
+// Compound person filters stay in SQL so OR/N-of searches do not materialize
+// the photo collection or hit the legacy post-filter candidate limit.
+func personExpressionSQL(expression queryExpression) (string, []any, bool) {
+	groups := []string{}
+	args := []any{}
+	termSQL := func(t queryTerm) (string, []any, bool) {
+		if !indexTermCanUseSQL(t) {
+			return "", nil, false
+		}
+		where := []string{}
+		values := []any{}
+		appendIndexTermWhere(&where, &values, t)
+		if len(where) == 0 {
+			return "", nil, false
+		}
+		return "(" + strings.Join(where, " AND ") + ")", values, true
+	}
+	for _, group := range expression.Groups {
+		conditions := []string{}
+		for _, node := range group {
+			if node.Skip {
+				continue
+			}
+			if node.NOf > 0 {
+				counts := []string{}
+				for _, t := range node.NOfTerms {
+					sql, a, ok := termSQL(t)
+					if !ok {
+						return "", nil, false
+					}
+					counts = append(counts, "CASE WHEN "+sql+" THEN 1 ELSE 0 END")
+					args = append(args, a...)
+				}
+				if len(counts) == 0 {
+					return "", nil, false
+				}
+				conditions = append(conditions, "("+strings.Join(counts, " + ")+" >= "+strconv.Itoa(node.NOf)+")")
+			} else {
+				sql, a, ok := termSQL(node.Term)
+				if !ok {
+					return "", nil, false
+				}
+				conditions = append(conditions, sql)
+				args = append(args, a...)
+			}
+		}
+		if len(conditions) == 0 {
+			return "", nil, false
+		}
+		groups = append(groups, "("+strings.Join(conditions, " AND ")+")")
+	}
+	if len(groups) == 0 {
+		return "", nil, false
+	}
+	return "(" + strings.Join(groups, " OR ") + ")", args, true
 }

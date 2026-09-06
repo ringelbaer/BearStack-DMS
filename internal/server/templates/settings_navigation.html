@@ -4,7 +4,7 @@
   <a class="settings-tab-button {{if eq .SettingsTab "main"}}active{{end}}" {{if eq .SettingsTab "main"}}aria-current="page"{{end}} href="/settings">Dokumente</a>
   <a class="settings-tab-button {{if eq .SettingsTab "mail_import"}}active{{end}}" {{if eq .SettingsTab "mail_import"}}aria-current="page"{{end}} href="/settings/mail-import">E-Mail-Import</a>
   {{end}}
-  {{if and .PhotoModuleEnabled .Auth.CanPhotosManage}}<a class="settings-tab-button {{if eq .SettingsTab "photos"}}active{{end}}" {{if eq .SettingsTab "photos"}}aria-current="page"{{end}} href="/settings/photos">Fotos</a>{{end}}
+  {{if and .PhotoModuleEnabled .Auth.CanPhotosManage}}<a class="settings-tab-button {{if eq .SettingsTab "photos"}}active{{end}}" {{if eq .SettingsTab "photos"}}aria-current="page"{{end}} href="/settings/photos">Fotos</a> <a class="settings-tab-button {{if eq .SettingsTab "faces"}}active{{end}}" {{if eq .SettingsTab "faces"}}aria-current="page"{{end}} href="/settings/photos/faces">Gesichtserkennung</a>{{end}}
   {{if .Auth.CanSystemUsersManage}}<a class="settings-tab-button {{if eq .SettingsTab "users"}}active{{end}}" {{if eq .SettingsTab "users"}}aria-current="page"{{end}} href="/settings/users">Nutzer</a>{{end}}
 </nav>
 {{end}}

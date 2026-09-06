@@ -266,28 +266,29 @@ func photoMediaGroupDate(item PhotoMediaView) (string, string) {
 }
 
 type photoMediaAPIResponse struct {
-	Path          string                 `json:"path"`
-	Name          string                 `json:"name"`
-	Title         string                 `json:"title"`
-	Src           string                 `json:"src"`
-	Original      string                 `json:"original"`
-	Preview       string                 `json:"preview"`
-	LargePreview  string                 `json:"large_preview"`
-	Thumb         string                 `json:"thumb"`
-	Type          string                 `json:"type"`
-	Date          string                 `json:"date"`
-	DateTime      string                 `json:"date_time"`
-	Camera        string                 `json:"camera"`
-	Lens          string                 `json:"lens"`
-	Rating        string                 `json:"rating"`
-	Size          string                 `json:"size"`
-	Resolution    string                 `json:"resolution"`
-	Coords        string                 `json:"coords"`
-	Lat           string                 `json:"lat"`
-	Lon           string                 `json:"lon"`
-	ThumbReady    bool                   `json:"thumb_ready"`
-	ThumbnailSize int                    `json:"thumbnail_size,omitempty"`
-	Faces         []photoFaceAPIResponse `json:"faces,omitempty"`
+	Path           string                  `json:"path"`
+	Name           string                  `json:"name"`
+	Title          string                  `json:"title"`
+	Src            string                  `json:"src"`
+	Original       string                  `json:"original"`
+	Preview        string                  `json:"preview"`
+	LargePreview   string                  `json:"large_preview"`
+	Thumb          string                  `json:"thumb"`
+	Type           string                  `json:"type"`
+	Date           string                  `json:"date"`
+	DateTime       string                  `json:"date_time"`
+	Camera         string                  `json:"camera"`
+	Lens           string                  `json:"lens"`
+	Rating         string                  `json:"rating"`
+	Size           string                  `json:"size"`
+	Resolution     string                  `json:"resolution"`
+	Coords         string                  `json:"coords"`
+	Lat            string                  `json:"lat"`
+	Lon            string                  `json:"lon"`
+	ThumbReady     bool                    `json:"thumb_ready"`
+	ThumbnailSize  int                     `json:"thumbnail_size,omitempty"`
+	AutomaticFaces []photos.RecognizedFace `json:"automatic_faces,omitempty"`
+	Faces          []photoFaceAPIResponse  `json:"faces,omitempty"`
 }
 
 type photoFaceAPIResponse struct {
@@ -330,23 +331,24 @@ func photoMediaAPIResponseFrom(item PhotoMediaView) photoMediaAPIResponse {
 		src = firstNonEmpty(item.LargePreviewURL, item.PreviewURL, item.ThumbURL, item.MediaURL)
 	}
 	response := photoMediaAPIResponse{
-		Path:         item.Path,
-		Name:         item.Name,
-		Title:        item.Name,
-		Src:          src,
-		Original:     item.MediaURL,
-		Preview:      item.PreviewURL,
-		LargePreview: item.LargePreviewURL,
-		Thumb:        item.ThumbURL,
-		Type:         item.Type,
-		Date:         formatDate(item.CapturedAt),
-		DateTime:     formatPhotoDateTime(item.CapturedAt),
-		Camera:       item.Camera,
-		Lens:         item.Lens,
-		Rating:       formatRatingData(item.Rating),
-		Size:         formatBytes(item.SizeBytes),
-		ThumbReady:   item.ThumbReady,
-		Faces:        photoFaceAPIResponsesFrom(item.Faces),
+		Path:           item.Path,
+		Name:           item.Name,
+		Title:          item.Name,
+		Src:            src,
+		Original:       item.MediaURL,
+		Preview:        item.PreviewURL,
+		LargePreview:   item.LargePreviewURL,
+		Thumb:          item.ThumbURL,
+		Type:           item.Type,
+		Date:           formatDate(item.CapturedAt),
+		DateTime:       formatPhotoDateTime(item.CapturedAt),
+		Camera:         item.Camera,
+		Lens:           item.Lens,
+		Rating:         formatRatingData(item.Rating),
+		Size:           formatBytes(item.SizeBytes),
+		ThumbReady:     item.ThumbReady,
+		Faces:          photoFaceAPIResponsesFrom(item.Faces),
+		AutomaticFaces: item.AutomaticFaces,
 	}
 	if item.Width > 0 && item.Height > 0 {
 		response.Resolution = fmt.Sprintf("%d × %d", item.Width, item.Height)

@@ -448,6 +448,14 @@ func auditActionTarget(r *http.Request) (string, string) {
 		return "Dokument endgültig löschen", documentAuditTarget(r)
 	case "POST /trash/empty":
 		return "Papierkorb leeren", ""
+	case "POST /photos/people/{id}/rename":
+		return "Fotoperson benennen", idAuditTarget("Person", r.PathValue("id"))
+	case "POST /photos/people/{id}/merge":
+		return "Fotopersonen zusammenführen", idAuditTarget("Person", r.PathValue("id"))
+	case "POST /photos/faces/edit":
+		return "Gesichtszuordnungen ändern", ""
+	case "POST /settings/photos/faces", "POST /settings/photos/faces/{action}":
+		return "Gesichtserkennung verwalten", r.PathValue("action")
 	case "POST /photos/tags":
 		return "Foto-Tags speichern", ""
 	default:

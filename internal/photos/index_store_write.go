@@ -114,6 +114,9 @@ func (s *photoIndexStore) saveMediaBatchWithExisting(ctx context.Context, items 
 			return err
 		}
 	}
+	if err := s.queueFaceMediaTx(ctx, tx, items); err != nil {
+		return err
+	}
 	if err := s.queueChangedMediaThumbnailsTx(ctx, tx, items, now); err != nil {
 		return err
 	}

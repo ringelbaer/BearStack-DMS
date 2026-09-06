@@ -1,0 +1,93 @@
+openapi: 3.1.0
+info:
+  title: BearStack private face inference
+  version: 1.0.0
+security:
+- bearer: []
+paths:
+  /health:
+    get:
+      responses:
+        '200':
+          description: Ready after pinned model checksums pass.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ready:
+                    const: true
+                  protocol:
+                    const: 1
+                  model:
+                    const: yunet-2023mar-sface-2021dec-v1
+        '401':
+          description: Invalid token.
+  /v1/analyze:
+    post:
+      description: Upright JPEG; max 8 MiB, 1600 px edge, 256 faces. No file paths
+        or URLs.
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Normalized boxes and vectors.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  model:
+                    const: yunet-2023mar-sface-2021dec-v1
+                  faces:
+                    type: array
+                    maxItems: 256
+                    items:
+                      type: object
+                      properties:
+                        x:
+                          type: number
+                          minimum: 0
+                          maximum: 1
+                        y:
+                          type: number
+                          minimum: 0
+                          maximum: 1
+                        width:
+                          type: number
+                          minimum: 0
+                          maximum: 1
+                        height:
+                          type: number
+                          minimum: 0
+                          maximum: 1
+                        confidence:
+                          type: number
+                          minimum: 0
+                          maximum: 1
+                        embedding:
+                          type: array
+                          minItems: 128
+                          maxItems: 128
+                          items:
+                            type: number
+        '401':
+          description: Invalid token.
+        '413':
+          description: Invalid body size.
+        '415':
+          description: JPEG required.
+        '422':
+          description: Invalid image.
+        '429':
+          description: Inference busy.
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer

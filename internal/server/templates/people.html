@@ -1,0 +1,20 @@
+{{define "people.html"}}
+{{template "head" .}}
+<section class="page-head"><div><h1>{{if .People.PersonID}}{{if .People.Name}}{{.People.Name}}{{else}}Unbenannt{{end}}{{else}}Personen{{end}}</h1><p>Automatisch erkannte Gesichter aus deinen Fotos.</p></div><div class="page-actions"><a class="button" href="/photos">Fotos</a>{{if .People.PersonID}}<a class="button" href="/photos/people">Alle Personen</a>{{end}}{{if .Auth.CanPhotosManage}}<a class="button" href="/settings/photos/faces">Gesichtserkennung</a>{{end}}</div></section>
+{{if not .People.PersonID}}
+<form method="get" action="/photos/people" class="filters"><label>Name <input type="search" name="q" value="{{.People.Query}}" placeholder="Person suchen"></label><button>Suchen</button></form>
+<div class="people-grid">{{range .People.People}}<a class="person-card" href="/photos/people/{{.ID}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.FaceID}}/thumbnail" alt=""><strong>{{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}</strong><span>{{.Count}} {{if eq .Count 1}}Foto{{else}}Fotos{{end}}</span></a>{{else}}<p>Noch keine Personen gefunden. {{if .Auth.CanPhotosManage}}Die optionale Erkennung lässt sich in den Einstellungen aktivieren.{{end}}</p>{{end}}</div>
+{{else}}
+{{if .Auth.CanPhotosManage}}
+<section class="card"><form method="post" action="/photos/people/{{.People.PersonID}}/rename" class="filters"><label>Name <input name="name" maxlength="200" value="{{.People.Name}}"></label><button>Benennen</button></form>
+<form method="post" action="/photos/people/{{.People.PersonID}}/merge" class="filters" data-person-picker><label>Zielperson suchen <input type="search" data-person-search placeholder="Name eingeben"></label><label>Zusammenführen mit <select name="target" data-person-options required><option value="">Person auswählen</option></select></label><button>Gruppen zusammenführen</button></form></section>
+<form method="post" action="/photos/faces/edit" data-person-picker>
+<div class="filters"><label>Zielperson suchen <input type="search" data-person-search placeholder="Name eingeben"></label><label>Verschieben zu <select name="target" data-person-options><option value="0">Neue Person</option></select></label><label>Name der neuen Person <input name="name" maxlength="200"></label><button name="action" value="move">Auswahl verschieben</button><button name="action" value="ignore">Auswahl ignorieren</button></div>
+{{end}}
+<div class="people-grid">{{range .People.Faces}}<div class="person-card">{{if $.Auth.CanPhotosManage}}<label><input type="checkbox" name="face_id" value="{{.ID}}"> Auswählen</label>{{end}}<img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Gesicht"><a href="/photos/media?path={{queryEscape .Path}}">{{.Path}}</a>{{if .Manual}}<span>Manuell zugeordnet</span>{{end}}</div>{{end}}</div>
+{{if .Auth.CanPhotosManage}}</form>{{end}}
+{{end}}
+<nav class="pagination" aria-label="Personenseiten">{{if .People.HasPrev}}<a href="?page={{prevPage .People.Page}}&amp;q={{queryEscape .People.Query}}">Zurück</a>{{end}}<span>Seite {{.People.Page}}</span>{{if .People.HasNext}}<a href="?page={{nextPage .People.Page}}&amp;q={{queryEscape .People.Query}}">Weiter</a>{{end}}</nav>
+<script src="{{assetURL "/static/app-people.js"}}" defer></script>
+{{template "foot" .}}
+{{end}}

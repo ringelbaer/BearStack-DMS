@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.23.4
+  version: 0.24.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -20,6 +20,8 @@ security:
   - basicAuth: []
   - sessionCookie: []
 tags:
+  - name: Photos
+    description: Optional photo library and local face recognition.
   - name: System
     description: Service status and API description.
   - name: Documents
@@ -588,6 +590,499 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /photos/people:
+    get:
+      tags:
+      - Photos
+      operationId: listPhotoPeople
+      summary: List automatically grouped people
+      description: 'Requires photos.read. HTML by default; format=json or Accept: application/json
+        returns a page of at most 60 groups. Admin-only photos are excluded.'
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: q
+        in: query
+        schema:
+          type: string
+      - name: format
+        in: query
+        schema:
+          type: string
+          enum:
+          - json
+        description: Request JSON instead of HTML.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoPeoplePage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /photos/people/{id}:
+    get:
+      tags:
+      - Photos
+      operationId: getPhotoPerson
+      summary: List faces assigned to one person
+      description: 'Requires photos.read. HTML by default; format=json or Accept: application/json
+        returns at most 60 faces. Empty/hidden groups return 404.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: format
+        in: query
+        schema:
+          type: string
+          enum:
+          - json
+        description: Request JSON instead of HTML.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoPeoplePage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /photos/faces/{id}/thumbnail:
+    get:
+      tags:
+      - Photos
+      operationId: getFaceThumbnail
+      summary: Get a face crop
+      description: Requires photos.read. Checks current filesystem visibility; generated
+        crops are private and not cacheable.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        '200':
+          description: 160 x 160 JPEG face preview.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /photos/people/{id}/rename:
+    post:
+      tags:
+      - Photos
+      operationId: renamePhotoPerson
+      summary: Name or rename a person
+      description: Requires photos.manage. Form writes redirect to the corresponding
+        HTML page. Existing authentication, same-origin protection and audit logging
+        apply.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+              required: []
+      responses:
+        '303':
+          description: Saved; Location points to the corresponding page.
+          headers:
+            Location:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /photos/people/{id}/merge:
+    post:
+      tags:
+      - Photos
+      operationId: mergePhotoPeople
+      summary: Merge source group into target
+      description: Requires photos.manage. Form writes redirect to the corresponding
+        HTML page. Existing authentication, same-origin protection and audit logging
+        apply.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                target:
+                  type: integer
+                  format: int64
+                  minimum: 1
+              required:
+              - target
+      responses:
+        '303':
+          description: Saved; Location points to the corresponding page.
+          headers:
+            Location:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /photos/faces/edit:
+    post:
+      tags:
+      - Photos
+      operationId: editPhotoFaces
+      summary: Move selected faces or ignore false detections
+      description: Requires photos.manage. Form writes redirect to the corresponding
+        HTML page. Existing authentication, same-origin protection and audit logging
+        apply.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                face_id:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                  minItems: 1
+                  maxItems: 500
+                action:
+                  type: string
+                  enum:
+                  - move
+                  - ignore
+                target:
+                  type: integer
+                  minimum: 0
+                  default: 0
+                  description: Existing target person ID; 0 or omitted creates a new
+                    person for move.
+                name:
+                  type: string
+                  maxLength: 200
+                  description: Optional name for the new person.
+              required:
+              - face_id
+              - action
+      responses:
+        '303':
+          description: Saved; Location points to the corresponding page.
+          headers:
+            Location:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /settings/photos/faces:
+    get:
+      tags:
+      - Photos
+      operationId: getFaceRecognitionSettings
+      summary: Recognition settings and progress
+      description: Requires photos.manage. HTML by default; format=json returns settings
+        and status. Service tokens and vectors are never returned.
+      parameters:
+      - name: format
+        in: query
+        schema:
+          type: string
+          enum:
+          - json
+        description: Request JSON instead of HTML.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaceSettingsStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+      - Photos
+      operationId: saveFaceRecognitionSettings
+      summary: Configure optional face recognition
+      description: Requires photos.manage. Form writes redirect to the corresponding
+        HTML page. Existing authentication, same-origin protection and audit logging
+        apply.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: string
+                  enum:
+                  - '1'
+                  description: Omit to pause. Activation requires a healthy, compatible
+                    configured service.
+                batch_size:
+                  type: integer
+                  minimum: 1
+                  maximum: 1000
+                  default: 100
+                delay_millis:
+                  type: integer
+                  minimum: 100
+                  maximum: 60000
+                  default: 1000
+                interval_minutes:
+                  type: integer
+                  minimum: 1
+                  maximum: 1440
+                  default: 15
+              required: []
+      responses:
+        '303':
+          description: Saved; Location points to the corresponding page.
+          headers:
+            Location:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /settings/photos/faces/{action}:
+    post:
+      tags:
+      - Photos
+      operationId: controlFaceRecognition
+      summary: Pause, resume, retry or delete recognition data
+      description: Requires photos.manage. Form writes redirect to the corresponding
+        HTML page. Existing authentication, same-origin protection and audit logging
+        apply.
+      parameters:
+      - name: action
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - pause
+          - resume
+          - retry
+          - clear
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                confirm:
+                  type: string
+                  enum:
+                  - delete
+                  description: Required for clear; deletes generated data and disables
+                    processing, preserving XMP.
+              required: []
+      responses:
+        '303':
+          description: Saved; Location points to the corresponding page.
+          headers:
+            Location:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /photos/media/info:
+    get:
+      tags:
+      - Photos
+      operationId: getPhotoMetadata
+      summary: Get photo metadata, including automatic faces
+      description: Requires photos.read. Existing faces contains imported XMP regions;
+        automatic_faces is a separate additive field. Neither includes embeddings.
+      parameters:
+      - name: path
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  media:
+                    $ref: '#/components/schemas/PhotoFaceMetadata'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+      - Photos
+      operationId: getPhotoMetadataBatch
+      summary: Get metadata for up to 100 media paths
+      description: Requires photos.read; read-only batch endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - paths
+              properties:
+                paths:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  media:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PhotoFaceMetadata'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /photos/frame/items:
+    get:
+      tags:
+      - Photos
+      operationId: getPhotoFrameItems
+      summary: Get a paginated photo listing for frames
+      description: Requires photos.read. Supports the existing photo search syntax;
+        automatic_faces is additive and contains no internal vectors.
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: page_size
+        in: query
+        schema:
+          type: integer
+          maximum: 500
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  media:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PhotoFaceMetadata'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  has_next:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
 components:
   securitySchemes:
@@ -1251,3 +1746,176 @@ components:
         finished_at:
           type: string
           format: date-time
+
+    RecognizedPhotoFace:
+      type: object
+      required:
+      - id
+      - person_id
+      - name
+      - path
+      - x
+      - y
+      - width
+      - height
+      - manual
+      - ignored
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        person_id:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+        path:
+          type: string
+        x:
+          type: number
+          minimum: 0
+          maximum: 1
+        y:
+          type: number
+          minimum: 0
+          maximum: 1
+        width:
+          type: number
+          minimum: 0
+          maximum: 1
+        height:
+          type: number
+          minimum: 0
+          maximum: 1
+        manual:
+          type: boolean
+        ignored:
+          type: boolean
+    PhotoPerson:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+        count:
+          type: integer
+          description: Distinct visible photos.
+        face_id:
+          type: integer
+          format: int64
+          minimum: 1
+    PhotoPeoplePage:
+      type: object
+      properties:
+        query:
+          type: string
+        people:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhotoPerson'
+        faces:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecognizedPhotoFace'
+        person_id:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+        page:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+    PhotoFaceMetadata:
+      type: object
+      description: Existing media fields remain unchanged; only automatic_faces is new.
+      additionalProperties: true
+      properties:
+        path:
+          type: string
+        faces:
+          type: array
+          description: Existing imported XMP data.
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              left:
+                type: number
+                minimum: 0
+                maximum: 1
+              top:
+                type: number
+                minimum: 0
+                maximum: 1
+              width:
+                type: number
+                minimum: 0
+                maximum: 1
+              height:
+                type: number
+                minimum: 0
+                maximum: 1
+        automatic_faces:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecognizedPhotoFace'
+    FaceSettingsStatus:
+      type: object
+      properties:
+        settings:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            batch_size:
+              type: integer
+            delay_millis:
+              type: integer
+            interval_minutes:
+              type: integer
+        status:
+          type: object
+          properties:
+            errors:
+              type: array
+              maxItems: 20
+              items:
+                type: object
+                properties:
+                  path:
+                    type: string
+                  error:
+                    type: string
+                  attempts:
+                    type: integer
+            queued:
+              type: integer
+              minimum: 0
+            done:
+              type: integer
+              minimum: 0
+            failed:
+              type: integer
+              minimum: 0
+            faces:
+              type: integer
+              minimum: 0
+            people:
+              type: integer
+              minimum: 0
+        running:
+          type: boolean
+        configured:
+          type: boolean
+        error:
+          type: string

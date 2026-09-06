@@ -32,6 +32,8 @@ func parseTemplates() (*template.Template, error) {
 		return nil, err
 	}
 	funcs := template.FuncMap{
+		"prevPage":               func(p int) int { return max(1, p-1) },
+		"nextPage":               func(p int) int { return p + 1 },
 		"formatBytes":            formatBytes,
 		"formatDate":             formatDate,
 		"formatDateInput":        formatDateInput,

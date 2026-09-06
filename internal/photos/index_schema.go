@@ -26,7 +26,7 @@ var (
 const (
 	indexSchemaSetupTimeout = 30 * time.Second
 	photoSchemaComponent    = "photos"
-	photoSchemaVersion      = 17
+	photoSchemaVersion      = 18
 )
 
 type photoSchemaMigration struct {
@@ -56,6 +56,7 @@ var photoSchemaMigrations = []photoSchemaMigration{
 	{Version: 15, Name: "folder_index.public_recursive_blog_count", Table: "folder_index", Column: "public_recursive_blog_count", SQL: `ALTER TABLE folder_index ADD COLUMN public_recursive_blog_count INTEGER NOT NULL DEFAULT -1`, InvalidateIndex: true},
 	{Version: 16, Name: "photo_folder_scan.order_mode", Table: "photo_folder_scan", Column: "order_mode", SQL: `ALTER TABLE photo_folder_scan ADD COLUMN order_mode TEXT NOT NULL DEFAULT ''`, InvalidateIndex: true},
 	{Version: 17, Name: "media_index.random_hash", Table: "media_index", Column: "random_hash", SQL: `ALTER TABLE media_index ADD COLUMN random_hash TEXT NOT NULL DEFAULT ''`, BackfillSQL: `UPDATE media_index SET random_hash = bearstack_stable_hash(path) WHERE random_hash = ''`},
+	{Version: 18, Name: "face recognition tables"},
 }
 
 func openIndexDB(path string) (*sql.DB, string, error) {
@@ -286,6 +287,12 @@ func runPhotoSchemaMigrations(ctx context.Context, db *sql.DB) error {
 	}
 	for _, migration := range photoSchemaMigrations {
 		if current >= migration.Version {
+			continue
+		}
+		if migration.Version == 18 {
+			if err := setupFaceSchema(ctx, db); err != nil {
+				return fmt.Errorf("photo schema migration 18: %w", err)
+			}
 			continue
 		}
 		added, err := ensurePhotoColumn(ctx, db, migration.Table, migration.Column, migration.SQL)

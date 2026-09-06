@@ -425,7 +425,7 @@ func matchesTerm(media Media, term queryTerm) bool {
 	case "tag":
 		return matchTag(media.Tags, value)
 	case "person":
-		return matchText(faceText(media.Faces), value)
+		return matchText(faceText(media.Faces)+" "+recognizedFaceNames(media.AutomaticFaces), value)
 	case "camera":
 		return matchText(media.Camera, value)
 	case "lens":

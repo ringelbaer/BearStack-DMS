@@ -37,6 +37,11 @@ type indexMediaOptions struct {
 }
 
 func (l *Library) indexMedia(ctx context.Context, opts indexMediaOptions) ([]Media, int, error) {
+	if queryHasPerson(opts.Query) {
+		if err := l.RefreshFaceVisibility(ctx); err != nil {
+			return nil, 0, err
+		}
+	}
 	if opts.Limit <= 0 {
 		opts.Limit = defaultPageSize
 	}
@@ -120,20 +125,47 @@ func (l *Library) indexMediaPostFilter(ctx context.Context, opts indexMediaOptio
 	total := 0
 	scanned := 0
 	query := compileMediaQuery(opts.Query)
+	candidates := []cachedMediaRow{}
 	for rows.Next() {
+		row, e := scanCachedMediaRow(rows)
+		if e != nil {
+			rows.Close()
+			return nil, 0, e
+		}
+		candidates = append(candidates, row)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, 0, err
+	}
+	rows.Close()
+	paths := make([]string, len(candidates))
+	for i := range candidates {
+		paths[i] = candidates[i].Path
+	}
+	auto, err := l.automaticFacesBatch(ctx, paths)
+	if err != nil {
+		return nil, 0, err
+	}
+	for _, row := range candidates {
 		scanned++
 		if scanned > candidateLimit {
 			finishTrace(ListTraceInt("scanned", scanned), ListTraceString("error", errPhotoSearchTooBroad.Error()))
 			return nil, 0, errPhotoSearchTooBroad
 		}
-		row, err := scanCachedMediaRow(rows)
-		if err != nil {
-			finishTrace(ListTraceInt("scanned", scanned), ListTraceString("error", err.Error()))
-			return nil, 0, err
+		original := row
+		if queryHasPerson(opts.Query) {
+			var faces []Face
+			_ = json.Unmarshal([]byte(row.Faces), &faces)
+			for _, f := range auto[row.Path] {
+				faces = append(faces, Face{Name: f.Name})
+			}
+			b, _ := json.Marshal(faces)
+			row.Faces = string(b)
 		}
 		if query.matchesRow(row) {
 			if total >= opts.Offset && len(page) < opts.Limit {
-				page = append(page, mediaFromCachedRowWithMetadata(row, includeMetadata))
+				page = append(page, mediaFromCachedRowWithMetadata(original, includeMetadata))
 			}
 			total++
 		}
@@ -261,6 +293,9 @@ func (opts indexMediaOptions) useGlobalGPSDateIndex() bool {
 }
 
 func (opts indexMediaOptions) useGlobalDateIndex() bool {
+	if opts.Plan.ExpressionSQL != "" {
+		return false
+	}
 	if opts.Directory != "" || opts.MediaType != "" || opts.GPSOnly || opts.ExactDir || !opts.usesDateOrder() {
 		return false
 	}
@@ -292,6 +327,9 @@ func (p indexQueryPlan) onlyNegatedTagTerm() bool {
 }
 
 func (l *Library) indexFastTotal(ctx context.Context, opts indexMediaOptions) (int, bool) {
+	if opts.Plan.ExpressionSQL != "" {
+		return 0, false
+	}
 	if opts.ExactDir && opts.Query == "" && opts.MediaType == "" && !opts.GPSOnly && len(opts.Plan.SQLTerms) == 0 {
 		var total int
 		var err error
@@ -365,6 +403,10 @@ func indexWhere(opts indexMediaOptions) (string, []any, bool) {
 	if opts.GPSOnly {
 		where = append(where, "mi.latitude IS NOT NULL AND mi.longitude IS NOT NULL")
 	}
+	if opts.Plan.ExpressionSQL != "" {
+		where = append(where, opts.Plan.ExpressionSQL)
+		args = append(args, opts.Plan.ExpressionArgs...)
+	}
 	for _, term := range opts.Plan.SQLTerms {
 		appendIndexTermWhere(&where, &args, term)
 	}
@@ -388,6 +430,9 @@ func appendIndexTermWhere(where *[]string, args *[]any, term queryTerm) {
 		*args = append(*args, values...)
 	}
 	switch term.Field {
+	case "person":
+		pattern := searchtext.LikeContainsPattern(searchtext.GermanFold(term.Value))
+		add(`mi.path IN (SELECT path FROM photo_xmp_people WHERE bearstack_german_fold(name) LIKE ? ESCAPE '\' UNION SELECT f.path FROM photo_people p CROSS JOIN photo_faces f INDEXED BY idx_photo_faces_person ON f.person_id=p.id WHERE p.name_fold LIKE ? ESCAPE '\' AND f.ignored=0)`, pattern, pattern)
 	case "type":
 		if v := normalizeMediaType(term.Value); v != "" {
 			add("mi.type = ?", v)

@@ -27,3 +27,6 @@ coverage.out
 Dockerfile
 compose.yaml
 .dockerignore
+
+**/__pycache__
+**/*.pyc

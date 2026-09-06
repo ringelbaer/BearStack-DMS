@@ -33,6 +33,7 @@ import (
 var webFS embed.FS
 
 type Server struct {
+	faceWorker        faceWorkerState
 	cfg               config.Config
 	repo              *repository.Repository
 	store             *storage.Store
@@ -150,6 +151,7 @@ func New(cfg config.Config, repo *repository.Repository, store *storage.Store, l
 		auth:        authState,
 		preferences: preferenceState,
 	}
+	s.faceWorker.wake = make(chan struct{}, 1)
 	s.apps.photo.jobs = make(chan struct{}, 1)
 	s.apps.documents.thumbnails = newThumbnailService(repo, store, logger, make(chan struct{}, 1))
 	s.apps.documents.ocr = newOCRService(repo, store, logger, make(chan struct{}, 1), s.invalidateDocumentCountCache, s.recordAuditLog)

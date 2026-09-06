@@ -105,6 +105,9 @@ func (svc photoApplicationService) Listing(ctx context.Context, request photoLis
 		photos.ListTraceInt("media", len(listing.Media)),
 		photos.ListTraceInt("total", listing.Total),
 	)
+	if err := svc.library.AddAutomaticFaces(ctx, listing.Media); err != nil {
+		return photos.Listing{}, PhotoSettings{}, err
+	}
 	return listing, settings, nil
 }
 

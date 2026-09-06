@@ -62,12 +62,14 @@ type TLSConfig struct {
 }
 
 type PhotoConfig struct {
-	Enabled  bool   `json:"enabled"`
-	RootDir  string `json:"root_dir"`
-	DataDir  string `json:"data_dir"`
-	CacheDir string `json:"cache_dir"`
-	DBPath   string `json:"db_path"`
-	PageSize int    `json:"page_size"`
+	FaceServiceURL   string `json:"face_service_url"`
+	FaceServiceToken string `json:"face_service_token"`
+	Enabled          bool   `json:"enabled"`
+	RootDir          string `json:"root_dir"`
+	DataDir          string `json:"data_dir"`
+	CacheDir         string `json:"cache_dir"`
+	DBPath           string `json:"db_path"`
+	PageSize         int    `json:"page_size"`
 }
 
 type WebDAVConfig struct {
@@ -266,6 +268,12 @@ func applyEnv(cfg *Config) {
 	}
 	if v, ok := envBool("BEARSTACK_TLS_AUTO_CERT"); ok {
 		cfg.TLS.AutoCert = v
+	}
+	if v := os.Getenv("BEARSTACK_PHOTOS_FACE_SERVICE_URL"); v != "" {
+		cfg.Photos.FaceServiceURL = v
+	}
+	if v := os.Getenv("BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN"); v != "" {
+		cfg.Photos.FaceServiceToken = v
 	}
 	if v, ok := envBool("BEARSTACK_PHOTOS_ENABLED"); ok {
 		cfg.Photos.Enabled = v

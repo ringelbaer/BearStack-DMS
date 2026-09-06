@@ -233,7 +233,8 @@
     item.title = data.title || data.name || item.title || "Foto";
     item.date = data.date || item.date || "-";
     item.dateTime = data.date_time || data.dateTime || item.date || item.dateTime || "-";
-    item.camera = data.camera || "-";
+    item.automaticFaces = data.automatic_faces || [];
+ item.camera = data.camera || "-";
     item.lens = data.lens || "-";
     item.rating = data.rating || "";
     item.size = data.size || "-";
@@ -813,6 +814,8 @@
     var stage = dialog.querySelector(".photo-lightbox-stage");
     var title = dialog.querySelector("[data-photo-title]");
     var slideshowButton = dialog.querySelector("[data-photo-slideshow]");
+    var prevButton = dialog.querySelector("[data-photo-prev]");
+    var nextButton = dialog.querySelector("[data-photo-next]");
     var infoButton = dialog.querySelector("[data-photo-info-toggle]");
     var infoClose = dialog.querySelector("[data-photo-info-close]");
     var fullscreenButton = dialog.querySelector("[data-photo-fullscreen]");
@@ -1304,13 +1307,28 @@
       setText("[data-photo-info-size]", item.size);
       setText("[data-photo-info-resolution]", item.resolution);
       setText("[data-photo-info-coords]", item.coords);
+      var people = dialog.querySelector("[data-photo-info-people]");
+      if (people) {
+        people.replaceChildren();
+        (item.automaticFaces || []).forEach(function (face) {
+          var link = document.createElement("a");
+          link.href = "/photos/people/" + encodeURIComponent(face.person_id);
+          link.textContent = face.name || "Unbenannt";
+          people.appendChild(link); people.appendChild(document.createTextNode(" "));
+        });
+        if (!people.childNodes.length) people.textContent = "–";
+      }
       setDownload(item);
       setMap(item);
     }
 
     function show(index) {
-      if (!items.length) return;
-      current = (index + items.length) % items.length;
+      if (index < 0 || index >= items.length) return;
+      current = index;
+      prevButton.disabled = current === 0;
+      nextButton.disabled = current === items.length - 1;
+      slideshowButton.disabled = nextButton.disabled;
+      if (nextButton.disabled) stopSlideshow();
       var item = items[current];
       if (title) title.textContent = item.title;
       renderCurrentItem(item);
@@ -1359,9 +1377,8 @@
     }
 
     function preloadItem(index) {
-      if (!items.length) return;
-      var normalized = (index + items.length) % items.length;
-      var item = items[normalized];
+      if (index < 0 || index >= items.length) return;
+      var item = items[index];
       if (!item) return;
       ensurePhotoItemDetails(item).then(function () {
         var src = bestPhotoDisplaySrc(item);
@@ -1380,9 +1397,7 @@
       if (!preloadAdjacent) return;
       window.setTimeout(function () {
         preloadItem(current + 1);
-        if (items.length > 2) {
-          preloadItem(current - 1);
-        }
+        preloadItem(current - 1);
       }, 0);
     }
 
@@ -1431,8 +1446,8 @@
     dialog.querySelector("[data-photo-close]").addEventListener("click", function () {
       closeLightbox();
     });
-    dialog.querySelector("[data-photo-prev]").addEventListener("click", function () { show(current - 1); });
-    dialog.querySelector("[data-photo-next]").addEventListener("click", function () { show(current + 1); });
+    prevButton.addEventListener("click", function () { show(current - 1); });
+    nextButton.addEventListener("click", function () { show(current + 1); });
     if (infoButton) {
       infoButton.addEventListener("click", function () {
         setInfoPanel(!dialog.classList.contains("info-open"));

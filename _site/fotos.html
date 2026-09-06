@@ -546,6 +546,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Berechtigungen">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optionale-lokale-gesichtserkennung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Optionale lokale Gesichtserkennung
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -783,6 +800,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Berechtigungen">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optionale-lokale-gesichtserkennung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Optionale lokale Gesichtserkennung
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -814,6 +848,8 @@
 <p><code>BEARSTACK_PHOTOS_DIR</code> ist das vorhandene read-only Fotoverzeichnis. <code>BEARSTACK_PHOTOS_DATA_DIR</code> ist der BearStack-eigene Fotobereich für erzeugte Dateien; standardmäßig liegen darunter <code>thumbnails/</code> und die separate Foto-Indexdatenbank <code>photos.db</code>. Bei Bedarf können <code>BEARSTACK_PHOTOS_CACHE_DIR</code> und <code>BEARSTACK_PHOTOS_DB_PATH</code> einzeln überschrieben werden.</p>
 <p>Nach dem Neustart erscheint <code>Fotos</code> in der Hauptnavigation.</p>
 <h2 id="galerie-und-suche">Galerie und Suche<a class="headerlink" href="#galerie-und-suche" title="Permanent link">&para;</a></h2>
+<p>Auf kleinen Bildschirmen steht die Foto-Info unter dem Foto über die volle Breite. Das Panel ist separat scrollbar; sein Schließen-Knopf bleibt sichtbar.</p>
+<p>Die Foto-Lightbox stoppt am ersten und letzten Medium. Die jeweiligen Navigationspfeile sind dort deaktiviert; auch die Diashow endet beim letzten Medium.</p>
 <p>Unterstützt werden:</p>
 <ul>
 <li>Ordnernavigation, Bild- und Videowiedergabe</li>
@@ -881,6 +917,80 @@
 </table>
 <p>Einzelrechte heißen <code>photos.read</code>, <code>photos.edit</code> und <code>photos.manage</code>. <code>.adminonly</code>-Ordner bleiben bewusst an die Rolle <code>admin</code> gebunden. Die vollständige Matrix steht unter <a href="benutzer-und-rechte.html">Benutzer und Rechte</a>.</p>
 <p>Externe Werkzeuge wie <code>ffmpeg</code> und optional <code>vipsthumbnail</code> werden nur für Medienfunktionen benötigt, die sie tatsächlich brauchen.</p>
+<h3 id="optionale-lokale-gesichtserkennung">Optionale lokale Gesichtserkennung<a class="headerlink" href="#optionale-lokale-gesichtserkennung" title="Permanent link">&para;</a></h3>
+<p>Ab 0.24.0 kann BearStack Gesichter automatisch erkennen und ähnliche Gesichter zu
+Personen gruppieren. Die Funktion ist standardmäßig aus. Unter <strong>Fotos → Personen</strong>
+sehen Fotoleser die Gruppen; Foto-Verwalter (<code>photos.manage</code>) können Namen vergeben,
+Gruppen zusammenführen, ausgewählte Gesichter in andere oder neue Gruppen verschieben
+und Fehlfunde ignorieren. Die Fotoinfo verlinkt erkannte Personen. <code>person:Juergen</code>
+und <code>face:"Marie Curie"</code> suchen sowohl XMP-Namen als auch benannte automatische Gruppen.</p>
+<p>Die Verarbeitung erfolgt in einem separaten lokalen Dienst mit OpenCV/YuNet/SFace.
+Bilder verlassen die eigene Infrastruktur nicht. Der Dienst hat weder Zugriff auf
+das Fotoverzeichnis noch auf die Datenbank. BearStack sendet ausgerichtete, auf
+höchstens 1.600 Pixel verkleinerte JPEGs. Modelle werden beim Image-Build mit festen
+SHA-256-Prüfsummen geladen und beim Start geprüft; im Betrieb gibt es keine Downloads.</p>
+<p><strong>Einrichtung mit Compose:</strong></p>
+<ol>
+<li>Einen zufälligen Token erzeugen, beispielsweise mit <code>openssl rand -hex 32</code>.</li>
+<li>In <code>.env</code> <code>BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN</code> auf diesen Token setzen.</li>
+<li>Fotomodul und Fotoverzeichnis wie oben konfigurieren und
+   <code>docker compose --profile faces up -d --build</code> starten.</li>
+<li>Unter <strong>Einstellungen → Gesichtserkennung</strong> die Verarbeitung einschalten.
+   Aktivierung ist nur bei erreichbarem, kompatiblem Dienst möglich.</li>
+</ol>
+<p>Compose verwendet intern <code>http://faces:8091</code>, ohne veröffentlichten Dienstport.
+Die native Installation und die Diensttests sind in <code>services/faces/README.md</code>
+beschrieben. Eine eigene Dienstadresse lässt sich über folgende optionale Werte setzen:</p>
+<table>
+<thead>
+<tr>
+<th>JSON-Feld unter <code>photos</code></th>
+<th>Umgebungsvariable</th>
+<th>Bedeutung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>face_service_url</code></td>
+<td><code>BEARSTACK_PHOTOS_FACE_SERVICE_URL</code></td>
+<td>HTTP(S)-Adresse des eigenen Erkennungsdienstes.</td>
+</tr>
+<tr>
+<td><code>face_service_token</code></td>
+<td><code>BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN</code></td>
+<td>Gemeinsamer geheimer Token, mindestens 32 Zeichen.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Schonender Betrieb:</strong> Ein Worker verarbeitet standardmäßig 100 Bilder, mit einer
+Sekunde Pause pro Bild und 15 Minuten Wartezeit zwischen Läufen. Der Dienst nutzt
+einen Inferenzthread; Compose begrenzt ihn auf 0,5 CPU-Kerne und 1 GiB RAM. Die
+Einstellungen erlauben 1–1.000 Bilder pro Lauf, 100–60.000 ms Pause und 1–1.440 Minuten
+Wartezeit. Der Erstlauf holt die Sammlung schrittweise nach. Wenn der separate
+Fotoindex-Worker aus ist, nutzt die Gesichtserkennung dessen Scanmechanismus stündlich.
+Nach dem Erstlauf entstehen neue Aufträge direkt bei Indexänderungen. Unveränderte
+Bilder einschließlich Ergebnissen ohne Gesicht werden nicht erneut analysiert.
+Fehler werden mit zunehmender Wartezeit bis zu fünfmal versucht und können manuell
+zurückgesetzt werden. Neustarts setzen die persistente Warteschlange fort.</p>
+<p><strong>Metadaten und Korrekturen:</strong> Eindeutige XMP-Gesichtsregionen liefern Namen und
+Referenzen. Manuelle Zuordnungen haben Vorrang. XMP und automatische Gesichter werden
+getrennt gespeichert; Originale und Sidecars werden nicht verändert. Die Foto-DB
+migriert automatisch auf Schema 18. Ihre Sicherung muss die erzeugten Gesichtsdaten
+und manuellen Korrekturen einschließen. Ein Index-Neuaufbau erhält die Korrekturen
+unveränderter Bilder; Dateiaustausch und Löschung entfernen veraltete Analysen.
+Bei einem Modellwechsel werden manuelle Zuordnungen nur auf eindeutig wiedergefundene
+Regionen übertragen. Unsichere Treffer bleiben getrennt. Das Zusammenführen bestehender
+Gruppen erfolgt ausschließlich manuell; die Erkennung stellt keine sichere Identitätsfeststellung dar.</p>
+<p><strong>Sichtbarkeit und Aufbewahrung:</strong> <code>.adminonly</code>-Fotos sind von automatischer Analyse
+und Personengruppen ausgeschlossen. Nachträgliche Schutzmarkierungen entfernen deren
+automatische Ergebnisse und Referenzen. Gesichtsvorschauen prüfen die aktuellen Rechte.
+Pausieren oder Ausschalten behält bisherige Ergebnisse. Die separate, ausdrücklich
+zu bestätigende Löschaktion entfernt erzeugte Gesichtsdaten, Gruppen und Korrekturen
+und schaltet die Verarbeitung aus; importierte XMP-Gesichtsdaten bleiben erhalten.
+Merkmalsvektoren erscheinen weder in HTTP-Antworten an Browser noch in Logs.</p>
+<p>V1 unterstützt JPEG, PNG, WebP und das erste GIF-Bild. Videos und SVG werden nicht
+analysiert. Bilder über 40 Megapixel werden zur Begrenzung des Speichers zurückgewiesen;
+sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können fehlen.</p>
 
 
 
@@ -929,7 +1039,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.23.4 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.24.2 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

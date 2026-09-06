@@ -144,6 +144,10 @@ func (s *Server) handlePhotoFrameItems(w http.ResponseWriter, r *http.Request) {
 		s.renderPhotoError(w, r, err)
 		return
 	}
+	if err = s.photos.AddAutomaticFaces(r.Context(), listing.Media); err != nil {
+		s.renderPhotoError(w, r, err)
+		return
+	}
 	photoView := newPhotoListingView(r.Context(), s.photos, listing, settings)
 	if err := writeJSON(w, http.StatusOK, struct {
 		Media    []photoMediaAPIResponse `json:"media"`

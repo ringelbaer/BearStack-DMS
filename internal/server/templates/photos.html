@@ -16,6 +16,7 @@
     </nav>
   </div>
   <div class="page-actions">
+ <a class="button" href="/photos/people">Personen</a>
     {{if and .Auth.CanPhotosEdit (not .PhotoFilter.MapView)}}
     <button type="button" class="photo-mode-toggle" data-photo-mode-toggle aria-pressed="false" aria-label="Bearbeiten einschalten" title="Bearbeiten einschalten">
       <span class="photo-mode-icon photo-mode-view" aria-hidden="true">
@@ -400,6 +401,7 @@
       <dl>
         <dt>Datei</dt><dd data-photo-info-name>-</dd>
         <dt>Aufgenommen</dt><dd data-photo-info-date>-</dd>
+        <dt>Personen</dt><dd data-photo-info-people>–</dd>
         <dt>Kamera</dt><dd data-photo-info-camera>-</dd>
         <dt>Objektiv</dt><dd data-photo-info-lens>-</dd>
         <dt>Bewertung</dt><dd data-photo-info-rating>-</dd>

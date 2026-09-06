@@ -224,6 +224,11 @@ func (l *Library) finishListing(ctx context.Context, opts ListOptions, listing *
 	finishFolderSort := StartListTraceStep(ctx, "photos.library.sort_folders", ListTraceInt("count", len(listing.Folders)), ListTraceString("order", listing.Order), ListTraceString("sort", opts.Sort))
 	sortFolders(listing.Folders, listing.Order, opts.Sort)
 	finishFolderSort()
+	if !source.mediaFiltered && queryHasPerson(opts.Query) {
+		if err := l.AddAutomaticFaces(ctx, listing.Media); err != nil {
+			return err
+		}
+	}
 	if !source.mediaFiltered {
 		finishFilter := StartListTraceStep(ctx, "photos.library.filter_media", ListTraceInt("before", len(listing.Media)))
 		listing.Media = filterMedia(listing.Media, opts)

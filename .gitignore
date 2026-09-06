@@ -29,3 +29,7 @@ pigallery2
 *.tar
 .cache/
 .venv
+# Python service test/build artifacts
+__pycache__/
+*.pyc
+.venv-faces/
