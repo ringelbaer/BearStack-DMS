@@ -24,12 +24,55 @@ test.beforeAll(async () => {
   });
   await new Promise(resolve=>service.listen(0,"127.0.0.1",resolve));
   const appPort=await port();baseURL=`http://127.0.0.1:${appPort}`;
-  const config=path.join(root,"config.json");await writeFile(config,JSON.stringify({addr:`127.0.0.1:${appPort}`,data_dir:path.join(root,"data"),auth:{credentials:[{username:"manager",password:"secret",role:"photos_manager"},{username:"reader",password:"secret",role:"photos_read"}]},photos:{enabled:true,root_dir:photos,face_service_url:`http://127.0.0.1:${service.address().port}`,face_service_token:token}}));
+  const config=path.join(root,"config.json");await writeFile(config,JSON.stringify({addr:`127.0.0.1:${appPort}`,data_dir:path.join(root,"data"),auth:{credentials:[{username:"admin",password:"secret",role:"admin"},{username:"manager",password:"secret",role:"photos_manager"},{username:"reader",password:"secret",role:"photos_read"}]},photos:{enabled:true,root_dir:photos,face_service_url:`http://127.0.0.1:${service.address().port}`,face_service_token:token}}));
   app=spawn("go",["run","./cmd/bearstack"],{env:{...process.env,BEARSTACK_CONFIG:config},stdio:["ignore","pipe","pipe"],detached:true});
   app.stdout.on("data",b=>{output+=b;});app.stderr.on("data",b=>{output+=b;});
   await expect.poll(async()=>{try{return (await fetch(baseURL+"/healthz",{headers:{authorization:"Basic "+Buffer.from("manager:secret").toString("base64")}})).status;}catch{return 0;}},{timeout:120000,message:()=>output}).toBe(200);
 });
 test.afterAll(async()=>{if(app?.pid){try{process.kill(-app.pid,"SIGTERM");}catch{}}if(service)await new Promise(resolve=>service.close(resolve));if(root)await rm(root,{recursive:true,force:true});});
+
+test("face settings fit the shared desktop and mobile layout", async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto(baseURL + "/login");
+  await page.getByLabel("Benutzername").fill("admin");
+  await page.locator('input[name="password"]').fill("secret");
+  await page.getByRole("button", { name: "Anmelden" }).click();
+  await page.goto(baseURL + "/settings/photos/faces");
+  await expect(page.getByRole("heading", { name: "Gesichtserkennung", exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Einstellungen", exact: true }).locator("a")).toHaveCount(5);
+  for (const width of [1440, 1024, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    const layout = await page.evaluate(() => {
+      const navigation = document.querySelector(".settings-tab-list").getBoundingClientRect();
+      const panel = document.querySelector(".face-settings-panel").getBoundingClientRect();
+      const fields = [...document.querySelectorAll('.face-settings-panel input[type="number"], .face-settings-status > div, .face-settings-panel button')];
+      return {
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        navigationRight: navigation.right,
+        navigationBottom: navigation.bottom,
+        panelLeft: panel.left,
+        panelTop: panel.top,
+        contained: fields.every(field => {
+          const rect = field.getBoundingClientRect();
+          return rect.left >= panel.left && rect.right <= panel.right + 1;
+        }),
+      };
+    });
+    expect(layout.overflow, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(1);
+    expect(layout.contained, `clipped controls at ${width}px`).toBe(true);
+    if (width > 1050) expect(layout.panelLeft).toBeGreaterThanOrEqual(layout.navigationRight - 1);
+    else expect(layout.panelTop).toBeGreaterThanOrEqual(layout.navigationBottom - 1);
+    const enabled = await page.getByLabel("Gesichtserkennung aktivieren").boundingBox();
+    const firstField = await page.getByLabel("Bilder pro Lauf", { exact: true }).boundingBox();
+    expect(firstField.y).toBeGreaterThan(enabled.y + enabled.height);
+    await page.screenshot({ path: `/tmp/bearstack-face-settings-${width}.png`, fullPage: true });
+  }
+  await expect(page.locator('input[name="confirm"]')).not.toBeChecked();
+  await page.getByRole("button", { name: "Gesichtsdaten löschen", exact: true }).click();
+  expect(await page.locator('input[name="confirm"]').evaluate(input => input.validity.valueMissing)).toBe(true);
+  await context.close();
+});
 
 test("face recognition: enable, name, move, merge, ignore and search",async({browser})=>{
   const context=await browser.newContext({httpCredentials:{username:"manager",password:"secret"}});const page=await context.newPage();

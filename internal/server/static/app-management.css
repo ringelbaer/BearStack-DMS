@@ -1162,6 +1162,70 @@ label .context-help-trigger:focus-visible,
   margin: 4px 0 0;
 }
 
+.face-settings-panel p,
+.face-settings-panel h3 {
+  margin: 0;
+}
+
+.face-settings-panel h3 {
+  font-size: 16px;
+}
+
+.face-settings-fields {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.face-settings-inputs {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+
+.face-settings-inputs label {
+  display: grid;
+  align-content: end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.face-settings-status {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  margin: 0;
+}
+
+.face-settings-status > div {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  min-width: 0;
+  padding: 12px;
+}
+
+.face-settings-status dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.face-settings-status dd {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.face-settings-errors {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.face-settings-delete {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+
 .mail-enabled {
   justify-self: start;
 }

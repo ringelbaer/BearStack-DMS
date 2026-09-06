@@ -105,6 +105,10 @@ Gruppen zusammenführen, ausgewählte Gesichter in andere oder neue Gruppen vers
 und Fehlfunde ignorieren. Die Fotoinfo verlinkt erkannte Personen. `person:Juergen`
 und `face:"Marie Curie"` suchen sowohl XMP-Namen als auch benannte automatische Gruppen.
 
+Unter **Einstellungen → Gesichtserkennung** stehen Statuszahlen, Verarbeitung und
+Löschaktion in getrennten Bereichen. Die Einstellungsnavigation steht auf großen
+Bildschirmen links und ist auf kleinen Bildschirmen als horizontale Reiterleiste erreichbar.
+
 Die Verarbeitung erfolgt in einem separaten lokalen Dienst mit OpenCV/YuNet/SFace.
 Bilder verlassen die eigene Infrastruktur nicht. Der Dienst hat weder Zugriff auf
 das Fotoverzeichnis noch auf die Datenbank. BearStack sendet ausgerichtete, auf

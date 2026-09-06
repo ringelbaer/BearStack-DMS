@@ -2,7 +2,7 @@
 site_name = "BearStack"
 site_description = "Lokale Dokumenten- und Fotoverwaltung für kleine Server, Raspberry Pi und private Archive."
 site_author = "BearStack"
-copyright = "BearStack 0.24.2"
+copyright = "BearStack 0.24.3"
 repo_url = "https://github.com/ringelbaer/BearStack-DMS"
 repo_name = "ringelbaer/BearStack-DMS"
 docs_dir = "_site-src/docs"
