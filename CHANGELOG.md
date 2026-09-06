@@ -2,6 +2,12 @@
 
 Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
+## Unveröffentlicht
+
+### Dokumentation
+
+- Schrittweise Einrichtung der Gesichtserkennung ohne Compose ergänzt: Python-Umgebung, Modellinstallation, Token, Dienstprüfung und native BearStack-Konfiguration.
+
 ## 0.24.2 - 2026-09-06
 
 ### Behoben

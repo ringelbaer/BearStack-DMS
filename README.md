@@ -283,7 +283,7 @@ und `face:"Marie Curie"` suchen sowohl XMP-Namen als auch benannte automatische 
 Die Verarbeitung erfolgt in einem separaten lokalen Dienst mit OpenCV/YuNet/SFace.
 Bilder verlassen die eigene Infrastruktur nicht. Der Dienst hat weder Zugriff auf
 das Fotoverzeichnis noch auf die Datenbank. BearStack sendet ausgerichtete, auf
-höchstens 1.600 Pixel verkleinerte JPEGs. Modelle werden beim Image-Build mit festen
+höchstens 1.600 Pixel verkleinerte JPEGs. Modelle werden bei der Einrichtung beziehungsweise beim Image-Build mit festen
 SHA-256-Prüfsummen geladen und beim Start geprüft; im Betrieb gibt es keine Downloads.
 
 **Einrichtung mit Compose:**
@@ -296,13 +296,99 @@ SHA-256-Prüfsummen geladen und beim Start geprüft; im Betrieb gibt es keine Do
    Aktivierung ist nur bei erreichbarem, kompatiblem Dienst möglich.
 
 Compose verwendet intern `http://faces:8091`, ohne veröffentlichten Dienstport.
-Die native Installation und die Diensttests sind in `services/faces/README.md`
-beschrieben. Eine eigene Dienstadresse lässt sich über folgende optionale Werte setzen:
+Eine eigene Dienstadresse lässt sich über folgende optionale Werte setzen:
 
 | JSON-Feld unter `photos` | Umgebungsvariable | Bedeutung |
 | --- | --- | --- |
 | `face_service_url` | `BEARSTACK_PHOTOS_FACE_SERVICE_URL` | HTTP(S)-Adresse des eigenen Erkennungsdienstes. |
 | `face_service_token` | `BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN` | Gemeinsamer geheimer Token, mindestens 32 Zeichen. |
+
+#### Einrichtung ohne Compose (native Installation)
+
+BearStack und der Erkennungsdienst können auf demselben Rechner direkt laufen.
+Voraussetzungen sind ein eingerichtetes Fotomodul, die BearStack-Quelldateien passend
+zur installierten Version, **Python 3.12 oder neuer mit `venv`**, OpenSSL und curl.
+Eine GPU ist nicht erforderlich. Die folgenden Befehle werden im BearStack-Projektordner
+ausgeführt; für die Installation der Python-Pakete und Modelle wird Internetzugang benötigt.
+
+1. **Python-Umgebung und Modelle installieren:**
+
+    ```sh
+    python3 --version
+    python3 -m venv .venv-faces
+    .venv-faces/bin/python -m pip install --only-binary=:all: -r services/faces/requirements.txt
+    .venv-faces/bin/python services/faces/download_models.py "$HOME/.local/share/bearstack-face-models"
+    ```
+
+    Fehlt `venv`, das zur Python-Version passende Paket des Betriebssystems installieren
+    (unter Debian/Ubuntu beispielsweise `python3-venv`). Das Downloadskript lädt die
+    festgelegten Modelle samt Lizenzhinweisen und prüft ihre SHA-256-Prüfsummen.
+    Die Modelldateien bleiben lokal erhalten; dieser Schritt ist nur bei der Einrichtung
+    oder einem vorgesehenen Modellupdate nötig.
+
+2. **Gemeinsamen Token erzeugen:**
+
+    ```sh
+    openssl rand -hex 32
+    ```
+
+    Den erzeugten Wert in den folgenden Beispielen anstelle von `TOKEN_HIER_EINTRAGEN`
+    verwenden. Erkennungsdienst und BearStack müssen denselben Token erhalten.
+
+3. **Erkennungsdienst in einem eigenen Terminal starten:**
+
+    ```sh
+    export BEARSTACK_FACE_MODELS_DIR="$HOME/.local/share/bearstack-face-models"
+    export BEARSTACK_FACE_SERVICE_TOKEN='TOKEN_HIER_EINTRAGEN'
+    export BEARSTACK_FACE_BIND=127.0.0.1
+    .venv-faces/bin/python services/faces/server.py
+    ```
+
+    Der Dienst lauscht auf `127.0.0.1:8091`. Er benötigt Leserechte auf die Modelle,
+    aber keine Rechte auf Fotoverzeichnis oder BearStack-Datenbank. Das Terminal bleibt
+    während des Betriebs geöffnet. Der Python-Dienst liest `.env` **nicht** automatisch;
+    seine Variablen müssen in der Prozessumgebung gesetzt sein.
+
+4. **Erreichbarkeit in einem zweiten Terminal prüfen:**
+
+    ```sh
+    export BEARSTACK_FACE_SERVICE_TOKEN='TOKEN_HIER_EINTRAGEN'
+    curl --fail --silent --show-error \
+      -H "Authorization: Bearer $BEARSTACK_FACE_SERVICE_TOKEN" \
+      http://127.0.0.1:8091/health
+    ```
+
+    Die JSON-Antwort muss `"ready": true`, `"protocol": 1` und die Modellkennung
+    `yunet-2023mar-sface-2021dec-v1` enthalten. Bei HTTP 401 stimmt der Token nicht;
+    bei einem Verbindungsfehler zuerst das Dienstterminal prüfen.
+
+5. **BearStack verbinden und neu starten:** Die folgenden Werte in die von BearStack
+    gelesene `.env`-Datei beziehungsweise seine Prozessumgebung eintragen:
+
+    ```env
+    BEARSTACK_PHOTOS_FACE_SERVICE_URL=http://127.0.0.1:8091
+    BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN=TOKEN_HIER_EINTRAGEN
+    ```
+
+    Bei der systemd-Beispielinstallation können stattdessen die Felder
+    `face_service_url` und `face_service_token` im vorhandenen `photos`-Objekt in
+    `/etc/bearstack/bearstack.json` ergänzt werden. Danach `sudo systemctl restart bearstack`
+    ausführen. Die übrige Foto-Konfiguration beibehalten und die Datei mit dem Token
+    nur für den Administrator und den jeweiligen Dienst lesbar halten.
+
+6. **Verarbeitung aktivieren:** Als Foto-Verwalter unter **Einstellungen → Gesichtserkennung**
+    einschalten. Dort erscheinen Fortschritt und Fehler; die Ergebnisse stehen unter
+    **Fotos → Personen** bereit. Der vorhandene Fotobestand wird schrittweise verarbeitet.
+
+Für dauerhaften Betrieb muss der Python-Prozess ebenfalls durch einen Dienstmanager
+wie systemd gestartet werden. Dabei einen absoluten Pfad zu `.venv-faces/bin/python`,
+`services/faces/server.py` und den Modellen verwenden sowie die drei Dienstvariablen
+aus Schritt 3 setzen. BearStack startet diesen Prozess nicht selbst. Die Begrenzungen
+auf einen halben CPU-Kern und 1 GiB RAM gelten nur für die Compose-Konfiguration;
+bei nativem Betrieb müssen entsprechende Ressourcenlimits im Dienstmanager gesetzt werden.
+Der einzelne Inferenzthread und die BearStack-Pausen gelten auch ohne Compose.
+
+#### Verarbeitung, Metadaten und Datenschutz
 
 **Schonender Betrieb:** Ein Worker verarbeitet standardmäßig 100 Bilder, mit einer
 Sekunde Pause pro Bild und 15 Minuten Wartezeit zwischen Läufen. Der Dienst nutzt
