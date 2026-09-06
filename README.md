@@ -232,6 +232,8 @@ Standardmaessig zeigt BearStack PDF-Ausgaben mit dem nativen Viewer des Browsers
 
 Die maschinenlesbare API-Beschreibung liegt im Repository als `openapi.yaml` und wird von einer laufenden Instanz authentifiziert unter `GET /api/openapi.yaml` ausgeliefert. Sie verwendet OpenAPI 3.1 und beschreibt die oeffentlichen JSON-, Upload- und Dokumentmedien-Endpunkte.
 
+Bei Versionsänderungen muss `info.version` in `openapi.yaml` mit der Root-Datei `VERSION` übereinstimmen; `TestOpenAPISpecMatchesApplicationVersion` prüft diesen Abgleich.
+
 Uploads werden nach dem konfigurierten Limit begrenzt, Dateinamen werden normalisiert, unbekannte Dateitypen werden abgelehnt und gespeicherte Pfade werden immer gegen den Storage-Root aufgeloest. Unerwartete Import- und Vorschaufehler werden fuer HTTP-Antworten generisch ausgegeben, damit interne Pfade oder Werkzeugdetails nicht im Browser landen.
 
 Der E-Mail-Import verarbeitet erlaubte IMAP-Nachrichten mit PDF-Anhaengen oder angehaengten `.eml`-Dateien. PDF-Anhaenge werden wie normale Uploads importiert. Jede EML-Datei wird zu einem Archiv-PDF mit unabhaengig erzeugtem Metadaten-Deckblatt, gerenderter sicherer Mailabbildung und anschliessenden PDF-Anhaengen aus der EML; andere Anhaenge werden auf dem Deckblatt gelistet. Die Mailabbildung benoetigt `chromium`; das Zusammenfuehren von Deckblatt, Mailabbildung und PDF-Anhaengen benoetigt `pdfunite` aus `poppler-utils`.

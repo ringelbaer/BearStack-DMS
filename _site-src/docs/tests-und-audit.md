@@ -49,6 +49,8 @@ Die Go-Tests decken Repository-Migrationen, Suche, Tags, benutzerdefinierte Feld
 
 Für Änderungen an riskanten Bereichen gilt: fokussierte Regressionstests vor breit angelegten Refactors. Wenn eine Änderung Performance berührt, sind Benchmarks oder nachvollziehbare Messungen sinnvoller als reine Einschätzung.
 
+Bei Versionsänderungen muss `info.version` in `openapi.yaml` mit der Root-Datei `VERSION` übereinstimmen. Der Go-Test `TestOpenAPISpecMatchesApplicationVersion` prüft diesen Abgleich für die eingebettete API-Beschreibung.
+
 ## Performance-Benchmarks
 
 BearStack enthält Benchmarks für Dokumentlisten und das Fotomodul. Sie messen Suche, Tag-Filter, Pagination, große Fotoindexe, GPX-Daten, Thumbnail-Status und Index-Neuaufbau.
