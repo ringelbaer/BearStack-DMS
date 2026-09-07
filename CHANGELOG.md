@@ -58,6 +58,25 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 - OpenAPI-Versionsangabe auf den bestehenden Release 0.24.2 korrigiert und den erforderlichen Abgleich mit `VERSION` dokumentiert.
 - Schrittweise Einrichtung der Gesichtserkennung ohne Compose ergänzt: Python-Umgebung, Modellinstallation, Token, Dienstprüfung und native BearStack-Konfiguration.
 
+## 0.36.0 - 2026-09-08
+
+### Neu
+
+- „Fotos bearbeiten“ (`photos_editor` / `photos.edit`) reicht für Personenbenennung, Zuordnung, Zusammenführung, Ignorieren und Wiederherstellung sowie alle Endpunkte der Android-/Labeling-API. Die Web-Oberfläche zeigt die passenden Bearbeitungsaktionen auch Fotobearbeitern.
+- Einstellungen und Steuerung der Gesichtserkennung sowie das Löschen aller Gesichtsdaten bleiben an `photos.manage` gebunden. Fotoleser dürfen Personen weiterhin nur ansehen; geschützte Fotos bleiben ausgeschlossen.
+- Das API-Feld `can_manage` bleibt für bestehende Apps kompatibel und signalisiert die erlaubte Personenbearbeitung. Ein App-Update ist für die Rechtefreigabe nicht nötig.
+
+### Tests
+
+- App-Sitzung, Benennung, Vorschaubilder, Aktionsquittungen und Web-Ignorieren mit Fotobearbeiter-Rechten geprüft; Verwaltungsaktionen und Datenlöschung bleiben gesperrt.
+
+## 0.35.1 - 2026-09-08
+
+### Sicherheit
+
+- „Gesichtsdaten löschen“ verlangt zusätzlich zur Löschbestätigung das aktuelle Passwort des angemeldeten Nutzers im bestehenden Passwortdialog. Die serverseitige Prüfung samt Fehlversuchsdrosselung erfolgt vor dem Abschalten der Verarbeitung und dem Löschen der Daten.
+- Fehlendes oder falsches Passwort sowie fehlende Löschbestätigung und unzureichende Rechte lassen Daten und Verarbeitung unverändert. Ablehnung, Passwortdialog und erfolgreiche Löschung sind durch HTTP-Tests abgesichert.
+
 ## 0.34.0 - 2026-09-07
 
 ### Hinzugefügt

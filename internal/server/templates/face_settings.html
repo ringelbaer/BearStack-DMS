@@ -64,10 +64,10 @@
       <section class="face-settings-delete settings-form" aria-labelledby="face-delete-heading">
         <h3 id="face-delete-heading">Gesichtsdaten löschen</h3>
         <p class="muted">Entfernt erzeugte Gesichter, Personengruppen und manuelle Korrekturen und schaltet die Verarbeitung aus. Vorhandene XMP-Gesichtsdaten bleiben erhalten.</p>
-        <form method="post" action="/settings/photos/faces/clear" class="settings-form">
+        <form method="post" action="/settings/photos/faces/clear" class="settings-form" data-password-prompt="Alle erzeugten Gesichtsdaten einschließlich Namen und manueller Korrekturen löschen? Bitte mit deinem aktuellen Passwort bestätigen." data-password-prompt-confirm="Gesichtsdaten löschen">
           <label class="checkbox-line">
             <input type="checkbox" name="confirm" value="delete" required>
-            <span class="checkbox-help-label">Ich möchte alle erzeugten Gesichtsdaten löschen. <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Gesichtsdaten löschen" aria-expanded="false" data-context-help-title="Gesichtsdaten löschen" data-context-help="Bestätigt das Löschen erkannter Gesichter, Personengruppen, Namen und manueller Korrekturen. Die Verarbeitung wird ausgeschaltet. Originalbilder und vorhandene XMP-Gesichtsdaten bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden.">i</span></span>
+            <span class="checkbox-help-label">Ich möchte alle erzeugten Gesichtsdaten löschen. <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Gesichtsdaten löschen" aria-expanded="false" data-context-help-title="Gesichtsdaten löschen" data-context-help="Bestätigt das Löschen erkannter Gesichter, Personengruppen, Namen und manueller Korrekturen. Die Verarbeitung wird ausgeschaltet. Originalbilder und vorhandene XMP-Gesichtsdaten bleiben erhalten. Vor dem Löschen musst du dein aktuelles Passwort bestätigen. Diese Aktion kann nicht rückgängig gemacht werden.">i</span></span>
           </label>
           <div class="settings-actions"><button type="submit" class="danger">Gesichtsdaten löschen</button></div>
         </form>

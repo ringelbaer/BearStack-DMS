@@ -82,7 +82,7 @@ func TestLabelingOriginalPhoto(t *testing.T) {
 			for _, test := range []struct {
 				user   string
 				status int
-			}{{"", 401}, {"reader", 403}, {"editor", 403}} {
+			}{{"", 401}, {"reader", 403}, {"editor", 200}} {
 				if w := labelRequest(s, "GET", path, test.user, ""); w.Code != test.status {
 					t.Fatalf("original permission %q: %d", test.user, w.Code)
 				}
@@ -117,7 +117,7 @@ func TestLabelingHTTPContractPermissionsAndImages(t *testing.T) {
 	for _, test := range []struct {
 		user   string
 		status int
-	}{{"", 401}, {"reader", 403}, {"editor", 403}, {"manager", 200}} {
+	}{{"", 401}, {"reader", 403}, {"editor", 200}, {"manager", 200}} {
 		w := labelRequest(s, "GET", base+"/session", test.user, "")
 		if w.Code != test.status {
 			t.Fatalf("%s %d %s", test.user, w.Code, w.Body.String())
@@ -136,7 +136,7 @@ func TestLabelingHTTPContractPermissionsAndImages(t *testing.T) {
 		t.Fatal(err)
 	}
 	session, _ := s.photos.LabelSession(ctx)
-	w := labelRequest(s, "GET", fmt.Sprintf("%s/candidates?upper=%d", base, session.UpperID), "manager", "")
+	w := labelRequest(s, "GET", fmt.Sprintf("%s/candidates?upper=%d", base, session.UpperID), "editor", "")
 	var candidates photos.LabelCandidates
 	if err = json.Unmarshal(w.Body.Bytes(), &candidates); err != nil || len(candidates.People) != 1 {
 		t.Fatalf("%s %v", w.Body.String(), err)
@@ -145,7 +145,7 @@ func TestLabelingHTTPContractPermissionsAndImages(t *testing.T) {
 	if strings.Contains(w.Body.String(), "embedding") {
 		t.Fatal("embedding exposed")
 	}
-	w = labelRequest(s, "GET", fmt.Sprintf("%s/people/%d", base, p.ID), "manager", "")
+	w = labelRequest(s, "GET", fmt.Sprintf("%s/people/%d", base, p.ID), "editor", "")
 	var detail photos.LabelPerson
 	if err := json.Unmarshal(w.Body.Bytes(), &detail); err != nil || len(detail.Faces) != 1 || detail.Faces[0].DisplayPath != "Fotos / one.jpg" {
 		t.Fatalf("face display path: %s %v", w.Body.String(), err)
@@ -154,7 +154,7 @@ func TestLabelingHTTPContractPermissionsAndImages(t *testing.T) {
 		t.Fatalf("oriented face bounds: %+v", got)
 	}
 	for _, size := range []int{160, 640} {
-		w = labelRequest(s, "GET", fmt.Sprintf("%s/faces/%d/thumbnail?size=%d", base, p.FaceID, size), "manager", "")
+		w = labelRequest(s, "GET", fmt.Sprintf("%s/faces/%d/thumbnail?size=%d", base, p.FaceID, size), "editor", "")
 		img, e := jpeg.Decode(w.Body)
 		if e != nil || img.Bounds().Dx() != size || img.Bounds().Dy() != size {
 			t.Fatalf("thumbnail %d %v", w.Code, e)
@@ -167,26 +167,26 @@ func TestLabelingHTTPContractPermissionsAndImages(t *testing.T) {
 	if w.Code != 403 {
 		t.Fatalf("unauthorized write %d", w.Code)
 	}
-	w = labelRequest(s, "POST", path, "manager", string(body))
+	w = labelRequest(s, "POST", path, "editor", string(body))
 	if w.Code != 200 {
 		t.Fatalf("write %d %s", w.Code, w.Body.String())
 	}
 	receipt := w.Body.String()
-	w = labelRequest(s, "GET", base+"/actions/"+a.OperationID+"?dataset="+session.Dataset, "manager", "")
+	w = labelRequest(s, "GET", base+"/actions/"+a.OperationID+"?dataset="+session.Dataset, "editor", "")
 	if w.Code != 200 || w.Body.String() != receipt {
 		t.Fatalf("receipt %d %s", w.Code, w.Body.String())
 	}
-	w = labelRequest(s, "POST", path, "manager", string(body))
+	w = labelRequest(s, "POST", path, "editor", string(body))
 	if w.Code != 200 || w.Body.String() != receipt {
 		t.Fatalf("repeat %d %s", w.Code, w.Body.String())
 	}
 	for _, path := range []string{"/candidates?after=-1", "/people/1?offset=-1", "/faces/1/thumbnail?size=500"} {
-		w = labelRequest(s, "GET", base+path, "manager", "")
+		w = labelRequest(s, "GET", base+path, "editor", "")
 		if w.Code != 400 {
 			t.Fatalf("validation %s: %d", path, w.Code)
 		}
 	}
-	w = labelRequest(s, "POST", path, "manager", string(body)+" {}")
+	w = labelRequest(s, "POST", path, "editor", string(body)+" {}")
 	if w.Code != 400 {
 		t.Fatalf("trailing JSON %d", w.Code)
 	}

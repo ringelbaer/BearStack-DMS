@@ -75,7 +75,7 @@ func TestFaceRoutesPermissionsAndDisabledDefault(t *testing.T) {
 			t.Fatalf("people %s %d %s", user, w.Code, w.Body.String())
 		}
 		w = faceRequest(s, "POST", "/photos/faces/edit", user, url.Values{"face_id": {"1"}, "action": {"ignore"}})
-		if user != "manager" && w.Code != 403 {
+		if user == "reader" && w.Code != 403 {
 			t.Errorf("edit permission %s %d", user, w.Code)
 		}
 	}
@@ -161,14 +161,14 @@ func TestFaceWorkerAndAPI(t *testing.T) {
 	if denied.Code == 304 || denied.Code == 200 {
 		t.Fatalf("unauthenticated cache access: %d", denied.Code)
 	}
-	if err = s.photos.RenamePerson(context.Background(), f[0].PersonID, "Marie"); err != nil {
-		t.Fatal(err)
+	if response := faceRequest(s, "POST", "/photos/people/"+strconv.FormatInt(f[0].PersonID, 10)+"/rename", "editor", url.Values{"name": {"Marie"}}); response.Code != 303 {
+		t.Fatalf("editor rename: %d %s", response.Code, response.Body.String())
 	}
 	w = faceRequest(s, "GET", "/photos/media/info?path=one.jpg", "reader", nil)
 	if w.Code != 200 || !strings.Contains(w.Body.String(), `"automatic_faces"`) || strings.Contains(w.Body.String(), "embedding") {
 		t.Fatalf("API %d %s", w.Code, w.Body.String())
 	}
-	w = faceRequest(s, "POST", "/photos/faces/edit", "manager", url.Values{"face_id": {strconv.FormatInt(f[0].ID, 10)}, "action": {"ignore"}})
+	w = faceRequest(s, "POST", "/photos/faces/edit", "editor", url.Values{"face_id": {strconv.FormatInt(f[0].ID, 10)}, "action": {"ignore"}})
 	if w.Code != http.StatusOK || w.Header().Get("Location") != "" || !strings.Contains(w.Body.String(), `"ok":true`) {
 		t.Fatalf("Ajax ignore %d %s", w.Code, w.Body.String())
 	}
@@ -191,7 +191,7 @@ func TestFaceWorkerAndAPI(t *testing.T) {
 	if w.Code != 400 {
 		t.Fatal("unconfirmed clear")
 	}
-	w = faceRequest(s, "POST", "/settings/photos/faces/clear", "manager", url.Values{"confirm": {"delete"}})
+	w = faceRequest(s, "POST", "/settings/photos/faces/clear", "manager", url.Values{"confirm": {"delete"}, "password": {"secret"}})
 	if w.Code != 303 {
 		t.Fatalf("clear %d %s", w.Code, w.Body.String())
 	}

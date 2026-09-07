@@ -280,6 +280,10 @@ func (s *Server) handleFaceControl(w http.ResponseWriter, r *http.Request) {
 			s.faceError(w, r, errors.New("Löschen der Gesichtsdaten muss bestätigt werden"))
 			return
 		}
+		if status, confirmationErr := s.passwordConfirmationFailure(w, r, r.FormValue("password")); confirmationErr != nil {
+			s.renderErrorWithReturn(w, r, status, confirmationErr, "/settings/photos/faces")
+			return
+		}
 		settings.Enabled = false
 		err = s.saveFaceSettings(r.Context(), settings)
 		if err == nil {

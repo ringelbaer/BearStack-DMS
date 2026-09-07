@@ -93,7 +93,7 @@ var permissionDescriptors = []PermissionDescriptor{
 	{Name: PermissionDocumentsDelete, Label: "Dokumente löschen", Description: "Dokumente in den Papierkorb verschieben und endgültig löschen", Group: "Dokumente", Capability: CapabilityDocumentsDelete},
 	{Name: PermissionDocumentsStructure, Label: "Dokumentstruktur verwalten", Description: "Tags, Felder und Suchfavoriten verwalten", Group: "Dokumente", Capability: CapabilityDocumentsStructure},
 	{Name: PermissionPhotosRead, Label: "Fotos lesen", Description: "Fotos und Alben ansehen", Group: "Fotos", Capability: CapabilityPhotosRead},
-	{Name: PermissionPhotosEdit, Label: "Fotos bearbeiten", Description: "Foto-Metadaten und Tags bearbeiten", Group: "Fotos", Capability: CapabilityPhotosEdit},
+	{Name: PermissionPhotosEdit, Label: "Fotos bearbeiten", Description: "Foto-Metadaten, Tags und Personen bearbeiten; Personen-App verwenden", Group: "Fotos", Capability: CapabilityPhotosEdit},
 	{Name: PermissionPhotosManage, Label: "Fotobibliothek verwalten", Description: "Fotobibliothek und Blogs verwalten", Group: "Fotos", Capability: CapabilityPhotosManage},
 	{Name: PermissionSystemManage, Label: "System verwalten", Description: "Anwendungseinstellungen und Wartung verwalten", Group: "System", Capability: CapabilitySystemManage},
 	{Name: PermissionSystemAudit, Label: "Audit-Protokoll lesen", Description: "Audit-Ereignisse einsehen", Group: "System", Capability: CapabilitySystemAudit},

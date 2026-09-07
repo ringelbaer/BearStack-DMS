@@ -72,7 +72,7 @@ Läuft BearStack ohne Auth ausschließlich auf Loopback, muss das erste UI-Konto
 | `documents_editor` | `documents_read` plus `documents.upload`, `documents.edit` | Dokumente hochladen, Metadaten bearbeiten, OCR starten, Dokumente verknüpfen und vorhandene Tags zuweisen |
 | `documents_manager` | `documents_editor` plus `documents.delete`, `documents.structure` | Dokumente löschen/wiederherstellen und Struktur-Daten wie Tags, Suchfavoriten und benutzerdefinierte Felder verwalten |
 | `photos_read` | `photos.read` | Foto-Galerie, Suche, Medien, Thumbnails, Zufallsbild und Fotoframe lesen |
-| `photos_editor` | `photos_read` plus `photos.edit` | Foto- und Ordner-Tags zuweisen oder entfernen |
+| `photos_editor` | `photos_read` plus `photos.edit` | Foto- und Ordner-Tags zuweisen oder entfernen; Personen benennen, zuordnen, zusammenführen, ignorieren und wiederherstellen; Personen-App verwenden |
 | `photos_manager` | `photos_editor` plus `photos.manage` | Fotoeinstellungen, Foto-Tag-Bibliothek, Index-Worker und Thumbnail-Worker verwalten |
 | `api_uploader` | `documents.upload` | Scanner, Automationen und Importjobs, die Dateien hochladen, aber keine Dokumente lesen sollen |
 | `custom` | nur explizit gewählte Einzelrechte | Delegierte Nutzerverwalter und eng zugeschnittene Spezialkonten |
@@ -92,7 +92,7 @@ Einzelrechte werden als `permissions` gesetzt. Wenn `role` und `permissions` gem
 | `documents.delete` | Papierkorb sehen, Dokumente löschen, wiederherstellen, endgültig entfernen und Papierkorb leeren |
 | `documents.structure` | Dokument-Tags, Tag-Regeln, Suchfavoriten, benutzerdefinierte Felder und Feldwert-Vorschläge verwalten |
 | `photos.read` | Foto-Galerie, Medien, Thumbnails, Suche, Zufallsbild, Fotoframe und Foto-Metadaten lesen |
-| `photos.edit` | Tags auf Fotos und Fotoordnern setzen oder entfernen |
+| `photos.edit` | Tags auf Fotos und Fotoordnern setzen oder entfernen; Personen bearbeiten und Personen-App verwenden |
 | `photos.manage` | Fotoeinstellungen ändern, Index- und Thumbnail-Worker starten und Foto-Tag-Bibliothek pflegen |
 | `system.manage` | Systemeinstellungen, Mail-Import, Spalten, Seitengrößen und Favicon verwalten |
 | `system.users.manage` | gewöhnliche Benutzer innerhalb der eigenen Fachrechte verwalten; Admins und weitere Nutzerverwalter bleiben der Rolle `admin` vorbehalten |

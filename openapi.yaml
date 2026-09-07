@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.35.0
+  version: 0.36.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -38,7 +38,7 @@ paths:
       operationId: getLabelingSession
       summary: Check labeling protocol, identity and rights
       description: |
-        Requires photos_manage. Clients must use HTTPS. Protocol 1 is available from
+        Requires photos.edit. Clients must use HTTPS. Protocol 1 is available from
         BearStack 0.30.0. Persist queue state under instance + dataset + account.
         upper_id freezes the next candidate pass. Clearing face data rotates dataset.
       responses:
@@ -65,7 +65,7 @@ paths:
       operationId: getLabelingCandidates
       summary: Read unnamed groups within a bounded pass
       description: |
-        Requires photos_manage. At most 20 metadata records, ordered by ID, with no
+        Requires photos.edit. At most 20 metadata records, ordered by ID, with no
         face images or embeddings. Newer groups are excluded. Before display,
         re-read the group. Detached groups must be placed in a local priority queue.
       parameters:
@@ -109,7 +109,7 @@ paths:
       operationId: getLabelingPerson
       summary: Read a consistent group revision and four faces
       description: |
-        Requires photos_manage. count is the entire active face count, not the page
+        Requires photos.edit. count is the entire active face count, not the page
         size or distinct photo count. Empty, ignored and deleted groups return 404.
         Protected photos are excluded even for administrators.
       parameters:
@@ -152,7 +152,7 @@ paths:
       operationId: getLabelingSuggestions
       summary: Find up to twenty named people
       description: |
-        Requires photos_manage. Returns named groups with revisions, preview face IDs
+        Requires photos.edit. Returns named groups with revisions, preview face IDs
         and total active face counts. No embeddings. Duplicate names are allowed
         only after an explicit allow_duplicate decision on the name action.
       parameters:
@@ -193,7 +193,7 @@ paths:
       operationId: applyLabelingAction
       summary: Atomically change a whole group or detach one face
       description: |
-        Requires photos_manage. Source must still be unnamed. JSON is limited to 16 KiB.
+        Requires photos.edit. Source must still be unnamed. JSON is limited to 16 KiB.
         All active faces are changed in one transaction with the receipt; there is
         no 500-face limit or client-side batching. Images are never deleted.
         operation_id is unique per account and dataset. An identical replay returns
@@ -251,7 +251,7 @@ paths:
       operationId: getLabelingReceipt
       summary: Resolve an action after a lost response
       description: |
-        Requires photos_manage. Only the requesting account can retrieve its receipt.
+        Requires photos.edit. Only the requesting account can retrieve its receipt.
         404 means no receipt in this dataset; the client may resend the identical
         saved request. Receipts remain available until face data is cleared.
       parameters:
@@ -288,7 +288,7 @@ paths:
       tags: [Photos]
       operationId: getLabelingFaceImage
       summary: Get an authorized face crop
-      description: Requires photos_manage. Protected and ignored faces are excluded; no embeddings or original photos are returned.
+      description: Requires photos.edit. Protected and ignored faces are excluded; no embeddings or original photos are returned.
       parameters:
         - name: id
           in: path
@@ -330,7 +330,7 @@ paths:
       operationId: getLabelingFaceOriginal
       summary: Get the full original photo containing a face
       description: >-
-        Available since BearStack 0.33.0. Requires photos_manage. Streams the
+        Available since BearStack 0.33.0. Requires photos.edit. Streams the
         unchanged source file, preserving its dimensions and metadata. The path
         is resolved from the face ID; protected and ignored faces are excluded.
         Responses use Cache-Control no-store. Supports HTTP byte ranges.
@@ -1059,7 +1059,7 @@ paths:
       - Photos
       operationId: renamePhotoPerson
       summary: Name or rename a person
-      description: Requires photos.manage. Form writes redirect to the corresponding
+      description: Requires photos.edit. Form writes redirect to the corresponding
         HTML page. Existing authentication, same-origin protection and audit logging
         apply.
       parameters:
@@ -1102,7 +1102,7 @@ paths:
       - Photos
       operationId: mergePhotoPeople
       summary: Merge source group into target
-      description: Requires photos.manage. Form writes redirect to the corresponding
+      description: Requires photos.edit. Form writes redirect to the corresponding
         HTML page. Existing authentication, same-origin protection and audit logging
         apply. Additional person_id sources merge atomically (at most 60 distinct sources,
         excluding the target). An unnamed target inherits the first non-empty source
@@ -1168,7 +1168,7 @@ paths:
       - Photos
       operationId: editPhotoFaces
       summary: Move selected faces or ignore false detections
-      description: Requires photos.manage. Form writes redirect to the corresponding
+      description: Requires photos.edit. Form writes redirect to the corresponding
         HTML page; requests with Accept application/json receive HTTP 200 with an ok flag. Existing authentication, same-origin protection and audit logging
         apply.
       parameters: []
@@ -1343,7 +1343,8 @@ paths:
       summary: Pause, resume, retry or delete recognition data
       description: Requires photos.manage. Form writes redirect to the corresponding
         HTML page. Existing authentication, same-origin protection and audit logging
-        apply.
+        apply. The clear action additionally requires the current password of the
+        authenticated user; failed confirmation leaves data and processing unchanged.
       parameters:
       - name: action
         in: path
@@ -1368,6 +1369,11 @@ paths:
                   - delete
                   description: Required for clear; deletes generated data and disables
                     processing, preserving XMP.
+                password:
+                  type: string
+                  format: password
+                  writeOnly: true
+                  description: Required for clear; current password of the authenticated user.
               required: []
       responses:
         '303':
@@ -1382,6 +1388,13 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '429':
+          description: Too many failed password confirmations.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
         '404':
           $ref: '#/components/responses/NotFound'
   /photos/media/info:
@@ -1618,7 +1631,7 @@ components:
         dataset: {type: string, description: Changes when detected face data is cleared.}
         account: {type: string, description: Opaque stable account identity; do not parse.}
         upper_id: {type: integer, format: int64, minimum: 0}
-        can_manage: {type: boolean, const: true}
+        can_manage: {type: boolean, const: true, description: "Person-editing access granted by photos.edit; retained field name for client compatibility."}
     LabelingPerson:
       type: object
       required: [id, name, revision, count, face_id, offset]

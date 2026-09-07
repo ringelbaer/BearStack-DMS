@@ -36,7 +36,7 @@ func TestIgnoredFacesFilterAndNamingHTTP(t *testing.T) {
 	if err := s.photos.EditFaces(ctx, []int64{id}, 0, true, ""); err != nil {
 		t.Fatal(err)
 	}
-	for _, user := range []string{"reader", "manager"} {
+	for _, user := range []string{"reader", "editor", "manager"} {
 		request := httptest.NewRequest("GET", "/photos/people?ignored=1", nil)
 		request.SetBasicAuth(user, "secret")
 		response := httptest.NewRecorder()
@@ -45,7 +45,7 @@ func TestIgnoredFacesFilterAndNamingHTTP(t *testing.T) {
 		if response.Code != 200 || !strings.Contains(html, "Ignorierte Gesichter") || !strings.Contains(html, fmt.Sprintf("/photos/faces/%d/thumbnail", id)) {
 			t.Fatalf("%s ignored view: %d %s", user, response.Code, html)
 		}
-		if strings.Contains(html, "Benennen und wiederherstellen") != (user == "manager") {
+		if strings.Contains(html, "Benennen und wiederherstellen") != (user != "reader") {
 			t.Fatalf("%s restore permissions", user)
 		}
 		for _, label := range []string{"Erste Seite", "Letzte Seite", "Seite 1 von 1"} {
