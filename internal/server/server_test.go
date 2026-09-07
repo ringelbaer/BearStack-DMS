@@ -142,7 +142,7 @@ func TestTemplateAssetsAreScopedByPage(t *testing.T) {
 				"/static/app-preview.js",
 				"/static/app-upload.js",
 			},
-			notWant: []string{"/static/app-photos.js", "/static/app-charts.js", "/static/app-pdf-preview.js"},
+			notWant: []string{"/static/app-photos.js", "/static/app-photos-lightbox.js", "/static/app-charts.js", "/static/app-pdf-preview.js"},
 		},
 		{
 			name: "documents with custom pdf preview",
@@ -163,7 +163,7 @@ func TestTemplateAssetsAreScopedByPage(t *testing.T) {
 			name:    "photos",
 			tpl:     "photos.html",
 			data:    PageData{Title: "Fotos", Active: "photos", PhotoPage: true},
-			want:    []string{"/static/app-photos-media.js", "/static/app-photos-map.js", "/static/app-photos-thumbnails.js", "/static/app-photos.js", "/static/app-photos-frame.js"},
+			want:    []string{"/static/app-photos-media.js", "/static/app-photos-map.js", "/static/app-photos-thumbnails.js", "/static/app-photos-lightbox.js", "/static/app-photos.js", "/static/app-photos-frame.js"},
 			notWant: []string{"/static/app-charts.js", "/static/app-documents.js", "/static/app-preview.js", "/static/app-upload.js"},
 		},
 	}
@@ -210,7 +210,7 @@ func TestSystemMenuSeparatorsOnlyBetweenVisibleGroups(t *testing.T) {
 			name:           "api uploader",
 			auth:           authPermissionsFromCapabilities(authCapDocumentsUpload, authPrincipal{Username: "uploader"}),
 			wantSeparators: 0,
-			want:           []string{`href="/help"`, `href="/api"`, `action="/logout"`, `>Logout<`},
+			want:           []string{`href="/help"`, `href="/api"`, `action="/logout"`, `aria-label="Logout"`},
 		},
 		{
 			name:           "photos reader",
@@ -221,7 +221,7 @@ func TestSystemMenuSeparatorsOnlyBetweenVisibleGroups(t *testing.T) {
 		{
 			name:           "audit only",
 			auth:           authPermissionsFromCapabilities(authCapSystemAudit, authPrincipal{Username: "auditor"}),
-			wantSeparators: 1,
+			wantSeparators: 0,
 			want:           []string{`href="/log"`, `href="/help"`, `action="/logout"`},
 			notWant:        []string{`href="/api"`},
 		},

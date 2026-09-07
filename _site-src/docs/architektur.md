@@ -81,6 +81,8 @@ Fotoeinstellungen werden an ihrer Quelle eingelesen und anschließend gemeinsam 
 
 Das Browsermodul `app-photos-media.js` stellt die gemeinsam verwendeten Medien-Helfer bereit, darunter die Übernahme von Fotometadaten und die Auswahl einer passenden Bildauflösung. Galerie und Fotoframe verwenden diese Helfer; der Fotoframe kann unabhängig vom Galerie-Script arbeiten. Das gemeinsame Modul wird vor seinen Verbrauchern geladen.
 
+Die Lightbox mit Zoom, Touch-Gesten, Vollbild, Diashow und Video-/Audiowiedergabe liegt in `app-photos-lightbox.js`. Die Galerie startet sie über `BearStack.photos.lightbox.init` und übergibt Bearbeitungsmodus, gebündeltes Metadaten-Nachladen und Kartenhelfer explizit. Der Dialogzustand bleibt innerhalb des Lightbox-Moduls; Galerie-Layout, Auswahl und Scroll-Wiederherstellung bleiben im Galerie-Modul. Die Asset-Liste lädt das neue Modul vor der Galerie. Ein Browser-Test prüft die Lightbox ohne Galerie-Script mit separat übergebenen Funktionen.
+
 ## Performance
 
 BearStack trennt Dokumente und Fotodaten, nutzt Caches für aufwendige Medienarbeit und führt OCR sowie Vorschau-Erzeugung im Hintergrund aus. Das ist besonders wichtig, wenn Archive über die Zeit wachsen oder viele Bilder in einem bestehenden Fotoverzeichnis liegen.

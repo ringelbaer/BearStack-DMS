@@ -133,6 +133,7 @@ func pageJSAssets(data PageData) []string {
 			"/static/app-photos-media.js",
 			"/static/app-photos-map.js",
 			"/static/app-photos-thumbnails.js",
+			"/static/app-photos-lightbox.js",
 			"/static/app-photos.js",
 			"/static/app-photos-frame.js",
 		)

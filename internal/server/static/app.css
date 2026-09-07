@@ -531,6 +531,45 @@ label span {
   text-decoration: none;
 }
 
+.system-menu-actions {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 8px;
+  justify-content: space-evenly;
+  margin: 6px 4px 0;
+  padding-top: 6px;
+}
+
+.system-menu-actions > * {
+  flex: 0 0 44px;
+}
+
+.system-menu-list .system-menu-icon {
+  align-items: center;
+  display: flex;
+  height: 44px;
+  justify-content: center;
+  min-width: 44px;
+  padding: 10px;
+  width: 44px;
+}
+
+.system-menu-icon svg {
+  fill: none;
+  height: 24px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  width: 24px;
+}
+
+.system-menu-icon:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
 .document-menu {
   position: relative;
 }
@@ -591,11 +630,35 @@ label span {
 }
 
 .app-footer {
+  align-items: center;
   color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
   font-size: 12px;
+  gap: 4px 12px;
+  justify-content: center;
   line-height: 1.4;
   margin-top: 34px;
   text-align: center;
+}
+
+.app-footer > span,
+.app-footer a {
+  white-space: nowrap;
+}
+
+.app-footer a {
+  align-items: center;
+  color: inherit;
+  display: inline-flex;
+  min-height: 32px;
+  padding: 6px 4px;
+  text-underline-offset: 3px;
+}
+
+.app-footer a:hover,
+.app-footer a[aria-current="page"] {
+  color: var(--primary);
 }
 
 .login-page {

@@ -241,14 +241,23 @@ func (d PageData) SystemMenuPrimaryVisible() bool {
 }
 
 func (d PageData) SystemMenuSecondaryVisible() bool {
-	return d.Auth.CanDocumentsRead ||
-		d.Auth.CanSystemManage ||
-		d.Auth.CanSystemUsersManage ||
-		d.Auth.CanPhotosManage ||
-		d.Auth.CanSystemAudit
+	return d.Auth.CanDocumentsRead
 }
 
-func (d PageData) SystemMenuAPILinkVisible() bool {
+func (d PageData) SettingsURL() string {
+	if d.Auth.CanSystemManage {
+		return "/settings"
+	}
+	if d.PhotoModuleEnabled && d.Auth.CanPhotosManage {
+		return "/settings/photos"
+	}
+	if d.Auth.CanSystemUsersManage {
+		return "/settings/users"
+	}
+	return ""
+}
+
+func (d PageData) APILinkVisible() bool {
 	return d.Auth.CanDocumentsRead ||
 		d.Auth.CanDocumentsUpload ||
 		d.Auth.CanDocumentsWebDAV ||

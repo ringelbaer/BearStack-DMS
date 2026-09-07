@@ -29,8 +29,8 @@ test.afterAll(async ({}, testInfo) => {
   if (root) await rm(root, { recursive: true, force: true });
 });
 
-async function adminPage(browser) {
-  const context = await browser.newContext();
+async function adminPage(browser, options = {}) {
+  const context = await browser.newContext(options);
   const page = await context.newPage();
   await page.goto(baseURL + "/login");
   await page.getByLabel("Benutzername").fill(credentials.username);
@@ -86,7 +86,99 @@ for (const theme of ["default", "design2"]) {
     }
     await context.close();
   });
+
+  test(`system menu icons and footer links work without JavaScript (${theme})`, async ({ browser }) => {
+    const { context, page } = await adminPage(browser, { javaScriptEnabled: false });
+    try {
+      await page.goto(baseURL + "/settings/general");
+      await page.locator(`input[name="theme_mode"][value="${theme}"]`).check();
+      await page.getByRole("button", { name: "Speichern", exact: true }).click();
+
+      const menu = page.getByRole("navigation", { name: "Systemmenü", exact: true });
+      const footer = page.locator(".app-footer");
+      for (const width of [1440, 768, 390, 320]) {
+        await page.setViewportSize({ width, height: 844 });
+        await page.goto(baseURL + "/help");
+        await page.getByLabel("Systemmenü öffnen", { exact: true }).click();
+        await expect(menu.getByRole("link", { name: "API", exact: true })).toHaveCount(0);
+        await expect(menu.getByRole("link", { name: "Log", exact: true })).toHaveCount(0);
+        await expect(footer.getByRole("link", { name: "API", exact: true })).toHaveAttribute("href", "/api");
+        await expect(footer.getByRole("link", { name: "Log", exact: true })).toHaveAttribute("href", "/log");
+        await expect(menu.locator(".system-menu-icon svg")).toHaveCount(3);
+        const layout = await page.evaluate(() => {
+          const bounds = document.querySelector(".system-menu-list").getBoundingClientRect();
+          const icons = [...document.querySelectorAll(".system-menu-icon")].map((element) => element.getBoundingClientRect());
+          const footerItems = [...document.querySelector(".app-footer").children].map((element) => element.getBoundingClientRect());
+          return {
+            overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            contained: icons.every((rect) => rect.left >= bounds.left && rect.right <= bounds.right),
+            touchTargets: icons.every((rect) => rect.width >= 44 && rect.height >= 44),
+            iconRow: icons.every((rect) => Math.abs(rect.top - icons[0].top) < 1),
+            footerRow: footerItems.every((rect) => Math.abs(rect.top + rect.height / 2 - footerItems[0].top - footerItems[0].height / 2) < 1),
+          };
+        });
+        expect(layout, `${theme} at ${width}px`).toEqual({ overflow: 0, contained: true, touchTargets: true, iconRow: true, footerRow: true });
+        if (width === 390 || width === 1440) {
+          await page.screenshot({ path: `/tmp/bearstack-menu-${theme}-${width}.png` });
+          await footer.screenshot({ path: `/tmp/bearstack-footer-${theme}-${width}.png` });
+        }
+      }
+
+      await footer.getByRole("link", { name: "API", exact: true }).click();
+      await expect(page).toHaveURL(baseURL + "/api");
+      await expect(footer.getByRole("link", { name: "API", exact: true })).toHaveAttribute("aria-current", "page");
+      await footer.getByRole("link", { name: "Log", exact: true }).click();
+      await expect(page).toHaveURL(baseURL + "/log");
+      await expect(footer.getByRole("link", { name: "Log", exact: true })).toHaveAttribute("aria-current", "page");
+      await page.getByLabel("Systemmenü öffnen", { exact: true }).click();
+      await menu.getByRole("link", { name: "Einstellungen", exact: true }).click();
+      await expect(page).toHaveURL(baseURL + "/settings");
+      await page.getByLabel("Systemmenü öffnen", { exact: true }).click();
+      await expect(menu.getByRole("link", { name: "Einstellungen", exact: true })).toHaveAttribute("aria-current", "page");
+      await menu.getByRole("link", { name: "Konto · admin", exact: true }).click();
+      await expect(page).toHaveURL(baseURL + "/account");
+      await page.getByLabel("Systemmenü öffnen", { exact: true }).click();
+      await expect(menu.getByRole("link", { name: "Konto · admin", exact: true })).toHaveAttribute("aria-current", "page");
+      await menu.getByRole("button", { name: "Logout", exact: true }).click();
+      await expect(page).toHaveURL(/\/login/);
+      await expect(page.getByLabel("Benutzername")).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
 }
+
+test("system menu icons and footer links are reachable with the keyboard", async ({ browser }) => {
+  const { context, page } = await adminPage(browser);
+  try {
+    await page.goto(baseURL + "/help");
+    const toggle = page.getByLabel("Systemmenü öffnen", { exact: true });
+    const menu = page.getByRole("navigation", { name: "Systemmenü", exact: true });
+    await toggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(menu).toBeVisible();
+    const links = menu.locator("a, button");
+    for (let i = 0; i < await links.count(); i += 1) {
+      await page.keyboard.press("Tab");
+      await expect(links.nth(i)).toBeFocused();
+    }
+    await expect(menu.getByRole("button", { name: "Logout", exact: true })).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(menu.getByRole("link", { name: "Konto · admin", exact: true })).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(menu.getByRole("link", { name: "Einstellungen", exact: true })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(baseURL + "/settings");
+    const api = page.locator(".app-footer").getByRole("link", { name: "API", exact: true });
+    await api.focus();
+    await page.keyboard.press("Tab");
+    await expect(page.locator(".app-footer").getByRole("link", { name: "Log", exact: true })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(baseURL + "/log");
+  } finally {
+    await context.close();
+  }
+});
 
 test("general and document forms preserve each other's settings", async ({ browser }) => {
   const { context, page } = await adminPage(browser);

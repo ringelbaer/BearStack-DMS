@@ -47,6 +47,19 @@ make test-playwright
 
 Die Go-Tests decken Repository-Migrationen, Suche, Tags, benutzerdefinierte Felder, Suchfavoriten, Uploads, Auth, Berechtigungen, Audit-Logs, Dokumentverarbeitung, Fotoindex, Thumbnails, Worker und viele HTTP-Handler ab. JavaScript wird per `node --check` geprüft. Playwright-Smokes starten BearStack mit temporärer Konfiguration und prüfen zentrale Browser-Flows wie Dokumenten-Upload und Foto-Galerie.
 
+Die Go-Anweisungsabdeckung lässt sich reproduzierbar messen:
+
+```sh
+go test ./... -coverprofile=/tmp/bearstack-coverage.out
+go tool cover -func=/tmp/bearstack-coverage.out
+```
+
+Diese Messung umfasst die Go-Tests; Browser-Tests werden separat ausgeführt. Eine hohe Prozentzahl ersetzt keine Prüfung von Fehler- und Abbruchpfaden.
+
+OCR-Tests führen kontrollierte Ersatzprogramme für Tesseract und Poppler aus. Sie prüfen Argumentübergabe, Seitenreihenfolge, Fortschritt, das 50-Seiten-Limit im Fallback, Werkzeugfehler, Abbruch und die Bereinigung temporärer Dateien. Sie benötigen keine installierten OCR-Werkzeuge und bewerten nicht die Erkennungsqualität echter Scans. Dateisystemtests prüfen Traversal sowie interne, externe und ungültige Symlinks beim Auflösen und Anlegen von Verzeichnissen.
+
+Browser-Regressionen prüfen, dass verspätete Metadaten oder Vorschaubilder nach einem Bildwechsel das aktuelle Foto nicht überschreiben. Auch fehlgeschlagene Metadaten- und Vorschauabrufe, die Lightbox ohne Kartenhelfer und die Tastaturnavigation zu den Menü-Icons und Footer-Links sind abgedeckt. Die Berechtigungsmatrix der Navigation umfasst unter anderem reine WebDAV-Rechte und die Einstellungsziele bei deaktiviertem Fotomodul.
+
 Regressionstests prüfen den Zugriff ohne Auth über lokale und fremde Hostnamen einschließlich gefälschter Forwarded-Header. Präparierte WebP-Dateien mit widersprüchlichen Bild- und Alpha-Dimensionen müssen bei der Gesichtsvorverarbeitung einen Fehler statt eines Absturzes auslösen; gültige WebP-Bilder bleiben verarbeitbar. Die Mindestversion Go `1.26.6` und `golang.org/x/image` ab `v0.45.0` enthalten die zugehörigen Sicherheitskorrekturen.
 
 Zusätzliche Regressionstests vergleichen die Normalisierung von Fotoeinstellungen aus Datenbank und HTTP-Formular, prüfen die Abfrageanzahl für HTML- und API-Dokumentlisten und erhalten deren unterschiedliche Behandlung zu hoher Seitenzahlen. Ein Browser-Test lädt den Fotoframe mit leerem Galerie-Script und prüft, dass das gemeinsame Medienmodul für die Anzeige ausreicht.
@@ -55,7 +68,7 @@ Für Änderungen an riskanten Bereichen gilt: fokussierte Regressionstests vor b
 
 Bei Versionsänderungen muss `info.version` in `openapi.yaml` mit der Root-Datei `VERSION` übereinstimmen. Der Go-Test `TestOpenAPISpecMatchesApplicationVersion` prüft diesen Abgleich für die eingebettete API-Beschreibung.
 
-Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle drei Suiten verwenden denselben Helfer für Start, Gesundheitsprüfung und geordnetes Beenden; temporäre Daten werden erst nach Prozessende entfernt. Die Testabhängigkeit ist in `package-lock.json` festgelegt und wird bei Bedarf mit `npm ci --ignore-scripts` installiert. Ein vorhandener `GOCACHE` wird weiterverwendet.
+Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle Suiten verwenden denselben Helfer für Start, Gesundheitsprüfung und geordnetes Beenden; temporäre Daten werden erst nach Prozessende entfernt. Die Testabhängigkeit ist in `package-lock.json` festgelegt und wird bei Bedarf mit `npm ci --ignore-scripts` installiert. Ein vorhandener `GOCACHE` wird weiterverwendet.
 
 ## Performance-Benchmarks
 

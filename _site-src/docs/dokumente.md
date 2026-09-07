@@ -10,6 +10,8 @@ BearStack organisiert Dokumente um die vorhandenen Dateien herum. Die Dateien bl
 
 ## Einstellungen
 
+Im Systemmenü bilden Einstellungen (Zahnrad), Konto (Person) und Logout eine gemeinsame Icon-Zeile. API und Log stehen im Footer neben der Versionsnummer. Sichtbar sind jeweils die Aktionen, für die das Konto berechtigt ist.
+
 Unter **Einstellungen → Allgemein** (`/settings/general`) stehen die globalen Optionen für Anwendungsname, Design, Startseite, Tag-Darstellung und Favicon. **Einstellungen → Dokumente** (`/settings`) enthält Desktop-Vorschau, Dokument-Wolke, Tag-Ordner und Papierkorb-Aufbewahrung. Speichern ändert jeweils nur den geöffneten Bereich; Favicon-Upload und Zurücksetzen bleiben separate Aktionen.
 
 Die Einstellungsnavigation steht auf großen Bildschirmen seitlich und bricht auf kleineren Bildschirmen in mehrere Zeilen um. Formulargruppen, lange Beschriftungen und Aktionen passen sich der verfügbaren Breite an.

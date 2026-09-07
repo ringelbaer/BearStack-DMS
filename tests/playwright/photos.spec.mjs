@@ -381,6 +381,162 @@ test("photo lightbox stops at both ends and finishes the slideshow", async ({ br
   }
 });
 
+test("photo lightbox works without the gallery script and uses host callbacks", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  try {
+    await page.route("**/static/app-photos.js*", (route) => route.fulfill({
+      contentType: "application/javascript",
+      body: "",
+    }));
+    await page.goto(`${fixture.baseURL}/photos?type=image&sort=ascending_name`);
+    await page.evaluate(() => {
+      const host = window.lightboxTestHost = { editing: true, requested: [] };
+      window.BearStack.photos.lightbox.init({
+        isEditMode: () => host.editing,
+        ensureItemDetails: (item) => {
+          host.requested.push(item.path);
+          return Promise.resolve(Object.assign(item, {
+            detailsLoaded: true,
+            title: `Nachgeladen: ${item.path}`,
+            camera: "Testkamera",
+          }));
+        },
+        map: window.BearStack.photos.map,
+      });
+    });
+
+    const dialog = page.locator("[data-photo-lightbox]");
+    // Activate items directly because their layout belongs to the omitted gallery script.
+    await photoItem(page, "public-a.png").locator(".photo-card-button").dispatchEvent("click");
+    await expect(dialog).not.toBeVisible();
+    expect(await page.evaluate(() => window.lightboxTestHost.requested)).toEqual([]);
+
+    await page.evaluate(() => { window.lightboxTestHost.editing = false; });
+    await photoItem(page, "public-a.png").locator(".photo-card-button").dispatchEvent("click");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator("[data-photo-title]")).toHaveText("Nachgeladen: public-a.png");
+    await expect(dialog.locator("[data-photo-info-camera]")).toHaveText("Testkamera");
+    expect(await page.evaluate(() => window.lightboxTestHost.requested)).toContain("public-a.png");
+    await page.keyboard.press("ArrowRight");
+    await expect(dialog.locator("[data-photo-title]")).toHaveText("Nachgeladen: public-b.png");
+    await page.keyboard.press("Escape");
+    await expect(dialog).not.toBeVisible();
+    expect(errors).toEqual([]);
+  } finally {
+    await context.close();
+  }
+});
+
+test("photo lightbox ignores metadata arriving after navigation without map helpers", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  try {
+    await page.route("**/static/app-photos.js*", (route) => route.fulfill({ contentType: "application/javascript", body: "" }));
+    await page.goto(`${fixture.baseURL}/photos?type=image&sort=ascending_name`);
+    await page.evaluate(() => {
+      document.querySelector("[data-photo-lightbox]").dataset.photoPreloadAdjacent = "false";
+      const pending = window.lightboxPendingDetails = {};
+      window.BearStack.photos.lightbox.init({
+        isEditMode: () => false,
+        ensureItemDetails: (item) => new Promise((resolve) => {
+          pending[item.path] = () => resolve(Object.assign(item, {
+            detailsLoaded: true, title: `Details: ${item.path}`, camera: item.path,
+            lat: "52.5", lon: "13.4",
+          }));
+        }),
+      });
+    });
+    const dialog = page.locator("[data-photo-lightbox]");
+    await photoItem(page, "public-a.png").locator(".photo-card-button").dispatchEvent("click");
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("ArrowRight");
+    await page.evaluate(() => window.lightboxPendingDetails["public-b.png"]());
+    await expect(dialog.locator("[data-photo-title]")).toHaveText("Details: public-b.png");
+    await page.evaluate(() => window.lightboxPendingDetails["public-a.png"]());
+    await expect(dialog.locator("[data-photo-title]")).toHaveText("Details: public-b.png");
+    await expect(dialog.locator("[data-photo-info-camera]")).toHaveText("public-b.png");
+    await expect(dialog.locator("[data-photo-image]")).toHaveAttribute("src", /path=public-b\.png/);
+    await page.keyboard.press("Escape");
+    await expect(dialog).not.toBeVisible();
+    expect(errors).toEqual([]);
+  } finally {
+    await context.close();
+  }
+});
+
+test("photo lightbox remains usable when the metadata batch fails", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  const errors = [];
+  const requested = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  try {
+    await page.route("**/photos/media/info", async (route) => {
+      requested.push(...route.request().postDataJSON().paths);
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"unavailable"}' });
+    });
+    await page.goto(`${fixture.baseURL}/photos?type=image&sort=ascending_name`);
+    await photoItem(page, "public-a.png").locator(".photo-card-button").click();
+    const dialog = page.locator("[data-photo-lightbox]");
+    await expect(dialog).toBeVisible();
+    await expect.poll(() => requested).toContain("public-a.png");
+    await expect(dialog.locator("[data-photo-title]")).toHaveText("public-a.png");
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(() => requested).toContain("public-b.png");
+    await expect(dialog.locator("[data-photo-title]")).toHaveText("public-b.png");
+    await expect(dialog.locator("[data-photo-image]")).toHaveAttribute("src", /path=public-b\.png/);
+    await expect.poll(() => dialog.locator("[data-photo-image]").evaluate((image) => image.naturalWidth)).toBeGreaterThan(0);
+    await page.keyboard.press("Escape");
+    await expect(dialog).not.toBeVisible();
+    expect(errors).toEqual([]);
+  } finally {
+    await context.close();
+  }
+});
+
+test("photo lightbox keeps the current thumbnail when previews fail or arrive late", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  let releasePreview;
+  const gate = new Promise((resolve) => { releasePreview = resolve; });
+  let delayedPreview = false;
+  try {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.route("**/photos/thumbnail?*", async (route) => {
+      const url = new URL(route.request().url());
+      if (Number(url.searchParams.get("size")) < 1000) return route.continue();
+      if (url.searchParams.get("path") === "public-a.png") {
+        delayedPreview = true;
+        await gate;
+        return route.fulfill({ contentType: "image/png", body: tinyPNG });
+      }
+      return route.abort("failed");
+    });
+    await page.goto(`${fixture.baseURL}/photos?type=image&sort=ascending_name`);
+    await photoItem(page, "public-a.png").locator(".photo-card-button").click();
+    await expect.poll(() => delayedPreview).toBe(true);
+    const image = page.locator("[data-photo-lightbox] [data-photo-image]");
+    await page.keyboard.press("ArrowRight");
+    await expect(image).toHaveAttribute("src", /path=public-b\.png/);
+    await expect.poll(() => image.evaluate((node) => node.naturalWidth)).toBeGreaterThan(0);
+    const currentSrc = await image.getAttribute("src");
+    const finished = page.waitForEvent("requestfinished", (request) => {
+      const url = new URL(request.url());
+      return url.pathname === "/photos/thumbnail" && url.searchParams.get("path") === "public-a.png" && Number(url.searchParams.get("size")) >= 1000;
+    });
+    releasePreview();
+    await finished;
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await expect(image).toHaveAttribute("src", currentSrc);
+    await page.keyboard.press("Escape");
+    await expect(image).not.toHaveAttribute("src");
+  } finally {
+    releasePreview();
+    await context.close();
+  }
+});
+
 test("photo lightbox opens from gallery", async ({ browser }) => {
   const { context, page } = await editorPage(browser);
   try {

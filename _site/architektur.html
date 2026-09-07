@@ -866,6 +866,7 @@
 <p>Dokumentlisten für HTML und JSON nutzen denselben Abfrage-Service. Er erhält Filter und Optionen für OCR-Daten beziehungsweise das Überspringen von Seiten außerhalb des gültigen Bereichs und liefert Dokumente, Gesamtzahl und optional OCR-Jobs. HTTP-Anfragen, Redirects und Navigationslinks bleiben in der Darstellungsschicht. HTML-Seiten werden wie bisher auf die letzte vorhandene Seite umgeleitet; die API darf eine leere Seite zurückgeben. Vor einer HTML-Umleitung wird nur gezählt, und API-Abfragen benötigen keine OCR-Abfrage.</p>
 <p>Fotoeinstellungen werden an ihrer Quelle eingelesen und anschließend gemeinsam normalisiert. Zahlenbereiche stehen dadurch an einer Stelle. Fehlende oder ungültige Datenbankwerte behalten ihre Defaults; Formular-Checkboxen sind weiterhin nur mit dem Wert <code>1</code> aktiviert. Speicherung und Cache-Verhalten bleiben unverändert.</p>
 <p>Das Browsermodul <code>app-photos-media.js</code> stellt die gemeinsam verwendeten Medien-Helfer bereit, darunter die Übernahme von Fotometadaten und die Auswahl einer passenden Bildauflösung. Galerie und Fotoframe verwenden diese Helfer; der Fotoframe kann unabhängig vom Galerie-Script arbeiten. Das gemeinsame Modul wird vor seinen Verbrauchern geladen.</p>
+<p>Die Lightbox mit Zoom, Touch-Gesten, Vollbild, Diashow und Video-/Audiowiedergabe liegt in <code>app-photos-lightbox.js</code>. Die Galerie startet sie über <code>BearStack.photos.lightbox.init</code> und übergibt Bearbeitungsmodus, gebündeltes Metadaten-Nachladen und Kartenhelfer explizit. Der Dialogzustand bleibt innerhalb des Lightbox-Moduls; Galerie-Layout, Auswahl und Scroll-Wiederherstellung bleiben im Galerie-Modul. Die Asset-Liste lädt das neue Modul vor der Galerie. Ein Browser-Test prüft die Lightbox ohne Galerie-Script mit separat übergebenen Funktionen.</p>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
 <p>BearStack trennt Dokumente und Fotodaten, nutzt Caches für aufwendige Medienarbeit und führt OCR sowie Vorschau-Erzeugung im Hintergrund aus. Das ist besonders wichtig, wenn Archive über die Zeit wachsen oder viele Bilder in einem bestehenden Fotoverzeichnis liegen.</p>
 <h2 id="performance-benchmark">Performance-Benchmark<a class="headerlink" href="#performance-benchmark" title="Permanent link">&para;</a></h2>
@@ -932,7 +933,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.25.7 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.25.8 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

@@ -70,11 +70,22 @@ make test-playwright
 
 `make test-go` fuehrt `go test ./...` aus. `make test-js` nutzt `scripts/check-js.sh` und fuehrt `node --check` fuer alle Browser-Skripte unter `internal/server/static/*.js` aus. `make test-playwright` installiert bei Bedarf die fest versionierte Testabhängigkeit und prüft Dokumenten-Upload, Benutzerverwaltung und Foto-Galerie. Die Make-Variablen `GO`, `NODE` und `NPM` koennen bei Bedarf ueberschrieben werden, z. B. `NODE=/opt/node/bin/node make test-js`. Falls kein lokaler Chrome-Channel verfuegbar ist, kann Playwright wie ueblich mit eigenem Browser-Download verwendet werden, z. B. `npx playwright install chromium` und `PLAYWRIGHT_BROWSER_CHANNEL=chromium make test-playwright`.
 
-Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle drei Suiten verwenden denselben Helfer für Start, Gesundheitsprüfung und geordnetes Beenden; temporäre Daten werden erst nach Prozessende entfernt. Die Testabhängigkeit ist in `package-lock.json` festgelegt und wird bei Bedarf mit `npm ci --ignore-scripts` installiert. Ein vorhandener `GOCACHE` wird weiterverwendet.
+Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle Suiten verwenden denselben Helfer für Start, Gesundheitsprüfung und geordnetes Beenden; temporäre Daten werden erst nach Prozessende entfernt. Die Testabhängigkeit ist in `package-lock.json` festgelegt und wird bei Bedarf mit `npm ci --ignore-scripts` installiert. Ein vorhandener `GOCACHE` wird weiterverwendet.
 
 Reine Go-Testhelfer liegen in `_test.go`-Dateien und werden nicht in das Anwendungsbinary übernommen. Die GPX-Benchmarks setzen für Messungen ohne Cache neben den Einträgen auch LRU-Verwaltung und Speicherzähler zurück.
 
-Regressionstests pruefen unter anderem die gleichen Foto-Wertebereiche aus Formular und Datenbank, unterschiedliche HTML-/API-Antworten auf zu hohe Dokumentseiten sowie den Fotoframe ohne Galerie-Script. Details zur internen Trennung stehen in der [Architekturbeschreibung](_site-src/docs/architektur.md).
+Regressionstests pruefen unter anderem die gleichen Foto-Wertebereiche aus Formular und Datenbank, unterschiedliche HTML-/API-Antworten auf zu hohe Dokumentseiten sowie Fotoframe und Lightbox ohne Galerie-Script. Details zur internen Trennung stehen in der [Architekturbeschreibung](_site-src/docs/architektur.md).
+
+Weitere Tests sichern die OCR-Prozessausfuehrung mit kontrollierten Werkzeug-Fixtures ab: Seitenreihenfolge, Fallback-Limit, Fehler, Abbruch und temporaere Dateien. Dateisystemtests pruefen Traversal und Symlinks auch beim Erstellen von Verzeichnissen. Browser-Regressionen decken verspaetete Lightbox-Antworten, fehlgeschlagene Metadaten-/Vorschauabrufe sowie die Navigation per Tastatur ab.
+
+Go-Anweisungsabdeckung messen (Browser-Tests werden separat ausgefuehrt):
+
+```sh
+go test ./... -coverprofile=/tmp/bearstack-coverage.out
+go tool cover -func=/tmp/bearstack-coverage.out
+```
+
+Die Foto-Lightbox liegt in `app-photos-lightbox.js`. Die Galerie initialisiert das Modul mit expliziten Abhaengigkeiten fuer Bearbeitungsmodus, gebuendeltes Metadaten-Nachladen und Kartenhelfer; gemeinsame Medienfunktionen kommen aus `app-photos-media.js`.
 
 ## Build
 
@@ -97,6 +108,8 @@ GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o bearstack ./cmd/b
 ```
 
 ## Einstellungen
+
+Im Systemmenue bilden Einstellungen (Zahnrad), Konto (Person) und Logout eine gemeinsame Icon-Zeile. API und Log stehen im Footer neben der Versionsnummer. Sichtbar sind jeweils die Aktionen, fuer die das Konto berechtigt ist.
 
 Unter **Einstellungen → Allgemein** (`/settings/general`) stehen die globalen Optionen fuer Anwendungsname, Design, Startseite, Tag-Darstellung und Favicon. **Einstellungen → Dokumente** (`/settings`) enthaelt Desktop-Vorschau, Dokument-Wolke, Tag-Ordner und Papierkorb-Aufbewahrung. Speichern aendert jeweils nur den geoeffneten Bereich; Favicon-Upload und Zuruecksetzen bleiben separate Aktionen.
 

@@ -56,3 +56,65 @@ func TestEnsureDirWithinRootCreatesNestedDirsAndRejectsFiles(t *testing.T) {
 		t.Fatal("expected file path to be rejected")
 	}
 }
+
+func TestRootOperationsRejectTraversalAndSymlinksWithoutCreatingFiles(t *testing.T) {
+	for _, target := range []string{"outside", "inside", "dangling"} {
+		t.Run(target, func(t *testing.T) {
+			root, outside := t.TempDir(), t.TempDir()
+			destination := outside
+			if target == "inside" {
+				destination = filepath.Join(root, "real")
+				if err := os.Mkdir(destination, 0o700); err != nil {
+					t.Fatal(err)
+				}
+			} else if target == "dangling" {
+				destination = filepath.Join(outside, "missing")
+			}
+			if err := os.Symlink(destination, filepath.Join(root, "link")); err != nil {
+				t.Skipf("symlink unavailable: %v", err)
+			}
+			escapeErr := errors.New("escape")
+			for _, rel := range []string{"../child", `..\child`, "/absolute/child", "link", "link/child"} {
+				if _, _, err := ResolveWithinRoot(root, rel, false, escapeErr); !errors.Is(err, escapeErr) {
+					t.Errorf("ResolveWithinRoot(%q) = %v, want escape error", rel, err)
+				}
+				if _, err := EnsureDirWithinRoot(root, rel, 0o700, escapeErr); !errors.Is(err, escapeErr) {
+					t.Errorf("EnsureDirWithinRoot(%q) = %v, want escape error", rel, err)
+				}
+			}
+			if _, err := os.Stat(filepath.Join(destination, "child")); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("child created through symlink: %v", err)
+			}
+			entries, err := os.ReadDir(outside)
+			if err != nil || len(entries) != 0 {
+				t.Fatalf("outside directory modified: entries=%v err=%v", entries, err)
+			}
+		})
+	}
+}
+
+func TestRootOperationsAllowRootAndExistingDirectories(t *testing.T) {
+	root := t.TempDir()
+	escapeErr := errors.New("escape")
+	for _, rel := range []string{"", ".", "/", "a/.."} {
+		clean, abs, err := ResolveWithinRoot(root, rel, true, escapeErr)
+		if err != nil || clean != "" || abs != root {
+			t.Errorf("ResolveWithinRoot(%q) = %q, %q, %v", rel, clean, abs, err)
+		}
+		if _, _, err := ResolveWithinRoot(root, rel, false, escapeErr); err == nil {
+			t.Errorf("empty file path %q accepted", rel)
+		}
+		if dir, err := EnsureDirWithinRoot(root, rel, 0o700, escapeErr); err != nil || dir != root {
+			t.Errorf("EnsureDirWithinRoot(%q) = %q, %v", rel, dir, err)
+		}
+	}
+	if err := os.Mkdir(filepath.Join(root, "existing"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		dir, err := EnsureDirWithinRoot(root, "existing/child", 0o700, escapeErr)
+		if err != nil || dir != filepath.Join(root, "existing", "child") {
+			t.Fatalf("repeated creation = %q, %v", dir, err)
+		}
+	}
+}

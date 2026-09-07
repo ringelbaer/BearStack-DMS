@@ -56,26 +56,28 @@
         {{if .Auth.CanDocumentsRead}}
         <a href="/statistics" class="{{if eq .Active "statistics"}}active{{end}}">Statistik</a>
         {{end}}
-        {{if .Auth.CanSystemManage}}
-        <a href="/settings" class="{{if eq .Active "settings"}}active{{end}}">Einstellungen</a>
-        {{else if and .PhotoModuleEnabled .Auth.CanPhotosManage}}
-        <a href="/settings/photos" class="{{if eq .Active "settings"}}active{{end}}">Einstellungen</a>
-        {{else if .Auth.CanSystemUsersManage}}
-        <a href="/settings/users" class="{{if eq .Active "settings"}}active{{end}}">Einstellungen</a>
-        {{end}}
-        {{if .Auth.CanSystemAudit}}
-        <a href="/log" class="{{if eq .Active "log"}}active{{end}}">Log</a>
-        {{end}}
         {{if or $systemMenuPrimary $systemMenuSecondary}}
         <span class="system-menu-separator" aria-hidden="true"></span>
         {{end}}
         <a href="/help" class="{{if eq .Active "help"}}active{{end}}">Hilfe</a>
-        {{if .SystemMenuAPILinkVisible}}<a href="/api" class="{{if eq .Active "api"}}active{{end}}">API</a>{{end}}
+        {{if or .SettingsURL .Auth.Username}}
+        <div class="system-menu-actions" role="group" aria-label="Einstellungen und Konto">
+        {{if .SettingsURL}}
+        <a href="{{.SettingsURL}}" class="system-menu-icon {{if eq .Active "settings"}}active{{end}}" {{if eq .Active "settings"}}aria-current="page"{{end}} aria-label="Einstellungen" title="Einstellungen">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 3-.5 2-2 1.2-2-.6-2 3.4L4 10.5v3L2.5 15l2 3.4 2-.6 2 1.2.5 2h6l.5-2 2-1.2 2 .6 2-3.4-1.5-1.5v-3L21.5 9l-2-3.4-2 .6-2-1.2L15 3Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        </a>
+        {{end}}
         {{if .Auth.Username}}
-        <a href="/account" class="{{if eq .Active "account"}}active{{end}}">Konto · {{.Auth.Username}}</a>
+        <a href="/account" class="system-menu-icon {{if eq .Active "account"}}active{{end}}" {{if eq .Active "account"}}aria-current="page"{{end}} aria-label="Konto · {{.Auth.Username}}" title="Konto · {{.Auth.Username}}">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-2a8 8 0 0 1 16 0v2"></path></svg>
+        </a>
         <form method="post" action="/logout">
-          <button type="submit">Logout</button>
+          <button type="submit" class="system-menu-icon" aria-label="Logout" title="Logout">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M10 12h11m-4-4 4 4-4 4"></path></svg>
+          </button>
         </form>
+        {{end}}
+        </div>
         {{end}}
       </nav>
     </details>
@@ -99,7 +101,15 @@
 {{end}}
 
 {{define "foot"}}
-    {{if not .PhotoFrame}}<footer class="app-footer" aria-label="BearStack-Version">BearStack v{{.AppVersion}}</footer>{{end}}
+    {{if not .PhotoFrame}}
+    <footer class="app-footer" aria-label="BearStack">
+      <span>BearStack v{{.AppVersion}}</span>
+      {{if .Auth.Authenticated}}
+      {{if .APILinkVisible}}<a href="/api" {{if eq .Active "api"}}aria-current="page"{{end}}>API</a>{{end}}
+      {{if .Auth.CanSystemAudit}}<a href="/log" {{if eq .Active "log"}}aria-current="page"{{end}}>Log</a>{{end}}
+      {{end}}
+    </footer>
+    {{end}}
   </main>
   <div class="drop-overlay" data-drop-overlay>
     <div>Dokumente loslassen zum Hochladen</div>
