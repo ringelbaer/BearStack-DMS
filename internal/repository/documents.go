@@ -546,6 +546,9 @@ func (r *Repository) Purge(ctx context.Context, id int64) (document.Document, er
 	if protected {
 		return document.Document{}, ErrDeleteProtected
 	}
+	if err := enqueueFileDeletionTx(ctx, tx, doc); err != nil {
+		return document.Document{}, err
+	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM document_tags WHERE document_id = ?`, id); err != nil {
 		return document.Document{}, err
 	}
@@ -617,6 +620,10 @@ func (r *Repository) purgeTrash(ctx context.Context, cutoff *time.Time) ([]docum
 	}
 
 	if err := forDocumentBatches(docs, func(inClause string, args []any) error {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO document_file_deletions(document_id, stored_path, thumbnail_path)
+			SELECT id, stored_path, thumbnail_path FROM documents WHERE id IN (`+inClause+`)`, args...); err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, `DELETE FROM document_tags WHERE document_id IN (`+inClause+`)`, args...); err != nil {
 			return err
 		}

@@ -110,6 +110,8 @@ GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o bearstack ./cmd/b
 
 ## Docker und Compose
 
+Lokale Python-Umgebungen (`.venv`, `.venv-faces`), `.cache` sowie die Website-Verzeichnisse `_site` und `_site-src` werden nicht in den Docker-Buildkontext übernommen.
+
 Image lokal bauen:
 
 ```sh

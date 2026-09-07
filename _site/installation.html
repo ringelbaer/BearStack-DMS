@@ -1003,6 +1003,7 @@
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nv">GOOS</span><span class="o">=</span>linux<span class="w"> </span><span class="nv">GOARCH</span><span class="o">=</span>arm64<span class="w"> </span>go<span class="w"> </span>build<span class="w"> </span>-trimpath<span class="w"> </span>-ldflags<span class="o">=</span><span class="s2">&quot;-s -w&quot;</span><span class="w"> </span>-o<span class="w"> </span>bearstack<span class="w"> </span>./cmd/bearstack
 </span></code></pre></div>
 <h2 id="docker-und-compose">Docker und Compose<a class="headerlink" href="#docker-und-compose" title="Permanent link">&para;</a></h2>
+<p>Lokale Python-Umgebungen (<code>.venv</code>, <code>.venv-faces</code>), <code>.cache</code> sowie die Website-Verzeichnisse <code>_site</code> und <code>_site-src</code> werden nicht in den Docker-Buildkontext übernommen.</p>
 <p>Image lokal bauen:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>bearstack:local<span class="w"> </span>.
 </span></code></pre></div>
@@ -1326,7 +1327,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.24.3 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.25.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

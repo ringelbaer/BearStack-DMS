@@ -1161,7 +1161,7 @@ func TestLibraryDetectsStaleThumbnailAfterSourceChange(t *testing.T) {
 	if _, err := lib.Thumbnail(context.Background(), "photo.jpg", 120); err != nil {
 		t.Fatal(err)
 	}
-	if !lib.CachedThumbnailReadyForMedia(media, 120) {
+	if !lib.CachedThumbnailsReadyForMediaContext(context.Background(), []Media{media}, 120)[media.Path] {
 		t.Fatal("thumbnail was not ready for original source")
 	}
 
@@ -1171,7 +1171,7 @@ func TestLibraryDetectsStaleThumbnailAfterSourceChange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if lib.CachedThumbnailReadyForMedia(updated, 120) {
+	if lib.CachedThumbnailsReadyForMediaContext(context.Background(), []Media{updated}, 120)[updated.Path] {
 		t.Fatal("stale thumbnail was reported ready after source change")
 	}
 }

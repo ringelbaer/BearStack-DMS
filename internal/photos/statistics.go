@@ -39,6 +39,7 @@ type Statistics struct {
 	LastIndexedAt            time.Time
 	ThumbnailCacheFiles      int
 	ThumbnailCacheBytes      int64
+	ThumbnailCacheMeasuredAt time.Time
 	IndexDatabaseBytes       int64
 	RootPath                 string
 	CachePath                string
@@ -56,14 +57,17 @@ type ThumbnailBackendStatus struct {
 
 const (
 	thumbnailBackendStatusCacheTTL = 5 * time.Minute
-	thumbnailCacheStatsCacheTTL    = 30 * time.Second
 )
 
 type thumbnailCacheStatsEntry struct {
-	root      string
-	files     int
-	bytes     int64
-	expiresAt time.Time
+	files      int
+	bytes      int64
+	measuredAt time.Time
+}
+
+type thumbnailCacheStatsFlight struct {
+	done chan struct{}
+	err  error
 }
 
 var thumbnailBackendStatusCache struct {
@@ -82,12 +86,12 @@ func (l *Library) Statistics(ctx context.Context) (Statistics, error) {
 		IndexDatabasePath: l.DBPath(),
 		ThumbnailBackends: thumbnailBackendStatuses(ctx),
 	}
-	cacheFiles, cacheBytes, err := l.cachedThumbnailCacheStats(filepath.Join(l.CacheDir(), "thumbnails"))
-	if err != nil {
-		return Statistics{}, err
-	}
-	stats.ThumbnailCacheFiles = cacheFiles
-	stats.ThumbnailCacheBytes = cacheBytes
+	l.statsMu.Lock()
+	cache := l.statsCache
+	l.statsMu.Unlock()
+	stats.ThumbnailCacheFiles = cache.files
+	stats.ThumbnailCacheBytes = cache.bytes
+	stats.ThumbnailCacheMeasuredAt = cache.measuredAt
 	stats.IndexDatabaseBytes = sqliteDatabaseBytes(l.DBPath())
 
 	if !l.index.available() {
@@ -110,15 +114,6 @@ func (l *Library) Statistics(ctx context.Context) (Statistics, error) {
 		return Statistics{}, err
 	}
 	return stats, nil
-}
-
-func (l *Library) InvalidateStatisticsCache() {
-	if l == nil {
-		return
-	}
-	l.statsMu.Lock()
-	l.statsCache = thumbnailCacheStatsEntry{}
-	l.statsMu.Unlock()
 }
 
 func (l *Library) loadMediaStatistics(ctx context.Context, stats *Statistics) error {
@@ -204,25 +199,37 @@ func (l *Library) loadLastIndexedAt(ctx context.Context, stats *Statistics) erro
 	return nil
 }
 
-func thumbnailCacheStats(root string) (int, int64, error) {
-	if root == "" {
-		return 0, 0, nil
-	}
-	info, err := os.Stat(root)
-	if os.IsNotExist(err) {
-		return 0, 0, nil
-	}
-	if err != nil {
+// The filesystem snapshot is refreshed in the background, never by HTTP requests.
+func thumbnailCacheStats(ctx context.Context, root string) (int, int64, error) {
+	if err := ctx.Err(); err != nil {
 		return 0, 0, err
 	}
-	if !info.IsDir() {
+	if root == "" {
 		return 0, 0, nil
 	}
 	var files int
 	var bytes int64
-	err = walkFilesystemFiles(context.Background(), root, func(entry os.DirEntry) error {
+	err := filepath.WalkDir(root, func(_ string, entry os.DirEntry, walkErr error) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if walkErr != nil {
+			if os.IsNotExist(walkErr) {
+				return nil
+			}
+			return walkErr
+		}
+		if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || strings.HasPrefix(entry.Name(), ".") {
+			return nil
+		}
 		info, err := entry.Info()
+		if os.IsNotExist(err) {
+			return nil
+		}
 		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
 			return nil
 		}
 		files++
@@ -232,33 +239,35 @@ func thumbnailCacheStats(root string) (int, int64, error) {
 	return files, bytes, err
 }
 
-func (l *Library) cachedThumbnailCacheStats(root string) (int, int64, error) {
+// RefreshThumbnailCacheStatistics coalesces concurrent scans and retains the
+// last complete snapshot after an error or cancellation.
+func (l *Library) RefreshThumbnailCacheStatistics(ctx context.Context) error {
 	if l == nil {
-		return thumbnailCacheStats(root)
+		return nil
 	}
-	now := time.Now()
 	l.statsMu.Lock()
-	entry := l.statsCache
-	if entry.root == root && now.Before(entry.expiresAt) {
+	if flight := l.statsFlight; flight != nil {
 		l.statsMu.Unlock()
-		return entry.files, entry.bytes, nil
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-flight.done:
+			return flight.err
+		}
 	}
+	flight := &thumbnailCacheStatsFlight{done: make(chan struct{})}
+	l.statsFlight = flight
 	l.statsMu.Unlock()
-
-	files, bytes, err := thumbnailCacheStats(root)
-	if err != nil {
-		return 0, 0, err
-	}
-
+	files, bytes, err := thumbnailCacheStats(ctx, filepath.Join(l.CacheDir(), "thumbnails"))
 	l.statsMu.Lock()
-	l.statsCache = thumbnailCacheStatsEntry{
-		root:      root,
-		files:     files,
-		bytes:     bytes,
-		expiresAt: time.Now().Add(thumbnailCacheStatsCacheTTL),
+	if err == nil {
+		l.statsCache = thumbnailCacheStatsEntry{files: files, bytes: bytes, measuredAt: time.Now().UTC()}
 	}
+	flight.err = err
+	l.statsFlight = nil
+	close(flight.done)
 	l.statsMu.Unlock()
-	return files, bytes, nil
+	return err
 }
 
 func sqliteDatabaseBytes(path string) int64 {

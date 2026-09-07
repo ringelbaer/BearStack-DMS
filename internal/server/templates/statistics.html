@@ -147,7 +147,7 @@
           <div class="stats-check-row">
             <div>
               <strong>Index und Cache</strong>
-              <span>{{formatBytes .PhotoStatistics.IndexDatabaseBytes}} Indexdatenbank · {{formatNumber .PhotoStatistics.ThumbnailCacheFiles}} Thumbnail(s), {{formatBytes .PhotoStatistics.ThumbnailCacheBytes}}</span>
+              <span>{{formatBytes .PhotoStatistics.IndexDatabaseBytes}} Indexdatenbank · {{if .PhotoStatistics.ThumbnailCacheMeasuredAt.IsZero}}Thumbnail-Cache wird ermittelt.{{else}}{{formatNumber .PhotoStatistics.ThumbnailCacheFiles}} Thumbnail(s), {{formatBytes .PhotoStatistics.ThumbnailCacheBytes}} (Stand {{.PhotoStatistics.ThumbnailCacheMeasuredAt.Local.Format "02.01.2006 15:04"}}){{end}}</span>
             </div>
             <span class="status-pill">{{if .PhotoStatistics.LastIndexedAt.IsZero}}nie{{else}}{{formatDateTime .PhotoStatistics.LastIndexedAt}}{{end}}</span>
           </div>

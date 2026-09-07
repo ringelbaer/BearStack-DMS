@@ -455,6 +455,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#endgultiges-loschen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Endgültiges Löschen
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#suche-und-ocr" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -753,6 +764,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#endgultiges-loschen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Endgültiges Löschen
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#suche-und-ocr" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -883,6 +905,10 @@
 <li>Hintergrundverarbeitung mit nachvollziehbaren Statusansichten</li>
 <li>Statistik- und Audit-Ansichten für den Betrieb</li>
 </ul>
+<p>PDF-Thumbnails werden zunächst temporär erzeugt und vollständig als JPEG geprüft. Erst danach ersetzen sie die veröffentlichte Vorschau atomar. Der Thumbnail-Nachholprozess arbeitet über Dokument-IDs in kleinen Batches weiter; auch ein vollständig fehlerhafter Batch blockiert spätere Dokumente nicht.</p>
+<h2 id="endgultiges-loschen">Endgültiges Löschen<a class="headerlink" href="#endgultiges-loschen" title="Permanent link">&para;</a></h2>
+<p>BearStack speichert Dateibereinigungsaufträge und die Löschung der Dokumentmetadaten gemeinsam in einer SQLite-Transaktion. Originale und Vorschauen werden zunächst in <code>storage_dir/.purge/</code> verschoben. Die Phase wird gespeichert, bevor Dateien endgültig entfernt werden. Noch offene Aufträge überstehen Neustarts und werden beim Start sowie danach minütlich erneut verarbeitet, auch bei deaktivierter Papierkorb-Aufbewahrungsfrist. Originaldateinamen bleiben bis zum Abschluss reserviert; ein späterer Upload kann dadurch nicht versehentlich von einem wiederholten Löschauftrag entfernt werden.</p>
+<p>Die Dokumentdatenbank wird automatisch auf Schema 17 migriert. Für konsistente Backups die Datenbank und den vollständigen Dokumentenspeicher einschließlich <code>.purge/</code> gemeinsam sichern. Bei einer fehlgeschlagenen Dateibereinigung zeigt die Oberfläche an, dass sie im Hintergrund wiederholt wird; Einzelheiten stehen im Server-Log.</p>
 <h2 id="suche-und-ocr">Suche und OCR<a class="headerlink" href="#suche-und-ocr" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Volltextsuche über extrahierte Inhalte</li>
@@ -1032,7 +1058,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.24.3 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.25.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

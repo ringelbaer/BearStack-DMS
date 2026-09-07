@@ -18,10 +18,11 @@ type Repository interface {
 	FindActiveByChecksum(context.Context, string) (document.Document, bool, error)
 	CreateDocument(context.Context, document.Document) (int64, error)
 	UpdateSearchText(context.Context, int64, string, string, int) error
+	StoredPathPendingDeletion(context.Context, string) (bool, error)
 }
 
 type Store interface {
-	Commit(storage.Candidate, time.Time) (string, error)
+	CommitWithReservedPath(storage.Candidate, time.Time, func(string) (bool, error)) (string, error)
 	Delete(string) error
 	RemoveTemp(storage.Candidate)
 	Resolve(string) (string, error)
@@ -101,7 +102,9 @@ func (i Importer) ImportCandidateWithOptions(ctx context.Context, candidate stor
 		documentDate = options.DocumentDate
 	}
 	now := time.Now().UTC()
-	storedPath, err := i.Store.Commit(candidate, now)
+	storedPath, err := i.Store.CommitWithReservedPath(candidate, now, func(path string) (bool, error) {
+		return i.Repo.StoredPathPendingDeletion(ctx, path)
+	})
 	if err != nil {
 		i.Store.RemoveTemp(candidate)
 		return Result{Error: err}

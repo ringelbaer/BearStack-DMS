@@ -74,7 +74,7 @@ func TestRepositoryMigratesVersion15ToAccountPreferences(t *testing.T) {
 	}
 	defer repo.Close()
 	version, found, err := sqlutil.CurrentSchemaVersion(ctx, repo.db, repositorySchemaComponent)
-	if err != nil || !found || version != 16 {
+	if err != nil || !found || version != repositorySchemaVersion {
 		t.Fatalf("schema version=%d found=%v err=%v", version, found, err)
 	}
 	if _, err := repo.SaveAccountPreference(ctx, SaveAccountPreferenceParams{

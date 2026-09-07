@@ -568,25 +568,26 @@ func TestStatisticsTemplateRendersPhotoIndexerTelemetry(t *testing.T) {
 			ThumbnailConcurrency: 2,
 		},
 		PhotoStatistics: photos.Statistics{
-			IndexAvailable:       true,
-			Index:                photos.IndexStats{Media: 5, Folders: 1, Blogs: 1},
-			MediaBytes:           123456,
-			AverageMediaBytes:    30864,
-			ImageCount:           3,
-			VideoCount:           1,
-			AudioCount:           1,
-			GPSMediaCount:        2,
-			GPSCoveragePercent:   50,
-			MediaTagAssignments:  3,
-			FolderTagAssignments: 1,
-			BlogTagAssignments:   1,
-			PhotoTagCount:        4,
-			ThumbnailCacheFiles:  2,
-			ThumbnailCacheBytes:  2048,
-			ThumbnailBackends:    []photos.ThumbnailBackendStatus{{Name: "vipsthumbnail", Purpose: "Bilder, primär", Available: true, Version: "vipsthumbnail 8.14", Path: "/usr/bin/vipsthumbnail"}},
-			IndexDatabasePath:    "/tmp/photos.db",
-			RootPath:             "/photos",
-			CachePath:            "/photos/.bearstack-cache",
+			IndexAvailable:           true,
+			Index:                    photos.IndexStats{Media: 5, Folders: 1, Blogs: 1},
+			MediaBytes:               123456,
+			AverageMediaBytes:        30864,
+			ImageCount:               3,
+			VideoCount:               1,
+			AudioCount:               1,
+			GPSMediaCount:            2,
+			GPSCoveragePercent:       50,
+			MediaTagAssignments:      3,
+			FolderTagAssignments:     1,
+			BlogTagAssignments:       1,
+			PhotoTagCount:            4,
+			ThumbnailCacheFiles:      2,
+			ThumbnailCacheBytes:      2048,
+			ThumbnailCacheMeasuredAt: started,
+			ThumbnailBackends:        []photos.ThumbnailBackendStatus{{Name: "vipsthumbnail", Purpose: "Bilder, primär", Available: true, Version: "vipsthumbnail 8.14", Path: "/usr/bin/vipsthumbnail"}},
+			IndexDatabasePath:        "/tmp/photos.db",
+			RootPath:                 "/photos",
+			CachePath:                "/photos/.bearstack-cache",
 		},
 		PhotoIndexTelemetry: photos.IndexTelemetry{
 			StartedAt:      started,
@@ -606,7 +607,7 @@ func TestStatisticsTemplateRendersPhotoIndexerTelemetry(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := out.String()
-	for _, want := range []string{"Fotos", "Foto-Indexer", "3 Bilder", "1 Videos", "vipsthumbnail", "2 gescannt", "3 übersprungen", "2.0 Datei(en)/s", "album: testfehler"} {
+	for _, want := range []string{"Fotos", "Foto-Indexer", "3 Bilder", "1 Videos", "vipsthumbnail", "2 gescannt", "3 übersprungen", "2.0 Datei(en)/s", "album: testfehler", "2 Thumbnail(s)", "Stand " + started.Local().Format("02.01.2006 15:04")} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("statistics template missing %q in\n%s", want, body)
 		}
@@ -687,6 +688,9 @@ func TestCachedPhotoStatisticsInvalidatesPhotoCache(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(thumbnailDir, "one.webp"), []byte("one"), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	if err := lib.RefreshThumbnailCacheStatistics(ctx); err != nil {
+		t.Fatal(err)
+	}
 	server := &Server{photos: lib}
 	stats, err := server.cachedPhotoStatistics(ctx)
 	if err != nil {
@@ -707,6 +711,9 @@ func TestCachedPhotoStatisticsInvalidatesPhotoCache(t *testing.T) {
 		t.Fatalf("cached thumbnail cache files = %d", cached.ThumbnailCacheFiles)
 	}
 
+	if err := lib.RefreshThumbnailCacheStatistics(ctx); err != nil {
+		t.Fatal(err)
+	}
 	server.invalidatePhotoStatisticsCache()
 	refreshed, err := server.cachedPhotoStatistics(ctx)
 	if err != nil {

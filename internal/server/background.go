@@ -17,6 +17,7 @@ type BackgroundWorkers struct {
 	runTrashRetention       func(context.Context)
 	runPhotoIndexWorker     func(context.Context)
 	runPhotoThumbnailWorker func(context.Context)
+	runPhotoCacheStatistics func(context.Context)
 }
 
 const thumbnailStartupDelay = 5 * time.Second
@@ -32,6 +33,7 @@ func (s *Server) BackgroundWorkers() BackgroundWorkers {
 		runTrashRetention:       s.trashService().RunRetention,
 		runPhotoIndexWorker:     s.RunPhotoIndexWorker,
 		runPhotoThumbnailWorker: s.RunPhotoThumbnailWorker,
+		runPhotoCacheStatistics: s.runPhotoCacheStatistics,
 	}
 }
 
@@ -93,6 +95,7 @@ func (w BackgroundWorkers) Start(ctx context.Context) {
 	start(w.runTrashRetention)
 	start(w.runPhotoIndexWorker)
 	start(w.runPhotoThumbnailWorker)
+	start(w.runPhotoCacheStatistics)
 	if w.server != nil {
 		start(w.server.RunFaceWorker)
 	}

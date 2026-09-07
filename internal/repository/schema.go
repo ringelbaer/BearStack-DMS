@@ -14,7 +14,7 @@ import (
 
 const (
 	repositorySchemaComponent = "repository"
-	repositorySchemaVersion   = 16
+	repositorySchemaVersion   = 17
 )
 
 type repositorySchemaMigration struct {
@@ -69,6 +69,9 @@ var repositorySchemaMigrations = []repositorySchemaMigration{
 	}},
 	{Version: 16, Name: "account_preferences", Apply: func(ctx context.Context, r *Repository) error {
 		return r.ensureAccountPreferenceTable(ctx)
+	}},
+	{Version: 17, Name: "document_file_deletions", Apply: func(ctx context.Context, r *Repository) error {
+		return r.ensureDocumentFileDeletionTable(ctx)
 	}},
 }
 

@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -28,7 +29,9 @@ var errStoredPathEscapesRoot = errors.New("stored path escapes storage root")
 const committedDocumentFilePerm os.FileMode = 0o640
 
 type Store struct {
-	root string
+	root          string
+	documentMu    sync.Mutex
+	documentGates map[int64]*documentFileGate
 }
 
 type Candidate struct {
@@ -120,6 +123,10 @@ func (s *Store) ReceiveReader(originalName string, r io.Reader, maxBytes int64) 
 }
 
 func (s *Store) Commit(candidate Candidate, now time.Time) (string, error) {
+	return s.CommitWithReservedPath(candidate, now, nil)
+}
+
+func (s *Store) CommitWithReservedPath(candidate Candidate, now time.Time, reserved func(string) (bool, error)) (string, error) {
 	relDir := filepath.Join(fmt.Sprintf("%04d", now.Year()), fmt.Sprintf("%02d", now.Month()))
 	absDir, err := s.EnsureDir(relDir)
 	if err != nil {
@@ -129,16 +136,52 @@ func (s *Store) Commit(candidate Candidate, now time.Time) (string, error) {
 	name := candidate.SafeName
 	target := filepath.Join(absDir, name)
 	for i := 1; ; i++ {
-		if err := commitTempFile(candidate.TempPath, target); err == nil {
-			return filepath.ToSlash(filepath.Join(relDir, name)), nil
-		} else if !errors.Is(err, os.ErrExist) {
-			return "", err
+		blocked := false
+		if reserved != nil {
+			blocked, err = reserved(filepath.ToSlash(filepath.Join(relDir, name)))
+			if err != nil {
+				return "", err
+			}
+		}
+		if !blocked {
+			if err := commitTempFile(candidate.TempPath, target); err == nil {
+				return filepath.ToSlash(filepath.Join(relDir, name)), nil
+			} else if !errors.Is(err, os.ErrExist) {
+				return "", err
+			}
 		}
 		ext := filepath.Ext(candidate.SafeName)
 		base := strings.TrimSuffix(candidate.SafeName, ext)
 		name = fmt.Sprintf("%s-%d%s", base, i, ext)
 		target = filepath.Join(absDir, name)
 	}
+}
+
+// StageDeletion moves a file to a stable, private location before unlinking it.
+// A previously staged file is never replaced when a deletion is retried.
+func (s *Store) StageDeletion(rel, quarantine string) error {
+	target, err := s.Resolve(quarantine)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Lstat(target); err == nil {
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	source, err := s.Resolve(rel)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Lstat(source); errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	if _, err := s.EnsureDir(filepath.ToSlash(filepath.Dir(quarantine))); err != nil {
+		return err
+	}
+	return os.Rename(source, target)
 }
 
 func (s *Store) RemoveTemp(candidate Candidate) {

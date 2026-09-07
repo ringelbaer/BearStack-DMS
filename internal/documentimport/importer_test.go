@@ -400,7 +400,11 @@ type fakeStore struct {
 	resolvedPath string
 }
 
-func (f *fakeStore) Commit(storage.Candidate, time.Time) (string, error) {
+func (f *fakeRepository) StoredPathPendingDeletion(context.Context, string) (bool, error) {
+	return false, nil
+}
+
+func (f *fakeStore) CommitWithReservedPath(storage.Candidate, time.Time, func(string) (bool, error)) (string, error) {
 	return f.storedPath, nil
 }
 

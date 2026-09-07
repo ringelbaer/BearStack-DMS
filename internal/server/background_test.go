@@ -21,7 +21,8 @@ func TestBackgroundWorkersFactoryWiresServerWorkers(t *testing.T) {
 		workers.runTrashRetention == nil ||
 		workers.runPhotoIndexWorker == nil ||
 		workers.runPhotoThumbnailWorker == nil ||
-		workers.ensureThumbnails == nil {
+		workers.ensureThumbnails == nil ||
+		workers.runPhotoCacheStatistics == nil {
 		t.Fatal("background workers factory returned missing worker callbacks")
 	}
 }

@@ -24,6 +24,14 @@ Weitere Dokumentfunktionen:
 - Hintergrundverarbeitung mit nachvollziehbaren Statusansichten
 - Statistik- und Audit-Ansichten für den Betrieb
 
+PDF-Thumbnails werden zunächst temporär erzeugt und vollständig als JPEG geprüft. Erst danach ersetzen sie die veröffentlichte Vorschau atomar. Der Thumbnail-Nachholprozess arbeitet über Dokument-IDs in kleinen Batches weiter; auch ein vollständig fehlerhafter Batch blockiert spätere Dokumente nicht.
+
+## Endgültiges Löschen
+
+BearStack speichert Dateibereinigungsaufträge und die Löschung der Dokumentmetadaten gemeinsam in einer SQLite-Transaktion. Originale und Vorschauen werden zunächst in `storage_dir/.purge/` verschoben. Die Phase wird gespeichert, bevor Dateien endgültig entfernt werden. Noch offene Aufträge überstehen Neustarts und werden beim Start sowie danach minütlich erneut verarbeitet, auch bei deaktivierter Papierkorb-Aufbewahrungsfrist. Originaldateinamen bleiben bis zum Abschluss reserviert; ein späterer Upload kann dadurch nicht versehentlich von einem wiederholten Löschauftrag entfernt werden.
+
+Die Dokumentdatenbank wird automatisch auf Schema 17 migriert. Für konsistente Backups die Datenbank und den vollständigen Dokumentenspeicher einschließlich `.purge/` gemeinsam sichern. Bei einer fehlgeschlagenen Dateibereinigung zeigt die Oberfläche an, dass sie im Hintergrund wiederholt wird; Einzelheiten stehen im Server-Log.
+
 ## Suche und OCR
 
 - Volltextsuche über extrahierte Inhalte

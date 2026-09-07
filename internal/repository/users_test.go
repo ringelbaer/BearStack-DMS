@@ -375,8 +375,8 @@ func TestRepositoryMigratesVersion14AndCreatesUserSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !found || version != 16 || repositorySchemaVersion != 16 {
-		t.Fatalf("repository schema version = %d, found %v, supported %d; want 16", version, found, repositorySchemaVersion)
+	if !found || version != repositorySchemaVersion {
+		t.Fatalf("repository schema version = %d, found %v, supported %d", version, found, repositorySchemaVersion)
 	}
 
 	wantColumns := map[string]bool{

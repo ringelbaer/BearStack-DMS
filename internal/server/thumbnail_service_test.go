@@ -3,6 +3,8 @@ package server
 import (
 	"bytes"
 	"context"
+	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -11,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"bearstack/internal/document"
 	"bearstack/internal/repository"
@@ -170,6 +173,15 @@ func TestThumbnailServiceCreatesPlainTextThumbnailWithoutSoffice(t *testing.T) {
 func installFakePDFToPPM(t *testing.T) {
 	t.Helper()
 	dir := t.TempDir()
+	fixture := filepath.Join(dir, "fixture.jpg")
+	var encoded bytes.Buffer
+	if err := jpeg.Encode(&encoded, image.NewRGBA(image.Rect(0, 0, 2, 2)), nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(fixture, encoded.Bytes(), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BEARSTACK_TEST_PDF_THUMBNAIL", fixture)
 	script := filepath.Join(dir, "pdftoppm")
 	if err := os.WriteFile(script, []byte(`#!/bin/sh
 prefix=""
@@ -177,9 +189,124 @@ while [ "$#" -gt 0 ]; do
 	prefix="$1"
 	shift
 done
-printf '%s' 'jpg' > "$prefix.jpg"
+/bin/cp "$BEARSTACK_TEST_PDF_THUMBNAIL" "$prefix.jpg"
 `), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
+
+func TestPDFThumbnailPublicationPreservesTargetOnRendererFailure(t *testing.T) {
+	for _, tc := range []struct {
+		name, script string
+		cancel       bool
+	}{
+		{"partial failure", "printf broken > \"$prefix.jpg\"\nexit 1\n", false},
+		{"invalid successful output", "printf broken > \"$prefix.jpg\"\n", false},
+		{"cancelled renderer", "printf broken > \"$prefix.jpg\"\nexec /bin/sleep 30\n", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bin := t.TempDir()
+			script := "#!/bin/sh\nprefix=\"\"\nfor arg in \"$@\"; do prefix=\"$arg\"; done\n" + tc.script
+			if err := os.WriteFile(filepath.Join(bin, "pdftoppm"), []byte(script), 0755); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("PATH", bin)
+			dir := t.TempDir()
+			target := filepath.Join(dir, "existing.jpg")
+			old := []byte("previous complete thumbnail")
+			if err := os.WriteFile(target, old, 0640); err != nil {
+				t.Fatal(err)
+			}
+			ctx := context.Background()
+			if tc.cancel {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, 100*time.Millisecond)
+				defer cancel()
+			}
+			if err := writePDFThumbnail(ctx, "source.pdf", target); err == nil {
+				t.Fatal("expected render failure")
+			}
+			got, err := os.ReadFile(target)
+			if err != nil || !bytes.Equal(got, old) {
+				t.Fatalf("target changed: %q, %v", got, err)
+			}
+			entries, err := os.ReadDir(dir)
+			if err != nil || len(entries) != 1 {
+				t.Fatalf("temporary files remain: %#v, %v", entries, err)
+			}
+		})
+	}
+}
+
+func TestPDFThumbnailPublicationReplacesTargetWithValidJPEG(t *testing.T) {
+	installFakePDFToPPM(t)
+	target := filepath.Join(t.TempDir(), "thumbnail.jpg")
+	if err := os.WriteFile(target, []byte("old"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := writePDFThumbnail(context.Background(), "source.pdf", target); err != nil {
+		t.Fatal(err)
+	}
+	file, err := os.Open(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	if _, err := jpeg.Decode(file); err != nil {
+		t.Fatal(err)
+	}
+	info, err := file.Stat()
+	if err != nil || info.Mode().Perm() != 0640 {
+		t.Fatalf("permissions: %v, %v", info, err)
+	}
+}
+
+func TestThumbnailWarmupContinuesPastEntireFailedBatch(t *testing.T) {
+	ctx := context.Background()
+	repo, err := repository.Open(ctx, filepath.Join(t.TempDir(), "documents.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer repo.Close()
+	store, err := storage.New(filepath.Join(t.TempDir(), "store"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ids []int64
+	for i := 0; i < 11; i++ {
+		content := []byte("broken image")
+		if i == 10 {
+			var buf bytes.Buffer
+			if err := jpeg.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 4, 4)), nil); err != nil {
+				t.Fatal(err)
+			}
+			content = buf.Bytes()
+		}
+		name := fmt.Sprintf("image-%02d.jpg", i)
+		path := writeStoredTestFile(t, store, name, content)
+		id, err := repo.CreateDocument(ctx, document.Document{OriginalName: name, StoredPath: path, MIMEType: "image/jpeg", SHA256: name, Title: name})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, id)
+	}
+	service := newThumbnailService(repo, store, nil, make(chan struct{}, 1))
+	if err := service.EnsureAll(ctx); err != nil {
+		t.Fatal(err)
+	}
+	for i, id := range ids {
+		doc, err := repo.GetDocumentFile(ctx, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if (doc.ThumbnailPath != "") != (i == 10) {
+			t.Fatalf("document %d thumbnail: %q", id, doc.ThumbnailPath)
+		}
+	}
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	if err := service.EnsureAll(cancelled); !errors.Is(err, context.Canceled) {
+		t.Fatalf("cancel: %v", err)
+	}
 }

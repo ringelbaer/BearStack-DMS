@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"bearstack/internal/document"
 	"bearstack/internal/repository"
 )
 
@@ -72,7 +71,11 @@ func (s *Server) handlePurge(w http.ResponseWriter, r *http.Request) {
 	}
 	s.invalidateDocumentCountCache()
 	setAuditTarget(r, documentAuditTargetFor(doc))
-	s.deletePurgedDocumentFiles(doc)
+	if err := s.trashService().DeletePurgedDocumentFiles(r.Context(), doc.ID); err != nil {
+		logWarn(s.log, "purged files queued for retry", "id", doc.ID, "error", err)
+		redirectWithNotice(w, r, "/trash", "Dokument gelöscht. Die Dateibereinigung wird im Hintergrund wiederholt.")
+		return
+	}
 	redirectWithNotice(w, r, "/trash", "Dokument endgültig gelöscht.")
 }
 
@@ -83,21 +86,25 @@ func (s *Server) handleEmptyTrash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.invalidateDocumentCountCache()
+	pending := 0
 	for _, doc := range docs {
-		s.deletePurgedDocumentFiles(doc)
+		if err := s.trashService().DeletePurgedDocumentFiles(r.Context(), doc.ID); err != nil {
+			pending++
+			logWarn(s.log, "purged files queued for retry", "id", doc.ID, "error", err)
+		}
 	}
 	setAuditTarget(r, documentAuditTargetsFor(docs))
 	if len(docs) == 0 {
 		redirectWithNotice(w, r, "/trash", "Keine löschbaren Dokumente im Papierkorb. Geschützte Dokumente bleiben erhalten.")
 		return
 	}
-	redirectWithNotice(w, r, "/trash", fmt.Sprintf("%d Dokument(e) endgültig gelöscht.", len(docs)))
+	notice := fmt.Sprintf("%d Dokument(e) endgültig gelöscht.", len(docs))
+	if pending > 0 {
+		notice = fmt.Sprintf("%d Dokument(e) gelöscht. Die Dateibereinigung für %d Dokument(e) wird im Hintergrund wiederholt.", len(docs), pending)
+	}
+	redirectWithNotice(w, r, "/trash", notice)
 }
 
 func (s *Server) purgeTrashByRetention(ctx context.Context) (int, error) {
 	return s.trashService().PurgeByRetention(ctx)
-}
-
-func (s *Server) deletePurgedDocumentFiles(doc document.Document) {
-	s.trashService().DeletePurgedDocumentFiles(doc)
 }

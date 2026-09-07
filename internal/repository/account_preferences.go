@@ -104,16 +104,6 @@ func (r *Repository) SaveAccountPreference(ctx context.Context, params SaveAccou
 	return r.AccountPreference(ctx, params.Source, params.Subject)
 }
 
-func (r *Repository) DeleteAccountPreference(ctx context.Context, source, subject string) error {
-	source = strings.TrimSpace(source)
-	subject = strings.TrimSpace(subject)
-	if err := validateAccountPreferenceKey(source, subject); err != nil {
-		return err
-	}
-	_, err := r.db.ExecContext(ctx, `DELETE FROM account_preferences WHERE account_source = ? AND account_subject = ?`, source, subject)
-	return err
-}
-
 func validateAccountPreferenceKey(source, subject string) error {
 	source = strings.TrimSpace(source)
 	subject = strings.TrimSpace(subject)

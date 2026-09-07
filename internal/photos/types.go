@@ -40,6 +40,7 @@ type Library struct {
 	gpxCache      map[string]cachedGPXTrack
 	statsMu       sync.Mutex
 	statsCache    thumbnailCacheStatsEntry
+	statsFlight   *thumbnailCacheStatsFlight
 	telemetryMu   sync.RWMutex
 	telemetry     IndexTelemetry
 }

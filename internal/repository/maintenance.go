@@ -21,7 +21,8 @@ func (r *Repository) UpdateThumbnailPath(ctx context.Context, id int64, thumbnai
 	return requireAffected(result)
 }
 
-func (r *Repository) ThumbnailCandidates(ctx context.Context, limit int) ([]document.Document, error) {
+// ThumbnailCandidatesAfter advances by immutable ID, including past failed jobs.
+func (r *Repository) ThumbnailCandidatesAfter(ctx context.Context, afterID int64, limit int) ([]document.Document, error) {
 	if limit <= 0 {
 		limit = 25
 	}
@@ -29,6 +30,7 @@ func (r *Repository) ThumbnailCandidates(ctx context.Context, limit int) ([]docu
 		SELECT id, original_name, stored_path, thumbnail_path, mime_type
 			FROM documents
 			WHERE deleted_at IS NULL
+			  AND id > ?
 			  AND (
 			      mime_type IN ('application/pdf', 'image/jpeg', 'image/png', 'image/gif')
 			      OR lower(mime_type) LIKE 'text/plain%'
@@ -48,8 +50,8 @@ func (r *Repository) ThumbnailCandidates(ctx context.Context, limit int) ([]docu
 			      OR lower(original_name) LIKE '%.pages'
 			  )
 			  AND thumbnail_path = ''
-		ORDER BY uploaded_at ASC, id ASC
-		LIMIT ?`, limit)
+		ORDER BY id ASC
+		LIMIT ?`, afterID, limit)
 	if err != nil {
 		return nil, err
 	}

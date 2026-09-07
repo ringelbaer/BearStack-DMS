@@ -13,9 +13,17 @@ import (
 const statisticsCacheTTL = 30 * time.Second
 
 type statisticsCacheState struct {
-	mu        sync.RWMutex
-	documents documentStatisticsCacheEntry
-	photos    photoStatisticsCacheEntry
+	mu              sync.RWMutex
+	documents       documentStatisticsCacheEntry
+	photos          photoStatisticsCacheEntry
+	photoFlight     *photoStatisticsFlight
+	photoGeneration uint64
+}
+
+type photoStatisticsFlight struct {
+	done  chan struct{}
+	value photos.Statistics
+	err   error
 }
 
 type documentStatisticsCacheEntry struct {
@@ -55,25 +63,36 @@ func (s *Server) cachedDocumentStatistics(ctx context.Context) (document.Statist
 func (s *Server) cachedPhotoStatistics(ctx context.Context) (photos.Statistics, error) {
 	now := time.Now()
 	state := &s.apps.statistics
-	state.mu.RLock()
+	state.mu.Lock()
 	entry := state.photos
 	if now.Before(entry.expiresAt) {
-		state.mu.RUnlock()
+		state.mu.Unlock()
 		return entry.value, nil
 	}
-	state.mu.RUnlock()
+	if flight := state.photoFlight; flight != nil {
+		state.mu.Unlock()
+		select {
+		case <-ctx.Done():
+			return photos.Statistics{}, ctx.Err()
+		case <-flight.done:
+			return flight.value, flight.err
+		}
+	}
+	flight := &photoStatisticsFlight{done: make(chan struct{})}
+	state.photoFlight = flight
+	generation := state.photoGeneration
+	state.mu.Unlock()
 
 	stats, err := s.photos.Statistics(ctx)
-	if err != nil {
-		return photos.Statistics{}, err
-	}
 	state.mu.Lock()
-	state.photos = photoStatisticsCacheEntry{
-		value:     stats,
-		expiresAt: time.Now().Add(statisticsCacheTTL),
+	if err == nil && generation == state.photoGeneration {
+		state.photos = photoStatisticsCacheEntry{value: stats, expiresAt: time.Now().Add(statisticsCacheTTL)}
 	}
+	flight.value, flight.err = stats, err
+	state.photoFlight = nil
+	close(flight.done)
 	state.mu.Unlock()
-	return stats, nil
+	return stats, err
 }
 
 func (s *Server) invalidateDocumentStatisticsCache() {
@@ -90,11 +109,32 @@ func (s *Server) invalidatePhotoStatisticsCache() {
 	if s == nil {
 		return
 	}
-	if s.photos != nil {
-		s.photos.InvalidateStatisticsCache()
-	}
 	state := &s.apps.statistics
 	state.mu.Lock()
 	state.photos = photoStatisticsCacheEntry{}
+	state.photoGeneration++
 	state.mu.Unlock()
+}
+
+func (s *Server) runPhotoCacheStatistics(ctx context.Context) {
+	if s.photos == nil {
+		return
+	}
+	ticker := time.NewTicker(30 * time.Minute)
+	defer ticker.Stop()
+	for {
+		if err := s.photos.RefreshThumbnailCacheStatistics(ctx); err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			logWarn(s.log, "photo cache statistics refresh failed", "error", err)
+		} else {
+			s.invalidatePhotoStatisticsCache()
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
 }

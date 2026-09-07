@@ -20,10 +20,19 @@ func (s *Server) ensureDocumentOfficePreview(ctx context.Context, doc document.D
 	}); ok {
 		return previewer.EnsureOfficePreview(ctx, doc)
 	}
-	return ensureDocumentOfficePreview(ctx, s.store, doc)
+	return newThumbnailService(s.repo, s.store, s.log, nil).EnsureOfficePreview(ctx, doc)
 }
 
 func (t thumbnailService) EnsureOfficePreview(ctx context.Context, doc document.Document) (string, error) {
+	release, err := t.store.AcquireDocumentFiles(ctx, doc.ID)
+	if err != nil {
+		return "", err
+	}
+	defer release()
+	doc, err = t.repo.GetDocumentFile(ctx, doc.ID)
+	if err != nil {
+		return "", err
+	}
 	return ensureDocumentOfficePreview(ctx, t.store, doc)
 }
 

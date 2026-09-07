@@ -102,6 +102,8 @@ Bei mehreren Aenderungstypen gewinnt die hoechste Kategorie. Docs-only- und Test
 
 ## Docker
 
+Lokale Python-Umgebungen (`.venv`, `.venv-faces`), `.cache` sowie `_site` und `_site-src` sind vom Docker-Buildkontext ausgeschlossen.
+
 Image lokal bauen:
 
 ```sh
@@ -228,6 +230,10 @@ Weitere projektnahe Variablen:
 
 Dokumente werden ueber die Weboberflaeche (`POST /upload`), die JSON-API (`POST /api/upload`) oder WebDAV-`PUT` importiert. BearStack speichert die Originaldatei im konfigurierten `storage_dir`, legt Metadaten in SQLite ab und fuehrt Text-/Vorschau-/Thumbnail-Verarbeitung asynchron im Hintergrund aus. Unterstuetzt werden PDF, Bilder sowie einfache Text- und Office-Formate; Office-Text und Office-Vorschauen benoetigen LibreOffice.
 
+Endgültiges Löschen speichert Dateibereinigungsaufträge zusammen mit der Löschung der Dokumentmetadaten in einer SQLite-Transaktion. Originale und Vorschauen werden zunächst nach `storage_dir/.purge/` verschoben. Fehlgeschlagene Aufträge werden beim Start und anschließend minütlich erneut verarbeitet, auch bei deaktivierter Papierkorb-Aufbewahrungsfrist. Betroffene Originaldateinamen bleiben bis zum Abschluss reserviert. Die Dokumentdatenbank wird dafür automatisch auf Schema 17 migriert; Datenbank und vollständigen Dokumentenspeicher einschließlich `.purge/` zusammen sichern.
+
+PDF-Thumbnails werden erst nach erfolgreicher Erzeugung und JPEG-Prüfung atomar veröffentlicht. Der Thumbnail-Nachholprozess arbeitet in kleinen Batches über Dokument-IDs weiter, auch wenn ein kompletter Batch fehlschlägt; fehlerhafte Dateien bleiben für spätere Läufe erhalten.
+
 Standardmaessig zeigt BearStack PDF-Ausgaben mit dem nativen Viewer des Browsers. Unter `Konto -> Darstellung` kann jeder Nutzer den integrierten BearStack-PDF-Viewer aktivieren; Nutzerverwalter koennen dieselbe geraeteuebergreifende Praeferenz pro verwaltbarem Konto setzen. Der lokale Viewer bietet Seitennavigation, Zoom, Breiten-/Seitenanpassung, Textauswahl, Links sowie Zugriff auf Browser-Viewer und Originaldatei. Er wird erst beim Oeffnen eines PDFs geladen und faellt bei nicht unterstuetzten oder passwortgeschuetzten Dateien automatisch auf den Browser-Viewer zurueck. Die Einstellung gilt auch fuer von LibreOffice erzeugte PDF-Vorschauen und wird fuer SQLite- wie Config-Konten in `bearstack.db` gespeichert.
 
 Die maschinenlesbare API-Beschreibung liegt im Repository als `openapi.yaml` und wird von einer laufenden Instanz authentifiziert unter `GET /api/openapi.yaml` ausgeliefert. Sie verwendet OpenAPI 3.1 und beschreibt die oeffentlichen JSON-, Upload- und Dokumentmedien-Endpunkte.
@@ -270,6 +276,8 @@ Gesichtsdaten werden aus eingebettetem JPEG-XMP sowie XMP-Sidecars gelesen (`pho
 Unter `Einstellungen -> Fotos` kann die Foto-Track-Aufloesung der Karte in sinnvollen Stufen von 500 m bis 10 km eingestellt werden. Sie legt fest, wie nah GPS-Fotos liegen muessen, um im fotobasierten Karten-Track zu einem Trackpunkt zusammengefasst zu werden. Dort kann auch ein Index-Worker aktiviert werden. Er crawlt den Foto-Root ordnerweise im Hintergrund, ueberspringt unveraenderte Ordner anhand ihres letzten Scan-Zeitpunkts und entfernt nicht mehr vorhandene Foto-, Ordner- und Blogeintraege ordnerlokal aus dem Index. Standardmaessig ist er deaktiviert; bei Aktivierung laeuft er alle 60 Minuten mit niedriger I/O-Prioritaet, falls vom System unterstuetzt, und 250 ms Pause pro gescanntem Ordner. Der separate Thumbnail-Worker ist ebenfalls standardmaessig deaktiviert; bei Aktivierung laeuft er alle 15 Minuten, erzeugt standardmaessig bis zu 15 fehlende Thumbnails pro Lauf und nutzt standardmaessig eine Thumbnail-Parallelitaet von 1.
 
 Ordner koennen nach Ordnerstandard, Name, Datum oder zufaellig sortiert werden. Die Datumssortierung von Ordnern nutzt das aus dem Ordnernamen erkannte Anzeigedatum. Die Ordnerstandard-Sortierung wird ueber eine leere Steuerdatei im Ordner gesetzt: `.order_descending_name.pg2conf`, `.order_ascending_name.pg2conf`, `.order_descending_date.pg2conf`, `.order_ascending_date.pg2conf` oder `.order_random.pg2conf`.
+
+Die Anzahl und Größe der Foto-Thumbnail-Dateien werden beim Start und anschließend alle 30 Minuten im Hintergrund ermittelt. Die Statistikseite zeigt den Messzeitpunkt und durchsucht den Thumbnail-Cache bei Seitenaufrufen nicht. Vor der ersten Messung erscheint „Thumbnail-Cache wird ermittelt“; bei einem fehlgeschlagenen oder abgebrochenen Durchlauf bleibt der letzte vollständige Stand erhalten. Die Messung läuft auch bei deaktivierter Thumbnail-Erzeugung.
 
 Ein Ordner mit der Datei `.adminonly` ist nur fuer Benutzer mit der Rolle `admin` zugaenglich. Admin-only-Inhalte sind auch fuer Admins standardmaessig in Galerie, Suche, Zufall, Fotoframe, Kartenansicht und Foto-Tag-Listen ausgeblendet. Admins koennen sie im Sortieren-Menue der Galerie per Schalter einblenden; die Auswahl bleibt in der aktuellen Session gespeichert. Direkte Medien- und Thumbnail-URLs bleiben weiterhin nur Admins vorbehalten.
 

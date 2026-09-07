@@ -3,6 +3,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"image"
@@ -50,8 +51,9 @@ func newThumbnailService(repo *repository.Repository, store *storage.Store, log 
 
 func (t thumbnailService) EnsureAll(ctx context.Context) error {
 	total := 0
+	var afterID int64
 	for {
-		docs, err := t.repo.ThumbnailCandidates(ctx, 10)
+		docs, err := t.repo.ThumbnailCandidatesAfter(ctx, afterID, 10)
 		if err != nil {
 			return err
 		}
@@ -61,17 +63,16 @@ func (t thumbnailService) EnsureAll(ctx context.Context) error {
 			}
 			return nil
 		}
-		progress := 0
 		for _, doc := range docs {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			afterID = doc.ID
 			if err := t.Ensure(ctx, doc); err != nil {
 				logWarn(t.log, "thumbnail generation skipped document", "id", doc.ID, "error", err)
 				continue
 			}
-			progress++
 			total++
-		}
-		if progress == 0 {
-			return nil
 		}
 	}
 }
@@ -79,6 +80,18 @@ func (t thumbnailService) EnsureAll(ctx context.Context) error {
 func (t thumbnailService) Ensure(ctx context.Context, doc document.Document) error {
 	if doc.ID <= 0 {
 		return nil
+	}
+	releaseFiles, err := t.store.AcquireDocumentFiles(ctx, doc.ID)
+	if err != nil {
+		return err
+	}
+	defer releaseFiles()
+	doc, err = t.repo.GetDocumentFile(ctx, doc.ID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
 	}
 	if doc.ThumbnailPath != "" {
 		path, err := t.store.Resolve(doc.ThumbnailPath)
@@ -155,7 +168,8 @@ func (t thumbnailService) ensureOfficeThumbnail(ctx context.Context, doc documen
 		return err
 	}
 
-	previewAbs, err := t.EnsureOfficePreview(ctx, doc)
+	// Ensure already holds the document file gate.
+	previewAbs, err := ensureDocumentOfficePreview(ctx, t.store, doc)
 	if err != nil {
 		return err
 	}
@@ -169,19 +183,38 @@ func (t thumbnailService) ensureOfficeThumbnail(ctx context.Context, doc documen
 }
 
 func writePDFThumbnail(ctx context.Context, source, target string) error {
-	prefix := strings.TrimSuffix(target, filepath.Ext(target))
+	tmpDir, err := os.MkdirTemp(filepath.Dir(target), ".pdf-thumbnail-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+	prefix := filepath.Join(tmpDir, "thumbnail")
 	cmd := exec.CommandContext(ctx, "pdftoppm", "-f", "1", "-l", "1", "-singlefile", "-jpeg", "-scale-to", "300", source, prefix)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("pdftoppm: %w: %s", err, strings.TrimSpace(string(output)))
 	}
-	info, err := os.Stat(target)
+	output := prefix + ".jpg"
+	file, err := os.Open(output)
 	if err != nil {
 		return err
 	}
-	if info.Size() == 0 {
-		return errors.New("leeres Vorschaubild erzeugt")
+	// Decode the small, scaled JPEG completely: a header alone does not prove
+	// that a terminated renderer produced a complete thumbnail.
+	_, decodeErr := jpeg.Decode(file)
+	closeErr := file.Close()
+	if decodeErr != nil {
+		return fmt.Errorf("ungültiges Vorschaubild: %w", decodeErr)
 	}
-	return nil
+	if closeErr != nil {
+		return closeErr
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := os.Chmod(output, 0o640); err != nil {
+		return err
+	}
+	return os.Rename(output, target)
 }
 
 func (t thumbnailService) ensureImageThumbnail(ctx context.Context, doc document.Document) error {

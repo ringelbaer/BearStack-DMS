@@ -115,13 +115,6 @@ func (l *Library) CachedThumbnailReady(rel string, size int) bool {
 	return l.thumbnailFileReady(clean, size)
 }
 
-func (l *Library) CachedThumbnailReadyForMedia(media Media, size int) bool {
-	if l == nil || !mediaCanThumbnail(media) {
-		return false
-	}
-	return l.thumbnailFileReadyForSource(media.Path, NormalizeThumbnailSize(size), media.ModTime)
-}
-
 func (l *Library) CachedThumbnailContext(ctx context.Context, rel string, size int, includeAdminOnly bool) (string, bool, error) {
 	if l == nil || !l.index.available() {
 		return "", false, nil

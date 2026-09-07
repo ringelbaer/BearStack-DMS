@@ -527,6 +527,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cache-statistik" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Cache-Statistik
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#foto-ordner" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -560,7 +571,7 @@
   
     <nav class="md-nav" aria-label="Optionale lokale Gesichtserkennung">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#einrichtung-ohne-compose-native-installation" class="md-nav__link">
     <span class="md-ellipsis">
@@ -569,9 +580,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#verarbeitung-metadaten-und-datenschutz" class="md-nav__link">
     <span class="md-ellipsis">
@@ -580,12 +591,12 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
-
+  
 </li>
         
       </ul>
@@ -809,6 +820,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cache-statistik" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Cache-Statistik
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#foto-ordner" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -842,7 +864,7 @@
   
     <nav class="md-nav" aria-label="Optionale lokale Gesichtserkennung">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#einrichtung-ohne-compose-native-installation" class="md-nav__link">
     <span class="md-ellipsis">
@@ -851,9 +873,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#verarbeitung-metadaten-und-datenschutz" class="md-nav__link">
     <span class="md-ellipsis">
@@ -862,12 +884,12 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
-
+  
 </li>
         
       </ul>
@@ -930,6 +952,8 @@
 <p>Die Kartenansicht passt ihre Höhe an das Browserfenster an und nutzt den zwischen Navigation, Filtern und Footer verfügbaren Bereich vollständig aus. Auf kleinen oder sehr kurzen Fenstern bleibt eine bedienbare Mindesthöhe erhalten.</p>
 <p>Dort kann auch ein Index-Worker aktiviert werden. Er crawlt den Foto-Root ordnerweise im Hintergrund, überspringt unveränderte Ordner anhand ihres letzten Scan-Zeitpunkts und entfernt nicht mehr vorhandene Foto-, Ordner- und Blogeinträge ordnerlokal aus dem Index. Standardmäßig ist er deaktiviert; bei Aktivierung läuft er alle 60 Minuten mit niedriger I/O-Priorität, falls vom System unterstützt, und 250 ms Pause pro gescanntem Ordner.</p>
 <p>Der separate Thumbnail-Worker ist ebenfalls standardmäßig deaktiviert. Bei Aktivierung läuft er alle 15 Minuten, erzeugt standardmäßig bis zu 15 fehlende Thumbnails pro Lauf und nutzt standardmäßig eine Thumbnail-Parallelität von 1.</p>
+<h2 id="cache-statistik">Cache-Statistik<a class="headerlink" href="#cache-statistik" title="Permanent link">&para;</a></h2>
+<p>Anzahl und Größe der Thumbnail-Dateien werden beim Start und danach alle 30 Minuten im Hintergrund ermittelt, auch wenn die Thumbnail-Erzeugung deaktiviert ist. Seitenaufrufe lesen den letzten vollständigen Stand und lösen keinen Dateisystemdurchlauf aus. Die Statistik nennt den Messzeitpunkt; vor der ersten Messung erscheint „Thumbnail-Cache wird ermittelt“. Bei Fehler oder Abbruch bleibt der vorherige Stand erhalten. Gleichzeitige Aktualisierungen teilen sich einen Durchlauf; temporäre Dateien und symbolische Links werden nicht mitgezählt.</p>
 <h2 id="foto-ordner">Foto-Ordner<a class="headerlink" href="#foto-ordner" title="Permanent link">&para;</a></h2>
 <p>Beim Zurückkehren aus einem Unterordner über den Fotopfad oder Browser-Zurück/Vorwärts erscheint die Ordnerliste wieder an der vorherigen Scrollposition. Pfadlinks behalten die zuvor besuchte Sortierung, Filter und Seite bei. Ändert sich die Fensterbreite, bleibt der betretene Ordner an seiner bisherigen Bildschirmposition. Die Positionen werden innerhalb des aktuellen Tabs gespeichert.</p>
 <p>Ordnerthumbnails zeigen Bilder bei <strong>20 %, 40 %, 60 % und 80 %</strong> der sichtbaren Bilder einschließlich Unterordnern. Die Auswahl verwendet absteigende Datumsreihenfolge: Aufnahmedatum, ersatzweise Dateiänderungsdatum. Bruchteile einer Bildposition werden aufgerundet; bei 100 Bildern sind es Bild 20, 40, 60 und 80.</p>
@@ -1173,7 +1197,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.24.3 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.25.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       
