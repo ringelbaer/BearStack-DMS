@@ -543,7 +543,7 @@
   </a>
   
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#verbindungsfehler-eingrenzen" class="md-nav__link">
     <span class="md-ellipsis">
@@ -552,7 +552,7 @@
       </span>
     </span>
   </a>
-
+  
 </li>
       
         <li class="md-nav__item">
@@ -802,7 +802,7 @@
   </a>
   
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#verbindungsfehler-eingrenzen" class="md-nav__link">
     <span class="md-ellipsis">
@@ -811,7 +811,7 @@
       </span>
     </span>
   </a>
-
+  
 </li>
       
         <li class="md-nav__item">
@@ -888,7 +888,7 @@
 
 
 <h1 id="bearstack-personen-fur-android">BearStack Personen für Android<a class="headerlink" href="#bearstack-personen-fur-android" title="Permanent link">&para;</a></h1>
-<p>Native, deutschsprachige App für Android 8.0 oder neuer. App-Version <strong>0.4.0</strong>; erforderlich sind <strong>BearStack 0.34.0</strong>, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit <code>photos_manage</code> (beispielsweise <code>photos_manager</code> oder Administrator). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.</p>
+<p>Native, deutschsprachige App für Android 8.0 oder neuer. App-Version <strong>0.5.0</strong>; erforderlich sind <strong>BearStack 0.35.0</strong>, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit <code>photos_manage</code> (beispielsweise <code>photos_manager</code> oder Administrator). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
 <p><code>apps/android/</code> in Android Studio als eigenes Projekt öffnen. Voraussetzungen: JDK 17 oder 21 und Android-SDK mit Plattform 36. Das Projekt verwendet den Gradle Wrapper 8.13, AGP 8.13.2 und Kotlin 2.3.21. SDK-Pfad über <code>ANDROID_HOME</code> oder eine ignorierte <code>apps/android/local.properties</code> mit <code>sdk.dir=…</code> setzen.</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./scripts/check-android.sh
@@ -908,7 +908,7 @@
 <li>Das Grid zeigt bis zu vier <strong>Gesichtsausschnitte</strong>, keine ganzen Fotos. Bei größeren Gruppen blättern „Zurück“ und „Weiter“ durch Viererseiten. Benennen, Zuordnen und Ignorieren betreffen immer die gesamte Gruppe.</li>
 <li>Wischen funktioniert auf Bildern, Zwischenräumen und dem freien Hintergrund der Bearbeitungsansicht. Links überspringt die Gruppe; rechts holt die zuletzt übersprungene Gruppe zurück; oben ignoriert sie mit Rücknahmefrist. Bei überlangem Inhalt scrollt Hochwischen zunächst zum Ende; ein weiterer Wischer nach oben ignoriert die Gruppe. Menü, Statistik, Namensdialog und Originalfoto-Vorschau lösen keine Wischaktionen aus.</li>
 <li>Rechtswischen nimmt das letzte Überspringen im aktuellen Durchgang zurück, auch mehrfach und nach dem letzten Datensatz. Alternativ „Letztes Überspringen zurücknehmen“ im Menü wählen. Die bisherige Gruppe bleibt mit ihrer Bildseite zur weiteren Bearbeitung vorgemerkt. Zurückgeholte Gruppen werden erneut am Server geprüft; bereits bearbeitete oder entfernte Gruppen werden ausgelassen. Bei Verbindungsfehlern bleiben aktuelle Gruppe und Rücknahmemöglichkeit erhalten. Die zurückgenommene Überspringen-Zählung wird entfernt. Verlauf und vorgemerkte Gruppen bleiben nach einem App-Neustart erhalten; ein neuer Durchgang beginnt ohne Rücknahmeverlauf.</li>
-<li>Einen Gesichtsausschnitt halten, um das vollständige Originalfoto zu sehen, aus dem er stammt. Das Foto wird mit seinem ursprünglichen Seitenverhältnis vollständig eingepasst. Loslassen oder Abbruch schließt die Vorschau. Während des Haltens gibt es keine Wischaktion. Über die TalkBack-Aktion „Originalfoto anzeigen“ bleibt die Vorschau bis „Vorschau schließen“ geöffnet.</li>
+<li>Einen Gesichtsausschnitt halten, um das vollständige Originalfoto zu sehen, aus dem er stammt. Das Foto wird mit seinem ursprünglichen Seitenverhältnis vollständig eingepasst. Loslassen oder Abbruch schließt die Vorschau. Eine feine Bounding Box markiert das ausgewählte Gesicht. Bei weiter gedrücktem Finger vergrößert Hochwischen zum Gesicht, Herunterwischen verkleinert zurück zum ganzen Foto. Dabei wird weder ignoriert noch übersprungen. Der Zoom bleibt auf maximal 12-fache Vergrößerung begrenzt; das Original wird einmal mit höchstens 2048 Pixeln je Seite dekodiert. Über die TalkBack-Aktion „Originalfoto anzeigen“ bleibt die Vorschau bis „Vorschau schließen“ geöffnet; dort stehen „Zum Gesicht vergrößern“ und „Ganzes Foto anzeigen“ als Aktionen bereit. Die Markierung benötigt die Gesichtskoordinaten aus BearStack 0.35.0; bei älteren Servern bleibt das Original ohne Markierung und Zoom sichtbar.</li>
 <li>Der Stift öffnet das Namensfeld. Nach 250 ms Eingabepause erscheinen höchstens 20 Vorschläge. Einen Vorschlag antippen, um zuzuordnen; „Speichern“ benennt die aktuelle Gruppe. Bei einem bestehenden gleichen Namen wird zwischen Zuordnen und „Separat benennen“ unterschieden.</li>
 <li>Das <strong>×</strong> links unten trennt genau dieses Gesicht in eine neue unbenannte Gruppe ab. Es ignoriert und löscht nichts. Die neue Gruppe folgt nach Abschluss der aktuellen Gruppe; mehrere Abtrennungen folgen ihrer Reihenfolge. Bei einem einzigen Gesicht entfällt das ×.</li>
 <li><strong>Nach oben wischen:</strong> die ganze Gruppe ignorieren. Die nächste Gruppe erscheint sofort. Eine klickbare Meldung am oberen Bildschirmrand bietet fünf Sekunden lang „Rückgängig“ an; die Ansicht bleibt währenddessen bedienbar. Bei mehreren rasch ignorierten Gruppen hat jede ihre eigene Frist, die Meldung nimmt jeweils die letzte noch rücknehmbare Gruppe zurück. Erst nach Fristende wird die ursprüngliche Gruppe gespeichert. Schreibanfragen werden nacheinander ausgeführt. Beim Wechsel in den Hintergrund oder nach Prozessende kehren noch nicht gesendete Gruppen in die Warteschlange zurück.</li>
@@ -918,6 +918,7 @@
 <p>Benennen und Zuordnen schalten nach Serverbestätigung weiter. Ignorieren schaltet bereits während der Rücknahmefrist weiter. Bei abgelehntem Ignorieren wird die betroffene Gruppe zur erneuten Prüfung vorgemerkt; die aktuelle Gruppe bleibt erhalten. „Offene Aktion prüfen“ klärt zuerst die serverseitige Aktionsquittung und sendet nur bei fehlender Quittung denselben gespeicherten Auftrag erneut. Währenddessen sind weitere Entscheidungen gesperrt. Bei fehlenden Rechten oder falschen Zugangsdaten kann die Verbindung gewechselt und mit demselben Konto wiederhergestellt werden.</p>
 <p>Ändert die Weboberfläche oder Hintergrundverarbeitung inzwischen eine Gruppe, meldet die API <code>409</code>; die App lädt den aktuellen Stand und verlangt eine neue Entscheidung. Sie überträgt die alte Entscheidung nicht automatisch auf eine veränderte Gruppe. Eine Änderung an der Zielperson erfordert ebenfalls eine erneute Auswahl.</p>
 <h2 id="verbindungsfehler-eingrenzen">Verbindungsfehler eingrenzen<a class="headerlink" href="#verbindungsfehler-eingrenzen" title="Permanent link">&para;</a></h2>
+<p>Ab App-Version 0.4.1 erfolgt auch das Schließen von HTTPS-Verbindungen außerhalb des UI-Threads. Dadurch funktionieren Kontowechsel ohne verdeckende Android-Netzwerkfehler; abgelehnte Anmeldungen zeigen die konkrete Ursache auch im Zertifikatsdialog.</p>
 <p>Ab App-Version 0.1.1 zeigt die Fehlermeldung die Phase (HTTPS-Verbindungsprüfung, Anmeldung oder Serveranfrage) und einen Diagnosecode. <code>DNS</code> steht für fehlgeschlagene Namensauflösung, <code>CONNECT</code> für einen fehlgeschlagenen Verbindungsaufbau, <code>NO_ROUTE</code> für eine fehlende Route und <code>TIMEOUT</code> für eine Zeitüberschreitung. <code>TLS</code>, <code>TLS_IDENTITY</code>, <code>CERT_EXPIRED</code> und <code>CERT_NOT_YET_VALID</code> unterscheiden Zertifikatsprobleme. <code>NETWORK_PERMISSION</code> weist auf verweigerten Socket-Zugriff hin.</p>
 <p>Bei einer LAN-Adresse dieselbe HTTPS-Adresse auf demselben Handy im Browser testen. Funktioniert der Zugriff nur außerhalb der App, die Netzwerkfreigabe und die appbezogenen VPN-Regeln prüfen. Eine Zeitüberschreitung allein beweist weder einen Zertifikats- noch einen Passwortfehler. Bei der ersten HTTPS-Prüfung werden keine Zugangsdaten gesendet; die Meldung über eine offene Aktion erscheint nur, wenn tatsächlich eine solche Aktion gespeichert ist.</p>
 <p>Debug-Builds schreiben unter dem Logcat-Tag <code>BearStackConnection</code> ausschließlich Phase und Diagnosecode. Exception-Texte, vollständige URLs, Benutzernamen und Passwörter werden nicht protokolliert.</p>

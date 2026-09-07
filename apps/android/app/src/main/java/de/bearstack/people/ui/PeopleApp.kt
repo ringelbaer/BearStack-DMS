@@ -1,7 +1,9 @@
 package de.bearstack.people.ui
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -18,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.input.*
@@ -44,6 +47,8 @@ fun PeopleApp(vm: PeopleViewModel) {
                         Text("Vergleiche diesen SHA-256-Fingerabdruck mit dem Zertifikat auf deinem BearStack-Server. Erst danach werden Zugangsdaten gesendet.")
                         Spacer(Modifier.height(16.dp)); Text(certificate.fingerprint)
                         Spacer(Modifier.height(16.dp)); Text("${certificate.subject}\nGültig bis ${certificate.expires}")
+                        state.error?.let { Text(it,color=MaterialTheme.colorScheme.error,
+                            modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite}) }
                     } }, confirmButton={ TextButton(onClick=vm::confirmCertificate,enabled=!state.busy) { Text("Abgeglichen und vertrauen") } },
                     dismissButton={ TextButton(onClick=vm::cancelCertificate,enabled=!state.busy) { Text("Abbrechen") } })
             }
@@ -76,7 +81,11 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
     var menu by remember { mutableStateOf(false) }
     var statistics by rememberSaveable { mutableStateOf(false) }
     var held by remember { mutableStateOf<Long?>(null) }
+    var heldDismissed by remember { mutableStateOf(false) }
     var accessibleZoom by remember { mutableStateOf(false) }
+    var zoom by remember { mutableFloatStateOf(0f) }
+    val zoomDistance=with(LocalDensity.current) { 240.dp.toPx() }
+    val zoomDrag: (Float) -> Unit = { dy -> zoom=(zoom-dy/zoomDistance).coerceIn(0f,1f) }
     val enabled = !state.busy && !state.unresolved && held == null
     LaunchedEffect(state.person?.id,state.person?.revision) { held=null;accessibleZoom=false }
     Box(Modifier.fillMaxSize()) {
@@ -114,12 +123,13 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                     Text("Unbenannte Person",style=MaterialTheme.typography.headlineSmall)
                     Text("${person.offset+1}–${minOf(person.offset+4L,person.count)} von ${person.count} Gesichtern")
                     FaceGrid(person,enabled,vm.images,vm::image,onDetach=vm::detach,
-                        onHold={ held=it },onZoom={held=it;accessibleZoom=true})
+                        onHold={ held=it;heldDismissed=false;zoom=0f },
+                        onZoom={held=it;heldDismissed=false;zoom=0f;accessibleZoom=true},onZoomDrag=zoomDrag)
                     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
                         OutlinedButton(onClick={vm.page(-1)},enabled=enabled && person.offset>0) { Text("Zurück") }
                         OutlinedButton(onClick={vm.page(1)},enabled=enabled && person.offset+4<person.count) { Text("Weiter") }
                     }
-                    Text("Halten: Originalfoto · Nach oben: ignorieren · Nach links: überspringen · Nach rechts: zurück",style=MaterialTheme.typography.bodySmall)
+                    Text("Halten: Originalfoto, dabei hoch/runter zoomen · Nach oben: ignorieren · Nach links: überspringen · Nach rechts: zurück",style=MaterialTheme.typography.bodySmall)
                     Spacer(Modifier.height(80.dp))
                 } ?: run {
                     if(!state.busy && !state.unresolved) {
@@ -131,20 +141,14 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                 }
             }
         }
-        held?.let { face ->
-            var loading by remember(face) { mutableStateOf(true) }
-            var failed by remember(face) { mutableStateOf(false) }
+        held?.takeUnless { heldDismissed }?.let { face ->
             Column(Modifier.fillMaxSize().background(Color.Black.copy(alpha=.94f)).safeDrawingPadding().padding(16.dp),
                 horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.weight(1f).fillMaxWidth(),contentAlignment=Alignment.Center) {
-                    vm.images?.let { AsyncImage(vm.original(face),"Originalfoto",imageLoader=it,
-                        modifier=Modifier.fillMaxSize(),contentScale=ContentScale.Fit,
-                        onLoading={loading=true;failed=false},onSuccess={loading=false;failed=false},
-                        onError={loading=false;failed=true}) }
-                    if(loading) CircularProgressIndicator()
-                    if(failed) Text(if(accessibleZoom) "Originalfoto konnte nicht geladen werden. Vorschau schließen und erneut öffnen."
-                        else "Originalfoto konnte nicht geladen werden. Loslassen und erneut halten.",
-                        color=Color.White,modifier=Modifier.padding(24.dp))
+                vm.images?.let { images ->
+                    OriginalPhoto(vm.original(face),images,state.person?.faceBounds?.get(face),zoom,
+                        onZoom={zoom=it},onDrag=zoomDrag,modifier=Modifier.weight(1f).fillMaxWidth(),
+                        // Keep editing blocked until the original held pointer is released.
+                        onNewTouch=if(accessibleZoom) null else { { heldDismissed=true } })
                 }
                 state.person?.facePaths?.get(face)?.takeIf {it.isNotEmpty()}?.let {
                     Text(it,color=Color.White,style=MaterialTheme.typography.bodySmall,
@@ -160,9 +164,12 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
 
 @Composable
 fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Long, Boolean) -> String?,
-    onDetach: (Long) -> Unit, onHold: (Long?) -> Unit, onZoom: (Long) -> Unit) {
+    onDetach: (Long) -> Unit, onHold: (Long?) -> Unit, onZoom: (Long) -> Unit,
+    onZoomDrag: (Float) -> Unit = {}) {
     var holding by remember { mutableStateOf(false) }
     val active by rememberUpdatedState(enabled)
+    val hold by rememberUpdatedState(onHold)
+    val zoomDrag by rememberUpdatedState(onZoomDrag)
     Column(Modifier.fillMaxWidth().testTag("face-grid"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         person.faces.chunked(2).forEach { row ->
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -174,9 +181,26 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
                                 .semantics { contentDescription="Gesicht ${person.faces.indexOf(face)+person.offset+1}"
                                     customActions=listOf(CustomAccessibilityAction("Originalfoto anzeigen") { if(active) {onZoom(face);true} else false }) }
                                 .pointerInput(face) {
-                                    detectTapGestures(onLongPress={if(active){holding=true;onHold(face)}},onPress={
-                                        try { tryAwaitRelease() } finally { if(holding){holding=false;onHold(null)} }
-                                    })
+                                    awaitEachGesture {
+                                        val down=awaitFirstDown()
+                                        if(!active) return@awaitEachGesture
+                                        val pressed=awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
+                                        if(!active) return@awaitEachGesture
+                                        holding=true
+                                        try {
+                                            hold(face)
+                                            // The original tile owns this pointer even while the overlay is visible.
+                                            // Keep tracking outside its bounds, but cancel on competing/multiple pointers.
+                                            while(true) {
+                                                val event=awaitPointerEvent()
+                                                val change=event.changes.singleOrNull { it.id==pressed.id } ?: break
+                                                if(event.changes.size!=1 || change.isConsumed) break
+                                                if(!change.pressed) { change.consume();break }
+                                                zoomDrag(change.position.y-change.previousPosition.y)
+                                                change.consume()
+                                            }
+                                        } finally { holding=false;hold(null) }
+                                    }
                                 }) {
                                 if(images!=null) AsyncImage(image(face,false),null,imageLoader=images,
                                     modifier=Modifier.fillMaxSize(),contentScale=ContentScale.Crop)

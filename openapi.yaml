@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.34.0
+  version: 0.35.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -1635,7 +1635,7 @@ components:
           description: Present on a detail page with faces. Empty pages can omit this field.
           items:
             type: object
-            required: [id, display_path]
+            required: [id, display_path, bounds]
             properties:
               id: {type: integer, format: int64, minimum: 1}
               display_path:
@@ -1645,6 +1645,18 @@ components:
                   folder formatted with gallery breadcrumb rules, and the unchanged
                   filename. Contains no absolute host path. Available since 0.34.0.
                 example: Fotos / 11.05.2026 · Urlaub / IMG_1234.jpg
+              bounds:
+                type: object
+                required: [x, y, width, height]
+                description: >-
+                  Normalized face rectangle in the complete original after EXIF
+                  rotation/mirroring, with origin at its top left. Available since
+                  0.35.0. Clients clip the rectangle to the image edges.
+                properties:
+                  x: {type: number, format: double}
+                  y: {type: number, format: double}
+                  width: {type: number, format: double, exclusiveMinimum: 0}
+                  height: {type: number, format: double, exclusiveMinimum: 0}
     LabelingCandidates:
       type: object
       required: [people, next, has_next]

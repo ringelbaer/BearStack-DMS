@@ -308,3 +308,34 @@ func TestLabelingCompetingDecisionsCommitOnlyOnce(t *testing.T) {
 		t.Fatalf("success=%d conflict=%d", success, conflict)
 	}
 }
+
+func TestLabelingBoundsFollowFacesOnDetailPages(t *testing.T) {
+	ctx := context.Background()
+	l, p, session := labelFixture(t)
+	want := make(map[int64]LabelFaceBounds)
+	for i, f := range p.Faces {
+		b := LabelFaceBounds{X: float64(i) * .1, Y: .15, Width: .2, Height: .4}
+		want[f.ID] = b
+		if _, err := l.index.db.Exec(`UPDATE photo_faces SET x=?,y=?,width=?,height=? WHERE id=?`, b.X, b.Y, b.Width, b.Height, f.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	page, err := l.LabelPerson(ctx, p.ID, 1)
+	if err != nil || len(page.Faces) != 2 {
+		t.Fatalf("page %+v: %v", page, err)
+	}
+	for _, f := range page.Faces {
+		if f.Bounds != want[f.ID] {
+			t.Fatalf("face %d: %+v, want %+v", f.ID, f.Bounds, want[f.ID])
+		}
+	}
+	candidates, err := l.LabelCandidates(ctx, 0, session.UpperID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, candidate := range candidates.People {
+		if len(candidate.Faces) != 0 {
+			t.Fatal("candidate pages must not load face details")
+		}
+	}
+}

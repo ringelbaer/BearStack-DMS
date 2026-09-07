@@ -18,7 +18,8 @@ data class Session(val instance: String, val dataset: String, val account: Strin
     val scope: String get() = JSONObject().put("instance", instance).put("dataset", dataset).put("account", account).toString()
 }
 data class Person(val id: Long, val name: String, val revision: Long, val count: Long, val faceId: Long,
-    val faces: List<Long> = emptyList(), val offset: Int = 0, val facePaths: Map<Long,String> = emptyMap())
+    val faces: List<Long> = emptyList(), val offset: Int = 0, val facePaths: Map<Long,String> = emptyMap(),
+    val faceBounds: Map<Long,FaceBounds> = emptyMap())
 data class Candidates(val people: List<Person>, val next: Long, val hasNext: Boolean)
 data class Receipt(val operation: String, val action: String, val source: Long, val target: Long, val newId: Long,
     val faces: Long, val groups: Int, val at: Long)
@@ -91,7 +92,12 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
             if(faces == null) emptyList() else List(faces.length()) { faces.getJSONObject(it).getLong("id") },o.optInt("offset"),
             if(faces == null) emptyMap() else (0 until faces.length()).associate {
                 val face=faces.getJSONObject(it);face.getLong("id") to face.optString("display_path", "")
-            })
+            }, if(faces == null) emptyMap() else (0 until faces.length()).mapNotNull {
+                val face=faces.getJSONObject(it)
+                val b=face.optJSONObject("bounds") ?: return@mapNotNull null
+                FaceBounds.validated(b.optDouble("x").toFloat(), b.optDouble("y").toFloat(),
+                    b.optDouble("width").toFloat(), b.optDouble("height").toFloat())?.let { face.getLong("id") to it }
+            }.toMap())
     }
     private fun receipt(o: JSONObject) = Receipt(o.getString("operation_id"),o.getString("action"),o.getLong("source_id"),
         o.getLong("target_id"),o.getLong("new_id"),o.getLong("faces"),o.getInt("groups"),o.getLong("at"))

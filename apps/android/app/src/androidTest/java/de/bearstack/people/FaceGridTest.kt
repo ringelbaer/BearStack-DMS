@@ -69,15 +69,19 @@ class FaceGridTest {
         }
     }
     @Test fun holdingReleaseAndCancelDoNotSwipeOrDetach() {
-        var held by mutableStateOf<Long?>(null);var swipes=0;var detaches=0
+        var held by mutableStateOf<Long?>(null);var swipes=0;var detaches=0;var drag=0f
         compose.setContent { MaterialTheme { PersonSwipeArea(1,held==null,{swipes++},Modifier.fillMaxSize()) {
             FaceGrid(Person(1,"",1,4,10,listOf(10,11,12,13)),held==null,null,{_,_->null},
-                {detaches++},{held=it},{})
+                {detaches++},{held=it},{},onZoomDrag={drag+=it})
         } } }
         compose.onNodeWithTag("face-10").performTouchInput { down(center) }
         compose.mainClock.advanceTimeBy(800)
         compose.runOnIdle {assertEquals(10L,held)}
-        compose.onNodeWithTag("face-10").performTouchInput { moveBy(Offset(0f,-150f));up() }
+        compose.onNodeWithTag("face-10").performTouchInput { moveBy(Offset(0f,-300f)) }
+        compose.runOnIdle {assertEquals(10L,held);assertEquals(-300f,drag,.01f)}
+        compose.onNodeWithTag("face-10").performTouchInput { moveBy(Offset(0f,100f)) }
+        compose.runOnIdle {assertEquals(-200f,drag,.01f)}
+        compose.onNodeWithTag("face-10").performTouchInput { up() }
         compose.runOnIdle {assertNull(held);assertEquals(0,swipes);assertEquals(0,detaches)}
         compose.onNodeWithTag("face-10").performTouchInput { down(center) }
         compose.mainClock.advanceTimeBy(800)

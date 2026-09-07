@@ -17,6 +17,7 @@ import de.bearstack.people.BuildConfig
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.json.JSONObject
+import okhttp3.OkHttpClient
 
 data class PeopleState(
     val connected: Boolean = false, val busy: Boolean = false, val person: Person? = null,
@@ -28,6 +29,7 @@ data class PeopleState(
 class PeopleViewModel private constructor(application: Application, private val db: LabelingDatabase,
     initialRepository: PeopleRepository?) : AndroidViewModel(application) {
     constructor(application: Application) : this(application, LabelingDatabase.open(application), null)
+    internal constructor(application: Application, database: LabelingDatabase) : this(application,database,null)
     internal constructor(application: Application, database: LabelingDatabase, service: LabelingService, session: Session) :
         this(application, database, PeopleRepository(database, service, session))
     private val store = ProfileStore(application)
@@ -110,7 +112,9 @@ class PeopleViewModel private constructor(application: Application, private val 
     private suspend fun open(profile: Profile, save: Boolean) {
         val client = Connections.client(profile)
         val remote = LabelingApi(client, profile.url)
-        val session = try { remote.session() } catch (e: Exception) { client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown()
+        val session = try { remote.session() } catch (e: Exception) {
+            // Cleanup must not replace a useful 401/403 error with a socket-close error.
+            runCatching { Connections.close(client) }
             if(e is java.io.IOException && e !is ApiFailure) throw ConnectionAttemptException(ConnectionStage.SIGN_IN,e)
             throw e
         }
@@ -299,16 +303,29 @@ class PeopleViewModel private constructor(application: Application, private val 
     }
     fun newPass(skipped: Boolean) { if(editable()) task { repository!!.newPass(skipped); loadNext() } }
     fun switchConnection() { if(!state.value.busy) task { repository?.restoreIgnores(); clearConnection(); store.clear() } }
-    private fun clearConnection() {
+    private fun detachConnection(): Pair<ImageLoader?,OkHttpClient?> {
         ignoreJobs.values.forEach {it.cancel()};ignoreJobs.clear()
         undoRequests.clear()
         search?.cancel(); searchPreload?.cancel(); statsJob?.cancel()
         preloads.forEach { it.dispose() }; preloads.clear()
-        images?.memoryCache?.clear(); images?.shutdown(); images=null
-        api?.client?.dispatcher?.cancelAll(); api?.client?.connectionPool?.evictAll()
-        api?.client?.dispatcher?.executorService?.shutdown()
-        api=null;repository=null
+        val resources=images to api?.client
+        images=null;api=null;repository=null
         update { PeopleState(busy=it.busy) }
+        return resources
     }
-    override fun onCleared() { clearConnection(); db.close(); super.onCleared() }
+    private suspend fun closeConnection(resources: Pair<ImageLoader?,OkHttpClient?>) = withContext(NonCancellable + Dispatchers.IO) {
+        try { resources.first?.memoryCache?.clear(); resources.first?.shutdown() }
+        finally { resources.second?.let {Connections.close(it)} }
+    }
+    private suspend fun clearConnection() {
+        closeConnection(detachConnection())
+    }
+    override fun onCleared() {
+        val resources=detachConnection()
+        // viewModelScope is already cancelled here; resource cleanup must finish independently.
+        CoroutineScope(Dispatchers.IO).launch {
+            try { closeConnection(resources) } finally { db.close() }
+        }
+        super.onCleared()
+    }
 }

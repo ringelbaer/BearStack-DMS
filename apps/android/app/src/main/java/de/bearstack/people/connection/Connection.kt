@@ -18,6 +18,7 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.HttpUrl
@@ -32,6 +33,14 @@ data class Profile(val url: String, val username: String, val password: String, 
 data class CertificateOffer(val encoded: String, val fingerprint: String, val subject: String, val expires: String)
 
 object Connections {
+    // Closing a TLS socket can send close_notify. It is network work too, even
+    // when the request itself used OkHttp's asynchronous API.
+    suspend fun close(client: OkHttpClient) = withContext(NonCancellable + Dispatchers.IO) {
+        try {
+            client.dispatcher.cancelAll()
+            client.connectionPool.evictAll()
+        } finally { client.dispatcher.executorService.shutdown() }
+    }
     fun address(raw: String): HttpUrl {
         val url = raw.trim().trimEnd('/').plus('/').toHttpUrl()
         require(url.isHttps && url.username.isEmpty() && url.password.isEmpty() && url.query == null && url.fragment == null) {

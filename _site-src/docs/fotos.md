@@ -250,6 +250,8 @@ Bilder einschließlich Ergebnissen ohne Gesicht werden nicht erneut analysiert.
 Fehler werden mit zunehmender Wartezeit bis zu fünfmal versucht und können manuell
 zurückgesetzt werden. Neustarts setzen die persistente Warteschlange fort.
 
+Die Info-Symbole in den Einstellungen der Gesichtserkennung erklären Aktivierung, Bilder pro Lauf, Pausen, Referenzlimit und das Löschen der Gesichtsdaten. Die Kontexthilfen lassen sich per Klick oder Tastatur öffnen.
+
 **Referenzen pro Person:** Unter **Einstellungen → Gesichtserkennung** lässt sich
 seit 0.34.0 das Limit auf 1–100 einstellen; der Standard ist **30**. BearStack wählt
 bis zu dieser Anzahl aus den bereits zugeordneten Gesichtern aus, bevorzugt manuelle

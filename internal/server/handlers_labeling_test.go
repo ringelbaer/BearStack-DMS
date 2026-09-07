@@ -150,6 +150,9 @@ func TestLabelingHTTPContractPermissionsAndImages(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &detail); err != nil || len(detail.Faces) != 1 || detail.Faces[0].DisplayPath != "Fotos / one.jpg" {
 		t.Fatalf("face display path: %s %v", w.Body.String(), err)
 	}
+	if got := detail.Faces[0].Bounds; got != (photos.LabelFaceBounds{X: .1, Y: .1, Width: .5, Height: .5}) {
+		t.Fatalf("oriented face bounds: %+v", got)
+	}
 	for _, size := range []int{160, 640} {
 		w = labelRequest(s, "GET", fmt.Sprintf("%s/faces/%d/thumbnail?size=%d", base, p.FaceID, size), "manager", "")
 		img, e := jpeg.Decode(w.Body)

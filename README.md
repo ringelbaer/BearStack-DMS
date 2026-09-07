@@ -27,7 +27,7 @@ Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie `127.0
 
 ## Android-App zum Personenbenennen
 
-Ab BearStack **0.30.0** steht unter [`apps/android/`](apps/android/README.md) eine native Android-App (Android 8.0+, App-Version 0.4.0) zur Verfügung. Sie zeigt bis zu vier Gesichtsausschnitte, unterstützt Benennen und Zuordnen mit Namensvorschlägen, Abtrennen, Ignorieren mit klickbarer Rückgängig-Meldung am oberen Bildschirmrand bei weiter bedienbarer Ansicht und lokale Statistiken. Die aktuelle App benötigt BearStack **0.34.0**: Beim Halten eines Gesichtsausschnitts zeigt sie das vollständige Originalfoto, beim Loslassen wieder das Grid. Unter Ausschnitten und Originalfoto steht der vollständige, nach Galerieregeln aufbereitete Bildpfad. Wischaktionen funktionieren auch auf dem freien Hintergrund der Bearbeitungsansicht. Rechtswischen holt die zuletzt übersprungene Person zurück und korrigiert die lokale Statistik. Erforderlich sind HTTPS und ein Konto mit Personenverwaltungsrechten. Selbstsignierte Zertifikate werden vor der Anmeldung über ihren SHA-256-Fingerabdruck bestätigt.
+Ab BearStack **0.30.0** steht unter [`apps/android/`](apps/android/README.md) eine native Android-App (Android 8.0+, App-Version 0.5.0) zur Verfügung. Sie zeigt bis zu vier Gesichtsausschnitte, unterstützt Benennen und Zuordnen mit Namensvorschlägen, Abtrennen, Ignorieren mit klickbarer Rückgängig-Meldung am oberen Bildschirmrand bei weiter bedienbarer Ansicht und lokale Statistiken. Die aktuelle App benötigt BearStack **0.35.0**: Beim Halten eines Gesichtsausschnitts zeigt sie das vollständige Originalfoto, beim Loslassen wieder das Grid. Eine dünne Bounding Box markiert das Gesicht; Hoch- und Herunterwischen während des Haltens zoomt zum Gesicht und wieder heraus. Unter Ausschnitten und Originalfoto steht der vollständige, nach Galerieregeln aufbereitete Bildpfad. Wischaktionen funktionieren auch auf dem freien Hintergrund der Bearbeitungsansicht. Rechtswischen holt die zuletzt übersprungene Person zurück und korrigiert die lokale Statistik. Erforderlich sind HTTPS und ein Konto mit Personenverwaltungsrechten. Selbstsignierte Zertifikate werden vor der Anmeldung über ihren SHA-256-Fingerabdruck bestätigt. App 0.4.1 behebt den allgemeinen Fehler beim Kontowechsel; falsche Zugangsdaten und fehlende Personenrechte werden auch im Zertifikatsdialog angezeigt.
 
 `make test-android` prüft die App und baut eine Debug-APK. Einrichtung, Gesten, Zertifikatsabgleich, Emulator-Integrationstest und private Release-Signierung stehen in der [Android-Anleitung](apps/android/README.md). Der gemeinsame Vertrag bleibt [`openapi.yaml`](openapi.yaml), neue Endpunkte liegen unter `/api/photos/labeling/v1`. Android hat einen eigenen Gradle-Build und wird nicht in Go- oder Docker-Builds einbezogen.
 
@@ -462,6 +462,8 @@ Nach dem Erstlauf entstehen neue Aufträge direkt bei Indexänderungen. Unverän
 Bilder einschließlich Ergebnissen ohne Gesicht werden nicht erneut analysiert.
 Fehler werden mit zunehmender Wartezeit bis zu fünfmal versucht und können manuell
 zurückgesetzt werden. Neustarts setzen die persistente Warteschlange fort.
+
+Die Info-Symbole in den Einstellungen der Gesichtserkennung erklären Aktivierung, Bilder pro Lauf, Pausen, Referenzlimit und das Löschen der Gesichtsdaten. Die Kontexthilfen lassen sich per Klick oder Tastatur öffnen.
 
 **Referenzen pro Person:** Unter **Einstellungen → Gesichtserkennung** lässt sich
 seit 0.34.0 das Limit auf 1–100 einstellen; der Standard ist **30**. BearStack wählt

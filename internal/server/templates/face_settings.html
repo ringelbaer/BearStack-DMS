@@ -47,13 +47,13 @@
             <legend>Verarbeitung</legend>
             <label class="checkbox-line">
               <input type="checkbox" name="enabled" value="1" {{if .FaceSettings.Settings.Enabled}}checked{{end}}>
-              <span>Gesichtserkennung aktivieren</span>
+              <span class="checkbox-help-label">Gesichtserkennung aktivieren <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Gesichtserkennung aktivieren" aria-expanded="false" data-context-help-title="Gesichtserkennung aktivieren" data-context-help="Startet nach dem Speichern die lokale Erkennung für ausstehende Bilder. Beim Ausschalten bleiben erkannte Gesichter, Namen und Zuordnungen erhalten. Zum Aktivieren muss der Erkennungsdienst erreichbar sein.">i</span></span>
             </label>
             <div class="face-settings-inputs">
-              <label><span>Bilder pro Lauf</span><input type="number" name="batch_size" min="1" max="1000" value="{{.FaceSettings.Settings.BatchSize}}"></label>
-              <label><span>Pause zwischen Bildern (ms)</span><input type="number" name="delay_millis" min="100" max="60000" value="{{.FaceSettings.Settings.DelayMillis}}"></label>
-              <label><span>Wartezeit zwischen Läufen (Minuten)</span><input type="number" name="interval_minutes" min="1" max="1440" value="{{.FaceSettings.Settings.IntervalMinutes}}"></label>
-              <label><span>Referenzen pro Person</span><input type="number" name="reference_limit" min="1" max="100" value="{{.FaceSettings.Settings.ReferenceLimit}}" aria-describedby="face-reference-help"></label>
+              <label><span class="checkbox-help-label">Bilder pro Lauf <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Bilder pro Lauf" aria-expanded="false" data-context-help-title="Bilder pro Lauf" data-context-help="Begrenzt die Anzahl der Bilder, die ein Verarbeitungslauf aus der Warteschlange bearbeitet. Größere Werte verlängern einen Lauf; die Bilder werden weiterhin nacheinander verarbeitet.">i</span></span><input type="number" name="batch_size" min="1" max="1000" value="{{.FaceSettings.Settings.BatchSize}}"></label>
+              <label><span class="checkbox-help-label">Pause zwischen Bildern (ms) <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Pause zwischen Bildern (ms)" aria-expanded="false" data-context-help-title="Pause zwischen Bildern (ms)" data-context-help="Wartezeit nach der Verarbeitung eines Bildes. Höhere Werte entlasten den Server zwischen den Analysen, verlängern aber die Verarbeitung der Warteschlange. 1.000 ms entsprechen einer Sekunde.">i</span></span><input type="number" name="delay_millis" min="100" max="60000" value="{{.FaceSettings.Settings.DelayMillis}}"></label>
+              <label><span class="checkbox-help-label">Wartezeit zwischen Läufen (Minuten) <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Wartezeit zwischen Läufen (Minuten)" aria-expanded="false" data-context-help-title="Wartezeit zwischen Läufen (Minuten)" data-context-help="Nach Abschluss eines Laufs wartet BearStack diese Zeit bis zum nächsten automatischen Lauf. Kürzere Abstände arbeiten die Warteschlange schneller ab und lassen dem Server weniger Ruhezeit.">i</span></span><input type="number" name="interval_minutes" min="1" max="1440" value="{{.FaceSettings.Settings.IntervalMinutes}}"></label>
+              <label><span class="checkbox-help-label">Referenzen pro Person <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Referenzen pro Person" aria-expanded="false" data-context-help-title="Referenzen pro Person" data-context-help="Legt fest, wie viele bereits zugeordnete Gesichter höchstens als Vergleichsbilder pro Person dienen (Standard: 30). Manuelle Zuordnungen werden bevorzugt. Mehr Referenzen benötigen mehr Arbeitsspeicher. Änderungen wirken vor der nächsten Analyse, ohne Fotos erneut zu analysieren oder bestehende Gruppen automatisch zusammenzuführen.">i</span></span><input type="number" name="reference_limit" min="1" max="100" value="{{.FaceSettings.Settings.ReferenceLimit}}" aria-describedby="face-reference-help"></label>
             </div>
             <p class="muted" id="face-reference-help">Standard: 30. Mehr Referenzen berücksichtigen mehr zugeordnete Gesichter und benötigen mehr Arbeitsspeicher. Änderungen werden vor der nächsten Analyse aus vorhandenen Gesichtsdaten übernommen.</p>
           </fieldset>
@@ -67,7 +67,7 @@
         <form method="post" action="/settings/photos/faces/clear" class="settings-form">
           <label class="checkbox-line">
             <input type="checkbox" name="confirm" value="delete" required>
-            <span>Ich möchte alle erzeugten Gesichtsdaten löschen.</span>
+            <span class="checkbox-help-label">Ich möchte alle erzeugten Gesichtsdaten löschen. <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Gesichtsdaten löschen" aria-expanded="false" data-context-help-title="Gesichtsdaten löschen" data-context-help="Bestätigt das Löschen erkannter Gesichter, Personengruppen, Namen und manueller Korrekturen. Die Verarbeitung wird ausgeschaltet. Originalbilder und vorhandene XMP-Gesichtsdaten bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden.">i</span></span>
           </label>
           <div class="settings-actions"><button type="submit" class="danger">Gesichtsdaten löschen</button></div>
         </form>

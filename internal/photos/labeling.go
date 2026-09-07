@@ -33,8 +33,17 @@ type LabelPerson struct {
 	Offset   int         `json:"offset"`
 }
 type LabelFace struct {
-	ID          int64  `json:"id"`
-	DisplayPath string `json:"display_path"`
+	ID          int64           `json:"id"`
+	DisplayPath string          `json:"display_path"`
+	Bounds      LabelFaceBounds `json:"bounds"`
+}
+
+// LabelFaceBounds uses normalized coordinates in the EXIF-oriented original image.
+type LabelFaceBounds struct {
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
 }
 type LabelCandidates struct {
 	People  []LabelPerson `json:"people"`
@@ -118,14 +127,14 @@ func (l *Library) LabelPerson(ctx context.Context, id int64, offset int) (LabelP
 	}
 	p.Offset = offset
 	p.Faces = []LabelFace{}
-	rows, err := tx.QueryContext(ctx, `SELECT id,path FROM photo_faces WHERE person_id=? AND ignored=0 ORDER BY id LIMIT 4 OFFSET ?`, id, offset)
+	rows, err := tx.QueryContext(ctx, `SELECT id,path,x,y,width,height FROM photo_faces WHERE person_id=? AND ignored=0 ORDER BY id LIMIT 4 OFFSET ?`, id, offset)
 	if err != nil {
 		return p, err
 	}
 	for rows.Next() {
 		var f LabelFace
 		var source string
-		if err = rows.Scan(&f.ID, &source); err != nil {
+		if err = rows.Scan(&f.ID, &source, &f.Bounds.X, &f.Bounds.Y, &f.Bounds.Width, &f.Bounds.Height); err != nil {
 			rows.Close()
 			return p, err
 		}

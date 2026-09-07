@@ -4,6 +4,24 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### Web-UI
+
+- Kontexthilfen im bestehenden `checkbox-help-label`-Muster für Aktivierung, Bilder pro Lauf, Pausen, Referenzen pro Person und Löschbestätigung der Gesichtserkennung ergänzt. Die Hilfen erklären Leistungsfolgen und den Umfang der Aktionen und sind per Tastatur bedienbar.
+
+### BearStack 0.35.0 / Android 0.5.0
+
+- Die Personenbenennungs-API liefert pro Gesicht einer Detailseite ein normalisiertes `bounds`-Rechteck im gemäß EXIF ausgerichteten Originalfoto. Die vier Koordinaten werden mit derselben paginierten Abfrage geladen; zusätzliche Bilddekodierung oder Datei-/Datenbankabfragen entfallen.
+- Android zeigt im Originalfoto einen dünnen, auch beim Zoomen gleichbleibenden Rahmen um das ausgewählte Gesicht. Während des Haltens zoomt Hochwischen zum Gesicht; Herunterwischen zoomt zurück. Loslassen, Abbruch und Mehrfingergesten schließen die gehaltene Vorschau. Ignorieren und Überspringen bleiben währenddessen gesperrt.
+- Die dauerhaft geöffnete TalkBack-Vorschau bietet entsprechende Zoomaktionen. Das Original wird einmal mit maximal 2048 Pixeln je Seite geladen, die Vergrößerung ist auf 12-fach begrenzt. Ältere Server bleiben ohne Rahmen und Zoom lesbar.
+- Server-MINOR auf 0.35.0; Android-MINOR auf 0.5.0 (`versionCode` 9). API-Vertrag, Android-Anleitung und Website aktualisiert.
+
+### Android 0.4.1
+
+- HTTPS-Verbindungen werden beim Kontowechsel, bei abgelehnten Logins und beim Beenden des ViewModels außerhalb des UI-Threads geschlossen. Dadurch verdeckt eine `NetworkOnMainThreadException` beim TLS-Verbindungsabbau nicht mehr die eigentliche Ursache mit „Die Aktion konnte nicht abgeschlossen werden“.
+- Fehler bei falschen Zugangsdaten oder fehlenden Personenrechten bleiben erhalten und sind auch im geöffneten Zertifikatsdialog sichtbar. Die Ressourcenfreigabe läuft unabhängig vom bereits beendeten ViewModel zu Ende.
+- Login, Profilwechsel zwischen zwei Konten sowie HTTP 401/403 einschließlich Fehleranzeige im Zertifikatsdialog durch einen HTTPS-Emulatortest abgesichert.
+- Android-PATCH auf 0.4.1 (`versionCode` 8); Serverversion und API bleiben unverändert.
+
 ### Android 0.3.0
 
 - Ignorieren zeigt sofort die nächste Gruppe. „Rückgängig“ erscheint ausschließlich als klickbare Meldung am oberen Bildschirmrand; die Rücknahmefrist sperrt die Bearbeitung nicht mehr.
