@@ -2,17 +2,36 @@
 {{template "head" .}}
 <section class="page-head"><div><h1>{{if .People.PersonID}}{{if .People.Name}}{{.People.Name}}{{else}}Unbenannt{{end}}{{else}}Personen{{end}}</h1><p>Automatisch erkannte Gesichter aus deinen Fotos.</p></div><div class="page-actions"><a class="secondary-button" href="/photos">Fotos</a>{{if .People.PersonID}}<a class="secondary-button" href="/photos/people">Alle Personen</a>{{end}}{{if .Auth.CanPhotosManage}}<a class="secondary-button" href="/settings/photos/faces">Gesichtserkennung</a>{{end}}</div></section>
 {{if not .People.PersonID}}
-<form method="get" action="/photos/people" class="filters people-form"><label>Name <input type="search" name="q" value="{{.People.Query}}" placeholder="Person suchen"></label><label class="people-known-filter"><input type="checkbox" name="known" value="1" {{if .People.KnownOnly}}checked{{end}}> Nur bekannte Personen</label><button>Suchen</button></form>
+<form method="get" action="/photos/people" class="filters people-form"><label>Name <input type="search" name="q" value="{{.People.Query}}" placeholder="Person suchen"></label><label class="people-known-filter"><input type="checkbox" name="known" value="1" {{if .People.KnownOnly}}checked{{end}}> Nur bekannte Personen</label><label class="people-known-filter"><input type="checkbox" name="ignored" value="1" {{if .People.IgnoredOnly}}checked{{end}}> Ignorierte Gesichter</label><button>Suchen</button></form>
+{{if .People.IgnoredOnly}}
+<p>Beim Benennen wird das Gesicht wieder sichtbar und einer neuen Person mit diesem Namen zugeordnet.</p>
+<div class="people-grid">
+{{range .People.Faces}}
+<section class="person-card">
+<img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Ignoriertes Gesicht">
+<span>{{.Path}}</span>
+{{if $.Auth.CanPhotosManage}}
+<form method="post" action="/photos/faces/edit" class="ignored-face-form">
+<input type="hidden" name="face_id" value="{{.ID}}"><input type="hidden" name="target" value="0"><input type="hidden" name="action" value="move">
+<input type="hidden" name="ignored" value="1"><input type="hidden" name="q" value="{{$.People.Query}}"><input type="hidden" name="page" value="{{$.People.Page}}">{{if $.People.KnownOnly}}<input type="hidden" name="known" value="1">{{end}}
+<label>Name <input name="name" value="{{.Name}}" maxlength="200" required></label><button>Benennen und wiederherstellen</button>
+</form>
+{{else}}<strong>{{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}</strong>{{end}}
+</section>
+{{else}}<p>Keine ignorierten Gesichter für diesen Filter gefunden.</p>{{end}}
+</div>
+{{else}}
 <p role="status" data-people-status></p>
 <div class="people-grid" data-people-overview data-can-ignore="{{if .Auth.CanPhotosManage}}true{{else}}false{{end}}">
 {{range .People.People}}
-  <div class="person-overview-card" data-person-id="{{.ID}}">
+  <div class="person-overview-card" data-person-id="{{.ID}}" data-person-name="{{.Name}}">
     <a class="person-card" href="/photos/people/{{.ID}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.FaceID}}/thumbnail" alt=""><strong>{{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}</strong><span>{{.Count}} {{if eq .Count 1}}Foto{{else}}Fotos{{end}}</span></a>
-    {{if $.Auth.CanPhotosManage}}<label class="person-select"><input type="checkbox" data-person-select value="{{.ID}}" aria-label="Person auswählen: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}"> Auswählen</label><button type="button" class="person-ignore-button" data-ignore-face="{{.FaceID}}" aria-label="Angezeigtes Gesicht ignorieren: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}" title="Angezeigtes Gesicht ignorieren">×</button>{{end}}
+    {{if $.Auth.CanPhotosManage}}<label class="person-select"><input type="checkbox" data-person-select value="{{.ID}}" aria-label="Person auswählen: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}"></label><button type="button" class="person-ignore-button" data-ignore-face="{{.FaceID}}" aria-label="Angezeigtes Gesicht ignorieren: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}" title="Angezeigtes Gesicht ignorieren">×</button>{{end}}
   </div>
 {{else}}<p>{{if or .People.Query .People.KnownOnly}}Keine Personen für diesen Filter gefunden.{{else}}Noch keine Personen gefunden. {{if .Auth.CanPhotosManage}}Die optionale Erkennung lässt sich in den Einstellungen aktivieren.{{end}}{{end}}</p>{{end}}
 </div>
 {{if .Auth.CanPhotosManage}}<div class="people-merge" data-people-merge hidden><span data-people-merge-target></span><button type="button" data-people-merge-button>Personen zusammenführen</button></div>{{end}}
+{{end}}
 {{else}}
 {{if .Auth.CanPhotosManage}}
 <section class="people-management"><form method="post" action="/photos/people/{{.People.PersonID}}/rename" class="filters people-form"><label>Name <input name="name" maxlength="200" value="{{.People.Name}}"></label><button>Benennen</button></form>
@@ -35,13 +54,15 @@
 </div>
 <label>Name der neuen Person <input name="name" maxlength="200"></label><button name="action" value="move">Auswahl verschieben</button><button name="action" value="ignore" formnovalidate>Auswahl ignorieren</button></div>
 {{end}}
-<div class="people-grid" data-photo-gallery>{{range .People.Faces}}<div class="person-card">{{if $.Auth.CanPhotosManage}}<label><input type="checkbox" name="face_id" value="{{.ID}}"> Auswählen</label>{{end}}<button type="button" class="person-photo-button" data-photo-item data-photo-path="{{.Path}}" data-photo-title="{{.Path}}" data-photo-type="image" aria-label="Foto öffnen: {{.Path}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Gesicht"><span>{{.Path}}</span></button>{{if .Manual}}<span>Manuell zugeordnet</span>{{end}}</div>{{end}}</div>
+<div class="people-grid" data-photo-gallery>{{range .People.Faces}}<div class="person-card">{{if $.Auth.CanPhotosManage}}<label><input type="checkbox" name="face_id" value="{{.ID}}"></label>{{end}}<button type="button" class="person-photo-button" data-photo-item data-photo-path="{{.Path}}" data-photo-title="{{.Path}}" data-photo-type="image" aria-label="Foto öffnen: {{.Path}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Gesicht"><span>{{.Path}}</span></button>{{if .Manual}}<span>Manuell zugeordnet</span>{{end}}</div>{{end}}</div>
 {{if .Auth.CanPhotosManage}}</form>{{end}}
 {{end}}
-<nav class="pagination people-pagination" aria-label="Personenseiten">
-  {{if .People.HasPrev}}<a class="secondary-button" rel="prev" href="?page={{prevPage .People.Page}}&amp;q={{queryEscape .People.Query}}{{if .People.KnownOnly}}&amp;known=1{{end}}">Zurück</a>{{end}}
-  <span class="people-pagination-current" aria-current="page">Seite {{.People.Page}}</span>
-  {{if .People.HasNext}}<a class="secondary-button" rel="next" href="?page={{nextPage .People.Page}}&amp;q={{queryEscape .People.Query}}{{if .People.KnownOnly}}&amp;known=1{{end}}">Weiter</a>{{end}}
+<nav class="pagination people-pagination" aria-label="Personenseiten" data-people-page="{{.People.Page}}" data-people-user="{{.Auth.Username}}">
+  {{if .People.HasPrev}}<a class="secondary-button" rel="first" href="?page=1&amp;q={{queryEscape .People.Query}}{{if .People.KnownOnly}}&amp;known=1{{end}}{{if .People.IgnoredOnly}}&amp;ignored=1{{end}}">Erste Seite</a>{{else}}<span class="secondary-button" aria-disabled="true">Erste Seite</span>{{end}}
+  {{if .People.HasPrev}}<a class="secondary-button" rel="prev" href="?page={{prevPage .People.Page}}&amp;q={{queryEscape .People.Query}}{{if .People.KnownOnly}}&amp;known=1{{end}}{{if .People.IgnoredOnly}}&amp;ignored=1{{end}}">Zurück</a>{{end}}
+  <span class="people-pagination-current" aria-current="page">Seite {{.People.Page}} von {{.People.TotalPages}}</span>
+  {{if .People.HasNext}}<a class="secondary-button" rel="next" href="?page={{nextPage .People.Page}}&amp;q={{queryEscape .People.Query}}{{if .People.KnownOnly}}&amp;known=1{{end}}{{if .People.IgnoredOnly}}&amp;ignored=1{{end}}">Weiter</a>{{end}}
+  {{if .People.HasNext}}<a class="secondary-button" rel="last" href="?page={{.People.TotalPages}}&amp;q={{queryEscape .People.Query}}{{if .People.KnownOnly}}&amp;known=1{{end}}{{if .People.IgnoredOnly}}&amp;ignored=1{{end}}">Letzte Seite</a>{{else}}<span class="secondary-button" aria-disabled="true">Letzte Seite</span>{{end}}
 </nav>
 {{if .People.PersonID}}<div class="photo-module" data-photo-module data-photo-mode="view">{{template "photo_lightbox" .}}</div>{{end}}
 <script src="{{assetURL "/static/app-people.js"}}" defer></script>

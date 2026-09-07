@@ -1,11 +1,51 @@
 (function () {
   "use strict";
+  var pageNavigation = document.querySelector("[data-people-page]");
+  var pageStorageKey = pageNavigation ? "bearstack.people.lastPage:" + pageNavigation.dataset.peopleUser : "";
+  function savePeoplePage(page) {
+    if (!pageStorageKey) return;
+    var address = new URL(window.location.href);
+    if (address.pathname !== "/photos/people") return;
+    var saved = { page: page, q: address.searchParams.get("q") || "", known: address.searchParams.get("known") === "1", ignored: address.searchParams.get("ignored") === "1" };
+    try { window.localStorage.setItem(pageStorageKey, JSON.stringify(saved)); } catch (_) {}
+  }
+  if (pageNavigation) {
+    var address = new URL(window.location.href);
+    var saved;
+    try { saved = JSON.parse(window.localStorage.getItem(pageStorageKey)); } catch (_) {}
+    if (saved && Number.isInteger(saved.page) && saved.page >= 1 && saved.page <= 1000000 && typeof saved.q === "string") {
+      var destination = new URL("/photos/people", address.origin);
+      destination.searchParams.set("page", String(saved.page));
+      destination.searchParams.set("q", saved.q);
+      if (saved.known === true) destination.searchParams.set("known", "1");
+      if (saved.ignored === true) destination.searchParams.set("ignored", "1");
+      if (address.pathname === "/photos/people" && !["page", "q", "known", "ignored"].some(function (key) { return address.searchParams.has(key); })) {
+        if (address.searchParams.has("notice")) destination.searchParams.set("notice", address.searchParams.get("notice"));
+        window.location.replace(destination.pathname + destination.search);
+        return;
+      }
+      if (address.pathname !== "/photos/people") {
+        document.querySelectorAll('a[href="/photos/people"]').forEach(function (link) { link.href = destination.pathname + destination.search; });
+      }
+    }
+    savePeoplePage(Number(pageNavigation.dataset.peoplePage));
+  }
   var overview = document.querySelector("[data-people-overview]");
   var status = document.querySelector("[data-people-status]");
   var busy = false;
   var selected = new Set();
   var merge = document.querySelector("[data-people-merge]");
   var mergeButton = document.querySelector("[data-people-merge-button]");
+
+  function mergeSelection() {
+    var ids = Array.from(selected);
+    var named = ids.findIndex(function (id) {
+      var card = overview.querySelector('[data-person-id="' + id + '"]');
+      return card && Boolean(card.dataset.personName);
+    });
+    if (named > 0) ids.unshift(ids.splice(named, 1)[0]);
+    return ids;
+  }
 
   function updateSelection() {
     if (!merge) return;
@@ -19,7 +59,7 @@
     merge.hidden = selected.size < 2;
     mergeButton.disabled = busy;
     if (selected.size) {
-      var target = cards.get(selected.values().next().value);
+      var target = cards.get(mergeSelection()[0]);
       document.querySelector("[data-people-merge-target]").textContent =
         selected.size + " ausgewählt · Ziel: " + target.querySelector("strong").textContent;
     }
@@ -30,13 +70,26 @@
     var name = person.name || "Unbenannt";
     var thumbnail = "/photos/faces/" + encodeURIComponent(person.face_id) + "/thumbnail";
     var countText = person.count + (person.count === 1 ? " Foto" : " Fotos");
-    // Keep unchanged cards and their loaded thumbnails across Ajax updates.
-    if (existing && existing.querySelector("img").getAttribute("src") === thumbnail &&
-        existing.querySelector("strong").textContent === name &&
-        existing.querySelector(".person-card > span").textContent === countText) return existing;
+    // Update text in place so a changed count/name never reloads the image.
+    if (existing) {
+      existing.dataset.personName = person.name || "";
+      var existingImage = existing.querySelector("img");
+      if (existingImage.getAttribute("src") !== thumbnail) existingImage.src = thumbnail;
+      existing.querySelector("strong").textContent = name;
+      existing.querySelector(".person-card > span").textContent = countText;
+      var checkbox = existing.querySelector("[data-person-select]");
+      if (checkbox) checkbox.setAttribute("aria-label", "Person auswählen: " + name);
+      var ignore = existing.querySelector("[data-ignore-face]");
+      if (ignore) {
+        ignore.dataset.ignoreFace = person.face_id;
+        ignore.setAttribute("aria-label", "Angezeigtes Gesicht ignorieren: " + name);
+      }
+      return existing;
+    }
     var card = document.createElement("div");
     card.className = "person-overview-card";
     card.dataset.personId = person.id;
+    card.dataset.personName = person.name || "";
     var link = document.createElement("a");
     link.className = "person-card";
     link.href = "/photos/people/" + encodeURIComponent(person.id);
@@ -53,7 +106,7 @@
       var checkbox = document.createElement("input");
       checkbox.type = "checkbox"; checkbox.dataset.personSelect = ""; checkbox.value = person.id;
       checkbox.setAttribute("aria-label", "Person auswählen: " + name);
-      label.append(checkbox, document.createTextNode(" Auswählen"));
+      label.append(checkbox);
       card.append(label);
       var button = document.createElement("button");
       button.type = "button"; button.className = "person-ignore-button";
@@ -77,21 +130,22 @@
       return data;
     }
     var data = await load();
-    if (!data.people.length && data.has_prev) {
-      url.searchParams.set("page", String(Math.max(1, data.page - 1)));
-      data = await load();
-      var address = new URL(window.location.href);
-      address.searchParams.set("page", String(data.page));
-      window.history.replaceState(window.history.state, "", address);
-    }
-    var cards = document.createDocumentFragment();
+    var address = new URL(window.location.href);
+    address.searchParams.set("page", String(data.page));
+    window.history.replaceState(window.history.state, "", address);
+    savePeoplePage(data.page);
     var existing = new Map();
     overview.querySelectorAll("[data-person-id]").forEach(function (card) { existing.set(card.dataset.personId, card); });
-    data.people.forEach(function (person) { cards.append(personCard(person, existing.get(String(person.id)))); });
+    var keep = new Set();
+    data.people.forEach(function (person, index) {
+      var card = personCard(person, existing.get(String(person.id)));
+      keep.add(card);
+      if (overview.children[index] !== card) overview.insertBefore(card, overview.children[index] || null);
+    });
+    Array.from(overview.children).forEach(function (card) { if (!keep.has(card)) card.remove(); });
     if (!data.people.length) {
-      var empty = document.createElement("p"); empty.textContent = "Keine weiteren Personen gefunden."; cards.append(empty);
+      var empty = document.createElement("p"); empty.textContent = "Keine weiteren Personen gefunden."; overview.append(empty);
     }
-    overview.replaceChildren(cards);
     updateSelection();
     var pagination = document.querySelector(".people-pagination");
     var parts = document.createDocumentFragment();
@@ -103,10 +157,18 @@
       link.className = "secondary-button"; link.rel = relation; link.textContent = label;
       return link;
     }
+    function boundary(page, label, relation, enabled) {
+      if (enabled) return pageLink(page, label, relation);
+      var disabled = document.createElement("span");
+      disabled.className = "secondary-button"; disabled.setAttribute("aria-disabled", "true"); disabled.textContent = label;
+      return disabled;
+    }
+    parts.append(boundary(1, "Erste Seite", "first", data.has_prev));
     if (data.has_prev) parts.append(pageLink(data.page - 1, "Zurück", "prev"));
     var current = document.createElement("span"); current.className = "people-pagination-current";
-    current.setAttribute("aria-current", "page"); current.textContent = "Seite " + data.page; parts.append(current);
+    current.setAttribute("aria-current", "page"); current.textContent = "Seite " + data.page + " von " + data.total_pages; parts.append(current);
     if (data.has_next) parts.append(pageLink(data.page + 1, "Weiter", "next"));
+    parts.append(boundary(data.total_pages, "Letzte Seite", "last", data.has_next));
     pagination.replaceChildren(parts);
   }
 
@@ -119,7 +181,7 @@
     });
     mergeButton.addEventListener("click", async function () {
       if (busy || selected.size < 2) return;
-      var ids = Array.from(selected);
+      var ids = mergeSelection();
       var body = new URLSearchParams({ target: ids[0] });
       ids.slice(2).forEach(function (id) { body.append("person_id", id); });
       busy = true;

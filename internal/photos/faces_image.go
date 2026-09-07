@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"math"
@@ -109,10 +110,40 @@ func (l *Library) faceImage(ctx context.Context, path string) (image.Image, erro
 	return out, nil
 }
 func (l *Library) FaceThumbnail(ctx context.Context, id int64) ([]byte, error) {
+	return l.FaceThumbnailSize(ctx, id, 160)
+}
+
+func (l *Library) FaceThumbnailSize(ctx context.Context, id int64, size int) ([]byte, error) {
+	if size != 160 && size != 640 {
+		return nil, errors.New("ungültige Vorschaugröße")
+	}
 	f, err := l.Face(ctx, id)
 	if err != nil {
 		return nil, err
 	}
+	abs, err := l.Resolve(f.Path)
+	if err != nil {
+		return nil, err
+	}
+	info, err := os.Stat(abs)
+	if err != nil {
+		return nil, err
+	}
+	key := fmt.Sprintf("%d:%d:%s:%d:%d:%g:%g:%g:%g", id, size, abs, info.Size(), info.ModTime().UnixNano(), f.X, f.Y, f.Width, f.Height)
+	b, err := l.faceThumbnails.get(ctx, key, func() ([]byte, error) {
+		return l.renderFaceThumbnail(ctx, f, size)
+	})
+	if err != nil {
+		return nil, err
+	}
+	// Revalidate even on cache hits, including deletion or replacement during rendering.
+	if _, err = l.Face(ctx, id); err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+func (l *Library) renderFaceThumbnail(ctx context.Context, f RecognizedFace, size int) ([]byte, error) {
 	img, err := l.faceImage(ctx, f.Path)
 	if err != nil {
 		return nil, err
@@ -122,7 +153,7 @@ func (l *Library) FaceThumbnail(ctx context.Context, id int64) ([]byte, error) {
 	if r.Empty() {
 		return nil, errors.New("leere Gesichtsregion")
 	}
-	dst := image.NewNRGBA(image.Rect(0, 0, 160, 160))
+	dst := image.NewNRGBA(image.Rect(0, 0, size, size))
 	draw.ApproxBiLinear.Scale(dst, dst.Bounds(), img, r, draw.Src, nil)
 	// Check again after decoding, in case the folder became private meanwhile.
 	private, err := l.MediaAdminOnly(f.Path)

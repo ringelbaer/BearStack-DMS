@@ -27,15 +27,17 @@ type Person struct {
 	FaceID int64  `json:"face_id"`
 }
 type PeoplePage struct {
-	KnownOnly bool             `json:"known_only"`
-	Query     string           `json:"query,omitempty"`
-	People    []Person         `json:"people"`
-	Faces     []RecognizedFace `json:"faces,omitempty"`
-	PersonID  int64            `json:"person_id,omitempty"`
-	Name      string           `json:"name,omitempty"`
-	Page      int              `json:"page"`
-	HasNext   bool             `json:"has_next"`
-	HasPrev   bool             `json:"has_prev"`
+	TotalPages  int              `json:"total_pages"`
+	IgnoredOnly bool             `json:"ignored_only"`
+	KnownOnly   bool             `json:"known_only"`
+	Query       string           `json:"query,omitempty"`
+	People      []Person         `json:"people"`
+	Faces       []RecognizedFace `json:"faces,omitempty"`
+	PersonID    int64            `json:"person_id,omitempty"`
+	Name        string           `json:"name,omitempty"`
+	Page        int              `json:"page"`
+	HasNext     bool             `json:"has_next"`
+	HasPrev     bool             `json:"has_prev"`
 }
 type FaceJob struct {
 	Path          string
@@ -63,4 +65,11 @@ type faceRuntime struct {
 	people   map[int64]int64
 	nodes    map[int64][]int64
 	model    string
+}
+
+func (p *PeoplePage) setTotal(total int) {
+	p.TotalPages = max(1, (total+59)/60)
+	p.Page = min(max(1, p.Page), p.TotalPages)
+	p.HasPrev = p.Page > 1
+	p.HasNext = p.Page < p.TotalPages
 }

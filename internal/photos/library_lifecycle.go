@@ -52,14 +52,15 @@ func New(root, cacheDir, dbPath string, pageSize int) (*Library, error) {
 		pageSize = defaultPageSize
 	}
 	library := &Library{
-		faceImageGate: make(chan struct{}, 1),
-		root:          absRoot,
-		cacheDir:      absCache,
-		dbPath:        absDBPath,
-		index:         index,
-		pageSize:      pageSize,
-		thumbnail:     newThumbnailRuntime(1),
-		gpxCache:      map[string]cachedGPXTrack{},
+		faceImageGate:  make(chan struct{}, 1),
+		faceThumbnails: faceThumbnailCache{dir: filepath.Join(absCache, "faces", "v1")},
+		root:           absRoot,
+		cacheDir:       absCache,
+		dbPath:         absDBPath,
+		index:          index,
+		pageSize:       pageSize,
+		thumbnail:      newThumbnailRuntime(1),
+		gpxCache:       map[string]cachedGPXTrack{},
 	}
 	if err := library.refreshAdminOnlyIndexFlags(context.Background()); err != nil {
 		_ = library.Close()
@@ -93,6 +94,7 @@ func (l *Library) Close() error {
 	if l == nil {
 		return nil
 	}
+	l.faceThumbnails.close()
 	return l.index.close()
 }
 

@@ -2,7 +2,7 @@
 site_name = "BearStack"
 site_description = "Lokale Dokumenten- und Fotoverwaltung für kleine Server, Raspberry Pi und private Archive."
 site_author = "BearStack"
-copyright = "BearStack 0.29.0"
+copyright = "BearStack 0.32.1"
 repo_url = "https://github.com/ringelbaer/BearStack-DMS"
 repo_name = "ringelbaer/BearStack-DMS"
 docs_dir = "_site-src/docs"
@@ -13,6 +13,7 @@ nav = [
   { "Start" = "index.md" },
   { "Dokumente" = "dokumente.md" },
   { "Fotos" = "fotos.md" },
+  { "Android-App" = "android.md" },
   { "Installation" = "installation.md" },
   { "Benutzer & Rechte" = "benutzer-und-rechte.md" },
   { "Architektur" = "architektur.md" },

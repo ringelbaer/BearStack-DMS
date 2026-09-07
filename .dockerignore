@@ -37,3 +37,6 @@ compose.yaml
 .cache
 _site
 _site-src
+
+# Independent native client; no Android SDK in server images.
+apps/android

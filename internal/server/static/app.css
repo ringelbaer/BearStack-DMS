@@ -3564,3 +3564,7 @@ label span {
 .people-merge[hidden] { display: none; }
 .people-merge span { overflow-wrap: anywhere; min-width: 0; }
 body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px; }
+
+.ignored-face-form { display: flex; flex-direction: column; gap: .5rem; width: 100%; min-width: 0; }
+.ignored-face-form input { width: 100%; min-width: 0; }
+.ignored-face-form button { white-space: normal; }

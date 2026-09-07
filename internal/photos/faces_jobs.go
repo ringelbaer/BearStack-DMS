@@ -170,10 +170,13 @@ func (l *Library) ClearFaces(ctx context.Context) error {
 		return err
 	}
 	defer tx.Rollback()
-	for _, table := range []string{"photo_faces", "photo_face_references", "photo_people", "photo_face_jobs"} {
+	for _, table := range []string{"photo_labeling_actions", "photo_faces", "photo_face_references", "photo_people", "photo_face_jobs"} {
 		if _, err = tx.ExecContext(ctx, `DELETE FROM `+table); err != nil {
 			return err
 		}
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE photo_labeling_identity SET dataset=lower(hex(randomblob(16))) WHERE id=1`); err != nil {
+		return err
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE photo_face_state SET enabled=0 WHERE id=1`); err != nil {
 		return err

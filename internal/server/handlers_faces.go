@@ -1,11 +1,16 @@
 package server
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"bearstack/internal/photos"
 )
@@ -38,7 +43,12 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	page := boundedInt(r.URL.Query().Get("page"), 1, 1, 1000000)
-	result, err := s.photos.People(r.Context(), id, page, r.URL.Query().Get("q"), r.URL.Query().Get("known") == "1")
+	var result photos.PeoplePage
+	if id == 0 && r.URL.Query().Get("ignored") == "1" {
+		result, err = s.photos.IgnoredFaces(r.Context(), page, r.URL.Query().Get("q"), r.URL.Query().Get("known") == "1")
+	} else {
+		result, err = s.photos.People(r.Context(), id, page, r.URL.Query().Get("q"), r.URL.Query().Get("known") == "1")
+	}
 	if err != nil {
 		s.faceError(w, r, err)
 		return
@@ -70,9 +80,10 @@ func (s *Server) handleFaceThumbnail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "image/jpeg")
-	w.Header().Set("Cache-Control", "private, no-store")
+	w.Header().Set("Cache-Control", "private, no-cache")
+	w.Header().Set("ETag", fmt.Sprintf(`"%x"`, sha256.Sum256(b)))
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	_, _ = w.Write(b)
+	http.ServeContent(w, r, "face.jpg", time.Time{}, bytes.NewReader(b))
 }
 func (s *Server) handlePersonRename(w http.ResponseWriter, r *http.Request) {
 	if !s.parseFaceForm(w, r) {
@@ -152,6 +163,9 @@ func (s *Server) handleFacesEdit(w http.ResponseWriter, r *http.Request) {
 	if action != "move" && action != "ignore" {
 		err = errors.New("ungültige Aktion")
 	}
+	if r.FormValue("ignored") == "1" && action == "move" && target == 0 && strings.TrimSpace(r.FormValue("name")) == "" {
+		err = errors.New("Bitte einen Namen eingeben")
+	}
 	if err == nil {
 		err = s.photos.EditFaces(r.Context(), ids, target, action == "ignore", r.FormValue("name"))
 	}
@@ -164,7 +178,15 @@ func (s *Server) handleFacesEdit(w http.ResponseWriter, r *http.Request) {
 		_ = writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 		return
 	}
-	redirectWithNotice(w, r, "/photos/people", "Gesichtszuordnungen gespeichert.")
+	destination := "/photos/people"
+	if r.FormValue("ignored") == "1" {
+		query := url.Values{"ignored": {"1"}, "q": {r.FormValue("q")}, "page": {strconv.Itoa(boundedInt(r.FormValue("page"), 1, 1, 1000000))}}
+		if r.FormValue("known") == "1" {
+			query.Set("known", "1")
+		}
+		destination += "?" + query.Encode()
+	}
+	redirectWithNotice(w, r, destination, "Gesichtszuordnungen gespeichert.")
 }
 func (s *Server) handleFaceSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := s.faceSettings(r.Context())

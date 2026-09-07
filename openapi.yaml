@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.29.0
+  version: 0.32.1
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -32,6 +32,298 @@ tags:
     description: Tags, custom fields and virtual folders.
 
 paths:
+  /api/photos/labeling/v1/session:
+    get:
+      tags: [Photos]
+      operationId: getLabelingSession
+      summary: Check labeling protocol, identity and rights
+      description: |
+        Requires photos_manage. Clients must use HTTPS. Protocol 1 is available from
+        BearStack 0.30.0. Persist queue state under instance + dataset + account.
+        upper_id freezes the next candidate pass. Clearing face data rotates dataset.
+      responses:
+        "200":
+          description: Successful response. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabelingSession"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/photos/labeling/v1/candidates:
+    get:
+      tags: [Photos]
+      operationId: getLabelingCandidates
+      summary: Read unnamed groups within a bounded pass
+      description: |
+        Requires photos_manage. At most 20 metadata records, ordered by ID, with no
+        face images or embeddings. Newer groups are excluded. Before display,
+        re-read the group. Detached groups must be placed in a local priority queue.
+      parameters:
+        - name: after
+          in: query
+          required: false
+          description: Exclusive ID cursor; initially zero.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - name: upper
+          in: query
+          required: true
+          description: Fixed upper_id returned by the session at the start of this pass.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+      responses:
+        "200":
+          description: Successful response. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabelingCandidates"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/photos/labeling/v1/people/{id}:
+    get:
+      tags: [Photos]
+      operationId: getLabelingPerson
+      summary: Read a consistent group revision and four faces
+      description: |
+        Requires photos_manage. count is the entire active face count, not the page
+        size or distinct photo count. Empty, ignored and deleted groups return 404.
+        Protected photos are excluded even for administrators.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - name: offset
+          in: query
+          required: false
+          description: Zero-based face offset. Four faces ordered by ID; default zero.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+      responses:
+        "200":
+          description: Successful response. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabelingPerson"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/photos/labeling/v1/suggestions:
+    get:
+      tags: [Photos]
+      operationId: getLabelingSuggestions
+      summary: Find up to twenty named people
+      description: |
+        Requires photos_manage. Returns named groups with revisions, preview face IDs
+        and total active face counts. No embeddings. Duplicate names are allowed
+        only after an explicit allow_duplicate decision on the name action.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Name substring (maximum 800 UTF-8 bytes).
+          schema:
+            type: string
+        - name: exact
+          in: query
+          required: false
+          description: Set to 1 for a whitespace-normalized, case-sensitive exact name match.
+          schema:
+            type: string
+            enum: ["0", "1"]
+      responses:
+        "200":
+          description: Successful response. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabelingSuggestions"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/photos/labeling/v1/people/{id}/actions:
+    post:
+      tags: [Photos]
+      operationId: applyLabelingAction
+      summary: Atomically change a whole group or detach one face
+      description: |
+        Requires photos_manage. Source must still be unnamed. JSON is limited to 16 KiB.
+        All active faces are changed in one transaction with the receipt; there is
+        no 500-face limit or client-side batching. Images are never deleted.
+        operation_id is unique per account and dataset. An identical replay returns
+        the original receipt, including after the source has disappeared. Changed
+        content under the same ID returns 409. Source and target revisions must
+        match; web edits and background changes also advance revisions.
+        A 409 requires a fresh read and a new explicit user decision, with a new ID.
+        name_exists allows the client to offer assignment or separate naming.
+        Ignore undo is a client-side delay BEFORE sending this request.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LabelingAction"
+      responses:
+        "200":
+          description: Successful response. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabelingReceipt"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        "409":
+          description: Stale source/target revision, reused operation ID, changed dataset or existing name.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, code]
+                properties:
+                  error: {type: string}
+                  code: {type: string, enum: [conflict, name_exists]}
+
+  /api/photos/labeling/v1/actions/{operation}:
+    get:
+      tags: [Photos]
+      operationId: getLabelingReceipt
+      summary: Resolve an action after a lost response
+      description: |
+        Requires photos_manage. Only the requesting account can retrieve its receipt.
+        404 means no receipt in this dataset; the client may resend the identical
+        saved request. Receipts remain available until face data is cleared.
+      parameters:
+        - name: operation
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: dataset
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabelingReceipt"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/photos/labeling/v1/faces/{id}/thumbnail:
+    get:
+      tags: [Photos]
+      operationId: getLabelingFaceImage
+      summary: Get an authorized face crop
+      description: Requires photos_manage. Protected and ignored faces are excluded; no embeddings or original photos are returned.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - name: size
+          in: query
+          required: false
+          description: Grid or hold-to-enlarge size.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            enum: [160, 640]
+            default: 160
+      responses:
+        "200":
+          description: Square JPEG crop. Cache-Control is private, no-store.
+          content:
+            image/jpeg:
+              schema: {type: string, format: binary}
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /healthz:
     get:
       tags: [System]
@@ -598,7 +890,8 @@ paths:
       operationId: listPhotoPeople
       summary: List automatically grouped people
       description: 'Requires photos.read. HTML by default; format=json or Accept: application/json
-        returns a page of at most 60 groups. Admin-only photos are excluded.'
+        returns a page of at most 60 groups. With ignored=1, returns up to 60 individual
+        ignored faces in faces and an empty people array. Admin-only photos are excluded.'
       parameters:
       - name: page
         in: query
@@ -610,6 +903,13 @@ paths:
         in: query
         schema:
           type: string
+      - name: ignored
+        in: query
+        description: Set to 1 to list ignored faces, including faces in groups without active faces. Combines with q, known and pagination.
+        schema:
+          type: string
+          enum: ['0', '1']
+          default: '0'
       - name: known
         in: query
         description: Set to 1 to list only people with a non-empty name; combines with q and pagination.
@@ -682,7 +982,9 @@ paths:
       operationId: getFaceThumbnail
       summary: Get a face crop
       description: Requires photos.read. Checks current filesystem visibility; generated
-        crops are private and not cacheable.
+        crops use private browser caching with mandatory revalidation and ETags.
+        Matching If-None-Match returns 304 only after authentication and visibility
+        checks. Encoded crops are cached in the configured photo cache.
       parameters:
       - name: id
         in: path
@@ -699,6 +1001,8 @@ paths:
               schema:
                 type: string
                 format: binary
+        '304':
+          description: Cached face preview is unchanged; no response body.
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -755,7 +1059,9 @@ paths:
       description: Requires photos.manage. Form writes redirect to the corresponding
         HTML page. Existing authentication, same-origin protection and audit logging
         apply. Additional person_id sources merge atomically (at most 60 distinct sources,
-        excluding the target). Accept application/json returns 200 with ok true.
+        excluding the target). An unnamed target inherits the first non-empty source
+        name, including its provenance; a named target keeps its name. Accept
+        application/json returns 200 with ok true.
       parameters:
       - name: id
         in: path
@@ -849,7 +1155,23 @@ paths:
                 name:
                   type: string
                   maxLength: 200
-                  description: Optional name for the new person.
+                  description: Name for the new person. Required and non-blank when ignored=1, action=move and target=0. Moving an ignored face restores it.
+                ignored:
+                  type: string
+                  enum: ['0', '1']
+                  description: Set to 1 to return HTML form submissions to the ignored-face filter.
+                q:
+                  type: string
+                  description: Name filter preserved in the ignored-face HTML redirect.
+                known:
+                  type: string
+                  enum: ['0', '1']
+                  description: Named-only filter preserved in the ignored-face HTML redirect.
+                page:
+                  type: integer
+                  minimum: 1
+                  maximum: 1000000
+                  description: Page preserved in the ignored-face HTML redirect.
               required:
               - face_id
               - action
@@ -1233,6 +1555,80 @@ components:
             format: binary
 
   schemas:
+    LabelingSession:
+      type: object
+      required: [protocol, instance, dataset, account, upper_id, can_manage]
+      properties:
+        protocol: {type: integer, const: 1}
+        instance: {type: string, description: Stable identity of this photo database.}
+        dataset: {type: string, description: Changes when detected face data is cleared.}
+        account: {type: string, description: Opaque stable account identity; do not parse.}
+        upper_id: {type: integer, format: int64, minimum: 0}
+        can_manage: {type: boolean, const: true}
+    LabelingPerson:
+      type: object
+      required: [id, name, revision, count, face_id, offset]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        name: {type: string}
+        revision: {type: integer, format: int64, minimum: 1}
+        count: {type: integer, format: int64, minimum: 1}
+        face_id: {type: integer, format: int64, description: Representative active face for suggestions.}
+        offset: {type: integer, minimum: 0}
+        faces:
+          type: array
+          maxItems: 4
+          description: Present on a detail page with faces. Empty pages can omit this field.
+          items:
+            type: object
+            required: [id]
+            properties:
+              id: {type: integer, format: int64, minimum: 1}
+    LabelingCandidates:
+      type: object
+      required: [people, next, has_next]
+      properties:
+        people:
+          type: array
+          maxItems: 20
+          items: {$ref: "#/components/schemas/LabelingPerson"}
+        next: {type: integer, format: int64, minimum: 0}
+        has_next: {type: boolean}
+    LabelingSuggestions:
+      type: object
+      required: [people]
+      properties:
+        people:
+          type: array
+          maxItems: 20
+          items: {$ref: "#/components/schemas/LabelingPerson"}
+    LabelingAction:
+      type: object
+      additionalProperties: false
+      required: [operation_id, dataset, revision, action]
+      properties:
+        operation_id: {type: string, minLength: 16, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$'}
+        dataset: {type: string}
+        revision: {type: integer, format: int64, minimum: 1}
+        action: {type: string, enum: [name, assign, detach, ignore]}
+        name: {type: string, maxLength: 200, description: Required and nonempty for name; whitespace normalized.}
+        allow_duplicate: {type: boolean, default: false, description: Explicitly allow a separate group with the same name.}
+        target_id: {type: integer, format: int64, description: Named target for assign.}
+        target_revision: {type: integer, format: int64, description: Expected target revision for assign.}
+        face_id: {type: integer, format: int64, description: One source face for detach; source must contain at least two faces.}
+    LabelingReceipt:
+      type: object
+      required: [operation_id, action, source_id, target_id, new_id, faces, groups, at]
+      properties:
+        operation_id: {type: string}
+        action: {type: string, enum: [name, assign, detach, ignore]}
+        source_id: {type: integer, format: int64}
+        target_id: {type: integer, format: int64, description: Assignment target or zero.}
+        new_id: {type: integer, format: int64, description: New detached group or zero.}
+        faces: {type: integer, format: int64, minimum: 1, description: Actually affected active face count.}
+        groups: {type: integer, enum: [0, 1], description: Zero for detach; one for name/assign/ignore.}
+        at: {type: integer, format: int64, description: Server confirmation time in Unix seconds.}
+
     Error:
       type: object
       required: [error]
@@ -1849,6 +2245,13 @@ components:
     PhotoPeoplePage:
       type: object
       properties:
+        total_pages:
+          type: integer
+          minimum: 1
+          description: Total pages for the current filters; at least 1 even for empty results. Requested page numbers are clamped to this range.
+        ignored_only:
+          type: boolean
+          description: Whether the overview lists individual ignored faces.
         known_only:
           type: boolean
           description: Whether the overview is filtered to named people.

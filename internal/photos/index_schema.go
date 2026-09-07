@@ -26,7 +26,7 @@ var (
 const (
 	indexSchemaSetupTimeout = 30 * time.Second
 	photoSchemaComponent    = "photos"
-	photoSchemaVersion      = 18
+	photoSchemaVersion      = 19
 )
 
 type photoSchemaMigration struct {
@@ -57,6 +57,7 @@ var photoSchemaMigrations = []photoSchemaMigration{
 	{Version: 16, Name: "photo_folder_scan.order_mode", Table: "photo_folder_scan", Column: "order_mode", SQL: `ALTER TABLE photo_folder_scan ADD COLUMN order_mode TEXT NOT NULL DEFAULT ''`, InvalidateIndex: true},
 	{Version: 17, Name: "media_index.random_hash", Table: "media_index", Column: "random_hash", SQL: `ALTER TABLE media_index ADD COLUMN random_hash TEXT NOT NULL DEFAULT ''`, BackfillSQL: `UPDATE media_index SET random_hash = bearstack_stable_hash(path) WHERE random_hash = ''`},
 	{Version: 18, Name: "face recognition tables"},
+	{Version: 19, Name: "labeling API revisions and receipts"},
 }
 
 func openIndexDB(path string) (*sql.DB, string, error) {
@@ -287,6 +288,12 @@ func runPhotoSchemaMigrations(ctx context.Context, db *sql.DB) error {
 	}
 	for _, migration := range photoSchemaMigrations {
 		if current >= migration.Version {
+			continue
+		}
+		if migration.Version == 19 {
+			if err := setupLabelingSchema(ctx, db); err != nil {
+				return err
+			}
 			continue
 		}
 		if migration.Version == 18 {

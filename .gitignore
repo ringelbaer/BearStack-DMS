@@ -33,3 +33,12 @@ pigallery2
 __pycache__/
 *.pyc
 .venv-faces/
+
+# Android client and private signing material
+apps/android/.gradle/
+apps/android/.kotlin/
+apps/android/local.properties
+apps/android/**/build/
+apps/android/.idea/
+*.jks
+*.keystore

@@ -29,24 +29,25 @@ func NormalizeFolderPreviewCount(value int) int {
 }
 
 type Library struct {
-	faceImageGate chan struct{}
-	faceRuntime   faceRuntime
-	root          string
-	cacheDir      string
-	dbPath        string
-	index         *photoIndexStore
-	pageSize      int
-	thumbnail     thumbnailRuntime
-	gpxMu         sync.Mutex
-	gpxCache      map[string]cachedGPXTrack
-	gpxLRU        list.List
-	gpxCacheBytes int64
-	gpxParseGate  chan struct{}
-	statsMu       sync.Mutex
-	statsCache    thumbnailCacheStatsEntry
-	statsFlight   *thumbnailCacheStatsFlight
-	telemetryMu   sync.RWMutex
-	telemetry     IndexTelemetry
+	faceImageGate  chan struct{}
+	faceRuntime    faceRuntime
+	faceThumbnails faceThumbnailCache
+	root           string
+	cacheDir       string
+	dbPath         string
+	index          *photoIndexStore
+	pageSize       int
+	thumbnail      thumbnailRuntime
+	gpxMu          sync.Mutex
+	gpxCache       map[string]cachedGPXTrack
+	gpxLRU         list.List
+	gpxCacheBytes  int64
+	gpxParseGate   chan struct{}
+	statsMu        sync.Mutex
+	statsCache     thumbnailCacheStatsEntry
+	statsFlight    *thumbnailCacheStatsFlight
+	telemetryMu    sync.RWMutex
+	telemetry      IndexTelemetry
 }
 
 type IndexStats struct {

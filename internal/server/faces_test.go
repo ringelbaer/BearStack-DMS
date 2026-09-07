@@ -141,6 +141,26 @@ func TestFaceWorkerAndAPI(t *testing.T) {
 	if err != nil || len(f) != 1 {
 		t.Fatalf("faces %+v %v", f, err)
 	}
+	thumbnailURL := "/photos/faces/" + strconv.FormatInt(f[0].ID, 10) + "/thumbnail"
+	first := faceRequest(s, "GET", thumbnailURL, "reader", nil)
+	if first.Code != 200 || first.Header().Get("Cache-Control") != "private, no-cache" || first.Header().Get("ETag") == "" {
+		t.Fatalf("thumbnail cache headers: %d %v", first.Code, first.Header())
+	}
+	request := httptest.NewRequest("GET", thumbnailURL, nil)
+	request.SetBasicAuth("reader", "secret")
+	request.Header.Set("If-None-Match", first.Header().Get("ETag"))
+	cached := httptest.NewRecorder()
+	s.Handler().ServeHTTP(cached, request)
+	if cached.Code != 304 || cached.Body.Len() != 0 {
+		t.Fatalf("revalidation: %d %s", cached.Code, cached.Body.String())
+	}
+	request = httptest.NewRequest("GET", thumbnailURL, nil)
+	request.Header.Set("If-None-Match", first.Header().Get("ETag"))
+	denied := httptest.NewRecorder()
+	s.Handler().ServeHTTP(denied, request)
+	if denied.Code == 304 || denied.Code == 200 {
+		t.Fatalf("unauthenticated cache access: %d", denied.Code)
+	}
 	if err = s.photos.RenamePerson(context.Background(), f[0].PersonID, "Marie"); err != nil {
 		t.Fatal(err)
 	}
@@ -155,6 +175,17 @@ func TestFaceWorkerAndAPI(t *testing.T) {
 	remaining, err := s.photos.AutomaticFaces(context.Background(), "one.jpg")
 	if err != nil || len(remaining) != 0 {
 		t.Fatalf("ignored face still visible: %+v %v", remaining, err)
+	}
+	if err := os.WriteFile(filepath.Join(s.photos.Root(), ".adminonly"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	privateRequest := httptest.NewRequest("GET", thumbnailURL, nil)
+	privateRequest.SetBasicAuth("reader", "secret")
+	privateRequest.Header.Set("If-None-Match", first.Header().Get("ETag"))
+	privateResponse := httptest.NewRecorder()
+	s.Handler().ServeHTTP(privateResponse, privateRequest)
+	if privateResponse.Code != 403 {
+		t.Fatalf("private cached thumbnail: %d", privateResponse.Code)
 	}
 	w = faceRequest(s, "POST", "/settings/photos/faces/clear", "manager", nil)
 	if w.Code != 400 {

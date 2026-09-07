@@ -448,6 +448,8 @@ func auditActionTarget(r *http.Request) (string, string) {
 		return "Dokument endgültig löschen", documentAuditTarget(r)
 	case "POST /trash/empty":
 		return "Papierkorb leeren", ""
+	case "POST /api/photos/labeling/v1/people/{id}/actions":
+		return "Fotoperson über Benennungs-API bearbeiten", idAuditTarget("Person", r.PathValue("id"))
 	case "POST /photos/people/{id}/rename":
 		return "Fotoperson benennen", idAuditTarget("Person", r.PathValue("id"))
 	case "POST /photos/people/{id}/merge":

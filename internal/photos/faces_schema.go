@@ -26,6 +26,7 @@ func setupFaceSchema(ctx context.Context, db *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS idx_photo_faces_path ON photo_faces(path,id)`,
 		`CREATE TABLE IF NOT EXISTS photo_face_directories (directory TEXT PRIMARY KEY, face_count INTEGER NOT NULL) WITHOUT ROWID`,
 		`CREATE INDEX IF NOT EXISTS idx_face_reference_selection ON photo_faces(person_id,ignored,manual DESC,confidence DESC,id)`,
+		`CREATE INDEX IF NOT EXISTS idx_photo_faces_ignored ON photo_faces(id) WHERE ignored=1`,
 		`CREATE INDEX IF NOT EXISTS idx_photo_faces_person ON photo_faces(person_id,ignored,path,id)`,
 		`CREATE TABLE IF NOT EXISTS photo_face_references (face_id INTEGER PRIMARY KEY, person_id INTEGER NOT NULL)`,
 		`CREATE INDEX IF NOT EXISTS idx_face_references_person ON photo_face_references(person_id,face_id)`,

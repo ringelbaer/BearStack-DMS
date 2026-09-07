@@ -215,7 +215,7 @@ func TestSystemMenuSeparatorsOnlyBetweenVisibleGroups(t *testing.T) {
 		{
 			name:           "photos reader",
 			auth:           authPermissionsFromCapabilities(authCapPhotosRead, authPrincipal{Username: "photos"}),
-			wantSeparators: 1,
+			wantSeparators: 0,
 			want:           []string{`href="/tags"`, `href="/help"`, `href="/api"`, `action="/logout"`},
 		},
 		{
@@ -228,7 +228,7 @@ func TestSystemMenuSeparatorsOnlyBetweenVisibleGroups(t *testing.T) {
 		{
 			name:           "documents reader",
 			auth:           authPermissionsFromCapabilities(authCapDocumentsRead, authPrincipal{Username: "reader"}),
-			wantSeparators: 2,
+			wantSeparators: 1,
 			want:           []string{`href="/tags"`, `href="/duplicates"`, `href="/statistics"`, `href="/help"`, `href="/api"`, `action="/logout"`},
 		},
 	}

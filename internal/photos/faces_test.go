@@ -381,6 +381,9 @@ func TestFacePreviewRejectsUnindexedReplacement(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err := l.FaceThumbnail(context.Background(), faces[0].ID); err != nil {
+		t.Fatal(err)
+	}
 	writeSizedJPEG(t, filepath.Join(l.Root(), "a.jpg"), 160, 90, color.Black)
 	if _, err = l.FaceThumbnail(context.Background(), faces[0].ID); err == nil {
 		t.Fatal("cropped replacement using stale face region")

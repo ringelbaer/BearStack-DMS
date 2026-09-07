@@ -83,6 +83,11 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 		if out.KnownOnly {
 			knownFilter = " AND p.name <> ''"
 		}
+		var total int
+		if err := l.index.db.QueryRowContext(ctx, `SELECT count(*) FROM photo_people p WHERE p.name_fold LIKE ? ESCAPE '\'`+knownFilter+` AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=p.id AND ignored=0)`, pattern).Scan(&total); err != nil {
+			return out, err
+		}
+		out.setTotal(total)
 		rows, err := l.index.db.QueryContext(ctx, `SELECT p.id,p.name,(SELECT count(DISTINCT path) FROM photo_faces WHERE person_id=p.id AND ignored=0),(SELECT min(id) FROM photo_faces WHERE person_id=p.id AND ignored=0) FROM photo_people p WHERE p.name_fold LIKE ? ESCAPE '\'`+knownFilter+` AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=p.id AND ignored=0) ORDER BY p.name_fold,p.id LIMIT 61 OFFSET ?`, pattern, (out.Page-1)*60)
 		if err != nil {
 			return out, err
@@ -105,6 +110,11 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 	if err != nil {
 		return out, err
 	}
+	var total int
+	if err := l.index.db.QueryRowContext(ctx, `SELECT count(*) FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.ignored=0 AND m.admin_only=0`, id).Scan(&total); err != nil {
+		return out, err
+	}
+	out.setTotal(total)
 	rows, err := l.index.db.QueryContext(ctx, `SELECT `+faceColumns+` FROM photo_faces f JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.ignored=0 AND m.admin_only=0 ORDER BY f.id LIMIT 61 OFFSET ?`, id, (out.Page-1)*60)
 	if err != nil {
 		return out, err
@@ -122,6 +132,47 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 		out.Faces = out.Faces[:60]
 	}
 	return out, rows.Err()
+}
+
+// IgnoredFaces lists individual ignored detections, including groups with no
+// active faces. Pagination happens in SQLite, using the partial ignored index.
+func (l *Library) IgnoredFaces(ctx context.Context, page int, q string, knownOnly bool) (PeoplePage, error) {
+	out := PeoplePage{Query: q, Page: max(1, page), People: []Person{}, Faces: []RecognizedFace{}, KnownOnly: knownOnly, IgnoredOnly: true}
+	out.HasPrev = out.Page > 1
+	if err := l.RefreshFaceVisibility(ctx); err != nil {
+		return out, err
+	}
+	knownFilter := ""
+	if knownOnly {
+		knownFilter = " AND p.name <> ''"
+	}
+	var total int
+	if err := l.index.db.QueryRowContext(ctx, `SELECT count(*) FROM photo_faces f JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path WHERE f.ignored=1 AND m.admin_only=0 AND p.name_fold LIKE ? ESCAPE '\'`+knownFilter, searchtext.LikeContainsPattern(searchtext.GermanFold(q))).Scan(&total); err != nil {
+		return out, err
+	}
+	out.setTotal(total)
+	rows, err := l.index.db.QueryContext(ctx, `SELECT `+faceColumns+` FROM photo_faces f JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path WHERE f.ignored=1 AND m.admin_only=0 AND p.name_fold LIKE ? ESCAPE '\'`+knownFilter+` ORDER BY f.id LIMIT 61 OFFSET ?`, searchtext.LikeContainsPattern(searchtext.GermanFold(q)), (out.Page-1)*60)
+	if err != nil {
+		return out, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		f, err := scanFace(rows)
+		if err != nil {
+			return out, err
+		}
+		out.Faces = append(out.Faces, f)
+	}
+	if err := rows.Err(); err != nil {
+		return out, err
+	}
+	rows.Close()
+	if len(out.Faces) > 60 {
+		out.HasNext = true
+		out.Faces = out.Faces[:60]
+	}
+	l.sanitizeFaceNames(out.Faces)
+	return out, nil
 }
 
 func (l *Library) RenamePerson(ctx context.Context, id int64, name string) error {
@@ -245,6 +296,11 @@ func (l *Library) MergePeople(ctx context.Context, source, target int64, additio
 		}
 	}
 	for _, id := range sources {
+		// Preserve a source name when the explicitly selected target is unnamed.
+		// Copy its provenance as well so imported names retain their visibility rules.
+		if _, err = tx.ExecContext(ctx, `UPDATE photo_people SET (name,name_fold,manual_name,name_source)=(SELECT name,name_fold,manual_name,name_source FROM photo_people WHERE id=?) WHERE id=? AND name='' AND EXISTS(SELECT 1 FROM photo_people WHERE id=? AND name<>'')`, id, target, id); err != nil {
+			return err
+		}
 		if _, err = tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=?,manual=1 WHERE person_id=?`, target, id); err != nil {
 			return err
 		}

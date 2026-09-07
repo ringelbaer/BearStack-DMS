@@ -190,6 +190,14 @@ class TestElement extends TestEventTarget {
     }
   }
 
+  insertBefore(node, reference) {
+    node.remove();
+    const index = reference ? this.children.indexOf(reference) : this.children.length;
+    this.children.splice(index, 0, node);
+    node.parentElement = this;
+    return node;
+  }
+
   prepend(...nodes) {
     for (const node of nodes.reverse()) {
       if (!node) continue;
@@ -1019,7 +1027,108 @@ function testPhotoMediaHelpersWorkWithoutGallery() {
   assert.equal(context.window.BearStack.photos.formatPhotoRating("2.5"), "2,5 Sterne");
 }
 
+async function testPeopleRefreshRetainsImagesWhenCountsChange() {
+  const document = new TestDocument();
+  const img = el("img", { src: "/photos/faces/10/thumbnail" });
+  let imageWrites = 0;
+  Object.defineProperty(img, "src", { set(value) { imageWrites++; this.setAttribute("src", value); } });
+  const count = el("span", { text: "1 Foto" });
+  const title = el("strong", { text: "Alt" });
+  const ignore = el("button", { "data-ignore-face": "10" });
+  const checkbox = el("input", { "data-person-select": "", value: "1" });
+  const card = el("div", { "data-person-id": "1", class: "person-overview-card" }, [
+    el("a", { class: "person-card" }, [img, title, count]), checkbox, ignore,
+  ]);
+  const query = card.querySelector.bind(card);
+  card.querySelector = (selector) => selector === ".person-card > span" ? count : query(selector);
+  const overview = el("div", { "data-people-overview": "", "data-can-ignore": "true" }, [card]);
+  const status = el("p", { "data-people-status": "" });
+  document.body.append(overview, status,
+    el("div", { "data-people-merge": "" }, [el("button", { "data-people-merge-button": "" })]),
+    el("div", { class: "people-pagination" }));
+  const context = createContext(document);
+  context.location.href = "http://example.test/photos/people";
+  context.history = { state: null, replaceState() {} };
+  context.fetch = async (url, options) => ({ ok: true, json: async () => options.method === "POST" ?
+    { ok: true } : { people: [{ id: 1, face_id: 10, name: "Neu", count: 2 }], page: 2, total_pages: 3, has_prev: true, has_next: true } });
+  runScripts(context, ["app-people.js"]);
+  overview.dispatchEvent({ type: "click", target: ignore });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(status.textContent, "Gesicht ignoriert.");
+  assert.equal(overview.children[0], card);
+  assert.equal(card.querySelector("img"), img);
+  assert.equal(imageWrites, 0);
+  assert.equal(count.textContent, "2 Fotos");
+  assert.equal(title.textContent, "Neu");
+  assert.equal(checkbox.getAttribute("aria-label"), "Person auswählen: Neu");
+  const links = document.querySelector(".people-pagination").children;
+  assert.equal(links[0].textContent, "Erste Seite");
+  assert.equal(new URL(links[0].href, "http://example.test").searchParams.get("page"), "1");
+  assert.equal(links[links.length - 1].textContent, "Letzte Seite");
+  assert.equal(new URL(links[links.length - 1].href, "http://example.test").searchParams.get("page"), "3");
+}
+
+function testPeopleRemembersPageAndHonorsExplicitFilters() {
+  const key = "bearstack.people.lastPage:manager";
+  const stored = JSON.stringify({ page: 7, q: "Petra", known: true, ignored: true });
+  function setup(href, initial = stored, blocked = false) {
+    const document = new TestDocument();
+    document.body.append(el("nav", { "data-people-page": "2", "data-people-user": "manager" }));
+    const context = createContext(document);
+    const values = new Map([[key, initial]]);
+    context.location.href = href;
+    context.location.replace = (url) => { context.redirect = url; };
+    context.localStorage = { getItem: (k) => values.get(k), setItem: (k, value) => values.set(k, value) };
+    if (blocked) context.localStorage = { getItem() { throw new Error("blocked"); }, setItem() { throw new Error("blocked"); } };
+    runScripts(context, ["app-people.js"]);
+    return { context, values };
+  }
+  const restored = setup("http://example.test/photos/people");
+  const destination = new URL(restored.context.redirect, "http://example.test");
+  assert.equal(destination.searchParams.get("page"), "7");
+  assert.equal(destination.searchParams.get("q"), "Petra");
+  assert.equal(destination.searchParams.get("known"), "1");
+  assert.equal(destination.searchParams.get("ignored"), "1");
+  for (const query of ["?page=2", "?q=", "?ignored=1", "?known=1"]) {
+    const explicit = setup("http://example.test/photos/people" + query);
+    assert.equal(explicit.context.redirect, undefined);
+    assert.equal(JSON.parse(explicit.values.get(key)).page, 2);
+  }
+  const invalid = setup("http://example.test/photos/people", '{"page":-1,"q":"x"}');
+  assert.equal(invalid.context.redirect, undefined);
+  const broken = setup("http://example.test/photos/people", "not json");
+  assert.equal(broken.context.redirect, undefined);
+  assert.equal(setup("http://example.test/photos/people", stored, true).context.redirect, undefined);
+}
+
+async function testPeopleMergePrefersNamedSelection() {
+  for (const names of [["", "Petra", ""], ["", "", "Petra"], ["Petra", "Marie", ""], ["", "", ""]]) {
+    const document = new TestDocument();
+    const inputs = names.map((name, index) => el("input", { "data-person-select": "", value: String(index + 1) }));
+    const cards = names.map((name, index) => el("div", { "data-person-id": String(index + 1), "data-person-name": name }, [el("strong", { text: name || "Unbenannt" }), inputs[index]]));
+    const overview = el("div", { "data-people-overview": "", "data-can-ignore": "true" }, cards);
+    const target = el("span", { "data-people-merge-target": "" });
+    const button = el("button", { "data-people-merge-button": "" });
+    document.body.append(overview, el("p", { "data-people-status": "" }), el("div", { "data-people-merge": "" }, [target, button]));
+    const context = createContext(document);
+    let request;
+    context.fetch = async (url, options) => { request = { url, options }; return { ok: false, status: 503 }; };
+    runScripts(context, ["app-people.js"]);
+    inputs.forEach((input) => { input.checked = true; overview.dispatchEvent({ type: "change", target: input }); });
+    const expected = Math.max(0, names.findIndex(Boolean));
+    assert.equal(target.textContent, "3 ausgewählt · Ziel: " + (names[expected] || "Unbenannt"));
+    button.dispatchEvent({ type: "click" });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(request.options.body.get("target"), String(expected + 1));
+    const merged = [request.url.match(/people\/(\d+)\/merge/)[1], ...request.options.body.getAll("person_id")];
+    assert.deepEqual(merged.sort(), ["1", "2", "3"].filter((id) => id !== String(expected + 1)));
+  }
+}
+
 const tests = [
+  testPeopleMergePrefersNamedSelection,
+  testPeopleRemembersPageAndHonorsExplicitFilters,
+  testPeopleRefreshRetainsImagesWhenCountsChange,
   testTagPickerUsesBackendDisplayValues,
   testTagPickerFallsBackToConfiguredDisplayMode,
   testUploadLifecycleUsesXHRBoundary,

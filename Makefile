@@ -20,3 +20,11 @@ node_modules/@playwright/test/package.json: package.json package-lock.json
 
 build:
 	$(GO) build -trimpath -ldflags="-s -w" -o bearstack ./cmd/bearstack
+
+# Independent Android checks; Go and Docker builds never invoke Gradle.
+.PHONY: test-android test-android-integration
+test-android:
+	./scripts/check-android.sh
+
+test-android-integration:
+	./scripts/test-android-integration.sh
