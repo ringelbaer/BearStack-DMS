@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { spawn } from "node:child_process";
+import { startBearStack, stopBearStack, freePort } from "./server-fixture.mjs";
 import http from "node:http";
-import net from "node:net";
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -9,8 +8,7 @@ import path from "node:path";
 const model = "yunet-2023mar-sface-2021dec-v1";
 const token = "bearstack-test-service-token-000000";
 const png = await readFile(new URL("../../services/faces/tests/fixtures/astronaut.png", import.meta.url));
-let root, baseURL, app, service, output = "";
-async function port() { const server = net.createServer(); await new Promise(resolve => server.listen(0, "127.0.0.1", resolve)); const result=server.address().port; await new Promise(resolve=>server.close(resolve));return result; }
+let root, baseURL, app, service;
 
 test.beforeAll(async () => {
   root = await mkdtemp(path.join(os.tmpdir(), "bearstack-faces-e2e-"));
@@ -23,13 +21,16 @@ test.beforeAll(async () => {
     request.resume();request.on("end",()=>{const embedding=Array(128).fill(0);embedding[calls++===2?1:0]=1;response.end(JSON.stringify({model,faces:[{x:.1,y:.1,width:.5,height:.5,confidence:.99,embedding}]}));});
   });
   await new Promise(resolve=>service.listen(0,"127.0.0.1",resolve));
-  const appPort=await port();baseURL=`http://127.0.0.1:${appPort}`;
+  const appPort=await freePort();baseURL=`http://127.0.0.1:${appPort}`;
   const config=path.join(root,"config.json");await writeFile(config,JSON.stringify({addr:`127.0.0.1:${appPort}`,data_dir:path.join(root,"data"),auth:{credentials:[{username:"admin",password:"secret",role:"admin"},{username:"manager",password:"secret",role:"photos_manager"},{username:"reader",password:"secret",role:"photos_read"}]},photos:{enabled:true,root_dir:photos,face_service_url:`http://127.0.0.1:${service.address().port}`,face_service_token:token}}));
-  app=spawn("go",["run","./cmd/bearstack"],{env:{...process.env,BEARSTACK_CONFIG:config},stdio:["ignore","pipe","pipe"],detached:true});
-  app.stdout.on("data",b=>{output+=b;});app.stderr.on("data",b=>{output+=b;});
-  await expect.poll(async()=>{try{return (await fetch(baseURL+"/healthz",{headers:{authorization:"Basic "+Buffer.from("manager:secret").toString("base64")}})).status;}catch{return 0;}},{timeout:120000,message:()=>output}).toBe(200);
+  app = await startBearStack({ configPath: config, baseURL }, { username: "manager", password: "secret" });
 });
-test.afterAll(async()=>{if(app?.pid){try{process.kill(-app.pid,"SIGTERM");}catch{}}if(service)await new Promise(resolve=>service.close(resolve));if(root)await rm(root,{recursive:true,force:true});});
+test.afterAll(async ({}, testInfo) => {
+  testInfo.setTimeout(75_000);
+  await stopBearStack(app);
+  if (service) await new Promise(resolve => service.close(resolve));
+  if (root) await rm(root, { recursive: true, force: true });
+});
 
 test("face settings fit the shared desktop and mobile layout", async ({ browser }) => {
   const context = await browser.newContext();

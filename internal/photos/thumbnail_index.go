@@ -401,16 +401,9 @@ func (s *photoIndexStore) thumbnailCandidates(ctx context.Context, sizes []int, 
 	return candidates, rows.Err()
 }
 
-func (l *Library) thumbnailIndexAllowsReady(ctx context.Context, media Media, size int) bool {
-	if l == nil || !l.index.available() {
-		return true
-	}
-	return l.index.thumbnailReadyForMedia(ctx, media, size)
-}
-
-func (s *photoIndexStore) thumbnailReadyForMedia(ctx context.Context, media Media, size int) bool {
+func (s *photoIndexStore) thumbnailReadyState(ctx context.Context, media Media, size int) (ready, repair bool) {
 	if !s.available() {
-		return true
+		return true, false
 	}
 	var quality int
 	var sourceMod int64
@@ -421,15 +414,15 @@ func (s *photoIndexStore) thumbnailReadyForMedia(ctx context.Context, media Medi
 		FROM photo_thumbnail_index
 		WHERE media_path = ? AND size = ?`, media.Path, NormalizeThumbnailSize(size)).Scan(&quality, &sourceMod, &sourceSize, &status)
 	if errors.Is(err, sql.ErrNoRows) {
-		return true
+		return true, true
 	}
 	if err != nil {
-		return true
+		return true, false
 	}
 	if quality != thumbnailWebPQuality || sourceMod != media.ModTime.UnixNano() || sourceSize != media.SizeBytes {
-		return false
+		return false, false
 	}
-	return status == thumbnailStatusGenerated || status == thumbnailStatusQueued || status == thumbnailStatusFailed
+	return status == thumbnailStatusGenerated || status == thumbnailStatusQueued || status == thumbnailStatusFailed, status != thumbnailStatusGenerated
 }
 
 func (l *Library) CachedThumbnailsReadyForMediaContext(ctx context.Context, items []Media, size int) map[string]bool {

@@ -84,7 +84,7 @@ func (s *Server) startFaceRun() bool {
 	s.faceWorker.running = true
 	s.faceWorker.lastError = ""
 	s.faceWorker.mu.Unlock()
-	go func() {
+	if !s.background.start(func() {
 		defer s.faceWorker.run.Unlock()
 		defer cancel()
 		err := s.processFaceBatch(ctx)
@@ -100,7 +100,15 @@ func (s *Server) startFaceRun() bool {
 		case s.faceWorker.wake <- struct{}{}:
 		default:
 		}
-	}()
+	}) {
+		cancel()
+		s.faceWorker.mu.Lock()
+		s.faceWorker.running = false
+		s.faceWorker.cancel = nil
+		s.faceWorker.mu.Unlock()
+		s.faceWorker.run.Unlock()
+		return false
+	}
 	return true
 }
 func (s *Server) RunFaceWorker(ctx context.Context) {

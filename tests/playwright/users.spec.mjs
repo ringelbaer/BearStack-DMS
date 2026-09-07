@@ -1,13 +1,8 @@
+import { startBearStack, stopBearStack, freePort } from "./server-fixture.mjs";
 import { expect, test } from "@playwright/test";
-import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import net from "node:net";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const testDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(testDir, "../..");
 
 const bootstrapAdmin = "local-admin";
 const bootstrapPassword = "Bootstrap-Admin!2026";
@@ -68,7 +63,8 @@ test.describe.serial("hybrid user management", () => {
     server = await startBearStack(fixture, { username: configAdmin, password: configPassword });
   });
 
-  test.afterAll(async () => {
+  test.afterAll(async ({}, testInfo) => {
+    testInfo.setTimeout(75_000);
     await stopBearStack(server);
     if (fixture?.root) {
       await rm(fixture.root, { recursive: true, force: true });
@@ -337,72 +333,4 @@ async function createUsersFixture(credentials = []) {
     baseURL: `http://127.0.0.1:${port}`,
     configPath,
   };
-}
-
-async function startBearStack(fixture, healthCredential = null) {
-  const child = spawn("go", ["run", "./cmd/bearstack"], {
-    cwd: repoRoot,
-    env: {
-      ...process.env,
-      BEARSTACK_CONFIG: fixture.configPath,
-      GOCACHE: path.join(fixture.root, "go-cache"),
-    },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  const state = { child, output: "" };
-  child.stdout.on("data", (chunk) => {
-    state.output += chunk.toString();
-  });
-  child.stderr.on("data", (chunk) => {
-    state.output += chunk.toString();
-  });
-  child.once("exit", (code, signal) => {
-    state.exited = { code, signal };
-  });
-  await waitForHealth(fixture.baseURL, state, healthCredential);
-  return state;
-}
-
-async function stopBearStack(state) {
-  if (!state?.child || state.exited) return;
-  state.child.kill("SIGTERM");
-  await Promise.race([
-    new Promise((resolve) => state.child.once("exit", resolve)),
-    new Promise((resolve) => setTimeout(resolve, 2_000)),
-  ]);
-  if (!state.exited) {
-    state.child.kill("SIGKILL");
-  }
-}
-
-async function waitForHealth(baseURL, state, credential) {
-  const headers = {};
-  if (credential) {
-    headers.authorization = `Basic ${Buffer.from(`${credential.username}:${credential.password}`).toString("base64")}`;
-  }
-  const deadline = Date.now() + 30_000;
-  while (Date.now() < deadline) {
-    if (state.exited) {
-      throw new Error(`BearStack exited before healthcheck: ${JSON.stringify(state.exited)}\n${state.output}`);
-    }
-    try {
-      const response = await fetch(`${baseURL}/healthz`, { headers });
-      if (response.ok) return;
-    } catch (_) {
-      // Server is still starting.
-    }
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-  throw new Error(`BearStack did not become healthy\n${state.output}`);
-}
-
-async function freePort() {
-  return await new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      server.close(() => resolve(address.port));
-    });
-  });
 }

@@ -51,6 +51,8 @@ type Server struct {
 	apps              serverApplications
 	jobCtxMu          sync.RWMutex
 	jobCtx            context.Context
+	jobCancel         context.CancelFunc
+	background        backgroundTasks
 }
 
 const pageSize = 100

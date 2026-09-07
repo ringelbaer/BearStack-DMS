@@ -2,6 +2,8 @@
 package photos
 
 import (
+	"container/list"
+	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -16,7 +18,16 @@ import (
 )
 
 const gpxMinPointDistanceMeters = 5
-const gpxTrackCacheMaxEntries = 4096
+const (
+	gpxTrackCacheMaxEntries       = 4096
+	gpxMaxBytes             int64 = 16 << 20
+	gpxMaxPoints                  = 100_000
+	gpxCacheMaxBytes        int64 = 32 << 20
+	gpxListingMaxPoints           = 250_000
+	gpxListingMaxTracks           = 256
+)
+
+var errGPXLimit = errors.New("GPX überschreitet das Byte- oder Punktlimit")
 
 var (
 	gpxDateYMDPattern = regexp.MustCompile(`(?:^|[^0-9])(\d{4})[-_. ]?(\d{2})[-_. ]?(\d{2})(?:[^0-9]|$)`)
@@ -27,22 +38,11 @@ type cachedGPXTrack struct {
 	modTimeUnixNano int64
 	sizeBytes       int64
 	track           GPXTrack
+	cost            int64
+	element         *list.Element
 }
 
-func (l *Library) gpxFromPath(rel string) (GPXTrack, error) {
-	abs, err := l.Resolve(rel)
-	if err != nil {
-		return GPXTrack{}, err
-	}
-	info, err := os.Stat(abs)
-	if err != nil {
-		l.gpxInvalidateCache(rel)
-		return GPXTrack{}, err
-	}
-	return l.gpxFromResolvedPath(rel, abs, info)
-}
-
-func (l *Library) gpxFromPathInfo(rel string, info os.FileInfo) (GPXTrack, error) {
+func (l *Library) gpxFromPathInfo(ctx context.Context, rel string, info os.FileInfo) (GPXTrack, error) {
 	abs, err := l.Resolve(rel)
 	if err != nil {
 		return GPXTrack{}, err
@@ -54,10 +54,33 @@ func (l *Library) gpxFromPathInfo(rel string, info os.FileInfo) (GPXTrack, error
 			return GPXTrack{}, err
 		}
 	}
-	return l.gpxFromResolvedPath(rel, abs, info)
+	return l.gpxFromResolvedPath(ctx, rel, abs, info)
 }
 
-func (l *Library) gpxFromResolvedPath(rel, abs string, info os.FileInfo) (GPXTrack, error) {
+func (l *Library) gpxFromResolvedPath(ctx context.Context, rel, abs string, info os.FileInfo) (GPXTrack, error) {
+	if err := ctx.Err(); err != nil {
+		return GPXTrack{}, err
+	}
+	if info.Size() > gpxMaxBytes {
+		l.gpxInvalidateCache(rel)
+		return GPXTrack{}, errGPXLimit
+	}
+	if cached, ok := l.gpxFromCache(rel, info); ok {
+		return cached, nil
+	}
+	// Bound concurrent parser allocations and let waiting requests cancel.
+	l.gpxMu.Lock()
+	if l.gpxParseGate == nil {
+		l.gpxParseGate = make(chan struct{}, 1)
+	}
+	gate := l.gpxParseGate
+	l.gpxMu.Unlock()
+	select {
+	case gate <- struct{}{}:
+		defer func() { <-gate }()
+	case <-ctx.Done():
+		return GPXTrack{}, ctx.Err()
+	}
 	if cached, ok := l.gpxFromCache(rel, info); ok {
 		return cached, nil
 	}
@@ -73,20 +96,54 @@ func (l *Library) gpxFromResolvedPath(rel, abs string, info os.FileInfo) (GPXTra
 		}
 	}
 
-	decoder := xml.NewDecoder(file)
+	points, err := decodeGPX(ctx, file, gpxMaxBytes, gpxMaxPoints)
+	if err != nil {
+		return GPXTrack{}, err
+	}
 	name := filepath.Base(filepath.FromSlash(rel))
-	track := GPXTrack{Name: name, Path: rel, Label: gpxTrackLabel(name)}
+	track := GPXTrack{Name: name, Path: rel, Label: gpxTrackLabel(name), Points: points}
+	l.gpxStoreCache(rel, info, track)
+	return track, nil
+}
+
+type gpxContextReader struct {
+	ctx    context.Context
+	reader io.Reader
+}
+
+func (r gpxContextReader) Read(p []byte) (int, error) {
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return r.reader.Read(p)
+}
+
+func decodeGPX(ctx context.Context, input io.Reader, maxBytes int64, maxPoints int) ([]GPXPoint, error) {
+	limited := &io.LimitedReader{R: input, N: maxBytes + 1}
+	decoder := xml.NewDecoder(gpxContextReader{ctx, limited})
+	var points []GPXPoint
+	count := 0
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		token, err := decoder.Token()
+		if limited.N == 0 {
+			return nil, errGPXLimit
+		}
 		if errors.Is(err, io.EOF) {
-			break
+			return points, nil
 		}
 		if err != nil {
-			return GPXTrack{}, err
+			return nil, err
 		}
 		start, ok := token.(xml.StartElement)
 		if !ok || (start.Name.Local != "trkpt" && start.Name.Local != "rtept") {
 			continue
+		}
+		count++
+		if count > maxPoints {
+			return nil, errGPXLimit
 		}
 		var point GPXPoint
 		var hasLat, hasLon bool
@@ -99,45 +156,66 @@ func (l *Library) gpxFromResolvedPath(rel, abs string, info os.FileInfo) (GPXTra
 			}
 		}
 		if hasLat && hasLon && validGPXPoint(point) {
-			track.Points = appendGPXPoint(track.Points, point)
+			points = appendGPXPoint(points, point)
 		}
 	}
-	l.gpxStoreCache(rel, info, track)
-	return track, nil
 }
 
 func (l *Library) gpxFromCache(rel string, info os.FileInfo) (GPXTrack, bool) {
 	if l == nil || info == nil {
 		return GPXTrack{}, false
 	}
-	modUnix := info.ModTime().UnixNano()
-	sizeBytes := info.Size()
-	l.gpxMu.RLock()
+	l.gpxMu.Lock()
+	defer l.gpxMu.Unlock()
 	cached, ok := l.gpxCache[rel]
-	l.gpxMu.RUnlock()
-	if !ok || cached.modTimeUnixNano != modUnix || cached.sizeBytes != sizeBytes {
+	if !ok {
 		return GPXTrack{}, false
 	}
+	if cached.modTimeUnixNano != info.ModTime().UnixNano() || cached.sizeBytes != info.Size() {
+		l.removeGPXCacheEntry(rel)
+		return GPXTrack{}, false
+	}
+	l.gpxLRU.MoveToFront(cached.element)
 	return cached.track, true
 }
 
 func (l *Library) gpxStoreCache(rel string, info os.FileInfo, track GPXTrack) {
+	l.gpxStoreCacheBudget(rel, info, track, gpxCacheMaxBytes)
+}
+
+func (l *Library) gpxStoreCacheBudget(rel string, info os.FileInfo, track GPXTrack, budget int64) {
 	if l == nil || info == nil {
 		return
 	}
+	// Include backing-array capacity, strings and conservative per-entry overhead.
+	cost := int64(cap(track.Points))*16 + int64(len(rel)+len(track.Name)+len(track.Path)+len(track.Label)+len(track.Color)) + 256
 	l.gpxMu.Lock()
+	defer l.gpxMu.Unlock()
+	l.removeGPXCacheEntry(rel)
+	if cost > budget {
+		return
+	}
 	if l.gpxCache == nil {
 		l.gpxCache = map[string]cachedGPXTrack{}
 	}
-	l.gpxCache[rel] = cachedGPXTrack{
-		modTimeUnixNano: info.ModTime().UnixNano(),
-		sizeBytes:       info.Size(),
-		track:           track,
+	for l.gpxCacheBytes+cost > budget || len(l.gpxCache) >= gpxTrackCacheMaxEntries {
+		oldest := l.gpxLRU.Back()
+		if oldest == nil {
+			break
+		}
+		l.removeGPXCacheEntry(oldest.Value.(string))
 	}
-	if len(l.gpxCache) > gpxTrackCacheMaxEntries {
-		clear(l.gpxCache)
+	l.gpxCache[rel] = cachedGPXTrack{modTimeUnixNano: info.ModTime().UnixNano(), sizeBytes: info.Size(), track: track, cost: cost, element: l.gpxLRU.PushFront(rel)}
+	l.gpxCacheBytes += cost
+}
+
+// Caller holds gpxMu.
+func (l *Library) removeGPXCacheEntry(rel string) {
+	if cached, ok := l.gpxCache[rel]; ok {
+		l.gpxCacheBytes -= cached.cost
+		l.gpxLRU.Remove(cached.element)
+		delete(l.gpxCache, rel)
 	}
-	l.gpxMu.Unlock()
 }
 
 func (l *Library) gpxInvalidateCache(rel string) {
@@ -145,10 +223,8 @@ func (l *Library) gpxInvalidateCache(rel string) {
 		return
 	}
 	l.gpxMu.Lock()
-	if l.gpxCache != nil {
-		delete(l.gpxCache, rel)
-	}
-	l.gpxMu.Unlock()
+	defer l.gpxMu.Unlock()
+	l.removeGPXCacheEntry(rel)
 }
 
 func parseGPXCoord(value string) (float64, bool) {
@@ -235,4 +311,14 @@ func colorByte(value float64) int {
 
 func clampFloat(value, min, max float64) float64 {
 	return math.Max(min, math.Min(max, value))
+}
+
+// Map responses have a separate budget: evicting the cache cannot release
+// tracks that are still referenced by a response under construction.
+func (listing *Listing) addGPXTrack(track GPXTrack) {
+	if len(track.Points) == 0 || len(listing.GPXTracks) >= gpxListingMaxTracks || listing.gpxPointCount+len(track.Points) > gpxListingMaxPoints {
+		return
+	}
+	listing.GPXTracks = append(listing.GPXTracks, track)
+	listing.gpxPointCount += len(track.Points)
 }

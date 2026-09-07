@@ -6,6 +6,7 @@ const configDir = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   testDir: join(configDir, "tests/playwright"),
+  globalSetup: join(configDir, "tests/playwright/global-setup.mjs"),
   outputDir: join(configDir, "test-results"),
   timeout: 30_000,
   expect: {

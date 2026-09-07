@@ -44,37 +44,37 @@ func TestBackgroundWorkersStartLaunchesPhotoWorkersAndSetsContext(t *testing.T) 
 	workers := BackgroundWorkers{
 		server: server,
 		runPhotoIndexWorker: func(runCtx context.Context) {
-			if runCtx != ctx {
+			if runCtx != server.backgroundJobContext() {
 				t.Errorf("photo index worker context mismatch")
 			}
 			indexStarted <- struct{}{}
 		},
 		runPhotoThumbnailWorker: func(runCtx context.Context) {
-			if runCtx != ctx {
+			if runCtx != server.backgroundJobContext() {
 				t.Errorf("photo thumbnail worker context mismatch")
 			}
 			thumbnailStarted <- struct{}{}
 		},
 		runDocumentPostImport: func(runCtx context.Context) {
-			if runCtx != ctx {
+			if runCtx != server.backgroundJobContext() {
 				t.Errorf("document post-import context mismatch")
 			}
 			documentStarted <- struct{}{}
 		},
 		runOCRQueue: func(runCtx context.Context) {
-			if runCtx != ctx {
+			if runCtx != server.backgroundJobContext() {
 				t.Errorf("ocr queue context mismatch")
 			}
 			ocrStarted <- struct{}{}
 		},
 		runMailImport: func(runCtx context.Context) {
-			if runCtx != ctx {
+			if runCtx != server.backgroundJobContext() {
 				t.Errorf("mail import context mismatch")
 			}
 			mailStarted <- struct{}{}
 		},
 		runTrashRetention: func(runCtx context.Context) {
-			if runCtx != ctx {
+			if runCtx != server.backgroundJobContext() {
 				t.Errorf("trash retention context mismatch")
 			}
 			trashStarted <- struct{}{}
@@ -90,7 +90,7 @@ func TestBackgroundWorkersStartLaunchesPhotoWorkersAndSetsContext(t *testing.T) 
 	waitStarted(t, "mail import worker", mailStarted)
 	waitStarted(t, "trash retention worker", trashStarted)
 
-	if got := server.backgroundJobContext(); got != ctx {
+	if got := server.backgroundJobContext(); got.Err() != nil {
 		t.Fatalf("background job context mismatch")
 	}
 }

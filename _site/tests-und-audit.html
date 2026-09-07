@@ -810,6 +810,7 @@
 <p>Die Go-Tests decken Repository-Migrationen, Suche, Tags, benutzerdefinierte Felder, Suchfavoriten, Uploads, Auth, Berechtigungen, Audit-Logs, Dokumentverarbeitung, Fotoindex, Thumbnails, Worker und viele HTTP-Handler ab. JavaScript wird per <code>node --check</code> geprüft. Playwright-Smokes starten BearStack mit temporärer Konfiguration und prüfen zentrale Browser-Flows wie Dokumenten-Upload und Foto-Galerie.</p>
 <p>Für Änderungen an riskanten Bereichen gilt: fokussierte Regressionstests vor breit angelegten Refactors. Wenn eine Änderung Performance berührt, sind Benchmarks oder nachvollziehbare Messungen sinnvoller als reine Einschätzung.</p>
 <p>Bei Versionsänderungen muss <code>info.version</code> in <code>openapi.yaml</code> mit der Root-Datei <code>VERSION</code> übereinstimmen. Der Go-Test <code>TestOpenAPISpecMatchesApplicationVersion</code> prüft diesen Abgleich für die eingebettete API-Beschreibung.</p>
+<p>Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle drei Suiten verwenden denselben Helfer für Start, Gesundheitsprüfung und geordnetes Beenden; temporäre Daten werden erst nach Prozessende entfernt. Die Testabhängigkeit ist in <code>package-lock.json</code> festgelegt und wird bei Bedarf mit <code>npm ci --ignore-scripts</code> installiert. Ein vorhandener <code>GOCACHE</code> wird weiterverwendet.</p>
 <h2 id="performance-benchmarks">Performance-Benchmarks<a class="headerlink" href="#performance-benchmarks" title="Permanent link">&para;</a></h2>
 <p>BearStack enthält Benchmarks für Dokumentlisten und das Fotomodul. Sie messen Suche, Tag-Filter, Pagination, große Fotoindexe, GPX-Daten, Thumbnail-Status und Index-Neuaufbau.</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/repository<span class="w"> </span>-bench<span class="o">=</span>BenchmarkList<span class="w"> </span>-benchmem
@@ -881,7 +882,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.25.2 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.25.3 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

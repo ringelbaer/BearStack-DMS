@@ -68,7 +68,9 @@ make test-js
 make test-playwright
 ```
 
-`make test-go` fuehrt `go test ./...` aus. `make test-js` nutzt `scripts/check-js.sh` und fuehrt `node --check` fuer alle Browser-Skripte unter `internal/server/static/*.js` aus. `make test-playwright` ruft den Test-Runner ueber `npm exec` on-demand ab; die Tests erzeugen temporaere Daten, starten lokal `go run ./cmd/bearstack` mit eigener Testkonfiguration und pruefen Dokumenten-Upload sowie die Foto-Galerie. Die Make-Variablen `GO`, `NODE`, `NPM` und `PLAYWRIGHT_TEST_VERSION` koennen bei Bedarf ueberschrieben werden, z. B. `NODE=/opt/node/bin/node make test-js`. Falls kein lokaler Chrome-Channel verfuegbar ist, kann Playwright wie ueblich mit eigenem Browser-Download verwendet werden, z. B. `npx playwright install chromium` und `PLAYWRIGHT_BROWSER_CHANNEL=chromium make test-playwright`.
+`make test-go` fuehrt `go test ./...` aus. `make test-js` nutzt `scripts/check-js.sh` und fuehrt `node --check` fuer alle Browser-Skripte unter `internal/server/static/*.js` aus. `make test-playwright` installiert bei Bedarf die fest versionierte Testabhängigkeit und prüft Dokumenten-Upload, Benutzerverwaltung und Foto-Galerie. Die Make-Variablen `GO`, `NODE` und `NPM` koennen bei Bedarf ueberschrieben werden, z. B. `NODE=/opt/node/bin/node make test-js`. Falls kein lokaler Chrome-Channel verfuegbar ist, kann Playwright wie ueblich mit eigenem Browser-Download verwendet werden, z. B. `npx playwright install chromium` und `PLAYWRIGHT_BROWSER_CHANNEL=chromium make test-playwright`.
+
+Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle drei Suiten verwenden denselben Helfer für Start, Gesundheitsprüfung und geordnetes Beenden; temporäre Daten werden erst nach Prozessende entfernt. Die Testabhängigkeit ist in `package-lock.json` festgelegt und wird bei Bedarf mit `npm ci --ignore-scripts` installiert. Ein vorhandener `GOCACHE` wird weiterverwendet.
 
 ## Build
 
@@ -222,7 +224,6 @@ Weitere projektnahe Variablen:
 | `GO` | Nur `Makefile`: Go-Binary fuer `make test-go` und `make build`, Standard `go`. |
 | `NODE` | Nur `Makefile`/`scripts/check-js.sh`: Node-Binary fuer `make test-js`, Standard `node`. |
 | `NPM` | Nur `Makefile`: npm-Binary fuer `make test-playwright`, Standard `npm`. |
-| `PLAYWRIGHT_TEST_VERSION` | Nur `Makefile`: Version des per `npm exec` geladenen `@playwright/test`, Standard `1.60.0`. |
 | `PLAYWRIGHT_BROWSER_CHANNEL` | Nur Playwright-Konfiguration: Browser-Channel fuer `make test-playwright`, Standard `chrome`. |
 | `BEARSTACK_WEBDAV_TRACE` | Diagnose fuer WebDAV-Clients: bei `1`, `true`, `yes` oder `on` protokolliert BearStack WebDAV-Methode, Status und Pfadmetadaten. |
 
@@ -290,6 +291,10 @@ Foto-Tags, Tagzuordnungen und Volltextsuche werden gemeinsam in einer Transaktio
 Die Anzahl und Größe der Foto-Thumbnail-Dateien werden beim Start und anschließend alle 30 Minuten im Hintergrund ermittelt. Die Statistikseite zeigt den Messzeitpunkt und durchsucht den Thumbnail-Cache bei Seitenaufrufen nicht. Vor der ersten Messung erscheint „Thumbnail-Cache wird ermittelt“; bei einem fehlgeschlagenen oder abgebrochenen Durchlauf bleibt der letzte vollständige Stand erhalten. Die Messung läuft auch bei deaktivierter Thumbnail-Erzeugung.
 
 Ein Ordner mit der Datei `.adminonly` ist nur fuer Benutzer mit der Rolle `admin` zugaenglich. Admin-only-Inhalte sind auch fuer Admins standardmaessig in Galerie, Suche, Zufall, Fotoframe, Kartenansicht und Foto-Tag-Listen ausgeblendet. Admins koennen sie im Sortieren-Menue der Galerie per Schalter einblenden; die Auswahl bleibt in der aktuellen Session gespeichert. Direkte Medien- und Thumbnail-URLs bleiben weiterhin nur Admins vorbehalten.
+
+GPX-Dateien werden bis 16 MiB und 100.000 eingelesene Track-/Routenpunkte verarbeitet; größere oder fehlerhafte Dateien werden übersprungen. Wartezeiten und Lesen reagieren auf einen Anfrageabbruch. Je Foto-Library läuft höchstens ein Parser gleichzeitig. Eine Kartenantwort enthält höchstens 256 Tracks und 250.000 Punkte; weitere Tracks, die das Budget überschreiten, werden ausgelassen. Der GPX-Cache hat ein Speicherbudget von 32 MiB für Punktarrays und Eintragskosten und verdrängt die am längsten ungenutzten Tracks.
+
+Gültige Foto-Thumbnail-Cachetreffer lesen ihre Metadaten ohne SQLite-Schreibaufruf. Nur fehlende oder zu reparierende Queue-Metadaten werden nachgetragen; ein paralleler Datenbank-Writer blockiert reguläre Cachetreffer nicht.
 
 ### Optionale lokale Gesichtserkennung
 
@@ -553,19 +558,17 @@ Vor Updates ein Datenbackup erstellen. Fuer systemd-Installationen liegt ein Upd
 ```sh
 cd /opt/bearstack-src/BearStack
 ./update.sh
-# Alternativ den Alpha-Branch installieren:
-./update.sh --alpha
 ```
 
-`update.sh` fuehrt im aktuellen Stand `git fetch --all --tags` aus, wechselt auf den Update-Branch (`main` als Standard, `Alpha` mit `--alpha` oder frei per `--branch NAME`), fuehrt `git pull --ff-only origin BRANCH`, `go test ./...` und einen Build in ein temporaeres Artefakt aus. Danach stoppt es den systemd-Dienst, installiert das neue Binary, startet den Dienst wieder und zeigt `systemctl status`. Ein Binary-Backup, automatischer `/healthz`-Check und Rollback sind im Skript nicht aktiv; den Smoke-Test deshalb nach dem Lauf manuell ausfuehren.
+`update.sh` aktualisiert den aktuellen Branch mit `git fetch --all --tags` und `git pull --ff-only`, führt `go test ./...` aus und baut ein temporäres Binary. Danach wartet es auf `systemctl stop` und prüft `ActiveState=inactive`, `Result=success` und `MainPID=0`. Bei einem Stop-Fehler, Timeout oder verbliebenen Hauptprozess bricht das Update vor der Installation ab. Nur nach erfolgreichem Stopp wird das Binary installiert und der Dienst gestartet. Den Dienststatus und Smoke-Test anschließend prüfen; automatisches Backup und Rollback sind nicht enthalten.
+
+BearStack beendet bei SIGTERM und SIGINT zunächst die Annahme neuer Hintergrundjobs und signalisiert laufenden Workern den Abbruch. HTTP-Anfragen und Hintergrundjobs einschließlich manuell gestarteter Foto- und Gesichtsläufe haben zusammen bis zu 60 Sekunden zum Abschluss. Erst danach schließen die Datenbanken; ein überschrittenes Zeitlimit führt zu einem Fehlerstatus. Die systemd-Vorlage verwendet `TimeoutStopSec=75s`. Bestehende eigene Units sollten mindestens diesen Wert erhalten; anschließend `sudo systemctl daemon-reload` ausführen.
 
 Variablen fuer das Skript:
 
 | Variable | Standard |
 | --- | --- |
 | `BEARSTACK_REPO_DIR` | Verzeichnis des Skripts |
-| `BEARSTACK_UPDATE_BRANCH` | `main` |
-| `BEARSTACK_GIT_REMOTE` | `origin` |
 | `BEARSTACK_SERVICE` | `bearstack.service` |
 | `BEARSTACK_INSTALL_PATH` | `/usr/local/bin/bearstack` |
 

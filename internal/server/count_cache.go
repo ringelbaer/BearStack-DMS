@@ -184,15 +184,6 @@ func (s *Server) invalidateDocumentCountCache() {
 	s.invalidateDocumentStatisticsCache()
 }
 
-func (c *documentCountCache) countSize() int {
-	if c == nil {
-		return 0
-	}
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return len(c.counts)
-}
-
 func documentCountKey(filter document.ListFilter) documentCountCacheKey {
 	tags := normalizeTagValues(filter.Tags, "")
 	sort.Strings(tags)

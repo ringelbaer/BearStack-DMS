@@ -507,13 +507,13 @@ Danach im Browser pruefen, ob Dokumentliste, Downloads und Vorschaubilder funkti
 
 Vor jedem Update ein Backup erstellen.
 
-Das Update-Skript im Repo aktualisiert den Checkout, fuehrt `go test ./...` aus, baut ein temporaeres Artefakt, installiert es nach `/usr/local/bin/bearstack` und startet den systemd-Dienst neu. Es erstellt im aktuellen Stand kein Binary-Backup und fuehrt keinen automatischen Healthcheck oder Rollback aus. Vorher deshalb ein Datenbackup erstellen und danach den Dienststatus plus Smoke-Test manuell pruefen:
+`update.sh` aktualisiert den aktuellen Branch mit `git fetch --all --tags` und `git pull --ff-only`, führt `go test ./...` aus und baut ein temporäres Binary. Danach wartet es auf `systemctl stop` und prüft `ActiveState=inactive`, `Result=success` und `MainPID=0`. Bei einem Stop-Fehler, Timeout oder verbliebenen Hauptprozess bricht das Update vor der Installation ab. Nur nach erfolgreichem Stopp wird das Binary installiert und der Dienst gestartet. Den Dienststatus und Smoke-Test anschließend prüfen; automatisches Backup und Rollback sind nicht enthalten.
+
+BearStack beendet bei SIGTERM und SIGINT zunächst die Annahme neuer Hintergrundjobs und signalisiert laufenden Workern den Abbruch. HTTP-Anfragen und Hintergrundjobs einschließlich manuell gestarteter Foto- und Gesichtsläufe haben zusammen bis zu 60 Sekunden zum Abschluss. Erst danach schließen die Datenbanken; ein überschrittenes Zeitlimit führt zu einem Fehlerstatus. Die systemd-Vorlage verwendet `TimeoutStopSec=75s`. Bestehende eigene Units sollten mindestens diesen Wert erhalten; anschließend `sudo systemctl daemon-reload` ausführen.
 
 ```sh
 cd /opt/bearstack-src/BearStack
 ./update.sh
-# Alternativ den Alpha-Branch installieren:
-./update.sh --alpha
 curl -I -u admin:mein-passwort http://127.0.0.1:8080/
 ```
 
@@ -522,8 +522,6 @@ Wenn das Passwort nicht in der Shell-History landen soll, den Smoke-Test interak
 Anpassbare Variablen:
 
 - `BEARSTACK_REPO_DIR`: Checkout-Verzeichnis, standardmaessig Verzeichnis des Skripts.
-- `BEARSTACK_UPDATE_BRANCH`: Update-Branch, standardmaessig `main`.
-- `BEARSTACK_GIT_REMOTE`: Git-Remote, standardmaessig `origin`.
 - `BEARSTACK_SERVICE`: systemd-Dienst, standardmaessig `bearstack.service`.
 - `BEARSTACK_INSTALL_PATH`: Installationspfad, standardmaessig `/usr/local/bin/bearstack`.
 

@@ -316,15 +316,18 @@ func (l *Library) populateIndexedGPXTracks(ctx context.Context, abs string, opts
 }
 
 func (l *Library) collectGPXTracks(ctx context.Context, abs string, recursive, includeAdminOnly bool) ([]GPXTrack, error) {
-	var tracks []GPXTrack
+	var collected Listing
 	addTrack := func(path string, info os.FileInfo) error {
 		childRel, err := filepath.Rel(l.root, path)
 		if err != nil {
 			return nil
 		}
-		track, err := l.gpxFromPathInfo(filepath.ToSlash(childRel), info)
+		track, err := l.gpxFromPathInfo(ctx, filepath.ToSlash(childRel), info)
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		if err == nil && len(track.Points) > 0 {
-			tracks = append(tracks, track)
+			collected.addGPXTrack(track)
 		}
 		return nil
 	}
@@ -342,7 +345,7 @@ func (l *Library) collectGPXTracks(ctx context.Context, abs string, recursive, i
 			}
 			return addTrack(path, info)
 		})
-		return tracks, err
+		return collected.GPXTracks, err
 	}
 	entries, err := os.ReadDir(abs)
 	if err != nil {
@@ -363,7 +366,7 @@ func (l *Library) collectGPXTracks(ctx context.Context, abs string, recursive, i
 			return nil, err
 		}
 	}
-	return tracks, nil
+	return collected.GPXTracks, nil
 }
 
 func (l *Library) Resolve(rel string) (string, error) {

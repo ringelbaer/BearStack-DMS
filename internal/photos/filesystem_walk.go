@@ -52,18 +52,3 @@ func walkPhotoFilesystem(ctx context.Context, opts photoFilesystemWalkOptions, v
 		return visit(path, entry, kind)
 	})
 }
-
-func walkFilesystemFiles(ctx context.Context, root string, visit func(entry os.DirEntry) error) error {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	return filepath.WalkDir(root, func(_ string, entry os.DirEntry, walkErr error) error {
-		if walkErr != nil || entry.IsDir() {
-			return nil
-		}
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		return visit(entry)
-	})
-}

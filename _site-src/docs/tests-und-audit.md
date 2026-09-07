@@ -51,6 +51,8 @@ Für Änderungen an riskanten Bereichen gilt: fokussierte Regressionstests vor b
 
 Bei Versionsänderungen muss `info.version` in `openapi.yaml` mit der Root-Datei `VERSION` übereinstimmen. Der Go-Test `TestOpenAPISpecMatchesApplicationVersion` prüft diesen Abgleich für die eingebettete API-Beschreibung.
 
+Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle drei Suiten verwenden denselben Helfer für Start, Gesundheitsprüfung und geordnetes Beenden; temporäre Daten werden erst nach Prozessende entfernt. Die Testabhängigkeit ist in `package-lock.json` festgelegt und wird bei Bedarf mit `npm ci --ignore-scripts` installiert. Ein vorhandener `GOCACHE` wird weiterverwendet.
+
 ## Performance-Benchmarks
 
 BearStack enthält Benchmarks für Dokumentlisten und das Fotomodul. Sie messen Suche, Tag-Filter, Pagination, große Fotoindexe, GPX-Daten, Thumbnail-Status und Index-Neuaufbau.

@@ -157,7 +157,6 @@ func (l *Library) CachedThumbnailContext(ctx context.Context, rel string, size i
 	if !ready {
 		return "", false, nil
 	}
-	_ = l.markThumbnailGenerated(ctx, media, size)
 	return cachePath, true, nil
 }
 
@@ -187,12 +186,10 @@ func (l *Library) thumbnailForMedia(ctx context.Context, media Media, size int) 
 	media.SizeBytes = sourceInfo.Size()
 	cachePath := l.thumbnailCachePath(media.Path, size)
 	if readyPath, ready := l.thumbnailReadyCachePathForMedia(ctx, media, size); ready {
-		_ = l.markThumbnailGenerated(ctx, media, size)
 		return readyPath, nil
 	}
 	return l.thumbnail.flight(ctx, cachePath, func() (string, error) {
 		if readyPath, ready := l.thumbnailReadyCachePathForMedia(ctx, media, size); ready {
-			_ = l.markThumbnailGenerated(ctx, media, size)
 			return readyPath, nil
 		}
 		release, err := l.thumbnail.acquireSlot(ctx)
@@ -201,7 +198,6 @@ func (l *Library) thumbnailForMedia(ctx context.Context, media Media, size int) 
 		}
 		defer release()
 		if readyPath, ready := l.thumbnailReadyCachePathForMedia(ctx, media, size); ready {
-			_ = l.markThumbnailGenerated(ctx, media, size)
 			return readyPath, nil
 		}
 		if err := ctx.Err(); err != nil {
@@ -312,7 +308,6 @@ func (l *Library) ensureThumbnailsFromIndex(ctx context.Context, sizes []int, ba
 			continue
 		}
 		if l.thumbnailReadyForMedia(ctx, candidate.Media, candidate.Size) {
-			_ = l.markThumbnailGenerated(ctx, candidate.Media, candidate.Size)
 			continue
 		}
 		if _, err := l.thumbnailForMedia(ctx, candidate.Media, candidate.Size); err == nil {
@@ -417,8 +412,12 @@ func (l *Library) thumbnailReadyCachePathForMedia(ctx context.Context, media Med
 		if !thumbnailFileReadyForSource(cachePath, media.ModTime) {
 			continue
 		}
-		if !l.thumbnailIndexAllowsReady(ctx, media, size) {
+		ready, repair := l.index.thumbnailReadyState(ctx, media, size)
+		if !ready {
 			return "", false
+		}
+		if repair {
+			_ = l.markThumbnailGenerated(ctx, media, size)
 		}
 		return cachePath, true
 	}

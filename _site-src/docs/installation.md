@@ -75,7 +75,7 @@ make test-playwright
 
 `make test-go` führt `go test ./...` aus. `make test-js` nutzt `scripts/check-js.sh` und ruft `node --check` für alle Browser-Skripte unter `internal/server/static/*.js` auf. `make test-playwright` lädt den Test-Runner bei Bedarf über `npm exec`, erzeugt temporäre Daten, startet BearStack lokal mit eigener Testkonfiguration und prüft Dokumenten-Upload sowie Foto-Galerie.
 
-Die Make-Variablen `GO`, `NODE`, `NPM` und `PLAYWRIGHT_TEST_VERSION` können überschrieben werden, zum Beispiel:
+Die Make-Variablen `GO`, `NODE` und `NPM` können überschrieben werden, zum Beispiel:
 
 ```sh
 NODE=/opt/node/bin/node make test-js
@@ -292,19 +292,17 @@ Vor Updates ein Datenbackup erstellen. Für systemd-Installationen liegt ein Upd
 ```sh
 cd /opt/bearstack-src/BearStack
 ./update.sh
-# Alternativ den Alpha-Branch installieren:
-./update.sh --alpha
 ```
 
-`update.sh` führt im aktuellen Stand `git fetch --all --tags` aus, wechselt auf den Update-Branch (`main` als Standard, `Alpha` mit `--alpha` oder frei per `--branch NAME`), führt `git pull --ff-only origin BRANCH`, `go test ./...` und einen Build in ein temporäres Artefakt aus. Danach stoppt es den systemd-Dienst, installiert das neue Binary, startet den Dienst wieder und zeigt `systemctl status`. Ein Binary-Backup, automatischer `/healthz`-Check und Rollback sind im Skript nicht aktiv; den Smoke-Test deshalb nach dem Lauf manuell ausführen.
+`update.sh` aktualisiert den aktuellen Branch mit `git fetch --all --tags` und `git pull --ff-only`, führt `go test ./...` aus und baut ein temporäres Binary. Danach wartet es auf `systemctl stop` und prüft `ActiveState=inactive`, `Result=success` und `MainPID=0`. Bei einem Stop-Fehler, Timeout oder verbliebenen Hauptprozess bricht das Update vor der Installation ab. Nur nach erfolgreichem Stopp wird das Binary installiert und der Dienst gestartet. Den Dienststatus und Smoke-Test anschließend prüfen; automatisches Backup und Rollback sind nicht enthalten.
+
+BearStack beendet bei SIGTERM und SIGINT zunächst die Annahme neuer Hintergrundjobs und signalisiert laufenden Workern den Abbruch. HTTP-Anfragen und Hintergrundjobs einschließlich manuell gestarteter Foto- und Gesichtsläufe haben zusammen bis zu 60 Sekunden zum Abschluss. Erst danach schließen die Datenbanken; ein überschrittenes Zeitlimit führt zu einem Fehlerstatus. Die systemd-Vorlage verwendet `TimeoutStopSec=75s`. Bestehende eigene Units sollten mindestens diesen Wert erhalten; anschließend `sudo systemctl daemon-reload` ausführen.
 
 Variablen für das Skript:
 
 | Variable | Standard |
 | --- | --- |
 | `BEARSTACK_REPO_DIR` | Verzeichnis des Skripts |
-| `BEARSTACK_UPDATE_BRANCH` | `main` |
-| `BEARSTACK_GIT_REMOTE` | `origin` |
 | `BEARSTACK_SERVICE` | `bearstack.service` |
 | `BEARSTACK_INSTALL_PATH` | `/usr/local/bin/bearstack` |
 

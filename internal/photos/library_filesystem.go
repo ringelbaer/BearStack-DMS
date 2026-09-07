@@ -97,9 +97,12 @@ func (l *Library) listDirectory(ctx context.Context, rel, abs string, includeAdm
 			if err != nil {
 				continue
 			}
-			track, err := l.gpxFromPathInfo(childRel, info)
+			track, err := l.gpxFromPathInfo(ctx, childRel, info)
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			if err == nil && len(track.Points) > 0 {
-				listing.GPXTracks = append(listing.GPXTracks, track)
+				listing.addGPXTrack(track)
 			}
 		}
 	}
@@ -206,9 +209,12 @@ func (l *Library) listDirectoryFast(ctx context.Context, rel, abs string, opts L
 			if err != nil {
 				continue
 			}
-			track, err := l.gpxFromPathInfo(childRel, info)
+			track, err := l.gpxFromPathInfo(ctx, childRel, info)
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			if err == nil && len(track.Points) > 0 {
-				listing.GPXTracks = append(listing.GPXTracks, track)
+				listing.addGPXTrack(track)
 			}
 		}
 	}
@@ -394,9 +400,12 @@ func (l *Library) listRecursiveMedia(ctx context.Context, rel, abs string, inclu
 			if err != nil {
 				return nil
 			}
-			track, err := l.gpxFromPathInfo(childRel, info)
+			track, err := l.gpxFromPathInfo(ctx, childRel, info)
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			if err == nil && len(track.Points) > 0 {
-				listing.GPXTracks = append(listing.GPXTracks, track)
+				listing.addGPXTrack(track)
 			}
 			return nil
 		}

@@ -123,7 +123,7 @@ func (s *Server) startPhotoThumbnailJobForSizes(settings PhotoSettings, sizes []
 	if !ok {
 		return false
 	}
-	go func() {
+	if !s.background.start(func() {
 		defer release()
 		ctx := s.backgroundJobContext()
 		s.configurePhotoThumbnailer(settings)
@@ -140,7 +140,10 @@ func (s *Server) startPhotoThumbnailJobForSizes(settings PhotoSettings, sizes []
 		if s.log != nil {
 			s.log.Info("manual photo thumbnail job finished", "count", generated)
 		}
-	}()
+	}) {
+		release()
+		return false
+	}
 	return true
 }
 
@@ -175,7 +178,7 @@ func (s *Server) startPhotoIndexJob(settings PhotoSettings) bool {
 	if !ok {
 		return false
 	}
-	go func() {
+	if !s.background.start(func() {
 		defer release()
 		ctx := s.backgroundJobContext()
 		stats, err := s.photos.RebuildIndexWithOptions(ctx, photoIndexOptions(settings))
@@ -189,7 +192,10 @@ func (s *Server) startPhotoIndexJob(settings PhotoSettings) bool {
 		if s.log != nil {
 			s.log.Info("manual photo index job finished", "media", stats.Media, "folders", stats.Folders, "blogs", stats.Blogs)
 		}
-	}()
+	}) {
+		release()
+		return false
+	}
 	return true
 }
 

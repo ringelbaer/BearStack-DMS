@@ -3119,7 +3119,7 @@ func TestLibraryInvalidatesGPXCacheWhenFileChanges(t *testing.T) {
 	}
 	defer lib.Close()
 
-	initial, err := lib.gpxFromPath("album/route.gpx")
+	initial, err := lib.gpxFromPathInfo(context.Background(), "album/route.gpx", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3135,7 +3135,7 @@ func TestLibraryInvalidatesGPXCacheWhenFileChanges(t *testing.T) {
 </trkseg></trk></gpx>`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	updated, err := lib.gpxFromPath("album/route.gpx")
+	updated, err := lib.gpxFromPathInfo(context.Background(), "album/route.gpx", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

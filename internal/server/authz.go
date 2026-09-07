@@ -510,11 +510,6 @@ func (s *Server) withAuthWrite(ctx context.Context, change func() error) error {
 	return change()
 }
 
-func (s *Server) authenticateBasic(user, password string) (authPrincipal, bool) {
-	principal, ok, _ := s.authenticateBasicCheck(user, password)
-	return principal, ok
-}
-
 // authenticateBasicCheck returns a positive retry duration when the exact
 // entered username is currently blocked.
 func (s *Server) authenticateBasicCheck(user, password string) (authPrincipal, bool, time.Duration) {

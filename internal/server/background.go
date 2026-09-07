@@ -45,7 +45,7 @@ func (s *Server) setBackgroundJobContext(ctx context.Context) {
 		ctx = context.Background()
 	}
 	s.jobCtxMu.Lock()
-	s.jobCtx = ctx
+	s.jobCtx, s.jobCancel = context.WithCancel(ctx)
 	s.jobCtxMu.Unlock()
 }
 
@@ -53,24 +53,26 @@ func (s *Server) backgroundJobContext() context.Context {
 	if s == nil {
 		return context.Background()
 	}
-	s.jobCtxMu.RLock()
-	ctx := s.jobCtx
-	s.jobCtxMu.RUnlock()
-	if ctx == nil {
-		return context.Background()
+	s.jobCtxMu.Lock()
+	defer s.jobCtxMu.Unlock()
+	if s.jobCtx == nil {
+		s.jobCtx, s.jobCancel = context.WithCancel(context.Background())
 	}
-	return ctx
+	return s.jobCtx
 }
 
 func (w BackgroundWorkers) Start(ctx context.Context) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	tasks := &backgroundTasks{}
 	if w.server != nil {
 		w.server.setBackgroundJobContext(ctx)
+		ctx = w.server.backgroundJobContext()
+		tasks = &w.server.background
 	}
 	if w.ensureThumbnails != nil {
-		go func() {
+		tasks.start(func() {
 			timer := time.NewTimer(thumbnailStartupDelay)
 			defer timer.Stop()
 			select {
@@ -81,12 +83,12 @@ func (w BackgroundWorkers) Start(ctx context.Context) {
 			if err := w.ensureThumbnails(ctx); err != nil && w.log != nil {
 				w.log.Warn("thumbnail generation failed", "error", err)
 			}
-		}()
+		})
 	}
 
 	start := func(run func(context.Context)) {
 		if run != nil {
-			go run(ctx)
+			tasks.start(func() { run(ctx) })
 		}
 	}
 	start(w.runDocumentPostImport)

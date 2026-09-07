@@ -2,6 +2,7 @@
 package photos
 
 import (
+	"container/list"
 	"html/template"
 	"sync"
 	"time"
@@ -38,6 +39,9 @@ type Library struct {
 	thumbnail     thumbnailRuntime
 	gpxMu         sync.RWMutex
 	gpxCache      map[string]cachedGPXTrack
+	gpxLRU        list.List
+	gpxCacheBytes int64
+	gpxParseGate  chan struct{}
 	statsMu       sync.Mutex
 	statsCache    thumbnailCacheStatsEntry
 	statsFlight   *thumbnailCacheStatsFlight
@@ -88,24 +92,25 @@ type ListOptions struct {
 }
 
 type Listing struct {
-	Path        string
-	ParentPath  string
-	Breadcrumbs []Crumb
-	Folders     []Folder
-	Media       []Media
-	Blogs       []BlogPost
-	GPXTracks   []GPXTrack
-	RoutePoints []RoutePoint
-	Query       string
-	MediaType   string
-	GPSOnly     bool
-	Sort        string
-	Order       string
-	Page        int
-	PageSize    int
-	Total       int
-	HasPrev     bool
-	HasNext     bool
+	Path          string
+	ParentPath    string
+	Breadcrumbs   []Crumb
+	Folders       []Folder
+	Media         []Media
+	Blogs         []BlogPost
+	GPXTracks     []GPXTrack
+	gpxPointCount int
+	RoutePoints   []RoutePoint
+	Query         string
+	MediaType     string
+	GPSOnly       bool
+	Sort          string
+	Order         string
+	Page          int
+	PageSize      int
+	Total         int
+	HasPrev       bool
+	HasNext       bool
 }
 
 type Tag struct {

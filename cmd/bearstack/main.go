@@ -27,7 +27,9 @@ func main() {
 	}
 }
 
-func run(logger *slog.Logger) error {
+const shutdownTimeout = 60 * time.Second
+
+func run(logger *slog.Logger) (runErr error) {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
@@ -43,12 +45,48 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	defer repo.Close()
+	closeRepository := true
+	defer func() {
+		if closeRepository {
+			runErr = errors.Join(runErr, repo.Close())
+		}
+	}()
 
 	app, err := server.New(cfg, repo, store, logger)
 	if err != nil {
 		return err
 	}
+	appCtx, cancelApp := context.WithCancel(context.Background())
+	var httpServer, redirectServer *http.Server
+	var samePortMux *tlsHTTPMux
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		cancelApp()
+		app.StopBackgroundJobs()
+		var httpErr error
+		for _, srv := range []*http.Server{redirectServer, httpServer} {
+			if srv == nil {
+				continue
+			}
+			if err := srv.Shutdown(shutdownCtx); err != nil {
+				httpErr = errors.Join(httpErr, err)
+				_ = srv.Close()
+			}
+		}
+		if samePortMux != nil {
+			httpErr = errors.Join(httpErr, samePortMux.Close())
+		}
+		if httpErr != nil {
+			closeRepository = false
+			runErr = errors.Join(runErr, httpErr, app.WaitBackgroundJobs(shutdownCtx))
+			return
+		}
+		if err := app.Shutdown(shutdownCtx); err != nil {
+			closeRepository = false
+			runErr = errors.Join(runErr, err)
+		}
+	}()
 	tlsCertFile, tlsKeyFile := "", ""
 	if cfg.TLS.Enabled {
 		tlsCertFile, tlsKeyFile, err = tlsCertificateFiles(cfg)
@@ -57,10 +95,7 @@ func run(logger *slog.Logger) error {
 		}
 	}
 
-	appCtx, cancelApp := context.WithCancel(context.Background())
-	defer cancelApp()
-
-	httpServer := &http.Server{
+	httpServer = &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           app.Handler(),
 		TLSConfig:         serverTLSConfig(),
@@ -69,8 +104,6 @@ func run(logger *slog.Logger) error {
 		WriteTimeout:      10 * time.Minute,
 		IdleTimeout:       2 * time.Minute,
 	}
-	var redirectServer *http.Server
-	var samePortMux *tlsHTTPMux
 	if cfg.TLS.Enabled {
 		samePortMux, err = newTLSHTTPMux(cfg.Addr)
 		if err != nil {
@@ -114,6 +147,7 @@ func run(logger *slog.Logger) error {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(stop)
 
 	select {
 	case sig := <-stop:
@@ -126,22 +160,6 @@ func run(logger *slog.Logger) error {
 		return nil
 	}
 
-	cancelApp()
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	if redirectServer != nil {
-		if err := redirectServer.Shutdown(shutdownCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			return err
-		}
-	}
-	if err := httpServer.Shutdown(shutdownCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
-	if samePortMux != nil {
-		if err := samePortMux.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
-			return err
-		}
-	}
 	return nil
 }
 

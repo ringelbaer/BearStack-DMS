@@ -985,7 +985,7 @@
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>make<span class="w"> </span>test-playwright
 </span></code></pre></div>
 <p><code>make test-go</code> führt <code>go test ./...</code> aus. <code>make test-js</code> nutzt <code>scripts/check-js.sh</code> und ruft <code>node --check</code> für alle Browser-Skripte unter <code>internal/server/static/*.js</code> auf. <code>make test-playwright</code> lädt den Test-Runner bei Bedarf über <code>npm exec</code>, erzeugt temporäre Daten, startet BearStack lokal mit eigener Testkonfiguration und prüft Dokumenten-Upload sowie Foto-Galerie.</p>
-<p>Die Make-Variablen <code>GO</code>, <code>NODE</code>, <code>NPM</code> und <code>PLAYWRIGHT_TEST_VERSION</code> können überschrieben werden, zum Beispiel:</p>
+<p>Die Make-Variablen <code>GO</code>, <code>NODE</code> und <code>NPM</code> können überschrieben werden, zum Beispiel:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">NODE</span><span class="o">=</span>/opt/node/bin/node<span class="w"> </span>make<span class="w"> </span>test-js
 </span></code></pre></div>
 <p>Falls kein lokaler Chrome-Channel verfügbar ist, kann Playwright wie üblich einen Browser installieren:</p>
@@ -1207,10 +1207,9 @@
 <p>Vor Updates ein Datenbackup erstellen. Für systemd-Installationen liegt ein Update-Skript im Repo:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nb">cd</span><span class="w"> </span>/opt/bearstack-src/BearStack
 </span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>./update.sh
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="c1"># Alternativ den Alpha-Branch installieren:</span>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>./update.sh<span class="w"> </span>--alpha
 </span></code></pre></div>
-<p><code>update.sh</code> führt im aktuellen Stand <code>git fetch --all --tags</code> aus, wechselt auf den Update-Branch (<code>main</code> als Standard, <code>Alpha</code> mit <code>--alpha</code> oder frei per <code>--branch NAME</code>), führt <code>git pull --ff-only origin BRANCH</code>, <code>go test ./...</code> und einen Build in ein temporäres Artefakt aus. Danach stoppt es den systemd-Dienst, installiert das neue Binary, startet den Dienst wieder und zeigt <code>systemctl status</code>. Ein Binary-Backup, automatischer <code>/healthz</code>-Check und Rollback sind im Skript nicht aktiv; den Smoke-Test deshalb nach dem Lauf manuell ausführen.</p>
+<p><code>update.sh</code> aktualisiert den aktuellen Branch mit <code>git fetch --all --tags</code> und <code>git pull --ff-only</code>, führt <code>go test ./...</code> aus und baut ein temporäres Binary. Danach wartet es auf <code>systemctl stop</code> und prüft <code>ActiveState=inactive</code>, <code>Result=success</code> und <code>MainPID=0</code>. Bei einem Stop-Fehler, Timeout oder verbliebenen Hauptprozess bricht das Update vor der Installation ab. Nur nach erfolgreichem Stopp wird das Binary installiert und der Dienst gestartet. Den Dienststatus und Smoke-Test anschließend prüfen; automatisches Backup und Rollback sind nicht enthalten.</p>
+<p>BearStack beendet bei SIGTERM und SIGINT zunächst die Annahme neuer Hintergrundjobs und signalisiert laufenden Workern den Abbruch. HTTP-Anfragen und Hintergrundjobs einschließlich manuell gestarteter Foto- und Gesichtsläufe haben zusammen bis zu 60 Sekunden zum Abschluss. Erst danach schließen die Datenbanken; ein überschrittenes Zeitlimit führt zu einem Fehlerstatus. Die systemd-Vorlage verwendet <code>TimeoutStopSec=75s</code>. Bestehende eigene Units sollten mindestens diesen Wert erhalten; anschließend <code>sudo systemctl daemon-reload</code> ausführen.</p>
 <p>Variablen für das Skript:</p>
 <table>
 <thead>
@@ -1223,14 +1222,6 @@
 <tr>
 <td><code>BEARSTACK_REPO_DIR</code></td>
 <td>Verzeichnis des Skripts</td>
-</tr>
-<tr>
-<td><code>BEARSTACK_UPDATE_BRANCH</code></td>
-<td><code>main</code></td>
-</tr>
-<tr>
-<td><code>BEARSTACK_GIT_REMOTE</code></td>
-<td><code>origin</code></td>
 </tr>
 <tr>
 <td><code>BEARSTACK_SERVICE</code></td>
@@ -1327,7 +1318,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.25.2 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.25.3 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

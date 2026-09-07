@@ -1,13 +1,9 @@
+import { startBearStack, stopBearStack, freePort } from "./server-fixture.mjs";
 import { expect, test } from "@playwright/test";
-import { spawn } from "node:child_process";
 import { chmod, mkdir, mkdtemp, rm, utimes, writeFile } from "node:fs/promises";
-import net from "node:net";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const testDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(testDir, "../..");
 const password = "secret";
 const tinyPNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
@@ -19,10 +15,14 @@ let server;
 
 test.beforeAll(async () => {
   fixture = await createPhotoFixture();
-  server = await startBearStack(fixture);
+  server = await startBearStack(fixture, { username: "admin", password }, {
+    BEARSTACK_E2E_THUMBNAIL: fixture.thumbnailFixture,
+    PATH: `${fixture.toolsDir}${path.delimiter}${process.env.PATH || ""}`,
+  });
 });
 
-test.afterAll(async () => {
+test.afterAll(async ({}, testInfo) => {
+  testInfo.setTimeout(75_000);
   await stopBearStack(server);
   if (fixture?.root) {
     await rm(fixture.root, { recursive: true, force: true });
@@ -1049,70 +1049,6 @@ done
 cp "$BEARSTACK_E2E_THUMBNAIL" "$last"
 `);
   await chmod(target, 0o700);
-}
-
-async function startBearStack(currentFixture) {
-  const child = spawn("go", ["run", "./cmd/bearstack"], {
-    cwd: repoRoot,
-    env: {
-      ...process.env,
-      BEARSTACK_CONFIG: currentFixture.configPath,
-      BEARSTACK_E2E_THUMBNAIL: currentFixture.thumbnailFixture,
-      GOCACHE: process.env.GOCACHE || path.join(currentFixture.root, "go-cache"),
-      PATH: `${currentFixture.toolsDir}${path.delimiter}${process.env.PATH || ""}`,
-    },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  const state = { child, output: "" };
-  child.stdout.on("data", (chunk) => {
-    state.output += chunk.toString();
-  });
-  child.stderr.on("data", (chunk) => {
-    state.output += chunk.toString();
-  });
-  child.once("exit", (code, signal) => {
-    state.exited = { code, signal };
-  });
-  await waitForHealth(currentFixture.baseURL, state);
-  return state;
-}
-
-async function stopBearStack(state) {
-  if (!state?.child || state.exited) return;
-  state.child.kill("SIGTERM");
-  await Promise.race([
-    new Promise((resolve) => state.child.once("exit", resolve)),
-    new Promise((resolve) => setTimeout(resolve, 2_000)).then(() => state.child.kill("SIGKILL")),
-  ]);
-}
-
-async function waitForHealth(baseURL, state) {
-  const authorization = `Basic ${Buffer.from(`admin:${password}`).toString("base64")}`;
-  const deadline = Date.now() + 20_000;
-  while (Date.now() < deadline) {
-    if (state.exited) {
-      throw new Error(`BearStack exited before healthcheck: ${JSON.stringify(state.exited)}\n${state.output}`);
-    }
-    try {
-      const response = await fetch(`${baseURL}/healthz`, { headers: { authorization } });
-      if (response.ok) return;
-    } catch (_) {
-      // Server is still starting.
-    }
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-  throw new Error(`BearStack did not become healthy\n${state.output}`);
-}
-
-async function freePort() {
-  return await new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      server.close(() => resolve(address.port));
-    });
-  });
 }
 
 function multiPagePDF(labels) {
