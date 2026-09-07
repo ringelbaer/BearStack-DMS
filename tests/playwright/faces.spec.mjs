@@ -87,14 +87,88 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect.poll(async()=>{const r=await context.request.get(baseURL+"/settings/photos/faces?format=json");return (await r.json()).status.done;}).toBe(3);
   await page.goto(baseURL+"/photos/people");await expect(page.locator("a.person-card")).toHaveCount(2);
   await page.locator("a.person-card").filter({hasText:"2 Fotos"}).click();
+  for (const width of [320, 390, 640, 960, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const layout = await page.evaluate(() => {
+      const forms = [...document.querySelectorAll(".people-form")];
+      return {
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        fits: forms.every(form => {
+          const bounds = form.getBoundingClientRect();
+          const children = [...form.children];
+          return [...form.querySelectorAll("input, select, button")].every(control => {
+            const rect = control.getBoundingClientRect();
+            return rect.width >= 180 && rect.left >= bounds.left && rect.right <= bounds.right + 1 &&
+              (control.tagName !== "BUTTON" || control.scrollWidth <= control.clientWidth + 1);
+          }) && children.every((child, index) => {
+            if (window.innerWidth > 640 || !index) return true;
+            return child.getBoundingClientRect().top >= children[index - 1].getBoundingClientRect().bottom + 5;
+          });
+        }),
+      };
+    });
+    expect(layout.overflow, `page overflow at ${width}px`).toBeLessThanOrEqual(1);
+    expect(layout.fits, `person form controls at ${width}px`).toBe(true);
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const personURL = page.url();
+  const lightbox = page.locator("[data-photo-lightbox]");
+  const photoButtons = page.locator(".person-photo-button");
+  await expect(photoButtons).toHaveCount(2);
+  await photoButtons.first().locator("img").click();
+  await expect(lightbox).toBeVisible();
+  await expect.poll(() => lightbox.locator("[data-photo-image]").evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  await expect(page).toHaveURL(personURL);
+  const firstTitle = await lightbox.locator("[data-photo-title]").textContent();
+  await page.mouse.move(400, 8);
+  await lightbox.getByRole("button", { name: "Nächstes Foto", exact: true }).click();
+  await expect(lightbox.locator("[data-photo-title]")).not.toHaveText(firstTitle);
+  await page.keyboard.press("Escape");
+  await expect(lightbox).not.toBeVisible();
+  await photoButtons.first().focus();
+  await page.keyboard.press("Enter");
+  await expect(lightbox).toBeVisible();
+  await page.mouse.move(400, 8);
+  await lightbox.getByRole("button", { name: "Foto schließen", exact: true }).click();
+  await page.getByLabel("Auswählen", { exact: true }).first().check();
+  await expect(lightbox).not.toBeVisible();
+  await page.getByLabel("Auswählen", { exact: true }).first().uncheck();
   await page.getByLabel("Name",{exact:true}).fill("Jürgen");await page.getByRole("button",{name:"Benennen",exact:true}).click();await expect(page.getByRole("heading",{name:"Jürgen",exact:true})).toBeVisible();
   const response=await context.request.get(baseURL+"/photos/frame/items?q=person%3AJuergen");expect((await response.json()).total).toBe(2);
+  await page.goto(baseURL + "/photos/people");
+  await expect(page.locator("a.person-card")).toHaveCount(2);
+  await page.getByLabel("Nur bekannte Personen", { exact: true }).check();
+  await page.getByRole("button", { name: "Suchen", exact: true }).click();
+  await expect(page.getByLabel("Nur bekannte Personen", { exact: true })).toBeChecked();
+  await expect(page.locator("a.person-card")).toHaveCount(1);
+  await expect(page.locator("a.person-card")).toContainText("Jürgen");
+  const knownPage = await context.request.get(baseURL + "/photos/people?format=json&known=1");
+  expect((await knownPage.json()).known_only).toBe(true);
+  await page.locator("a.person-card").click();
+
   await page.getByLabel("Auswählen",{exact:true}).first().check();await page.getByLabel("Name der neuen Person").fill("Marie");await page.getByRole("button",{name:"Auswahl verschieben"}).click();
   await page.locator("a.person-card").filter({hasText:"Marie"}).click();
   await expect(page.getByLabel("Zusammenführen mit").locator("option").filter({hasText:"Jürgen"})).toHaveCount(1);
   await page.getByLabel("Zusammenführen mit").selectOption({label:await page.getByLabel("Zusammenführen mit").locator("option").filter({hasText:"Jürgen"}).textContent()});
   await page.getByRole("button",{name:"Gruppen zusammenführen"}).click();await expect(page.getByLabel("Auswählen",{exact:true})).toHaveCount(2);
-  await page.getByLabel("Auswählen",{exact:true}).first().check();await page.getByRole("button",{name:"Auswahl ignorieren"}).click();
+  await page.goto(baseURL + "/photos/people?q=J%C3%BCrgen&known=1");
+  await page.evaluate(() => { window.peoplePageMarker = "unchanged"; });
+  const ignore = page.locator("[data-ignore-face]").first();
+  const oldFace = await ignore.getAttribute("data-ignore-face");
+  await page.route("**/photos/faces/edit", route => route.fulfill({ status: 503, body: "Unavailable" }));
+  await ignore.click();
+  await expect(page.locator("[data-people-status]")).toContainText("HTTP 503");
+  await expect(ignore).toBeEnabled();
+  await expect(page.locator("a.person-card")).toContainText("2 Fotos");
+  await page.unroute("**/photos/faces/edit");
+  const ignoredResponse = page.waitForResponse(response => response.url().endsWith("/photos/faces/edit") && response.request().method() === "POST");
+  await ignore.click();
+  expect(await (await ignoredResponse).json()).toEqual({ ok: true });
+  await expect(page.locator("[data-people-status]")).toHaveText("Gesicht ignoriert.");
+  await expect(page.locator("[data-ignore-face]")).not.toHaveAttribute("data-ignore-face", oldFace);
+  await expect(page.getByLabel("Nur bekannte Personen", { exact: true })).toBeChecked();
+  await expect(page).toHaveURL(baseURL + "/photos/people?q=J%C3%BCrgen&known=1");
+  expect(await page.evaluate(() => window.peoplePageMarker)).toBe("unchanged");
   await expect(page.locator("a.person-card").filter({hasText:"Jürgen"})).toContainText("1 Foto");
   await page.screenshot({path:"/tmp/bearstack-people.png",fullPage:true});
   await page.setViewportSize({width:390,height:844});
@@ -102,6 +176,22 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.locator("a.person-card").filter({hasText:"Jürgen"}).click();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({path:"/tmp/bearstack-person-mobile.png",fullPage:true});
-  const reader=await browser.newContext({httpCredentials:{username:"reader",password:"secret"}});const denied=await reader.request.post(baseURL+"/photos/faces/edit",{form:{face_id:"1",action:"ignore"}});expect(denied.status()).toBe(403);await reader.close();
-  await page.goto(baseURL+"/settings/photos/faces");await page.getByRole("button",{name:"Pausieren",exact:true}).click();await expect(page.getByLabel("Gesichtserkennung aktivieren")).not.toBeChecked();await context.close();
+  const reader=await browser.newContext({httpCredentials:{username:"reader",password:"secret"}});const denied=await reader.request.post(baseURL+"/photos/faces/edit",{form:{face_id:"1",action:"ignore"}});expect(denied.status()).toBe(403);const readerPage = await reader.newPage();
+  await readerPage.goto(page.url());
+  await expect(readerPage.getByLabel("Auswählen", { exact: true })).toHaveCount(0);
+  await readerPage.locator(".person-photo-button span").first().click();
+  await expect(readerPage.locator("[data-photo-lightbox]")).toBeVisible();
+  await expect.poll(() => readerPage.locator("[data-photo-image]").evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  await readerPage.goto(baseURL + "/photos/people");
+  await expect(readerPage.locator("[data-ignore-face]")).toHaveCount(0);
+  await reader.close();
+  await page.goto(baseURL+"/settings/photos/faces");await page.getByRole("button",{name:"Pausieren",exact:true}).click();await expect(page.getByLabel("Gesichtserkennung aktivieren")).not.toBeChecked();
+  await page.goto(baseURL + "/photos/people?q=J%C3%BCrgen&known=1");
+  await page.evaluate(() => { window.peoplePageMarker = "last-face"; });
+  await page.locator("[data-ignore-face]").click();
+  await expect(page.locator("[data-people-status]")).toHaveText("Gesicht ignoriert.");
+  await expect(page.locator("a.person-card")).toHaveCount(0);
+  await expect(page.locator("[data-people-overview]")).toContainText("Keine weiteren Personen gefunden.");
+  expect(await page.evaluate(() => window.peoplePageMarker)).toBe("last-face");
+  await context.close();
 });

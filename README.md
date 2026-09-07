@@ -113,7 +113,7 @@ GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o bearstack ./cmd/b
 
 Im Systemmenue bilden Einstellungen (Zahnrad), Konto (Person) und Logout eine gemeinsame Icon-Zeile. API und Log stehen im Footer neben der Versionsnummer. Sichtbar sind jeweils die Aktionen, fuer die das Konto berechtigt ist.
 
-Unter **Einstellungen → Allgemein** (`/settings/general`) stehen die globalen Optionen fuer Anwendungsname, Design, Startseite, Tag-Darstellung und Favicon. **Einstellungen → Dokumente** (`/settings`) enthaelt Desktop-Vorschau, Dokument-Wolke, Tag-Ordner und Papierkorb-Aufbewahrung. Speichern aendert jeweils nur den geoeffneten Bereich; Favicon-Upload und Zuruecksetzen bleiben separate Aktionen.
+Die Einstellungen starten auf **Allgemein** (`/settings/general`). Unter **Einstellungen → Allgemein** (`/settings/general`) stehen die globalen Optionen fuer Anwendungsname, Design, Startseite, Tag-Darstellung und Favicon. **Einstellungen → Dokumente** (`/settings`) enthaelt Desktop-Vorschau, Dokument-Wolke, Tag-Ordner und Papierkorb-Aufbewahrung. Speichern aendert jeweils nur den geoeffneten Bereich; Favicon-Upload und Zuruecksetzen bleiben separate Aktionen.
 
 Die Einstellungsnavigation steht auf grossen Bildschirmen seitlich und bricht auf kleineren Bildschirmen in mehrere Zeilen um. Formulargruppen, lange Beschriftungen und Aktionen passen sich der verfuegbaren Breite an.
 
@@ -327,7 +327,7 @@ Ab 0.24.0 kann BearStack Gesichter automatisch erkennen und ähnliche Gesichter 
 Personen gruppieren. Die Funktion ist standardmäßig aus. Unter **Fotos → Personen**
 sehen Fotoleser die Gruppen; Foto-Verwalter (`photos.manage`) können Namen vergeben,
 Gruppen zusammenführen, ausgewählte Gesichter in andere oder neue Gruppen verschieben
-und Fehlfunde ignorieren. Die Fotoinfo verlinkt erkannte Personen. `person:Juergen`
+und Fehlfunde ignorieren. Mit „Nur bekannte Personen“ zeigt die Personenübersicht ausschließlich benannte Gruppen; Namenssuche und Seitenwechsel behalten den Filter bei. Fotoverwalter können in der Personenübersicht mit „×“ das angezeigte Gesicht ohne Seitenreload ignorieren. Weitere Gesichter der Gruppe bleiben erhalten; Vorschaubild und Fotoanzahl aktualisieren sich automatisch. Die Fotoinfo verlinkt erkannte Personen und trennt mehrere Namen mit „·“. Die Kopfaktionen der Personenseiten erscheinen als Navigationsbuttons. Auf Mobilgeräten stehen die Felder und Aktionen zum Benennen, Zusammenführen und Verschieben untereinander in voller Breite. Die Paginierung zeigt getrennte Navigationsbuttons und eine hervorgehobene aktuelle Seitenzahl. Auf einer Personenseite öffnen Gesichtsbild und Dateiname die Foto-Lightbox; dort stehen Navigation, Zoom und Bildinformationen zur Verfügung. `person:Juergen`
 und `face:"Marie Curie"` suchen sowohl XMP-Namen als auch benannte automatische Gruppen.
 
 Unter **Einstellungen → Gesichtserkennung** stehen Statuszahlen, Verarbeitung und

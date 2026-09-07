@@ -59,7 +59,7 @@ func TestFacesGroupSearchAndOverrides(t *testing.T) {
 	finishFace(t, l, 0)
 	finishFace(t, l, 0)
 	finishFace(t, l, 1)
-	p, err := l.People(ctx, 0, 1, "")
+	p, err := l.People(ctx, 0, 1, "", false)
 	if err != nil || len(p.People) != 2 {
 		t.Fatalf("groups=%+v err=%v", p, err)
 	}
@@ -146,7 +146,7 @@ func TestFacesXMPAndPrivateInvalidation(t *testing.T) {
 	if _, err := l.Face(ctx, a[0].ID); !errors.Is(err, ErrAdminOnly()) {
 		t.Fatalf("private thumbnail access: %v", err)
 	}
-	p, err := l.People(ctx, 0, 1, "")
+	p, err := l.People(ctx, 0, 1, "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -355,7 +355,7 @@ func TestFacesXMPNameChangeAndLateSeed(t *testing.T) {
 		t.Fatal(err)
 	}
 	finishFace(t, l, 0)
-	p, err := l.People(ctx, 0, 1, "")
+	p, err := l.People(ctx, 0, 1, "", false)
 	if err != nil || len(p.People) != 1 || p.People[0].Name != "First Name" {
 		t.Fatalf("late seed fragmented group %+v %v", p, err)
 	}
@@ -368,7 +368,7 @@ func TestFacesXMPNameChangeAndLateSeed(t *testing.T) {
 		t.Fatalf("obsolete XMP label retained %+v %v", f, err)
 	}
 	finishFace(t, l, 0)
-	p, err = l.People(ctx, 0, 1, "")
+	p, err = l.People(ctx, 0, 1, "", false)
 	if err != nil || len(p.People) != 1 || p.People[0].Name != "Updated Name" {
 		t.Fatalf("XMP rename fragmented group %+v %v", p, err)
 	}
@@ -477,7 +477,7 @@ func TestFacesConcurrentIndexAndAnalysis(t *testing.T) {
 	if err = <-indexed; err != nil {
 		t.Fatal(err)
 	}
-	page, err := l.People(ctx, id, 1, "")
+	page, err := l.People(ctx, id, 1, "", false)
 	if err != nil || len(page.Faces) != 4 || page.Name != "Manuell benannt" {
 		t.Fatalf("concurrent indexing changed assignments: %+v, %v", page, err)
 	}
@@ -521,8 +521,44 @@ func TestFacesConservativeMatching(t *testing.T) {
 			t.Fatalf("uncertain match assigned to existing person: %+v", faces[0])
 		}
 	}
-	page, err := l.People(ctx, 0, 1, "")
+	page, err := l.People(ctx, 0, 1, "", false)
 	if err != nil || len(page.People) != 4 {
 		t.Fatalf("groups must remain separate: %+v, %v", page, err)
+	}
+}
+
+func TestPeopleKnownFilterCombinesWithSearch(t *testing.T) {
+	ctx := context.Background()
+	l := faceLibrary(t, "a.jpg", "b.jpg")
+	finishFace(t, l, 0)
+	finishFace(t, l, 1)
+	faces, err := l.AutomaticFaces(ctx, "b.jpg")
+	if err != nil || len(faces) != 1 {
+		t.Fatalf("faces: %v %v", faces, err)
+	}
+	if err := l.RenamePerson(ctx, faces[0].PersonID, "Jürgen"); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		query string
+		known bool
+		count int
+	}{
+		{"", false, 2}, {"", true, 1}, {"Juergen", true, 1}, {"Unbenannt", true, 0}, {"Marie", true, 0},
+	} {
+		page, err := l.People(ctx, 0, 1, tc.query, tc.known)
+		if err != nil || len(page.People) != tc.count || page.KnownOnly != tc.known {
+			t.Fatalf("query=%q known=%v: %+v %v", tc.query, tc.known, page, err)
+		}
+		if tc.known && len(page.People) > 0 && page.People[0].Name != "Jürgen" {
+			t.Fatal("unnamed person in known results")
+		}
+	}
+	if err := l.RenamePerson(ctx, faces[0].PersonID, "  "); err != nil {
+		t.Fatal(err)
+	}
+	page, err := l.People(ctx, 0, 1, "", true)
+	if err != nil || len(page.People) != 0 {
+		t.Fatalf("cleared name remains known: %+v %v", page, err)
 	}
 }

@@ -12,7 +12,7 @@ func TestHomeURLForPermissionsUsesAnAccessibleLandingPage(t *testing.T) {
 	}{
 		{name: "configured document home", page: homePageFolders, auth: AuthPermissions{CanDocumentsRead: true}, want: "/folders"},
 		{name: "photos", page: homePageDocuments, auth: AuthPermissions{CanPhotosRead: true}, photosEnabled: true, want: "/photos"},
-		{name: "system settings", page: homePageDocuments, auth: AuthPermissions{CanSystemManage: true}, want: "/settings"},
+		{name: "system settings", page: homePageDocuments, auth: AuthPermissions{CanSystemManage: true}, want: "/settings/general"},
 		{name: "photo settings", page: homePageDocuments, auth: AuthPermissions{CanPhotosManage: true}, photosEnabled: true, want: "/settings/photos"},
 		{name: "users only", page: homePageDocuments, auth: AuthPermissions{CanSystemUsersManage: true}, want: "/settings/users"},
 		{name: "photo manager falls through to users when module disabled", page: homePageDocuments, auth: AuthPermissions{CanPhotosManage: true, CanSystemUsersManage: true}, want: "/settings/users"},
@@ -25,5 +25,12 @@ func TestHomeURLForPermissionsUsesAnAccessibleLandingPage(t *testing.T) {
 				t.Fatalf("home URL = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestSystemManagerAuthLandingOpensGeneralSettings(t *testing.T) {
+	principal := authPrincipal{capabilities: authCapSystemManage}
+	if got := defaultAuthLandingURL(principal); got != "/settings/general" {
+		t.Fatalf("auth landing URL = %q, want /settings/general", got)
 	}
 }

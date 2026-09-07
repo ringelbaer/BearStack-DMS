@@ -71,15 +71,19 @@ func (l *Library) AutomaticFaces(ctx context.Context, path string) ([]Recognized
 	return faces, nil
 }
 
-func (l *Library) People(ctx context.Context, id int64, page int, q string) (PeoplePage, error) {
-	out := PeoplePage{Query: q, PersonID: id, Page: max(1, page), People: []Person{}}
+func (l *Library) People(ctx context.Context, id int64, page int, q string, knownOnly bool) (PeoplePage, error) {
+	out := PeoplePage{Query: q, PersonID: id, Page: max(1, page), People: []Person{}, KnownOnly: knownOnly && id == 0}
 	out.HasPrev = out.Page > 1
 	if err := l.RefreshFaceVisibility(ctx); err != nil {
 		return out, err
 	}
 	if id == 0 {
 		pattern := searchtext.LikeContainsPattern(searchtext.GermanFold(q))
-		rows, err := l.index.db.QueryContext(ctx, `SELECT p.id,p.name,(SELECT count(DISTINCT path) FROM photo_faces WHERE person_id=p.id AND ignored=0),(SELECT min(id) FROM photo_faces WHERE person_id=p.id AND ignored=0) FROM photo_people p WHERE p.name_fold LIKE ? ESCAPE '\' AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=p.id AND ignored=0) ORDER BY p.name_fold,p.id LIMIT 61 OFFSET ?`, pattern, (out.Page-1)*60)
+		knownFilter := ""
+		if out.KnownOnly {
+			knownFilter = " AND p.name <> ''"
+		}
+		rows, err := l.index.db.QueryContext(ctx, `SELECT p.id,p.name,(SELECT count(DISTINCT path) FROM photo_faces WHERE person_id=p.id AND ignored=0),(SELECT min(id) FROM photo_faces WHERE person_id=p.id AND ignored=0) FROM photo_people p WHERE p.name_fold LIKE ? ESCAPE '\'`+knownFilter+` AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=p.id AND ignored=0) ORDER BY p.name_fold,p.id LIMIT 61 OFFSET ?`, pattern, (out.Page-1)*60)
 		if err != nil {
 			return out, err
 		}

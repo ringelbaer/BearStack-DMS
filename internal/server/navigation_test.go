@@ -31,9 +31,9 @@ func TestNavigationPlacesLinksAndActionsAccordingToPermissions(t *testing.T) {
 		{name: "user manager", auth: authPermissionsFromCapabilities(authCapSystemUsersManage, authPrincipal{Username: "manager"}), settings: "/settings/users", account: true},
 		{name: "photo manager precedes user settings", auth: authPermissionsFromCapabilities(authCapPhotosManage|authCapSystemUsersManage, authPrincipal{Username: "manager"}), photos: true, settings: "/settings/photos", account: true},
 		{name: "disabled photos fall back to user settings", auth: authPermissionsFromCapabilities(authCapPhotosManage|authCapSystemUsersManage, authPrincipal{Username: "manager"}), settings: "/settings/users", account: true},
-		{name: "system manager", auth: authPermissionsFromCapabilities(authCapSystemManage|authCapPhotosManage|authCapSystemUsersManage, authPrincipal{Username: "manager"}), photos: true, settings: "/settings", account: true},
-		{name: "admin", auth: authPermissionsFromCapabilities(authCapSystemManage|authCapDocumentsRead|authCapSystemAudit, authPrincipal{Username: "admin"}), settings: "/settings", api: true, audit: true, account: true},
-		{name: "local without account", auth: authPermissionsFromCapabilities(authCapSystemManage|authCapDocumentsRead|authCapSystemAudit, authPrincipal{}), settings: "/settings", api: true, audit: true},
+		{name: "system manager", auth: authPermissionsFromCapabilities(authCapSystemManage|authCapPhotosManage|authCapSystemUsersManage, authPrincipal{Username: "manager"}), photos: true, settings: "/settings/general", account: true},
+		{name: "admin", auth: authPermissionsFromCapabilities(authCapSystemManage|authCapDocumentsRead|authCapSystemAudit, authPrincipal{Username: "admin"}), settings: "/settings/general", api: true, audit: true, account: true},
+		{name: "local without account", auth: authPermissionsFromCapabilities(authCapSystemManage|authCapDocumentsRead|authCapSystemAudit, authPrincipal{}), settings: "/settings/general", api: true, audit: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var out bytes.Buffer

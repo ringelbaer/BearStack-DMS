@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.25.9
+  version: 0.27.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -610,6 +610,13 @@ paths:
         in: query
         schema:
           type: string
+      - name: known
+        in: query
+        description: Set to 1 to list only people with a non-empty name; combines with q and pagination.
+        schema:
+          type: string
+          enum: ['0', '1']
+          default: '0'
       - name: format
         in: query
         schema:
@@ -791,7 +798,7 @@ paths:
       operationId: editPhotoFaces
       summary: Move selected faces or ignore false detections
       description: Requires photos.manage. Form writes redirect to the corresponding
-        HTML page. Existing authentication, same-origin protection and audit logging
+        HTML page; requests with Accept application/json receive HTTP 200 with an ok flag. Existing authentication, same-origin protection and audit logging
         apply.
       parameters: []
       requestBody:
@@ -828,6 +835,17 @@ paths:
               - face_id
               - action
       responses:
+        '200':
+          description: Saved (Accept application/json).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+                    enum: [true]
         '303':
           description: Saved; Location points to the corresponding page.
           headers:
@@ -1812,6 +1830,9 @@ components:
     PhotoPeoplePage:
       type: object
       properties:
+        known_only:
+          type: boolean
+          description: Whether the overview is filtered to named people.
         query:
           type: string
         people:

@@ -96,6 +96,9 @@ func defaultAuthLandingURL(principal authPrincipal) string {
 	if principal.hasAll(authCapSystemUsersManage) {
 		return "/settings/users"
 	}
+	if principal.hasAll(authCapSystemManage) {
+		return "/settings/general"
+	}
 	if principal.hasAny(authCapSystemManage | authCapSystemAudit) {
 		return "/settings"
 	}

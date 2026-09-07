@@ -523,7 +523,8 @@
           var link = document.createElement("a");
           link.href = "/photos/people/" + encodeURIComponent(face.person_id);
           link.textContent = face.name || "Unbenannt";
-          people.appendChild(link); people.appendChild(document.createTextNode(" "));
+          if (people.childNodes.length) people.appendChild(document.createTextNode(" · "));
+          people.appendChild(link);
         });
         if (!people.childNodes.length) people.textContent = "–";
       }

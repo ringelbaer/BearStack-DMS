@@ -353,65 +353,7 @@
 </section>
 {{end}}
 
-  <dialog class="photo-lightbox" data-photo-lightbox data-photo-slideshow-seconds="{{.PhotoSettings.SlideshowSeconds}}" data-photo-preload-adjacent="{{if .PhotoSettings.PreloadAdjacent}}true{{else}}false{{end}}" tabindex="-1">
-  <header>
-    <strong data-photo-title>Foto</strong>
-    <div class="photo-lightbox-actions">
-      <button type="button" class="secondary-button" data-photo-slideshow>Start</button>
-      <button type="button" class="icon-button photo-info-toggle" data-photo-info-toggle aria-label="Informationen anzeigen" aria-pressed="false" title="Informationen">i</button>
-      <button type="button" class="icon-button photo-fullscreen-toggle" data-photo-fullscreen aria-label="Vollbild öffnen" aria-pressed="false" title="Vollbild öffnen">⛶</button>
-      <button type="button" class="icon-button" data-photo-prev aria-label="Vorheriges Foto">‹</button>
-      <button type="button" class="icon-button" data-photo-next aria-label="Nächstes Foto">›</button>
-      <button type="button" class="icon-button" data-photo-close aria-label="Foto schließen">×</button>
-    </div>
-  </header>
-  <div class="photo-lightbox-body">
-    <div class="photo-lightbox-stage">
-      <img alt="" data-photo-image hidden>
-      <video data-photo-video controls playsinline hidden></video>
-      <div class="photo-audio-stage" data-photo-audio-stage hidden>
-        <span class="photo-audio-note" aria-hidden="true">&#9835;</span>
-        <audio data-photo-audio controls preload="metadata"></audio>
-      </div>
-      <div class="photo-lightbox-zoom-controls" data-photo-zoom-controls hidden>
-        <output class="photo-lightbox-zoom-indicator" data-photo-zoom-indicator aria-live="polite">100%</output>
-        <div class="photo-lightbox-zoom-buttons" role="group" aria-label="Zoom-Steuerung">
-          <button type="button" data-photo-zoom-out aria-label="Verkleinern" title="Verkleinern">−</button>
-          <button type="button" data-photo-zoom-reset aria-label="Zoom zurücksetzen" title="Zoom zurücksetzen">100%</button>
-          <button type="button" data-photo-zoom-in aria-label="Vergrößern" title="Vergrößern">+</button>
-        </div>
-      </div>
-    </div>
-    <aside class="photo-info-panel">
-      <header class="photo-info-panel-head">
-        <strong>Info</strong>
-        <button type="button" class="icon-button" data-photo-info-close aria-label="Informationen schließen">×</button>
-      </header>
-      <a class="secondary-button photo-original-download" data-photo-download href="#" download>Original herunterladen</a>
-      <section class="photo-info-map-card" data-photo-info-map hidden>
-        <header>
-          <strong>Karte</strong>
-          <a data-photo-info-map-link href="#" target="_blank" rel="noreferrer">OpenStreetMap</a>
-        </header>
-        <div class="photo-info-map-canvas" data-photo-info-map-canvas aria-label="Aufnahmestandort">
-          <div class="photo-map-tile-layer" data-photo-info-map-tiles aria-hidden="true"></div>
-          <span class="photo-info-map-marker" data-photo-info-map-marker hidden aria-hidden="true"></span>
-        </div>
-      </section>
-      <dl>
-        <dt>Datei</dt><dd data-photo-info-name>-</dd>
-        <dt>Aufgenommen</dt><dd data-photo-info-date>-</dd>
-        <dt>Personen</dt><dd data-photo-info-people>–</dd>
-        <dt>Kamera</dt><dd data-photo-info-camera>-</dd>
-        <dt>Objektiv</dt><dd data-photo-info-lens>-</dd>
-        <dt>Bewertung</dt><dd data-photo-info-rating>-</dd>
-        <dt>Größe</dt><dd data-photo-info-size>-</dd>
-        <dt>Auflösung</dt><dd data-photo-info-resolution>-</dd>
-        <dt>GPS</dt><dd data-photo-info-coords>-</dd>
-      </dl>
-    </aside>
-  </div>
-</dialog>
+{{template "photo_lightbox" .}}
 
 </div>
 

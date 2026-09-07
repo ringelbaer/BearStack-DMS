@@ -27,14 +27,15 @@ type Person struct {
 	FaceID int64  `json:"face_id"`
 }
 type PeoplePage struct {
-	Query    string           `json:"query,omitempty"`
-	People   []Person         `json:"people"`
-	Faces    []RecognizedFace `json:"faces,omitempty"`
-	PersonID int64            `json:"person_id,omitempty"`
-	Name     string           `json:"name,omitempty"`
-	Page     int              `json:"page"`
-	HasNext  bool             `json:"has_next"`
-	HasPrev  bool             `json:"has_prev"`
+	KnownOnly bool             `json:"known_only"`
+	Query     string           `json:"query,omitempty"`
+	People    []Person         `json:"people"`
+	Faces     []RecognizedFace `json:"faces,omitempty"`
+	PersonID  int64            `json:"person_id,omitempty"`
+	Name      string           `json:"name,omitempty"`
+	Page      int              `json:"page"`
+	HasNext   bool             `json:"has_next"`
+	HasPrev   bool             `json:"has_prev"`
 }
 type FaceJob struct {
 	Path          string

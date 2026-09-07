@@ -480,7 +480,7 @@ func homeURLForPermissions(page string, auth AuthPermissions, photosEnabled bool
 		return "/photos"
 	}
 	if auth.CanSystemManage {
-		return "/settings"
+		return "/settings/general"
 	}
 	if photosEnabled && auth.CanPhotosManage {
 		return "/settings/photos"

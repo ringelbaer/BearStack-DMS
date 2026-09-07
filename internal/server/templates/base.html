@@ -56,9 +56,6 @@
         {{if .Auth.CanDocumentsRead}}
         <a href="/statistics" class="{{if eq .Active "statistics"}}active{{end}}">Statistik</a>
         {{end}}
-        {{if or $systemMenuPrimary $systemMenuSecondary}}
-        <span class="system-menu-separator" aria-hidden="true"></span>
-        {{end}}
         <a href="/help" class="{{if eq .Active "help"}}active{{end}}">Hilfe</a>
         {{if or .SettingsURL .Auth.Username}}
         <div class="system-menu-actions" role="group" aria-label="Einstellungen und Konto">

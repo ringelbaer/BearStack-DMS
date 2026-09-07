@@ -38,7 +38,7 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	page := boundedInt(r.URL.Query().Get("page"), 1, 1, 1000000)
-	result, err := s.photos.People(r.Context(), id, page, r.URL.Query().Get("q"))
+	result, err := s.photos.People(r.Context(), id, page, r.URL.Query().Get("q"), r.URL.Query().Get("known") == "1")
 	if err != nil {
 		s.faceError(w, r, err)
 		return
@@ -48,7 +48,15 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 		_ = writeJSON(w, http.StatusOK, result)
 		return
 	}
-	s.render(w, r, "people.html", PageData{Title: "Personen", Active: "photos", Assets: photoPageAssets(false), People: result, Notice: r.URL.Query().Get("notice")})
+	data := PageData{Title: "Personen", Active: "photos", Assets: photoPageAssets(false), People: result, Notice: r.URL.Query().Get("notice")}
+	if id != 0 {
+		data.PhotoSettings, err = s.photoSettings(r.Context())
+		if err != nil {
+			s.renderError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+	}
+	s.render(w, r, "people.html", data)
 }
 func (s *Server) handleFaceThumbnail(w http.ResponseWriter, r *http.Request) {
 	id, err := faceID(r.PathValue("id"))
@@ -133,6 +141,11 @@ func (s *Server) handleFacesEdit(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		s.faceError(w, r, err)
+		return
+	}
+	if wantsJSON(r) {
+		w.Header().Set("Cache-Control", "no-store")
+		_ = writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 		return
 	}
 	redirectWithNotice(w, r, "/photos/people", "Gesichtszuordnungen gespeichert.")

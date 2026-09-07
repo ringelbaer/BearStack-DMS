@@ -246,7 +246,7 @@ func (d PageData) SystemMenuSecondaryVisible() bool {
 
 func (d PageData) SettingsURL() string {
 	if d.Auth.CanSystemManage {
-		return "/settings"
+		return "/settings/general"
 	}
 	if d.PhotoModuleEnabled && d.Auth.CanPhotosManage {
 		return "/settings/photos"

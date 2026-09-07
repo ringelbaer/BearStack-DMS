@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -146,6 +147,14 @@ func TestFaceWorkerAndAPI(t *testing.T) {
 	w = faceRequest(s, "GET", "/photos/media/info?path=one.jpg", "reader", nil)
 	if w.Code != 200 || !strings.Contains(w.Body.String(), `"automatic_faces"`) || strings.Contains(w.Body.String(), "embedding") {
 		t.Fatalf("API %d %s", w.Code, w.Body.String())
+	}
+	w = faceRequest(s, "POST", "/photos/faces/edit", "manager", url.Values{"face_id": {strconv.FormatInt(f[0].ID, 10)}, "action": {"ignore"}})
+	if w.Code != http.StatusOK || w.Header().Get("Location") != "" || !strings.Contains(w.Body.String(), `"ok":true`) {
+		t.Fatalf("Ajax ignore %d %s", w.Code, w.Body.String())
+	}
+	remaining, err := s.photos.AutomaticFaces(context.Background(), "one.jpg")
+	if err != nil || len(remaining) != 0 {
+		t.Fatalf("ignored face still visible: %+v %v", remaining, err)
 	}
 	w = faceRequest(s, "POST", "/settings/photos/faces/clear", "manager", nil)
 	if w.Code != 400 {

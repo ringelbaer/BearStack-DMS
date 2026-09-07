@@ -1144,3 +1144,9 @@
     grid-column: 1 / -1;
   }
 }
+
+@media (max-width: 640px) {
+  .filters.people-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
