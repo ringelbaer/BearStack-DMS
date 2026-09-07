@@ -1,5 +1,6 @@
 package de.bearstack.people
 
+import android.graphics.BitmapFactory
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import de.bearstack.people.connection.*
@@ -36,6 +37,12 @@ class ServerIntegrationTest {
                 assertEquals("image/jpeg",it.header("Content-Type"));it.body!!.bytes()
             }}
             assertTrue(image.size>100)
+            val original=withContext(Dispatchers.IO) {client.newCall(Request.Builder().url(api.original(first.faces[0])).build()).execute().use {
+                assertEquals(200,it.code);assertEquals("image/jpeg",it.header("Content-Type"));it.body!!.bytes()
+            }}
+            val dimensions=BitmapFactory.Options().apply {inJustDecodeBounds=true}
+            BitmapFactory.decodeByteArray(original,0,original.size,dimensions)
+            assertEquals(32,dimensions.outWidth);assertEquals(32,dimensions.outHeight)
             repo.prepare(first,"detach",face=first.faces[0]);val detached=repo.resolve()!!
             assertEquals(1L,detached.faces);assertTrue(detached.newId>session.upper)
             val remaining=repo.next()!!;assertEquals(4L,remaining.count)

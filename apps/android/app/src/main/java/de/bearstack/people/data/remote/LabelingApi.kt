@@ -18,7 +18,7 @@ data class Session(val instance: String, val dataset: String, val account: Strin
     val scope: String get() = JSONObject().put("instance", instance).put("dataset", dataset).put("account", account).toString()
 }
 data class Person(val id: Long, val name: String, val revision: Long, val count: Long, val faceId: Long,
-    val faces: List<Long> = emptyList(), val offset: Int = 0)
+    val faces: List<Long> = emptyList(), val offset: Int = 0, val facePaths: Map<Long,String> = emptyMap())
 data class Candidates(val people: List<Person>, val next: Long, val hasNext: Boolean)
 data class Receipt(val operation: String, val action: String, val source: Long, val target: Long, val newId: Long,
     val faces: Long, val groups: Int, val at: Long)
@@ -36,6 +36,7 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
     private val base = Connections.address(address).resolve("api/photos/labeling/v1/")!!
     fun image(face: Long, large: Boolean = false): String = base.resolve("faces/$face/thumbnail")!!.newBuilder()
         .addQueryParameter("size", if (large) "640" else "160").build().toString()
+    fun original(face: Long): String = base.resolve("faces/$face/original")!!.toString()
     private suspend fun json(path: String, query: Map<String,String> = emptyMap(), body: String? = null): JSONObject {
         val url = base.resolve(path)!!.newBuilder().apply { query.forEach { (k,v) -> addQueryParameter(k,v) } }.build()
         val request = Request.Builder().url(url).apply { body?.let { post(it.toRequestBody("application/json".toMediaType())) } }.build()
@@ -84,10 +85,13 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
     override suspend fun action(id: Long, body: String): Receipt = receipt(json("people/$id/actions", body=body))
     override suspend fun receipt(operation: String, dataset: String): Receipt = receipt(json("actions/$operation",mapOf("dataset" to dataset)))
     private fun people(o: JSONObject): List<Person> = o.getJSONArray("people").let { a -> List(a.length()) { person(a.getJSONObject(it)) } }
-    private fun person(o: JSONObject): Person {
+    internal fun person(o: JSONObject): Person {
         val faces = o.optJSONArray("faces")
         return Person(o.getLong("id"),o.getString("name"),o.getLong("revision"),o.getLong("count"),o.getLong("face_id"),
-            if(faces == null) emptyList() else List(faces.length()) { faces.getJSONObject(it).getLong("id") },o.optInt("offset"))
+            if(faces == null) emptyList() else List(faces.length()) { faces.getJSONObject(it).getLong("id") },o.optInt("offset"),
+            if(faces == null) emptyMap() else (0 until faces.length()).associate {
+                val face=faces.getJSONObject(it);face.getLong("id") to face.optString("display_path", "")
+            })
     }
     private fun receipt(o: JSONObject) = Receipt(o.getString("operation_id"),o.getString("action"),o.getLong("source_id"),
         o.getLong("target_id"),o.getLong("new_id"),o.getLong("faces"),o.getInt("groups"),o.getLong("at"))

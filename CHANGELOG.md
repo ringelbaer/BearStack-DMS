@@ -4,10 +4,68 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### Android 0.3.0
+
+- Ignorieren zeigt sofort die nächste Gruppe. „Rückgängig“ erscheint ausschließlich als klickbare Meldung am oberen Bildschirmrand; die Rücknahmefrist sperrt die Bearbeitung nicht mehr.
+- Mehrere ignorierte Gruppen erhalten jeweils fünf Sekunden Rücknahmezeit. Die Meldung nimmt die letzte noch rücknehmbare Gruppe zurück. Verzögerte Schreibanfragen behalten ihre ursprüngliche Quellgruppe und werden mit anderen Aktionen serialisiert.
+- Aktionsquittungen im Hintergrund verändern die aktuelle Karte nicht. Statistik zählt weiterhin erst bestätigte Serveraktionen. Noch nicht gesendete Gruppen kehren beim Hintergrundwechsel, Profilwechsel oder Neustart in die Warteschlange zurück.
+- Room-Schema 3 ergänzt die dauerhafte Vormerkung vorläufig ignorierter Gruppen mit kompatibler Migration. Android-MINOR auf 0.3.0 (`versionCode` 6); Serverversion und API bleiben unverändert.
+
+### Android 0.2.0
+
+- Rechtswischen und die Menüaktion „Letztes Überspringen zurücknehmen“ holen zuletzt übersprungene Gruppen zurück, auch mehrfach und nach Durchgangsende. Aktuelle Gruppen und Bildseiten bleiben zur weiteren Bearbeitung erhalten.
+- Gruppen werden vor dem Zurückholen erneut geprüft. Netzwerkfehler erhalten die aktuelle Ansicht und Rücknahmemöglichkeit; inzwischen bearbeitete oder entfernte Gruppen werden ausgelassen. Offene Serveraktionen sperren die Rücknahme.
+- Rücknahmen korrigieren die Überspringen-Statistik atomar mit der Warteschlange. Verlauf und vorgemerkte Bildseiten werden pro Instanz, Datenbestand und Konto gespeichert. Ein neuer Durchgang leert den Rücknahmeverlauf.
+- Kompatible Room-Migration von Schema 1 auf 2 erhält Warteschlange, Statistik und offene Aktionen. Android-MINOR auf 0.2.0 (`versionCode` 5); BearStack-Serverversion und API bleiben unverändert.
+
+### Android 0.1.3
+
+- Wischen nach links und oben funktioniert auf der gesamten Inhaltsfläche der Personenbearbeitung, einschließlich Hintergrund und Abständen. Die Wischerkennung liegt zentral außerhalb des Grids; eine Geste löst höchstens eine Aktion aus.
+- Bei überlangem Inhalt scrollt Hochwischen zunächst bis zum Ende. Erst ein weiterer Wischer ignoriert die Gruppe. Haltevorschau, Namensdialog, Menüs, Statistik und laufende Aktionen sperren Bearbeitungsgesten.
+- Android-PATCH auf 0.1.3 (`versionCode` 4); Serverversion und API bleiben für diese UI-Korrektur unverändert.
+
+### Android 0.1.1
+
+- Verbindungsfehler nennen jetzt Phase und Ursache (DNS, Erreichbarkeit, Timeout, Netzwerkberechtigung oder Zertifikat), statt beim ersten Verbindungsaufbau eine offene Aktion anzudeuten. Debug-Logs enthalten nur Diagnosecodes und keine Zugangsdaten, URLs oder Exception-Texte.
+- Gemeinsame AndroidX-Future-Version für App und instrumentierte Tests festgelegt, damit die Tests auch mit AGP 9.4 ohne Versionskonflikt auflösen.
+- Die Android-Version steigt unabhängig auf 0.1.1 (`versionCode` 2); Serverversion und API bleiben unverändert.
+
 ### Dokumentation
 
 - OpenAPI-Versionsangabe auf den bestehenden Release 0.24.2 korrigiert und den erforderlichen Abgleich mit `VERSION` dokumentiert.
 - Schrittweise Einrichtung der Gesichtserkennung ohne Compose ergänzt: Python-Umgebung, Modellinstallation, Token, Dienstprüfung und native BearStack-Konfiguration.
+
+## 0.34.0 - 2026-09-07
+
+### Hinzugefügt
+
+- Personenbenennungs-API liefert für die vier Gesichter einer Detailseite `display_path`: vollständiger Galeriepfad mit allen Ordnerebenen und Dateiname. Ordnernamen und Datumspräfixe folgen den bestehenden Galerie-Breadcrumb-Regeln. Die Pfade werden ohne zusätzliche Datei- oder Datenbankabfragen aufbereitet; absolute Host-Pfade werden nicht ausgegeben.
+- Android 0.4.0 (`versionCode` 7) zeigt diesen Pfad unter jedem Gesichtsausschnitt und unter der Originalfoto-Vorschau. Lange Pfade werden umgebrochen und nicht mit Auslassungszeichen gekürzt. Die Anzeige benötigt BearStack 0.34.0.
+
+- Einstellbare Referenzanzahl pro Person (1–100, Standard 30) unter Einstellungen → Gesichtserkennung. Vorhandene Gesichter werden ohne erneute Bildanalyse vor der nächsten Analyse als Referenzen ausgewählt; manuelle Zuordnungen bleiben bevorzugt.
+- Foto-Schema 20 speichert Referenzlimit und Fortschritt des stückweisen Referenz-Neuaufbaus. Abbruch und Neustart setzen die Aktualisierung fort. Die Kandidatensuche berücksichtigt das Referenzlimit, damit viele Referenzen derselben Person den Abstand zur zweitbesten Person nicht verdecken.
+
+### Behoben
+
+- Die Auswahlfelder einzelner Gesichter erhalten wieder einen zugänglichen Namen für Screenreader und Tastaturtests.
+
+## 0.33.0 - 2026-09-07
+
+### Hinzugefügt
+
+- Die Personenbenennungs-API liefert über `GET /api/photos/labeling/v1/faces/{id}/original` das unveränderte Quellfoto eines Gesichts, mit Personenverwaltungsrechten, Ausschluss geschützter und ignorierter Gesichter, `no-store` und Unterstützung für Bereichsanfragen. Vorhandene Ausschnitt-Endpunkte bleiben kompatibel.
+
+### Android 0.1.2
+
+- Halten eines Gesichtsausschnitts zeigt das vollständige Originalfoto im ursprünglichen Seitenverhältnis. Loslassen oder Berührungsabbruch schließt die Vorschau. TalkBack bietet „Originalfoto anzeigen“ an.
+- Originalfotos werden erst beim Halten geladen; Ladeanzeige und Fehlermeldung geben Rückmeldung. Das Grid verwendet weiterhin kleine Gesichtsausschnitte.
+- `versionCode` steigt auf 3; die Originalfoto-Vorschau benötigt BearStack 0.33.0.
+
+## 0.32.2 - 2026-09-07
+
+### Behoben
+
+- Die Option „BearStack PDF-Vorschau verwenden“ zeigt Checkbox und Beschriftung in Konto- und Benutzerverwaltung nebeneinander. Der Text verwendet normale Schreibweise und bricht auf schmalen Bildschirmen neben der Checkbox um.
 
 ## 0.32.1 - 2026-09-07
 

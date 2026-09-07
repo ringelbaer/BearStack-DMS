@@ -1,12 +1,17 @@
 package de.bearstack.people
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
+import de.bearstack.people.ui.PersonSwipeArea
 import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.text.TextLayoutResult
 import de.bearstack.people.data.remote.Person
 import de.bearstack.people.people.SwipeAction
 import de.bearstack.people.ui.FaceGrid
@@ -16,11 +21,39 @@ import org.junit.Test
 
 class FaceGridTest {
     @get:Rule val compose=createComposeRule()
+    @Test fun fullGalleryPathWrapsBelowTheImageAtLargeFontSize() {
+        val path="Fotos / 11.05.2026 · Urlaub / Ein sehr langer Unterordner / IMG_1234.jpg"
+        compose.setContent {MaterialTheme {
+            val density=LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density,2f)) {
+                FaceGrid(Person(1,"",1,1,10,listOf(10),facePaths=mapOf(10L to path)),true,null,{_,_->null},{},{},{})
+            }
+        }}
+        val caption=compose.onNodeWithText(path).assertIsDisplayed()
+        caption.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { action ->
+            val results=mutableListOf<TextLayoutResult>();assertTrue(action(results))
+            assertFalse(results.single().hasVisualOverflow);assertTrue(results.single().lineCount>1)
+        }
+        assertTrue(caption.fetchSemanticsNode().boundsInRoot.top >= compose.onNodeWithTag("face-10").fetchSemanticsNode().boundsInRoot.bottom)
+    }
+    @Test fun accessibleOriginalPreviewTargetsTheSelectedFaceWithoutEditing() {
+        var preview: Long?=null
+        var edits=0
+        compose.setContent { MaterialTheme {
+            FaceGrid(Person(1,"",1,4,10,listOf(10,11,12,13)),true,null,{_,_->null},
+                {edits++},{},{preview=it})
+        } }
+        val actions = compose.onNodeWithTag("face-12").fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        compose.runOnIdle {
+            assertTrue(actions.single { it.label=="Originalfoto anzeigen" }.action())
+        }
+        compose.runOnIdle {assertEquals(12L,preview);assertEquals(0,edits)}
+    }
     @Test fun oneFaceHasNoDetachAndLargeTextRetainsAccessibleActions() {
         compose.setContent { MaterialTheme {
             val density=LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density,2f)) {
-                FaceGrid(Person(1,"",1,1,10,listOf(10)),true,null,{_,_->null},{},{},{},{})
+                FaceGrid(Person(1,"",1,1,10,listOf(10)),true,null,{_,_->null},{},{},{})
             }
         } }
         compose.onNodeWithContentDescription("Gesicht 1").assertIsDisplayed()
@@ -28,7 +61,7 @@ class FaceGridTest {
     }
     @Test fun gridNeverShowsMoreThanTheCurrentFourFacePage() {
         var count by mutableLongStateOf(4)
-        compose.setContent { MaterialTheme { FaceGrid(Person(1,"",1,count,10,listOf(10,11,12,13)),true,null,{_,_->null},{},{},{},{}) } }
+        compose.setContent { MaterialTheme { FaceGrid(Person(1,"",1,count,10,listOf(10,11,12,13)),true,null,{_,_->null},{},{},{}) } }
         for(total in listOf(4L,5L,600L)) {
             compose.runOnIdle {count=total}
             compose.onAllNodesWithContentDescription("Dieses Gesicht einzeln benennen").assertCountEquals(4)
@@ -36,9 +69,11 @@ class FaceGridTest {
         }
     }
     @Test fun holdingReleaseAndCancelDoNotSwipeOrDetach() {
-        var held: Long?=null;var swipes=0;var detaches=0
-        compose.setContent { MaterialTheme { FaceGrid(Person(1,"",1,4,10,listOf(10,11,12,13)),true,null,{_,_->null},
-            {detaches++},{held=it},{},{swipes++}) } }
+        var held by mutableStateOf<Long?>(null);var swipes=0;var detaches=0
+        compose.setContent { MaterialTheme { PersonSwipeArea(1,held==null,{swipes++},Modifier.fillMaxSize()) {
+            FaceGrid(Person(1,"",1,4,10,listOf(10,11,12,13)),held==null,null,{_,_->null},
+                {detaches++},{held=it},{})
+        } } }
         compose.onNodeWithTag("face-10").performTouchInput { down(center) }
         compose.mainClock.advanceTimeBy(800)
         compose.runOnIdle {assertEquals(10L,held)}
@@ -51,8 +86,9 @@ class FaceGridTest {
     }
     @Test fun explicitDetachAndDirectionalSwipesAreExclusive() {
         var detached: Long?=null;val swipes=mutableListOf<SwipeAction>()
-        compose.setContent { MaterialTheme { FaceGrid(Person(1,"",1,4,10,listOf(10,11,12,13)),true,null,{_,_->null},
-            {detached=it},{},{},{swipes+=it}) } }
+        compose.setContent { MaterialTheme { PersonSwipeArea(1,true,{swipes+=it},Modifier.fillMaxSize()) {
+            FaceGrid(Person(1,"",1,4,10,listOf(10,11,12,13)),true,null,{_,_->null},{detached=it},{},{})
+        } } }
         compose.onAllNodesWithContentDescription("Dieses Gesicht einzeln benennen")[0].performClick()
         compose.runOnIdle {assertEquals(10L,detached);assertTrue(swipes.isEmpty())}
         compose.onNodeWithTag("face-grid").performTouchInput { swipeLeft() }

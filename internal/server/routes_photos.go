@@ -9,6 +9,7 @@ var photoRouteSpecs = []routeSpec{
 	{pattern: "POST /api/photos/labeling/v1/people/{id}/actions", capabilities: authCapPhotosManage, handler: (*Server).handleLabeling},
 	{pattern: "GET /api/photos/labeling/v1/actions/{operation}", capabilities: authCapPhotosManage, handler: (*Server).handleLabeling},
 	{pattern: "GET /api/photos/labeling/v1/faces/{id}/thumbnail", capabilities: authCapPhotosManage, handler: (*Server).handleLabeling},
+	{pattern: "GET /api/photos/labeling/v1/faces/{id}/original", capabilities: authCapPhotosManage, handler: (*Server).handleLabeling},
 
 	{pattern: "GET /photos/people", capabilities: authCapPhotosRead, handler: (*Server).handlePeople},
 	{pattern: "GET /photos/people/{id}", capabilities: authCapPhotosRead, handler: (*Server).handlePeople},

@@ -15,6 +15,7 @@ import (
 const faceSettingsKey = "photo_face_settings"
 
 type FaceSettings struct {
+	ReferenceLimit  int  `json:"reference_limit"`
 	Enabled         bool `json:"enabled"`
 	BatchSize       int  `json:"batch_size"`
 	DelayMillis     int  `json:"delay_millis"`
@@ -52,9 +53,17 @@ func (s *Server) faceSettings(ctx context.Context) (FaceSettings, error) {
 	v.BatchSize = max(1, min(1000, v.BatchSize))
 	v.DelayMillis = max(100, min(60000, v.DelayMillis))
 	v.IntervalMinutes = max(1, min(1440, v.IntervalMinutes))
-	return v, nil
+	v.ReferenceLimit, err = s.photos.FaceReferenceLimit(ctx)
+	return v, err
 }
 func (s *Server) saveFaceSettings(ctx context.Context, v FaceSettings) error {
+	// Reference limits are authoritative in the photo DB. Zero preserves the
+	// current value for existing internal callers and older forms.
+	if v.ReferenceLimit != 0 {
+		if err := s.photos.SetFaceReferenceLimit(ctx, v.ReferenceLimit); err != nil {
+			return err
+		}
+	}
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err

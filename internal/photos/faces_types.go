@@ -59,12 +59,13 @@ type FaceStatus struct {
 	People int            `json:"people"`
 }
 type faceRuntime struct {
-	mu       sync.Mutex
-	graph    *hnsw.Graph[int64]
-	revision int64
-	people   map[int64]int64
-	nodes    map[int64][]int64
-	model    string
+	referenceLimit int
+	mu             sync.Mutex
+	graph          *hnsw.Graph[int64]
+	revision       int64
+	people         map[int64]int64
+	nodes          map[int64][]int64
+	model          string
 }
 
 func (p *PeoplePage) setTotal(total int) {

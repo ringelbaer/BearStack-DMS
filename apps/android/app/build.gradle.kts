@@ -8,11 +8,12 @@ val signingPath = providers.environmentVariable("BEARSTACK_ANDROID_KEYSTORE").or
 android {
     namespace = "de.bearstack.people"
     compileSdk = 36
+    sourceSets["androidTest"].assets.srcDir("schemas")
     defaultConfig {
         applicationId = "de.bearstack.people"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
+        versionCode = 7
         versionName = rootProject.file("VERSION").readText().trim()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -37,6 +38,9 @@ android {
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 kapt { arguments { arg("room.schemaLocation", "$projectDir/schemas") } }
 dependencies {
+    // AGP also constrains instrumented tests to app runtime versions. Keep the
+    // shared AndroidX future library compatible with AndroidX Test 1.3.
+    constraints { implementation("androidx.concurrent:concurrent-futures:1.2.0") }
     implementation(platform("androidx.compose:compose-bom:2026.06.00"))
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.compose.material3:material3")

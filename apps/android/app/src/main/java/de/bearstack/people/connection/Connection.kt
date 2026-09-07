@@ -83,6 +83,8 @@ object Connections {
                     MessageDigest.getInstance("SHA-256").digest(it.encoded).joinToString(":") { b -> "%02X".format(b) },
                     it.subjectX500Principal.name, it.notAfter.toString())
             }
+        } catch (e: java.io.IOException) {
+            throw ConnectionAttemptException(ConnectionStage.CERTIFICATE_CHECK,e)
         } finally { client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown() }
     }
     fun client(profile: Profile): OkHttpClient {

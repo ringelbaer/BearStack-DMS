@@ -53,7 +53,9 @@
               <label><span>Bilder pro Lauf</span><input type="number" name="batch_size" min="1" max="1000" value="{{.FaceSettings.Settings.BatchSize}}"></label>
               <label><span>Pause zwischen Bildern (ms)</span><input type="number" name="delay_millis" min="100" max="60000" value="{{.FaceSettings.Settings.DelayMillis}}"></label>
               <label><span>Wartezeit zwischen Läufen (Minuten)</span><input type="number" name="interval_minutes" min="1" max="1440" value="{{.FaceSettings.Settings.IntervalMinutes}}"></label>
+              <label><span>Referenzen pro Person</span><input type="number" name="reference_limit" min="1" max="100" value="{{.FaceSettings.Settings.ReferenceLimit}}" aria-describedby="face-reference-help"></label>
             </div>
+            <p class="muted" id="face-reference-help">Standard: 30. Mehr Referenzen berücksichtigen mehr zugeordnete Gesichter und benötigen mehr Arbeitsspeicher. Änderungen werden vor der nächsten Analyse aus vorhandenen Gesichtsdaten übernommen.</p>
           </fieldset>
         </div>
         <div class="settings-actions"><button type="submit">Speichern</button></div>

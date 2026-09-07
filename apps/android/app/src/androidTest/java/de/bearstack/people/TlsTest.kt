@@ -41,7 +41,7 @@ class TlsTest {
             server.start()
             try {
                 server.enqueue(MockResponse().setResponseCode(401))
-                try { Connections.inspect(server.url("/").toString());fail("invalid certificate offered") } catch(_:javax.net.ssl.SSLException) {}
+                try { Connections.inspect(server.url("/").toString());fail("invalid certificate offered") } catch(e:ConnectionAttemptException) { assertTrue(e.cause is javax.net.ssl.SSLException) }
                 assertEquals(0,server.requestCount)
             } finally {server.close()}
         }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -25,7 +26,7 @@ func (s *Server) labelError(w http.ResponseWriter, r *http.Request, err error) {
 		status, code = 409, "conflict"
 	case errors.Is(err, photos.ErrLabelInvalid):
 		status, code = 400, "invalid"
-	case errors.Is(err, sql.ErrNoRows):
+	case errors.Is(err, sql.ErrNoRows), errors.Is(err, os.ErrNotExist):
 		status, code = 404, "not_found"
 	case errors.Is(err, photos.ErrAdminOnly()):
 		status, code = 403, "forbidden"
@@ -131,15 +132,7 @@ func (s *Server) handleLabeling(w http.ResponseWriter, r *http.Request) {
 		_ = writeJSON(w, 200, out)
 		return
 	}
-	if strings.HasSuffix(r.URL.Path, "/thumbnail") {
-		size, err := labelInt(r, "size", 640)
-		if err != nil {
-			s.labelError(w, r, err)
-			return
-		}
-		if size == 0 {
-			size = 160
-		}
+	if strings.HasSuffix(r.URL.Path, "/thumbnail") || strings.HasSuffix(r.URL.Path, "/original") {
 		face, err := s.photos.Face(r.Context(), id)
 		if err == nil && face.Ignored {
 			err = sql.ErrNoRows
@@ -147,6 +140,18 @@ func (s *Server) handleLabeling(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			s.labelError(w, r, err)
 			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/original") {
+			s.servePhotoMedia(w, r, face.Path, photoMediaCacheNoStore)
+			return
+		}
+		size, err := labelInt(r, "size", 640)
+		if err != nil {
+			s.labelError(w, r, err)
+			return
+		}
+		if size == 0 {
+			size = 160
 		}
 		if size != 160 && size != 640 {
 			s.labelError(w, r, photos.ErrLabelInvalid)

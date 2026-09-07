@@ -543,6 +543,17 @@
   </a>
   
 </li>
+
+        <li class="md-nav__item">
+  <a href="#verbindungsfehler-eingrenzen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Verbindungsfehler eingrenzen
+      </span>
+    </span>
+  </a>
+
+</li>
       
         <li class="md-nav__item">
   <a href="#warteschlange-und-statistik" class="md-nav__link">
@@ -791,6 +802,17 @@
   </a>
   
 </li>
+
+        <li class="md-nav__item">
+  <a href="#verbindungsfehler-eingrenzen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Verbindungsfehler eingrenzen
+      </span>
+    </span>
+  </a>
+
+</li>
       
         <li class="md-nav__item">
   <a href="#warteschlange-und-statistik" class="md-nav__link">
@@ -866,7 +888,7 @@
 
 
 <h1 id="bearstack-personen-fur-android">BearStack Personen für Android<a class="headerlink" href="#bearstack-personen-fur-android" title="Permanent link">&para;</a></h1>
-<p>Native, deutschsprachige App für Android 8.0 oder neuer. App-Version <strong>0.1.0</strong>; erforderlich sind <strong>BearStack 0.30.0</strong>, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit <code>photos_manage</code> (beispielsweise <code>photos_manager</code> oder Administrator). Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.</p>
+<p>Native, deutschsprachige App für Android 8.0 oder neuer. App-Version <strong>0.4.0</strong>; erforderlich sind <strong>BearStack 0.34.0</strong>, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit <code>photos_manage</code> (beispielsweise <code>photos_manager</code> oder Administrator). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
 <p><code>apps/android/</code> in Android Studio als eigenes Projekt öffnen. Voraussetzungen: JDK 17 oder 21 und Android-SDK mit Plattform 36. Das Projekt verwendet den Gradle Wrapper 8.13, AGP 8.13.2 und Kotlin 2.3.21. SDK-Pfad über <code>ANDROID_HOME</code> oder eine ignorierte <code>apps/android/local.properties</code> mit <code>sdk.dir=…</code> setzen.</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./scripts/check-android.sh
@@ -882,20 +904,27 @@
 <p>Es gibt ein aktives Profil. Zugangsdaten und bestätigtes Zertifikat werden mit AES-GCM unter einem Schlüssel im Android Keystore in <code>noBackupFilesDir</code> gespeichert. Backups und Gerätetransfers sind ausgeschlossen. Screenshots und die Vorschau im App-Umschalter sind gesperrt. Die App schreibt keine Zugangsdaten in Logs. Bilder werden nur im begrenzten Arbeitsspeichercache gehalten; ein Profilwechsel leert den Cache.</p>
 <h2 id="bearbeitung">Bearbeitung<a class="headerlink" href="#bearbeitung" title="Permanent link">&para;</a></h2>
 <ul>
+<li>Unter jedem Gesichtsausschnitt und in der Originalfoto-Vorschau steht der vollständige Galeriepfad mit allen Ordnerebenen und Dateiname. Die Aufbereitung entspricht der Galerie, etwa <code>Fotos / 11.05.2026 · Urlaub / IMG_1234.jpg</code>. Lange Pfade werden umgebrochen statt abgeschnitten. Die Pfade kommen vom Server; diese Anzeige benötigt BearStack 0.34.0.</li>
 <li>Das Grid zeigt bis zu vier <strong>Gesichtsausschnitte</strong>, keine ganzen Fotos. Bei größeren Gruppen blättern „Zurück“ und „Weiter“ durch Viererseiten. Benennen, Zuordnen und Ignorieren betreffen immer die gesamte Gruppe.</li>
-<li>Einen Ausschnitt halten, um ihn zu vergrößern. Loslassen oder Abbruch schließt die Vorschau. Während des Haltens gibt es keine Wischaktion. Über die TalkBack-Aktion „Vergrößern“ bleibt die Vorschau bis „Vorschau schließen“ geöffnet.</li>
+<li>Wischen funktioniert auf Bildern, Zwischenräumen und dem freien Hintergrund der Bearbeitungsansicht. Links überspringt die Gruppe; rechts holt die zuletzt übersprungene Gruppe zurück; oben ignoriert sie mit Rücknahmefrist. Bei überlangem Inhalt scrollt Hochwischen zunächst zum Ende; ein weiterer Wischer nach oben ignoriert die Gruppe. Menü, Statistik, Namensdialog und Originalfoto-Vorschau lösen keine Wischaktionen aus.</li>
+<li>Rechtswischen nimmt das letzte Überspringen im aktuellen Durchgang zurück, auch mehrfach und nach dem letzten Datensatz. Alternativ „Letztes Überspringen zurücknehmen“ im Menü wählen. Die bisherige Gruppe bleibt mit ihrer Bildseite zur weiteren Bearbeitung vorgemerkt. Zurückgeholte Gruppen werden erneut am Server geprüft; bereits bearbeitete oder entfernte Gruppen werden ausgelassen. Bei Verbindungsfehlern bleiben aktuelle Gruppe und Rücknahmemöglichkeit erhalten. Die zurückgenommene Überspringen-Zählung wird entfernt. Verlauf und vorgemerkte Gruppen bleiben nach einem App-Neustart erhalten; ein neuer Durchgang beginnt ohne Rücknahmeverlauf.</li>
+<li>Einen Gesichtsausschnitt halten, um das vollständige Originalfoto zu sehen, aus dem er stammt. Das Foto wird mit seinem ursprünglichen Seitenverhältnis vollständig eingepasst. Loslassen oder Abbruch schließt die Vorschau. Während des Haltens gibt es keine Wischaktion. Über die TalkBack-Aktion „Originalfoto anzeigen“ bleibt die Vorschau bis „Vorschau schließen“ geöffnet.</li>
 <li>Der Stift öffnet das Namensfeld. Nach 250 ms Eingabepause erscheinen höchstens 20 Vorschläge. Einen Vorschlag antippen, um zuzuordnen; „Speichern“ benennt die aktuelle Gruppe. Bei einem bestehenden gleichen Namen wird zwischen Zuordnen und „Separat benennen“ unterschieden.</li>
 <li>Das <strong>×</strong> links unten trennt genau dieses Gesicht in eine neue unbenannte Gruppe ab. Es ignoriert und löscht nichts. Die neue Gruppe folgt nach Abschluss der aktuellen Gruppe; mehrere Abtrennungen folgen ihrer Reihenfolge. Bei einem einzigen Gesicht entfällt das ×.</li>
-<li><strong>Nach oben wischen:</strong> die ganze Gruppe ignorieren. Für fünf Sekunden ist „Rückgängig“ verfügbar; weitere Bearbeitungen sind gesperrt. Erst nach Ablauf wird gesendet. Wechsel in den Hintergrund oder Prozessende während dieser Frist verwirft die noch nicht gesendete Aktion.</li>
+<li><strong>Nach oben wischen:</strong> die ganze Gruppe ignorieren. Die nächste Gruppe erscheint sofort. Eine klickbare Meldung am oberen Bildschirmrand bietet fünf Sekunden lang „Rückgängig“ an; die Ansicht bleibt währenddessen bedienbar. Bei mehreren rasch ignorierten Gruppen hat jede ihre eigene Frist, die Meldung nimmt jeweils die letzte noch rücknehmbare Gruppe zurück. Erst nach Fristende wird die ursprüngliche Gruppe gespeichert. Schreibanfragen werden nacheinander ausgeführt. Beim Wechsel in den Hintergrund oder nach Prozessende kehren noch nicht gesendete Gruppen in die Warteschlange zurück.</li>
 <li><strong>Nach links wischen:</strong> lokal für den aktuellen Durchgang überspringen. Über „Übersprungene bearbeiten“ am Ende des Durchgangs werden diese Gruppen erneut angeboten. „Neuen Durchgang starten“ übernimmt inzwischen hinzugekommene Gruppen; übersprungene bleiben der ausdrücklichen Wiederaufnahme vorbehalten.</li>
 <li>Ignorieren und Überspringen sind auch als beschriftete Menüaktionen verfügbar. Die Oberfläche unterstützt System-Hell-/Dunkelmodus und große Schrift; Inhalte und Dialoge sind scrollbar.</li>
 </ul>
-<p>Nach einer bestätigten Aktion wird weitergeschaltet. Bei einem Fehler bleibt die Gruppe erhalten. „Offene Aktion prüfen“ klärt zuerst die serverseitige Aktionsquittung und sendet nur bei fehlender Quittung denselben gespeicherten Auftrag erneut. Währenddessen sind weitere Entscheidungen gesperrt. Bei fehlenden Rechten oder falschen Zugangsdaten kann die Verbindung gewechselt und mit demselben Konto wiederhergestellt werden.</p>
+<p>Benennen und Zuordnen schalten nach Serverbestätigung weiter. Ignorieren schaltet bereits während der Rücknahmefrist weiter. Bei abgelehntem Ignorieren wird die betroffene Gruppe zur erneuten Prüfung vorgemerkt; die aktuelle Gruppe bleibt erhalten. „Offene Aktion prüfen“ klärt zuerst die serverseitige Aktionsquittung und sendet nur bei fehlender Quittung denselben gespeicherten Auftrag erneut. Währenddessen sind weitere Entscheidungen gesperrt. Bei fehlenden Rechten oder falschen Zugangsdaten kann die Verbindung gewechselt und mit demselben Konto wiederhergestellt werden.</p>
 <p>Ändert die Weboberfläche oder Hintergrundverarbeitung inzwischen eine Gruppe, meldet die API <code>409</code>; die App lädt den aktuellen Stand und verlangt eine neue Entscheidung. Sie überträgt die alte Entscheidung nicht automatisch auf eine veränderte Gruppe. Eine Änderung an der Zielperson erfordert ebenfalls eine erneute Auswahl.</p>
+<h2 id="verbindungsfehler-eingrenzen">Verbindungsfehler eingrenzen<a class="headerlink" href="#verbindungsfehler-eingrenzen" title="Permanent link">&para;</a></h2>
+<p>Ab App-Version 0.1.1 zeigt die Fehlermeldung die Phase (HTTPS-Verbindungsprüfung, Anmeldung oder Serveranfrage) und einen Diagnosecode. <code>DNS</code> steht für fehlgeschlagene Namensauflösung, <code>CONNECT</code> für einen fehlgeschlagenen Verbindungsaufbau, <code>NO_ROUTE</code> für eine fehlende Route und <code>TIMEOUT</code> für eine Zeitüberschreitung. <code>TLS</code>, <code>TLS_IDENTITY</code>, <code>CERT_EXPIRED</code> und <code>CERT_NOT_YET_VALID</code> unterscheiden Zertifikatsprobleme. <code>NETWORK_PERMISSION</code> weist auf verweigerten Socket-Zugriff hin.</p>
+<p>Bei einer LAN-Adresse dieselbe HTTPS-Adresse auf demselben Handy im Browser testen. Funktioniert der Zugriff nur außerhalb der App, die Netzwerkfreigabe und die appbezogenen VPN-Regeln prüfen. Eine Zeitüberschreitung allein beweist weder einen Zertifikats- noch einen Passwortfehler. Bei der ersten HTTPS-Prüfung werden keine Zugangsdaten gesendet; die Meldung über eine offene Aktion erscheint nur, wenn tatsächlich eine solche Aktion gespeichert ist.</p>
+<p>Debug-Builds schreiben unter dem Logcat-Tag <code>BearStackConnection</code> ausschließlich Phase und Diagnosecode. Exception-Texte, vollständige URLs, Benutzernamen und Passwörter werden nicht protokolliert.</p>
 <h2 id="warteschlange-und-statistik">Warteschlange und Statistik<a class="headerlink" href="#warteschlange-und-statistik" title="Permanent link">&para;</a></h2>
-<p>Room trennt lokalen Zustand nach Instanz, Datenbestand und Konto. Gespeichert werden aktueller Datensatz und Bildseite, Cursor mit fester oberer Gruppen-ID, abgetrennte und übersprungene Gruppen, ungeklärte Aktionen und bestätigte Ereignisse. Eine noch nicht gesendete Rücknahmefrist ist ausschließlich im Arbeitsspeicher. Es gibt keine allgemeine Offline-Warteschlange.</p>
+<p>Room trennt lokalen Zustand nach Instanz, Datenbestand und Konto. Gespeichert werden aktueller Datensatz und Bildseite, Cursor mit fester oberer Gruppen-ID, abgetrennte und übersprungene Gruppen, ungeklärte Aktionen und bestätigte Ereignisse. Rücknahmetimer laufen ausschließlich im Arbeitsspeicher. Die IDs und Bildseiten vorläufig ignorierter Gruppen werden in Room gespeichert, damit sie nach einem Neustart wieder angeboten werden. Ungeklärte, möglicherweise bereits gesendete Aktionen werden zuerst über die Aktionsquittung aufgelöst. Es gibt keine allgemeine Offline-Warteschlange.</p>
 <p>Die Statistik zählt <strong>Gesichter und Gruppen</strong>, jeweils heute (lokale Zeitzone) und insgesamt: Benannt, Zugeordnet, Ignoriert, Übersprungen. Serveraktionen zählen nach Bestätigung genau einmal pro Aktions-ID. Überspringen zählt einmal je Gruppe und Durchgang. Abtrennen hat keinen eigenen Statistikzähler. Die Zahlen sind gerätelokal; sie sind kein vollständiges Server-Audit. App-Daten löschen oder Deinstallation entfernt die lokalen Zahlen.</p>
-<p>Ein Durchgang lädt Metadaten in Seiten von maximal 20 Gruppen. Jede Gruppe wird vor Anzeige erneut geprüft. Benannte, leere oder gelöschte Gruppen werden ausgelassen. Vier Bilder werden angezeigt, höchstens die nächste Viereransicht wird vorgeladen. Vergrößerungen werden erst beim Halten angefordert. Der Bildcache ist auf 16 MiB begrenzt und hat keinen Disk-Cache.</p>
+<p>Ein Durchgang lädt Metadaten in Seiten von maximal 20 Gruppen. Jede Gruppe wird vor Anzeige erneut geprüft. Benannte, leere oder gelöschte Gruppen werden ausgelassen. Vier Bilder werden angezeigt, höchstens die nächste Viereransicht wird vorgeladen. Originalfotos werden erst beim Halten angefordert und für die Anzeige auf Bildschirmgröße dekodiert. Beim Loslassen wird die Vorschau geschlossen; Originalfotos werden nicht vorgeladen. Der Bildcache ist auf 16 MiB begrenzt und hat keinen Disk-Cache.</p>
 <h2 id="api-und-datenmigration">API und Datenmigration<a class="headerlink" href="#api-und-datenmigration" title="Permanent link">&para;</a></h2>
 <p>Der gemeinsame Vertrag steht in <a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml"><code>openapi.yaml</code></a>, unter <code>/api/photos/labeling/v1</code>. Anfragen verwenden HTTP Basic über HTTPS und JSON. Operationen tragen eine zufällige ID, Datenbestandskennung, Quellrevision und bei Zuordnung eine Zielrevision. Die Antwort enthält tatsächliche Gesichtszahlen und betroffene Gruppen-IDs.</p>
 <p>BearStack migriert die Foto-Datenbank kompatibel auf Schema 19. Datenbanktrigger erhöhen Revisionen auch bei Web- und Hintergrundänderungen. Mutation und Quittung werden in derselben SQLite-Transaktion gespeichert. Quittungen sind kontogebunden und bleiben bis zum Löschen der Gesichtserkennungsdaten erhalten. Dieser Reset erzeugt eine neue Datenbestandskennung. Die Foto-Datenbank einschließlich dieser Tabellen gemeinsam sichern und wiederherstellen. Bestehende Web-Endpunkte bleiben erhalten; ausgeschlossene geschützte Fotos werden auch über diese API nicht angeboten.</p>
@@ -914,7 +943,7 @@
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>make<span class="w"> </span>test-go
 </span></code></pre></div>
 <p>Der Integrationstest öffnet ausschließlich <code>127.0.0.1:18787</code>, nutzt temporäre Daten und führt <code>adb reverse</code> aus. Er greift auf keine installierte BearStack-Instanz zu. Ohne Testadresse wird dieser zusätzliche instrumentierte Test übersprungen.</p>
-<p>Vor einer privaten Verteilung zusätzlich die komplette Bedienung auf dem eigenen Gerät mit TalkBack prüfen, besonders Namensdialog/Tastatur und die Vergrößerung. Ein Gerätewechsel, Energiesparmodus und herstellerspezifische Prozessbeendigung lassen sich nicht vollständig durch einen Emulator ersetzen.</p>
+<p>Vor einer privaten Verteilung zusätzlich die komplette Bedienung auf dem eigenen Gerät mit TalkBack prüfen, besonders Namensdialog/Tastatur und die Originalfoto-Vorschau. Ein Gerätewechsel, Energiesparmodus und herstellerspezifische Prozessbeendigung lassen sich nicht vollständig durch einen Emulator ersetzen.</p>
 <h2 id="privaten-release-signieren">Privaten Release signieren<a class="headerlink" href="#privaten-release-signieren" title="Permanent link">&para;</a></h2>
 <p>Einen dauerhaften Signierschlüssel <strong>außerhalb des Repositories</strong> anlegen und separat sichern. Updates derselben App-ID benötigen denselben Schlüssel. Passwörter interaktiv eingeben:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>keytool<span class="w"> </span>-genkeypair<span class="w"> </span>-v<span class="w"> </span>-keystore<span class="w"> </span>/sicherer/pfad/bearstack-android.jks<span class="w"> </span><span class="se">\</span>
@@ -992,7 +1021,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.30.1 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.34.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

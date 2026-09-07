@@ -159,6 +159,8 @@ Ein Audit-Konto, das nur das Betriebslog lesen darf:
 
 ## Persönliche PDF-Vorschau
 
+Die Option zeigt Checkbox und normal geschriebene Beschriftung nebeneinander; auf schmalen Bildschirmen bricht die Beschriftung neben der Checkbox um.
+
 Unter `Konto -> Darstellung` kann jeder angemeldete Nutzer die integrierte BearStack-PDF-Vorschau aktivieren. Die Präferenz wird in der BearStack-Datenbank anhand von Kontoquelle und stabiler Konto-ID gespeichert und funktioniert deshalb sowohl für SQLite- als auch für JSON-/Env-Konten geräteübergreifend. Nutzerverwalter können sie außerdem für Konten ändern, die sie nach den bestehenden Delegationsregeln verwalten dürfen; nur echte Admins dürfen dies bei Admins und weiteren Nutzerverwaltern. Die Änderung benötigt keine Passwortbestätigung, verändert keine Rechte oder Sitzungen und wird bei fremden Konten auditiert.
 
 Ohne gespeicherte Aktivierung bleibt der native Browser-Viewer erhalten. Der integrierte Viewer wird erst beim Öffnen einer PDF geladen und gilt ebenfalls für von BearStack erzeugte PDF-Vorschauen. Fehlerhafte, passwortgeschützte oder im eingebetteten Viewer nicht unterstützte PDFs wechseln automatisch zurück zum Browser-Viewer.

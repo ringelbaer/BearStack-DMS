@@ -27,7 +27,7 @@ Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie `127.0
 
 ## Android-App zum Personenbenennen
 
-Ab BearStack **0.30.0** steht unter [`apps/android/`](apps/android/README.md) eine native Android-App (Android 8.0+, App-Version 0.1.0) zur Verfügung. Sie zeigt bis zu vier Gesichtsausschnitte, unterstützt Benennen und Zuordnen mit Namensvorschlägen, Abtrennen, Ignorieren mit Rücknahmefrist und lokale Statistiken. Erforderlich sind HTTPS und ein Konto mit Personenverwaltungsrechten. Selbstsignierte Zertifikate werden vor der Anmeldung über ihren SHA-256-Fingerabdruck bestätigt.
+Ab BearStack **0.30.0** steht unter [`apps/android/`](apps/android/README.md) eine native Android-App (Android 8.0+, App-Version 0.4.0) zur Verfügung. Sie zeigt bis zu vier Gesichtsausschnitte, unterstützt Benennen und Zuordnen mit Namensvorschlägen, Abtrennen, Ignorieren mit klickbarer Rückgängig-Meldung am oberen Bildschirmrand bei weiter bedienbarer Ansicht und lokale Statistiken. Die aktuelle App benötigt BearStack **0.34.0**: Beim Halten eines Gesichtsausschnitts zeigt sie das vollständige Originalfoto, beim Loslassen wieder das Grid. Unter Ausschnitten und Originalfoto steht der vollständige, nach Galerieregeln aufbereitete Bildpfad. Wischaktionen funktionieren auch auf dem freien Hintergrund der Bearbeitungsansicht. Rechtswischen holt die zuletzt übersprungene Person zurück und korrigiert die lokale Statistik. Erforderlich sind HTTPS und ein Konto mit Personenverwaltungsrechten. Selbstsignierte Zertifikate werden vor der Anmeldung über ihren SHA-256-Fingerabdruck bestätigt.
 
 `make test-android` prüft die App und baut eine Debug-APK. Einrichtung, Gesten, Zertifikatsabgleich, Emulator-Integrationstest und private Release-Signierung stehen in der [Android-Anleitung](apps/android/README.md). Der gemeinsame Vertrag bleibt [`openapi.yaml`](openapi.yaml), neue Endpunkte liegen unter `/api/photos/labeling/v1`. Android hat einen eigenen Gradle-Build und wird nicht in Go- oder Docker-Builds einbezogen.
 
@@ -463,10 +463,20 @@ Bilder einschließlich Ergebnissen ohne Gesicht werden nicht erneut analysiert.
 Fehler werden mit zunehmender Wartezeit bis zu fünfmal versucht und können manuell
 zurückgesetzt werden. Neustarts setzen die persistente Warteschlange fort.
 
+**Referenzen pro Person:** Unter **Einstellungen → Gesichtserkennung** lässt sich
+seit 0.34.0 das Limit auf 1–100 einstellen; der Standard ist **30**. BearStack wählt
+bis zu dieser Anzahl aus den bereits zugeordneten Gesichtern aus, bevorzugt manuelle
+Zuordnungen und danach die Erkennungssicherheit. Eine Verteilung über Aufnahmejahre
+ist damit noch nicht verbunden. Mehr Referenzen benötigen mehr Arbeitsspeicher für
+den Suchindex. Änderungen werden vor der nächsten Analyse in kurzen, fortsetzbaren
+Schritten übernommen; Fotos müssen dafür nicht erneut analysiert werden. Die
+Einstellung bleibt nach Neustart erhalten und kann auch bei pausierter Verarbeitung
+geändert werden. Bestehende Gruppen werden dadurch nicht automatisch zusammengeführt.
+
 **Metadaten und Korrekturen:** Eindeutige XMP-Gesichtsregionen liefern Namen und
 Referenzen. Manuelle Zuordnungen haben Vorrang. XMP und automatische Gesichter werden
 getrennt gespeichert; Originale und Sidecars werden nicht verändert. Die Foto-DB
-migriert automatisch auf Schema 18. Ihre Sicherung muss die erzeugten Gesichtsdaten
+migriert automatisch auf Schema 20. Ihre Sicherung muss die erzeugten Gesichtsdaten
 und manuellen Korrekturen einschließen. Ein Index-Neuaufbau erhält die Korrekturen
 unveränderter Bilder; Dateiaustausch und Löschung entfernen veraltete Analysen.
 Bei einem Modellwechsel werden manuelle Zuordnungen nur auf eindeutig wiedergefundene
@@ -519,7 +529,7 @@ Rollen: `admin`, `documents_read`, `documents_editor`, `documents_manager`, `pho
 
 Admins verwalten zusaetzliche Konten unter `Einstellungen -> Benutzer`. Diese Konten liegen mit bcrypt-Hash in `bearstack.db`; Passwoerter muessen mindestens 12 Zeichen lang sein und duerfen die bcrypt-Grenze von 72 UTF-8-Bytes nicht ueberschreiten. Konten aus JSON oder Env bleiben parallel aktiv, werden im UI als `Konfiguration` angezeigt und dort nicht veraendert. Benutzernamen duerfen sich zwischen beiden Quellen nicht doppeln. Ein Konto mit `system.users.manage` darf normale Konten innerhalb seiner eigenen Fachrechte verwalten; nur die Rolle `admin` darf Admins oder weitere Nutzerverwalter verwalten.
 
-Die reine Darstellungsoption `BearStack PDF-Vorschau` kann ohne erneute Passwortbestaetigung im eigenen Konto oder durch einen berechtigten Nutzerverwalter gespeichert werden. Sie veraendert keine Rechte und widerruft keine Sitzung; Aenderungen an fremden Konten folgen den bestehenden Delegationsgrenzen und werden auditiert. Config-Zugangsdaten bleiben dabei weiterhin extern und schreibgeschuetzt.
+Die PDF-Vorschau-Option zeigt Checkbox und normal geschriebene Beschriftung nebeneinander; auf schmalen Bildschirmen bricht die Beschriftung neben der Checkbox um. Die reine Darstellungsoption `BearStack PDF-Vorschau` kann ohne erneute Passwortbestaetigung im eigenen Konto oder durch einen berechtigten Nutzerverwalter gespeichert werden. Sie veraendert keine Rechte und widerruft keine Sitzung; Aenderungen an fremden Konten folgen den bestehenden Delegationsgrenzen und werden auditiert. Config-Zugangsdaten bleiben dabei weiterhin extern und schreibgeschuetzt.
 
 Passwort-, Rechte- und Statusaenderungen widerrufen bestehende Sitzungen des betroffenen UI-Kontos sofort. Wiederholte Fehlanmeldungen werden pro Benutzername zeitlich begrenzt. Fuer den Notfall kann ein temporaeres Config-Admin-Konto mit eindeutigem Benutzernamen gesetzt, BearStack neu gestartet und damit ein UI-Passwort zurueckgesetzt werden. Backups sollten das gesamte Datenverzeichnis einschliesslich `bearstack.db` und `auth-session.key` sowie weiterhin verwendete Konfigurationsdateien enthalten.
 

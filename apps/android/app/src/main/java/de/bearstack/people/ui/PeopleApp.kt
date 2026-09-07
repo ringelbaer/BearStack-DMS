@@ -1,7 +1,6 @@
 package de.bearstack.people.ui
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.input.*
@@ -31,7 +29,6 @@ import coil.compose.AsyncImage
 import de.bearstack.people.statistics.StatisticsPanel
 import de.bearstack.people.data.remote.Person
 import de.bearstack.people.people.*
-import kotlin.math.abs
 
 @Composable
 fun PeopleApp(vm: PeopleViewModel) {
@@ -80,7 +77,7 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
     var statistics by rememberSaveable { mutableStateOf(false) }
     var held by remember { mutableStateOf<Long?>(null) }
     var accessibleZoom by remember { mutableStateOf(false) }
-    val enabled = !state.busy && !state.unresolved && state.undoSeconds == 0 && held == null
+    val enabled = !state.busy && !state.unresolved && held == null
     LaunchedEffect(state.person?.id,state.person?.revision) { held=null;accessibleZoom=false }
     Box(Modifier.fillMaxSize()) {
         Scaffold(topBar={ TopAppBar(title={Text(if(statistics) "Statistik" else "Personen benennen")},actions={
@@ -89,17 +86,20 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                 DropdownMenuItem(text={Text(if(statistics) "Zur Bearbeitung" else "Statistik")},onClick={statistics=!statistics;menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text("Gruppe ignorieren")},onClick={vm.ignore();menu=false},enabled=enabled && state.person!=null)
                 DropdownMenuItem(text={Text("Gruppe überspringen")},onClick={vm.skip();menu=false},enabled=enabled && state.person!=null)
+                DropdownMenuItem(text={Text("Letztes Überspringen zurücknehmen")},onClick={vm.back();menu=false},enabled=enabled && state.canGoBack)
                 DropdownMenuItem(text={Text("Übersprungene bearbeiten (${state.skipped})")},onClick={vm.newPass(true);menu=false},enabled=enabled && state.person==null && state.skipped>0)
-                DropdownMenuItem(text={Text("Verbindung wechseln")},onClick={vm.switchConnection();menu=false},enabled=!state.busy && state.undoSeconds==0)
+                DropdownMenuItem(text={Text("Verbindung wechseln")},onClick={vm.switchConnection();menu=false},enabled=!state.busy)
             }
         }) },floatingActionButton={
-            if(!statistics && state.person!=null && state.undoSeconds==0) FloatingActionButton(onClick={if(enabled)vm.startNaming()},
+            if(!statistics && state.person!=null) FloatingActionButton(onClick={if(enabled)vm.startNaming()},
                 modifier=Modifier.semantics { contentDescription="Person benennen"; if(!enabled) disabled() }) {
                 Text("✎",style=MaterialTheme.typography.headlineMedium)
             }
         }) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding).imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
-                verticalArrangement=Arrangement.spacedBy(16.dp)) {
+            PersonSwipeArea(gestureKey=state.person?.let { it.id to it.revision },
+                enabled=enabled && !statistics && !menu && !state.naming && (state.person!=null || state.canGoBack),
+                onSwipe={when(it) { SwipeAction.Ignore -> vm.ignore(); SwipeAction.Skip -> vm.skip(); SwipeAction.Back -> vm.back() }},
+                modifier=Modifier.fillMaxSize().padding(padding).imePadding()) {
                 if(state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 state.error?.let { error ->
                     Card(colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.errorContainer)) {
@@ -110,24 +110,21 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                     }
                 }
                 if(statistics) StatisticsPanel(state.stats)
-                else if(state.undoSeconds>0) {
-                    Text("Gruppe wird in ${state.undoSeconds} Sekunden ignoriert.",Modifier.semantics { liveRegion=LiveRegionMode.Polite })
-                    Button(onClick=vm::undoIgnore,modifier=Modifier.fillMaxWidth()) { Text("Rückgängig") }
-                } else state.person?.let { person ->
+                else state.person?.let { person ->
                     Text("Unbenannte Person",style=MaterialTheme.typography.headlineSmall)
                     Text("${person.offset+1}–${minOf(person.offset+4L,person.count)} von ${person.count} Gesichtern")
                     FaceGrid(person,enabled,vm.images,vm::image,onDetach=vm::detach,
-                        onHold={ held=it },onZoom={held=it;accessibleZoom=true},
-                        onSwipe={if(it==SwipeAction.Ignore)vm.ignore() else vm.skip()})
+                        onHold={ held=it },onZoom={held=it;accessibleZoom=true})
                     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
                         OutlinedButton(onClick={vm.page(-1)},enabled=enabled && person.offset>0) { Text("Zurück") }
                         OutlinedButton(onClick={vm.page(1)},enabled=enabled && person.offset+4<person.count) { Text("Weiter") }
                     }
-                    Text("Halten: vergrößern · Nach oben: ignorieren · Nach links: überspringen",style=MaterialTheme.typography.bodySmall)
+                    Text("Halten: Originalfoto · Nach oben: ignorieren · Nach links: überspringen · Nach rechts: zurück",style=MaterialTheme.typography.bodySmall)
                     Spacer(Modifier.height(80.dp))
                 } ?: run {
                     if(!state.busy && !state.unresolved) {
                         Text("Durchgang abgeschlossen",style=MaterialTheme.typography.headlineSmall)
+                        if(state.canGoBack) OutlinedButton(onClick=vm::back,enabled=enabled) { Text("Letztes Überspringen zurücknehmen") }
                         Button(onClick={vm.newPass(false)}) { Text("Neuen Durchgang starten") }
                         if(state.skipped>0) OutlinedButton(onClick={vm.newPass(true)}) { Text("Übersprungene bearbeiten (${state.skipped})") }
                     }
@@ -135,54 +132,62 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
             }
         }
         held?.let { face ->
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha=.94f)).safeDrawingPadding(),contentAlignment=Alignment.Center) {
-                vm.images?.let { AsyncImage(vm.image(face,true),"Vergrößerter Gesichtsausschnitt",imageLoader=it,
-                    modifier=Modifier.fillMaxSize().padding(16.dp),contentScale=ContentScale.Fit) }
-                if(accessibleZoom) Button(onClick={held=null;accessibleZoom=false},modifier=Modifier.align(Alignment.BottomCenter).padding(24.dp)) { Text("Vorschau schließen") }
+            var loading by remember(face) { mutableStateOf(true) }
+            var failed by remember(face) { mutableStateOf(false) }
+            Column(Modifier.fillMaxSize().background(Color.Black.copy(alpha=.94f)).safeDrawingPadding().padding(16.dp),
+                horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f).fillMaxWidth(),contentAlignment=Alignment.Center) {
+                    vm.images?.let { AsyncImage(vm.original(face),"Originalfoto",imageLoader=it,
+                        modifier=Modifier.fillMaxSize(),contentScale=ContentScale.Fit,
+                        onLoading={loading=true;failed=false},onSuccess={loading=false;failed=false},
+                        onError={loading=false;failed=true}) }
+                    if(loading) CircularProgressIndicator()
+                    if(failed) Text(if(accessibleZoom) "Originalfoto konnte nicht geladen werden. Vorschau schließen und erneut öffnen."
+                        else "Originalfoto konnte nicht geladen werden. Loslassen und erneut halten.",
+                        color=Color.White,modifier=Modifier.padding(24.dp))
+                }
+                state.person?.facePaths?.get(face)?.takeIf {it.isNotEmpty()}?.let {
+                    Text(it,color=Color.White,style=MaterialTheme.typography.bodySmall,
+                        modifier=Modifier.fillMaxWidth().testTag("original-photo-path"))
+                }
+                if(accessibleZoom) Button(onClick={held=null;accessibleZoom=false}) { Text("Vorschau schließen") }
             }
         }
     }
     if(state.naming) NamingDialog(state,vm,enabled)
+    if(state.undoIgnores.isNotEmpty()) key(state.naming) { IgnoreUndoToast(state.undoIgnores.size,vm::undoIgnore) }
 }
 
 @Composable
 fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Long, Boolean) -> String?,
-    onDetach: (Long) -> Unit, onHold: (Long?) -> Unit, onZoom: (Long) -> Unit, onSwipe: (SwipeAction) -> Unit) {
-    val threshold = with(LocalDensity.current) { 96.dp.toPx() }
+    onDetach: (Long) -> Unit, onHold: (Long?) -> Unit, onZoom: (Long) -> Unit) {
     var holding by remember { mutableStateOf(false) }
     val active by rememberUpdatedState(enabled)
-    val currentSwipe by rememberUpdatedState(onSwipe)
-    Column(Modifier.fillMaxWidth().testTag("face-grid").pointerInput(person.id) {
-        var dx=0f; var dy=0f; var horizontal: Boolean?=null; var blocked=false
-        detectDragGestures(onDragStart={dx=0f;dy=0f;horizontal=null;blocked=holding || !active},
-            onDragCancel={dx=0f;dy=0f},onDragEnd={
-                if(!blocked && !holding && active) horizontal?.let { swipeAction(dx,dy,it,threshold)?.let(currentSwipe) }
-            }) { change, amount ->
-                if(!blocked && !holding && active) {
-                    dx+=amount.x;dy+=amount.y
-                    if(horizontal==null) horizontal=abs(dx)>abs(dy)
-                    change.consume()
-                }
-            }
-    },verticalArrangement=Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxWidth().testTag("face-grid"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         person.faces.chunked(2).forEach { row ->
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                 row.forEach { face ->
                     key(face) {
-                        Box(Modifier.weight(1f).testTag("face-$face").aspectRatio(1f).clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                            .semantics { contentDescription="Gesicht ${person.faces.indexOf(face)+person.offset+1}"
-                                customActions=listOf(CustomAccessibilityAction("Vergrößern") { if(active) {onZoom(face);true} else false }) }
-                            .pointerInput(face) {
-                                detectTapGestures(onLongPress={if(active){holding=true;onHold(face)}},onPress={
-                                    try { tryAwaitRelease() } finally { if(holding){holding=false;onHold(null)} }
-                                })
-                            }) {
-                            if(images!=null) AsyncImage(image(face,false),null,imageLoader=images,
-                                modifier=Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
-                            if(person.count>1) FilledTonalIconButton(onClick={onDetach(face)},enabled=enabled && !holding,
-                                modifier=Modifier.align(Alignment.BottomStart).padding(4.dp).size(48.dp)
-                                    .semantics { contentDescription="Dieses Gesicht einzeln benennen" }) { Text("×",style=MaterialTheme.typography.headlineMedium) }
+                        Column(Modifier.weight(1f)) {
+                            Box(Modifier.fillMaxWidth().testTag("face-$face").aspectRatio(1f).clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                .semantics { contentDescription="Gesicht ${person.faces.indexOf(face)+person.offset+1}"
+                                    customActions=listOf(CustomAccessibilityAction("Originalfoto anzeigen") { if(active) {onZoom(face);true} else false }) }
+                                .pointerInput(face) {
+                                    detectTapGestures(onLongPress={if(active){holding=true;onHold(face)}},onPress={
+                                        try { tryAwaitRelease() } finally { if(holding){holding=false;onHold(null)} }
+                                    })
+                                }) {
+                                if(images!=null) AsyncImage(image(face,false),null,imageLoader=images,
+                                    modifier=Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
+                                if(person.count>1) FilledTonalIconButton(onClick={onDetach(face)},enabled=enabled && !holding,
+                                    modifier=Modifier.align(Alignment.BottomStart).padding(4.dp).size(48.dp)
+                                        .semantics { contentDescription="Dieses Gesicht einzeln benennen" }) { Text("×",style=MaterialTheme.typography.headlineMedium) }
+                            }
+                            person.facePaths[face]?.takeIf {it.isNotEmpty()}?.let {
+                                Text(it,style=MaterialTheme.typography.bodySmall,
+                                    modifier=Modifier.fillMaxWidth().padding(top=6.dp).testTag("face-path-$face"))
+                            }
                         }
                     }
                 }

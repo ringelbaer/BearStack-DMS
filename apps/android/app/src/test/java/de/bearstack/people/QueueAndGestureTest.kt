@@ -19,7 +19,7 @@ class QueueAndGestureTest {
     }
     @Test fun swipeRejectsTapShortReverseDiagonalAndChangedDirection() {
         assertNull(swipeAction(-20f,0f,true,96f))
-        assertNull(swipeAction(120f,0f,true,96f))
+        assertEquals(SwipeAction.Back,swipeAction(120f,0f,true,96f))
         assertNull(swipeAction(-120f,-110f,true,96f))
         assertNull(swipeAction(-10f,-200f,true,96f))
         assertNull(swipeAction(-200f,-10f,false,96f))

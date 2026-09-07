@@ -13,7 +13,9 @@ import org.junit.Test
 import java.io.IOException
 
 internal class FakeService : LabelingService {
-    val session = Session("instance","dataset","account",2)
+    var upper=2L
+    val session get() = Session("instance","dataset","account",upper)
+    var actionDelay=0L
     val people = mutableMapOf(1L to Person(1,"",1,5,10,listOf(10,11,12,13)),2L to Person(2,"",1,1,20,listOf(20)))
     val receipts = mutableMapOf<String,Receipt>()
     var commits = 0
@@ -36,6 +38,7 @@ internal class FakeService : LabelingService {
     }
     override suspend fun receipt(operation: String,dataset: String) = receipts[operation] ?: throw ApiFailure(404,"not_found","no receipt")
     override suspend fun action(id: Long,body: String): Receipt {
+        if(actionDelay>0) kotlinx.coroutines.delay(actionDelay)
         val request=JSONObject(body); val op=request.getString("operation_id")
         receipts[op]?.let {return it}
         val p=people[id] ?: throw ApiFailure(409,"conflict","gone")
@@ -53,6 +56,77 @@ internal class FakeService : LabelingService {
 }
 class RepositoryTest {
     private fun database() = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext,LabelingDatabase::class.java).build()
+    @Test fun unsentIgnoresRecoverAfterRestartAndReceiptsKeepCurrentCard() = runBlocking {
+        val db=database()
+        try {
+            val api=FakeService();var repo=PeopleRepository(db,api,api.session)
+            val ignored=repo.next()!!;repo.stageIgnore(ignored)
+            assertEquals(2L,repo.next()!!.id)
+            repo=PeopleRepository(db,api,api.session)
+            repo.restoreIgnores()
+            assertEquals("",repo.state().stagedIgnores);assertEquals(0,api.commits)
+            repo.skip(repo.next()!!);assertEquals(1L,repo.next()!!.id)
+            repo.stageIgnore(repo.next()!!)
+            repo.newPass(false) // A new pass must not reoffer an ignore still awaiting confirmation.
+            assertNull(repo.next())
+            repo.prepare(ignored,"ignore");repo.resolve()
+            assertEquals("",repo.state().stagedIgnores)
+            assertEquals(5L,repo.statistics(0).first().single {it.action=="ignore"}.faces)
+        } finally {db.close()}
+    }
+    @Test fun backRestoresPageAndCurrentCardAfterRecreationAndCorrectsStatistics() = runBlocking {
+        val db=database()
+        try {
+            val api=FakeService();var repo=PeopleRepository(db,api,api.session)
+            repo.next();repo.skip(repo.page(4));assertEquals(2L,repo.next()!!.id)
+            assertEquals(5L,repo.statistics(0).first().single().faces)
+            repo=PeopleRepository(db,api,api.session)
+            val restored=repo.back()!!
+            assertEquals(1L,restored.id);assertEquals(4,restored.offset)
+            assertEquals("",repo.state().skipped);assertTrue(repo.statistics(0).first().isEmpty())
+            repo.prepare(restored,"name",name="Anna");repo.resolve()
+            assertEquals(2L,repo.next()!!.id);assertNull(repo.back())
+            repo.skip(repo.next()!!);assertNull(repo.next())
+            assertEquals(2L,repo.back()!!.id) // Also works from the end of a pass.
+            repo.skip(repo.next()!!)
+            assertEquals(1L,repo.statistics(0).first().single {it.action=="skip"}.groups)
+        } finally {db.close()}
+    }
+    @Test fun repeatedBackPreservesResumeOrderAndNewPassClearsHistory() = runBlocking {
+        val db=database()
+        try {
+            val api=FakeService();api.people[3]=Person(3,"",1,1,30,listOf(30))
+            val repo=PeopleRepository(db,api,api.session.copy(upper=3))
+            repo.skip(repo.next()!!);repo.skip(repo.next()!!);assertEquals(3L,repo.next()!!.id)
+            assertEquals(2L,repo.back()!!.id);assertEquals(1L,repo.back()!!.id)
+            assertTrue(repo.statistics(0).first().isEmpty())
+            repo.prepare(repo.next()!!,"name",name="Anna");repo.resolve()
+            assertEquals(2L,repo.next()!!.id)
+            repo.prepare(repo.next()!!,"name",name="Ben");repo.resolve()
+            assertEquals(3L,repo.next()!!.id)
+            repo.skip(repo.next()!!);assertNull(repo.next())
+            repo.newPass(true);assertNull(repo.back());assertEquals(3L,repo.next()!!.id)
+        } finally {db.close()}
+    }
+    @Test fun backFailurePreservesQueueAndUnavailableGroupsAreNotRestored() = runBlocking {
+        val db=database()
+        try {
+            val api=FakeService();val repo=PeopleRepository(db,api,api.session)
+            repo.skip(repo.next()!!);val current=repo.next()!!
+            val before=repo.state();api.failPerson=1
+            try {repo.back();fail("network failure expected")}catch(_:IOException){}
+            assertEquals(before,repo.state());assertEquals(1L,repo.statistics(0).first().single().groups)
+            api.failPerson=null
+            repo.prepare(current,"name",name="Ben")
+            try {repo.back();fail("pending action must block back")}catch(_:IllegalStateException){}
+            assertEquals(before,repo.state());db.dao().clearPending(repo.scope)
+            api.people[1]=api.people[1]!!.copy(name="Extern benannt",revision=2)
+            assertNull(repo.back());assertEquals(current.id,repo.state().current)
+            assertEquals("",repo.state().skipHistory)
+            val other=PeopleRepository(db,api,api.session.copy(account="other"))
+            assertNull(other.back());assertTrue(other.statistics(0).first().isEmpty())
+        } finally {db.close()}
+    }
     @Test fun lostCommitResponseResolvedAfterRepositoryRecreationWithoutDoubleCount() = runBlocking {
         val db=database()
         try {

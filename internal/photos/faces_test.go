@@ -228,7 +228,7 @@ func TestFacesAtomicEditsAndReferenceBound(t *testing.T) {
 		finishFace(t, l, 0)
 	}
 	var n int
-	if err := l.index.db.QueryRow(`SELECT count(*) FROM photo_face_references`).Scan(&n); err != nil || n != 5 {
+	if err := l.index.db.QueryRow(`SELECT count(*) FROM photo_face_references`).Scan(&n); err != nil || n != len(paths) {
 		t.Fatalf("reference cap %d %v", n, err)
 	}
 	f, _ := l.AutomaticFaces(ctx, paths[0])

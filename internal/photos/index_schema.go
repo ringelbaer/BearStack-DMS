@@ -26,7 +26,7 @@ var (
 const (
 	indexSchemaSetupTimeout = 30 * time.Second
 	photoSchemaComponent    = "photos"
-	photoSchemaVersion      = 19
+	photoSchemaVersion      = 20
 )
 
 type photoSchemaMigration struct {
@@ -58,6 +58,7 @@ var photoSchemaMigrations = []photoSchemaMigration{
 	{Version: 17, Name: "media_index.random_hash", Table: "media_index", Column: "random_hash", SQL: `ALTER TABLE media_index ADD COLUMN random_hash TEXT NOT NULL DEFAULT ''`, BackfillSQL: `UPDATE media_index SET random_hash = bearstack_stable_hash(path) WHERE random_hash = ''`},
 	{Version: 18, Name: "face recognition tables"},
 	{Version: 19, Name: "labeling API revisions and receipts"},
+	{Version: 20, Name: "configurable face reference limit"},
 }
 
 func openIndexDB(path string) (*sql.DB, string, error) {
@@ -288,6 +289,12 @@ func runPhotoSchemaMigrations(ctx context.Context, db *sql.DB) error {
 	}
 	for _, migration := range photoSchemaMigrations {
 		if current >= migration.Version {
+			continue
+		}
+		if migration.Version == 20 {
+			if err := setupFaceReferenceSettings(ctx, db); err != nil {
+				return fmt.Errorf("photo schema migration 20: %w", err)
+			}
 			continue
 		}
 		if migration.Version == 19 {

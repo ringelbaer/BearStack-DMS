@@ -86,10 +86,16 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.getByLabel("Benutzername").fill("manager");await page.locator('input[name="password"]').fill("secret");await page.getByRole("button",{name:"Anmelden"}).click();
   await page.goto(baseURL+"/settings/photos/faces");
   await expect(page.getByLabel("Gesichtserkennung aktivieren")).not.toBeChecked();
+  await expect(page.getByLabel("Referenzen pro Person", { exact: true })).toHaveValue("30");
+  await page.getByLabel("Referenzen pro Person", { exact: true }).fill("50");
   await page.getByLabel("Gesichtserkennung aktivieren").check();
   await page.getByLabel("Pause zwischen Bildern (ms)").fill("100");
   await page.getByRole("button",{name:"Speichern",exact:true}).click();
   await expect.poll(async()=>{const r=await context.request.get(baseURL+"/settings/photos/faces?format=json");return (await r.json()).status.done;}).toBe(3);
+  await page.reload();
+  await expect(page.getByLabel("Referenzen pro Person", { exact: true })).toHaveValue("50");
+  const settingsResponse = await context.request.get(baseURL + "/settings/photos/faces?format=json");
+  expect((await settingsResponse.json()).settings.reference_limit).toBe(50);
   await page.goto(baseURL+"/photos/people");await expect(page.locator("a.person-card")).toHaveCount(2);
   await page.locator("a.person-card").filter({hasText:"2 Fotos"}).click();
   for (const width of [320, 390, 640, 960, 1440]) {
@@ -263,7 +269,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(page.locator("[data-people-status]")).toHaveText("Gesicht ignoriert.");
   await expect(page.locator("[data-ignore-face]")).not.toHaveAttribute("data-ignore-face", oldFace);
   await expect(page.getByLabel("Nur bekannte Personen", { exact: true })).toBeChecked();
-  await expect(page).toHaveURL(baseURL + "/photos/people?q=J%C3%BCrgen&known=1");
+  await expect(page).toHaveURL(baseURL + "/photos/people?q=J%C3%BCrgen&known=1&page=1");
   expect(await page.evaluate(() => window.peoplePageMarker)).toBe("unchanged");
   await expect(page.locator("a.person-card").filter({hasText:"Jürgen"})).toContainText("1 Foto");
   await page.screenshot({path:"/tmp/bearstack-people.png",fullPage:true});
@@ -297,7 +303,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
     headers: { Accept: "application/json", Origin: baseURL }
   });
   expect(restore.ok(), await restore.text()).toBe(true);
-  await page.goto(baseURL + "/photos/people");
+  // Explicitly clear the remembered name/known filters for the merge scenario.
+  await page.goto(baseURL + "/photos/people?q=&known=0&page=1");
   await page.evaluate(() => { window.peoplePageMarker = "merge"; });
   const mergeButton = page.locator("[data-people-merge-button]");
   await expect(mergeButton).toBeHidden();

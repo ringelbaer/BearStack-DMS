@@ -267,3 +267,44 @@ func TestFaceWorkerWaitsAfterBatchCompletion(t *testing.T) {
 		t.Fatal("overlapping batch scheduled")
 	}
 }
+
+func TestFaceReferenceSettingsValidationAndCompatibility(t *testing.T) {
+	s := faceTestServer(t)
+	ctx := context.Background()
+	settings, err := s.faceSettings(ctx)
+	if err != nil || settings.ReferenceLimit != 30 {
+		t.Fatalf("default: %+v %v", settings, err)
+	}
+	// Existing settings JSON has no reference_limit field.
+	if err = s.repo.SaveSetting(ctx, faceSettingsKey, `{"batch_size":80,"enabled":false}`); err != nil {
+		t.Fatal(err)
+	}
+	settings, err = s.faceSettings(ctx)
+	if err != nil || settings.ReferenceLimit != 30 || settings.BatchSize != 80 {
+		t.Fatalf("legacy settings: %+v %v", settings, err)
+	}
+	w := faceRequest(s, "POST", "/settings/photos/faces", "manager", url.Values{"reference_limit": {"50"}})
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("save %d %s", w.Code, w.Body.String())
+	}
+	// Older clients omitting the new field must preserve the configured limit.
+	w = faceRequest(s, "POST", "/settings/photos/faces", "manager", url.Values{"batch_size": {"20"}})
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("legacy save %d", w.Code)
+	}
+	for _, value := range []string{"0", "101", "-5", "abc"} {
+		w = faceRequest(s, "POST", "/settings/photos/faces", "manager", url.Values{"reference_limit": {value}})
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("invalid %s: %d", value, w.Code)
+		}
+	}
+	w = faceRequest(s, "POST", "/settings/photos/faces", "reader", url.Values{"reference_limit": {"10"}})
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("reader write %d", w.Code)
+	}
+	w = faceRequest(s, "GET", "/settings/photos/faces?format=json", "manager", nil)
+	var view FaceSettingsView
+	if err = json.Unmarshal(w.Body.Bytes(), &view); err != nil || view.Settings.ReferenceLimit != 50 {
+		t.Fatalf("saved setting %+v %v", view, err)
+	}
+}

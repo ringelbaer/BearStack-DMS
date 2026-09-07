@@ -214,6 +214,14 @@ func (s *Server) handleSaveFaceSettings(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	settings := FaceSettings{Enabled: r.FormValue("enabled") == "1", BatchSize: boundedInt(r.FormValue("batch_size"), 100, 1, 1000), DelayMillis: boundedInt(r.FormValue("delay_millis"), 1000, 100, 60000), IntervalMinutes: boundedInt(r.FormValue("interval_minutes"), 15, 1, 1440)}
+	if raw := r.FormValue("reference_limit"); raw != "" {
+		limit, err := strconv.Atoi(raw)
+		if err != nil || limit < 1 || limit > photos.MaxFaceReferenceLimit {
+			s.faceError(w, r, errors.New("Referenzen pro Person müssen zwischen 1 und 100 liegen"))
+			return
+		}
+		settings.ReferenceLimit = limit
+	}
 	if settings.Enabled {
 		client, err := s.faceClient()
 		if err == nil {

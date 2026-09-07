@@ -46,8 +46,11 @@ Detection uses confidence >= 0.9. Automatic grouping requires cosine similarity
 >= 0.55 and a margin >= 0.08 over the second distinct candidate person, after an
 HNSW candidate search and exact re-scoring. These are conservative engineering
 defaults, not a claim of calibrated accuracy for every population or photo collection.
-At most five references per person are selected, prioritizing manual assignments
-and detector confidence. Low-confidence identity matches remain unnamed groups.
+The reference limit is configurable in BearStack (1–100, default 30), prioritizing
+manual assignments and detector confidence. It does not yet balance capture years.
+Changes rebuild references from stored vectors before the next analysis, with
+restartable checkpoints and no image re-analysis. The HNSW candidate count grows
+with the limit so a second person can still be considered. Low-confidence identity matches remain unnamed groups.
 
 Limits: 8 MiB compressed request, 1,600-pixel maximum edge, 256 faces, one concurrent
 inference and eight concurrent HTTP connections. Excess requests receive 429;
@@ -70,5 +73,5 @@ Protocol tests use a local HTTP server. Real-model tests use the documented NASA
 fixture; without `BEARSTACK_TEST_FACE_MODELS_DIR` they are explicitly skipped. This
 small fixture set verifies integration and same-image consistency, not population
 accuracy. The opt-in scale test creates 100,000 photo records and one million face
-records (about 1 GiB temporary disk), then measures the 50,000-reference index and
+records (about 1 GiB temporary disk), then measures the 300,000-reference index and
 person-gallery queries during synthetic background queue writes.

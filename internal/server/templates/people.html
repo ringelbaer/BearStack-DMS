@@ -54,7 +54,7 @@
 </div>
 <label>Name der neuen Person <input name="name" maxlength="200"></label><button name="action" value="move">Auswahl verschieben</button><button name="action" value="ignore" formnovalidate>Auswahl ignorieren</button></div>
 {{end}}
-<div class="people-grid" data-photo-gallery>{{range .People.Faces}}<div class="person-card">{{if $.Auth.CanPhotosManage}}<label><input type="checkbox" name="face_id" value="{{.ID}}"></label>{{end}}<button type="button" class="person-photo-button" data-photo-item data-photo-path="{{.Path}}" data-photo-title="{{.Path}}" data-photo-type="image" aria-label="Foto öffnen: {{.Path}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Gesicht"><span>{{.Path}}</span></button>{{if .Manual}}<span>Manuell zugeordnet</span>{{end}}</div>{{end}}</div>
+<div class="people-grid" data-photo-gallery>{{range .People.Faces}}<div class="person-card">{{if $.Auth.CanPhotosManage}}<label><input type="checkbox" name="face_id" value="{{.ID}}" aria-label="Auswählen"></label>{{end}}<button type="button" class="person-photo-button" data-photo-item data-photo-path="{{.Path}}" data-photo-title="{{.Path}}" data-photo-type="image" aria-label="Foto öffnen: {{.Path}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Gesicht"><span>{{.Path}}</span></button>{{if .Manual}}<span>Manuell zugeordnet</span>{{end}}</div>{{end}}</div>
 {{if .Auth.CanPhotosManage}}</form>{{end}}
 {{end}}
 <nav class="pagination people-pagination" aria-label="Personenseiten" data-people-page="{{.People.Page}}" data-people-user="{{.Auth.Username}}">

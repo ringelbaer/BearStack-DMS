@@ -250,10 +250,20 @@ Bilder einschließlich Ergebnissen ohne Gesicht werden nicht erneut analysiert.
 Fehler werden mit zunehmender Wartezeit bis zu fünfmal versucht und können manuell
 zurückgesetzt werden. Neustarts setzen die persistente Warteschlange fort.
 
+**Referenzen pro Person:** Unter **Einstellungen → Gesichtserkennung** lässt sich
+seit 0.34.0 das Limit auf 1–100 einstellen; der Standard ist **30**. BearStack wählt
+bis zu dieser Anzahl aus den bereits zugeordneten Gesichtern aus, bevorzugt manuelle
+Zuordnungen und danach die Erkennungssicherheit. Eine Verteilung über Aufnahmejahre
+ist damit noch nicht verbunden. Mehr Referenzen benötigen mehr Arbeitsspeicher für
+den Suchindex. Änderungen werden vor der nächsten Analyse in kurzen, fortsetzbaren
+Schritten übernommen; Fotos müssen dafür nicht erneut analysiert werden. Die
+Einstellung bleibt nach Neustart erhalten und kann auch bei pausierter Verarbeitung
+geändert werden. Bestehende Gruppen werden dadurch nicht automatisch zusammengeführt.
+
 **Metadaten und Korrekturen:** Eindeutige XMP-Gesichtsregionen liefern Namen und
 Referenzen. Manuelle Zuordnungen haben Vorrang. XMP und automatische Gesichter werden
 getrennt gespeichert; Originale und Sidecars werden nicht verändert. Die Foto-DB
-migriert automatisch auf Schema 18. Ihre Sicherung muss die erzeugten Gesichtsdaten
+migriert automatisch auf Schema 20. Ihre Sicherung muss die erzeugten Gesichtsdaten
 und manuellen Korrekturen einschließen. Ein Index-Neuaufbau erhält die Korrekturen
 unveränderter Bilder; Dateiaustausch und Löschung entfernen veraltete Analysen.
 Bei einem Modellwechsel werden manuelle Zuordnungen nur auf eindeutig wiedergefundene

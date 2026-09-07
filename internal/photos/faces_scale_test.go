@@ -63,9 +63,17 @@ func TestFaceScaleMillion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = db.Exec(`INSERT INTO photo_face_references SELECT id,person_id FROM photo_faces WHERE id<=50000`); err != nil {
+	if _, err = db.Exec(`UPDATE photo_face_state SET model=?`, facerec.Model); err != nil {
 		t.Fatal(err)
 	}
+	startReferences := time.Now()
+	if err = l.rebuildFaceReferences(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if count := faceReferenceCount(t, l); count != 300000 {
+		t.Fatalf("reference count %d", count)
+	}
+	t.Logf("300k reference selection: %s", time.Since(startReferences))
 	t.Logf("fixture: %s", time.Since(start))
 	start = time.Now()
 	if err = l.PrepareFaceQueue(ctx, facerec.Model); err != nil {
@@ -84,9 +92,9 @@ func TestFaceScaleMillion(t *testing.T) {
 	}
 	runtime.GC()
 	runtime.ReadMemStats(&after)
-	t.Logf("50k reference graph: %s, retained heap delta %.1f MiB", time.Since(start), float64(after.HeapAlloc-before.HeapAlloc)/(1<<20))
-	if after.HeapAlloc > before.HeapAlloc+(512<<20) {
-		t.Fatal("reference index exceeds 512 MiB budget")
+	t.Logf("300k reference graph: %s, retained heap delta %.1f MiB", time.Since(start), float64(after.HeapAlloc-before.HeapAlloc)/(1<<20))
+	if after.HeapAlloc > before.HeapAlloc+(768<<20) {
+		t.Fatal("reference index exceeds 768 MiB budget")
 	}
 	// Background queue writes run concurrently with the same gallery SQL path.
 	workCtx, cancel := context.WithCancel(ctx)

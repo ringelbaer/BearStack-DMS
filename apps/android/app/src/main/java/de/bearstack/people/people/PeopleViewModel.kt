@@ -12,7 +12,8 @@ import de.bearstack.people.data.local.*
 import de.bearstack.people.data.remote.*
 import java.time.LocalDate
 import java.time.ZoneId
-import javax.net.ssl.SSLException
+import android.util.Log
+import de.bearstack.people.BuildConfig
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.json.JSONObject
@@ -21,8 +22,8 @@ data class PeopleState(
     val connected: Boolean = false, val busy: Boolean = false, val person: Person? = null,
     val error: String? = null, val certificate: CertificateOffer? = null,
     val naming: Boolean = false, val name: String = "", val suggestions: List<Person> = emptyList(),
-    val duplicates: List<Person> = emptyList(), val undoSeconds: Int = 0, val unresolved: Boolean = false,
-    val stats: List<Statistics> = emptyList(), val skipped: Int = 0,
+    val duplicates: List<Person> = emptyList(), val undoIgnores: List<Long> = emptyList(), val unresolved: Boolean = false,
+    val stats: List<Statistics> = emptyList(), val skipped: Int = 0, val canGoBack: Boolean = false,
 )
 class PeopleViewModel private constructor(application: Application, private val db: LabelingDatabase,
     initialRepository: PeopleRepository?) : AndroidViewModel(application) {
@@ -36,7 +37,9 @@ class PeopleViewModel private constructor(application: Application, private val 
     private var api: LabelingApi? = null
     var images: ImageLoader? = null; private set
     private var profileToConfirm: Profile? = null
-    private var undo: Job? = null
+    private val ignoreJobs = mutableMapOf<Long,Job>()
+    private val undoRequests = mutableSetOf<Long>()
+    private var inBackground = false
     private var search: Job? = null
     private var statsJob: Job? = null
     private val preloads = mutableListOf<coil.request.Disposable>()
@@ -48,13 +51,14 @@ class PeopleViewModel private constructor(application: Application, private val 
             update { it.copy(connected=true) }
             collectStatistics()
             initialRepository.resolve()
+            initialRepository.restoreIgnores()
             loadNext()
         }
     } }
     private fun update(block: (PeopleState) -> PeopleState) = mutable.update(block)
-    private fun task(block: suspend () -> Unit) {
+    private fun task(clearError: Boolean = true, block: suspend () -> Unit) {
         if (state.value.busy) return
-        update { it.copy(busy=true, error=null) }
+        update { it.copy(busy=true, error=if(clearError) null else it.error) }
         viewModelScope.launch {
             try { block() }
             catch (e: CancellationException) { throw e }
@@ -76,15 +80,16 @@ class PeopleViewModel private constructor(application: Application, private val 
                     }
                 }
                 val pending = runCatching { repository?.pending() != null }.getOrDefault(false)
-                update { it.copy(error=message(e), unresolved=pending, undoSeconds=0) }
+                update { it.copy(error=message(e,pending), unresolved=pending) }
             } finally { update { it.copy(busy=false) } }
         }
     }
-    private fun message(e: Exception): String = when(e) {
-        is SSLException -> "Zertifikatsprüfung fehlgeschlagen. Adresse, Gültigkeit und Fingerabdruck erneut prüfen."
-        is ApiFailure -> e.message.orEmpty()
-        is java.io.IOException -> "Verbindung unterbrochen. Erneut versuchen; eine offene Aktion wird zuerst geprüft."
-        else -> e.message ?: "Die Aktion konnte nicht abgeschlossen werden."
+    private fun message(e: Exception, pending: Boolean = false): String {
+        connectionDiagnostic(e,pending)?.let { diagnostic ->
+            if (BuildConfig.DEBUG) Log.w("BearStackConnection", "stage=${diagnostic.stage} code=${diagnostic.code}")
+            return diagnostic.text
+        }
+        return if(e is ApiFailure) e.message.orEmpty() else e.message ?: "Die Aktion konnte nicht abgeschlossen werden."
     }
     fun connect(url: String, username: String, password: String) = task {
         val profile = Profile(Connections.address(url).toString(),username.trim(),password)
@@ -105,7 +110,10 @@ class PeopleViewModel private constructor(application: Application, private val 
     private suspend fun open(profile: Profile, save: Boolean) {
         val client = Connections.client(profile)
         val remote = LabelingApi(client, profile.url)
-        val session = try { remote.session() } catch (e: Exception) { client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown(); throw e }
+        val session = try { remote.session() } catch (e: Exception) { client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown()
+            if(e is java.io.IOException && e !is ApiFailure) throw ConnectionAttemptException(ConnectionStage.SIGN_IN,e)
+            throw e
+        }
         if (save) store.write(profile)
         clearConnection()
         api = remote
@@ -121,6 +129,7 @@ class PeopleViewModel private constructor(application: Application, private val 
             repository!!.resolve()
             update { it.copy(unresolved=false,naming=false) }
         }
+        repository!!.restoreIgnores()
         loadNext()
     }
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -136,10 +145,10 @@ class PeopleViewModel private constructor(application: Application, private val 
         val repo = repository ?: return
         // The queue may already have advanced after a confirmed mutation or local skip.
         // Never leave its previous card actionable when loading the next one fails.
-        update { it.copy(person=null) }
+        val queue=repo.state()
+        update { it.copy(person=null,skipped=queue.skipped.ids().size,canGoBack=queue.skipHistory.isNotEmpty()) }
         val person = repo.next()
-        val skipped = repo.state().skipped.ids().size
-        update { it.copy(person=person,skipped=skipped) }
+        update { it.copy(person=person) }
         preload(person)
     }
     private fun preload(person: Person?) {
@@ -161,7 +170,8 @@ class PeopleViewModel private constructor(application: Application, private val 
     }
     private var searchPreload: Job? = null
     fun image(face: Long, large: Boolean = false) = api?.image(face,large)
-    private fun editable() = state.value.connected && !state.value.busy && !state.value.unresolved && state.value.undoSeconds == 0
+    fun original(face: Long) = api?.original(face)
+    private fun editable() = state.value.connected && !state.value.busy && !state.value.unresolved
     fun page(delta: Int) { if (editable()) task {
         val old = state.value.person ?: return@task
         val offset = (old.offset + delta * 4).coerceAtLeast(0)
@@ -204,32 +214,94 @@ class PeopleViewModel private constructor(application: Application, private val 
         update { it.copy(unresolved=false,naming=false,duplicates=emptyList(),error=null) }
         loadNext()
     }
-    fun ignore() {
-        if(!editable() || state.value.person == null) return
+    private suspend fun awaitReady(repo: PeopleRepository): Boolean {
+        while(repository===repo) {
+            state.first { !it.busy && !it.unresolved }
+            // Several expired timers may wake together. Recheck the live state
+            // before claiming the single writer; none may silently be dropped.
+            if(repository===repo && !state.value.busy && !state.value.unresolved) return true
+        }
+        return false
+    }
+    private fun whenReady(repo: PeopleRepository, block: suspend () -> Unit): Job = viewModelScope.launch {
+        if(awaitReady(repo)) task(block=block)
+    }
+    fun ignore() { if(editable() && state.value.person!=null) task {
+        val person=state.value.person ?: return@task
+        val repo=repository ?: return@task
         search?.cancel()
-        update { it.copy(undoSeconds=5,error=null,naming=false) }
-        undo = viewModelScope.launch {
-            for (remaining in 5 downTo 1) { update { it.copy(undoSeconds=remaining) }; delay(1000) }
-            update { it.copy(undoSeconds=0) }
-            task { mutate("ignore") }
+        repo.stageIgnore(person)
+        update {it.copy(naming=false,error=null)}
+        if(inBackground) repo.restoreIgnores(setOf(person.id))
+        else {
+            update {it.copy(undoIgnores=it.undoIgnores+person.id)}
+            ignoreJobs[person.id]=viewModelScope.launch {
+                delay(5000)
+                update {it.copy(undoIgnores=it.undoIgnores-person.id)}
+                if(awaitReady(repo)) task(clearError=false) {
+                    ignoreJobs.remove(person.id)
+                    if(inBackground) { repo.restoreIgnores(setOf(person.id)); return@task }
+                    // Commit the captured group, never the card now on screen.
+                    repo.prepare(person,"ignore")
+                    try { repo.resolve() }
+                    catch(e: ApiFailure) {
+                        if(e.status!=400 && e.status!=404 && e.status!=409) throw e
+                        repo.restoreIgnores(setOf(person.id))
+                        update {it.copy(error="Ignorieren wurde nicht gespeichert. Die Gruppe wurde zur erneuten Prüfung vorgemerkt.")}
+                    }
+                }
+            }
+        }
+        loadNext()
+    } }
+    fun undoIgnore() {
+        val id=state.value.undoIgnores.lastOrNull() ?: return
+        val repo=repository ?: return
+        ignoreJobs.remove(id)?.cancel()
+        undoRequests+=id
+        update {it.copy(undoIgnores=it.undoIgnores-id)}
+        whenReady(repo) {
+            try { repo.restoreIgnores(setOf(id),show=id) } finally { undoRequests-=id }
+            search?.cancel()
+            update {it.copy(naming=false,suggestions=emptyList(),duplicates=emptyList())}
+            loadNext()
         }
     }
-    fun undoIgnore() { undo?.cancel(); undo=null; update { it.copy(undoSeconds=0) } }
+    fun foreground() { inBackground=false }
     fun background() {
-        if(state.value.undoSeconds > 0) {
-            undoIgnore()
-            update { it.copy(error="Ignorieren wurde beim Wechsel in den Hintergrund zurückgenommen.") }
+        inBackground=true
+        val repo=repository ?: return
+        val ids=ignoreJobs.keys.toSet()
+        ignoreJobs.values.forEach {it.cancel()};ignoreJobs.clear()
+        update {it.copy(undoIgnores=emptyList())}
+        if(ids.isNotEmpty()) whenReady(repo) {
+            repo.restoreIgnores(ids)
+            if(state.value.person==null) loadNext()
         }
     }
     fun skip() { if(editable()) task { repository!!.skip(state.value.person ?: return@task); loadNext() } }
+    fun back() { if(editable() && !state.value.naming && state.value.canGoBack) task {
+        val repo=repository ?: return@task
+        val person=repo.back()
+        val queue=repo.state()
+        update { it.copy(person=person ?: it.person,skipped=queue.skipped.ids().size,
+            canGoBack=queue.skipHistory.isNotEmpty(),
+            error=if(person==null) "Die übersprungenen Gruppen wurden inzwischen bearbeitet oder sind nicht mehr verfügbar." else null) }
+        if(person!=null) preload(person)
+    } }
     fun retry() = task {
         val receipt = repository?.resolve()
-        update { it.copy(unresolved=false,naming=if(receipt!=null) false else it.naming) }
+        repository?.let { repo ->
+            repo.restoreIgnores(repo.state().stagedIgnores.positions().map {it.id}.toSet()-ignoreJobs.keys-undoRequests)
+        }
+        update { it.copy(unresolved=false,naming=if(receipt!=null && receipt.source==it.person?.id) false else it.naming) }
         loadNext()
     }
     fun newPass(skipped: Boolean) { if(editable()) task { repository!!.newPass(skipped); loadNext() } }
-    fun switchConnection() { if(!state.value.busy && state.value.undoSeconds == 0) task { clearConnection(); store.clear() } }
+    fun switchConnection() { if(!state.value.busy) task { repository?.restoreIgnores(); clearConnection(); store.clear() } }
     private fun clearConnection() {
+        ignoreJobs.values.forEach {it.cancel()};ignoreJobs.clear()
+        undoRequests.clear()
         search?.cancel(); searchPreload?.cancel(); statsJob?.cancel()
         preloads.forEach { it.dispose() }; preloads.clear()
         images?.memoryCache?.clear(); images?.shutdown(); images=null

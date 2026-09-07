@@ -33,7 +33,8 @@ type LabelPerson struct {
 	Offset   int         `json:"offset"`
 }
 type LabelFace struct {
-	ID int64 `json:"id"`
+	ID          int64  `json:"id"`
+	DisplayPath string `json:"display_path"`
 }
 type LabelCandidates struct {
 	People  []LabelPerson `json:"people"`
@@ -117,16 +118,18 @@ func (l *Library) LabelPerson(ctx context.Context, id int64, offset int) (LabelP
 	}
 	p.Offset = offset
 	p.Faces = []LabelFace{}
-	rows, err := tx.QueryContext(ctx, `SELECT id FROM photo_faces WHERE person_id=? AND ignored=0 ORDER BY id LIMIT 4 OFFSET ?`, id, offset)
+	rows, err := tx.QueryContext(ctx, `SELECT id,path FROM photo_faces WHERE person_id=? AND ignored=0 ORDER BY id LIMIT 4 OFFSET ?`, id, offset)
 	if err != nil {
 		return p, err
 	}
 	for rows.Next() {
 		var f LabelFace
-		if err = rows.Scan(&f.ID); err != nil {
+		var source string
+		if err = rows.Scan(&f.ID, &source); err != nil {
 			rows.Close()
 			return p, err
 		}
+		f.DisplayPath = mediaDisplayPath(source)
 		p.Faces = append(p.Faces, f)
 	}
 	err = rows.Err()

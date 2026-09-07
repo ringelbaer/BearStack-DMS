@@ -50,6 +50,10 @@ func cosine(a, b []float32) float64 {
 
 func (l *Library) ensureFaceGraph(ctx context.Context, model string) error {
 	rt := &l.faceRuntime
+	if err := l.rebuildFaceReferences(ctx); err != nil {
+		rt.graph = nil
+		return err
+	}
 	var rev int64
 	if err := l.index.db.QueryRowContext(ctx, `SELECT revision FROM photo_face_state WHERE id=1`).Scan(&rev); err != nil {
 		return err
@@ -57,8 +61,14 @@ func (l *Library) ensureFaceGraph(ctx context.Context, model string) error {
 	if rt.graph != nil && rt.revision == rev && rt.model == model {
 		return nil
 	}
+	limit, err := l.FaceReferenceLimit(ctx)
+	if err != nil {
+		return err
+	}
+	rt.referenceLimit = limit
 	rt.graph = hnsw.NewGraph[int64]()
 	rt.graph.Distance = hnsw.CosineDistance
+	rt.graph.EfSearch = max(20, limit+1)
 	rt.people = map[int64]int64{}
 	rt.nodes = map[int64][]int64{}
 	rt.model = model
@@ -99,7 +109,7 @@ func (l *Library) nearestPerson(ctx context.Context, tx *sql.Tx, v []float32, ex
 		return 0
 	}
 	scores := map[int64]float64{}
-	for _, n := range rt.graph.Search(v, 25) {
+	for _, n := range rt.graph.Search(v, max(25, rt.referenceLimit+1)) {
 		p := rt.people[n.Key]
 		var source, labelSource string
 		if err := tx.QueryRowContext(ctx, `SELECT f.path,p.name_source FROM photo_faces f JOIN photo_people p ON p.id=f.person_id WHERE f.id=? AND f.ignored=0`, n.Key).Scan(&source, &labelSource); err != nil {
@@ -134,6 +144,12 @@ func (l *Library) nearestPerson(ctx context.Context, tx *sql.Tx, v []float32, ex
 	}
 	// Deliberately stricter than the pair-verification example threshold: a wrong
 	// automatic identity is more costly than two groups the user can merge.
+	// An approximate search can miss every competing person when many near-
+	// duplicate references dominate its neighborhood. Do not interpret a missing
+	// runner-up as an infinitely large margin if other people exist in the graph.
+	if second == -1 && len(rt.nodes) > len(excluded)+1 {
+		return 0
+	}
 	if best < 0.55 || best-second < 0.08 {
 		return 0
 	}
@@ -350,7 +366,7 @@ func refreshFaceReferencesTx(ctx context.Context, tx *sql.Tx, p int64) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM photo_face_references WHERE person_id=?`, p); err != nil {
 		return err
 	}
-	_, err := tx.ExecContext(ctx, `INSERT OR REPLACE INTO photo_face_references(face_id,person_id) SELECT f.id,f.person_id FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.ignored=0 AND m.admin_only=0 AND f.model=(SELECT model FROM photo_face_state WHERE id=1) ORDER BY f.manual DESC,f.confidence DESC,f.id LIMIT 5`, p)
+	_, err := tx.ExecContext(ctx, `INSERT OR REPLACE INTO photo_face_references(face_id,person_id) SELECT f.id,f.person_id FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.ignored=0 AND m.admin_only=0 AND f.model=(SELECT model FROM photo_face_state WHERE id=1) ORDER BY f.manual DESC,f.confidence DESC,f.id LIMIT (SELECT reference_limit FROM photo_face_reference_settings WHERE id=1)`, p)
 	return err
 }
 
@@ -394,6 +410,7 @@ func (l *Library) syncFaceGraphPeople(ctx context.Context, people map[int64]bool
 		if len(rt.people) == 0 {
 			rt.graph = hnsw.NewGraph[int64]()
 			rt.graph.Distance = hnsw.CosineDistance
+			rt.graph.EfSearch = max(20, rt.referenceLimit+1)
 		}
 		rt.nodes[p] = nil
 		for id, v := range next {
@@ -402,6 +419,9 @@ func (l *Library) syncFaceGraphPeople(ctx context.Context, people map[int64]bool
 			}
 			rt.people[id] = p
 			rt.nodes[p] = append(rt.nodes[p], id)
+		}
+		if len(rt.nodes[p]) == 0 {
+			delete(rt.nodes, p)
 		}
 	}
 	// Never acknowledge concurrent index deletions that were not synchronized here.
