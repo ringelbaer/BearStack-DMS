@@ -37,7 +37,7 @@ func TestLibraryListsTagsFromPhotoDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 	post.Tags = []string{"Reise"}
-	lib.saveBlog(post)
+	setBlogTagsForTest(t, lib, post.Path, post.Tags)
 	if _, err := lib.SaveTag(context.Background(), "Leer", "#cc3300"); err != nil {
 		t.Fatal(err)
 	}

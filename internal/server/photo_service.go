@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"bearstack/internal/photos"
-	"bearstack/internal/tagutil"
 )
 
 var (
@@ -138,34 +137,19 @@ func (svc photoApplicationService) UpdateMediaTags(ctx context.Context, admin bo
 		return 0, errPhotoModuleMissing
 	}
 	tags = normalizeTagValues(tags, "")
-	access := photoAccessPolicy{library: svc.library, allowAdminOnly: admin}
-	mediaItems := make([]photos.Media, 0, len(paths))
+	cleanPaths := make([]string, 0, len(paths))
 	for _, path := range paths {
-		if err := access.RequireMedia(path); err != nil {
-			return 0, err
-		}
-		media, err := svc.library.MediaContext(ctx, path)
+		clean, err := photos.CleanPath(path)
 		if err != nil {
 			return 0, err
 		}
-		mediaItems = append(mediaItems, media)
+		cleanPaths = append(cleanPaths, clean)
 	}
-
-	updated := 0
-	for _, media := range mediaItems {
-		next := tagutil.Merge(media.Tags, tags)
-		if !add {
-			next = tagutil.Remove(media.Tags, tags)
-		}
-		if tagutil.EqualNormalized(media.Tags, next) {
-			continue
-		}
-		if _, err := svc.library.SetMediaTagsContext(ctx, media.Path, next); err != nil {
-			return updated, err
-		}
-		updated++
+	access := photoAccessPolicy{library: svc.library, allowAdminOnly: admin}
+	if err := access.RequireMediaBatch(cleanPaths); err != nil {
+		return 0, err
 	}
-	return updated, nil
+	return svc.library.UpdateMediaTagsContext(ctx, cleanPaths, tags, add)
 }
 
 func (svc photoApplicationService) RandomMediaPath(ctx context.Context, opts photos.ListOptions, admin bool) (string, error) {

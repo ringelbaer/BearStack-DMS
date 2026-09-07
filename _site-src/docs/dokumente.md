@@ -32,6 +32,12 @@ BearStack speichert Dateibereinigungsaufträge und die Löschung der Dokumentmet
 
 Die Dokumentdatenbank wird automatisch auf Schema 17 migriert. Für konsistente Backups die Datenbank und den vollständigen Dokumentenspeicher einschließlich `.purge/` gemeinsam sichern. Bei einer fehlgeschlagenen Dateibereinigung zeigt die Oberfläche an, dass sie im Hintergrund wiederholt wird; Einzelheiten stehen im Server-Log.
 
+Die Bereinigung wartet auf eine laufende Vorschauerzeugung desselben Dokuments. Parallel angeforderte Löschungen anderer Dokumente können weiterarbeiten; abgebrochene Wartevorgänge lassen ihren Auftrag für einen späteren Versuch bestehen.
+
+## Dokumentstatistik
+
+Gleichzeitige Seitenaufrufe teilen sich eine Berechnung der Dokumentstatistik. Änderungen an Dokumenten invalidieren den Cache; ein älterer, noch laufender Berechnungsvorgang kann diese Invalidierung nicht rückgängig machen. Wartende Seitenaufrufe können unabhängig voneinander abgebrochen werden.
+
 ## Suche und OCR
 
 - Volltextsuche über extrahierte Inhalte

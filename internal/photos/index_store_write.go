@@ -3,6 +3,7 @@ package photos
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"time"
 )
@@ -123,19 +124,16 @@ func (s *photoIndexStore) saveMediaBatchWithExisting(ctx context.Context, items 
 	return tx.Commit()
 }
 
-func (s *photoIndexStore) refreshMediaSearch(ctx context.Context, path string) error {
-	if !s.available() {
-		return nil
-	}
-	row := s.db.QueryRowContext(ctx, `SELECT `+mediaIndexColumns(``)+`, rowid FROM media_index WHERE path = ?`, path)
+func refreshMediaSearchTx(ctx context.Context, tx *sql.Tx, path string) error {
+	row := tx.QueryRowContext(ctx, `SELECT `+mediaIndexColumns(``)+`, rowid FROM media_index WHERE path = ?`, path)
 	media, rowID, err := scanIndexedMediaWithRowID(row)
 	if err != nil {
 		return err
 	}
-	if _, err := s.db.ExecContext(ctx, `DELETE FROM media_search WHERE rowid = ?`, rowID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM media_search WHERE rowid = ?`, rowID); err != nil {
 		return err
 	}
-	_, err = s.db.ExecContext(ctx, `INSERT INTO media_search(rowid, path, search_text) VALUES (?, ?, ?)`, rowID, media.Path, searchText(media))
+	_, err = tx.ExecContext(ctx, `INSERT INTO media_search(rowid, path, search_text) VALUES (?, ?, ?)`, rowID, media.Path, searchText(media))
 	return err
 }
 
@@ -143,19 +141,38 @@ func (s *photoIndexStore) setMediaTags(ctx context.Context, path string, tags []
 	if !s.available() {
 		return nil
 	}
-	if _, err := s.db.ExecContext(ctx, `UPDATE media_index SET tags = ?, indexed_at = ? WHERE path = ?`, tagsJSONString(tags), time.Now().UTC().Format(time.RFC3339Nano), path); err != nil {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
 		return err
 	}
-	s.syncMediaTags(path, tags)
-	return s.refreshMediaSearch(ctx, path)
+	defer tx.Rollback()
+	if err := setMediaTagsTx(ctx, tx, path, tags); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func setMediaTagsTx(ctx context.Context, tx *sql.Tx, path string, tags []string) error {
+	if _, err := tx.ExecContext(ctx, `UPDATE media_index SET tags = ?, indexed_at = ? WHERE path = ?`, tagsJSONString(tags), time.Now().UTC().Format(time.RFC3339Nano), path); err != nil {
+		return err
+	}
+	if err := syncTagIndexTx(ctx, tx, "media_tag_index", "media_path", path, tags); err != nil {
+		return err
+	}
+	return refreshMediaSearchTx(ctx, tx, path)
 }
 
 func (s *photoIndexStore) setFolderTags(ctx context.Context, folder Folder) error {
 	if !s.available() {
 		return nil
 	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 	now := time.Now().UTC().Format(time.RFC3339Nano)
-	if _, err := s.db.ExecContext(ctx, `
+	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO folder_index(path, parent, name, media_count, public_media_count, recursive_media_count, public_recursive_media_count, recursive_blog_count, public_recursive_blog_count, dir_count, mod_time_unix_nano, order_mode, tags, admin_only, indexed_at)
 		VALUES (?, ?, ?, 0, 0, 0, 0, 0, 0, 0, ?, '', ?, ?, ?)
 		ON CONFLICT(path) DO UPDATE SET
@@ -172,8 +189,10 @@ func (s *photoIndexStore) setFolderTags(ctx context.Context, folder Folder) erro
 	); err != nil {
 		return err
 	}
-	s.syncFolderTags(folder.Path, folder.Tags)
-	return s.refreshFolderSearch(ctx, folder.Path)
+	if err := syncFolderTagsAndSearchTx(ctx, tx, folder.Path); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (s *photoIndexStore) folderTags(path string) ([]string, bool) {
@@ -202,6 +221,12 @@ func (s *photoIndexStore) saveFolder(folder Folder) error {
 	if !s.available() || folder.Path == "" {
 		return nil
 	}
+	ctx := context.Background()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 	directMediaCount := folder.DirectMediaCount
 	if directMediaCount == 0 {
 		directMediaCount = folder.MediaCount
@@ -213,7 +238,7 @@ func (s *photoIndexStore) saveFolder(folder Folder) error {
 		publicRecursiveMediaCount = 0
 	}
 	now := time.Now().UTC().Format(time.RFC3339Nano)
-	_, err := s.db.Exec(`
+	_, err = tx.ExecContext(ctx, `
 		INSERT INTO folder_index(path, parent, name, media_count, public_media_count, recursive_media_count, public_recursive_media_count, recursive_blog_count, public_recursive_blog_count, dir_count, mod_time_unix_nano, order_mode, tags, admin_only, indexed_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, '', ?, ?, ?)
 		ON CONFLICT(path) DO UPDATE SET
@@ -226,7 +251,6 @@ func (s *photoIndexStore) saveFolder(folder Folder) error {
 			public_recursive_blog_count = CASE WHEN excluded.admin_only = 1 THEN 0 ELSE folder_index.public_recursive_blog_count END,
 			dir_count = excluded.dir_count,
 			mod_time_unix_nano = excluded.mod_time_unix_nano,
-			tags = excluded.tags,
 			admin_only = excluded.admin_only,
 			indexed_at = excluded.indexed_at`,
 		folder.Path,
@@ -245,23 +269,22 @@ func (s *photoIndexStore) saveFolder(folder Folder) error {
 	if err != nil {
 		return err
 	}
-	s.syncFolderTags(folder.Path, folder.Tags)
-	return s.refreshFolderSearch(context.Background(), folder.Path)
+	if err := syncFolderTagsAndSearchTx(ctx, tx, folder.Path); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
-func (s *photoIndexStore) refreshFolderSearch(ctx context.Context, path string) error {
-	if !s.available() {
-		return nil
-	}
+func refreshFolderSearchTx(ctx context.Context, tx *sql.Tx, path string) error {
 	var rowID int64
 	var name, tags string
-	if err := s.db.QueryRowContext(ctx, `SELECT rowid, name, tags FROM folder_index WHERE path = ?`, path).Scan(&rowID, &name, &tags); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT rowid, name, tags FROM folder_index WHERE path = ?`, path).Scan(&rowID, &name, &tags); err != nil {
 		return err
 	}
-	if _, err := s.db.ExecContext(ctx, `DELETE FROM folder_search WHERE rowid = ?`, rowID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM folder_search WHERE rowid = ?`, rowID); err != nil {
 		return err
 	}
-	_, err := s.db.ExecContext(ctx, `INSERT INTO folder_search(rowid, path, search_text) VALUES (?, ?, ?)`, rowID, path, strings.Join([]string{path, name, strings.Join(tagsFromJSON(tags), " ")}, " "))
+	_, err := tx.ExecContext(ctx, `INSERT INTO folder_search(rowid, path, search_text) VALUES (?, ?, ?)`, rowID, path, strings.Join([]string{path, name, strings.Join(tagsFromJSON(tags), " ")}, " "))
 	return err
 }
 
@@ -284,7 +307,7 @@ func (s *photoIndexStore) saveBlogBatch(ctx context.Context, posts []BlogPost) e
 			date = excluded.date,
 			mod_time_unix_nano = excluded.mod_time_unix_nano,
 			text = excluded.text,
-			tags = CASE WHEN blog_index.tags = '[]' OR blog_index.tags = '' THEN excluded.tags ELSE blog_index.tags END,
+			tags = blog_index.tags,
 			admin_only = excluded.admin_only,
 			indexed_at = excluded.indexed_at
 		RETURNING rowid, tags`)
@@ -344,18 +367,28 @@ func (s *photoIndexStore) saveBlogBatch(ctx context.Context, posts []BlogPost) e
 	return tx.Commit()
 }
 
-func (s *photoIndexStore) refreshBlogSearch(ctx context.Context, path string) error {
-	if !s.available() {
-		return nil
-	}
+func refreshBlogSearchTx(ctx context.Context, tx *sql.Tx, path string) error {
 	var rowID int64
 	var name, directory, text, tags string
-	if err := s.db.QueryRowContext(ctx, `SELECT rowid, name, directory, text, tags FROM blog_index WHERE path = ?`, path).Scan(&rowID, &name, &directory, &text, &tags); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT rowid, name, directory, text, tags FROM blog_index WHERE path = ?`, path).Scan(&rowID, &name, &directory, &text, &tags); err != nil {
 		return err
 	}
-	if _, err := s.db.ExecContext(ctx, `DELETE FROM blog_search WHERE rowid = ?`, rowID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM blog_search WHERE rowid = ?`, rowID); err != nil {
 		return err
 	}
-	_, err := s.db.ExecContext(ctx, `INSERT INTO blog_search(rowid, path, search_text) VALUES (?, ?, ?)`, rowID, path, strings.Join([]string{MediaTypeBlog, path, name, directory, text, strings.Join(tagsFromJSON(tags), " ")}, " "))
+	_, err := tx.ExecContext(ctx, `INSERT INTO blog_search(rowid, path, search_text) VALUES (?, ?, ?)`, rowID, path, strings.Join([]string{MediaTypeBlog, path, name, directory, text, strings.Join(tagsFromJSON(tags), " ")}, " "))
 	return err
+}
+
+// Read back the authoritative tags inside the writer transaction: directory
+// scans may have collected their metadata before a concurrent tag edit.
+func syncFolderTagsAndSearchTx(ctx context.Context, tx *sql.Tx, path string) error {
+	var raw string
+	if err := tx.QueryRowContext(ctx, `SELECT tags FROM folder_index WHERE path = ?`, path).Scan(&raw); err != nil {
+		return err
+	}
+	if err := syncTagIndexTx(ctx, tx, "folder_tag_index", "folder_path", path, tagsFromJSON(raw)); err != nil {
+		return err
+	}
+	return refreshFolderSearchTx(ctx, tx, path)
 }

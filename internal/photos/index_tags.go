@@ -85,12 +85,7 @@ func (l *Library) RenameTag(ctx context.Context, oldName, newName string, colorV
 	if l == nil {
 		return Tag{Name: newName, Color: color}, nil
 	}
-	tag, refresh, err := l.index.renameTag(ctx, oldName, newName, color, updateColor)
-	if err != nil {
-		return Tag{}, err
-	}
-	l.refreshPhotoTagSearchPaths(ctx, refresh)
-	return tag, nil
+	return l.index.renameTag(ctx, oldName, newName, color, updateColor)
 }
 
 type photoTagSearchRefresh struct {
@@ -107,30 +102,26 @@ func (l *Library) DeleteTag(ctx context.Context, name string) (Tag, error) {
 	if l == nil {
 		return Tag{Name: name}, nil
 	}
-	tag, refresh, err := l.index.deleteTag(ctx, name)
-	if err != nil {
-		return Tag{}, err
-	}
-	l.refreshPhotoTagSearchPaths(ctx, refresh)
-	return tag, nil
+	return l.index.deleteTag(ctx, name)
 }
 
-func (l *Library) refreshPhotoTagSearchPaths(ctx context.Context, refresh photoTagSearchRefresh) {
+func refreshPhotoTagSearchPathsTx(ctx context.Context, tx *sql.Tx, refresh photoTagSearchRefresh) error {
 	for _, path := range refresh.media {
-		if err := l.refreshMediaSearch(ctx, path); err != nil {
-			l.logWriteError("photo media search refresh failed", path, err)
+		if err := refreshMediaSearchTx(ctx, tx, path); err != nil {
+			return err
 		}
 	}
 	for _, path := range refresh.folder {
-		if err := l.refreshFolderSearch(ctx, path); err != nil {
-			l.logWriteError("photo folder search refresh failed", path, err)
+		if err := refreshFolderSearchTx(ctx, tx, path); err != nil {
+			return err
 		}
 	}
 	for _, path := range refresh.blog {
-		if err := l.refreshBlogSearch(ctx, path); err != nil {
-			l.logWriteError("photo blog search refresh failed", path, err)
+		if err := refreshBlogSearchTx(ctx, tx, path); err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 func cleanSinglePhotoTag(name string) (string, error) {
@@ -154,48 +145,26 @@ func photoTagExistsTx(ctx context.Context, tx *sql.Tx, name string) (bool, error
 	return count > 0, err
 }
 
-func renamePhotoTagValuesTx(ctx context.Context, tx *sql.Tx, table, pathColumn, oldName, newName string) ([]string, error) {
-	rows, err := tx.QueryContext(ctx, "SELECT "+pathColumn+", tags FROM "+table+" WHERE tags <> '' AND tags <> '[]'")
-	if err != nil {
-		return nil, err
-	}
-	type update struct {
-		path string
-		tags string
-	}
-	var updates []update
-	for rows.Next() {
-		var path, raw string
-		if err := rows.Scan(&path, &raw); err != nil {
-			_ = rows.Close()
-			return nil, err
-		}
-		next, changed := renamePhotoTagJSON(raw, oldName, newName)
-		if changed {
-			updates = append(updates, update{path: path, tags: next})
-		}
-	}
-	if err := rows.Err(); err != nil {
-		_ = rows.Close()
-		return nil, err
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	for _, update := range updates {
-		if _, err := tx.ExecContext(ctx, "UPDATE "+table+" SET tags = ? WHERE "+pathColumn+" = ?", update.tags, update.path); err != nil {
-			return nil, err
-		}
-	}
-	paths := make([]string, len(updates))
-	for i, update := range updates {
-		paths[i] = update.path
-	}
-	return paths, nil
+func renamePhotoTagValuesTx(ctx context.Context, tx *sql.Tx, table, index, indexPath, oldName, newName string) ([]string, error) {
+	return changePhotoTagValuesTx(ctx, tx, table, index, indexPath, oldName, func(raw string) (string, bool) {
+		return renamePhotoTagJSON(raw, oldName, newName)
+	})
 }
 
-func removePhotoTagValuesTx(ctx context.Context, tx *sql.Tx, table, pathColumn, name string) ([]string, error) {
-	rows, err := tx.QueryContext(ctx, "SELECT "+pathColumn+", tags FROM "+table+" WHERE tags <> '' AND tags <> '[]'")
+func removePhotoTagValuesTx(ctx context.Context, tx *sql.Tx, table, index, indexPath, name string) ([]string, error) {
+	return changePhotoTagValuesTx(ctx, tx, table, index, indexPath, name, func(raw string) (string, bool) {
+		return removePhotoTagJSON(raw, name)
+	})
+}
+
+// All identifiers are internal constants. The tag index bounds the rows read
+// and decoded to the affected paths, even in a large photo library.
+func photoTagValuesQuery(table, index, indexPath string) string {
+	return "SELECT path, tags FROM " + table + " WHERE path IN (SELECT " + indexPath + " FROM " + index + " WHERE tag = ?)"
+}
+
+func changePhotoTagValuesTx(ctx context.Context, tx *sql.Tx, table, index, indexPath, name string, change func(string) (string, bool)) ([]string, error) {
+	rows, err := tx.QueryContext(ctx, photoTagValuesQuery(table, index, indexPath), name)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +179,7 @@ func removePhotoTagValuesTx(ctx context.Context, tx *sql.Tx, table, pathColumn, 
 			_ = rows.Close()
 			return nil, err
 		}
-		next, changed := removePhotoTagJSON(raw, name)
+		next, changed := change(raw)
 		if changed {
 			updates = append(updates, update{path: path, tags: next})
 		}
@@ -223,7 +192,7 @@ func removePhotoTagValuesTx(ctx context.Context, tx *sql.Tx, table, pathColumn, 
 		return nil, err
 	}
 	for _, update := range updates {
-		if _, err := tx.ExecContext(ctx, "UPDATE "+table+" SET tags = ? WHERE "+pathColumn+" = ?", update.tags, update.path); err != nil {
+		if _, err := tx.ExecContext(ctx, "UPDATE "+table+" SET tags = ? WHERE path = ?", update.tags, update.path); err != nil {
 			return nil, err
 		}
 	}

@@ -103,8 +103,14 @@ func (s *photoIndexStore) getTag(ctx context.Context, name string) (Tag, error) 
 	if !s.available() {
 		return Tag{Name: name, Color: defaultPhotoTagColor}, nil
 	}
+	return getPhotoTag(ctx, s.db, name)
+}
+
+func getPhotoTag(ctx context.Context, query interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}, name string) (Tag, error) {
 	var tag Tag
-	err := s.db.QueryRowContext(ctx, `
+	err := query.QueryRowContext(ctx, `
 		WITH tag_counts AS (
 			SELECT tag, SUM(count) AS count
 			FROM (
@@ -129,27 +135,27 @@ func (s *photoIndexStore) getTag(ctx context.Context, name string) (Tag, error) 
 	return tag, nil
 }
 
-func (s *photoIndexStore) renameTag(ctx context.Context, oldName, newName, color string, updateColor bool) (Tag, photoTagSearchRefresh, error) {
+func (s *photoIndexStore) renameTag(ctx context.Context, oldName, newName, color string, updateColor bool) (Tag, error) {
 	if !s.available() {
-		return Tag{Name: newName, Color: color}, photoTagSearchRefresh{}, nil
+		return Tag{Name: newName, Color: color}, nil
 	}
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.beginTagWrite(ctx)
 	if err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
 	}
 	defer tx.Rollback()
 
 	exists, err := photoTagExistsTx(ctx, tx, oldName)
 	if err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
 	}
 	if !exists {
-		return Tag{}, photoTagSearchRefresh{}, sql.ErrNoRows
+		return Tag{}, sql.ErrNoRows
 	}
 
 	if !updateColor {
 		if err := tx.QueryRowContext(ctx, `SELECT color FROM photo_tags WHERE name = ?`, oldName).Scan(&color); err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return Tag{}, photoTagSearchRefresh{}, err
+			return Tag{}, err
 		}
 	}
 	now := time.Now().UTC().Format(time.RFC3339Nano)
@@ -160,7 +166,7 @@ func (s *photoIndexStore) renameTag(ctx context.Context, oldName, newName, color
 			ON CONFLICT(name) DO UPDATE SET color = excluded.color, updated_at = excluded.updated_at`,
 			newName, color, now, now,
 		); err != nil {
-			return Tag{}, photoTagSearchRefresh{}, err
+			return Tag{}, err
 		}
 	} else {
 		if _, err := tx.ExecContext(ctx, `
@@ -169,21 +175,21 @@ func (s *photoIndexStore) renameTag(ctx context.Context, oldName, newName, color
 			ON CONFLICT(name) DO UPDATE SET updated_at = excluded.updated_at`,
 			newName, color, now, now,
 		); err != nil {
-			return Tag{}, photoTagSearchRefresh{}, err
+			return Tag{}, err
 		}
 	}
 
-	mediaPaths, err := renamePhotoTagValuesTx(ctx, tx, "media_index", "path", oldName, newName)
+	mediaPaths, err := renamePhotoTagValuesTx(ctx, tx, "media_index", "media_tag_index", "media_path", oldName, newName)
 	if err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
 	}
-	folderPaths, err := renamePhotoTagValuesTx(ctx, tx, "folder_index", "path", oldName, newName)
+	folderPaths, err := renamePhotoTagValuesTx(ctx, tx, "folder_index", "folder_tag_index", "folder_path", oldName, newName)
 	if err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
 	}
-	blogPaths, err := renamePhotoTagValuesTx(ctx, tx, "blog_index", "path", oldName, newName)
+	blogPaths, err := renamePhotoTagValuesTx(ctx, tx, "blog_index", "blog_tag_index", "blog_path", oldName, newName)
 	if err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
 	}
 	for _, index := range []struct {
 		table      string
@@ -194,48 +200,50 @@ func (s *photoIndexStore) renameTag(ctx context.Context, oldName, newName, color
 		{"blog_tag_index", "blog_path"},
 	} {
 		if err := renamePhotoTagIndexTx(ctx, tx, index.table, index.pathColumn, oldName, newName); err != nil {
-			return Tag{}, photoTagSearchRefresh{}, err
+			return Tag{}, err
 		}
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM photo_tags WHERE name = ?`, oldName); err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
+	}
+	if err := refreshPhotoTagSearchPathsTx(ctx, tx, photoTagSearchRefresh{media: mediaPaths, folder: folderPaths, blog: blogPaths}); err != nil {
+		return Tag{}, err
+	}
+	tag, err := getPhotoTag(ctx, tx, newName)
+	if err != nil {
+		return Tag{}, err
 	}
 	if err := tx.Commit(); err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
 	}
-
-	tag, err := s.getTag(ctx, newName)
-	if err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
-	}
-	return tag, photoTagSearchRefresh{media: mediaPaths, folder: folderPaths, blog: blogPaths}, nil
+	return tag, nil
 }
 
-func (s *photoIndexStore) deleteTag(ctx context.Context, name string) (Tag, photoTagSearchRefresh, error) {
+func (s *photoIndexStore) deleteTag(ctx context.Context, name string) (Tag, error) {
 	if !s.available() {
-		return Tag{Name: name}, photoTagSearchRefresh{}, nil
+		return Tag{Name: name}, nil
 	}
-	tag, err := s.getTag(ctx, name)
+	tx, err := s.beginTagWrite(ctx)
 	if err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
-	}
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
 	}
 	defer tx.Rollback()
+	tag, err := getPhotoTag(ctx, tx, name)
+	if err != nil {
+		return Tag{}, err
+	}
 
-	mediaPaths, err := removePhotoTagValuesTx(ctx, tx, "media_index", "path", name)
+	mediaPaths, err := removePhotoTagValuesTx(ctx, tx, "media_index", "media_tag_index", "media_path", name)
 	if err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
 	}
-	folderPaths, err := removePhotoTagValuesTx(ctx, tx, "folder_index", "path", name)
+	folderPaths, err := removePhotoTagValuesTx(ctx, tx, "folder_index", "folder_tag_index", "folder_path", name)
 	if err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
 	}
-	blogPaths, err := removePhotoTagValuesTx(ctx, tx, "blog_index", "path", name)
+	blogPaths, err := removePhotoTagValuesTx(ctx, tx, "blog_index", "blog_tag_index", "blog_path", name)
 	if err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
 	}
 	for _, index := range []struct {
 		table string
@@ -245,39 +253,33 @@ func (s *photoIndexStore) deleteTag(ctx context.Context, name string) (Tag, phot
 		{"blog_tag_index"},
 	} {
 		if _, err := tx.ExecContext(ctx, "DELETE FROM "+index.table+" WHERE tag = ?", name); err != nil {
-			return Tag{}, photoTagSearchRefresh{}, err
+			return Tag{}, err
 		}
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM photo_tags WHERE name = ?`, name); err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
+	}
+	if err := refreshPhotoTagSearchPathsTx(ctx, tx, photoTagSearchRefresh{media: mediaPaths, folder: folderPaths, blog: blogPaths}); err != nil {
+		return Tag{}, err
 	}
 	if err := tx.Commit(); err != nil {
-		return Tag{}, photoTagSearchRefresh{}, err
+		return Tag{}, err
 	}
-
-	return tag, photoTagSearchRefresh{media: mediaPaths, folder: folderPaths, blog: blogPaths}, nil
+	return tag, nil
 }
 
-func (s *photoIndexStore) syncMediaTags(path string, tags []string) {
-	s.syncTagIndex("media_tag_index", "media_path", path, tags)
-}
-
-func (s *photoIndexStore) syncFolderTags(path string, tags []string) {
-	s.syncTagIndex("folder_tag_index", "folder_path", path, tags)
-}
-
-func (s *photoIndexStore) syncTagIndex(table, pathColumn, path string, tags []string) {
-	if !s.available() {
-		return
-	}
-	ctx := context.Background()
+// Reserve the SQLite writer before reading tags. A deferred read transaction
+// cannot safely upgrade after another writer commits (SQLITE_BUSY_SNAPSHOT).
+// This zero-row UPDATE takes the database write lock without changing rows;
+// it coordinates other connections and the index worker as well as HTTP writes.
+func (s *photoIndexStore) beginTagWrite(ctx context.Context) (*sql.Tx, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return
+		return nil, err
 	}
-	defer tx.Rollback()
-	if err := syncTagIndexTx(ctx, tx, table, pathColumn, path, tags); err != nil {
-		return
+	if _, err := tx.ExecContext(ctx, `UPDATE photo_tags SET name = name WHERE 0`); err != nil {
+		_ = tx.Rollback()
+		return nil, err
 	}
-	_ = tx.Commit()
+	return tx, nil
 }

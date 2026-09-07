@@ -163,7 +163,11 @@ func (s *photoIndexStore) saveScannedFolder(ctx context.Context, rel string, mod
 	if !s.available() || rel == "" {
 		return nil
 	}
-	tags, _ := s.folderTags(rel)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 	publicMediaCount := mediaCount
 	publicBlogCount := blogCount
 	if adminOnly {
@@ -171,7 +175,7 @@ func (s *photoIndexStore) saveScannedFolder(ctx context.Context, rel string, mod
 		publicBlogCount = 0
 	}
 	now := time.Now().UTC().Format(time.RFC3339Nano)
-	result, err := s.db.ExecContext(ctx, `
+	result, err := tx.ExecContext(ctx, `
 		INSERT INTO folder_index(path, parent, name, media_count, public_media_count, recursive_media_count, public_recursive_media_count, recursive_blog_count, public_recursive_blog_count, dir_count, mod_time_unix_nano, order_mode, tags, admin_only, indexed_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(path) DO UPDATE SET
@@ -212,7 +216,7 @@ func (s *photoIndexStore) saveScannedFolder(ctx context.Context, rel string, mod
 		dirCount,
 		modTime.UnixNano(),
 		orderMode,
-		tagsJSONString(tags),
+		tagsJSONString(nil),
 		boolInt(adminOnly),
 		now,
 	)
@@ -222,10 +226,10 @@ func (s *photoIndexStore) saveScannedFolder(ctx context.Context, rel string, mod
 	if rowsAffected, err := result.RowsAffected(); err == nil && rowsAffected == 0 {
 		return nil
 	}
-	if len(tags) > 0 {
-		s.syncFolderTags(rel, tags)
+	if err := syncFolderTagsAndSearchTx(ctx, tx, rel); err != nil {
+		return err
 	}
-	return s.refreshFolderSearch(ctx, rel)
+	return tx.Commit()
 }
 
 func (s *photoIndexStore) saveFolderScan(ctx context.Context, rel string, scanSignature, quickSignature int64, orderMode string) error {

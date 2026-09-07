@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -41,6 +42,77 @@ func purgeFixture(t *testing.T) (*repository.Repository, *storage.Store, documen
 		t.Fatal(err)
 	}
 	return repo, store, doc, dbPath
+}
+
+func TestPurgeIndependentDocumentsAndCancellation(t *testing.T) {
+	ctx := context.Background()
+	repo, store, first, _ := purgeFixture(t)
+	path := writeStoredTestFile(t, store, "second.pdf", []byte("%PDF second"))
+	id, err := repo.CreateDocument(ctx, document.Document{OriginalName: "second.pdf", StoredPath: path, MIMEType: "application/pdf", SHA256: "second", Title: "Second"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SoftDelete(ctx, id); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.Purge(ctx, id); err != nil {
+		t.Fatal(err)
+	}
+	release, err := store.AcquireDocumentFiles(ctx, first.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	svc := newTrashService(repo, store, nil, nil, nil)
+	blocked, cancel := context.WithCancel(ctx)
+	defer cancel()
+	waitCtx := &observedWaitContext{Context: blocked, waiting: make(chan struct{})}
+	firstDone := make(chan error, 1)
+	go func() { firstDone <- svc.DeletePurgedDocumentFiles(waitCtx, first.ID) }()
+	awaitTestSignal(t, waitCtx.waiting)
+	secondDone := make(chan error, 1)
+	go func() { secondDone <- svc.DeletePurgedDocumentFiles(ctx, id) }()
+	select {
+	case err := <-secondDone:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("unrelated document blocked by active renderer")
+	}
+	assertStoredPathMissing(t, store, path)
+	cancel()
+	select {
+	case err := <-firstDone:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("blocked cleanup: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("blocked cleanup did not cancel")
+	}
+	if _, err := repo.FileDeletion(ctx, first.ID); err != nil {
+		t.Fatalf("canceled job lost: %v", err)
+	}
+}
+
+func TestPurgeConcurrentSameDocumentRemainsIdempotent(t *testing.T) {
+	repo, store, doc, _ := purgeFixture(t)
+	svc := newTrashService(repo, store, nil, nil, nil)
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := svc.DeletePurgedDocumentFiles(context.Background(), doc.ID); err != nil {
+				t.Error(err)
+			}
+		}()
+	}
+	wg.Wait()
+	assertStoredPathMissing(t, store, doc.StoredPath)
+	if _, err := repo.FileDeletion(context.Background(), doc.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("remaining job: %v", err)
+	}
 }
 
 func TestPurgeRetriesAfterRestartAndDoesNotReuseReservedFilename(t *testing.T) {

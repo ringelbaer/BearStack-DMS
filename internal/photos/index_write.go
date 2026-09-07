@@ -139,7 +139,7 @@ func mediaUpsertSQLForCount(count int) string {
 		latitude = excluded.latitude,
 		longitude = excluded.longitude,
 		keywords = excluded.keywords,
-		tags = CASE WHEN media_index.tags = '[]' OR media_index.tags = '' THEN excluded.tags ELSE media_index.tags END,
+		tags = media_index.tags,
 		faces = excluded.faces,
 		xmp_fingerprint = excluded.xmp_fingerprint,
 		admin_only = excluded.admin_only,
@@ -291,13 +291,6 @@ func facesJSONString(faces []Face) string {
 	return string(data)
 }
 
-func (l *Library) refreshMediaSearch(ctx context.Context, path string) error {
-	if l == nil {
-		return nil
-	}
-	return l.index.refreshMediaSearch(ctx, path)
-}
-
 func scanIndexedMediaWithRowID(scanner mediaScanner) (Media, int64, error) {
 	var row cachedMediaRow
 	var rowID int64
@@ -410,13 +403,6 @@ func (l *Library) saveFolder(folder Folder) error {
 	return l.index.saveFolder(folder)
 }
 
-func (l *Library) refreshFolderSearch(ctx context.Context, path string) error {
-	if l == nil {
-		return nil
-	}
-	return l.index.refreshFolderSearch(ctx, path)
-}
-
 func (l *Library) saveBlog(post BlogPost) {
 	if l == nil {
 		return
@@ -429,13 +415,6 @@ func (l *Library) saveBlogBatch(ctx context.Context, posts []BlogPost) error {
 		return nil
 	}
 	return l.index.saveBlogBatch(ctx, posts)
-}
-
-func (l *Library) refreshBlogSearch(ctx context.Context, path string) error {
-	if l == nil {
-		return nil
-	}
-	return l.index.refreshBlogSearch(ctx, path)
 }
 
 func blogSearchText(post BlogPost) string {

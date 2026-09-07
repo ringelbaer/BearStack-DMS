@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"bearstack/internal/repository"
@@ -17,7 +16,6 @@ import (
 )
 
 type trashService struct {
-	deleteMu                     sync.Mutex
 	repo                         *repository.Repository
 	store                        *storage.Store
 	log                          *slog.Logger
@@ -128,12 +126,8 @@ func (t *trashService) RetryFileDeletions(ctx context.Context) error {
 }
 
 func (t *trashService) DeletePurgedDocumentFiles(ctx context.Context, id int64) error {
-	// Serialize HTTP cleanup and the background retry before reloading state.
-	t.deleteMu.Lock()
-	defer t.deleteMu.Unlock()
-	if err := ctx.Err(); err != nil {
-		return err
-	}
+	// The per-document gate serializes cleanup and renderers without blocking
+	// unrelated documents. Waiting for it also honors request cancellation.
 	releaseFiles, err := t.store.AcquireDocumentFiles(ctx, id)
 	if err != nil {
 		return err

@@ -2684,7 +2684,7 @@ func TestLibraryRebuildIndexPreservesTagsAcrossRescan(t *testing.T) {
 		t.Fatal(err)
 	}
 	post.Tags = []string{"Journal"}
-	lib.saveBlog(post)
+	setBlogTagsForTest(t, lib, post.Path, post.Tags)
 
 	time.Sleep(10 * time.Millisecond)
 	writeJPEG(t, photoPath, color.RGBA{G: 200, A: 255})
@@ -3436,7 +3436,7 @@ func TestLibraryClearingPhotoTagsRemovesAssignments(t *testing.T) {
 		t.Fatal(err)
 	}
 	post.Tags = []string{"Clear"}
-	lib.saveBlog(post)
+	setBlogTagsForTest(t, lib, post.Path, post.Tags)
 
 	tag, err := lib.GetTag(context.Background(), "clear")
 	if err != nil {
@@ -3501,7 +3501,7 @@ func TestLibraryStatisticsCountsPhotoTagAssignments(t *testing.T) {
 		t.Fatal(err)
 	}
 	post.Tags = []string{"Journal"}
-	lib.saveBlog(post)
+	setBlogTagsForTest(t, lib, post.Path, post.Tags)
 	if _, err := lib.SaveTag(context.Background(), "Leer"); err != nil {
 		t.Fatal(err)
 	}
@@ -3550,13 +3550,13 @@ func TestLibraryListTagsForNonAdminHidesAdminOnlyOnlyTags(t *testing.T) {
 		t.Fatal(err)
 	}
 	publicPost.Tags = []string{"PublicBlog"}
-	lib.saveBlog(publicPost)
+	setBlogTagsForTest(t, lib, publicPost.Path, publicPost.Tags)
 	secretPost, err := lib.blogFromPath("secret/private.md")
 	if err != nil {
 		t.Fatal(err)
 	}
 	secretPost.Tags = []string{"SecretBlog"}
-	lib.saveBlog(secretPost)
+	setBlogTagsForTest(t, lib, secretPost.Path, secretPost.Tags)
 	if _, err := lib.SaveTag(context.Background(), "Leer"); err != nil {
 		t.Fatal(err)
 	}
@@ -3671,7 +3671,7 @@ func prepareListingDriftMetadata(t *testing.T, lib *Library) {
 		t.Fatal(err)
 	}
 	post.Tags = []string{"Journal"}
-	lib.saveBlog(post)
+	setBlogTagsForTest(t, lib, post.Path, post.Tags)
 }
 
 func summarizeListingDrift(listing Listing) listingDriftSummary {
