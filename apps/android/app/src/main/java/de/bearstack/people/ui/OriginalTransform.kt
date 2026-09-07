@@ -6,6 +6,10 @@ import androidx.compose.ui.geometry.Size
 import de.bearstack.people.data.remote.FaceBounds
 import kotlin.math.pow
 
+// Screen coordinates grow downwards: moving down increases magnification.
+internal fun zoomAfterDrag(zoom: Float, deltaY: Float, distance: Float): Float =
+    (zoom+deltaY/distance).coerceIn(0f,1f)
+
 internal data class OriginalTransform(val scale: Float, val translation: Offset, val face: Rect?)
 
 /** Fit the oriented image, then zoom towards the selected face without panning beyond its edges. */

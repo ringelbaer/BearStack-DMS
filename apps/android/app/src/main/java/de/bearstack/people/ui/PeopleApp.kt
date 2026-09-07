@@ -85,7 +85,7 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
     var accessibleZoom by remember { mutableStateOf(false) }
     var zoom by remember { mutableFloatStateOf(0f) }
     val zoomDistance=with(LocalDensity.current) { 240.dp.toPx() }
-    val zoomDrag: (Float) -> Unit = { dy -> zoom=(zoom-dy/zoomDistance).coerceIn(0f,1f) }
+    val zoomDrag: (Float) -> Unit = { dy -> zoom=zoomAfterDrag(zoom,dy,zoomDistance) }
     val enabled = !state.busy && !state.unresolved && held == null
     LaunchedEffect(state.person?.id,state.person?.revision) { held=null;accessibleZoom=false }
     Box(Modifier.fillMaxSize()) {
@@ -129,7 +129,7 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                         OutlinedButton(onClick={vm.page(-1)},enabled=enabled && person.offset>0) { Text("Zurück") }
                         OutlinedButton(onClick={vm.page(1)},enabled=enabled && person.offset+4<person.count) { Text("Weiter") }
                     }
-                    Text("Halten: Originalfoto, dabei hoch/runter zoomen · Nach oben: ignorieren · Nach links: überspringen · Nach rechts: zurück",style=MaterialTheme.typography.bodySmall)
+                    Text("Halten: Originalfoto, dabei runter: vergrößern, hoch: verkleinern · Nach oben: ignorieren · Nach links: überspringen · Nach rechts: zurück",style=MaterialTheme.typography.bodySmall)
                     Spacer(Modifier.height(80.dp))
                 } ?: run {
                     if(!state.busy && !state.unresolved) {

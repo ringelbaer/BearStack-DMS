@@ -19,6 +19,7 @@ import de.bearstack.people.data.remote.Person
 import de.bearstack.people.ui.FaceGrid
 import de.bearstack.people.ui.OriginalPhoto
 import de.bearstack.people.ui.PersonSwipeArea
+import de.bearstack.people.ui.zoomAfterDrag
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -59,7 +60,7 @@ class OriginalPhotoTest {
             compose.setContent { MaterialTheme {
                 val distance=with(LocalDensity.current) { 240.dp.toPx() }
                 OriginalPhoto(bitmap,loader,FaceBounds(.1f,.2f,.2f,.3f),zoom,{zoom=it},
-                    {zoom=(zoom-it/distance).coerceIn(0f,1f)},Modifier.size(300.dp,400.dp))
+                    {zoom=zoomAfterDrag(zoom,it,distance)},Modifier.size(300.dp,400.dp))
             } }
             compose.waitUntil(5000) { compose.onAllNodesWithTag("original-face-box").fetchSemanticsNodes().size==1 }
             val preview=compose.onNodeWithTag("original-photo")
@@ -70,7 +71,7 @@ class OriginalPhotoTest {
             val actions=preview.fetchSemanticsNode().config[SemanticsActions.CustomActions]
             compose.runOnIdle { assertTrue(actions.single {it.label=="Zum Gesicht vergrößern"}.action()) }
             compose.runOnIdle { assertEquals(1f,zoom,0f) }
-            preview.performTouchInput { swipeDown() }
+            preview.performTouchInput { swipeUp() }
             compose.runOnIdle { assertTrue(zoom<1f) }
             compose.runOnIdle { assertTrue(actions.single {it.label=="Ganzes Foto anzeigen"}.action()) }
             compose.runOnIdle { assertEquals(0f,zoom,0f) }
@@ -86,7 +87,7 @@ class OriginalPhotoTest {
         try {
             compose.setContent { MaterialTheme { Box(Modifier.fillMaxSize()) {
                 val distance=with(LocalDensity.current) { 240.dp.toPx() }
-                val drag: (Float)->Unit={zoom=(zoom-it/distance).coerceIn(0f,1f)}
+                val drag: (Float)->Unit={zoom=zoomAfterDrag(zoom,it,distance)}
                 PersonSwipeArea(1,held==null,{edits++},Modifier.fillMaxSize()) {
                     FaceGrid(Person(1,"",1,1,10,listOf(10)),held==null,null,{_,_->null},{edits++},
                         {held=it;dismissed=false},{},onZoomDrag=drag)
@@ -98,8 +99,10 @@ class OriginalPhotoTest {
             tile.performTouchInput {down(center)}
             compose.mainClock.advanceTimeBy(800)
             compose.waitUntil(5000) { compose.onAllNodesWithTag("original-face-box").fetchSemanticsNodes().size==1 }
-            tile.performTouchInput {moveBy(androidx.compose.ui.geometry.Offset(0f,-150f))}
+            tile.performTouchInput {moveBy(androidx.compose.ui.geometry.Offset(0f,150f))}
             compose.runOnIdle {assertEquals(10L,held);assertTrue(zoom>0f);assertEquals(0,edits)}
+            tile.performTouchInput {moveBy(androidx.compose.ui.geometry.Offset(0f,-150f))}
+            compose.runOnIdle {assertEquals(10L,held);assertEquals(0f,zoom,.001f);assertEquals(0,edits)}
             tile.performTouchInput {up()}
             compose.runOnIdle {assertNull(held);assertEquals(0,edits)}
             compose.onNodeWithTag("original-photo").assertDoesNotExist()
