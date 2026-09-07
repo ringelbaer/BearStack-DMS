@@ -967,6 +967,7 @@
 <p>Tagänderungen aktualisieren Metadaten, Tagzuordnungen und Volltextsuche gemeinsam. Beim Hinzufügen oder Entfernen von Tags auf mehreren Fotos bleiben gleichzeitige Änderungen erhalten. Scheitert eine Bulk-Aktion, wird keine teilweise geänderte Auswahl gespeichert. Auch laufende Indexscans erhalten den aktuellen Tagstand.</p>
 <p>Umbenennen und Entfernen eines Tags verwenden die vorhandenen Tagindizes, um nur die betroffenen Medien, Ordner und Blogs zu bearbeiten. Der Aufwand hängt damit von den betroffenen Einträgen statt von allen getaggten Dateien ab.</p>
 <h2 id="foto-zufall-und-metadaten">Foto-Zufall und Metadaten<a class="headerlink" href="#foto-zufall-und-metadaten" title="Permanent link">&para;</a></h2>
+<p>Foto-Info-Batchanfragen bündeln Metadaten- und Gesichtsabfragen in Paketen und teilen sich die Rechteprüfung gemeinsamer Elternordner. Dateistand und XMP-Sidecars werden weiterhin geprüft; aktuelle <code>.adminonly</code>-Markierungen und geschützte Gesichtsnamen bleiben berücksichtigt.</p>
 <p>Der Zufallsendpunkt <code>/photos/random</code> liefert standardmäßig das Original direkt aus. Mit <code>size=original</code> bleibt es beim Original; mit <code>size=ordner</code>, <code>size=galerie</code>, <code>size=gross</code>, <code>size=groß</code> oder <code>size=hd</code> wird stattdessen die jeweilige konfigurierte Thumbnailgröße ausgeliefert.</p>
 <p>Zusätzlich liefert der Endpunkt Metadaten als Response-Header: <code>X-BearStack-Photo-Title</code>, <code>X-BearStack-Photo-Path</code>, <code>X-BearStack-Photo-Folder-Path</code>, <code>X-BearStack-Photo-Folder-URL</code>, <code>X-BearStack-Photo-Folder-Title</code> sowie <code>Link: &lt;https://.../photos?...&gt;; rel="up"</code> als standardisierter Parent-Link.</p>
 <h2 id="gesichter-und-xmp">Gesichter und XMP<a class="headerlink" href="#gesichter-und-xmp" title="Permanent link">&para;</a></h2>
@@ -976,6 +977,7 @@
 <p>Unter <code>Einstellungen -&gt; Fotos</code> kann die Foto-Track-Auflösung der Karte in sinnvollen Stufen von 500 m bis 10 km eingestellt werden. Sie legt fest, wie nah GPS-Fotos liegen müssen, um im fotobasierten Karten-Track zu einem Trackpunkt zusammengefasst zu werden.</p>
 <p>Die Kartenansicht passt ihre Höhe an das Browserfenster an und nutzt den zwischen Navigation, Filtern und Footer verfügbaren Bereich vollständig aus. Auf kleinen oder sehr kurzen Fenstern bleibt eine bedienbare Mindesthöhe erhalten.</p>
 <p>Dort kann auch ein Index-Worker aktiviert werden. Er crawlt den Foto-Root ordnerweise im Hintergrund, überspringt unveränderte Ordner anhand ihres letzten Scan-Zeitpunkts und entfernt nicht mehr vorhandene Foto-, Ordner- und Blogeinträge ordnerlokal aus dem Index. Standardmäßig ist er deaktiviert; bei Aktivierung läuft er alle 60 Minuten mit niedriger I/O-Priorität, falls vom System unterstützt, und 250 ms Pause pro gescanntem Ordner.</p>
+<p>Bei Stat- oder Blog-Lesefehlern bleibt der Index des betroffenen Ordners einschließlich manueller Tags unverändert. Der Scan wird später erneut versucht. Vollständige Scans entfernen tatsächlich verschwundene Einträge; zusammengehörige Metadaten, Tagzuordnungen und Such-/Vorschauindizes werden je Löschpaket beziehungsweise Ordnerteilbaum gemeinsam zurückgerollt, falls die Bereinigung scheitert oder abgebrochen wird.</p>
 <p>Der separate Thumbnail-Worker ist ebenfalls standardmäßig deaktiviert. Bei Aktivierung läuft er alle 15 Minuten, erzeugt standardmäßig bis zu 15 fehlende Thumbnails pro Lauf und nutzt standardmäßig eine Thumbnail-Parallelität von 1.</p>
 <h2 id="cache-statistik">Cache-Statistik<a class="headerlink" href="#cache-statistik" title="Permanent link">&para;</a></h2>
 <p>Anzahl und Größe der Thumbnail-Dateien werden beim Start und danach alle 30 Minuten im Hintergrund ermittelt, auch wenn die Thumbnail-Erzeugung deaktiviert ist. Seitenaufrufe lesen den letzten vollständigen Stand und lösen keinen Dateisystemdurchlauf aus. Die Statistik nennt den Messzeitpunkt; vor der ersten Messung erscheint „Thumbnail-Cache wird ermittelt“. Bei Fehler oder Abbruch bleibt der vorherige Stand erhalten. Gleichzeitige Aktualisierungen teilen sich einen Durchlauf; temporäre Dateien und symbolische Links werden nicht mitgezählt.</p>
@@ -1222,7 +1224,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.25.1 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.25.2 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

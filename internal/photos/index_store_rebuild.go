@@ -405,10 +405,12 @@ func (s *photoIndexStore) deleteIndexPaths(ctx context.Context, paths []string, 
 			args = append(args, path)
 		}
 		in := sqlutil.Placeholders(len(args))
+		batch := make([]indexDeleteStatement, 0, len(statements))
 		for _, stmt := range statements {
-			if _, err := s.db.ExecContext(ctx, fmt.Sprintf(stmt, in), args...); err != nil {
-				return err
-			}
+			batch = append(batch, indexDeleteStatement{fmt.Sprintf(stmt, in), args})
+		}
+		if err := s.deleteIndexBatch(ctx, batch); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -422,10 +424,7 @@ func (s *photoIndexStore) deleteFolderIndexSubtree(ctx context.Context, rel stri
 	mediaArgs := []any{rel, start, end}
 	blogArgs := []any{rel, start, end}
 	folderArgs := []any{rel, start, end}
-	statements := []struct {
-		sql  string
-		args []any
-	}{
+	statements := []indexDeleteStatement{
 		{`DELETE FROM media_search WHERE path IN (SELECT path FROM media_index WHERE directory = ? OR (directory >= ? AND directory < ?))`, mediaArgs},
 		{`DELETE FROM media_tag_index WHERE media_path IN (SELECT path FROM media_index WHERE directory = ? OR (directory >= ? AND directory < ?))`, mediaArgs},
 		{`DELETE FROM folder_preview_index WHERE media_path IN (SELECT path FROM media_index WHERE directory = ? OR (directory >= ? AND directory < ?))`, mediaArgs},
@@ -440,15 +439,29 @@ func (s *photoIndexStore) deleteFolderIndexSubtree(ctx context.Context, rel stri
 		{`DELETE FROM folder_index WHERE path = ? OR (path >= ? AND path < ?)`, folderArgs},
 		{`DELETE FROM photo_folder_scan WHERE path = ? OR (path >= ? AND path < ?)`, folderArgs},
 	}
+	return s.deleteIndexBatch(ctx, statements)
+}
+
+type indexDeleteStatement struct {
+	sql  string
+	args []any
+}
+
+func (s *photoIndexStore) deleteIndexBatch(ctx context.Context, statements []indexDeleteStatement) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 	for _, stmt := range statements {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		if _, err := s.db.ExecContext(ctx, stmt.sql, stmt.args...); err != nil {
+		if _, err := tx.ExecContext(ctx, stmt.sql, stmt.args...); err != nil {
 			return err
 		}
 	}
-	return nil
+	return tx.Commit()
 }
 
 func (s *photoIndexStore) refreshPhotoStats(ctx context.Context) error {

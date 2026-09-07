@@ -1,5 +1,9 @@
 # BearStack Agent Instructions
 
+## Fetch & Pull
+
+Warne mich und verweigere die Ausführung von Befehlen, wenn nicht aktuell gepullt ist.
+
 ## Versioning
 
 BearStack uses semantic versioning from the root `VERSION` file. Any agent or maintainer changing tracked project behavior must decide whether the version changes and update `VERSION` in the same change when needed.

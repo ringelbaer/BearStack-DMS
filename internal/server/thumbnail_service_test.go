@@ -3,11 +3,14 @@ package server
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"image"
 	"image/color"
 	"image/jpeg"
+	"image/png"
 	"io"
 	"log/slog"
 	"os"
@@ -19,6 +22,62 @@ import (
 	"bearstack/internal/repository"
 	"bearstack/internal/storage"
 )
+
+func TestDocumentThumbnailRejectsOversizedHeaderBeforeDecode(t *testing.T) {
+	for _, dimensions := range [][2]uint32{{20_000, 20_000}, {40_000_001, 1}, {1, 40_000_001}} {
+		t.Run(fmt.Sprint(dimensions), func(t *testing.T) {
+			var raw bytes.Buffer
+			if err := png.Encode(&raw, image.NewNRGBA(image.Rect(0, 0, 1, 1))); err != nil {
+				t.Fatal(err)
+			}
+			// Keep only a valid PNG signature and IHDR. Decoding pixel data would
+			// fail with EOF; the dimension limit must reject it first.
+			header := raw.Bytes()[:33]
+			binary.BigEndian.PutUint32(header[16:20], dimensions[0])
+			binary.BigEndian.PutUint32(header[20:24], dimensions[1])
+			binary.BigEndian.PutUint32(header[29:33], crc32.ChecksumIEEE(header[12:29]))
+			dir := t.TempDir()
+			source, target := filepath.Join(dir, "source.png"), filepath.Join(dir, "target.jpg")
+			if err := os.WriteFile(source, header, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(target, []byte("existing"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := writeDocumentImageThumbnail(source, target, 120); !errors.Is(err, errDocumentThumbnailDimensions) {
+				t.Fatalf("error = %v", err)
+			}
+			data, err := os.ReadFile(target)
+			if err != nil || string(data) != "existing" {
+				t.Fatalf("target changed: %q %v", data, err)
+			}
+			entries, err := os.ReadDir(dir)
+			if err != nil || len(entries) != 2 {
+				t.Fatalf("temporary file leaked: %v %v", entries, err)
+			}
+		})
+	}
+}
+
+func TestDocumentThumbnailAcceptsPixelLimitHeader(t *testing.T) {
+	var raw bytes.Buffer
+	if err := png.Encode(&raw, image.NewNRGBA(image.Rect(0, 0, 1, 1))); err != nil {
+		t.Fatal(err)
+	}
+	header := raw.Bytes()[:33]
+	binary.BigEndian.PutUint32(header[16:20], 8_000)
+	binary.BigEndian.PutUint32(header[20:24], 5_000)
+	binary.BigEndian.PutUint32(header[29:33], crc32.ChecksumIEEE(header[12:29]))
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source.png")
+	if err := os.WriteFile(source, header, 0600); err != nil {
+		t.Fatal(err)
+	}
+	err := writeDocumentImageThumbnail(source, filepath.Join(dir, "target.jpg"), 120)
+	if err == nil || errors.Is(err, errDocumentThumbnailDimensions) {
+		t.Fatalf("expected missing pixel data error at permitted limit, got %v", err)
+	}
+}
 
 func TestWriteDocumentImageThumbnailReplacesTargetAndCleansTemp(t *testing.T) {
 	dir := t.TempDir()

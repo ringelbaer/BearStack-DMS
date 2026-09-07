@@ -114,15 +114,13 @@ func (s *Server) handlePhotoMediaInfoBatch(w http.ResponseWriter, r *http.Reques
 		s.renderPhotoError(w, r, err)
 		return
 	}
-	mediaItems := make([]photos.Media, 0, len(paths))
+	mediaItems, err := s.photos.MediaBatchContext(r.Context(), paths)
+	if err != nil {
+		s.renderPhotoError(w, r, err)
+		return
+	}
 	mediaViews := make([]PhotoMediaView, 0, len(paths))
-	for _, path := range paths {
-		media, err := s.photos.MediaContext(r.Context(), path)
-		if err != nil {
-			s.renderPhotoError(w, r, err)
-			return
-		}
-		mediaItems = append(mediaItems, media)
+	for _, media := range mediaItems {
 		mediaViews = append(mediaViews, photoMediaView(media, settings))
 	}
 	ready := s.photos.CachedThumbnailsReadyForMediaContext(r.Context(), mediaItems, settings.ThumbnailSize)

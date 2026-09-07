@@ -192,11 +192,16 @@ func (l *Library) indexDirectoryStep(ctx context.Context, item indexQueueItem, r
 	if !info.IsDir() {
 		return indexDirectoryStepResult{}, fmt.Errorf("photo path is not a directory: %s", rel)
 	}
-	adminOnly := item.ParentAdminOnly || adminOnlyMarkerExists(abs)
 	entries, err := os.ReadDir(abs)
 	if err != nil {
 		return indexDirectoryStepResult{}, err
 	}
+	return l.indexDirectoryEntries(ctx, item, runCache, abs, info, entries)
+}
+
+func (l *Library) indexDirectoryEntries(ctx context.Context, item indexQueueItem, runCache indexRunCache, abs string, info os.FileInfo, entries []os.DirEntry) (indexDirectoryStepResult, error) {
+	rel := item.Path
+	adminOnly := item.ParentAdminOnly || adminOnlyMarkerExists(abs)
 	orderMode := normalizeDirectoryOrderMode(directoryOrder(entries))
 	quickSignature := folderQuickScanSignature(info, entries)
 	var scanSignature int64
@@ -271,7 +276,10 @@ func (l *Library) indexDirectoryStep(ctx context.Context, item indexQueueItem, r
 		}
 		if isMediaKind(kind) {
 			childInfo, err := directoryEntryInfo(entry, entryInfoCache)
-			if err != nil || childInfo.IsDir() || childInfo.Mode()&os.ModeSymlink != 0 {
+			if err != nil {
+				return indexDirectoryStepResult{}, fmt.Errorf("stat %s: %w", childRel, err)
+			}
+			if childInfo.IsDir() || childInfo.Mode()&os.ModeSymlink != 0 {
 				continue
 			}
 			signatureBuilder.addFile(name, childInfo)
@@ -289,21 +297,25 @@ func (l *Library) indexDirectoryStep(ctx context.Context, item indexQueueItem, r
 				mediaCacheLoaded = true
 			}
 			media, changed, err := l.mediaFromPathInfo(childRel, filepath.Join(abs, name), childInfo, kind, mediaCache, adminOnly, false)
-			if err == nil {
-				mediaCount++
-				if trackExisting {
-					seenMedia[media.Path] = struct{}{}
-				}
-				if changed {
-					mediaToSave = append(mediaToSave, media)
-				}
+			if err != nil {
+				return indexDirectoryStepResult{}, fmt.Errorf("read %s: %w", childRel, err)
+			}
+			mediaCount++
+			if trackExisting {
+				seenMedia[media.Path] = struct{}{}
+			}
+			if changed {
+				mediaToSave = append(mediaToSave, media)
 			}
 			continue
 		}
 		switch kind {
 		case MediaTypeBlog:
 			childInfo, err := directoryEntryInfo(entry, entryInfoCache)
-			if err != nil || childInfo.IsDir() || childInfo.Mode()&os.ModeSymlink != 0 {
+			if err != nil {
+				return indexDirectoryStepResult{}, fmt.Errorf("stat %s: %w", childRel, err)
+			}
+			if childInfo.IsDir() || childInfo.Mode()&os.ModeSymlink != 0 {
 				continue
 			}
 			signatureBuilder.addFile(name, childInfo)
@@ -321,17 +333,20 @@ func (l *Library) indexDirectoryStep(ctx context.Context, item indexQueueItem, r
 				blogCacheLoaded = true
 			}
 			post, changed, err := l.blogFromPathInfo(childRel, filepath.Join(abs, name), childInfo, blogCache, adminOnly)
-			if err == nil {
-				blogCount++
-				if trackExisting {
-					seenBlogs[childRel] = struct{}{}
-				}
-				if changed {
-					blogsToSave = append(blogsToSave, post)
-				}
+			if err != nil {
+				return indexDirectoryStepResult{}, fmt.Errorf("read %s: %w", childRel, err)
+			}
+			blogCount++
+			if trackExisting {
+				seenBlogs[childRel] = struct{}{}
+			}
+			if changed {
+				blogsToSave = append(blogsToSave, post)
 			}
 		}
 	}
+	// Publish and prune only complete scans. Even an entry that disappears after
+	// ReadDir may be a transient mount/I/O failure; retry it on the next scan.
 	scanSignature = signatureBuilder.fullSignature()
 
 	if rel == "" && runCache.hasIndexedContent && len(children) == 0 && mediaCount == 0 && blogCount == 0 {

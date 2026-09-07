@@ -275,12 +275,27 @@ func isImageThumbnailMIME(mimeType string) bool {
 	}
 }
 
+const maxDocumentThumbnailPixels int64 = 40_000_000
+
+var errDocumentThumbnailDimensions = errors.New("Bild überschreitet das Vorschaulimit von 40 Megapixeln oder hat ungültige Dimensionen")
+
 func writeDocumentImageThumbnail(source, target string, size int) error {
 	file, err := os.Open(source)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
+	cfg, _, err := image.DecodeConfig(file)
+	if err != nil {
+		return err
+	}
+	// Divide instead of multiplying to reject oversized headers without overflow.
+	if cfg.Width <= 0 || cfg.Height <= 0 || int64(cfg.Width) > maxDocumentThumbnailPixels/int64(cfg.Height) {
+		return errDocumentThumbnailDimensions
+	}
+	if _, err := file.Seek(0, 0); err != nil {
+		return err
+	}
 	img, _, err := image.Decode(file)
 	if err != nil {
 		return err
