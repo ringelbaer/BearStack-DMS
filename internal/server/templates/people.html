@@ -8,16 +8,32 @@
 {{range .People.People}}
   <div class="person-overview-card" data-person-id="{{.ID}}">
     <a class="person-card" href="/photos/people/{{.ID}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.FaceID}}/thumbnail" alt=""><strong>{{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}</strong><span>{{.Count}} {{if eq .Count 1}}Foto{{else}}Fotos{{end}}</span></a>
-    {{if $.Auth.CanPhotosManage}}<button type="button" class="person-ignore-button" data-ignore-face="{{.FaceID}}" aria-label="Angezeigtes Gesicht ignorieren: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}" title="Angezeigtes Gesicht ignorieren">×</button>{{end}}
+    {{if $.Auth.CanPhotosManage}}<label class="person-select"><input type="checkbox" data-person-select value="{{.ID}}" aria-label="Person auswählen: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}"> Auswählen</label><button type="button" class="person-ignore-button" data-ignore-face="{{.FaceID}}" aria-label="Angezeigtes Gesicht ignorieren: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}" title="Angezeigtes Gesicht ignorieren">×</button>{{end}}
   </div>
 {{else}}<p>{{if or .People.Query .People.KnownOnly}}Keine Personen für diesen Filter gefunden.{{else}}Noch keine Personen gefunden. {{if .Auth.CanPhotosManage}}Die optionale Erkennung lässt sich in den Einstellungen aktivieren.{{end}}{{end}}</p>{{end}}
 </div>
+{{if .Auth.CanPhotosManage}}<div class="people-merge" data-people-merge hidden><span data-people-merge-target></span><button type="button" data-people-merge-button>Personen zusammenführen</button></div>{{end}}
 {{else}}
 {{if .Auth.CanPhotosManage}}
 <section class="people-management"><form method="post" action="/photos/people/{{.People.PersonID}}/rename" class="filters people-form"><label>Name <input name="name" maxlength="200" value="{{.People.Name}}"></label><button>Benennen</button></form>
-<form method="post" action="/photos/people/{{.People.PersonID}}/merge" class="filters people-form" data-person-picker><label>Zielperson suchen <input type="search" data-person-search placeholder="Name eingeben"></label><label>Zusammenführen mit <select name="target" data-person-options required><option value="">Person auswählen</option></select></label><button>Gruppen zusammenführen</button></form></section>
+<form method="post" action="/photos/people/{{.People.PersonID}}/merge" class="filters people-form" data-person-picker data-person-exclude="{{.People.PersonID}}">
+<div class="person-picker-field">
+  <label for="merge-person-search">Zielperson suchen</label>
+  <input id="merge-person-search" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="merge-person-options" autocomplete="off" data-person-search placeholder="Name eingeben" required>
+  <input type="hidden" name="target" data-person-target>
+  <div class="person-picker-popup" data-person-popup hidden><div id="merge-person-options" role="listbox" aria-label="Zielpersonen" data-person-options></div><p role="status" data-person-feedback></p></div>
+</div>
+<button>Gruppen zusammenführen</button></form></section>
 <form method="post" action="/photos/faces/edit" data-person-picker>
-<div class="filters people-form"><label>Zielperson suchen <input type="search" data-person-search placeholder="Name eingeben"></label><label>Verschieben zu <select name="target" data-person-options><option value="0">Neue Person</option></select></label><label>Name der neuen Person <input name="name" maxlength="200"></label><button name="action" value="move">Auswahl verschieben</button><button name="action" value="ignore">Auswahl ignorieren</button></div>
+<div class="filters people-form">
+<div class="person-picker-field">
+  <label for="move-person-search">Zielperson suchen</label>
+  <input id="move-person-search" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="move-person-options" aria-describedby="move-person-hint" autocomplete="off" data-person-search placeholder="Name eingeben">
+  <input type="hidden" name="target" value="0" data-person-target>
+  <span id="move-person-hint" class="person-picker-hint">Leer lassen für eine neue Person.</span>
+  <div class="person-picker-popup" data-person-popup hidden><div id="move-person-options" role="listbox" aria-label="Zielpersonen" data-person-options></div><p role="status" data-person-feedback></p></div>
+</div>
+<label>Name der neuen Person <input name="name" maxlength="200"></label><button name="action" value="move">Auswahl verschieben</button><button name="action" value="ignore" formnovalidate>Auswahl ignorieren</button></div>
 {{end}}
 <div class="people-grid" data-photo-gallery>{{range .People.Faces}}<div class="person-card">{{if $.Auth.CanPhotosManage}}<label><input type="checkbox" name="face_id" value="{{.ID}}"> Auswählen</label>{{end}}<button type="button" class="person-photo-button" data-photo-item data-photo-path="{{.Path}}" data-photo-title="{{.Path}}" data-photo-type="image" aria-label="Foto öffnen: {{.Path}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Gesicht"><span>{{.Path}}</span></button>{{if .Manual}}<span>Manuell zugeordnet</span>{{end}}</div>{{end}}</div>
 {{if .Auth.CanPhotosManage}}</form>{{end}}

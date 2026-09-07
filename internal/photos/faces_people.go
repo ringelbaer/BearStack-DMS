@@ -211,9 +211,22 @@ func (l *Library) EditFaces(ctx context.Context, ids []int64, target int64, igno
 	return nil
 }
 
-func (l *Library) MergePeople(ctx context.Context, source, target int64) error {
-	if source <= 0 || target <= 0 || source == target {
-		return errors.New("zwei verschiedene Personen auswählen")
+func (l *Library) MergePeople(ctx context.Context, source, target int64, additional ...int64) error {
+	sources := []int64{source}
+	seen := map[int64]bool{source: true}
+	for _, id := range additional {
+		if !seen[id] {
+			sources = append(sources, id)
+			seen[id] = true
+		}
+	}
+	if target <= 0 || len(sources) > 60 {
+		return errors.New("höchstens 60 verschiedene Quellpersonen auswählen")
+	}
+	for _, id := range sources {
+		if id <= 0 || id == target {
+			return errors.New("verschiedene Personen auswählen")
+		}
 	}
 	if err := l.RefreshFaceVisibility(ctx); err != nil {
 		return err
@@ -225,22 +238,25 @@ func (l *Library) MergePeople(ctx context.Context, source, target int64) error {
 		return err
 	}
 	defer tx.Rollback()
-	for _, id := range []int64{source, target} {
+	for _, id := range append(append([]int64{}, sources...), target) {
 		var exists int
 		if err = tx.QueryRowContext(ctx, `SELECT 1 FROM photo_people WHERE id=? AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=? AND ignored=0)`, id, id).Scan(&exists); err != nil {
 			return err
 		}
 	}
-	if _, err = tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=?,manual=1 WHERE person_id=?`, target, source); err != nil {
-		return err
-	}
-	if _, err = tx.ExecContext(ctx, `DELETE FROM photo_people WHERE id=?`, source); err != nil {
-		return err
-	}
-	for _, id := range []int64{source, target} {
+	for _, id := range sources {
+		if _, err = tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=?,manual=1 WHERE person_id=?`, target, id); err != nil {
+			return err
+		}
+		if _, err = tx.ExecContext(ctx, `DELETE FROM photo_people WHERE id=?`, id); err != nil {
+			return err
+		}
 		if err = refreshFaceReferencesTx(ctx, tx, id); err != nil {
 			return err
 		}
+	}
+	if err = refreshFaceReferencesTx(ctx, tx, target); err != nil {
+		return err
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE photo_face_state SET revision=revision+1 WHERE id=1`); err != nil {
 		return err

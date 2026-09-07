@@ -12,7 +12,12 @@ let root, baseURL, app, service;
 
 test.beforeAll(async () => {
   root = await mkdtemp(path.join(os.tmpdir(), "bearstack-faces-e2e-"));
-  const photos=path.join(root,"photos");await mkdir(photos);for(const name of ["a.png","b.png","c.png"]) await writeFile(path.join(photos,name),png);
+  const photos = path.join(root, "photos");
+  for (const name of ["a", "b", "c"]) {
+    const file = path.join(photos, "2002", "20021010-Assisi", "BILDER_LUKAS", name + "-sehr-langer-bilddateiname-ohne-kurze-abstaende-012345678901234567890123456789.png");
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, png);
+  }
   let calls=0;
   service=http.createServer((request,response)=>{
     if(request.headers.authorization!=="Bearer "+token){response.writeHead(401);response.end();return;}
@@ -93,10 +98,19 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
       const forms = [...document.querySelectorAll(".people-form")];
       return {
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        cardsFit: [...document.querySelectorAll(".person-photo-button")].every(button => {
+          const card = button.closest(".person-card").getBoundingClientRect();
+          const caption = button.querySelector("span");
+          const text = caption.getBoundingClientRect();
+          const image = button.querySelector("img").getBoundingClientRect();
+          return text.left >= card.left && text.right <= card.right &&
+            caption.scrollWidth <= caption.clientWidth + 1 && button.scrollWidth <= button.clientWidth + 1 &&
+            text.top >= image.bottom && Math.abs(image.width - image.height) <= 1;
+        }),
         fits: forms.every(form => {
           const bounds = form.getBoundingClientRect();
           const children = [...form.children];
-          return [...form.querySelectorAll("input, select, button")].every(control => {
+          return [...form.querySelectorAll("input:not([type=hidden]), select, button")].every(control => {
             const rect = control.getBoundingClientRect();
             return rect.width >= 180 && rect.left >= bounds.left && rect.right <= bounds.right + 1 &&
               (control.tagName !== "BUTTON" || control.scrollWidth <= control.clientWidth + 1);
@@ -109,12 +123,16 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
     });
     expect(layout.overflow, `page overflow at ${width}px`).toBeLessThanOrEqual(1);
     expect(layout.fits, `person form controls at ${width}px`).toBe(true);
+    expect(layout.cardsFit, `long photo paths and square thumbnails at ${width}px`).toBe(true);
   }
   await page.setViewportSize({ width: 1280, height: 900 });
   const personURL = page.url();
   const lightbox = page.locator("[data-photo-lightbox]");
   const photoButtons = page.locator(".person-photo-button");
   await expect(photoButtons).toHaveCount(2);
+  await photoButtons.first().hover();
+  await expect(photoButtons.first()).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await page.screenshot({ path: "/tmp/bearstack-person-layout-fixed.png", fullPage: true });
   await photoButtons.first().locator("img").click();
   await expect(lightbox).toBeVisible();
   await expect.poll(() => lightbox.locator("[data-photo-image]").evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
@@ -146,10 +164,88 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   expect((await knownPage.json()).known_only).toBe(true);
   await page.locator("a.person-card").click();
 
+  const moveForm = page.locator('form[action="/photos/faces/edit"]');
+  const moveSearch = moveForm.getByRole("combobox", { name: "Zielperson suchen" });
+  await moveSearch.fill("Jür");
+  await expect(moveForm.getByRole("option")).toHaveCount(1);
+  await moveForm.getByRole("option").click();
+  await expect(moveForm.locator("[data-person-target]")).not.toHaveValue("0");
+  await moveSearch.fill("");
+  await expect(moveForm.locator("[data-person-target]")).toHaveValue("0");
+  expect(await moveSearch.evaluate(input => input.checkValidity())).toBe(true);
+  await moveSearch.press("Tab");
   await page.getByLabel("Auswählen",{exact:true}).first().check();await page.getByLabel("Name der neuen Person").fill("Marie");await page.getByRole("button",{name:"Auswahl verschieben"}).click();
   await page.locator("a.person-card").filter({hasText:"Marie"}).click();
-  await expect(page.getByLabel("Zusammenführen mit").locator("option").filter({hasText:"Jürgen"})).toHaveCount(1);
-  await page.getByLabel("Zusammenführen mit").selectOption({label:await page.getByLabel("Zusammenführen mit").locator("option").filter({hasText:"Jürgen"}).textContent()});
+  const mergeForm = page.locator('form[action$="/merge"]');
+  const personSearch = mergeForm.getByRole("combobox", { name: "Zielperson suchen" });
+  const personOptions = mergeForm.getByRole("option");
+  await expect(mergeForm.locator("select")).toHaveCount(0);
+  await personSearch.fill("Marie");
+  await expect(mergeForm.locator("[data-person-feedback]")).toHaveText("Keine passende Person gefunden.");
+  await expect(personOptions).toHaveCount(0);
+  await personSearch.fill("nicht-vorhandene-person");
+  await expect(mergeForm.locator("[data-person-feedback]")).toHaveText("Keine passende Person gefunden.");
+  expect(await personSearch.evaluate(input => input.checkValidity())).toBe(false);
+  await page.route("**/photos/people?format=json&q=Fehler", route => route.fulfill({ status: 503, body: "Unavailable" }));
+  await personSearch.fill("Fehler");
+  await expect(mergeForm.locator("[data-person-feedback]")).toContainText("Personen konnten nicht geladen werden.");
+  await page.unroute("**/photos/people?format=json&q=Fehler");
+  await personSearch.fill("Jür");
+  await expect(personOptions).toHaveCount(1);
+  await expect(personOptions.first()).toContainText("Jürgen");
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    const visible = await mergeForm.locator("[data-person-popup]").evaluate(popup => {
+      const rect = popup.getBoundingClientRect();
+      const status = popup.querySelector("[role=status]").getBoundingClientRect();
+      return rect.left >= 0 && rect.right <= window.innerWidth &&
+        popup.contains(document.elementFromPoint(status.left + status.width / 2, status.top + status.height / 2));
+    });
+    expect(visible, "suggestions must overlay the following form at " + width + "px").toBe(true);
+  }
+  await page.screenshot({ path: "/tmp/bearstack-person-autocomplete.png", fullPage: true });
+  await personSearch.press("ArrowDown");
+  await expect(personOptions.first()).toHaveAttribute("aria-selected", "true");
+  await personSearch.press("Enter");
+  await expect(personSearch).toHaveValue(/Jürgen \(#\d+\)/);
+  await expect(personSearch).toHaveAttribute("aria-expanded", "false");
+  await expect(mergeForm.locator("[data-person-target]")).not.toHaveValue("");
+  expect(await personSearch.evaluate(input => input.checkValidity())).toBe(true);
+  // A response to an obsolete query must not replace the current suggestions.
+  let releaseStale, markStarted;
+  const started = new Promise(resolve => { markStarted = resolve; });
+  let markFinished;
+  const finished = new Promise(resolve => { markFinished = resolve; });
+  await page.route("**/photos/people?format=json&q=Veraltet", async route => {
+    markStarted();
+    await new Promise(resolve => { releaseStale = resolve; });
+    try {
+      await route.fulfill({ json: { people: [{ id: 99999, name: "Veraltete Antwort", count: 1 }] } });
+    } finally {
+      markFinished();
+    }
+  });
+  await personSearch.fill("Veraltet");
+  await started;
+  await personSearch.fill("Jür");
+  await expect(personOptions).toHaveCount(1);
+  await expect(personOptions.first()).toContainText("Jürgen");
+  releaseStale();
+  await finished;
+  await page.unroute("**/photos/people?format=json&q=Veraltet");
+  await expect(personOptions.first()).toContainText("Jürgen");
+  // Editing a chosen label must discard its ID; mouse selection restores it.
+  await personSearch.fill("Jü");
+  await expect(mergeForm.locator("[data-person-target]")).toHaveValue("");
+  expect(await personSearch.evaluate(input => input.checkValidity())).toBe(false);
+  await expect(personOptions).toHaveCount(1);
+  await personSearch.press("Escape");
+  await expect(personSearch).toHaveAttribute("aria-expanded", "false");
+  await personSearch.press("ArrowDown");
+  await expect(personOptions).toHaveCount(1);
+  await personOptions.first().click();
+  await expect(personSearch).toHaveAttribute("aria-expanded", "false");
+  await expect(mergeForm.locator("[data-person-target]")).not.toHaveValue("");
   await page.getByRole("button",{name:"Gruppen zusammenführen"}).click();await expect(page.getByLabel("Auswählen",{exact:true})).toHaveCount(2);
   await page.goto(baseURL + "/photos/people?q=J%C3%BCrgen&known=1");
   await page.evaluate(() => { window.peoplePageMarker = "unchanged"; });
@@ -184,6 +280,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect.poll(() => readerPage.locator("[data-photo-image]").evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
   await readerPage.goto(baseURL + "/photos/people");
   await expect(readerPage.locator("[data-ignore-face]")).toHaveCount(0);
+  await expect(readerPage.locator("[data-person-select]")).toHaveCount(0);
+  expect((await reader.request.post(baseURL + "/photos/people/1/merge", { form: { target: "2" }, headers: { Origin: baseURL } })).status()).toBe(403);
   await reader.close();
   await page.goto(baseURL+"/settings/photos/faces");await page.getByRole("button",{name:"Pausieren",exact:true}).click();await expect(page.getByLabel("Gesichtserkennung aktivieren")).not.toBeChecked();
   await page.goto(baseURL + "/photos/people?q=J%C3%BCrgen&known=1");
@@ -193,5 +291,41 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(page.locator("a.person-card")).toHaveCount(0);
   await expect(page.locator("[data-people-overview]")).toContainText("Keine weiteren Personen gefunden.");
   expect(await page.evaluate(() => window.peoplePageMarker)).toBe("last-face");
+  // Restore the remaining named group, then merge from the overview via Ajax.
+  const restore = await context.request.post(baseURL + "/photos/faces/edit", {
+    form: { face_id: oldFace, action: "move", name: "Merge-Ziel" },
+    headers: { Accept: "application/json", Origin: baseURL }
+  });
+  expect(restore.ok(), await restore.text()).toBe(true);
+  await page.goto(baseURL + "/photos/people");
+  await page.evaluate(() => { window.peoplePageMarker = "merge"; });
+  const mergeButton = page.locator("[data-people-merge-button]");
+  await expect(mergeButton).toBeHidden();
+  await page.locator(".person-overview-card").filter({ hasText: "Merge-Ziel" }).locator("[data-person-select]").check();
+  await expect(mergeButton).toBeHidden();
+  await page.locator(".person-overview-card").filter({ hasNotText: "Merge-Ziel" }).first().locator("[data-person-select]").check();
+  await expect(mergeButton).toBeVisible();
+  await expect(page.locator("[data-people-merge-target]")).toContainText("Ziel: Merge-Ziel");
+  const mergeBounds = await page.locator("[data-people-merge]").boundingBox();
+  expect(mergeBounds.x).toBeGreaterThanOrEqual(0);
+  expect(mergeBounds.x + mergeBounds.width).toBeLessThanOrEqual(390);
+  expect(mergeBounds.y + mergeBounds.height).toBeLessThanOrEqual(844);
+  const second = page.locator(".person-overview-card").filter({ hasNotText: "Merge-Ziel" }).first().locator("[data-person-select]");
+  await second.uncheck();
+  await expect(mergeButton).toBeHidden();
+  await second.check();
+  await page.route("**/photos/people/*/merge", route => route.fulfill({ status: 503, body: "Unavailable" }));
+  await mergeButton.click();
+  await expect(page.locator("[data-people-status]")).toContainText("HTTP 503");
+  await expect(mergeButton).toBeEnabled();
+  await expect(page.locator("[data-person-select]:checked")).toHaveCount(2);
+  await page.unroute("**/photos/people/*/merge");
+  await mergeButton.click();
+  await expect(page.locator("[data-people-status]")).toHaveText("Personen zusammengeführt.");
+  await expect(mergeButton).toBeHidden();
+  await expect(page.locator("a.person-card")).toHaveCount(1);
+  await expect(page.locator("a.person-card")).toContainText("Merge-Ziel");
+  await expect(page.locator("a.person-card")).toContainText("2 Fotos");
+  expect(await page.evaluate(() => window.peoplePageMarker)).toBe("merge");
   await context.close();
 });

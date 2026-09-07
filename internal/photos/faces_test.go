@@ -562,3 +562,41 @@ func TestPeopleKnownFilterCombinesWithSearch(t *testing.T) {
 		t.Fatalf("cleared name remains known: %+v %v", page, err)
 	}
 }
+
+func TestMergePeopleBatchAtomic(t *testing.T) {
+	ctx := context.Background()
+	l := faceLibrary(t, "a.jpg", "b.jpg", "c.jpg")
+	for i := 0; i < 3; i++ {
+		finishFace(t, l, i)
+	}
+	page, err := l.People(ctx, 0, 1, "", false)
+	if err != nil || len(page.People) != 3 {
+		t.Fatalf("people=%+v err=%v", page, err)
+	}
+	target, source, other := page.People[0].ID, page.People[1].ID, page.People[2].ID
+	if err := l.RenamePerson(ctx, target, "Ziel"); err != nil {
+		t.Fatal(err)
+	}
+	for _, extra := range []int64{999999, target, -1} {
+		if err := l.MergePeople(ctx, source, target, extra); err == nil {
+			t.Fatalf("accepted invalid source %d", extra)
+		}
+		page, err = l.People(ctx, 0, 1, "", false)
+		if err != nil || len(page.People) != 3 {
+			t.Fatalf("failed merge changed groups: %+v %v", page, err)
+		}
+	}
+	if err := l.MergePeople(ctx, source, target, other, source); err != nil {
+		t.Fatal(err)
+	}
+	page, err = l.People(ctx, 0, 1, "", false)
+	if err != nil || len(page.People) != 1 || page.People[0].ID != target || page.People[0].Name != "Ziel" || page.People[0].Count != 3 {
+		t.Fatalf("merged people=%+v err=%v", page, err)
+	}
+	for _, path := range []string{"a.jpg", "b.jpg", "c.jpg"} {
+		faces, err := l.AutomaticFaces(ctx, path)
+		if err != nil || len(faces) != 1 || faces[0].PersonID != target {
+			t.Fatalf("%s: faces=%+v err=%v", path, faces, err)
+		}
+	}
+}

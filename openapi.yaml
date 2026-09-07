@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.27.0
+  version: 0.29.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -754,7 +754,8 @@ paths:
       summary: Merge source group into target
       description: Requires photos.manage. Form writes redirect to the corresponding
         HTML page. Existing authentication, same-origin protection and audit logging
-        apply.
+        apply. Additional person_id sources merge atomically (at most 60 distinct sources,
+        excluding the target). Accept application/json returns 200 with ok true.
       parameters:
       - name: id
         in: path
@@ -770,6 +771,13 @@ paths:
             schema:
               type: object
               properties:
+                person_id:
+                  type: array
+                  description: Additional source group IDs; repeated form field.
+                  items:
+                    type: integer
+                    format: int64
+                    minimum: 1
                 target:
                   type: integer
                   format: int64
@@ -777,6 +785,17 @@ paths:
               required:
               - target
       responses:
+        '200':
+          description: Groups merged (Accept application/json).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
         '303':
           description: Saved; Location points to the corresponding page.
           headers:

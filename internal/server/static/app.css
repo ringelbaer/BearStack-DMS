@@ -3407,11 +3407,31 @@ label span {
 }
 
 /* Persons use bounded, lazy face previews even for large collections. */
-.people-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1rem; margin:1rem 0; }
+.people-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr)); gap:1rem; margin:1rem 0; }
 .person-card { display:flex; flex-direction:column; align-items:center; gap:.5rem; padding:1rem; border:1px solid var(--border,#ddd); border-radius:.75rem; overflow-wrap:anywhere; min-width:0; }
 .person-card img { object-fit:cover; border-radius:.5rem; max-width:100%; }
 
-.person-photo-button { display:flex; flex-direction:column; align-items:center; gap:.5rem; width:100%; min-width:0; border:0; padding:0; background:transparent; color:inherit; font:inherit; overflow-wrap:anywhere; cursor:pointer; }
+.person-photo-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.person-photo-button > span { width: 100%; min-width: 0; }
+.person-photo-button img { width: min(160px, 100%); height: auto; aspect-ratio: 1; }
+.person-photo-button:hover { background: transparent; }
+.person-photo-button:hover > span { text-decoration: underline; }
+.person-photo-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
 
 .people-pagination {
   display: flex;
@@ -3483,3 +3503,64 @@ label span {
   width: auto;
   flex: 0 0 auto;
 }
+
+.person-picker-field { position: relative; display: grid; gap: 6px; min-width: 0; }
+.filters.people-form:has([data-person-search][aria-expanded="true"]) { z-index: 12; }
+.person-picker-hint { color: var(--muted); font-size: .875rem; }
+.person-picker-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  max-height: 280px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.person-picker-popup[hidden] { display: none; }
+.person-picker-popup [role="option"] {
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.person-picker-popup [role="option"]:hover,
+.person-picker-popup [role="option"][aria-selected="true"] { background: var(--surface-2); }
+.person-picker-popup [role="status"] { margin: 0; padding: 10px 12px; color: var(--muted); font-size: .875rem; }
+
+
+.person-select {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.person-select input { width: 18px; height: 18px; margin: 0; }
+.person-overview-card:has([data-person-select]:checked) { outline: 2px solid var(--primary); border-radius: var(--radius-sm); }
+.people-merge {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: 0 4px 20px #0003;
+}
+.people-merge[hidden] { display: none; }
+.people-merge span { overflow-wrap: anywhere; min-width: 0; }
+body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px; }

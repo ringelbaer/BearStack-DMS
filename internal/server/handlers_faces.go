@@ -98,10 +98,26 @@ func (s *Server) handlePersonMerge(w http.ResponseWriter, r *http.Request) {
 		target, err = faceID(r.FormValue("target"))
 	}
 	if err == nil {
-		err = s.photos.MergePeople(r.Context(), source, target)
+		var additional []int64
+		for _, raw := range r.PostForm["person_id"] {
+			id, parseErr := faceID(raw)
+			if parseErr != nil {
+				err = parseErr
+				break
+			}
+			additional = append(additional, id)
+		}
+		if err == nil {
+			err = s.photos.MergePeople(r.Context(), source, target, additional...)
+		}
 	}
 	if err != nil {
 		s.faceError(w, r, err)
+		return
+	}
+	if wantsJSON(r) {
+		w.Header().Set("Cache-Control", "no-store")
+		_ = writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 		return
 	}
 	redirectWithNotice(w, r, "/photos/people/"+strconv.FormatInt(target, 10), "Personengruppen zusammengeführt.")
