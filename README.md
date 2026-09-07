@@ -6,7 +6,7 @@ Diese Datei beschreibt die wichtigsten Admin-Punkte. Eine vollstaendige Pi-Insta
 
 ## Schnellstart
 
-Voraussetzung fuer Entwicklung und Build ist Go `1.25.x` oder eine kompatible neuere Version. Fuer `make test-js` wird zusaetzlich `node` benoetigt. Die optionalen Playwright-Smokes brauchen zusaetzlich `npm` und einen Playwright-kompatiblen Browser; lokal ist standardmaessig der Chrome-Channel konfiguriert.
+Voraussetzung fuer Entwicklung und Build ist Go `1.26.6` oder eine kompatible neuere Version. Fuer `make test-js` wird zusaetzlich `node` benoetigt. Die optionalen Playwright-Smokes brauchen zusaetzlich `npm` und einen Playwright-kompatiblen Browser; lokal ist standardmaessig der Chrome-Channel konfiguriert.
 
 ```sh
 BEARSTACK_AUTH_USER=admin \
@@ -23,7 +23,7 @@ Standardwerte:
 - Fotos: deaktiviert, Root bei Aktivierung standardmaessig `data/photos`
 - Upload-Limit: 50 MiB
 
-Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie `127.0.0.1:8080` fuer die Ersteinrichtung deaktiviert. Ein Listener auf nicht-lokalen Interfaces wie `0.0.0.0:8080` oder `:8080` startet nur mit mindestens einem aktiven Konto; dieses darf vollstaendig aus der SQLite-Datenbank stammen.
+Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie `127.0.0.1:8080` fuer die Ersteinrichtung deaktiviert. Ein Listener auf nicht-lokalen Interfaces wie `0.0.0.0:8080` oder `:8080` startet nur mit mindestens einem aktiven Konto; dieses darf vollstaendig aus der SQLite-Datenbank stammen. Ohne Auth werden nur Anfragen von Loopback-Gegenstellen mit `localhost` oder einer Loopback-IP als HTTP-Host akzeptiert; fremde Hostnamen werden zum Schutz vor DNS-Rebinding mit `403` abgewiesen. Vor dem Zugriff ueber einen eigenen Hostnamen oder Reverse Proxy muss ein Konto eingerichtet werden.
 
 ## Lokale Entwicklung
 

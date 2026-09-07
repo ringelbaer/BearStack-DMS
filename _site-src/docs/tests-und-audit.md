@@ -18,7 +18,7 @@ Die interne Datei `.codex/AUDIT.md` enthält Prüfaufträge für wiederkehrende 
 
 Die wichtigsten Vorkehrungen entstehen direkt in der Anwendung:
 
-- Auth ist für nicht-lokale Listener Pflicht.
+- Auth ist für nicht-lokale Listener Pflicht. Ohne Auth müssen sowohl die Gegenstelle als auch der HTTP-Host auf Loopback begrenzt sein; fremde Hostnamen werden als Schutz vor DNS-Rebinding abgewiesen.
 - Passwort-Hashes mit bcrypt werden gegenüber Klartextpasswörtern bevorzugt.
 - Logins nutzen signierte HttpOnly-Session-Cookies.
 - Rollen und einzelne Permissions begrenzen Dokumente, Fotos, Systemverwaltung und Audit-Zugriff.
@@ -46,6 +46,8 @@ make test-playwright
 ```
 
 Die Go-Tests decken Repository-Migrationen, Suche, Tags, benutzerdefinierte Felder, Suchfavoriten, Uploads, Auth, Berechtigungen, Audit-Logs, Dokumentverarbeitung, Fotoindex, Thumbnails, Worker und viele HTTP-Handler ab. JavaScript wird per `node --check` geprüft. Playwright-Smokes starten BearStack mit temporärer Konfiguration und prüfen zentrale Browser-Flows wie Dokumenten-Upload und Foto-Galerie.
+
+Regressionstests prüfen den Zugriff ohne Auth über lokale und fremde Hostnamen einschließlich gefälschter Forwarded-Header. Präparierte WebP-Dateien mit widersprüchlichen Bild- und Alpha-Dimensionen müssen bei der Gesichtsvorverarbeitung einen Fehler statt eines Absturzes auslösen; gültige WebP-Bilder bleiben verarbeitbar. Die Mindestversion Go `1.26.6` und `golang.org/x/image` ab `v0.45.0` enthalten die zugehörigen Sicherheitskorrekturen.
 
 Für Änderungen an riskanten Bereichen gilt: fokussierte Regressionstests vor breit angelegten Refactors. Wenn eine Änderung Performance berührt, sind Benchmarks oder nachvollziehbare Messungen sinnvoller als reine Einschätzung.
 

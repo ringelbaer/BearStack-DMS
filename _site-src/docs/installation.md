@@ -8,7 +8,7 @@ icon: lucide/play
 
 ## Voraussetzungen
 
-Für Entwicklung und Build wird Go `1.25.x` oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich `node` dazu. Die optionalen Playwright-Smoke-Tests brauchen `npm` und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.
+Für Entwicklung und Build wird Go `1.26.6` oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich `node` dazu. Die optionalen Playwright-Smoke-Tests brauchen `npm` und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.
 
 Vorschau, OCR und Medienfunktionen nutzen externe Werkzeuge nur dort, wo sie gebraucht werden:
 
@@ -38,7 +38,7 @@ Standardwerte:
 | Fotos | deaktiviert, Root bei Aktivierung `data/photos` |
 | Upload-Limit | `50 MiB` |
 
-Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie `127.0.0.1:8080` für die Ersteinrichtung deaktiviert. Listener auf nicht-lokalen Interfaces wie `0.0.0.0:8080` oder `:8080` starten nur mit mindestens einem aktiven Konto; dieses darf vollständig aus der SQLite-Datenbank stammen.
+Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie `127.0.0.1:8080` für die Ersteinrichtung deaktiviert. Listener auf nicht-lokalen Interfaces wie `0.0.0.0:8080` oder `:8080` starten nur mit mindestens einem aktiven Konto; dieses darf vollständig aus der SQLite-Datenbank stammen. Ohne Auth werden nur Anfragen von Loopback-Gegenstellen mit `localhost` oder einer Loopback-IP als HTTP-Host akzeptiert; fremde Hostnamen werden zum Schutz vor DNS-Rebinding mit `403` abgewiesen. Vor dem Zugriff über einen eigenen Hostnamen oder Reverse Proxy muss ein Konto eingerichtet werden.
 
 ## Lokale Entwicklung
 

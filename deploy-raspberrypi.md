@@ -44,7 +44,7 @@ Optional kann `libvips-tools` installiert werden. BearStack nutzt `vipsthumbnail
 
 ## 2. Go installieren
 
-BearStack verwendet Go `1.25` laut `go.mod`. Fuer Neuinstallationen sollte eine aktuelle Patch-Version aus der `1.25`-Reihe oder eine kompatible neuere Go-Version verwendet werden.
+BearStack benoetigt laut `go.mod` mindestens Go `1.26.6`, das relevante Sicherheitskorrekturen der Standardbibliothek enthaelt. Eine kompatible neuere Go-Version kann ebenfalls verwendet werden.
 
 ```sh
 go version
@@ -54,7 +54,7 @@ Wenn keine passende Go-Version installiert ist:
 
 ```sh
 cd /tmp
-version=go1.25.10
+version=go1.26.6
 curl -LO "https://go.dev/dl/${version}.linux-arm64.tar.gz"
 sudo rm -rf /usr/local/go
 sudo tar -C /usr/local -xzf "${version}.linux-arm64.tar.gz"

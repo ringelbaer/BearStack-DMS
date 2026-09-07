@@ -1,15 +1,15 @@
 module bearstack
 
-go 1.25.0
+go 1.26.6
 
 require (
 	github.com/coder/hnsw v0.6.1
 	github.com/emersion/go-imap v1.2.1
 	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
 	golang.org/x/crypto v0.52.0
-	golang.org/x/image v0.38.0
-	golang.org/x/sys v0.45.0
-	golang.org/x/text v0.37.0
+	golang.org/x/image v0.45.0
+	golang.org/x/sys v0.47.0
+	golang.org/x/text v0.41.0
 	modernc.org/sqlite v1.51.0
 )
 

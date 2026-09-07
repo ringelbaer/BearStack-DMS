@@ -24,7 +24,7 @@ import (
 
 func TestHandleOpenAPIServesEmbeddedDescription(t *testing.T) {
 	server := &Server{log: slog.New(slog.NewTextHandler(io.Discard, nil))}
-	req := httptest.NewRequest(http.MethodGet, "/api/openapi.yaml", nil)
+	req := newLoopbackRequest(http.MethodGet, "/api/openapi.yaml", nil)
 	rec := httptest.NewRecorder()
 
 	server.Handler().ServeHTTP(rec, req)
@@ -535,7 +535,7 @@ func TestHandleAPIDownloadAliasServesStoredFile(t *testing.T) {
 		store: store,
 		log:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
-	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/documents/%d/download", docID), nil)
+	req := newLoopbackRequest(http.MethodGet, fmt.Sprintf("/api/documents/%d/download", docID), nil)
 	rec := httptest.NewRecorder()
 
 	server.Handler().ServeHTTP(rec, req)

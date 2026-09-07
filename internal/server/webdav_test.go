@@ -138,7 +138,7 @@ func TestWebDAVConfiguredPathRoutesRedirectsAndHrefs(t *testing.T) {
 	}
 	handler := server.Handler()
 
-	req := httptest.NewRequest("PROPFIND", "/dav/", nil)
+	req := newLoopbackRequest("PROPFIND", "/dav/", nil)
 	req.Header.Set("Depth", "1")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
@@ -154,7 +154,7 @@ func TestWebDAVConfiguredPathRoutesRedirectsAndHrefs(t *testing.T) {
 		t.Fatalf("default webdav href leaked into custom response: %s", body)
 	}
 
-	req = httptest.NewRequest(http.MethodGet, "/.well-known/webdav/steuer", nil)
+	req = newLoopbackRequest(http.MethodGet, "/.well-known/webdav/steuer", nil)
 	rec = httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 	if rec.Code != http.StatusPermanentRedirect {
@@ -164,7 +164,7 @@ func TestWebDAVConfiguredPathRoutesRedirectsAndHrefs(t *testing.T) {
 		t.Fatalf("well-known location = %q", got)
 	}
 
-	req = httptest.NewRequest("PROPFIND", "/webdav/", nil)
+	req = newLoopbackRequest("PROPFIND", "/webdav/", nil)
 	rec = httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
@@ -202,7 +202,7 @@ func TestWebDAVRootPropfindListsSearchFavoritesFirst(t *testing.T) {
 		repo: repo,
 		log:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
-	req := httptest.NewRequest("PROPFIND", "/webdav/", nil)
+	req := newLoopbackRequest("PROPFIND", "/webdav/", nil)
 	req.Header.Set("Depth", "1")
 	rec := httptest.NewRecorder()
 
@@ -248,7 +248,7 @@ func TestWebDAVRootPropfindFiltersTagsByConfiguredMinimum(t *testing.T) {
 		log:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 
-	req := httptest.NewRequest("PROPFIND", "/webdav/", nil)
+	req := newLoopbackRequest("PROPFIND", "/webdav/", nil)
 	req.Header.Set("Depth", "1")
 	rec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(rec, req)
@@ -263,7 +263,7 @@ func TestWebDAVRootPropfindFiltersTagsByConfiguredMinimum(t *testing.T) {
 		t.Fatalf("root tag below minimum rendered: %s", rootBody)
 	}
 
-	req = httptest.NewRequest("PROPFIND", "/webdav/haeufig/", nil)
+	req = newLoopbackRequest("PROPFIND", "/webdav/haeufig/", nil)
 	req.Header.Set("Depth", "1")
 	rec = httptest.NewRecorder()
 	server.Handler().ServeHTTP(rec, req)
@@ -307,7 +307,7 @@ func TestWebDAVTagPropfindGetAndHeadDocument(t *testing.T) {
 		store: store,
 		log:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
-	req := httptest.NewRequest("PROPFIND", "/webdav/steuer/", nil)
+	req := newLoopbackRequest("PROPFIND", "/webdav/steuer/", nil)
 	req.Header.Set("Depth", "1")
 	rec := httptest.NewRecorder()
 
@@ -328,7 +328,7 @@ func TestWebDAVTagPropfindGetAndHeadDocument(t *testing.T) {
 	}
 
 	target := "/webdav/steuer/" + url.PathEscape(name)
-	getReq := httptest.NewRequest(http.MethodGet, target, nil)
+	getReq := newLoopbackRequest(http.MethodGet, target, nil)
 	getRec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(getRec, getReq)
 	if getRec.Code != http.StatusOK {
@@ -344,7 +344,7 @@ func TestWebDAVTagPropfindGetAndHeadDocument(t *testing.T) {
 		t.Fatal("missing ETag")
 	}
 
-	rangeReq := httptest.NewRequest(http.MethodGet, target, nil)
+	rangeReq := newLoopbackRequest(http.MethodGet, target, nil)
 	rangeReq.Header.Set("Range", "bytes=0-3")
 	rangeRec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(rangeRec, rangeReq)
@@ -361,7 +361,7 @@ func TestWebDAVTagPropfindGetAndHeadDocument(t *testing.T) {
 		t.Fatalf("Range GET body = %q", rangeRec.Body.Bytes())
 	}
 
-	headReq := httptest.NewRequest(http.MethodHead, target, nil)
+	headReq := newLoopbackRequest(http.MethodHead, target, nil)
 	headRec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(headRec, headReq)
 	if headRec.Code != http.StatusOK {
@@ -446,7 +446,7 @@ func TestWebDAVTagFolderListsConfiguredCustomFieldValueFolders(t *testing.T) {
 		store: store,
 		log:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
-	req := httptest.NewRequest("PROPFIND", "/webdav/steuer/", nil)
+	req := newLoopbackRequest("PROPFIND", "/webdav/steuer/", nil)
 	req.Header.Set("Depth", "1")
 	rec := httptest.NewRecorder()
 
@@ -467,7 +467,7 @@ func TestWebDAVTagFolderListsConfiguredCustomFieldValueFolders(t *testing.T) {
 	}
 
 	target := "/webdav/steuer/" + url.PathEscape("ACME") + "/"
-	req = httptest.NewRequest("PROPFIND", target, nil)
+	req = newLoopbackRequest("PROPFIND", target, nil)
 	req.Header.Set("Depth", "1")
 	rec = httptest.NewRecorder()
 
@@ -549,7 +549,7 @@ func TestWebDAVSearchFavoritePropfindListsMatchingActiveDocuments(t *testing.T) 
 		log:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 	target := "/webdav/" + url.PathEscape(searchFavoritesFolderName) + "/" + url.PathEscape(escapePathComponent("Steuer 2026")) + "/"
-	req := httptest.NewRequest("PROPFIND", target, nil)
+	req := newLoopbackRequest("PROPFIND", target, nil)
 	req.Header.Set("Depth", "1")
 	rec := httptest.NewRecorder()
 
@@ -625,7 +625,7 @@ func TestWebDAVPutCreatesDocumentsAndInheritsTagsFromHierarchy(t *testing.T) {
 		{target: "/webdav/steuer/ACME/folder-upload.pdf", body: []byte("%PDF folder")},
 	}
 	for _, tt := range tests {
-		req := httptest.NewRequest(http.MethodPut, tt.target, bytes.NewReader(tt.body))
+		req := newLoopbackRequest(http.MethodPut, tt.target, bytes.NewReader(tt.body))
 		rec := httptest.NewRecorder()
 		server.Handler().ServeHTTP(rec, req)
 		if rec.Code != http.StatusCreated {
@@ -705,14 +705,14 @@ func TestWebDAVPutRejectsExistingTargetsAndDuplicates(t *testing.T) {
 	}
 
 	existingTarget := "/webdav/steuer/" + url.PathEscape(documentDisplayName(existingDoc))
-	req := httptest.NewRequest(http.MethodPut, existingTarget, bytes.NewReader([]byte("%PDF overwrite")))
+	req := newLoopbackRequest(http.MethodPut, existingTarget, bytes.NewReader([]byte("%PDF overwrite")))
 	rec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusConflict {
 		t.Fatalf("existing target status = %d body = %s", rec.Code, rec.Body.String())
 	}
 
-	duplicateReq := httptest.NewRequest(http.MethodPut, "/webdav/steuer/new-name.pdf", bytes.NewReader(existingContent))
+	duplicateReq := newLoopbackRequest(http.MethodPut, "/webdav/steuer/new-name.pdf", bytes.NewReader(existingContent))
 	duplicateRec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(duplicateRec, duplicateReq)
 	if duplicateRec.Code != http.StatusConflict {
@@ -767,7 +767,7 @@ func TestWebDAVPutAllowsSameOriginalNameWhenTargetPathDoesNotExist(t *testing.T)
 
 	target := "/webdav/gesundheit/202311-KK000051929807_Bescheinigung_03_2023-11-28.pdf"
 
-	probeReq := httptest.NewRequest("PROPFIND", target, nil)
+	probeReq := newLoopbackRequest("PROPFIND", target, nil)
 	probeReq.Header.Set("Depth", "0")
 	probeRec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(probeRec, probeReq)
@@ -775,7 +775,7 @@ func TestWebDAVPutAllowsSameOriginalNameWhenTargetPathDoesNotExist(t *testing.T)
 		t.Fatalf("probe status = %d body = %s", probeRec.Code, probeRec.Body.String())
 	}
 
-	putReq := httptest.NewRequest(http.MethodPut, target, bytes.NewReader([]byte("%PDF new content")))
+	putReq := newLoopbackRequest(http.MethodPut, target, bytes.NewReader([]byte("%PDF new content")))
 	putRec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(putRec, putReq)
 	if putRec.Code != http.StatusCreated {
@@ -810,7 +810,7 @@ func TestWebDAVPutRejectsSearchFavoritesPaths(t *testing.T) {
 	}
 
 	target := "/webdav/" + url.PathEscape(searchFavoritesFolderName) + "/" + url.PathEscape("Steuer Favorit") + "/neu.pdf"
-	req := httptest.NewRequest(http.MethodPut, target, bytes.NewReader([]byte("%PDF blocked")))
+	req := newLoopbackRequest(http.MethodPut, target, bytes.NewReader([]byte("%PDF blocked")))
 	rec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
@@ -878,7 +878,7 @@ func TestWebDAVSpaceTagPathsAcceptClientEncodingVariants(t *testing.T) {
 
 	for _, variant := range variants {
 		t.Run(variant.name+"-propfind", func(t *testing.T) {
-			req := httptest.NewRequest("PROPFIND", variant.folderURL, nil)
+			req := newLoopbackRequest("PROPFIND", variant.folderURL, nil)
 			req.Header.Set("Depth", "0")
 			rec := httptest.NewRecorder()
 			server.Handler().ServeHTTP(rec, req)
@@ -889,7 +889,7 @@ func TestWebDAVSpaceTagPathsAcceptClientEncodingVariants(t *testing.T) {
 
 		t.Run(variant.name+"-put", func(t *testing.T) {
 			target := variant.folderURL + variant.filename
-			req := httptest.NewRequest(http.MethodPut, target, bytes.NewReader(variant.content))
+			req := newLoopbackRequest(http.MethodPut, target, bytes.NewReader(variant.content))
 			rec := httptest.NewRecorder()
 			server.Handler().ServeHTTP(rec, req)
 			if rec.Code != http.StatusCreated {
@@ -982,7 +982,7 @@ func TestWebDAVNonPutWriteMethodsAreReadOnly(t *testing.T) {
 	}
 
 	for _, method := range []string{http.MethodDelete, "MKCOL", "MOVE", "COPY", "PROPPATCH", "LOCK", "UNLOCK"} {
-		req := httptest.NewRequest(method, "/webdav/neu.pdf", strings.NewReader("content"))
+		req := newLoopbackRequest(method, "/webdav/neu.pdf", strings.NewReader("content"))
 		rec := httptest.NewRecorder()
 		server.Handler().ServeHTTP(rec, req)
 		if rec.Code != http.StatusForbidden {
@@ -1003,7 +1003,7 @@ func TestWebDAVRejectsUnsupportedDepthAndEmptyPathSegment(t *testing.T) {
 		log: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 
-	depthReq := httptest.NewRequest("PROPFIND", "/webdav/", nil)
+	depthReq := newLoopbackRequest("PROPFIND", "/webdav/", nil)
 	depthReq.Header.Set("Depth", "infinity")
 	depthRec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(depthRec, depthReq)
@@ -1011,7 +1011,7 @@ func TestWebDAVRejectsUnsupportedDepthAndEmptyPathSegment(t *testing.T) {
 		t.Fatalf("depth status = %d body = %s", depthRec.Code, depthRec.Body.String())
 	}
 
-	pathReq := httptest.NewRequest("PROPFIND", "/webdav/%20%20", nil)
+	pathReq := newLoopbackRequest("PROPFIND", "/webdav/%20%20", nil)
 	pathReq.Header.Set("Depth", "1")
 	pathRec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(pathRec, pathReq)
@@ -1024,7 +1024,7 @@ func TestWebDAVOptionsAllowIncludesPut(t *testing.T) {
 	server := &Server{
 		log: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
-	req := httptest.NewRequest(http.MethodOptions, "/webdav/", nil)
+	req := newLoopbackRequest(http.MethodOptions, "/webdav/", nil)
 	rec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusNoContent {

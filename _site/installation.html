@@ -915,7 +915,7 @@
 
 <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
 <h2 id="voraussetzungen">Voraussetzungen<a class="headerlink" href="#voraussetzungen" title="Permanent link">&para;</a></h2>
-<p>Für Entwicklung und Build wird Go <code>1.25.x</code> oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich <code>node</code> dazu. Die optionalen Playwright-Smoke-Tests brauchen <code>npm</code> und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.</p>
+<p>Für Entwicklung und Build wird Go <code>1.26.6</code> oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich <code>node</code> dazu. Die optionalen Playwright-Smoke-Tests brauchen <code>npm</code> und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.</p>
 <p>Vorschau, OCR und Medienfunktionen nutzen externe Werkzeuge nur dort, wo sie gebraucht werden:</p>
 <ul>
 <li><code>poppler-utils</code> für PDF-Vorschau, PDF-Merge bei EML-Archiven und OCR-Vorbereitung</li>
@@ -965,7 +965,7 @@
 </tr>
 </tbody>
 </table>
-<p>Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie <code>127.0.0.1:8080</code> für die Ersteinrichtung deaktiviert. Listener auf nicht-lokalen Interfaces wie <code>0.0.0.0:8080</code> oder <code>:8080</code> starten nur mit mindestens einem aktiven Konto; dieses darf vollständig aus der SQLite-Datenbank stammen.</p>
+<p>Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie <code>127.0.0.1:8080</code> für die Ersteinrichtung deaktiviert. Listener auf nicht-lokalen Interfaces wie <code>0.0.0.0:8080</code> oder <code>:8080</code> starten nur mit mindestens einem aktiven Konto; dieses darf vollständig aus der SQLite-Datenbank stammen. Ohne Auth werden nur Anfragen von Loopback-Gegenstellen mit <code>localhost</code> oder einer Loopback-IP als HTTP-Host akzeptiert; fremde Hostnamen werden zum Schutz vor DNS-Rebinding mit <code>403</code> abgewiesen. Vor dem Zugriff über einen eigenen Hostnamen oder Reverse Proxy muss ein Konto eingerichtet werden.</p>
 <h2 id="lokale-entwicklung">Lokale Entwicklung<a class="headerlink" href="#lokale-entwicklung" title="Permanent link">&para;</a></h2>
 <p>Der lokale Start nutzt standardmäßig das Repo-nahe Verzeichnis <code>data/</code>:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>go<span class="w"> </span>run<span class="w"> </span>./cmd/bearstack
@@ -1318,7 +1318,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.25.4 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.25.5 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

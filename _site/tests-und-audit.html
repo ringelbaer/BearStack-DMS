@@ -787,7 +787,7 @@
 <h2 id="sicherheitsprinzipien">Sicherheitsprinzipien<a class="headerlink" href="#sicherheitsprinzipien" title="Permanent link">&para;</a></h2>
 <p>Die wichtigsten Vorkehrungen entstehen direkt in der Anwendung:</p>
 <ul>
-<li>Auth ist für nicht-lokale Listener Pflicht.</li>
+<li>Auth ist für nicht-lokale Listener Pflicht. Ohne Auth müssen sowohl die Gegenstelle als auch der HTTP-Host auf Loopback begrenzt sein; fremde Hostnamen werden als Schutz vor DNS-Rebinding abgewiesen.</li>
 <li>Passwort-Hashes mit bcrypt werden gegenüber Klartextpasswörtern bevorzugt.</li>
 <li>Logins nutzen signierte HttpOnly-Session-Cookies.</li>
 <li>Rollen und einzelne Permissions begrenzen Dokumente, Fotos, Systemverwaltung und Audit-Zugriff.</li>
@@ -808,6 +808,7 @@
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>make<span class="w"> </span>test-playwright
 </span></code></pre></div>
 <p>Die Go-Tests decken Repository-Migrationen, Suche, Tags, benutzerdefinierte Felder, Suchfavoriten, Uploads, Auth, Berechtigungen, Audit-Logs, Dokumentverarbeitung, Fotoindex, Thumbnails, Worker und viele HTTP-Handler ab. JavaScript wird per <code>node --check</code> geprüft. Playwright-Smokes starten BearStack mit temporärer Konfiguration und prüfen zentrale Browser-Flows wie Dokumenten-Upload und Foto-Galerie.</p>
+<p>Regressionstests prüfen den Zugriff ohne Auth über lokale und fremde Hostnamen einschließlich gefälschter Forwarded-Header. Präparierte WebP-Dateien mit widersprüchlichen Bild- und Alpha-Dimensionen müssen bei der Gesichtsvorverarbeitung einen Fehler statt eines Absturzes auslösen; gültige WebP-Bilder bleiben verarbeitbar. Die Mindestversion Go <code>1.26.6</code> und <code>golang.org/x/image</code> ab <code>v0.45.0</code> enthalten die zugehörigen Sicherheitskorrekturen.</p>
 <p>Für Änderungen an riskanten Bereichen gilt: fokussierte Regressionstests vor breit angelegten Refactors. Wenn eine Änderung Performance berührt, sind Benchmarks oder nachvollziehbare Messungen sinnvoller als reine Einschätzung.</p>
 <p>Bei Versionsänderungen muss <code>info.version</code> in <code>openapi.yaml</code> mit der Root-Datei <code>VERSION</code> übereinstimmen. Der Go-Test <code>TestOpenAPISpecMatchesApplicationVersion</code> prüft diesen Abgleich für die eingebettete API-Beschreibung.</p>
 <p>Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle drei Suiten verwenden denselben Helfer für Start, Gesundheitsprüfung und geordnetes Beenden; temporäre Daten werden erst nach Prozessende entfernt. Die Testabhängigkeit ist in <code>package-lock.json</code> festgelegt und wird bei Bedarf mit <code>npm ci --ignore-scripts</code> installiert. Ein vorhandener <code>GOCACHE</code> wird weiterverwendet.</p>
@@ -883,7 +884,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">Version 0.25.4 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">Version 0.25.5 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

@@ -41,6 +41,12 @@ func (s *Server) basicAuth(next http.Handler) http.Handler {
 		// Consult the current snapshot for every request instead of permanently
 		// bypassing middleware based on the state at Handler construction.
 		if !s.authEnabled() {
+			// Binding to loopback alone does not prevent browser DNS rebinding.
+			// Reuse the bootstrap boundary for every unauthenticated request.
+			if !requestIsLoopback(r) {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
 			next.ServeHTTP(w, r)
 			return
 		}
