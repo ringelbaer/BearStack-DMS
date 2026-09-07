@@ -31,16 +31,13 @@
   .settings-tab-list {
     border-right: 0;
     border-bottom: 1px solid var(--line);
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
-    justify-content: start;
-    overflow-x: auto;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr));
     padding: 8px;
   }
 
   .settings-tab-button {
     padding: 7px 10px;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   .settings-tab-panel {
@@ -750,6 +747,12 @@
 }
 
 @media (max-width: 640px) {
+
+  .theme-choice {
+    gap: 8px;
+    grid-template-columns: auto 42px minmax(0, 1fr);
+    padding: 8px;
+  }
 
   .pdf-preview-toolbar { gap: 4px; }
 

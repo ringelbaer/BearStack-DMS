@@ -1182,7 +1182,7 @@ func TestServerRenderSettingsCache(t *testing.T) {
 		t.Fatalf("cached tag display mode after external write = %q", settings.TagDisplayMode)
 	}
 
-	server.cacheRenderSettings(renderSettingsSnapshot{TagDisplayMode: tagDisplayModeFirst, ThemeMode: themeModeDefault, HomePage: homePageFolders})
+	server.settingsService().CacheRenderSettings(renderSettingsSnapshot{TagDisplayMode: tagDisplayModeFirst, ThemeMode: themeModeDefault, HomePage: homePageFolders})
 	settings, err = server.renderSettings(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -2956,6 +2956,13 @@ func TestPhotoRoutePermissionMatrix(t *testing.T) {
 			return url.Values{"name": {"delete-" + safeRoleName(role)}, "password": {"secret"}}
 		}},
 		{name: "photo settings", method: http.MethodGet, target: "/settings/photos", allowed: photoManageRoles},
+		{name: "general settings", method: http.MethodGet, target: "/settings/general", allowed: allowedTestRoles("admin")},
+		{name: "save general settings", method: http.MethodPost, target: "/settings", allowed: allowedTestRoles("admin"), form: func(string) url.Values {
+			return url.Values{"settings_section": {"general"}, "app_name": {"Archiv"}}
+		}},
+		{name: "save document settings", method: http.MethodPost, target: "/settings", allowed: allowedTestRoles("admin"), form: func(string) url.Values {
+			return url.Values{"settings_section": {"documents"}, "desktop_preview_mode": {"inline"}}
+		}},
 		{name: "save photo settings", method: http.MethodPost, target: "/settings/photos", allowed: photoManageRoles, form: func(string) url.Values {
 			return photoSettingsTestForm()
 		}},
@@ -3528,7 +3535,7 @@ func TestHandleSaveSettingsStoresDesktopPreviewMode(t *testing.T) {
 	}
 }
 
-func TestHandleSettingsRendersDesktopPreviewMode(t *testing.T) {
+func TestHandleSettingsRendersSeparateDocumentAndGeneralForms(t *testing.T) {
 	ctx := context.Background()
 	repo, err := repository.Open(ctx, filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
@@ -3584,11 +3591,32 @@ func TestHandleSettingsRendersDesktopPreviewMode(t *testing.T) {
 		!strings.Contains(rec.Body.String(), `<span class="brand-label">Aktenkiste</span>`) {
 		t.Fatalf("custom brand not rendered: %s", rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), `name="app_name" maxlength="80" value="Aktenkiste"`) {
-		t.Fatalf("app name setting not rendered: %s", rec.Body.String())
-	}
 	if !strings.Contains(rec.Body.String(), `name="desktop_preview_mode" value="inline" checked`) {
 		t.Fatalf("inline preview setting not rendered checked: %s", rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `href="/cloud"`) {
+		t.Fatalf("enabled cloud navigation not rendered: %s", rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `name="document_cloud_enabled" value="1" checked`) {
+		t.Fatalf("document cloud setting not rendered checked: %s", rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `option value="90" selected`) {
+		t.Fatalf("trash retention setting not rendered selected: %s", rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `name="folder_tag_min_documents" min="0" max="100000" value="12"`) {
+		t.Fatalf("folder tag minimum setting not rendered: %s", rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), `name="app_name"`) || strings.Contains(rec.Body.String(), `name="home_page"`) || strings.Contains(rec.Body.String(), `name="theme_mode"`) || strings.Contains(rec.Body.String(), `name="tag_display_mode"`) || strings.Contains(rec.Body.String(), `name="favicon"`) {
+		t.Fatal("document form contains global settings")
+	}
+	req = httptest.NewRequest(http.MethodGet, "/settings/general", nil)
+	rec = httptest.NewRecorder()
+	server.handleGeneralSettings(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("general settings status = %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), `name="app_name" maxlength="80" value="Aktenkiste"`) {
+		t.Fatalf("app name setting not rendered: %s", rec.Body.String())
 	}
 	if !strings.Contains(rec.Body.String(), `name="tag_display_mode" value="ucfirst" checked`) {
 		t.Fatalf("tag display setting not rendered checked: %s", rec.Body.String())
@@ -3602,17 +3630,10 @@ func TestHandleSettingsRendersDesktopPreviewMode(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), `<legend>Startseite</legend>`) || !strings.Contains(rec.Body.String(), `name="home_page" value="documents" checked`) {
 		t.Fatalf("home page setting not rendered checked: %s", rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), `href="/cloud"`) {
-		t.Fatalf("enabled cloud navigation not rendered: %s", rec.Body.String())
-	}
-	if !strings.Contains(rec.Body.String(), `name="document_cloud_enabled" value="1" checked`) {
-		t.Fatalf("document cloud setting not rendered checked: %s", rec.Body.String())
-	}
-	if !strings.Contains(rec.Body.String(), `option value="90" selected`) {
-		t.Fatalf("trash retention setting not rendered selected: %s", rec.Body.String())
-	}
-	if !strings.Contains(rec.Body.String(), `name="folder_tag_min_documents" min="0" max="100000" value="12"`) {
-		t.Fatalf("folder tag minimum setting not rendered: %s", rec.Body.String())
+	for _, name := range []string{"desktop_preview_mode", "document_cloud_enabled", "folder_tag_min_documents", "trash_retention_days"} {
+		if strings.Contains(rec.Body.String(), `name="`+name+`"`) {
+			t.Fatalf("general form contains document setting %q", name)
+		}
 	}
 }
 
@@ -3640,6 +3661,9 @@ func TestHandleUploadFaviconStoresServesAndRendersCustomIcon(t *testing.T) {
 
 	server.handleUploadFavicon(rec, req)
 
+	if location := rec.Header().Get("Location"); !strings.HasPrefix(location, "/settings/general?notice=") {
+		t.Fatalf("favicon redirect = %q", location)
+	}
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
 	}
@@ -3671,9 +3695,9 @@ func TestHandleUploadFaviconStoresServesAndRendersCustomIcon(t *testing.T) {
 		t.Fatalf("served favicon = %q", rec.Body.String())
 	}
 
-	req = httptest.NewRequest(http.MethodGet, "/settings", nil)
+	req = httptest.NewRequest(http.MethodGet, "/settings/general", nil)
 	rec = httptest.NewRecorder()
-	server.handleSettings(rec, req)
+	server.handleGeneralSettings(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("settings status = %d body = %s", rec.Code, rec.Body.String())
@@ -3717,6 +3741,9 @@ func TestHandleResetFaviconRestoresDefault(t *testing.T) {
 
 	server.handleResetFavicon(rec, req)
 
+	if location := rec.Header().Get("Location"); !strings.HasPrefix(location, "/settings/general?notice=") {
+		t.Fatalf("favicon redirect = %q", location)
+	}
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
 	}
@@ -3754,6 +3781,9 @@ func TestHandleUploadFaviconRejectsUnsupportedType(t *testing.T) {
 
 	server.handleUploadFavicon(rec, req)
 
+	if location := rec.Header().Get("Location"); !strings.HasPrefix(location, "/settings/general?notice=") {
+		t.Fatalf("favicon redirect = %q", location)
+	}
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())
 	}

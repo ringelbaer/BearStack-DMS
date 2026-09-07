@@ -3,6 +3,7 @@ package server
 
 var settingsRouteSpecs = []routeSpec{
 	{pattern: "GET /settings", capabilities: authCapSystemManage, handler: (*Server).handleSettings},
+	{pattern: "GET /settings/general", capabilities: authCapSystemManage, handler: (*Server).handleGeneralSettings},
 	{pattern: "POST /settings", capabilities: authCapSystemManage, handler: (*Server).handleSaveSettings},
 	{pattern: "POST /settings/favicon", capabilities: authCapSystemManage, handler: (*Server).handleUploadFavicon},
 	{pattern: "POST /settings/favicon/reset", capabilities: authCapSystemManage, handler: (*Server).handleResetFavicon},

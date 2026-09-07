@@ -61,7 +61,7 @@ func (s *Server) customFavicon(ctx context.Context) (CustomFavicon, bool, error)
 func (s *Server) handleUploadFavicon(w http.ResponseWriter, r *http.Request) {
 	icon, err := customFaviconFromRequest(w, r)
 	if err != nil {
-		redirectWithNotice(w, r, "/settings", friendlyCustomFaviconError(err))
+		redirectWithNotice(w, r, "/settings/general", friendlyCustomFaviconError(err))
 		return
 	}
 	if err := s.settingsService().SaveCustomFavicon(r.Context(), icon); err != nil {
@@ -69,7 +69,7 @@ func (s *Server) handleUploadFavicon(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setAuditTarget(r, icon.Filename)
-	redirectWithNotice(w, r, "/settings", "Favicon gespeichert.")
+	redirectWithNotice(w, r, "/settings/general", "Favicon gespeichert.")
 }
 
 func (s *Server) handleResetFavicon(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +81,7 @@ func (s *Server) handleResetFavicon(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setAuditTarget(r, "Standard-Favicon")
-	redirectWithNotice(w, r, "/settings", "Standard-Favicon aktiviert.")
+	redirectWithNotice(w, r, "/settings/general", "Standard-Favicon aktiviert.")
 }
 
 func (s *Server) handleCustomFavicon(w http.ResponseWriter, r *http.Request) {

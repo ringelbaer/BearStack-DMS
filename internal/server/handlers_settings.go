@@ -8,6 +8,15 @@ import (
 	"strconv"
 )
 
+func (s *Server) handleGeneralSettings(w http.ResponseWriter, r *http.Request) {
+	s.render(w, r, "settings.html", PageData{
+		Title:       "Einstellungen",
+		Active:      "settings",
+		SettingsTab: "general",
+		Notice:      r.URL.Query().Get("notice"),
+	})
+}
+
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
 	previewMode, err := s.desktopPreviewMode(r.Context())
 	if err != nil {
@@ -65,53 +74,52 @@ func (s *Server) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 	if !s.parseFormOrRenderError(w, r) {
 		return
 	}
-	appName := normalizeAppName(r.FormValue("app_name"))
-	if err := s.repo.SaveSetting(r.Context(), appNameSettingKey, appName); err != nil {
+	section := r.PostForm.Get("settings_section")
+	if section != "" && section != "general" && section != "documents" {
+		s.renderError(w, r, http.StatusBadRequest, errors.New("Ungültiger Einstellungsbereich."))
+		return
+	}
+	// Forms without a section retain the original combined save behavior.
+	saveGeneral := section != "documents"
+	saveDocuments := section != "general"
+	cloudEnabled, err := s.documentCloudEnabled(r.Context())
+	if err != nil {
 		s.renderHTTPError(w, r, err)
 		return
 	}
-	s.cacheAppName(appName)
-	previewMode := normalizeDesktopPreviewMode(r.FormValue("desktop_preview_mode"))
-	if err := s.repo.SaveSetting(r.Context(), desktopPreviewModeSettingKey, previewMode); err != nil {
+	if saveDocuments {
+		cloudEnabled = r.PostForm.Get("document_cloud_enabled") == "1"
+	}
+	values := make(map[string]string)
+	if saveGeneral {
+		values[appNameSettingKey] = normalizeAppName(r.PostForm.Get("app_name"))
+		values[tagDisplayModeSettingKey] = normalizeTagDisplayMode(r.PostForm.Get("tag_display_mode"))
+		values[themeModeSettingKey] = normalizeThemeMode(r.PostForm.Get("theme_mode"))
+		values[homePageSettingKey] = normalizeAvailableHomePage(r.PostForm.Get("home_page"), s.photos != nil, cloudEnabled)
+	}
+	if saveDocuments {
+		values[desktopPreviewModeSettingKey] = normalizeDesktopPreviewMode(r.PostForm.Get("desktop_preview_mode"))
+		values[documentCloudEnabledSettingKey] = boolSettingValue(cloudEnabled)
+		values[trashRetentionDaysSettingKey] = strconv.Itoa(normalizeTrashRetentionDays(r.PostForm.Get("trash_retention_days")))
+		values[folderTagMinDocumentsSettingKey] = strconv.Itoa(normalizeFolderTagMinDocuments(r.PostForm.Get("folder_tag_min_documents")))
+	}
+	for key, value := range values {
+		if err := s.repo.SaveSetting(r.Context(), key, value); err != nil {
+			s.renderHTTPError(w, r, err)
+			return
+		}
+	}
+	if saveGeneral {
+		s.cacheAppName(values[appNameSettingKey])
+	}
+	if _, err := s.settingsService().ReloadRenderSettings(r.Context()); err != nil {
 		s.renderHTTPError(w, r, err)
 		return
 	}
-	tagDisplayMode := normalizeTagDisplayMode(r.FormValue("tag_display_mode"))
-	if err := s.repo.SaveSetting(r.Context(), tagDisplayModeSettingKey, tagDisplayMode); err != nil {
-		s.renderHTTPError(w, r, err)
+	if !saveDocuments {
+		redirectWithNotice(w, r, "/settings/general", "Allgemeine Einstellungen gespeichert.")
 		return
 	}
-	themeMode := normalizeThemeMode(r.FormValue("theme_mode"))
-	if err := s.repo.SaveSetting(r.Context(), themeModeSettingKey, themeMode); err != nil {
-		s.renderHTTPError(w, r, err)
-		return
-	}
-	cloudEnabled := r.FormValue("document_cloud_enabled") == "1"
-	if err := s.repo.SaveSetting(r.Context(), documentCloudEnabledSettingKey, boolSettingValue(cloudEnabled)); err != nil {
-		s.renderHTTPError(w, r, err)
-		return
-	}
-	homePage := normalizeAvailableHomePage(r.FormValue("home_page"), s.photos != nil, cloudEnabled)
-	if err := s.repo.SaveSetting(r.Context(), homePageSettingKey, homePage); err != nil {
-		s.renderHTTPError(w, r, err)
-		return
-	}
-	retentionDays := normalizeTrashRetentionDays(r.FormValue("trash_retention_days"))
-	if err := s.repo.SaveSetting(r.Context(), trashRetentionDaysSettingKey, strconv.Itoa(retentionDays)); err != nil {
-		s.renderHTTPError(w, r, err)
-		return
-	}
-	folderTagMinDocuments := normalizeFolderTagMinDocuments(r.FormValue("folder_tag_min_documents"))
-	if err := s.repo.SaveSetting(r.Context(), folderTagMinDocumentsSettingKey, strconv.Itoa(folderTagMinDocuments)); err != nil {
-		s.renderHTTPError(w, r, err)
-		return
-	}
-	s.cacheRenderSettings(renderSettingsSnapshot{
-		TagDisplayMode:       tagDisplayMode,
-		ThemeMode:            themeMode,
-		HomePage:             homePage,
-		DocumentCloudEnabled: cloudEnabled,
-	})
 	purged, err := s.purgeTrashByRetention(r.Context())
 	if err != nil {
 		s.renderHTTPError(w, r, err)

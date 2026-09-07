@@ -1,6 +1,7 @@
 {{define "settings-tab-list"}}
 <nav class="settings-tab-list" aria-label="Einstellungen">
   {{if .Auth.CanSystemManage}}
+  <a class="settings-tab-button {{if eq .SettingsTab "general"}}active{{end}}" {{if eq .SettingsTab "general"}}aria-current="page"{{end}} href="/settings/general">Allgemein</a>
   <a class="settings-tab-button {{if eq .SettingsTab "main"}}active{{end}}" {{if eq .SettingsTab "main"}}aria-current="page"{{end}} href="/settings">Dokumente</a>
   <a class="settings-tab-button {{if eq .SettingsTab "mail_import"}}active{{end}}" {{if eq .SettingsTab "mail_import"}}aria-current="page"{{end}} href="/settings/mail-import">E-Mail-Import</a>
   {{end}}

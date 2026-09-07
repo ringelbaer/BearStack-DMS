@@ -96,6 +96,12 @@ Cross-Build fuer Raspberry Pi OS 64-bit:
 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o bearstack ./cmd/bearstack
 ```
 
+## Einstellungen
+
+Unter **Einstellungen → Allgemein** (`/settings/general`) stehen die globalen Optionen fuer Anwendungsname, Design, Startseite, Tag-Darstellung und Favicon. **Einstellungen → Dokumente** (`/settings`) enthaelt Desktop-Vorschau, Dokument-Wolke, Tag-Ordner und Papierkorb-Aufbewahrung. Speichern aendert jeweils nur den geoeffneten Bereich; Favicon-Upload und Zuruecksetzen bleiben separate Aktionen.
+
+Die Einstellungsnavigation steht auf grossen Bildschirmen seitlich und bricht auf kleineren Bildschirmen in mehrere Zeilen um. Formulargruppen, lange Beschriftungen und Aktionen passen sich der verfuegbaren Breite an.
+
 ## Versionierung
 
 Die Anwendungs-Version steht zentral in `VERSION` und wird in der Weboberflaeche dezent im Footer angezeigt. BearStack nutzt semantische Versionierung:

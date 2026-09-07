@@ -188,13 +188,14 @@
       </form>
       <form id="mail-import-run-form" method="post" action="/settings/mail-import/run"></form>
     </section>
-    {{else}}
-    <section class="settings-tab-panel" aria-label="Dokument-Einstellungen">
+    {{else if eq .SettingsTab "general"}}
+    <section class="settings-tab-panel" aria-label="Allgemeine Einstellungen">
       <header class="settings-section-head">
-        <h2>Dokumente</h2>
-        <p>Vorschau, Favicon, Tag-Darstellung und Papierkorb</p>
+        <h2>Allgemein</h2>
+        <p>Globale Einstellungen für Name, Design, Startseite, Tag-Darstellung und Favicon</p>
       </header>
       <form class="settings-form" method="post" action="/settings">
+        <input type="hidden" name="settings_section" value="general">
         <div class="settings-fieldset">
           <fieldset>
             <legend>Oberfläche</legend>
@@ -225,24 +226,6 @@
             {{end}}
           </fieldset>
           <fieldset>
-            <legend>Dokument-Wolke</legend>
-            <label class="checkbox-line">
-              <input type="checkbox" name="document_cloud_enabled" value="1" {{if .DocumentCloudEnabled}}checked{{end}}>
-              <span class="checkbox-help-label">Wolke anzeigen <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Wolke anzeigen" aria-expanded="false" data-context-help-title="Wolke anzeigen" data-context-help="Schaltet die Dokument-Wolke in der Hauptnavigation und unter /cloud frei. Standardmäßig ist sie deaktiviert.">i</span></span>
-            </label>
-          </fieldset>
-          <fieldset>
-            <legend>Desktop-Vorschau</legend>
-            <label class="radio-line">
-              <input type="radio" name="desktop_preview_mode" value="modal" {{if ne .DesktopPreviewMode "inline"}}checked{{end}}>
-              Modal
-            </label>
-            <label class="radio-line">
-              <input type="radio" name="desktop_preview_mode" value="inline" {{if eq .DesktopPreviewMode "inline"}}checked{{end}}>
-              Seitenvorschau
-            </label>
-          </fieldset>
-          <fieldset>
             <legend>Tag-Ausgabe</legend>
             {{range .TagDisplayOptions}}
             <label class="radio-line">
@@ -250,24 +233,6 @@
               {{.Label}}
             </label>
             {{end}}
-          </fieldset>
-          <fieldset>
-            <legend>Ordner</legend>
-            <label>
-              <span class="label-help-row">Tag-Ordner ab Dokumenten <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Tag-Ordner ab Dokumenten" aria-expanded="false" data-context-help-title="Tag-Ordner ab Dokumenten" data-context-help="Legt fest, ab welcher Dokumentanzahl ein Tag in der ersten Ordnerebene erscheint. 0 zeigt alle Tag-Ordner; Unterordner bleiben unabhängig davon sichtbar.">i</span></span>
-              <input type="number" name="folder_tag_min_documents" min="0" max="100000" value="{{.FolderTagMinDocuments}}">
-            </label>
-          </fieldset>
-          <fieldset>
-            <legend>Papierkorb-Aufbewahrung</legend>
-            <label>
-              <span>Endgültig löschen</span>
-              <select name="trash_retention_days">
-                {{range .TrashRetentionOptions}}
-                <option value="{{.Value}}" {{if eq $.TrashRetentionDays .Value}}selected{{end}}>{{.Label}}</option>
-                {{end}}
-              </select>
-            </label>
           </fieldset>
         </div>
         <div class="settings-actions">
@@ -299,6 +264,57 @@
         </div>
       </form>
       {{if .CustomFavicon.Uploaded}}<form id="favicon-reset-form" method="post" action="/settings/favicon/reset"></form>{{end}}
+    </section>
+    {{else}}
+    <section class="settings-tab-panel" aria-label="Dokument-Einstellungen">
+      <header class="settings-section-head">
+        <h2>Dokumente</h2>
+        <p>Vorschau, Dokument-Wolke, Ordner und Papierkorb</p>
+      </header>
+      <form class="settings-form" method="post" action="/settings">
+        <input type="hidden" name="settings_section" value="documents">
+        <div class="settings-fieldset">
+          <fieldset>
+            <legend>Dokument-Wolke</legend>
+            <label class="checkbox-line">
+              <input type="checkbox" name="document_cloud_enabled" value="1" {{if .DocumentCloudEnabled}}checked{{end}}>
+              <span class="checkbox-help-label">Wolke anzeigen <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Wolke anzeigen" aria-expanded="false" data-context-help-title="Wolke anzeigen" data-context-help="Schaltet die Dokument-Wolke in der Hauptnavigation und unter /cloud frei. Standardmäßig ist sie deaktiviert.">i</span></span>
+            </label>
+          </fieldset>
+          <fieldset>
+            <legend>Desktop-Vorschau</legend>
+            <label class="radio-line">
+              <input type="radio" name="desktop_preview_mode" value="modal" {{if ne .DesktopPreviewMode "inline"}}checked{{end}}>
+              Modal
+            </label>
+            <label class="radio-line">
+              <input type="radio" name="desktop_preview_mode" value="inline" {{if eq .DesktopPreviewMode "inline"}}checked{{end}}>
+              Seitenvorschau
+            </label>
+          </fieldset>
+          <fieldset>
+            <legend>Ordner</legend>
+            <label>
+              <span class="label-help-row">Tag-Ordner ab Dokumenten <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Tag-Ordner ab Dokumenten" aria-expanded="false" data-context-help-title="Tag-Ordner ab Dokumenten" data-context-help="Legt fest, ab welcher Dokumentanzahl ein Tag in der ersten Ordnerebene erscheint. 0 zeigt alle Tag-Ordner; Unterordner bleiben unabhängig davon sichtbar.">i</span></span>
+              <input type="number" name="folder_tag_min_documents" min="0" max="100000" value="{{.FolderTagMinDocuments}}">
+            </label>
+          </fieldset>
+          <fieldset>
+            <legend>Papierkorb-Aufbewahrung</legend>
+            <label>
+              <span>Endgültig löschen</span>
+              <select name="trash_retention_days">
+                {{range .TrashRetentionOptions}}
+                <option value="{{.Value}}" {{if eq $.TrashRetentionDays .Value}}selected{{end}}>{{.Label}}</option>
+                {{end}}
+              </select>
+            </label>
+          </fieldset>
+        </div>
+        <div class="settings-actions">
+          <button type="submit">Speichern</button>
+        </div>
+      </form>
     </section>
     {{end}}
   </div>

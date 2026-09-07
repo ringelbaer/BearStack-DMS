@@ -41,7 +41,7 @@ test("face settings fit the shared desktop and mobile layout", async ({ browser 
   await page.getByRole("button", { name: "Anmelden" }).click();
   await page.goto(baseURL + "/settings/photos/faces");
   await expect(page.getByRole("heading", { name: "Gesichtserkennung", exact: true })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Einstellungen", exact: true }).locator("a")).toHaveCount(5);
+  await expect(page.getByRole("navigation", { name: "Einstellungen", exact: true }).locator("a")).toHaveCount(6);
   for (const width of [1440, 1024, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     const layout = await page.evaluate(() => {

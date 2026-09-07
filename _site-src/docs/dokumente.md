@@ -8,6 +8,12 @@ icon: lucide/file-text
 
 BearStack organisiert Dokumente um die vorhandenen Dateien herum. Die Dateien bleiben unverändert im lokalen Speicher; Metadaten, Volltext, Vorschaudaten und Indexe liegen getrennt davon in SQLite und Cache-Verzeichnissen.
 
+## Einstellungen
+
+Unter **Einstellungen → Allgemein** (`/settings/general`) stehen die globalen Optionen für Anwendungsname, Design, Startseite, Tag-Darstellung und Favicon. **Einstellungen → Dokumente** (`/settings`) enthält Desktop-Vorschau, Dokument-Wolke, Tag-Ordner und Papierkorb-Aufbewahrung. Speichern ändert jeweils nur den geöffneten Bereich; Favicon-Upload und Zurücksetzen bleiben separate Aktionen.
+
+Die Einstellungsnavigation steht auf großen Bildschirmen seitlich und bricht auf kleineren Bildschirmen in mehrere Zeilen um. Formulargruppen, lange Beschriftungen und Aktionen passen sich der verfügbaren Breite an.
+
 ## Ablage und Verarbeitung
 
 Dokumente können über die Weboberfläche (`POST /upload`), die JSON-API (`POST /api/upload`) oder kompatible `PUT`-Anfragen importiert werden. BearStack speichert die Originaldatei im konfigurierten `storage_dir`, legt Metadaten in SQLite ab und führt Text-, Vorschau- und Thumbnail-Verarbeitung asynchron im Hintergrund aus.

@@ -133,10 +133,6 @@ func (s *Server) renderSettings(ctx context.Context) (renderSettingsSnapshot, er
 	return s.settingsService().RenderSettings(ctx)
 }
 
-func (s *Server) cacheRenderSettings(settings renderSettingsSnapshot) {
-	s.settingsService().CacheRenderSettings(settings)
-}
-
 func (s *Server) trashRetentionDays(ctx context.Context) (int, error) {
 	return s.settingsService().TrashRetentionDays(ctx)
 }
@@ -234,6 +230,15 @@ func (svc settingsService) RenderSettings(ctx context.Context) (renderSettingsSn
 		svc.app.mu.RUnlock()
 	}
 
+	return svc.ReloadRenderSettings(ctx)
+}
+
+// ReloadRenderSettings preserves values belonging to other settings forms when
+// refreshing the shared rendering cache after a save.
+func (svc settingsService) ReloadRenderSettings(ctx context.Context) (renderSettingsSnapshot, error) {
+	if svc.store == nil {
+		return defaultRenderSettingsSnapshot(), nil
+	}
 	settings := defaultRenderSettingsSnapshot()
 	var err error
 	if settings.TagDisplayMode, err = tagDisplayMode(ctx, svc.store); err != nil {

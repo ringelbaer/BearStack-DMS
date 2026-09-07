@@ -945,6 +945,7 @@ label .context-help-trigger:focus-visible,
   display: grid;
   gap: 18px;
   min-width: 0;
+  overflow-wrap: anywhere;
   padding: 20px;
 }
 
@@ -957,7 +958,7 @@ label .context-help-trigger:focus-visible,
   align-items: start;
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
   min-width: 0;
 }
 
@@ -975,6 +976,7 @@ label .context-help-trigger:focus-visible,
   border-radius: var(--radius-md);
   display: grid;
   gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
   margin: 0;
   min-width: 0;
   padding: 14px;
@@ -990,6 +992,20 @@ label .context-help-trigger:focus-visible,
 
 .settings-fieldset fieldset > label {
   min-width: 0;
+}
+
+.settings-form input,
+.settings-form select,
+.settings-form textarea,
+.settings-form .checkbox-help-label,
+.settings-form .label-help-row {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.settings-form input[type="checkbox"],
+.settings-form input[type="radio"] {
+  flex-shrink: 0;
 }
 
 .settings-fieldset input[type="file"] {
