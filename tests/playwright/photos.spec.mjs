@@ -147,6 +147,27 @@ test("photo gallery loads and starts thumbnail queue", async ({ browser }) => {
   }
 });
 
+test("photo frame works without the gallery script", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  try {
+    await page.route("**/static/app-photos.js*", (route) => route.fulfill({
+      contentType: "application/javascript",
+      body: "",
+    }));
+    await page.goto(`${fixture.baseURL}/photos/frame?q=file_name%3Apublic-a.png&type=image&sort=ascending_name`);
+    const image = page.locator("[data-photo-frame-image]");
+    await expect(image).toBeVisible();
+    await expect(image).toHaveAttribute("src", /public-a/);
+    await expect(page.locator("[data-photo-frame-count]")).toHaveText("1 von 1 Medien");
+    await expect.poll(() => image.evaluate((node) => node.complete && node.naturalWidth > 0)).toBe(true);
+    expect(errors).toEqual([]);
+  } finally {
+    await context.close();
+  }
+});
+
 test("photo folder breadcrumb restores scroll position and sorting", async ({ browser }) => {
   const { context, page } = await editorPage(browser);
   try {

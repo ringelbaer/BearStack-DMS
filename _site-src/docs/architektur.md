@@ -73,6 +73,14 @@ Die vollständige Liste der Laufzeit- und Docker-Umgebungsvariablen steht im Abs
 
 Zusätzlich zur Startkonfiguration speichert BearStack über die Weboberfläche angelegte Konten in der Hauptdatenbank. Beim Start werden beide Quellen validiert und zu einem unveränderlichen Auth-Snapshot zusammengeführt. Authentifizierung und Session-Prüfung lesen diesen Snapshot ohne Datenbankzugriff; Kontoänderungen ersetzen ihn nach erfolgreicher SQLite-Transaktion atomar. Konfigurationskonten bleiben schreibgeschützt, und doppelte Benutzernamen über beide Quellen werden abgelehnt.
 
+## Abfragen und Darstellung
+
+Dokumentlisten für HTML und JSON nutzen denselben Abfrage-Service. Er erhält Filter und Optionen für OCR-Daten beziehungsweise das Überspringen von Seiten außerhalb des gültigen Bereichs und liefert Dokumente, Gesamtzahl und optional OCR-Jobs. HTTP-Anfragen, Redirects und Navigationslinks bleiben in der Darstellungsschicht. HTML-Seiten werden wie bisher auf die letzte vorhandene Seite umgeleitet; die API darf eine leere Seite zurückgeben. Vor einer HTML-Umleitung wird nur gezählt, und API-Abfragen benötigen keine OCR-Abfrage.
+
+Fotoeinstellungen werden an ihrer Quelle eingelesen und anschließend gemeinsam normalisiert. Zahlenbereiche stehen dadurch an einer Stelle. Fehlende oder ungültige Datenbankwerte behalten ihre Defaults; Formular-Checkboxen sind weiterhin nur mit dem Wert `1` aktiviert. Speicherung und Cache-Verhalten bleiben unverändert.
+
+Das Browsermodul `app-photos-media.js` stellt die gemeinsam verwendeten Medien-Helfer bereit, darunter die Übernahme von Fotometadaten und die Auswahl einer passenden Bildauflösung. Galerie und Fotoframe verwenden diese Helfer; der Fotoframe kann unabhängig vom Galerie-Script arbeiten. Das gemeinsame Modul wird vor seinen Verbrauchern geladen.
+
 ## Performance
 
 BearStack trennt Dokumente und Fotodaten, nutzt Caches für aufwendige Medienarbeit und führt OCR sowie Vorschau-Erzeugung im Hintergrund aus. Das ist besonders wichtig, wenn Archive über die Zeit wachsen oder viele Bilder in einem bestehenden Fotoverzeichnis liegen.

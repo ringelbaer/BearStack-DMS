@@ -3,7 +3,6 @@ package server
 
 import (
 	"context"
-	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -639,85 +638,80 @@ func defaultPhotoSettings() PhotoSettings {
 	}
 }
 
+func normalizePhotoSettings(settings PhotoSettings) PhotoSettings {
+	settings.PageSize = max(1, min(1000, settings.PageSize))
+	settings.FolderPreviewCount = max(photos.MinFolderPreviewCount, min(photos.MaxFolderPreviewCount, settings.FolderPreviewCount))
+	settings.FolderThumbnailSize = max(photos.MinThumbnailSize, min(photoFolderThumbnailMaxSize, settings.FolderThumbnailSize))
+	settings.ThumbnailSize = max(photos.MinThumbnailSize, min(photoWorkerThumbnailMaxSize, settings.ThumbnailSize))
+	settings.PreviewSize = max(photoPreviewMinSize, min(photoPreviewMaxSize, settings.PreviewSize))
+	settings.LargePreviewSize = max(photoPreviewMaxSize, min(photos.MaxThumbnailSize, settings.LargePreviewSize))
+	settings.SlideshowSeconds = max(2, min(60, settings.SlideshowSeconds))
+	settings.FrameSeconds = max(3, min(300, settings.FrameSeconds))
+	settings.MapTrackResolutionMeters = max(500, min(10000, settings.MapTrackResolutionMeters))
+	settings.IndexWorkerIntervalMinutes = max(1, min(10080, settings.IndexWorkerIntervalMinutes))
+	settings.IndexWorkerDelayMillis = max(50, min(5000, settings.IndexWorkerDelayMillis))
+	settings.ThumbnailWorkerIntervalMinutes = max(1, min(1440, settings.ThumbnailWorkerIntervalMinutes))
+	settings.ThumbnailWorkerBatchSize = max(1, min(1000, settings.ThumbnailWorkerBatchSize))
+	settings.ThumbnailConcurrency = max(1, min(4, settings.ThumbnailConcurrency))
+	settings.MapTrackResolutionMeters = photos.NormalizeRouteClusterRadiusMeters(settings.MapTrackResolutionMeters)
+	return settings
+}
+
 func photoSettings(ctx context.Context, settings settingReader) (PhotoSettings, error) {
 	result := defaultPhotoSettings()
 	var err error
-	if result.PageSize, err = intSetting(ctx, settings, photoPageSizeSettingKey, result.PageSize, 1, 1000); err != nil {
+	if result.PageSize, err = intSetting(ctx, settings, photoPageSizeSettingKey, result.PageSize); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.FolderPreviewCount, err = intSetting(ctx, settings, photoFolderPreviewCountSettingKey, result.FolderPreviewCount, photos.MinFolderPreviewCount, photos.MaxFolderPreviewCount); err != nil {
+	if result.FolderPreviewCount, err = intSetting(ctx, settings, photoFolderPreviewCountSettingKey, result.FolderPreviewCount); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.FolderThumbnailSize, err = intSetting(ctx, settings, photoFolderThumbnailSizeSettingKey, result.FolderThumbnailSize, photos.MinThumbnailSize, photoFolderThumbnailMaxSize); err != nil {
+	if result.FolderThumbnailSize, err = intSetting(ctx, settings, photoFolderThumbnailSizeSettingKey, result.FolderThumbnailSize); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.ThumbnailSize, err = intSetting(ctx, settings, photoThumbnailSizeSettingKey, result.ThumbnailSize, photos.MinThumbnailSize, photoWorkerThumbnailMaxSize); err != nil {
+	if result.ThumbnailSize, err = intSetting(ctx, settings, photoThumbnailSizeSettingKey, result.ThumbnailSize); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.PreviewSize, err = intSetting(ctx, settings, photoPreviewSizeSettingKey, result.PreviewSize, photoPreviewMinSize, photoPreviewMaxSize); err != nil {
+	if result.PreviewSize, err = intSetting(ctx, settings, photoPreviewSizeSettingKey, result.PreviewSize); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.LargePreviewSize, err = intSetting(ctx, settings, photoLargePreviewSizeSettingKey, result.LargePreviewSize, photoPreviewMaxSize, photos.MaxThumbnailSize); err != nil {
+	if result.LargePreviewSize, err = intSetting(ctx, settings, photoLargePreviewSizeSettingKey, result.LargePreviewSize); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.SlideshowSeconds, err = intSetting(ctx, settings, photoSlideshowSecondsSettingKey, result.SlideshowSeconds, 2, 60); err != nil {
+	if result.SlideshowSeconds, err = intSetting(ctx, settings, photoSlideshowSecondsSettingKey, result.SlideshowSeconds); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.FrameSeconds, err = intSetting(ctx, settings, photoFrameSecondsSettingKey, result.FrameSeconds, 3, 300); err != nil {
+	if result.FrameSeconds, err = intSetting(ctx, settings, photoFrameSecondsSettingKey, result.FrameSeconds); err != nil {
 		return PhotoSettings{}, err
 	}
 	if result.PreloadAdjacent, err = boolSetting(ctx, settings, photoPreloadAdjacentSettingKey, result.PreloadAdjacent); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.MapTrackResolutionMeters, err = intSetting(ctx, settings, photoMapTrackResolutionSettingKey, result.MapTrackResolutionMeters, 500, 10000); err != nil {
+	if result.MapTrackResolutionMeters, err = intSetting(ctx, settings, photoMapTrackResolutionSettingKey, result.MapTrackResolutionMeters); err != nil {
 		return PhotoSettings{}, err
 	}
-	result.MapTrackResolutionMeters = photos.NormalizeRouteClusterRadiusMeters(result.MapTrackResolutionMeters)
 	if result.IndexWorkerEnabled, err = boolSetting(ctx, settings, photoIndexWorkerEnabledSettingKey, result.IndexWorkerEnabled); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.IndexWorkerIntervalMinutes, err = intSetting(ctx, settings, photoIndexWorkerIntervalSettingKey, result.IndexWorkerIntervalMinutes, 1, 10080); err != nil {
+	if result.IndexWorkerIntervalMinutes, err = intSetting(ctx, settings, photoIndexWorkerIntervalSettingKey, result.IndexWorkerIntervalMinutes); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.IndexWorkerDelayMillis, err = intSetting(ctx, settings, photoIndexWorkerDelaySettingKey, result.IndexWorkerDelayMillis, 50, 5000); err != nil {
+	if result.IndexWorkerDelayMillis, err = intSetting(ctx, settings, photoIndexWorkerDelaySettingKey, result.IndexWorkerDelayMillis); err != nil {
 		return PhotoSettings{}, err
 	}
 	if result.ThumbnailWorkerEnabled, err = boolSetting(ctx, settings, photoThumbnailWorkerEnabledSettingKey, result.ThumbnailWorkerEnabled); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.ThumbnailWorkerIntervalMinutes, err = intSetting(ctx, settings, photoThumbnailWorkerIntervalSettingKey, result.ThumbnailWorkerIntervalMinutes, 1, 1440); err != nil {
+	if result.ThumbnailWorkerIntervalMinutes, err = intSetting(ctx, settings, photoThumbnailWorkerIntervalSettingKey, result.ThumbnailWorkerIntervalMinutes); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.ThumbnailWorkerBatchSize, err = intSetting(ctx, settings, photoThumbnailWorkerBatchSettingKey, result.ThumbnailWorkerBatchSize, 1, 1000); err != nil {
+	if result.ThumbnailWorkerBatchSize, err = intSetting(ctx, settings, photoThumbnailWorkerBatchSettingKey, result.ThumbnailWorkerBatchSize); err != nil {
 		return PhotoSettings{}, err
 	}
-	if result.ThumbnailConcurrency, err = intSetting(ctx, settings, photoThumbnailConcurrencySettingKey, result.ThumbnailConcurrency, 1, 4); err != nil {
+	if result.ThumbnailConcurrency, err = intSetting(ctx, settings, photoThumbnailConcurrencySettingKey, result.ThumbnailConcurrency); err != nil {
 		return PhotoSettings{}, err
 	}
-	return result, nil
-}
-
-func photoSettingsFromRequest(r *http.Request) PhotoSettings {
-	defaults := defaultPhotoSettings()
-	return PhotoSettings{
-		PageSize:                       boundedInt(r.FormValue("photo_page_size"), defaults.PageSize, 1, 1000),
-		FolderPreviewCount:             boundedInt(r.FormValue("folder_preview_count"), defaults.FolderPreviewCount, photos.MinFolderPreviewCount, photos.MaxFolderPreviewCount),
-		FolderThumbnailSize:            boundedInt(r.FormValue("folder_thumbnail_size"), defaults.FolderThumbnailSize, photos.MinThumbnailSize, photoFolderThumbnailMaxSize),
-		ThumbnailSize:                  boundedInt(r.FormValue("thumbnail_size"), defaults.ThumbnailSize, photos.MinThumbnailSize, photoWorkerThumbnailMaxSize),
-		PreviewSize:                    boundedInt(r.FormValue("preview_size"), defaults.PreviewSize, photoPreviewMinSize, photoPreviewMaxSize),
-		LargePreviewSize:               boundedInt(r.FormValue("large_preview_size"), defaults.LargePreviewSize, photoPreviewMaxSize, photos.MaxThumbnailSize),
-		SlideshowSeconds:               boundedInt(r.FormValue("slideshow_seconds"), defaults.SlideshowSeconds, 2, 60),
-		FrameSeconds:                   boundedInt(r.FormValue("frame_seconds"), defaults.FrameSeconds, 3, 300),
-		PreloadAdjacent:                r.FormValue("preload_adjacent") == "1",
-		MapTrackResolutionMeters:       photos.NormalizeRouteClusterRadiusMeters(boundedInt(r.FormValue("photo_map_track_resolution_meters"), defaults.MapTrackResolutionMeters, 500, 10000)),
-		IndexWorkerEnabled:             r.FormValue("index_worker_enabled") == "1",
-		IndexWorkerIntervalMinutes:     boundedInt(r.FormValue("index_worker_interval_minutes"), defaults.IndexWorkerIntervalMinutes, 1, 10080),
-		IndexWorkerDelayMillis:         boundedInt(r.FormValue("index_worker_delay_millis"), defaults.IndexWorkerDelayMillis, 50, 5000),
-		ThumbnailWorkerEnabled:         r.FormValue("thumbnail_worker_enabled") == "1",
-		ThumbnailWorkerIntervalMinutes: boundedInt(r.FormValue("thumbnail_worker_interval_minutes"), defaults.ThumbnailWorkerIntervalMinutes, 1, 1440),
-		ThumbnailWorkerBatchSize:       boundedInt(r.FormValue("thumbnail_worker_batch_size"), defaults.ThumbnailWorkerBatchSize, 1, 1000),
-		ThumbnailConcurrency:           boundedInt(r.FormValue("thumbnail_concurrency"), defaults.ThumbnailConcurrency, 1, 4),
-	}
+	return normalizePhotoSettings(result), nil
 }
 
 func savePhotoSettings(ctx context.Context, store settingWriter, settings PhotoSettings) error {
@@ -748,7 +742,7 @@ func savePhotoSettings(ctx context.Context, store settingWriter, settings PhotoS
 	return nil
 }
 
-func intSetting(ctx context.Context, settings settingReader, key string, fallback, min, max int) (int, error) {
+func intSetting(ctx context.Context, settings settingReader, key string, fallback int) (int, error) {
 	value, ok, err := settings.GetSetting(ctx, key)
 	if err != nil {
 		return 0, err
@@ -756,7 +750,7 @@ func intSetting(ctx context.Context, settings settingReader, key string, fallbac
 	if !ok {
 		return fallback, nil
 	}
-	return boundedInt(value, fallback, min, max), nil
+	return parseIntOrDefault(value, fallback), nil
 }
 
 func boolSetting(ctx context.Context, settings settingReader, key string, fallback bool) (bool, error) {
@@ -796,4 +790,12 @@ func boolSettingValue(value bool) string {
 		return "1"
 	}
 	return "0"
+}
+
+func parseIntOrDefault(value string, fallback int) int {
+	parsed, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }

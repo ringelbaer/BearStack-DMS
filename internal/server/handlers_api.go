@@ -31,16 +31,12 @@ func (s *Server) handleAPIDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 	filter := filterFromRequest(r, apiTrashFromRequest(r), perPage)
 
-	total, err := s.countDocuments(r.Context(), filter)
+	result, err := s.documentListService().List(r.Context(), filter, documentListOptions{})
 	if err != nil {
 		s.renderJSONError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	docs, err := s.repo.ListDocuments(r.Context(), filter)
-	if err != nil {
-		s.renderJSONError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	docs, total := result.Documents, result.Total
 	documents, err := s.documentAPIResponses(r.Context(), docs)
 	if err != nil {
 		s.renderJSONError(w, http.StatusInternalServerError, err.Error())
@@ -104,16 +100,12 @@ func (s *Server) handleAPIFolders(w http.ResponseWriter, r *http.Request) {
 	var docs []document.Document
 	total := 0
 	if selection.Depth() > 0 {
-		total, err = s.countDocuments(r.Context(), filter)
+		result, err := s.documentListService().List(r.Context(), filter, documentListOptions{})
 		if err != nil {
 			s.renderJSONError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		docs, err = s.repo.ListDocuments(r.Context(), filter)
-		if err != nil {
-			s.renderJSONError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
+		docs, total = result.Documents, result.Total
 	}
 
 	documents, err := s.documentAPIResponses(r.Context(), docs)
@@ -173,16 +165,12 @@ func (s *Server) handleAPISearchFavoriteFolders(w http.ResponseWriter, r *http.R
 			s.renderJSONError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		total, err := s.countDocuments(r.Context(), filter)
+		result, err := s.documentListService().List(r.Context(), filter, documentListOptions{})
 		if err != nil {
 			s.renderJSONError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		docs, err := s.repo.ListDocuments(r.Context(), filter)
-		if err != nil {
-			s.renderJSONError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
+		docs, total := result.Documents, result.Total
 		documents, err := s.documentAPIResponses(r.Context(), docs)
 		if err != nil {
 			s.renderJSONError(w, http.StatusInternalServerError, err.Error())

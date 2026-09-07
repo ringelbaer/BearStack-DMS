@@ -80,7 +80,7 @@ func (s *Server) handleFolders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if selection.Depth() > 0 {
-		listResult, err := s.documentListService().List(r.Context(), r, filter, perPage)
+		listResult, err := s.documentListView(r.Context(), r, filter, perPage)
 		if err != nil {
 			s.renderError(w, r, http.StatusInternalServerError, err)
 			return
@@ -145,7 +145,7 @@ func (s *Server) handleSearchFavoriteFolders(w http.ResponseWriter, r *http.Requ
 			filter.Sort = sort
 			filter.Direction = document.NormalizeListDirection(r.URL.Query().Get("dir"), sort)
 		}
-		listResult, err := s.documentListService().List(r.Context(), r, filter, perPage)
+		listResult, err := s.documentListView(r.Context(), r, filter, perPage)
 		if err != nil {
 			s.renderError(w, r, http.StatusInternalServerError, err)
 			return

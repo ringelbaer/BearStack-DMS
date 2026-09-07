@@ -1,23 +1,5 @@
 (function () {
-  function photoHelpers() {
-    return (window.BearStack && window.BearStack.photos) || {};
-  }
-
-  function applyFramePhotoItemDetails(item, data) {
-    var helpers = photoHelpers();
-    if (typeof helpers.applyPhotoItemDetails === "function") {
-      return helpers.applyPhotoItemDetails(item, data);
-    }
-    return Object.assign(item, data || {});
-  }
-
-  function bestFramePhotoDisplaySrc(item) {
-    var helpers = photoHelpers();
-    if (typeof helpers.bestPhotoDisplaySrc === "function") {
-      return helpers.bestPhotoDisplaySrc(item);
-    }
-    return item.largePreview || item.preview || item.thumb || item.original || item.src || "";
-  }
+  var photoMedia = window.BearStack.photos;
 
   function initFrame() {
     var frame = document.querySelector("[data-photo-frame]");
@@ -67,7 +49,7 @@
         return response.json();
       }).then(function (payload) {
         (payload.media || []).forEach(function (media) {
-          items.push(applyFramePhotoItemDetails({
+          items.push(photoMedia.applyPhotoItemDetails({
             node: null,
             detailsLoaded: true,
             detailPromise: null
@@ -160,7 +142,7 @@
       if (item.type === "video") {
         showFrameVideo(item.src);
       } else {
-        var target = bestFramePhotoDisplaySrc(item);
+        var target = photoMedia.bestPhotoDisplaySrc(item);
         var fallback = item.preview || item.thumb || item.largePreview || item.original || item.src || "";
         if (target) {
           swapFrameImage(target, fallback, item);

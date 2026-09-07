@@ -163,7 +163,7 @@ func TestTemplateAssetsAreScopedByPage(t *testing.T) {
 			name:    "photos",
 			tpl:     "photos.html",
 			data:    PageData{Title: "Fotos", Active: "photos", PhotoPage: true},
-			want:    []string{"/static/app-photos-map.js", "/static/app-photos-thumbnails.js", "/static/app-photos.js", "/static/app-photos-frame.js"},
+			want:    []string{"/static/app-photos-media.js", "/static/app-photos-map.js", "/static/app-photos-thumbnails.js", "/static/app-photos.js", "/static/app-photos-frame.js"},
 			notWant: []string{"/static/app-charts.js", "/static/app-documents.js", "/static/app-preview.js", "/static/app-upload.js"},
 		},
 	}

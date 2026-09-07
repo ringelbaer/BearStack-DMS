@@ -130,6 +130,7 @@ func pageJSAssets(data PageData) []string {
 	}
 	if pageAssets.Photos {
 		assets = append(assets,
+			"/static/app-photos-media.js",
 			"/static/app-photos-map.js",
 			"/static/app-photos-thumbnails.js",
 			"/static/app-photos.js",

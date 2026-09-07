@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"net/http"
 	"time"
 
 	"bearstack/internal/document"
@@ -13,17 +12,25 @@ import (
 )
 
 type documentListService struct {
-	repo           *repository.Repository
+	repo           documentListRepository
 	countDocuments func(context.Context, document.ListFilter) (int, error)
 }
 
+type documentListRepository interface {
+	CountDocuments(context.Context, document.ListFilter) (int, error)
+	ListDocuments(context.Context, document.ListFilter) ([]document.Document, error)
+	LatestRelevantOCRJobsForDocuments(context.Context, []int64) (map[int64]*document.OCRJob, error)
+}
+
+type documentListOptions struct {
+	IncludeOCRJobs bool
+	SkipOutOfRange bool
+}
+
 type documentListResult struct {
-	Documents   []document.Document
-	OCRJobs     map[int64]*document.OCRJob
-	Total       int
-	RedirectURL string
-	Pagination  PaginationData
-	SortLinks   map[string]SortLink
+	Documents []document.Document
+	OCRJobs   map[int64]*document.OCRJob
+	Total     int
 }
 
 func (s *Server) documentListService() documentListService {
@@ -33,31 +40,34 @@ func (s *Server) documentListService() documentListService {
 	}
 }
 
-func (svc documentListService) List(ctx context.Context, r *http.Request, filter document.ListFilter, perPage int) (documentListResult, error) {
+func (svc documentListService) List(ctx context.Context, filter document.ListFilter, options documentListOptions) (documentListResult, error) {
 	total, err := svc.count(ctx, filter)
 	if err != nil {
 		return documentListResult{}, err
 	}
-	if target := documentPageRedirectURL(r, filter.Page, perPage, total); target != "" {
-		return documentListResult{Total: total, RedirectURL: target}, nil
+	// Callers that correct out-of-range pages need only the count. API callers
+	// can still query those pages without loading OCR data they do not expose.
+	if options.SkipOutOfRange && total > 0 && filter.Limit > 0 && filter.Page > pageCount(total, filter.Limit) {
+		return documentListResult{Total: total}, nil
 	}
 	docs, err := svc.repo.ListDocuments(ctx, filter)
 	if err != nil {
 		return documentListResult{}, err
 	}
-	ocrJobs := map[int64]*document.OCRJob{}
-	if len(docs) > 0 {
-		ocrJobs, err = svc.repo.LatestRelevantOCRJobsForDocuments(ctx, documentIDs(docs))
-		if err != nil {
-			return documentListResult{}, err
+	var ocrJobs map[int64]*document.OCRJob
+	if options.IncludeOCRJobs {
+		ocrJobs = map[int64]*document.OCRJob{}
+		if len(docs) > 0 {
+			ocrJobs, err = svc.repo.LatestRelevantOCRJobsForDocuments(ctx, documentIDs(docs))
+			if err != nil {
+				return documentListResult{}, err
+			}
 		}
 	}
 	return documentListResult{
-		Documents:  docs,
-		OCRJobs:    ocrJobs,
-		Total:      total,
-		Pagination: documentListPaginationData(r, filter.Page, perPage, len(docs), total),
-		SortLinks:  documentSortLinks(r, filter),
+		Documents: docs,
+		OCRJobs:   ocrJobs,
+		Total:     total,
 	}, nil
 }
 
@@ -245,4 +255,12 @@ func (svc folderApplicationService) countMany(ctx context.Context, filters []doc
 		counts = append(counts, count)
 	}
 	return counts, nil
+}
+
+func documentIDs(docs []document.Document) []int64 {
+	ids := make([]int64, 0, len(docs))
+	for _, doc := range docs {
+		ids = append(ids, doc.ID)
+	}
+	return ids
 }

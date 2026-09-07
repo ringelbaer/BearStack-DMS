@@ -969,13 +969,13 @@ async function testPDFPreviewControlsAndDestroyCancelWork() {
   assert.equal(root.hidden, true);
 }
 
-function testPhotoHelpersExposeLightboxInputs() {
+function testPhotoMediaHelpersWorkWithoutGallery() {
   const document = new TestDocument();
   const context = createContext(document);
   context.innerWidth = 1000;
   context.innerHeight = 700;
   context.devicePixelRatio = 1;
-  runScripts(context, ["app-photos-map.js", "app-photos-thumbnails.js", "app-photos.js", "app-photos-frame.js"]);
+  runScripts(context, ["app-photos-media.js", "app-photos-frame.js"]);
 
   const root = el("div", {}, [
     el("article", {
@@ -1001,6 +1001,20 @@ function testPhotoHelpersExposeLightboxInputs() {
   assert.equal(items.length, 2);
   assert.equal(items[0].title, "Albumfoto");
   assert.equal(context.window.BearStack.photos.bestPhotoDisplaySrc(items[0]), "/photos/thumbnail?size=1600");
+  context.devicePixelRatio = 2;
+  assert.equal(context.window.BearStack.photos.bestPhotoDisplaySrc(items[0]), "/photos/thumbnail?size=1600");
+  context.innerWidth = 300;
+  context.innerHeight = 200;
+  context.devicePixelRatio = 1;
+  assert.equal(context.window.BearStack.photos.bestPhotoDisplaySrc(items[0]), "/photos/thumbnail?size=320");
+  const details = context.window.BearStack.photos.applyPhotoItemDetails({}, {
+    path: "album/photo.jpg", large_preview: "/large", date_time: "18.05.2026 12:00", width: "3000", height: "2000"
+  });
+  assert.equal(details.largePreview, "/large");
+  assert.equal(details.dateTime, "18.05.2026 12:00");
+  assert.equal(details.width, 3000);
+  assert.equal(details.detailsLoaded, true);
+  assert.equal(context.window.BearStack.photos.bestPhotoDisplaySrc({ type: "image", original: "/original" }), "/original");
   assert.equal(items[1].src, "/photos/media?path=clip.mp4");
   assert.equal(context.window.BearStack.photos.formatPhotoRating("2.5"), "2,5 Sterne");
 }
@@ -1019,7 +1033,7 @@ const tests = [
   testPDFPreviewIsSelectedLazilyOnlyWhenEnabled,
   testDocumentDetailUsesCustomPDFPreview,
   testPDFPreviewControlsAndDestroyCancelWork,
-  testPhotoHelpersExposeLightboxInputs,
+  testPhotoMediaHelpersWorkWithoutGallery,
 ];
 
 for (const test of tests) {

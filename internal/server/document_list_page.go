@@ -35,7 +35,7 @@ func (builder documentListPageBuilder) Build(ctx context.Context, r *http.Reques
 	if err != nil {
 		return documentListPageResult{}, err
 	}
-	listResult, err := s.documentListService().List(ctx, r, filter, perPage)
+	listResult, err := s.documentListView(ctx, r, filter, perPage)
 	if err != nil {
 		return documentListPageResult{}, err
 	}
@@ -119,10 +119,24 @@ func (builder documentListPageBuilder) Build(ctx context.Context, r *http.Reques
 	}, nil
 }
 
-func documentIDs(docs []document.Document) []int64 {
-	ids := make([]int64, 0, len(docs))
-	for _, doc := range docs {
-		ids = append(ids, doc.ID)
+// documentListView adds HTTP navigation to the shared query result.
+type documentListViewResult struct {
+	documentListResult
+	RedirectURL string
+	Pagination  PaginationData
+	SortLinks   map[string]SortLink
+}
+
+func (s *Server) documentListView(ctx context.Context, r *http.Request, filter document.ListFilter, perPage int) (documentListViewResult, error) {
+	result, err := s.documentListService().List(ctx, filter, documentListOptions{IncludeOCRJobs: true, SkipOutOfRange: true})
+	if err != nil {
+		return documentListViewResult{}, err
 	}
-	return ids
+	view := documentListViewResult{documentListResult: result}
+	view.RedirectURL = documentPageRedirectURL(r, filter.Page, perPage, result.Total)
+	if view.RedirectURL == "" {
+		view.Pagination = documentListPaginationData(r, filter.Page, perPage, len(result.Documents), result.Total)
+		view.SortLinks = documentSortLinks(r, filter)
+	}
+	return view, nil
 }
