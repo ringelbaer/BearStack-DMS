@@ -30,12 +30,6 @@ func cachedMediaFromRow(base Media, row cachedMediaRow) (Media, bool) {
 	return media, true
 }
 
-func (l *Library) saveMedia(media Media) {
-	if err := l.saveMediaContext(context.Background(), media); err != nil {
-		l.logWriteError("photo media cache update failed", media.Path, err)
-	}
-}
-
 func (l *Library) saveMediaContext(ctx context.Context, media Media) error {
 	if l == nil {
 		return nil

@@ -185,6 +185,8 @@ func BenchmarkPhotoListIndexedGPXTracksCache(b *testing.B) {
 	clearGPXCache := func() {
 		lib.gpxMu.Lock()
 		clear(lib.gpxCache)
+		lib.gpxLRU.Init()
+		lib.gpxCacheBytes = 0
 		lib.gpxMu.Unlock()
 	}
 

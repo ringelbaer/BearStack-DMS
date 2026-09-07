@@ -37,7 +37,7 @@ type Library struct {
 	index         *photoIndexStore
 	pageSize      int
 	thumbnail     thumbnailRuntime
-	gpxMu         sync.RWMutex
+	gpxMu         sync.Mutex
 	gpxCache      map[string]cachedGPXTrack
 	gpxLRU        list.List
 	gpxCacheBytes int64

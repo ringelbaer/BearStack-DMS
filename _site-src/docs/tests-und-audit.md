@@ -65,6 +65,8 @@ go test ./internal/photos -bench=BenchmarkMillionPhotoRebuildIndexScenarios -ben
 
 Die Benchmarks sind als Regressionsschutz gedacht. Absolute Zahlen hängen stark von CPU, Speicher, Dateisystem, SQLite-I/O und Go-Version ab; vergleichbar werden sie erst auf demselben System mit mehreren Wiederholungen.
 
+Die GPX-Benchmarks setzen für Messungen ohne Cache auch die LRU-Verwaltung und den Speicherzähler zurück. Reine Go-Testhelfer liegen in `_test.go`-Dateien und werden nicht in das Anwendungsbinary übernommen.
+
 ## Audit-Log in BearStack
 
 BearStack protokolliert schreibende Aktionen im Laufzeit-Audit-Log. Erfasst werden unter anderem Zeitpunkt, Benutzer, HTTP-Methode, Pfad, Route, Aktion, Ziel, Status, Remote-Adresse und User-Agent. Dazu gehören auch das Anlegen, Ändern, Aktivieren, Deaktivieren und Löschen von Benutzern sowie Passwortänderungen; Passwörter und Hashes werden niemals übernommen. Das Log ist über `/log` erreichbar und erfordert die Permission `system.audit`; die Rolle `admin` enthält diese Berechtigung.

@@ -77,10 +77,7 @@ func documentURL(id int64, returnURL, notice string) string {
 	if returnURL != "/" {
 		q.Set("return", returnURL)
 	}
-	if encoded := q.Encode(); encoded != "" {
-		target += "?" + encoded
-	}
-	return target
+	return pathWithQuery(target, q)
 }
 
 func documentViewURL(id int64, returnURL, notice string) string {
@@ -93,10 +90,7 @@ func documentViewURL(id int64, returnURL, notice string) string {
 	if returnURL != "/" {
 		q.Set("return", returnURL)
 	}
-	if encoded := q.Encode(); encoded != "" {
-		target += "?" + encoded
-	}
-	return target
+	return pathWithQuery(target, q)
 }
 
 func withHighlight(target string, id int64) string {

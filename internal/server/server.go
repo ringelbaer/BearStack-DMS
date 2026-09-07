@@ -49,7 +49,7 @@ type Server struct {
 	preferenceWriteMu sync.Mutex
 	earlyAudit        auditRejectionLimiter
 	apps              serverApplications
-	jobCtxMu          sync.RWMutex
+	jobCtxMu          sync.Mutex
 	jobCtx            context.Context
 	jobCancel         context.CancelFunc
 	background        backgroundTasks
