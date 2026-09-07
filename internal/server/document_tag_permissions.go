@@ -11,13 +11,9 @@ func (s *Server) unknownDocumentTagsForRequest(r *http.Request, tags []string) (
 	if !s.authEnabled() || s.requestHasCapabilities(r, authCapDocumentsStructure) {
 		return nil, nil
 	}
-	existingTags, err := s.repo.ListTags(r.Context())
+	existing, err := s.repo.ExistingTagNames(r.Context(), tags)
 	if err != nil {
 		return nil, err
-	}
-	existing := make(map[string]struct{}, len(existingTags))
-	for _, tag := range existingTags {
-		existing[strings.TrimSpace(strings.ToLower(tag.Name))] = struct{}{}
 	}
 	unknown := make([]string, 0)
 	seen := map[string]struct{}{}

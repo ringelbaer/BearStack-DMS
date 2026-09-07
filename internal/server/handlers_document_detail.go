@@ -31,7 +31,7 @@ func (s *Server) renderDocumentDetail(w http.ResponseWriter, r *http.Request, re
 		s.renderHTTPError(w, r, err)
 		return
 	}
-	tags, err := s.repo.ListTags(r.Context())
+	tags, err := s.repo.ListTagDefinitions(r.Context())
 	if err != nil {
 		s.renderError(w, r, http.StatusInternalServerError, err)
 		return

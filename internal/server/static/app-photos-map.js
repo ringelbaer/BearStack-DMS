@@ -82,15 +82,21 @@
   }
 
   function photoMapScreenPoint(position, state, size) {
+    return photoMapProjector(state, size)(position);
+  }
+
+  function photoMapProjector(state, size) {
     var center = projectPhotoMap(state.lat, state.lon, state.zoom);
-    var world = projectPhotoMap(position.lat, position.lon, state.zoom);
     var worldSize = photoMapWorldSize(state.zoom);
-    var deltaX = world.x - center.x;
-    if (deltaX > worldSize / 2) deltaX -= worldSize;
-    if (deltaX < -worldSize / 2) deltaX += worldSize;
-    return {
-      x: deltaX + size.width / 2,
-      y: world.y - center.y + size.height / 2
+    return function (position) {
+      var world = projectPhotoMap(position.lat, position.lon, state.zoom);
+      var deltaX = world.x - center.x;
+      if (deltaX > worldSize / 2) deltaX -= worldSize;
+      if (deltaX < -worldSize / 2) deltaX += worldSize;
+      return {
+        x: deltaX + size.width / 2,
+        y: world.y - center.y + size.height / 2
+      };
     };
   }
 
@@ -247,15 +253,7 @@
       scheduleRender();
     }
 
-    function screenPoint(position) {
-      return photoMapScreenPoint(position, state, canvasSize());
-    }
-
-    function renderTiles() {
-      renderPhotoMapTiles(tileLayer, state, canvasSize(), tileCache);
-    }
-
-    function renderMarkers() {
+    function renderMarkers(screenPoint, size) {
       var showPhotos = layerVisible("photos");
       positions.forEach(function (position) {
         position.node.hidden = !showPhotos;
@@ -272,7 +270,6 @@
         position.node.style.left = point.x.toFixed(2) + "px";
         position.node.style.top = point.y.toFixed(2) + "px";
       });
-      var size = canvasSize();
       renderPhotoRoute(routeLayer, showRoute ? routePositions : [], screenPoint, size);
       gpxTracks.forEach(function (track) {
         renderPhotoMapTrack(track, layerVisible(track.layer), screenPoint, size);
@@ -285,8 +282,10 @@
     }
 
     function renderMap() {
-      renderTiles();
-      renderMarkers();
+      var size = canvasSize();
+      var screenPoint = photoMapProjector(state, size);
+      renderPhotoMapTiles(tileLayer, state, size, tileCache);
+      renderMarkers(screenPoint, size);
     }
 
     function scheduleRender() {
@@ -443,30 +442,30 @@
 
   function renderPhotoMapPolyline(layer, positions, project, size, className, color, label) {
     if (!layer) return;
-    while (layer.firstChild) {
-      layer.removeChild(layer.firstChild);
-    }
     if (!project || positions.length < 2 || !size || !size.width || !size.height) {
       layer.setAttribute("hidden", "");
       return;
     }
     layer.removeAttribute("hidden");
     layer.setAttribute("viewBox", "0 0 " + size.width + " " + size.height);
-    var polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-    polyline.setAttribute("class", className);
-    if (color) {
-      polyline.setAttribute("stroke", color);
-    }
-    if (label) {
-      var title = document.createElementNS("http://www.w3.org/2000/svg", "title");
-      title.textContent = label;
-      polyline.appendChild(title);
+    var polyline = layer.querySelector("polyline");
+    if (!polyline) {
+      polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+      polyline.setAttribute("class", className);
+      if (color) {
+        polyline.setAttribute("stroke", color);
+      }
+      if (label) {
+        var title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+        title.textContent = label;
+        polyline.appendChild(title);
+      }
+      layer.appendChild(polyline);
     }
     polyline.setAttribute("points", positions.map(function (position) {
       var point = project(position);
       return point.x.toFixed(2) + "," + point.y.toFixed(2);
     }).join(" "));
-    layer.appendChild(polyline);
   }
 
   window.BearStack = window.BearStack || {};

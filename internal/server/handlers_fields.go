@@ -241,26 +241,38 @@ func similarCustomFieldValues(values []document.CustomFieldValue) []document.Cus
 	type normalizedValue struct {
 		value      string
 		comparable string
+		runes      []rune
 	}
 	normalized := make([]normalizedValue, 0, len(values))
+	maxRunes := 0
 	for _, value := range values {
 		comparable := comparableCustomFieldValue(value.Value)
 		if comparable == "" {
 			continue
 		}
-		normalized = append(normalized, normalizedValue{value: value.Value, comparable: comparable})
+		runes := []rune(comparable)
+		maxRunes = max(maxRunes, len(runes))
+		normalized = append(normalized, normalizedValue{value: value.Value, comparable: comparable, runes: runes})
 	}
+	// Reuse the distance rows across pairs; only distances up to two matter.
+	prev, curr := make([]int, maxRunes+1), make([]int, maxRunes+1)
 	seen := map[string]struct{}{}
 	var suggestions []document.CustomFieldValueSuggestion
 	for i := 0; i < len(normalized); i++ {
 		group := []string{normalized[i].value}
 		reason := ""
 		for j := i + 1; j < len(normalized); j++ {
-			distance := levenshteinDistance(normalized[i].comparable, normalized[j].comparable)
 			if normalized[i].comparable == normalized[j].comparable {
 				reason = "Unterschied nur bei Großschreibung, Leerzeichen oder Satzzeichen"
 				group = append(group, normalized[j].value)
-			} else if distance <= 1 || (len(normalized[i].comparable) >= 6 && len(normalized[j].comparable) >= 6 && distance <= 2) {
+				continue
+			}
+			limit := 1
+			// Retain the existing byte-length threshold, including for Unicode.
+			if len(normalized[i].comparable) >= 6 && len(normalized[j].comparable) >= 6 {
+				limit = 2
+			}
+			if levenshteinWithin(normalized[i].runes, normalized[j].runes, limit, prev, curr) {
 				if reason == "" {
 					reason = "Sehr ähnliche Schreibweise"
 				}
@@ -296,32 +308,47 @@ func comparableCustomFieldValue(value string) string {
 	return b.String()
 }
 
-func levenshteinDistance(a, b string) int {
-	ar := []rune(a)
-	br := []rune(b)
-	if len(ar) == 0 {
-		return len(br)
+func levenshteinWithin(a, b []rune, limit int, prev, curr []int) bool {
+	if len(a)-len(b) > limit || len(b)-len(a) > limit {
+		return false
 	}
-	if len(br) == 0 {
-		return len(ar)
+	for len(a) > 0 && len(b) > 0 && a[0] == b[0] {
+		a, b = a[1:], b[1:]
 	}
-	prev := make([]int, len(br)+1)
-	curr := make([]int, len(br)+1)
+	for len(a) > 0 && len(b) > 0 && a[len(a)-1] == b[len(b)-1] {
+		a, b = a[:len(a)-1], b[:len(b)-1]
+	}
+	if len(a) == 0 || len(b) == 0 {
+		return max(len(a), len(b)) <= limit
+	}
+	prev, curr = prev[:len(b)+1], curr[:len(b)+1]
 	for j := range prev {
-		prev[j] = j
+		prev[j] = min(j, limit+1)
 	}
-	for i := 1; i <= len(ar); i++ {
-		curr[0] = i
-		for j := 1; j <= len(br); j++ {
+	for i := 1; i <= len(a); i++ {
+		start, end := max(1, i-limit), min(len(b), i+limit)
+		curr[0] = min(i, limit+1)
+		if start > 1 {
+			curr[start-1] = limit + 1
+		}
+		rowMin := limit + 1
+		for j := start; j <= end; j++ {
 			cost := 0
-			if ar[i-1] != br[j-1] {
+			if a[i-1] != b[j-1] {
 				cost = 1
 			}
 			curr[j] = min(prev[j]+1, curr[j-1]+1, prev[j-1]+cost)
+			rowMin = min(rowMin, curr[j])
+		}
+		if rowMin > limit {
+			return false
+		}
+		if end < len(b) {
+			curr[end+1] = limit + 1
 		}
 		prev, curr = curr, prev
 	}
-	return prev[len(br)]
+	return prev[len(b)] <= limit
 }
 
 func (s *Server) handleSaveColumns(w http.ResponseWriter, r *http.Request) {

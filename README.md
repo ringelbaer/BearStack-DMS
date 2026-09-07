@@ -78,6 +78,8 @@ Regressionstests pruefen unter anderem die gleichen Foto-Wertebereiche aus Formu
 
 Weitere Tests sichern die OCR-Prozessausfuehrung mit kontrollierten Werkzeug-Fixtures ab: Seitenreihenfolge, Fallback-Limit, Fehler, Abbruch und temporaere Dateien. Dateisystemtests pruefen Traversal und Symlinks auch beim Erstellen von Verzeichnissen. Browser-Regressionen decken verspaetete Lightbox-Antworten, fehlgeschlagene Metadaten-/Vorschauabrufe sowie die Navigation per Tastatur ab.
 
+Performance-Regressionen pruefen begrenzte Unicode-Distanzberechnung fuer Feldwertvorschlaege, Tagdefinitionen ohne Dokumentzaehlung und gebuendelte `.adminonly`-Startabfragen mit Rollback. Die Fotokarte liest ihre Abmessungen einmal je Renderdurchlauf und verwendet Track-Polylinien weiter; die Lightbox stellt bereits geladene Medien pro Auswahl einmal dar. Der Benchmark `go test ./internal/server -run '^$' -bench BenchmarkSimilarCustomFieldValues -benchmem` misst die Feldwertsuche mit 1.500 Werten.
+
 Go-Anweisungsabdeckung messen (Browser-Tests werden separat ausgefuehrt):
 
 ```sh

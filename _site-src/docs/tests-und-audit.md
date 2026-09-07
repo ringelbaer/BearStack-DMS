@@ -64,6 +64,8 @@ Regressionstests prüfen den Zugriff ohne Auth über lokale und fremde Hostnamen
 
 Zusätzliche Regressionstests vergleichen die Normalisierung von Fotoeinstellungen aus Datenbank und HTTP-Formular, prüfen die Abfrageanzahl für HTML- und API-Dokumentlisten und erhalten deren unterschiedliche Behandlung zu hoher Seitenzahlen. Ein Browser-Test lädt den Fotoframe mit leerem Galerie-Script und prüft, dass das gemeinsame Medienmodul für die Anzeige ausreicht.
 
+Performance-Regressionen vergleichen die begrenzte Unicode-Distanzberechnung der Feldwertsuche mit einer vollständigen Referenz. Tagdefinitionen bleiben ohne Dokumentzuordnungstabelle lesbar; Abfragen einzelner Tagnamen werden an Batchgrenzen geprüft. Die Foto-Startprüfung benötigt bei 401 unveränderten Ordnern vier SQL-Abfragen und keine Updates. Weitere Tests prüfen geänderte und vererbte `.adminonly`-Sichtbarkeit sowie das Zurückrollen bei Datenbankfehlern. Browser-Tests sichern bei 10.000 Trackpunkten eine Größenmessung je Renderdurchlauf, wiederverwendete Polylinien und einmalige Darstellung bereits geladener Lightbox-Medien ab.
+
 Für Änderungen an riskanten Bereichen gilt: fokussierte Regressionstests vor breit angelegten Refactors. Wenn eine Änderung Performance berührt, sind Benchmarks oder nachvollziehbare Messungen sinnvoller als reine Einschätzung.
 
 Bei Versionsänderungen muss `info.version` in `openapi.yaml` mit der Root-Datei `VERSION` übereinstimmen. Der Go-Test `TestOpenAPISpecMatchesApplicationVersion` prüft diesen Abgleich für die eingebettete API-Beschreibung.
@@ -72,10 +74,11 @@ Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle Suite
 
 ## Performance-Benchmarks
 
-BearStack enthält Benchmarks für Dokumentlisten und das Fotomodul. Sie messen Suche, Tag-Filter, Pagination, große Fotoindexe, GPX-Daten, Thumbnail-Status und Index-Neuaufbau.
+BearStack enthält Benchmarks für Dokumentlisten, Feldwertvorschläge und das Fotomodul. Sie messen Suche, Tag-Filter, Pagination, Ähnlichkeitssuche mit 1.500 Feldwerten, große Fotoindexe, GPX-Daten, Thumbnail-Status und Index-Neuaufbau.
 
 ```sh
 go test ./internal/repository -bench=BenchmarkList -benchmem
+go test ./internal/server -run '^$' -bench=BenchmarkSimilarCustomFieldValues -benchmem
 go test ./internal/photos -bench=BenchmarkPhoto -benchmem
 go test ./internal/photos -bench=BenchmarkMillionPhotoRebuildIndexScenarios -benchmem
 ```

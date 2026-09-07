@@ -541,15 +541,16 @@
       var item = items[current];
       if (title) title.textContent = item.title;
       renderCurrentItem(item);
+      if (item.detailsLoaded) {
+        preloadNeighbors();
+        return;
+      }
       ensurePhotoItemDetails(item).then(function (updated) {
         if (items[current] !== item) return;
         if (title) title.textContent = updated.title;
         renderCurrentItem(updated);
         preloadNeighbors();
       });
-      if (item.detailsLoaded) {
-        preloadNeighbors();
-      }
     }
 
     function renderInfoMap() {

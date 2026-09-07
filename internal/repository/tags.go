@@ -32,13 +32,25 @@ var (
 )
 
 func (r *Repository) ListTags(ctx context.Context) ([]document.Tag, error) {
-	rows, err := r.db.QueryContext(ctx, `
+	return r.queryTags(ctx, `
 		SELECT t.id, t.name, t.description, t.color, t.primary_tag, t.group_mode, t.list_hidden, t.delete_protected, COUNT(d.id)
 		FROM tags t
 		LEFT JOIN document_tags dt ON dt.tag_id = t.id
 		LEFT JOIN documents d ON d.id = dt.document_id AND d.deleted_at IS NULL
 		GROUP BY t.id, t.name, t.description, t.color, t.primary_tag, t.group_mode, t.list_hidden, t.delete_protected
 		ORDER BY t.name`)
+}
+
+// ListTagDefinitions loads tag metadata without scanning document assignments.
+// Count is left at zero; callers displaying usage counts must use ListTags.
+func (r *Repository) ListTagDefinitions(ctx context.Context) ([]document.Tag, error) {
+	return r.queryTags(ctx, `
+		SELECT id, name, description, color, primary_tag, group_mode, list_hidden, delete_protected, 0
+		FROM tags ORDER BY name`)
+}
+
+func (r *Repository) queryTags(ctx context.Context, query string) ([]document.Tag, error) {
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +65,38 @@ func (r *Repository) ListTags(ctx context.Context) ([]document.Tag, error) {
 		tags = append(tags, tag)
 	}
 	return tags, rows.Err()
+}
+
+func (r *Repository) ExistingTagNames(ctx context.Context, names []string) (map[string]struct{}, error) {
+	names = cleanTagNames(names)
+	existing := make(map[string]struct{}, len(names))
+	for start := 0; start < len(names); start += repositoryBatchSize {
+		batch := names[start:min(start+repositoryBatchSize, len(names))]
+		args := make([]any, len(batch))
+		for i, name := range batch {
+			args[i] = name
+		}
+		rows, err := r.db.QueryContext(ctx, `SELECT name FROM tags WHERE name IN (`+sqlutil.Placeholders(len(args))+`)`, args...)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			existing[name] = struct{}{}
+		}
+		err = rows.Err()
+		if closeErr := rows.Close(); err == nil {
+			err = closeErr
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	return existing, nil
 }
 
 func (r *Repository) TagCloud(ctx context.Context, itemLimit, relatedLimit int) (document.TagCloud, error) {

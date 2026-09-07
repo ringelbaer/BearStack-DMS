@@ -42,7 +42,7 @@ func (builder documentListPageBuilder) Build(ctx context.Context, r *http.Reques
 	if listResult.RedirectURL != "" {
 		return documentListPageResult{redirectURL: listResult.RedirectURL}, nil
 	}
-	tags, err := s.repo.ListTags(ctx)
+	tags, err := s.repo.ListTagDefinitions(ctx)
 	if err != nil {
 		return documentListPageResult{}, err
 	}

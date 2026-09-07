@@ -106,7 +106,7 @@ func (s *Server) handleSearchFavoriteFolders(w http.ResponseWriter, r *http.Requ
 		s.renderError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	allTags, err := s.repo.ListTags(r.Context())
+	allTags, err := s.repo.ListTagDefinitions(r.Context())
 	if err != nil {
 		s.renderError(w, r, http.StatusInternalServerError, err)
 		return

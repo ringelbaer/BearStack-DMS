@@ -41,7 +41,7 @@ func (s *Server) handleCloud(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	tags, err := s.repo.ListTags(r.Context())
+	tags, err := s.repo.ListTagDefinitions(r.Context())
 	if err != nil {
 		s.renderError(w, r, http.StatusInternalServerError, err)
 		return

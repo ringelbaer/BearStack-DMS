@@ -537,6 +537,36 @@ test("photo lightbox keeps the current thumbnail when previews fail or arrive la
   }
 });
 
+test("photo lightbox renders loaded details and preloads neighbors only once", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  try {
+    await page.route("**/static/app-photos.js*", route => route.fulfill({contentType: "application/javascript", body: ""}));
+    await page.goto(`${fixture.baseURL}/photos?type=image&sort=ascending_name`);
+    await page.evaluate(() => {
+      document.querySelectorAll("[data-photo-item]").forEach(node => {
+        node.dataset.photoSrc = "/photos/media?path=" + encodeURIComponent(node.dataset.photoPath);
+      });
+      const host = window.lightboxPerformance = { loads: 0, requests: [] };
+      const video = document.querySelector("[data-photo-video]");
+      const load = video.load.bind(video);
+      video.load = () => { host.loads++; load(); };
+      window.BearStack.photos.lightbox.init({
+        isEditMode: () => false,
+        ensureItemDetails: item => { host.requests.push(item.path); return Promise.resolve(item); },
+      });
+    });
+    await photoItem(page, "public-a.png").locator(".photo-card-button").dispatchEvent("click");
+    const dialog = page.locator("[data-photo-lightbox]");
+    await expect(dialog).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.lightboxPerformance)).toEqual({loads: 1, requests: ["public-b.png"]});
+    await page.keyboard.press("ArrowRight");
+    await expect(dialog.locator("[data-photo-title]")).toHaveText("public-b.png");
+    await expect.poll(() => page.evaluate(() => window.lightboxPerformance)).toEqual({loads: 2, requests: ["public-b.png", "public-a.png"]});
+  } finally {
+    await context.close();
+  }
+});
+
 test("photo lightbox opens from gallery", async ({ browser }) => {
   const { context, page } = await editorPage(browser);
   try {
@@ -1005,6 +1035,48 @@ test("photo map renders gpx tracks with layer toggles", async ({ browser }) => {
     await expect(firstLabel).toBeHidden();
     await firstToggle.check();
     await expect(firstTrack).toBeVisible();
+  } finally {
+    await context.close();
+  }
+});
+
+test("photo map measures once per render and reuses its track while panning", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  try {
+    await page.route("https://tile.openstreetmap.org/**", route => route.fulfill({status: 200, contentType: "image/png", body: tinyPNG}));
+    await page.goto(`${fixture.baseURL}/help`);
+    await page.setContent('<section data-photo-map><div data-photo-map-canvas tabindex="0" style="width:1000px;height:600px"><div data-photo-map-tiles></div><svg data-photo-map-gpx-track data-photo-map-layer="track"></svg></div></section>');
+    await page.addScriptTag({url: `${fixture.baseURL}/static/app-photos-map.js`});
+    const initial = await page.evaluate(() => {
+      const canvas = document.querySelector("[data-photo-map-canvas]");
+      window.mapSizeReads = 0;
+      for (const property of ["clientWidth", "clientHeight"]) {
+        const getter = Object.getOwnPropertyDescriptor(Element.prototype, property).get;
+        Object.defineProperty(canvas, property, {get() { window.mapSizeReads++; return getter.call(this); }});
+      }
+      const track = document.querySelector("[data-photo-map-gpx-track]");
+      track.dataset.points = Array.from({length: 10000}, (_, i) => `${48 + i / 100000},${11 + i / 100000}`).join(" ");
+      window.BearStack.photos.map.init();
+      const reads = window.mapSizeReads;
+      window.mapSizeReads = 0;
+      window.originalPolyline = track.querySelector("polyline");
+      return {reads, point: window.originalPolyline.points.getItem(0).x};
+    });
+    expect(initial.reads).toBe(4); // Initial fit plus the first render, independent of point count.
+    await page.locator("[data-photo-map-canvas]").press("ArrowRight");
+    await expect.poll(() => page.evaluate(() => window.originalPolyline.points.getItem(0).x)).toBeCloseTo(initial.point - 80, 1);
+    expect(await page.evaluate(() => ({
+      reads: window.mapSizeReads,
+      reused: window.originalPolyline === document.querySelector("[data-photo-map-gpx-track] polyline"),
+      points: window.originalPolyline.points.numberOfItems,
+    }))).toEqual({reads: 2, reused: true, points: 10000});
+    await page.evaluate(() => {
+      window.mapSizeReads = 0;
+      document.querySelector("[data-photo-map-canvas]").style.width = "800px";
+      window.dispatchEvent(new Event("resize"));
+    });
+    await expect(page.locator("[data-photo-map-gpx-track]")).toHaveAttribute("viewBox", "0 0 800 600");
+    expect(await page.evaluate(() => window.mapSizeReads)).toBe(2);
   } finally {
     await context.close();
   }
