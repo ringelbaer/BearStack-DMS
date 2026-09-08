@@ -132,6 +132,14 @@
       card.append(edit);
     }
     if ((face.ignored || face.name) && edit) edit.remove();
+    var ignore = card.querySelector("[data-group-ignore-face]");
+    if (!face.ignored && !face.name && !ignore) {
+      ignore = document.createElement("button"); ignore.type = "submit"; ignore.className = "person-ignore-button";
+      ignore.setAttribute("form", ignoreForm.id); ignore.name = "face_id"; ignore.value = String(face.id); ignore.dataset.groupIgnoreFace = "";
+      ignore.setAttribute("aria-label", "Dieses Gesicht ignorieren"); ignore.title = "Dieses Gesicht ignorieren"; ignore.textContent = "×";
+      card.insertBefore(ignore, edit || null);
+    }
+    if ((face.ignored || face.name) && ignore) ignore.remove();
     return card;
   }
 
@@ -162,7 +170,12 @@
     grid.append(cards);
     if (changedPhoto) { hovered = null; focused = null; setZoom(null); image.style.transform = ""; box.hidden = true; }
     if (photo && photo.image_face_id) {
-      var source = "/photos/people/groups/image/" + encodeURIComponent(photo.image_face_id);
+      // Ignoring the image's reference face does not change the photo. Keep the
+      // loaded preview while that detection still exists, including when ignored.
+      var source = image.getAttribute("src");
+      if (changedPhoto || !photo.faces.some(function (face) { return source === "/photos/people/groups/image/" + encodeURIComponent(face.id); })) {
+        source = "/photos/people/groups/image/" + encodeURIComponent(photo.image_face_id);
+      }
       if (image.getAttribute("src") !== source || (image.complete && !image.naturalWidth)) image.src = source;
       image.alt = photo.display_path;
     } else if (changedPhoto) image.removeAttribute("src");
@@ -207,20 +220,31 @@
   ignoreForm.addEventListener("submit", async function (event) {
     event.preventDefault();
     if (busy || navigationPending || !remaining) return;
-    var after = currentPath;
+    var submitter = event.submitter;
+    if (!submitter || (submitter !== ignoreButton && !submitter.hasAttribute("data-group-ignore-face"))) return;
+    var single = submitter !== ignoreButton;
+    var faceID = single ? submitter.value : "";
+    var focusPreview = single && document.activeElement === submitter;
+    var path = currentPath;
+    var body = new URLSearchParams(new FormData(ignoreForm));
+    if (single) body.set("face_id", faceID);
     setBusy(true); status.textContent = "";
     try {
-      var response = await fetch(ignoreForm.action, { method: "POST", credentials: "same-origin", redirect: "error", headers: { Accept: "application/json" }, body: new URLSearchParams(new FormData(ignoreForm)) });
+      var response = await fetch(ignoreForm.action, { method: "POST", credentials: "same-origin", redirect: "error", headers: { Accept: "application/json" }, body: body });
       var result = await response.json();
       if (!response.ok || result.ok !== true) {
-        if (response.status === 409) await loadPhoto({ path: after });
+        if (response.status === 409) await loadPhoto({ path: path });
         throw new Error(result.error || "Die Gesichter konnten nicht ignoriert werden.");
       }
       navigationPending = true;
-      await loadPhoto({ after: after });
-      status.textContent = result.ignored + " Gesichter ignoriert.";
+      await loadPhoto(single ? { path: path } : { after: path });
+      status.textContent = single ? "Gesicht ignoriert." : result.ignored + " Gesichter ignoriert.";
+      if (focusPreview) {
+        var card = grid.querySelector('[data-group-face="' + faceID + '"]');
+        if (card) card.querySelector("[data-group-highlight]").focus({ preventScroll: true });
+      }
     } catch (error) {
-      status.textContent = navigationPending ? "Gesichter gespeichert. Das nächste Foto konnte nicht geladen werden; bitte die Ansicht erneut laden." : error.message;
+      status.textContent = navigationPending ? (single ? "Gesicht gespeichert. Die Ansicht konnte nicht aktualisiert werden; bitte die Ansicht erneut laden." : "Gesichter gespeichert. Das nächste Foto konnte nicht geladen werden; bitte die Ansicht erneut laden.") : error.message;
     } finally { setBusy(false); }
   });
   retry.addEventListener("click", function () {

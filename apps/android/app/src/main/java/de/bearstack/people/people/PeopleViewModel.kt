@@ -27,7 +27,8 @@ data class PeopleState(
     val stats: List<Statistics> = emptyList(), val skipped: Int = 0, val canGoBack: Boolean = false,
     val directory: Boolean = false, val namedPeople: List<Person> = emptyList(),
     val namedCursor: Long = 0, val namedUpper: Long = 0, val namedHasNext: Boolean = false,
-    val selectedPerson: Person? = null,
+    val selectedPerson: Person? = null, val namedQuery: String = "", val loadedNamedQuery: String = "",
+    val namedSearch: Boolean = false, val removeFace: Long? = null, val removeRevision: Long = 0,
 )
 class PeopleViewModel private constructor(application: Application, private val db: LabelingDatabase,
     initialRepository: PeopleRepository?) : AndroidViewModel(application) {
@@ -46,6 +47,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     private val undoRequests = mutableSetOf<Long>()
     private var inBackground = false
     private var search: Job? = null
+    private var directorySearch: Job? = null
     private var statsJob: Job? = null
     private val preloads = mutableListOf<coil.request.Disposable>()
 
@@ -75,7 +77,7 @@ class PeopleViewModel private constructor(application: Application, private val 
                         }
                     } else {
                         // A changed source or target always requires a new explicit decision.
-                        update { it.copy(naming=false,duplicates=emptyList(),suggestions=emptyList()) }
+                        update { it.copy(naming=false,duplicates=emptyList(),suggestions=emptyList(),removeFace=null) }
                         runCatching {
                             val repo = repository ?: return@runCatching
                             if (repo.api.session().scope != repo.scope) {
@@ -222,60 +224,128 @@ class PeopleViewModel private constructor(application: Application, private val 
     fun assign(target: Person) { if(editable()) task { search?.cancel(); mutate("assign",target=target) } }
     fun detach(face: Long) { if(editable()) task { mutate("detach",face=face) } }
     fun openDirectory() { if(editable() && !state.value.naming) task {
-        update { it.copy(directory=true,selectedPerson=null,namedPeople=emptyList(),namedHasNext=false) }
+        update { it.copy(directory=true,selectedPerson=null,removeFace=null,namedPeople=emptyList(),namedHasNext=false) }
         loadNamedPeople(true)
     } }
-    fun moreNamedPeople() { if(editable() && state.value.namedHasNext) task { loadNamedPeople(false) } }
+    fun namedQueryChanged(query: String) {
+        if(!state.value.directory || state.value.selectedPerson!=null || state.value.unresolved) return
+        update {it.copy(namedQuery=query.take(200),namedPeople=emptyList(),namedHasNext=false,error=null)}
+        directorySearch?.cancel()
+        val repo=repository
+        directorySearch=viewModelScope.launch {
+            delay(250)
+            state.first {!it.busy}
+            if(repository===repo && state.value.directory && state.value.selectedPerson==null) task {loadNamedPeople(true)}
+        }
+    }
+    fun moreNamedPeople() { if(editable() && state.value.namedHasNext && state.value.namedQuery==state.value.loadedNamedQuery) task { loadNamedPeople(false) } }
     private suspend fun loadNamedPeople(reset: Boolean) {
         val repo=repository ?: return
-        val upper=if(reset) {
-            val fresh=repo.api.session()
-            require(fresh.scope==repo.scope) { "Der Datenbestand wurde geändert. Bitte neu verbinden." }
-            require(fresh.namedPeople) { "Der Personenbereich benötigt BearStack 0.43.0 oder neuer." }
-            fresh.upper
-        } else state.value.namedUpper
-        val page=repo.api.namedPeople(if(reset) 0 else state.value.namedCursor,upper)
-        update { it.copy(namedPeople=if(reset) page.people else (it.namedPeople+page.people).distinctBy { p -> p.id },
-            namedCursor=page.next,namedUpper=upper,namedHasNext=page.hasNext) }
+        val query=state.value.namedQuery
+        try {
+            val upper=if(reset) {
+                val fresh=repo.api.session()
+                require(fresh.scope==repo.scope) { "Der Datenbestand wurde geändert. Bitte neu verbinden." }
+                require(fresh.namedPeople) { "Der Personenbereich benötigt BearStack 0.43.0 oder neuer." }
+                update {it.copy(namedSearch=fresh.namedSearch)}
+                require(query.isBlank() || fresh.namedSearch) {"Die Textsuche benötigt BearStack 0.45.0 oder neuer."}
+                fresh.upper
+            } else state.value.namedUpper
+            val page=repo.api.searchPeople(if(reset) 0 else state.value.namedCursor,upper,query.trim())
+            if(state.value.namedQuery==query && state.value.directory && state.value.selectedPerson==null) update {
+                it.copy(namedPeople=if(reset) page.people else (it.namedPeople+page.people).distinctBy { p -> p.id },
+                    namedCursor=page.next,namedUpper=upper,namedHasNext=page.hasNext,loadedNamedQuery=query)
+            }
+        } catch(e: CancellationException) {throw e}
+        catch(e: Exception) {if(state.value.namedQuery==query) throw e}
     }
     fun openPerson(person: Person) { if(editable()) task {
-        update { it.copy(selectedPerson=person) }
+        directorySearch?.cancel()
+        update { it.copy(selectedPerson=person.copy(faces=emptyList(),offset=0),removeFace=null) }
         refreshSelectedPerson()
     } }
-    private suspend fun refreshSelectedPerson(offset: Int? = null) {
+    private fun setSelectedPerson(person: Person?) {
+        val old=state.value.selectedPerson ?: return
+        update {it.copy(selectedPerson=person,removeFace=null,namedPeople=it.namedPeople.mapNotNull { p ->
+            if(p.id!=old.id) p else person?.copy(faces=emptyList(),facePaths=emptyMap(),faceBounds=emptyMap(),originalKeys=emptyMap(),favorites=emptySet())
+        })}
+    }
+    private suspend fun refreshSelectedPerson() {
         val old=state.value.selectedPerson ?: return
         val remote=repository?.api ?: return
-        var person=try { remote.person(old.id,offset ?: old.offset) }
+        val person=try { remote.personFaces(old.id,0,0) }
             catch(e: ApiFailure) { if(e.status!=404) throw e; null }
-        if(person!=null && person.name.isNotEmpty() && person.count>0 && person.faces.isEmpty()) {
-            person=remote.person(person.id,((person.count-1)/4*4).toInt())
-        }
-        val current=person?.takeIf { it.name.isNotEmpty() && it.count>0 }
-        update { it.copy(selectedPerson=current,namedPeople=it.namedPeople.mapNotNull { p -> if(p.id==old.id) current else p }) }
+        setSelectedPerson(person?.takeIf {it.name.isNotEmpty() && it.count>0}?.copy(offset=0))
     }
-    fun personPage(delta: Int) { if(editable()) task {
-        val old=state.value.selectedPerson ?: return@task
-        refreshSelectedPerson((old.offset+delta*4).coerceAtLeast(0))
+    fun morePersonFaces() {
+        val old=state.value.selectedPerson ?: return
+        if(!editable() || state.value.naming || state.value.removeFace!=null || old.faces.size>=old.count) return
+        task {
+            val page=repository!!.api.personFaces(old.id,old.faces.size,old.faces.lastOrNull() ?: 0)
+            if(page.revision!=old.revision || page.name!=old.name || page.count!=old.count) {
+                refreshSelectedPerson()
+                update {it.copy(error="Die Person wurde geändert. Bitte erneut prüfen.")}
+            } else {
+                val faces=(old.faces+page.faces).distinct()
+                require(faces.size>old.faces.size) {"Keine weiteren Bilder geladen. Bitte erneut versuchen."}
+                update {it.copy(selectedPerson=old.copy(faces=faces,facePaths=old.facePaths+page.facePaths,
+                    faceBounds=old.faceBounds+page.faceBounds,originalKeys=old.originalKeys+page.originalKeys,
+                    favorites=old.favorites+page.favorites))}
+            }
+        }
+    }
+    fun closePerson() { if(editable() && !state.value.naming) {
+        update { it.copy(selectedPerson=null,removeFace=null,error=null) }
+        if(state.value.namedQuery.isNotBlank()) task {loadNamedPeople(true)}
     } }
-    fun closePerson() { if(editable() && !state.value.naming) update { it.copy(selectedPerson=null,error=null) } }
     fun closeDirectory() { if(editable() && !state.value.naming) task {
-        update { it.copy(directory=false,selectedPerson=null,error=null) }
+        directorySearch?.cancel()
+        update { it.copy(directory=false,selectedPerson=null,removeFace=null,error=null) }
         loadNext()
     } }
+    fun requestUnassign(face: Long) {
+        val person=state.value.selectedPerson ?: return
+        if(editable() && !state.value.naming && face in person.faces) update {it.copy(removeFace=face,removeRevision=person.revision)}
+    }
+    fun cancelUnassign() { if(!state.value.busy) update {it.copy(removeFace=null)} }
+    fun confirmUnassign() {
+        val current=state.value
+        val face=current.removeFace ?: return
+        if(!editable()) return
+        update {it.copy(removeFace=null)}
+        if(current.selectedPerson?.revision==current.removeRevision) unassign(face)
+        else update {it.copy(error="Die Person wurde geändert. Bitte erneut prüfen.")}
+    }
     fun unassign(face: Long) { if(editable()) task { manage("unassign",face=face) } }
     fun favorite(face: Long) { if(editable()) task {
         val person=state.value.selectedPerson ?: return@task
         manage("favorite",face=face,favorite=face !in person.favorites)
     } }
+    private suspend fun applyManagementReceipt(receipt: Receipt, body: JSONObject) {
+        val old=state.value.selectedPerson ?: return
+        if(receipt.source!=old.id || receipt.action !in listOf("rename","favorite","unassign")) return
+        if(receipt.sourceRevision<=0) {refreshSelectedPerson();return}
+        val face=body.optLong("face_id")
+        var person=old.copy(revision=receipt.sourceRevision)
+        when(receipt.action) {
+            "rename" -> person=person.copy(name=body.getString("name").trim().replace(Regex("\\s+")," "))
+            "favorite" -> person=person.copy(favorites=if(body.getBoolean("favorite")) person.favorites+face else person.favorites-face)
+            "unassign" -> person=person.copy(count=person.count-1,faces=person.faces-face,favorites=person.favorites-face,
+                facePaths=person.facePaths-face,faceBounds=person.faceBounds-face,originalKeys=person.originalKeys-face,
+                faceId=person.faces.firstOrNull {it!=face} ?: 0)
+        }
+        setSelectedPerson(person.takeIf {it.count>0})
+    }
     private suspend fun manage(action: String, face: Long = 0, name: String = "", allowDuplicate: Boolean = false,
         favorite: Boolean? = null) {
         val person=state.value.selectedPerson ?: return
         val repo=repository ?: return
         repo.prepare(person,action,name=name,face=face,allowDuplicate=allowDuplicate,favorite=favorite)
+        val body=JSONObject(repo.pending()!!.body)
         update { it.copy(unresolved=true) }
-        repo.resolve()
+        val receipt=repo.resolve()!!
         update { it.copy(unresolved=false,naming=false,duplicates=emptyList()) }
-        refreshSelectedPerson()
+        applyManagementReceipt(receipt,body)
     }
     private suspend fun mutate(action: String, name: String = "", target: Person? = null, face: Long = 0, allowDuplicate: Boolean = false) {
         val p = state.value.person ?: return
@@ -287,7 +357,7 @@ class PeopleViewModel private constructor(application: Application, private val 
         loadNext()
     }
     private suspend fun awaitReady(repo: PeopleRepository, waitForNaming: Boolean = false): Boolean {
-        fun ready(value: PeopleState) = !value.busy && !value.unresolved && (!waitForNaming || !value.naming)
+        fun ready(value: PeopleState) = !value.busy && !value.unresolved && (!waitForNaming || (!value.naming && value.removeFace==null))
         while(repository===repo) {
             state.first { ready(it) }
             // Several expired timers may wake together. Recheck the live state
@@ -365,13 +435,15 @@ class PeopleViewModel private constructor(application: Application, private val 
         if(person!=null) preload(person)
     } }
     fun retry() = task {
+        val body=repository?.pending()?.body?.let {JSONObject(it)}
         val receipt = repository?.resolve()
         repository?.let { repo ->
             repo.restoreIgnores(repo.state().stagedIgnores.positions().map {it.id}.toSet()-ignoreJobs.keys-undoRequests)
         }
         update { it.copy(unresolved=false,naming=if(receipt!=null && (receipt.source==it.person?.id || receipt.source==it.selectedPerson?.id)) false else it.naming) }
         if(state.value.directory) {
-            if(state.value.selectedPerson!=null) refreshSelectedPerson() else loadNamedPeople(true)
+            if(receipt!=null && body!=null && state.value.selectedPerson!=null) applyManagementReceipt(receipt,body)
+            else if(state.value.selectedPerson!=null) refreshSelectedPerson() else loadNamedPeople(true)
         } else loadNext()
     }
     fun newPass(skipped: Boolean) { if(editable()) task { repository!!.newPass(skipped); loadNext() } }
@@ -379,7 +451,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     private fun detachConnection(): Pair<ImageLoader?,OkHttpClient?> {
         ignoreJobs.values.forEach {it.cancel()};ignoreJobs.clear()
         undoRequests.clear()
-        search?.cancel(); searchPreload?.cancel(); statsJob?.cancel()
+        search?.cancel(); directorySearch?.cancel(); searchPreload?.cancel(); statsJob?.cancel()
         preloads.forEach { it.dispose() }; preloads.clear()
         val resources=images to api?.client
         images=null;api=null;repository=null

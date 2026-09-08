@@ -90,7 +90,18 @@ func (s *Server) handleGroupPhotoIgnore(w http.ResponseWriter, r *http.Request) 
 	}
 	path := r.PostForm.Get("path")
 	setAuditTarget(r, path)
-	count, err := s.photos.IgnoreGroupPhoto(r.Context(), path, r.PostForm.Get("revision"))
+	var count int
+	_, single := r.PostForm["face_id"]
+	if single {
+		id, parseErr := faceID(r.PostForm.Get("face_id"))
+		if parseErr != nil || len(r.PostForm["face_id"]) != 1 {
+			s.labelError(w, r, photos.ErrLabelInvalid)
+			return
+		}
+		count, err = s.photos.IgnoreGroupPhotoFace(r.Context(), path, r.PostForm.Get("revision"), id)
+	} else {
+		count, err = s.photos.IgnoreGroupPhoto(r.Context(), path, r.PostForm.Get("revision"))
+	}
 	if errors.Is(err, photos.ErrGroupPhotoChanged) {
 		_ = writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error(), "code": "conflict"})
 		return
@@ -100,11 +111,15 @@ func (s *Server) handleGroupPhotoIgnore(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if wantsJSON(r) {
-		// A separate GET advances the queue. If navigation fails after this write,
-		// the client retries navigation without repeating the successful mutation.
+		// A separate GET refreshes this photo or advances the queue. If it fails,
+		// the client retries that GET without repeating the successful mutation.
 		_ = writeJSON(w, http.StatusOK, map[string]any{"ok": true, "ignored": count})
 		return
 	}
 	query := url.Values{"min": {strconv.Itoa(minimum)}, "after": {path}}
+	if single {
+		query.Del("after")
+		query.Set("path", path)
+	}
 	http.Redirect(w, r, "/photos/people/groups?"+query.Encode(), http.StatusSeeOther)
 }

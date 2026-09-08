@@ -148,42 +148,49 @@ func TestGroupPhotoIgnoreProtectsNamedAndOtherPhotos(t *testing.T) {
 }
 
 func TestGroupPhotoIgnoreConflictAndRollback(t *testing.T) {
-	for _, scenario := range []string{"named", "reassigned", "reanalysis", "rollback"} {
-		t.Run(scenario, func(t *testing.T) {
-			ctx := context.Background()
-			l := faceLibrary(t, "a.jpg")
-			job, photo := finishGroupPhoto(t, l, 6, 0)
-			switch scenario {
-			case "named":
-				if err := l.RenamePerson(ctx, photo.Faces[0].PersonID, "Concurrent"); err != nil {
-					t.Fatal(err)
+	for _, single := range []bool{false, true} {
+		for _, scenario := range []string{"named", "reassigned", "reanalysis", "rollback"} {
+			t.Run(fmt.Sprintf("single=%t/%s", single, scenario), func(t *testing.T) {
+				ctx := context.Background()
+				l := faceLibrary(t, "a.jpg")
+				job, photo := finishGroupPhoto(t, l, 6, 0)
+				switch scenario {
+				case "named":
+					if err := l.RenamePerson(ctx, photo.Faces[0].PersonID, "Concurrent"); err != nil {
+						t.Fatal(err)
+					}
+				case "reassigned":
+					if err := l.EditFaces(ctx, []int64{photo.Faces[0].ID}, 0, false, ""); err != nil {
+						t.Fatal(err)
+					}
+				case "reanalysis":
+					if err := l.CommitFaceResult(ctx, job, facerec.Result{Model: facerec.Model, Faces: []facerec.Detection{faceDetection(0)}}); err != nil {
+						t.Fatal(err)
+					}
+				case "rollback":
+					if _, err := l.index.db.Exec(`CREATE TRIGGER fail_group_ignore BEFORE UPDATE OF ignored ON photo_faces WHEN new.id=` + fmt.Sprint(photo.Faces[3].ID) + ` BEGIN SELECT RAISE(ABORT,'injected write failure'); END`); err != nil {
+						t.Fatal(err)
+					}
 				}
-			case "reassigned":
-				if err := l.EditFaces(ctx, []int64{photo.Faces[0].ID}, 0, false, ""); err != nil {
-					t.Fatal(err)
+				var err error
+				if single {
+					_, err = l.IgnoreGroupPhotoFace(ctx, photo.Path, photo.Revision, photo.Faces[3].ID)
+				} else {
+					_, err = l.IgnoreGroupPhoto(ctx, photo.Path, photo.Revision)
 				}
-			case "reanalysis":
-				if err := l.CommitFaceResult(ctx, job, facerec.Result{Model: facerec.Model, Faces: []facerec.Detection{faceDetection(0)}}); err != nil {
-					t.Fatal(err)
+				if scenario == "rollback" {
+					if err == nil {
+						t.Fatal("expected database failure")
+					}
+				} else if !errors.Is(err, ErrGroupPhotoChanged) {
+					t.Fatalf("conflict: %v", err)
 				}
-			case "rollback":
-				if _, err := l.index.db.Exec(`CREATE TRIGGER fail_group_ignore BEFORE UPDATE OF ignored ON photo_faces WHEN new.id=` + fmt.Sprint(photo.Faces[3].ID) + ` BEGIN SELECT RAISE(ABORT,'injected write failure'); END`); err != nil {
-					t.Fatal(err)
+				var ignored int
+				if err := l.index.db.QueryRow(`SELECT count(*) FROM photo_faces WHERE ignored=1`).Scan(&ignored); err != nil || ignored != 0 {
+					t.Fatalf("partial mutation %d %v", ignored, err)
 				}
-			}
-			_, err := l.IgnoreGroupPhoto(ctx, photo.Path, photo.Revision)
-			if scenario == "rollback" {
-				if err == nil {
-					t.Fatal("expected database failure")
-				}
-			} else if !errors.Is(err, ErrGroupPhotoChanged) {
-				t.Fatalf("conflict: %v", err)
-			}
-			var ignored int
-			if err := l.index.db.QueryRow(`SELECT count(*) FROM photo_faces WHERE ignored=1`).Scan(&ignored); err != nil || ignored != 0 {
-				t.Fatalf("partial mutation %d %v", ignored, err)
-			}
-		})
+			})
+		}
 	}
 }
 
@@ -247,6 +254,9 @@ func TestGroupPhotoVisibilityAndSourceChanges(t *testing.T) {
 			}
 			if _, err := l.IgnoreGroupPhoto(ctx, a.Path, a.Revision); err == nil {
 				t.Fatal("unsafe source mutation succeeded")
+			}
+			if _, err := l.IgnoreGroupPhotoFace(ctx, a.Path, a.Revision, a.Faces[0].ID); err == nil {
+				t.Fatal("unsafe single-face mutation succeeded")
 			}
 		})
 	}

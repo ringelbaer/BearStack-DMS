@@ -321,6 +321,15 @@ einer vorhandenen Person zusammen, einschließlich anderer Fotos. Benannte oder
 ignorierte Gesichter zeigen keinen Stift. Das geöffnete Foto bleibt auch unterhalb
 der Schwelle sichtbar, damit die übrigen Gesichter weiter bearbeitet werden können.
 
+Ab **0.45.0** hat jede unbenannte, aktive Gesichtsvorschau ein kleines **×**
+(**Dieses Gesicht ignorieren**). Es ignoriert ausschließlich diese Erkennung im
+aktuellen Foto. Andere Gesichter derselben Person bleiben erhalten, auch im selben
+Foto. Die Vorschau bleibt als „Ignoriert“ sichtbar; Zähler und Aktionen aktualisieren
+sich ohne Seitenwechsel, die Zoomauswahl bleibt bestehen. Die Aktion funktioniert
+auch ohne JavaScript und kehrt dann zum selben Foto zurück. Sie verwendet dieselbe
+Revisions- und Rechteprüfung wie die Sammelaktion. Schlägt nur das Aktualisieren nach
+dem Speichern fehl, lädt „Ansicht erneut laden“ die Daten ohne erneute Schreibaktion.
+
 **Verbleibende ignorieren** ignoriert atomar ausschließlich die noch unbenannten,
 aktiven Gesichter des angezeigten Fotos und wechselt danach zum nächsten passenden
 Foto. Bereits benannte Gesichter und dieselben Personen auf anderen Fotos bleiben
@@ -403,3 +412,5 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
 ## Android-Personen-App
 
 Ab BearStack 0.30.0 lassen sich unbenannte Gruppen auch mit der [nativen Android-App](android.md) bearbeiten. Ab App 0.6.0 und BearStack 0.43.0 bietet „Menü → Personen“ zusätzlich alle benannten Personen mit Portraits, Umbenennen, einzelne Zuordnungen zurücksetzen, Favoriten, Galeriesuche im Browser und Originalfoto-Vorschau per Halten und Wischen. Die Anleitung beschreibt HTTPS-Anmeldung, Gesten, Statistik und den privaten APK-Build.
+
+Ab Android-App 0.7.0 und BearStack 0.45.0 durchsucht das Textfeld im Personenbereich alle benannten Personen. Personenliste und Portrait-Raster laden beim Scrollen automatisch nach. Das Entfernen einer Zuordnung verlangt zuvor eine Bestätigung mit Name und Bildpfad.

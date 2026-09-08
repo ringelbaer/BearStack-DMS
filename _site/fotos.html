@@ -1282,6 +1282,14 @@ tatsächlich angeklickte Vorschau markiert. Die Zoomauswahl bleibt dabei erhalte
 einer vorhandenen Person zusammen, einschließlich anderer Fotos. Benannte oder
 ignorierte Gesichter zeigen keinen Stift. Das geöffnete Foto bleibt auch unterhalb
 der Schwelle sichtbar, damit die übrigen Gesichter weiter bearbeitet werden können.</p>
+<p>Ab <strong>0.45.0</strong> hat jede unbenannte, aktive Gesichtsvorschau ein kleines <strong>×</strong>
+(<strong>Dieses Gesicht ignorieren</strong>). Es ignoriert ausschließlich diese Erkennung im
+aktuellen Foto. Andere Gesichter derselben Person bleiben erhalten, auch im selben
+Foto. Die Vorschau bleibt als „Ignoriert“ sichtbar; Zähler und Aktionen aktualisieren
+sich ohne Seitenwechsel, die Zoomauswahl bleibt bestehen. Die Aktion funktioniert
+auch ohne JavaScript und kehrt dann zum selben Foto zurück. Sie verwendet dieselbe
+Revisions- und Rechteprüfung wie die Sammelaktion. Schlägt nur das Aktualisieren nach
+dem Speichern fehl, lädt „Ansicht erneut laden“ die Daten ohne erneute Schreibaktion.</p>
 <p><strong>Verbleibende ignorieren</strong> ignoriert atomar ausschließlich die noch unbenannten,
 aktiven Gesichter des angezeigten Fotos und wechselt danach zum nächsten passenden
 Foto. Bereits benannte Gesichter und dieselben Personen auf anderen Fotos bleiben
@@ -1354,6 +1362,7 @@ analysiert. Bilder über 40 Megapixel werden zur Begrenzung des Speichers zurüc
 sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können fehlen.</p>
 <h2 id="android-personen-app">Android-Personen-App<a class="headerlink" href="#android-personen-app" title="Permanent link">&para;</a></h2>
 <p>Ab BearStack 0.30.0 lassen sich unbenannte Gruppen auch mit der <a href="android.html">nativen Android-App</a> bearbeiten. Ab App 0.6.0 und BearStack 0.43.0 bietet „Menü → Personen“ zusätzlich alle benannten Personen mit Portraits, Umbenennen, einzelne Zuordnungen zurücksetzen, Favoriten, Galeriesuche im Browser und Originalfoto-Vorschau per Halten und Wischen. Die Anleitung beschreibt HTTPS-Anmeldung, Gesten, Statistik und den privaten APK-Build.</p>
+<p>Ab Android-App 0.7.0 und BearStack 0.45.0 durchsucht das Textfeld im Personenbereich alle benannten Personen. Personenliste und Portrait-Raster laden beim Scrollen automatisch nach. Das Entfernen einer Zuordnung verlangt zuvor eine Bestätigung mit Name und Bildpfad.</p>
 
 
 
@@ -1402,7 +1411,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.44.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.45.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

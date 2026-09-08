@@ -92,6 +92,7 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   const threshold = page.locator('[data-group-filter] input[name="min"]');
   await expect(threshold).toHaveValue("5");
   await expect(surface).toHaveAttribute("data-path", "b.png"); await expect(cards).toHaveCount(6);
+  await expect(cards.locator("[data-group-ignore-face]")).toHaveCount(6);
   await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
   const zoomRequests = [];
   page.on("request", request => { if (request.url().includes("/photos/people/groups")) zoomRequests.push(request.url()); });
@@ -225,6 +226,7 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await expect(surface).toHaveAttribute("data-path", "b.png");
   await expect(page.locator("[data-group-count]")).toContainText("5 unbearbeitete");
   await expect(cards.first().locator("[data-person-edit]")).toHaveCount(0);
+  await expect(cards.first().locator("[data-group-ignore-face]")).toHaveCount(0);
   await expectZoom(page, cards.first());
   await expect(cards.first().locator("[data-group-highlight]")).toHaveAccessibleName("Gesicht im Foto vergrößern: Ada");
   expect(await page.evaluate(() => window.groupOriginal === document.querySelector("[data-group-image]") && window.groupThumb === document.querySelector("[data-group-face] img"))).toBe(true);
@@ -254,6 +256,41 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await expect(modal).not.toBeVisible();
   await expect(modalSource).toHaveCount(0);
   await expect(page.locator("[data-group-count]")).toContainText("4 unbearbeitete");
+  // Ignore exactly one face and keep the current photo, even below the threshold.
+  const singleCard = cards.nth(2);
+  const singleID = await singleCard.getAttribute("data-group-face");
+  await singleCard.locator("[data-group-highlight]").click();
+  await expectZoom(page, singleCard);
+  const singleWrites = [];
+  page.on("request", request => {
+    if (request.method() === "POST" && request.url().endsWith("/photos/people/groups/ignore")) singleWrites.push(new URLSearchParams(request.postData()));
+  });
+  await page.route("**/photos/people/groups/ignore", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Einzelnes Gesicht nicht gespeichert" }) }));
+  await singleCard.getByRole("button", { name: "Dieses Gesicht ignorieren", exact: true }).click();
+  await expect(page.locator("[data-people-status]")).toHaveText("Einzelnes Gesicht nicht gespeichert");
+  await expect(singleCard).toHaveAttribute("data-ignored", "false");
+  await expect(singleCard.locator("[data-group-ignore-face]")).toBeEnabled();
+  await expect(page.locator("[data-group-count]")).toContainText("4 unbearbeitete");
+  await page.unroute("**/photos/people/groups/ignore");
+  const blockRefresh = async route => {
+    if (new URL(route.request().url()).searchParams.get("path") === "b.png") await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Aktualisierung fehlgeschlagen" }) });
+    else await route.continue();
+  };
+  await page.route("**/photos/people/groups?*", blockRefresh);
+  await singleCard.locator("[data-group-ignore-face]").click();
+  await expect(page.locator("[data-people-status]")).toContainText("Gesicht gespeichert");
+  await expect(singleCard.locator("[data-group-ignore-face]")).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Verbleibende ignorieren" })).toBeDisabled();
+  await page.unroute("**/photos/people/groups?*", blockRefresh);
+  await page.getByRole("button", { name: "Ansicht erneut laden" }).click();
+  await expect(surface).toHaveAttribute("data-path", "b.png");
+  await expect(singleCard).toHaveAttribute("data-ignored", "true");
+  await expect(singleCard.locator("[data-group-name]")).toHaveText("Ignoriert");
+  await expect(singleCard.locator("[data-group-ignore-face], [data-person-edit]")).toHaveCount(0);
+  await expect(page.locator("[data-group-count]")).toContainText("3 unbearbeitete");
+  await expectZoom(page, singleCard);
+  expect(singleWrites).toHaveLength(2); // One failed write, one success; retry only reads.
+  for (const body of singleWrites) expect(body.get("face_id")).toBe(singleID);
   await page.route("**/photos/people/groups/ignore", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Speichern fehlgeschlagen" }) }));
   await page.getByRole("button", { name: "Verbleibende ignorieren" }).click();
   await expect(page.locator("[data-people-status]")).toHaveText("Speichern fehlgeschlagen");
@@ -306,10 +343,30 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await page.getByRole("button", { name: "Ansicht erneut laden" }).click();
   await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
   await expect(page.locator("[data-people-status]")).toBeEmpty();
+  // The reference face can be ignored without requesting the same image again.
+  const imageRequests = [];
+  page.on("request", request => { if (/\/photos\/(?:people\/groups\/image\/|faces\/\d+\/thumbnail)/.test(request.url())) imageRequests.push(request.url()); });
+  const retainedSource = await image.getAttribute("src");
+  await page.evaluate(() => { window.retainedGroupImages = [...document.querySelectorAll('[data-group-photos] img')]; });
+  await cards.first().locator("[data-group-highlight]").click();
+  await cards.first().locator("[data-group-ignore-face]").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("[data-people-status]")).toHaveText("Gesicht ignoriert.");
+  await expect(surface).toHaveAttribute("data-path", "a.png");
+  await expect(cards.first()).toHaveAttribute("data-ignored", "true");
+  await expect(cards.first().locator("[data-group-highlight]")).toBeFocused();
+  await expectZoom(page, cards.first());
+  await expect(image).toHaveAttribute("src", retainedSource);
+  expect(await page.evaluate(() => window.retainedGroupImages.every((img, i) => img === document.querySelectorAll('[data-group-photos] img')[i]))).toBe(true);
+  expect(imageRequests).toEqual([]);
   expect(errors).toEqual([]);
 
   const noJS = await browser.newContext({ javaScriptEnabled: false, storageState: await context.storageState(), httpCredentials: { username: "manager", password: "secret" } });
-  const fallback = await noJS.newPage(); await fallback.goto(baseURL + "/photos/people/groups?min=4");
+  const fallback = await noJS.newPage(); await fallback.goto(baseURL + "/photos/people/groups?min=4&path=a.png");
+  await fallback.locator("[data-group-ignore-face]").first().click();
+  await expect(fallback.locator("[data-group-photos]")).toHaveAttribute("data-path", "a.png");
+  await expect(fallback.locator('[data-group-face][data-ignored="true"]')).toHaveCount(2);
+  await expect(fallback.locator("[data-group-count]")).toContainText("3 unbearbeitete");
   await fallback.getByRole("button", { name: "Verbleibende ignorieren" }).click();
   await expect(fallback.locator("[data-group-photos]")).toHaveAttribute("data-path", "c.png");
   await noJS.close(); await context.close();

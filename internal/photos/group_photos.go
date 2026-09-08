@@ -153,6 +153,19 @@ func readGroupPhoto(ctx context.Context, query faceRowsQuery, path string) (Grou
 // their entire groups. Compare the displayed snapshot inside the write transaction
 // so concurrent naming, reassignment or reanalysis cannot change the selection.
 func (l *Library) IgnoreGroupPhoto(ctx context.Context, path, revision string) (int, error) {
+	return l.ignoreGroupPhoto(ctx, path, revision, 0)
+}
+
+// IgnoreGroupPhotoFace limits the same snapshot-checked operation to one unnamed
+// detection. Other detections of this person, including in this photo, stay active.
+func (l *Library) IgnoreGroupPhotoFace(ctx context.Context, path, revision string, faceID int64) (int, error) {
+	if faceID <= 0 {
+		return 0, ErrLabelInvalid
+	}
+	return l.ignoreGroupPhoto(ctx, path, revision, faceID)
+}
+
+func (l *Library) ignoreGroupPhoto(ctx context.Context, path, revision string, faceID int64) (int, error) {
 	if len(revision) != sha256.Size*2 {
 		return 0, ErrLabelInvalid
 	}
@@ -181,13 +194,32 @@ func (l *Library) IgnoreGroupPhoto(ctx context.Context, path, revision string) (
 		return 0, err
 	}
 	affected := map[int64]bool{}
+	count := 0
+	found := faceID == 0
 	for _, face := range photo.Faces {
+		if faceID != 0 && face.ID != faceID {
+			continue
+		}
+		found = true
 		if !face.Ignored && face.Name == "" {
 			affected[face.PersonID] = true
+			count++
 		}
 	}
+	if !found {
+		return 0, ErrLabelInvalid
+	}
+	if faceID != 0 && count == 0 {
+		return 0, ErrGroupPhotoChanged
+	}
+	selection := ""
+	args := []any{path}
+	if faceID != 0 {
+		selection = " AND id=?"
+		args = append(args, faceID)
+	}
 	if _, err := tx.ExecContext(ctx, `UPDATE photo_faces SET ignored=1,manual=1 WHERE path=? AND ignored=0
- AND person_id IN (SELECT id FROM photo_people WHERE name='')`, path); err != nil {
+ AND person_id IN (SELECT id FROM photo_people WHERE name='')`+selection, args...); err != nil {
 		return 0, err
 	}
 	committedRevision, err := refreshFaceMutationTx(ctx, tx, affected)
@@ -198,5 +230,5 @@ func (l *Library) IgnoreGroupPhoto(ctx context.Context, path, revision string) (
 		return 0, err
 	}
 	l.syncFaceMutation(ctx, affected, baseRevision, committedRevision)
-	return photo.Remaining, nil
+	return count, nil
 }

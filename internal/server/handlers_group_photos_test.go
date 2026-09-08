@@ -103,71 +103,94 @@ func TestGroupPhotosHTTPContract(t *testing.T) {
 }
 
 func TestGroupPhotoIgnoreHTTPProtection(t *testing.T) {
-	for _, scenario := range []string{"success", "reader", "csrf", "stale", "invalid", "private", "deleted", "fallback"} {
-		t.Run(scenario, func(t *testing.T) {
-			s, photo := groupPhotoServerFixture(t)
-			user := "editor"
-			form := url.Values{"path": {photo.Path}, "revision": {photo.Revision}, "min": {"5"}}
-			want := 200
-			switch scenario {
-			case "reader":
-				user = "reader"
-				want = 403
-			case "csrf":
-				want = 403
-			case "stale":
-				if err := s.photos.RenamePerson(context.Background(), photo.Faces[0].PersonID, "Ada"); err != nil {
+	for _, single := range []bool{false, true} {
+		for _, scenario := range []string{"success", "reader", "csrf", "stale", "invalid", "private", "deleted", "fallback"} {
+			t.Run(fmt.Sprintf("single=%t/%s", single, scenario), func(t *testing.T) {
+				s, photo := groupPhotoServerFixture(t)
+				user := "editor"
+				form := url.Values{"path": {photo.Path}, "revision": {photo.Revision}, "min": {"5"}}
+				if single {
+					form.Set("face_id", fmt.Sprint(photo.Faces[0].ID))
+				}
+				want := 200
+				switch scenario {
+				case "reader":
+					user = "reader"
+					want = 403
+				case "csrf":
+					want = 403
+				case "stale":
+					if err := s.photos.RenamePerson(context.Background(), photo.Faces[0].PersonID, "Ada"); err != nil {
+						t.Fatal(err)
+					}
+					want = 409
+				case "invalid":
+					form.Set("revision", "")
+					want = 400
+				case "private":
+					if err := os.WriteFile(filepath.Join(s.photos.Root(), ".adminonly"), nil, 0600); err != nil {
+						t.Fatal(err)
+					}
+					want = 403
+				case "deleted":
+					if err := os.Remove(filepath.Join(s.photos.Root(), photo.Path)); err != nil {
+						t.Fatal(err)
+					}
+					want = 404
+				case "fallback":
+					want = 303
+				}
+				r := httptest.NewRequest("POST", "/photos/people/groups/ignore", strings.NewReader(form.Encode()))
+				r.SetBasicAuth(user, "secret")
+				r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				if scenario != "fallback" {
+					r.Header.Set("Accept", "application/json")
+				}
+				if scenario == "csrf" {
+					r.Header.Set("Origin", "https://foreign.example")
+				}
+				w := httptest.NewRecorder()
+				s.Handler().ServeHTTP(w, r)
+				if w.Code != want {
+					t.Fatalf("status %d want %d: %s", w.Code, want, w.Body.String())
+				}
+				if scenario == "fallback" {
+					location := "/photos/people/groups?after=one.jpg&min=5"
+					if single {
+						location = "/photos/people/groups?min=5&path=one.jpg"
+					}
+					if w.Header().Get("Location") != location {
+						t.Fatalf("redirect %s", w.Header().Get("Location"))
+					}
+				}
+				if scenario == "success" {
+					count := 6
+					if single {
+						count = 1
+					}
+					if !strings.Contains(w.Body.String(), fmt.Sprintf(`"ignored":%d`, count)) {
+						t.Fatalf("wrong count: %s", w.Body.String())
+					}
+				}
+				if scenario == "private" || scenario == "deleted" {
+					return
+				}
+				faces, err := s.photos.AutomaticFaces(context.Background(), photo.Path)
+				if err != nil {
 					t.Fatal(err)
 				}
-				want = 409
-			case "invalid":
-				form.Set("revision", "")
-				want = 400
-			case "private":
-				if err := os.WriteFile(filepath.Join(s.photos.Root(), ".adminonly"), nil, 0600); err != nil {
-					t.Fatal(err)
+				expected := 6
+				if scenario == "success" || scenario == "fallback" {
+					expected = 0
+					if single {
+						expected = 5
+					}
 				}
-				want = 403
-			case "deleted":
-				if err := os.Remove(filepath.Join(s.photos.Root(), photo.Path)); err != nil {
-					t.Fatal(err)
+				if len(faces) != expected {
+					t.Fatalf("mutated protected faces: %d", len(faces))
 				}
-				want = 404
-			case "fallback":
-				want = 303
-			}
-			r := httptest.NewRequest("POST", "/photos/people/groups/ignore", strings.NewReader(form.Encode()))
-			r.SetBasicAuth(user, "secret")
-			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			if scenario != "fallback" {
-				r.Header.Set("Accept", "application/json")
-			}
-			if scenario == "csrf" {
-				r.Header.Set("Origin", "https://foreign.example")
-			}
-			w := httptest.NewRecorder()
-			s.Handler().ServeHTTP(w, r)
-			if w.Code != want {
-				t.Fatalf("status %d want %d: %s", w.Code, want, w.Body.String())
-			}
-			if scenario == "fallback" && w.Header().Get("Location") != "/photos/people/groups?after=one.jpg&min=5" {
-				t.Fatalf("redirect %s", w.Header().Get("Location"))
-			}
-			if scenario == "private" || scenario == "deleted" {
-				return
-			}
-			faces, err := s.photos.AutomaticFaces(context.Background(), photo.Path)
-			if err != nil {
-				t.Fatal(err)
-			}
-			expected := 6
-			if scenario == "success" || scenario == "fallback" {
-				expected = 0
-			}
-			if len(faces) != expected {
-				t.Fatalf("mutated protected faces: %d", len(faces))
-			}
-		})
+			})
+		}
 	}
 }
 

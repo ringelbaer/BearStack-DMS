@@ -14,7 +14,7 @@ import java.io.IOException
 
 internal class FakeService : LabelingService {
     var upper=2L
-    val session get() = Session("instance","dataset","account",upper,namedPeople=true)
+    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true)
     var actionDelay=0L
     val people = mutableMapOf(1L to Person(1,"",1,5,10,listOf(10,11,12,13)),2L to Person(2,"",1,1,20,listOf(20)))
     val receipts = mutableMapOf<String,Receipt>()
@@ -26,6 +26,19 @@ internal class FakeService : LabelingService {
     override suspend fun namedPeople(after: Long,upper: Long): Candidates {
         val page=people.values.filter {it.id>after && it.id<=upper && it.name.isNotEmpty()}.sortedBy {it.id}.take(21)
         return Candidates(page.take(20),page.take(20).lastOrNull()?.id ?: after,page.size>20)
+    }
+    val directoryQueries=mutableListOf<String>()
+    var directoryDelay=0L
+    override suspend fun searchPeople(after: Long,upper: Long,q: String): Candidates {
+        directoryQueries+=q
+        if(directoryDelay>0) kotlinx.coroutines.delay(directoryDelay)
+        val page=people.values.filter {it.id>after && it.id<=upper && it.name.isNotEmpty() && it.name.contains(q,true)}.sortedBy {it.id}.take(21)
+        return Candidates(page.take(20),page.take(20).lastOrNull()?.id ?: after,page.size>20)
+    }
+    override suspend fun personFaces(id: Long,offset: Int,after: Long): Person {
+        val p=person(id,0)
+        val all=if(p.count==5L && p.faces==listOf(10L,11L,12L,13L)) p.faces+14L else p.faces
+        return p.copy(offset=0,faces=all.filter {it>after}.take(40))
     }
     override suspend fun person(id: Long,offset: Int): Person {
         if (failPerson == id) throw IOException("next group unavailable")
@@ -60,7 +73,7 @@ internal class FakeService : LabelingService {
                     else people[id]=p.copy(count=p.count-1,revision=p.revision+1,faces=p.faces.filterNot {it==face},favorites=p.favorites-face)
                 }
             }
-            val receipt=Receipt(op,action,id,0,newId,if(action=="rename")p.count else 1,0,100)
+            val receipt=Receipt(op,action,id,0,newId,if(action=="rename")p.count else 1,0,100,people[id]?.revision ?: p.revision+1)
             commits++;receipts[op]=receipt
             if(loseResponse) {loseResponse=false;throw IOException("response lost after commit")}
             return receipt

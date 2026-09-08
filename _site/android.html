@@ -545,10 +545,10 @@
 </li>
 
         <li class="md-nav__item">
-  <a href="#bearbeitung" class="md-nav__link">
+  <a href="#zuordnungsmodus" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Bearbeitung
+        Zuordnungsmodus
       </span>
     </span>
   </a>
@@ -815,10 +815,10 @@
 </li>
 
         <li class="md-nav__item">
-  <a href="#bearbeitung" class="md-nav__link">
+  <a href="#zuordnungsmodus" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Bearbeitung
+        Zuordnungsmodus
       </span>
     </span>
   </a>
@@ -910,7 +910,7 @@
 
 
 <h1 id="bearstack-personen-fur-android">BearStack Personen für Android<a class="headerlink" href="#bearstack-personen-fur-android" title="Permanent link">&para;</a></h1>
-<p>Native, deutschsprachige App für Android 8.0 oder neuer. App-Version <strong>0.6.1</strong>; erforderlich sind <strong>BearStack 0.35.0</strong>, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit <code>photos.edit</code> (Rolle „Fotos bearbeiten“/<code>photos_editor</code>, <code>photos_manager</code> oder Administrator; Freigabe für Fotobearbeiter ab BearStack 0.36.0). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.</p>
+<p>Native, deutschsprachige App für Android 8.0 oder neuer. App-Version <strong>0.7.1</strong>; erforderlich sind <strong>BearStack 0.35.0</strong>, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit <code>photos.edit</code> (Rolle „Fotos bearbeiten“/<code>photos_editor</code>, <code>photos_manager</code> oder Administrator; Freigabe für Fotobearbeiter ab BearStack 0.36.0). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
 <p><code>apps/android/</code> in Android Studio als eigenes Projekt öffnen. Voraussetzungen: JDK 17 oder 21 und Android-SDK mit Plattform 36. Das Projekt verwendet den Gradle Wrapper 9.6.0, AGP 9.4.0 und Kotlin 2.3.21. SDK-Pfad über <code>ANDROID_HOME</code> oder eine ignorierte <code>apps/android/local.properties</code> mit <code>sdk.dir=…</code> setzen.</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./scripts/check-android.sh
@@ -925,18 +925,18 @@
 <p>Alle Hexadezimalpaare vergleichen, anschließend „Abgeglichen und vertrauen“ wählen. Nur dieses Zertifikat wird für das Profil akzeptiert; Hostname und Gültigkeit bleiben verbindlich. Eine IP-Adresse funktioniert nur mit einem entsprechenden IP-Eintrag im Subject Alternative Name des Zertifikats. Bei einem Zertifikatswechsel die Verbindung erneut einrichten und den neuen Fingerabdruck prüfen. Private Zertifikatsketten mit eigener CA werden in Version 1 nicht als selbstsigniertes Blattzertifikat angeboten.</p>
 <p>Es gibt ein aktives Profil. Zugangsdaten und bestätigtes Zertifikat werden mit AES-GCM unter einem Schlüssel im Android Keystore in <code>noBackupFilesDir</code> gespeichert. Backups und Gerätetransfers sind ausgeschlossen. Screenshots und die Vorschau im App-Umschalter sind gesperrt. Die App schreibt keine Zugangsdaten in Logs. Bilder werden nur im begrenzten Arbeitsspeichercache gehalten; ein Profilwechsel leert den Cache.</p>
 <h2 id="personen-verwalten">Personen verwalten<a class="headerlink" href="#personen-verwalten" title="Permanent link">&para;</a></h2>
-<p>Ab App-Version <strong>0.6.0</strong> öffnet <strong>Menü → Personen</strong> die Liste aller benannten Personen mit Portrait und Gesichtsanzahl. Dieser Bereich benötigt <strong>BearStack 0.43.0</strong>; auf älteren Servern bleibt das bisherige Benennen verfügbar. Die Liste lädt jeweils höchstens 20 Personen in stabiler ID-Reihenfolge. „Weitere Personen laden“ erschließt den gesamten Bestand; „Aktualisieren“ übernimmt neu hinzugekommene Personen.</p>
-<p>Eine Person antippen, um ihre Portraits in Viererseiten zu öffnen:</p>
+<p>Ab App-Version <strong>0.6.0</strong> öffnet <strong>Menü → Personen</strong> die Liste aller benannten Personen mit Portrait und Gesichtsanzahl. Dieser Bereich benötigt <strong>BearStack 0.43.0</strong>; auf älteren Servern bleibt das bisherige Benennen verfügbar. Die Liste lädt jeweils höchstens 20 Personen in stabiler ID-Reihenfolge. Ab App <strong>0.7.0</strong> lädt die Liste beim Scrollen automatisch weitere Personen nach; „Aktualisieren“ übernimmt neu hinzugekommene Personen. Das Suchfeld durchsucht nach 250 ms Eingabepause den gesamten Serverbestand nach Namen, unabhängig von bereits geladenen Einträgen. Groß-/Kleinschreibung und deutsche Umlautschreibweisen werden tolerant behandelt. Ein Suchwechsel beginnt eine neue Trefferliste; verspätete Antworten ersetzen keine neuere Suche. Die Textsuche benötigt <strong>BearStack 0.45.0</strong>; ältere Server zeigen einen entsprechenden Hinweis.</p>
+<p>Eine Person antippen, um ihre Portraits im fortlaufenden Raster zu öffnen. Ab App <strong>0.7.1</strong> ist das „×“ zum Entfernen einer Zuordnung im Personenbereich kleiner; die Touchfläche bleibt mindestens 48 dp groß. Ab App 0.7.0 werden beim Scrollen automatisch weitere Bilder ergänzt; Seitenknöpfe entfallen im Personenbereich:</p>
 <ul>
 <li><strong>Person umbenennen:</strong> Der neue Name gilt für die ganze Person. Existiert er bereits, muss das separate Speichern ausdrücklich bestätigt werden; Personen werden dadurch nicht zusammengeführt.</li>
-<li><strong>× / Zuordnung entfernen:</strong> Nur das ausgewählte Gesicht wird in eine neue unbenannte Gruppe verschoben und seine Favorisierung aufgehoben. Die Originaldatei bleibt erhalten. Das funktioniert auch beim letzten Gesicht; die leere Person verschwindet dann aus der Liste. Zurückgesetzte Gesichter werden im Zuordnungsmodus nach der aktuellen Gruppe angeboten.</li>
+<li><strong>× / Zuordnung entfernen:</strong> Zunächst erscheint eine Bestätigung mit Personenname und Bildpfad. „Abbrechen“ schließt sie ohne Änderung; erst „Entfernen“ sendet den Auftrag. Nur das ausgewählte Gesicht wird in eine neue unbenannte Gruppe verschoben und seine Favorisierung aufgehoben. Die Originaldatei bleibt erhalten. Das funktioniert auch beim letzten Gesicht; die leere Person verschwindet dann aus der Liste. Zurückgesetzte Gesichter werden im Zuordnungsmodus nach der aktuellen Gruppe angeboten.</li>
 <li><strong>☆ / ★:</strong> Das Gesicht als Vergleichsbild favorisieren oder die Favorisierung aufheben, entsprechend der Favoritenfunktion im Web.</li>
 <li><strong>Galeriesuche im Browser:</strong> Öffnet die Galerie mit dem Personen-Namensfilter. Der Reverse-Proxy-Pfad bleibt erhalten. Der Browser verwendet seine eigene Anmeldung; App-Zugangsdaten werden nicht im Link übergeben. Gleichnamige Personen erscheinen gemeinsam entsprechend der Galeriesuche.</li>
 <li><strong>Portrait halten und wischen:</strong> Dieselbe Originalfoto-Vorschau wie im Zuordnungsmodus, mit Gesichtsmarkierung, Herunterwischen zum Vergrößern und Hochwischen zum Verkleinern. Loslassen oder Abbrechen schließt sie. Die TalkBack-Aktion „Originalfoto anzeigen“ bleibt ebenfalls verfügbar.</li>
 </ul>
 <p>Umbenennen, Entfernen und Favorisieren werden erst nach Serverbestätigung angezeigt. Offene Schreibaktionen bleiben lokal gespeichert und werden über ihre Aktionsquittung geklärt. Änderungen an Gruppenzuordnung oder Namen durch andere Clients verlangen eine neue Entscheidung. Die aktuelle unbenannte Gruppe und ihre Bildseite bleiben beim Wechsel in den Personenbereich erhalten. Verwaltungsaktionen erhöhen nicht die Zähler für erstmaliges Benennen oder Zuordnen.</p>
-<p>Die Liste verwendet ein Lazy-Layout; Portraits werden nur für sichtbare Einträge geladen. Personen-Metadaten und Sichtbarkeitsprüfungen erfolgen serverseitig in kleinen Paketen ohne Gesamtzählung. Details enthalten höchstens vier Gesichter; Originale werden ausschließlich beim Öffnen der Vorschau geladen. Der vorhandene begrenzte Bildcache wird weiterverwendet. Änderungen aktualisieren den Gesichtssuchindex nur für betroffene Personen, sofern der Index aktuell ist.</p>
-<h2 id="bearbeitung">Bearbeitung<a class="headerlink" href="#bearbeitung" title="Permanent link">&para;</a></h2>
+<p>Die Liste verwendet ein Lazy-Layout; Portraits werden nur für sichtbare Einträge geladen. Personen-Metadaten und Sichtbarkeitsprüfungen erfolgen serverseitig in kleinen Paketen ohne Gesamtzählung. Das Raster stellt nur sichtbare Kacheln bereit. BearStack 0.45.0 liefert pro Anfrage bis zu 40 Gesichter über einen indexierten Gesichts-ID-Cursor; tiefes Scrollen benötigt keinen zunehmend großen Offset. Alte Server liefern weiterhin vier Gesichter je Anfrage, die App fügt sie ebenfalls fortlaufend an. Vor dem Anfügen werden Revision und Gesichtsanzahl geprüft; bei zwischenzeitlichen Änderungen wird neu geladen und eine Meldung angezeigt. Bestätigte Favoriten-, Namens- und Zuordnungsänderungen aktualisieren den geladenen Bestand anhand der atomaren Aktionsquittung, sodass Bilder und Scrollposition erhalten bleiben. Während eines Dialogs oder einer Originalvorschau wird nicht automatisch nachgeladen; Ladefehler lösen keine Endlosschleife aus. Originale werden ausschließlich beim Öffnen der Vorschau geladen. Der vorhandene begrenzte Bildcache wird weiterverwendet. Änderungen aktualisieren den Gesichtssuchindex nur für betroffene Personen, sofern der Index aktuell ist.</p>
+<h2 id="zuordnungsmodus">Zuordnungsmodus<a class="headerlink" href="#zuordnungsmodus" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Ab App-Version 0.5.2 bleibt der Platz für den Ladebalken dauerhaft reserviert. Überschrift, Gesichtsraster und Navigation behalten beim Ein- und Ausblenden ihre Position, auch in gescrollten Ansichten mit großer Schrift.</li>
 <li>Unter jedem Gesichtsausschnitt und in der Originalfoto-Vorschau steht der vollständige Galeriepfad mit allen Ordnerebenen und Dateiname. Die Aufbereitung entspricht der Galerie, etwa <code>Fotos / 11.05.2026 · Urlaub / IMG_1234.jpg</code>. Lange Pfade werden umgebrochen statt abgeschnitten. Die Pfade kommen vom Server; diese Anzeige benötigt BearStack 0.34.0.</li>
@@ -983,7 +983,7 @@
 </span></code></pre></div>
 <p>Compose-Regressionstests prüfen beim Vor- und Zurückblättern, dass Überschrift, Gesichtsraster und Navigation vor, während und nach dem Laden an derselben Position bleiben, auch bei doppelter Schriftgröße und gescrolltem Inhalt. Während des Ladens bleiben die Blätteraktionen gesperrt. Weitere Regressionen prüfen ablaufende Rücknahmen bei geöffnetem Namens- und Duplikatdialog, das anschließende Speichern jeder ursprünglichen Gruppe sowie die Wiederherstellung beim Hintergrundwechsel. Ein UI-Test ab Android 11 prüft außerdem Dialogidentität, Eingabefokus, sichtbare Bildschirmtastatur und weiteren Textinput beim Ändern und Ausblenden der Rückgängig-Meldung.</p>
 <p>Cachetests prüfen tatsächliche HTTPS-Anfragezahlen und die Wiederverwendung desselben dekodierten Bitmaps für unterschiedliche Gesichter, den festen Drei-Minuten-Ablauf, Fehlerantworten, Cacheleeren, Speicherbegrenzung und alte Server ohne Bildkennung.</p>
-<p>Zusätzliche Regressionen prüfen die vollständige Personenliste über mehrere Seiten, Umbenennen, Favoritenwechsel, Entfernen des letzten Gesichts, große Schrift, Halten/Wischen/Abbruch und TalkBack-Vorschau. Repository- und ViewModel-Tests sichern verlorene Antworten, Konflikte und den Erhalt der Zuordnungswarteschlange ab. Der echte HTTPS-Integrationstest führt die neuen Verwaltungsaktionen gegen den Go-Server aus.</p>
+<p>Zusätzliche Regressionen prüfen die vollständige Personenliste über mehrere Seiten, Umbenennen, Favoritenwechsel, Entfernen des letzten Gesichts, große Schrift, Halten/Wischen/Abbruch und TalkBack-Vorschau. Repository- und ViewModel-Tests sichern verlorene Antworten, Konflikte und den Erhalt der Zuordnungswarteschlange ab. Der echte HTTPS-Integrationstest führt die neuen Verwaltungsaktionen gegen den Go-Server aus. Ab 0.7.0 prüfen zusätzliche Tests Textsuche jenseits der ersten Seite, verspätete Suchantworten, Bestätigen/Abbrechen, fortlaufendes Nachladen über 80 Gesichter, Scrollposition nach Favorisieren und Revisionskonflikte beim Anfügen.</p>
 <p>Der Integrationstest öffnet ausschließlich <code>127.0.0.1:18787</code>, nutzt temporäre Daten und führt <code>adb reverse</code> aus. Er greift auf keine installierte BearStack-Instanz zu. Ohne Testadresse wird dieser zusätzliche instrumentierte Test übersprungen.</p>
 <p>Vor einer privaten Verteilung zusätzlich die komplette Bedienung auf dem eigenen Gerät mit TalkBack prüfen, besonders Namensdialog/Tastatur und die Originalfoto-Vorschau. Ein Gerätewechsel, Energiesparmodus und herstellerspezifische Prozessbeendigung lassen sich nicht vollständig durch einen Emulator ersetzen.</p>
 <h2 id="privaten-release-signieren">Privaten Release signieren<a class="headerlink" href="#privaten-release-signieren" title="Permanent link">&para;</a></h2>
@@ -1063,7 +1063,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.44.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.45.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

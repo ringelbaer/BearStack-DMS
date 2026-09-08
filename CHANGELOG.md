@@ -4,6 +4,18 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.45.0
+
+- Android-App **0.7.1** (versionCode 16): kleineres „×“ samt Schaltflächenhintergrund im Personenbereich bei weiterhin mindestens 48 dp Touchfläche. Kleine UI-Korrektur im bereits vorgesehenen Release 0.45.0; API unverändert.
+
+- Android-App **0.7.0** (versionCode 15): Textsuche im Personenbereich mit 250-ms-Eingabepause über alle benannten Personen. Entfernen einer Zuordnung erfordert einen Bestätigungsdialog mit Name und Bildpfad. Personenliste und Portrait-Raster laden beim Scrollen automatisch nach; die Viererseiten im Personenbereich entfallen.
+- Additive Labeling-API: `q` für die Personenliste, `limit` (1–40, Standard 4) und indexierter `after_face`-Cursor für Portraits, `named_search` in der Sitzung und `source_revision` in neuen Aktionsquittungen. Suche behandelt Umlaute tolerant und SQL-Platzhalterzeichen wörtlich. Bestehende Offset-Clients und gespeicherte Quittungen bleiben kompatibel; keine Datenmigration. MINOR für die neuen Bedien- und API-Funktionen.
+- Verspätete Suchantworten werden verworfen, widersprüchliche Portrait-Seiten nicht vermischt. Bestätigte Änderungen aktualisieren geladene Bilder ohne Rücksprung zum Listenanfang; offene Dialoge und Originalvorschauen unterbrechen das automatische Nachladen. Regressionen für Suchwechsel, Bestätigung/Abbruch, mehr als 80 Portraits, Scrollposition, Cursor, Revisionen und API-Validierung; README, Website und OpenAPI aktualisiert.
+
+- Einzelne unbenannte Gesichtsvorschauen lassen sich im Gruppenbildmodus über „×“ ignorieren. Nur die gewählte Erkennung wird ausgeblendet; andere Gesichter derselben Person bleiben aktiv. Das aktuelle Foto bleibt geöffnet, die ignorierte Vorschau wird markiert und der Zähler aktualisiert. Zoom und bereits geladene Bilder bleiben erhalten.
+- Der bestehende Gruppenbild-Endpunkt akzeptiert optional `face_id` mit atomarer Prüfung von Fotorevision, Zugehörigkeit und Bearbeitungsstand. Ungültige Einzelangaben lösen keine Sammelaktion aus. Ohne JavaScript kehrt die Einzelaktion zum gleichen Foto zurück. Nach erfolgreichem Speichern und fehlgeschlagenem Nachladen wird nur der Lesezugriff wiederholt.
+- MINOR für die zusätzliche Bedienfunktion und den kompatiblen API-Parameter; keine Datenmigration. Tests decken Einzel- und Sammelaktionen, Mehrfacherkennungen derselben Person, Rechte, Schutzmarker, Konflikte, Rollback, Tastatur, Bildwiederverwendung und Bedienung ohne JavaScript ab. README, Website und OpenAPI aktualisiert.
+
 ### BearStack 0.44.0
 
 - Neuer Filter „Nur unbekannte Personen“ unter `/photos/people`: ausschließlich unbenannte Gruppen mit aktiven Gesichtern. Benannte und vollständig ignorierte Gruppen sind ausgeschlossen; Vorschaubild und Fotoanzahl berücksichtigen keine ignorierten Gesichter. Der Filter bleibt beim Blättern, nach Bearbeitungen und über die im Browser gespeicherte Auswahl erhalten. Bekannte und ignorierte Ansichten schließen den neuen Filter in der Bedienung aus.

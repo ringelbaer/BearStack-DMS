@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.44.0
+  version: 0.45.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -203,6 +203,9 @@ paths:
         Newly created groups above upper appear after refreshing the list.
         Visibility is checked in small batches; protected groups are excluded.
         No total count or face detail arrays are loaded. Cache-Control is private, no-store.
+        Since 0.45.0, optional q searches all named groups using case-insensitive
+        German folding and literal substring matching. Keep q unchanged while
+        advancing the cursor; a changed query starts at after=0.
       parameters:
         - name: after
           in: query
@@ -211,6 +214,10 @@ paths:
           in: query
           required: true
           schema: {type: integer, format: int64, minimum: 0, maximum: 4611686018427387904}
+        - name: q
+          in: query
+          description: Optional person name substring (at most 800 UTF-8 bytes); advertised by session.named_search.
+          schema: {type: string, default: ''}
       responses:
         "200":
           description: Page of named people, including next and has_next.
@@ -230,11 +237,16 @@ paths:
     get:
       tags: [Photos]
       operationId: getLabelingPerson
-      summary: Read a consistent group revision and four faces
+      summary: Read a consistent group revision and a bounded face page
       description: |
         Requires photos.edit. count is the entire active face count, not the page
         size or distinct photo count. Empty, ignored and deleted groups return 404.
         Protected photos are excluded even for administrators.
+        Since 0.45.0, limit permits up to 40 faces and after_face selects faces
+        with greater IDs using an indexed cursor. If after_face is supplied,
+        offset is ignored and the response offset is zero. Clients must compare
+        revisions before appending pages and reload on conflict. Defaults retain
+        the legacy four-face offset behavior.
       parameters:
         - name: id
           in: path
@@ -246,11 +258,17 @@ paths:
         - name: offset
           in: query
           required: false
-          description: Zero-based face offset. Four faces ordered by ID; default zero.
+          description: Zero-based face offset, ignored when after_face is present. Default zero.
           schema:
             type: integer
             format: int64
             minimum: 0
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 40, default: 4}
+        - name: after_face
+          in: query
+          schema: {type: integer, format: int64, minimum: 0, maximum: 4611686018427387904}
       responses:
         "200":
           description: Successful response. Cache-Control is private, no-store.
@@ -1113,7 +1131,7 @@ paths:
     post:
       tags: [Photos]
       operationId: ignoreGroupPhotoRemainingFaces
-      summary: Ignore the current photo's remaining unnamed faces atomically
+      summary: Ignore remaining unnamed faces or one selected face in the current photo
       description: >-
         Available since 0.41.0. Requires photos.edit and the browser same-origin
         policy. Pass the path and revision of the displayed photo. The revision is
@@ -1122,8 +1140,14 @@ paths:
         A changed snapshot returns 409 without partial edits; refresh the photo
         before retrying. JSON success acknowledges only the write. Then GET the
         group photo view using after=path to advance. If this GET fails, retry only
-        navigation. HTML form success redirects to the next eligible photo. For
-        naming and assignment, the UI uses the existing whole-person rename/merge
+        navigation. HTML form success redirects to the next eligible photo.
+        Since 0.45.0, an optional positive face_id limits the write to that single
+        unnamed, active detection in this photo, including when its person has other
+        detections in the same photo. Invalid, empty, repeated or unrelated face_id
+        values return 400 and never fall back to ignoring all remaining faces.
+        Named or already ignored selections return 409. In single-face mode, refresh
+        with path=path instead of advancing; HTML redirects back to the same photo.
+        For naming and assignment, the UI uses the existing whole-person rename/merge
         endpoints, not individual-face movement. Responses use Cache-Control no-store.
       requestBody:
         required: true
@@ -1136,6 +1160,7 @@ paths:
                 path: {type: string, minLength: 1, maxLength: 4096}
                 revision: {type: string, minLength: 64, maxLength: 64, description: Opaque snapshot revision from GroupPhoto.}
                 min: {type: integer, minimum: 0, maximum: 255, default: 5, description: Threshold retained for the HTML redirect.}
+                face_id: {type: integer, format: int64, minimum: 1, description: "Since 0.45.0, ignore only this active unnamed detection in the displayed photo. Omit to ignore all remaining faces."}
       responses:
         '200':
           description: Write completed for requests with Accept application/json.
@@ -1148,7 +1173,7 @@ paths:
                   ok: {type: boolean, const: true}
                   ignored: {type: integer, minimum: 0, maximum: 256}
         '303':
-          description: Redirect to the next eligible photo for HTML forms.
+          description: Redirect to the next eligible photo for HTML forms, or the current photo when face_id is supplied.
           headers:
             Location:
               schema: {type: string}
@@ -2028,6 +2053,7 @@ components:
       required: [protocol, instance, dataset, account, upper_id, can_manage]
       properties:
         named_people: {type: boolean, const: true, description: "Named people list and rename/unassign/favorite receipt actions available since 0.43.0. Older servers omit this field."}
+        named_search: {type: boolean, const: true, description: "Name search, 40-face cursor pages and receipt source_revision available since 0.45.0. Older servers omit this field."}
         face_favorites: {type: boolean, const: true, description: "Favorite API available since 0.40.0. Older servers omit this field."}
         protocol: {type: integer, const: 1}
         instance: {type: string, description: Stable identity of this photo database.}
@@ -2047,7 +2073,7 @@ components:
         offset: {type: integer, minimum: 0}
         faces:
           type: array
-          maxItems: 4
+          maxItems: 40
           description: Present on a detail page with faces. Empty pages can omit this field.
           items:
             type: object
@@ -2122,6 +2148,7 @@ components:
       type: object
       required: [operation_id, action, source_id, target_id, new_id, faces, groups, at]
       properties:
+        source_revision: {type: integer, format: int64, minimum: 0, description: "Optional since 0.45.0. Source revision at commit (zero if absent). Preserved on replay; use for local updates, never as proof of the latest server state."}
         operation_id: {type: string}
         action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite]}
         source_id: {type: integer, format: int64}

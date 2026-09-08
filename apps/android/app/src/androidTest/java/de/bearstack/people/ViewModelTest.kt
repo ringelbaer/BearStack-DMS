@@ -12,6 +12,34 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ViewModelTest {
+    @Test fun delayedDirectorySearchDoesNotOverwriteNewQueryAndStreamingRejectsChangedRevision() = runBlocking {
+        val api=FakeService().apply {
+            upper=50
+            people[40]=Person(40,"Anna",1,100,400,(400L..499L).toList())
+            people[50]=Person(50,"Berta",1,1,500,listOf(500))
+        }
+        model(api) {vm ->
+            withContext(Dispatchers.Main) {vm.openDirectory()};idle(vm)
+            api.directoryDelay=600
+            withContext(Dispatchers.Main) {vm.namedQueryChanged("Ann")}
+            until {api.directoryQueries.contains("Ann")}
+            withContext(Dispatchers.Main) {vm.namedQueryChanged("Berta")}
+            until {!vm.state.value.busy && vm.state.value.loadedNamedQuery=="Berta"}
+            assertEquals(listOf(50L),vm.state.value.namedPeople.map {it.id})
+            withContext(Dispatchers.Main) {vm.openPerson(api.people.getValue(40))};idle(vm)
+            assertEquals(40,vm.state.value.selectedPerson!!.faces.size)
+            withContext(Dispatchers.Main) {vm.morePersonFaces()};idle(vm)
+            assertEquals(80,vm.state.value.selectedPerson!!.faces.size)
+            withContext(Dispatchers.Main) {vm.requestUnassign(450);vm.morePersonFaces()};idle(vm)
+            assertEquals(80,vm.state.value.selectedPerson!!.faces.size);assertEquals(0,api.commits)
+            withContext(Dispatchers.Main) {vm.cancelUnassign()}
+            api.people[40]=api.people.getValue(40).copy(revision=2)
+            withContext(Dispatchers.Main) {vm.morePersonFaces()};idle(vm)
+            assertEquals(2L,vm.state.value.selectedPerson!!.revision)
+            assertEquals(40,vm.state.value.selectedPerson!!.faces.size)
+            assertNotNull(vm.state.value.error);assertEquals(0,api.commits)
+        }
+    }
     @Test fun managementPreservesQueueAndResolvesLostFavoriteResponseBeforeNextDecision() = runBlocking {
         val api=FakeService().apply { upper=30; people[30]=Person(30,"Anna",1,1,300,listOf(300)) }
         model(api) { vm ->

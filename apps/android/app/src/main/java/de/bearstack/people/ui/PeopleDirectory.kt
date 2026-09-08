@@ -8,6 +8,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -39,9 +41,27 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
     val zoomDistance=with(LocalDensity.current) { 240.dp.toPx() }
     val zoomDrag: (Float) -> Unit = { zoom=zoomAfterDrag(zoom,it,zoomDistance) }
     val enabled=!state.busy && !state.unresolved && held==null
+    val browsing=enabled && !state.naming && state.removeFace==null
+    val listState=rememberLazyListState()
+    val gridState=rememberLazyGridState()
+    LaunchedEffect(state.namedQuery) {listState.scrollToItem(0)}
+    LaunchedEffect(person?.id) {gridState.scrollToItem(0)}
+    LaunchedEffect(state.namedPeople.size,state.namedHasNext,browsing,state.error,person?.id) {
+        if(person==null && browsing && state.error==null && state.namedHasNext) snapshotFlow {
+            val info=listState.layoutInfo
+            (info.visibleItemsInfo.lastOrNull()?.index ?: -1)>=info.totalItemsCount-3
+        }.collect { if(it) vm.moreNamedPeople() }
+    }
+    LaunchedEffect(person?.faces?.size,person?.count,browsing,state.error,person?.id) {
+        if(person!=null && browsing && state.error==null && person.faces.size<person.count) snapshotFlow {
+            val info=gridState.layoutInfo
+            (info.visibleItemsInfo.lastOrNull()?.index ?: -1)>=info.totalItemsCount-7
+        }.collect {if(it) vm.morePersonFaces()}
+    }
     LaunchedEffect(person?.id,person?.revision,person?.offset) { held=null;accessible=false }
     BackHandler {
         if(held!=null) { if(accessible) held=null else heldDismissed=true }
+        else if(state.removeFace!=null) vm.cancelUnassign()
         else if(state.naming) vm.closeNaming()
         else if(person!=null) vm.closePerson() else vm.closeDirectory()
     }
@@ -64,15 +84,19 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
                     }
                 }
                 if(person==null) {
-                    LazyColumn(Modifier.fillMaxSize().testTag("named-people"),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(state.namedQuery,vm::namedQueryChanged,label={Text("Personen suchen")},singleLine=true,
+                        enabled=state.namedSearch && !state.unresolved,modifier=Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=8.dp),
+                        trailingIcon={if(state.namedQuery.isNotEmpty()) TextButton(onClick={vm.namedQueryChanged("")}) {Text("Löschen")}})
+                    if(!state.namedSearch && !state.busy) Text("Textsuche ab BearStack 0.45.0 verfügbar.",Modifier.padding(horizontal=16.dp),style=MaterialTheme.typography.bodySmall)
+                    LazyColumn(state=listState,modifier=Modifier.fillMaxSize().testTag("named-people"),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
                         item {
                             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                                 Text("Benannte Personen",Modifier.weight(1f),style=MaterialTheme.typography.titleLarge)
-                                TextButton(onClick=vm::openDirectory,enabled=enabled) { Text("Aktualisieren") }
+                                TextButton(onClick=vm::openDirectory,enabled=browsing) { Text("Aktualisieren") }
                             }
                         }
                         items(state.namedPeople,key={it.id}) { p ->
-                            Surface(onClick={vm.openPerson(p)},enabled=enabled,shape=RoundedCornerShape(16.dp),color=MaterialTheme.colorScheme.surfaceContainer) {
+                            Surface(onClick={vm.openPerson(p)},enabled=browsing,shape=RoundedCornerShape(16.dp),color=MaterialTheme.colorScheme.surfaceContainer) {
                                 Row(Modifier.fillMaxWidth().padding(12.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(16.dp)) {
                                     Box(Modifier.size(72.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
                                         vm.images?.let { AsyncImage(vm.image(p.faceId),null,imageLoader=it,modifier=Modifier.fillMaxSize()) }
@@ -84,32 +108,41 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
                                 }
                             }
                         }
-                        if(state.namedPeople.isEmpty() && !state.busy && state.error==null) item { Text("Noch keine benannten Personen vorhanden.") }
-                        if(state.namedHasNext) item { OutlinedButton(onClick=vm::moreNamedPeople,enabled=enabled,modifier=Modifier.fillMaxWidth()) { Text("Weitere Personen laden") } }
-                    }
-                } else key(person.id) {
-                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-                        Text(person.name,style=MaterialTheme.typography.headlineSmall)
-                        Text("${person.offset+1}–${minOf(person.offset+4L,person.count)} von ${person.count} Gesichtern")
-                        OutlinedButton(onClick=vm::startNaming,enabled=enabled) { Text("Person umbenennen") }
-                        OutlinedButton(onClick={
-                            vm.gallery(person.name)?.let { url ->
-                                try {
-                                    context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE))
-                                    browserError=null
-                                } catch(_: ActivityNotFoundException) { browserError="Kein Browser zum Öffnen der Galeriesuche verfügbar." }
-                            }
-                        },enabled=enabled) { Text("Galeriesuche im Browser") }
-                        browserError?.let { Text(it,color=MaterialTheme.colorScheme.error) }
-                        FaceGrid(person,enabled,vm.images,vm::image,onDetach=vm::unassign,
-                            onHold={held=it;heldDismissed=false;zoom=0f},
-                            onZoom={held=it;heldDismissed=false;zoom=0f;accessible=true},
-                            onZoomDrag=zoomDrag,managing=true,onFavorite=vm::favorite)
-                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
-                            OutlinedButton(onClick={vm.personPage(-1)},enabled=enabled && person.offset>0) { Text("Vorherige Bilder") }
-                            OutlinedButton(onClick={vm.personPage(1)},enabled=enabled && person.offset+4<person.count) { Text("Weitere Bilder") }
+                        if(state.namedPeople.isEmpty() && !state.busy && state.error==null && state.namedQuery==state.loadedNamedQuery) item {
+                            Text(if(state.namedQuery.isBlank()) "Noch keine benannten Personen vorhanden." else "Keine Personen gefunden.")
                         }
-                        Text("×: Zuordnung entfernen und wieder unbenannt bereitstellen. Die Bilddatei bleibt erhalten. ★: Als Vergleichsbild favorisieren. Halten: Originalfoto; dabei runterwischen zum Vergrößern, hoch zum Verkleinern.",style=MaterialTheme.typography.bodySmall)
+                        if(state.namedHasNext) item { Text("Weitere Personen werden beim Scrollen geladen.",style=MaterialTheme.typography.bodySmall) }
+                    }
+                } else {
+                    LazyVerticalGrid(columns=GridCells.Fixed(2),state=gridState,modifier=Modifier.fillMaxSize().testTag("person-faces"),
+                        contentPadding=PaddingValues(16.dp),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                        item(key="heading",span={GridItemSpan(maxLineSpan)}) {
+                            Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                                Text(person.name,style=MaterialTheme.typography.headlineSmall)
+                                Text("${person.count} Gesichter")
+                                OutlinedButton(onClick=vm::startNaming,enabled=browsing) { Text("Person umbenennen") }
+                                OutlinedButton(onClick={
+                                    vm.gallery(person.name)?.let { url ->
+                                        try {
+                                            context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE))
+                                            browserError=null
+                                        } catch(_: ActivityNotFoundException) { browserError="Kein Browser zum Öffnen der Galeriesuche verfügbar." }
+                                    }
+                                },enabled=browsing) { Text("Galeriesuche im Browser") }
+                                browserError?.let { Text(it,color=MaterialTheme.colorScheme.error) }
+                                Text("×: Zuordnung nach Bestätigung entfernen. ★: Favorisieren. Halten: Originalfoto; dabei runterwischen zum Vergrößern, hoch zum Verkleinern.",style=MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        itemsIndexed(person.faces,key={_,face -> face}) {index,face ->
+                            FaceGrid(person.copy(faces=listOf(face),offset=index),browsing,vm.images,vm::image,onDetach=vm::requestUnassign,
+                                onHold={held=it;heldDismissed=false;zoom=0f},
+                                onZoom={held=it;heldDismissed=false;zoom=0f;accessible=true},
+                                onZoomDrag=zoomDrag,managing=true,onFavorite=vm::favorite)
+                        }
+                        item(key="footer",span={GridItemSpan(maxLineSpan)}) {
+                            Text(if(person.faces.size<person.count) "Weitere Bilder werden beim Scrollen geladen." else "Alle Bilder geladen.",
+                                style=MaterialTheme.typography.bodySmall,modifier=Modifier.padding(vertical=8.dp))
+                        }
                     }
                 }
             }
@@ -129,4 +162,12 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
         }
     }
     if(state.naming) NamingDialog(state,vm,enabled)
+    state.removeFace?.let {face ->
+        AlertDialog(onDismissRequest=vm::cancelUnassign,title={Text("Zuordnung entfernen?")},
+            text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text("Dieses Gesicht von „${person?.name.orEmpty()}“ entfernen und wieder auf unbenannt setzen? Die Bilddatei bleibt erhalten.")
+                person?.facePaths?.get(face)?.takeIf {it.isNotEmpty()}?.let {Text(it)}
+            }},confirmButton={TextButton(onClick=vm::confirmUnassign,enabled=enabled) {Text("Entfernen")}},
+            dismissButton={TextButton(onClick=vm::cancelUnassign,enabled=!state.busy) {Text("Abbrechen")}})
+    }
 }

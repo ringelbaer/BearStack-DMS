@@ -18,6 +18,7 @@ var ErrLabelInvalid = errors.New("ungültige Benennungsaktion")
 var ErrLabelNameExists = errors.New("Name bereits vorhanden")
 
 type LabelSession struct {
+	NamedSearch   bool   `json:"named_search"`
 	NamedPeople   bool   `json:"named_people"`
 	FaceFavorites bool   `json:"face_favorites"`
 	Protocol      int    `json:"protocol"`
@@ -67,14 +68,15 @@ type LabelAction struct {
 	FaceID         int64  `json:"face_id,omitempty"`
 }
 type LabelReceipt struct {
-	OperationID string `json:"operation_id"`
-	Action      string `json:"action"`
-	SourceID    int64  `json:"source_id"`
-	TargetID    int64  `json:"target_id"`
-	NewID       int64  `json:"new_id"`
-	Faces       int64  `json:"faces"`
-	Groups      int    `json:"groups"`
-	At          int64  `json:"at"`
+	SourceRevision int64  `json:"source_revision"`
+	OperationID    string `json:"operation_id"`
+	Action         string `json:"action"`
+	SourceID       int64  `json:"source_id"`
+	TargetID       int64  `json:"target_id"`
+	NewID          int64  `json:"new_id"`
+	Faces          int64  `json:"faces"`
+	Groups         int    `json:"groups"`
+	At             int64  `json:"at"`
 }
 
 const labelColumns = `p.id,p.name,r.revision,(SELECT count(*) FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0),(SELECT min(id) FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0)`
@@ -82,7 +84,7 @@ const labelFrom = ` FROM photo_people p JOIN photo_person_revisions r ON r.perso
 const labelExists = ` EXISTS(SELECT 1 FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0) `
 
 func (l *Library) LabelSession(ctx context.Context) (LabelSession, error) {
-	out := LabelSession{Protocol: 1, FaceFavorites: true, NamedPeople: true}
+	out := LabelSession{Protocol: 1, FaceFavorites: true, NamedPeople: true, NamedSearch: true}
 	err := l.index.db.QueryRowContext(ctx, `SELECT instance,dataset,(SELECT coalesce(max(id),0) FROM photo_people) FROM photo_labeling_identity WHERE id=1`).Scan(&out.Instance, &out.Dataset, &out.UpperID)
 	return out, err
 }
@@ -117,7 +119,20 @@ func (l *Library) LabelCandidates(ctx context.Context, after, upper int64) (Labe
 	}
 	return out, rows.Err()
 }
-func (l *Library) LabelPerson(ctx context.Context, id int64, offset int) (LabelPerson, error) {
+func (l *Library) LabelPerson(ctx context.Context, id int64, offset int, limits ...int) (LabelPerson, error) {
+	limit := 4
+	if len(limits) > 0 {
+		limit = limits[0]
+	}
+	return l.labelPersonPage(ctx, id, offset, limit, 0)
+}
+func (l *Library) LabelPersonAfter(ctx context.Context, id, after int64, limit int) (LabelPerson, error) {
+	return l.labelPersonPage(ctx, id, 0, limit, after)
+}
+func (l *Library) labelPersonPage(ctx context.Context, id int64, offset, limit int, after int64) (LabelPerson, error) {
+	if limit < 1 || limit > 40 {
+		return LabelPerson{}, ErrLabelInvalid
+	}
 	if err := l.refreshPersonIDsVisibility(ctx, id); err != nil {
 		return LabelPerson{}, err
 	}
@@ -132,7 +147,7 @@ func (l *Library) LabelPerson(ctx context.Context, id int64, offset int) (LabelP
 	}
 	p.Offset = offset
 	p.Faces = []LabelFace{}
-	rows, err := tx.QueryContext(ctx, `SELECT f.id,f.path,f.x,f.y,f.width,f.height,f.favorite,m.size_bytes,m.mod_time_unix_nano FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.ignored=0 ORDER BY f.id LIMIT 4 OFFSET ?`, id, offset)
+	rows, err := tx.QueryContext(ctx, `SELECT f.id,f.path,f.x,f.y,f.width,f.height,f.favorite,m.size_bytes,m.mod_time_unix_nano FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.ignored=0 AND f.id>? ORDER BY f.id LIMIT ? OFFSET ?`, id, after, limit, offset)
 	if err != nil {
 		return p, err
 	}
@@ -348,6 +363,9 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	}
 	committedRevision, err := refreshFaceMutationTx(ctx, tx, affected)
 	if err != nil {
+		return out, err
+	}
+	if err = tx.QueryRowContext(ctx, `SELECT coalesce((SELECT revision FROM photo_person_revisions WHERE person_id=?),0)`, id).Scan(&out.SourceRevision); err != nil {
 		return out, err
 	}
 	encoded, err = json.Marshal(out)

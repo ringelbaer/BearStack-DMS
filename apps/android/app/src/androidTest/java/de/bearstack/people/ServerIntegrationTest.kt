@@ -64,7 +64,12 @@ class ServerIntegrationTest {
             repo.prepare(repo.next()!!,"ignore");repo.resolve();assertNull(repo.next())
             assertEquals(5L,api.suggestions("Anna",true).single().count)
             assertTrue(api.session().namedPeople)
+            assertTrue(api.session().namedSearch)
+            assertEquals("Anna",api.searchPeople(0,api.session().upper,"ann").people.single().name)
             var named=api.person(api.namedPeople(0,api.session().upper).people.single().id)
+            val stream=api.personFaces(named.id,0,0)
+            assertEquals(5,stream.faces.size)
+            assertTrue(api.personFaces(named.id,5,stream.faces.last()).faces.isEmpty())
             val favoriteFace=named.faces.first()
             repo.prepare(named,"favorite",face=favoriteFace,favorite=true);repo.resolve()
             named=api.person(named.id)
@@ -73,6 +78,7 @@ class ServerIntegrationTest {
             named=api.person(named.id)
             assertEquals("Anna Neu",named.name)
             repo.prepare(named,"unassign",face=favoriteFace);val unassigned=repo.resolve()!!
+            assertTrue(unassigned.sourceRevision>named.revision)
             val unnamed=repo.next()!!
             assertEquals(unassigned.newId,unnamed.id);assertEquals("",unnamed.name)
             assertTrue(unnamed.favorites.isEmpty());assertEquals(4L,api.person(named.id).count)

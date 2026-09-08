@@ -211,7 +211,8 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
                                     modifier=Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
                                 if(managing || person.count>1) FilledTonalIconButton(onClick={onDetach(face)},enabled=enabled && !holding,
                                     modifier=Modifier.align(Alignment.BottomStart).padding(4.dp).size(48.dp)
-                                        .semantics { contentDescription=if(managing) "Zuordnung entfernen" else "Dieses Gesicht einzeln benennen" }) { Text("×",style=MaterialTheme.typography.headlineMedium) }
+                                        .padding(if(managing) 8.dp else 0.dp)
+                                        .semantics { contentDescription=if(managing) "Zuordnung entfernen" else "Dieses Gesicht einzeln benennen" }) { Text("×",style=if(managing) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineMedium) }
                                 if(managing) FilledTonalIconButton(onClick={onFavorite(face)},enabled=enabled && !holding,
                                     modifier=Modifier.align(Alignment.BottomEnd).padding(4.dp).size(48.dp).semantics {
                                         contentDescription=if(face in person.favorites) "Favorisierung aufheben" else "Bild favorisieren"

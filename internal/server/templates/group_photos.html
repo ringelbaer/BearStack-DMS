@@ -10,7 +10,7 @@
 <p role="status" data-people-status></p>
 <div class="group-photo-toolbar" {{if not .GroupPhotos.Photo}}hidden{{end}} data-group-toolbar>
 <div><h2 data-group-title>{{with .GroupPhotos.Photo}}{{.DisplayPath}}{{end}}</h2><p data-group-count>{{with .GroupPhotos.Photo}}{{.Remaining}} unbearbeitete von {{len .Faces}} erkannten Gesichtern{{end}}</p></div>
-<form method="post" action="/photos/people/groups/ignore" data-group-ignore-form>
+<form method="post" action="/photos/people/groups/ignore" id="group-photo-ignore-form" data-group-ignore-form>
 <input type="hidden" name="min" value="{{.GroupPhotos.Minimum}}"><input type="hidden" name="path" value="{{with .GroupPhotos.Photo}}{{.Path}}{{end}}"><input type="hidden" name="revision" value="{{with .GroupPhotos.Photo}}{{.Revision}}{{end}}">
 <button data-group-ignore {{if .GroupPhotos.Photo}}{{if not .GroupPhotos.Photo.Remaining}}disabled{{end}}{{else}}disabled{{end}}>Verbleibende ignorieren</button>
 </form>
@@ -21,7 +21,7 @@
 <img data-group-image {{with .GroupPhotos.Photo}}{{if .ImageFaceID}}src="/photos/people/groups/image/{{.ImageFaceID}}"{{end}} alt="{{.DisplayPath}}"{{else}}alt="Gruppenfoto"{{end}}>
 <div class="group-photo-box" data-group-box hidden aria-hidden="true"></div>
 </figure>
-<div><p class="group-photo-hint">Zeige auf ein Gesicht, um es im Foto zu markieren. Ein Klick auf die Vorschau vergrößert den Ausschnitt auf die doppelte Breite und Höhe der Gesichtsmarkierung (200 %). Ein weiterer Klick auf dieselbe Vorschau zeigt wieder das ganze Foto. Mit dem Stift benennst du die gesamte Personengruppe oder führst sie mit einer vorhandenen Person zusammen, auch in anderen Fotos.</p>
+<div><p class="group-photo-hint">Zeige auf ein Gesicht, um es im Foto zu markieren. Ein Klick auf die Vorschau vergrößert den Ausschnitt auf die doppelte Breite und Höhe der Gesichtsmarkierung (200 %). Ein weiterer Klick auf dieselbe Vorschau zeigt wieder das ganze Foto. Mit × ignorierst du nur dieses Gesicht im aktuellen Foto. Mit dem Stift benennst du die gesamte Personengruppe oder führst sie mit einer vorhandenen Person zusammen, auch in anderen Fotos.</p>
 <div class="group-photo-faces" data-group-grid>
 {{with .GroupPhotos.Photo}}{{range .Faces}}{{template "group_photo_face" .}}{{end}}{{end}}
 </div></div>
@@ -41,6 +41,6 @@
 <button type="button" class="group-face-highlight" data-group-highlight aria-pressed="false" aria-label="Gesicht im Foto vergrößern: {{if .Name}}{{.Name}}{{else if .Ignored}}Ignoriert{{else}}Unbenannt{{end}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Gesicht"></button>
 <strong data-group-name>{{if .Name}}{{.Name}}{{else if .Ignored}}Ignoriert{{else}}Unbenannt{{end}}</strong>
 {{if and .Ignored .Name}}<span data-group-ignored-label>Ignoriert</span>{{end}}
-{{if and (not .Ignored) (not .Name)}}<button type="button" class="person-edit-button secondary-button" data-person-edit aria-label="Person benennen oder zuordnen" title="Benennen / zuordnen">{{template "person_pencil_icon" .}}</button>{{end}}
+{{if and (not .Ignored) (not .Name)}}<button type="submit" form="group-photo-ignore-form" name="face_id" value="{{.ID}}" class="person-ignore-button" data-group-ignore-face aria-label="Dieses Gesicht ignorieren" title="Dieses Gesicht ignorieren">×</button><button type="button" class="person-edit-button secondary-button" data-person-edit aria-label="Person benennen oder zuordnen" title="Benennen / zuordnen">{{template "person_pencil_icon" .}}</button>{{end}}
 </div>
 {{end}}

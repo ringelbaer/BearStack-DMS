@@ -83,7 +83,12 @@ func (s *Server) handleLabelList(w http.ResponseWriter, r *http.Request, named b
 	}
 	var out photos.LabelCandidates
 	if named {
-		out, err = s.photos.LabelNamedPeople(r.Context(), after, upper)
+		q := r.URL.Query().Get("q")
+		if len(q) > 800 {
+			s.labelError(w, r, photos.ErrLabelInvalid)
+			return
+		}
+		out, err = s.photos.LabelNamedPeople(r.Context(), after, upper, q)
 	} else {
 		out, err = s.photos.LabelCandidates(r.Context(), after, upper)
 	}
@@ -197,7 +202,25 @@ func (s *Server) handleLabelPerson(w http.ResponseWriter, r *http.Request) {
 		s.labelError(w, r, err)
 		return
 	}
-	out, err := s.photos.LabelPerson(r.Context(), id, int(offset))
+	limit, err := labelInt(r, "limit", 40)
+	if err != nil || (r.URL.Query().Has("limit") && limit == 0) {
+		s.labelError(w, r, photos.ErrLabelInvalid)
+		return
+	}
+	if limit == 0 {
+		limit = 4
+	}
+	after, err := labelInt(r, "after_face", 1<<62)
+	if err != nil {
+		s.labelError(w, r, err)
+		return
+	}
+	var out photos.LabelPerson
+	if r.URL.Query().Has("after_face") {
+		out, err = s.photos.LabelPersonAfter(r.Context(), id, after, int(limit))
+	} else {
+		out, err = s.photos.LabelPerson(r.Context(), id, int(offset), int(limit))
+	}
 	if err != nil {
 		s.labelError(w, r, err)
 		return
