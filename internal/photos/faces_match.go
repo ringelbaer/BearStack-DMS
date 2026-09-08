@@ -376,7 +376,7 @@ func (l *Library) syncFaceGraphPeople(ctx context.Context, people map[int64]bool
 		return nil
 	}
 	for p := range people {
-		rows, err := l.index.db.QueryContext(ctx, `SELECT f.id,f.embedding FROM photo_face_references r JOIN photo_faces f ON f.id=r.face_id WHERE r.person_id=? AND f.model=?`, p, rt.model)
+		rows, err := l.index.db.QueryContext(ctx, `SELECT f.id,f.embedding FROM photo_face_references r JOIN photo_faces f ON f.id=r.face_id WHERE r.person_id=? AND f.model=? AND f.ignored=0`, p, rt.model)
 		if err != nil {
 			rt.graph = nil
 			return err

@@ -21,7 +21,7 @@ func TestFaceThumbnailCacheSharesRenderAndPersists(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			<-start
-			b, err := c.get(context.Background(), "same", func() ([]byte, error) { calls.Add(1); return []byte("jpeg"), nil })
+			b, err := c.get(context.Background(), 0, "same", func() ([]byte, error) { calls.Add(1); return []byte("jpeg"), nil })
 			if err != nil || string(b) != "jpeg" {
 				t.Errorf("get: %q %v", b, err)
 			}
@@ -44,7 +44,7 @@ func TestFaceThumbnailCacheSharesRenderAndPersists(t *testing.T) {
 	if err := os.Remove(files[0]); err != nil {
 		t.Fatal(err)
 	}
-	_, err = c.get(context.Background(), "same", func() ([]byte, error) { calls.Add(1); return []byte("jpeg"), nil })
+	_, err = c.get(context.Background(), 0, "same", func() ([]byte, error) { calls.Add(1); return []byte("jpeg"), nil })
 	if err != nil || calls.Load() != 2 {
 		t.Fatalf("missing file: %d %v", calls.Load(), err)
 	}
@@ -52,7 +52,7 @@ func TestFaceThumbnailCacheSharesRenderAndPersists(t *testing.T) {
 	c.close()
 	reopened := faceThumbnailCache{dir: dir}
 	defer reopened.close()
-	if _, err := reopened.get(context.Background(), "same", func() ([]byte, error) { t.Fatal("regenerated after restart"); return nil, nil }); err != nil {
+	if _, err := reopened.get(context.Background(), 0, "same", func() ([]byte, error) { t.Fatal("regenerated after restart"); return nil, nil }); err != nil {
 		t.Fatal(err)
 	}
 
@@ -63,15 +63,15 @@ func TestFaceThumbnailCacheFailures(t *testing.T) {
 	defer c.close()
 	ctx := context.Background()
 	expected := errors.New("decode failure")
-	if _, err := c.get(ctx, "bad", func() ([]byte, error) { return nil, expected }); !errors.Is(err, expected) {
+	if _, err := c.get(ctx, 0, "bad", func() ([]byte, error) { return nil, expected }); !errors.Is(err, expected) {
 		t.Fatal(err)
 	}
-	if _, err := c.get(ctx, "bad", func() ([]byte, error) { return []byte("retry"), nil }); err != nil {
+	if _, err := c.get(ctx, 0, "bad", func() ([]byte, error) { return []byte("retry"), nil }); err != nil {
 		t.Fatal(err)
 	}
 	cancelled, cancel := context.WithCancel(ctx)
 	cancel()
-	if _, err := c.get(cancelled, "b", func() ([]byte, error) { t.Fatal("render after cancellation"); return nil, nil }); !errors.Is(err, context.Canceled) {
+	if _, err := c.get(cancelled, 0, "b", func() ([]byte, error) { t.Fatal("render after cancellation"); return nil, nil }); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
 }
@@ -115,7 +115,7 @@ func TestFaceThumbnailCacheCancelledWaiterDoesNotCancelRender(t *testing.T) {
 	started, release, finished := make(chan struct{}), make(chan struct{}), make(chan struct{})
 	go func() {
 		defer close(finished)
-		_, err := c.get(context.Background(), "face", func() ([]byte, error) {
+		_, err := c.get(context.Background(), 0, "face", func() ([]byte, error) {
 			close(started)
 			<-release
 			return []byte("jpeg"), nil
@@ -127,12 +127,12 @@ func TestFaceThumbnailCacheCancelledWaiterDoesNotCancelRender(t *testing.T) {
 	<-started
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := c.get(ctx, "face", func() ([]byte, error) { t.Error("duplicate render"); return nil, nil }); !errors.Is(err, context.Canceled) {
+	if _, err := c.get(ctx, 0, "face", func() ([]byte, error) { t.Error("duplicate render"); return nil, nil }); !errors.Is(err, context.Canceled) {
 		t.Errorf("cancel: %v", err)
 	}
 	close(release)
 	<-finished
-	if _, err := c.get(context.Background(), "face", func() ([]byte, error) { t.Error("completed render not cached"); return nil, nil }); err != nil {
+	if _, err := c.get(context.Background(), 0, "face", func() ([]byte, error) { t.Error("completed render not cached"); return nil, nil }); err != nil {
 		t.Fatal(err)
 	}
 }

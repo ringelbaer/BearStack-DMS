@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.39.0
+
+- Vorschauen ignorierter Gesichter werden höchstens 48 Stunden gespeichert und anschließend auch ohne weitere Aufrufe automatisch entfernt. Zugriffe und wiederholtes Ignorieren verlängern bestehende Fristen nicht; bei Bedarf neu erzeugte Vorschauen erhalten erneut höchstens 48 Stunden. Dies gilt für Web- und Android-/Labeling-Aktionen und beide Vorschaugrößen.
+- Gesichtsdaten, Embeddings und Wiederherstellung bleiben dauerhaft erhalten. Wiederherstellen hebt die Ablaufzeit auf. Ignorierte Gesichter bleiben vom Abgleich ausgeschlossen, jetzt auch mit ausdrücklicher Filterung bei inkrementellen Aktualisierungen des Referenzgraphen.
+- Automatische Migration des Fotoindex auf Schema 21: Ein dauerhafter Ablaufindex ermöglicht die Bereinigung in begrenzten Paketen ohne regelmäßige Verzeichnisscans. Neustarts und gleichzeitige Bilderzeugung/Zuordnungsänderungen werden berücksichtigt. Der bestehende Vorschau-Cache `faces/v1` bleibt erhalten. Seine Zuordnungen werden ohne Bilddekodierung in fortsetzbaren Paketen von höchstens 100 Gesichtern ergänzt; Aufrufe übernehmen vorhandene Vorschauen auch vor Abschluss direkt. Dateinamen, Inhalt und Änderungszeiten bleiben erhalten. Ignorierte Altvorschauen erhalten eine feste Frist ab dem Update, nicht mehr zuordenbare Altdateien bleiben unangetastet. MINOR wegen der kompatiblen automatischen Migration.
+- Regressionstests für Fristgrenzen, Wiederherstellung, Web-/Labeling-Ignorieren, Neustart, Bereinigung ohne Aufrufe, Fehlerwiederholung, Erhalt alter Cachedateien, fortsetzbare Migration ohne Originalbildzugriffe und Ausschluss vom Gesichtsabgleich ergänzt.
+
 ### BearStack 0.38.1
 
 - Im Benenn-Modal sendet die Auswahl eines Namensvorschlags oder „Neu anlegen“ das Formular direkt per AJAX ab, auch bei Mehrfachauswahl und Tastaturbedienung. Während des Speicherns werden weitere Auswahlen blockiert.

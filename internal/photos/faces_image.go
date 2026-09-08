@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"image"
 	"image/jpeg"
 	"math"
@@ -129,8 +128,8 @@ func (l *Library) FaceThumbnailSize(ctx context.Context, id int64, size int) ([]
 	if err != nil {
 		return nil, err
 	}
-	key := fmt.Sprintf("%d:%d:%s:%d:%d:%g:%g:%g:%g", id, size, abs, info.Size(), info.ModTime().UnixNano(), f.X, f.Y, f.Width, f.Height)
-	b, err := l.faceThumbnails.get(ctx, key, func() ([]byte, error) {
+	key := faceThumbnailKey(f, size, abs, info.Size(), info.ModTime().UnixNano())
+	b, err := l.faceThumbnails.get(ctx, id, key, func() ([]byte, error) {
 		return l.renderFaceThumbnail(ctx, f, size)
 	})
 	if err != nil {
