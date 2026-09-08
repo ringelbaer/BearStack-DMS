@@ -40,7 +40,9 @@ fun PeopleApp(vm: PeopleViewModel) {
     MaterialTheme(colorScheme=if(dark) darkColorScheme(primary=Color(0xff75d2e8)) else lightColorScheme(primary=Color(0xff146e83))) {
         Surface(Modifier.fillMaxSize()) {
             if (!state.connected) ConnectionScreen(state,vm)
+            else if(state.directory) PeopleDirectoryScreen(state,vm)
             else LabelingScreen(state,vm)
+            if(state.undoIgnores.isNotEmpty()) key(state.naming) { IgnoreUndoToast(state.undoIgnores.size,vm::undoIgnore) }
             state.certificate?.let { certificate ->
                 AlertDialog(onDismissRequest={ if(!state.busy) vm.cancelCertificate() },title={ Text("Serverzertifikat prüfen") },
                     text={ Column(Modifier.verticalScroll(rememberScrollState())) {
@@ -92,6 +94,7 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
         Scaffold(topBar={ TopAppBar(title={Text(if(statistics) "Statistik" else "Personen benennen")},actions={
             TextButton(onClick={menu=true}) { Text("Menü") }
             DropdownMenu(menu,{menu=false}) {
+                DropdownMenuItem(text={Text("Personen")},onClick={vm.openDirectory();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(if(statistics) "Zur Bearbeitung" else "Statistik")},onClick={statistics=!statistics;menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text("Gruppe ignorieren")},onClick={vm.ignore();menu=false},enabled=enabled && state.person!=null)
                 DropdownMenuItem(text={Text("Gruppe überspringen")},onClick={vm.skip();menu=false},enabled=enabled && state.person!=null)
@@ -162,13 +165,12 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
         }
     }
     if(state.naming) NamingDialog(state,vm,enabled)
-    if(state.undoIgnores.isNotEmpty()) key(state.naming) { IgnoreUndoToast(state.undoIgnores.size,vm::undoIgnore) }
 }
 
 @Composable
 fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Long, Boolean) -> String?,
     onDetach: (Long) -> Unit, onHold: (Long?) -> Unit, onZoom: (Long) -> Unit,
-    onZoomDrag: (Float) -> Unit = {}) {
+    onZoomDrag: (Float) -> Unit = {}, managing: Boolean = false, onFavorite: (Long) -> Unit = {}) {
     var holding by remember { mutableStateOf(false) }
     val active by rememberUpdatedState(enabled)
     val hold by rememberUpdatedState(onHold)
@@ -207,9 +209,14 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
                                 }) {
                                 if(images!=null) AsyncImage(image(face,false),null,imageLoader=images,
                                     modifier=Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
-                                if(person.count>1) FilledTonalIconButton(onClick={onDetach(face)},enabled=enabled && !holding,
+                                if(managing || person.count>1) FilledTonalIconButton(onClick={onDetach(face)},enabled=enabled && !holding,
                                     modifier=Modifier.align(Alignment.BottomStart).padding(4.dp).size(48.dp)
-                                        .semantics { contentDescription="Dieses Gesicht einzeln benennen" }) { Text("×",style=MaterialTheme.typography.headlineMedium) }
+                                        .semantics { contentDescription=if(managing) "Zuordnung entfernen" else "Dieses Gesicht einzeln benennen" }) { Text("×",style=MaterialTheme.typography.headlineMedium) }
+                                if(managing) FilledTonalIconButton(onClick={onFavorite(face)},enabled=enabled && !holding,
+                                    modifier=Modifier.align(Alignment.BottomEnd).padding(4.dp).size(48.dp).semantics {
+                                        contentDescription=if(face in person.favorites) "Favorisierung aufheben" else "Bild favorisieren"
+                                        stateDescription=if(face in person.favorites) "Favorisiert" else "Nicht favorisiert"
+                                    }) { Text(if(face in person.favorites) "★" else "☆",style=MaterialTheme.typography.headlineMedium) }
                             }
                             person.facePaths[face]?.takeIf {it.isNotEmpty()}?.let {
                                 Text(it,style=MaterialTheme.typography.bodySmall,
@@ -223,18 +230,18 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
     }
 }
 @Composable
-private fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Boolean) {
+internal fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Boolean) {
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) { focus.requestFocus(); keyboard?.show() }
-    AlertDialog(onDismissRequest=vm::closeNaming,title={Text(if(state.duplicates.isEmpty()) "Person benennen" else "Name bereits vorhanden")},
+    AlertDialog(onDismissRequest=vm::closeNaming,title={Text(if(state.duplicates.isNotEmpty()) "Name bereits vorhanden" else if(state.directory) "Person umbenennen" else "Person benennen")},
         properties=DialogProperties(usePlatformDefaultWidth=false),modifier=Modifier.fillMaxWidth().padding(16.dp).imePadding(),
         text={ Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(state.name,vm::nameChanged,label={Text("Name")},singleLine=true,enabled=enabled,
                 modifier=Modifier.fillMaxWidth().focusRequester(focus),keyboardOptions=KeyboardOptions(imeAction=ImeAction.Done),
                 keyboardActions=KeyboardActions(onDone={vm.submitName()}))
-            if(state.duplicates.isNotEmpty()) Text("Einer vorhandenen Person zuordnen oder separat mit demselben Namen benennen:")
-            (state.duplicates.ifEmpty { state.suggestions }).forEach { person ->
+            if(state.duplicates.isNotEmpty()) Text(if(state.directory) "Eine andere Person heißt bereits so. Separat mit demselben Namen speichern?" else "Einer vorhandenen Person zuordnen oder separat mit demselben Namen benennen:")
+            (if(state.directory) emptyList() else state.duplicates.ifEmpty { state.suggestions }).forEach { person ->
                 Surface(onClick={vm.assign(person)},enabled=enabled,shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surfaceContainer) {
                     Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                         vm.images?.let { AsyncImage(vm.image(person.faceId),null,imageLoader=it,modifier=Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))) }

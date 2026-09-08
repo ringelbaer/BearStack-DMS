@@ -12,6 +12,53 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ViewModelTest {
+    @Test fun managementPreservesQueueAndResolvesLostFavoriteResponseBeforeNextDecision() = runBlocking {
+        val api=FakeService().apply { upper=30; people[30]=Person(30,"Anna",1,1,300,listOf(300)) }
+        model(api) { vm ->
+            withContext(Dispatchers.Main) {vm.openDirectory()};idle(vm)
+            assertEquals(listOf(30L),vm.state.value.namedPeople.map {it.id})
+            withContext(Dispatchers.Main) {vm.openPerson(vm.state.value.namedPeople.single())};idle(vm)
+            api.loseResponse=true
+            withContext(Dispatchers.Main) {vm.favorite(300)};idle(vm)
+            assertTrue(vm.state.value.unresolved);assertEquals(1,api.commits)
+            withContext(Dispatchers.Main) {vm.unassign(300);vm.closeDirectory()};idle(vm)
+            assertTrue(vm.state.value.directory);assertEquals(1,api.commits)
+            withContext(Dispatchers.Main) {vm.retry()};idle(vm)
+            assertFalse(vm.state.value.unresolved);assertEquals(setOf(300L),vm.state.value.selectedPerson!!.favorites)
+            assertEquals(1,api.commits)
+            withContext(Dispatchers.Main) {vm.startNaming();vm.nameChanged("Anna Neu");vm.submitName()};idle(vm)
+            assertEquals("Anna Neu",vm.state.value.selectedPerson!!.name)
+            assertEquals("Anna Neu",vm.state.value.namedPeople.single().name)
+            assertEquals(1L,vm.state.value.person!!.id)
+            withContext(Dispatchers.Main) {vm.unassign(300)};idle(vm)
+            assertNull(vm.state.value.selectedPerson);assertTrue(vm.state.value.namedPeople.isEmpty())
+            withContext(Dispatchers.Main) {vm.closeDirectory()};idle(vm)
+            assertEquals(1L,vm.state.value.person!!.id)
+            withContext(Dispatchers.Main) {vm.skip()};idle(vm)
+            assertEquals(31L,vm.state.value.person!!.id)
+        }
+    }
+    @Test fun managementConflictRequiresFreshDecisionAndListsPastTwentyPeople() = runBlocking {
+        val api=FakeService().apply {
+            upper=50
+            for(id in 10L..50L) people[id]=Person(id,"Anna $id",1,1,id*10,listOf(id*10))
+        }
+        model(api) {vm ->
+            withContext(Dispatchers.Main) {vm.openDirectory()};idle(vm)
+            assertEquals(20,vm.state.value.namedPeople.size);assertTrue(vm.state.value.namedHasNext)
+            withContext(Dispatchers.Main) {vm.moreNamedPeople()};idle(vm)
+            withContext(Dispatchers.Main) {vm.moreNamedPeople()};idle(vm)
+            assertEquals(41,vm.state.value.namedPeople.size);assertFalse(vm.state.value.namedHasNext)
+            withContext(Dispatchers.Main) {vm.openPerson(vm.state.value.namedPeople.first())};idle(vm)
+            api.people[10]=api.people.getValue(10).copy(name="Webänderung",revision=2)
+            withContext(Dispatchers.Main) {vm.unassign(100)};idle(vm)
+            assertEquals(0,api.commits);assertFalse(vm.state.value.unresolved)
+            assertEquals("Webänderung",vm.state.value.selectedPerson!!.name)
+            assertNotNull(vm.state.value.error)
+            withContext(Dispatchers.Main) {vm.unassign(100)};idle(vm)
+            assertEquals(1,api.commits);assertNull(vm.state.value.selectedPerson)
+        }
+    }
     private suspend fun model(api: FakeService, test: suspend (PeopleViewModel) -> Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as Application
         val db=Room.inMemoryDatabaseBuilder(app,LabelingDatabase::class.java).build()

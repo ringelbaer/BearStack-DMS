@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.42.1
+  version: 0.43.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -190,6 +190,42 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/photos/labeling/v1/people:
+    get:
+      tags: [Photos]
+      operationId: getLabelingNamedPeople
+      summary: List all named people in bounded cursor pages
+      description: >-
+        Available since 0.43.0, advertised by session.named_people. Requires
+        photos.edit. Returns at most 20 nonempty named groups, ordered by ID,
+        with a representative portrait face_id and active face count. Supply
+        upper_id from a fresh session as upper and the previous next as after.
+        Newly created groups above upper appear after refreshing the list.
+        Visibility is checked in small batches; protected groups are excluded.
+        No total count or face detail arrays are loaded. Cache-Control is private, no-store.
+      parameters:
+        - name: after
+          in: query
+          schema: {type: integer, format: int64, minimum: 0, maximum: 4611686018427387904, default: 0}
+        - name: upper
+          in: query
+          required: true
+          schema: {type: integer, format: int64, minimum: 0, maximum: 4611686018427387904}
+      responses:
+        "200":
+          description: Page of named people, including next and has_next.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LabelingCandidates'}
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
   /api/photos/labeling/v1/people/{id}:
     get:
       tags: [Photos]
@@ -278,9 +314,15 @@ paths:
     post:
       tags: [Photos]
       operationId: applyLabelingAction
-      summary: Atomically change a whole group or detach one face
+      summary: Atomically label or manage a person with a durable receipt
       description: |
-        Requires photos.edit. Source must still be unnamed. JSON is limited to 16 KiB.
+        Requires photos.edit. JSON is limited to 16 KiB.
+        name, assign, detach and ignore require an unnamed source.
+        Since 0.43.0, rename, unassign and favorite require a named source
+        (advertised by session.named_people). rename changes the name without merging.
+        unassign moves one face to a new manually unnamed group and clears its
+        favorite status, even for the last face. favorite explicitly sets the
+        reference favorite for one face; it is not a toggle.
         All active faces are changed in one transaction with the receipt; there is
         no 500-face limit or client-side batching. Images are never deleted.
         operation_id is unique per account and dataset. An identical replay returns
@@ -288,7 +330,8 @@ paths:
         content under the same ID returns 409. Source and target revisions must
         match; web edits and background changes also advance revisions.
         A 409 requires a fresh read and a new explicit user decision, with a new ID.
-        name_exists allows the client to offer assignment or separate naming.
+        name_exists allows assignment or separate naming for name; for rename,
+        offer a different name or explicit allow_duplicate without merging.
         Ignore undo is a client-side delay BEFORE sending this request.
       parameters:
         - name: id
@@ -1173,9 +1216,11 @@ paths:
         returns a page of at most 60 groups. With ignored=1, returns up to 60 individual
         ignored faces in faces and an empty people array. Admin-only photos are excluded.
         Since 0.42.0, format=suggestions returns the first 60 named groups for the web
-        autocomplete, with id, name, distinct-photo count and has_next only. This mode
+        autocomplete, with id, name, distinct-photo count and has_next. Since 0.43.0,
+        each suggestion also includes face_id for the same active portrait as the people
+        overview, served by /photos/faces/{id}/thumbnail. This mode
         applies q but ignores page, known and ignored; it performs current visibility
-        and imported-name-source checks without calculating total pages or thumbnail IDs.
+        and imported-name-source checks without calculating total pages.
         Cache-Control is private, no-store.'
       parameters:
       - name: page
@@ -1972,6 +2017,7 @@ components:
       type: object
       required: [protocol, instance, dataset, account, upper_id, can_manage]
       properties:
+        named_people: {type: boolean, const: true, description: "Named people list and rename/unassign/favorite receipt actions available since 0.43.0. Older servers omit this field."}
         face_favorites: {type: boolean, const: true, description: "Favorite API available since 0.40.0. Older servers omit this field."}
         protocol: {type: integer, const: 1}
         instance: {type: string, description: Stable identity of this photo database.}
@@ -2044,23 +2090,24 @@ components:
         operation_id: {type: string, minLength: 16, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$'}
         dataset: {type: string}
         revision: {type: integer, format: int64, minimum: 1}
-        action: {type: string, enum: [name, assign, detach, ignore]}
-        name: {type: string, maxLength: 200, description: Required and nonempty for name; whitespace normalized.}
+        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite]}
+        name: {type: string, maxLength: 200, description: Required and nonempty for name or rename; whitespace normalized.}
         allow_duplicate: {type: boolean, default: false, description: Explicitly allow a separate group with the same name.}
         target_id: {type: integer, format: int64, description: Named target for assign.}
         target_revision: {type: integer, format: int64, description: Expected target revision for assign.}
-        face_id: {type: integer, format: int64, description: One source face for detach; source must contain at least two faces.}
+        face_id: {type: integer, format: int64, description: One active source face for detach/unassign/favorite; only detach requires at least two faces.}
+        favorite: {type: boolean, description: Required explicit desired state for the favorite action.}
     LabelingReceipt:
       type: object
       required: [operation_id, action, source_id, target_id, new_id, faces, groups, at]
       properties:
         operation_id: {type: string}
-        action: {type: string, enum: [name, assign, detach, ignore]}
+        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite]}
         source_id: {type: integer, format: int64}
         target_id: {type: integer, format: int64, description: Assignment target or zero.}
-        new_id: {type: integer, format: int64, description: New detached group or zero.}
+        new_id: {type: integer, format: int64, description: New unnamed group for detach/unassign or zero.}
         faces: {type: integer, format: int64, minimum: 1, description: Actually affected active face count.}
-        groups: {type: integer, enum: [0, 1], description: Zero for detach; one for name/assign/ignore.}
+        groups: {type: integer, enum: [0, 1], description: Zero for detach/rename/unassign/favorite; one for name/assign/ignore.}
         at: {type: integer, format: int64, description: Server confirmation time in Unix seconds.}
 
     Error:
@@ -2691,7 +2738,7 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [id, name, count]
+            required: [id, name, count, face_id]
             properties:
               id:
                 type: integer
@@ -2704,6 +2751,11 @@ components:
                 type: integer
                 minimum: 1
                 description: Distinct visible photos with active faces in this group.
+              face_id:
+                type: integer
+                format: int64
+                minimum: 1
+                description: Since 0.43.0, representative active face matching the people overview; load /photos/faces/{id}/thumbnail for its portrait. Visibility is checked again on image access.
         has_next:
           type: boolean
           description: More named groups match; narrow q to find them. No total count is calculated.

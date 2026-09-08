@@ -476,6 +476,15 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.locator("[data-people-edit-button]").click();
   await dialogName.fill("Merge-Ziel");
   await expect(personDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" })).toHaveCount(1);
+  const suggestedPortrait = personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ }).locator("img");
+  await expect(suggestedPortrait).toHaveAttribute("src", await page.locator('.person-overview-card[data-person-name="Merge-Ziel"] .person-card img').getAttribute("src"));
+  await expect.poll(() => suggestedPortrait.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  // A failed image keeps the row and its keyboard selection usable.
+  await page.route("**/photos/faces/*/thumbnail", route => route.fulfill({ status: 404, body: "unavailable" }));
+  await dialogName.fill("Merge-Zie");
+  await expect(suggestedPortrait).toHaveCSS("visibility", "hidden");
+  await expect(personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ })).toBeVisible();
+  await page.unroute("**/photos/faces/*/thumbnail");
   await dialogName.press("ArrowDown");
   await page.screenshot({ path: "/tmp/bearstack-people-modal-mobile.png", fullPage: true });
   expect(await personDialog.evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth + 1)).toBe(true);

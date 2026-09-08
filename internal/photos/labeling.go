@@ -18,6 +18,7 @@ var ErrLabelInvalid = errors.New("ungültige Benennungsaktion")
 var ErrLabelNameExists = errors.New("Name bereits vorhanden")
 
 type LabelSession struct {
+	NamedPeople   bool   `json:"named_people"`
 	FaceFavorites bool   `json:"face_favorites"`
 	Protocol      int    `json:"protocol"`
 	Instance      string `json:"instance"`
@@ -53,6 +54,7 @@ type LabelCandidates struct {
 	HasNext bool          `json:"has_next"`
 }
 type LabelAction struct {
+	Favorite       *bool  `json:"favorite,omitempty"`
 	OperationID    string `json:"operation_id"`
 	Dataset        string `json:"dataset"`
 	Revision       int64  `json:"revision"`
@@ -79,7 +81,7 @@ const labelFrom = ` FROM photo_people p JOIN photo_person_revisions r ON r.perso
 const labelExists = ` EXISTS(SELECT 1 FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0) `
 
 func (l *Library) LabelSession(ctx context.Context) (LabelSession, error) {
-	out := LabelSession{Protocol: 1, FaceFavorites: true}
+	out := LabelSession{Protocol: 1, FaceFavorites: true, NamedPeople: true}
 	err := l.index.db.QueryRowContext(ctx, `SELECT instance,dataset,(SELECT coalesce(max(id),0) FROM photo_people) FROM photo_labeling_identity WHERE id=1`).Scan(&out.Instance, &out.Dataset, &out.UpperID)
 	return out, err
 }
@@ -189,7 +191,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		return out, ErrLabelInvalid
 	}
 	switch a.Action {
-	case "name", "assign", "detach", "ignore":
+	case "name", "assign", "detach", "ignore", "rename", "unassign", "favorite":
 	default:
 		return out, ErrLabelInvalid
 	}
@@ -197,7 +199,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	if err != nil {
 		return out, ErrLabelInvalid
 	}
-	if a.Action == "name" && name == "" {
+	if (a.Action == "name" || a.Action == "rename") && name == "" || a.Action == "favorite" && a.Favorite == nil {
 		return out, ErrLabelInvalid
 	}
 	encoded, _ := json.Marshal(struct {
@@ -208,7 +210,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	fingerprint := hex.EncodeToString(sum[:])
 	visibilityFilter := `p.id IN (?,?)`
 	visibilityArgs := []any{id, a.TargetID}
-	if a.Action == "name" && !a.AllowDuplicate {
+	if (a.Action == "name" || a.Action == "rename") && !a.AllowDuplicate {
 		visibilityFilter += ` OR p.name=?`
 		visibilityArgs = append(visibilityArgs, name)
 	}
@@ -254,12 +256,19 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	if err != nil {
 		return out, err
 	}
-	if source.Revision != a.Revision || source.Name != "" {
+	managing := a.Action == "rename" || a.Action == "unassign" || a.Action == "favorite"
+	if source.Revision != a.Revision || (source.Name != "") != managing {
 		return out, ErrLabelConflict
+	}
+	var baseRevision int64
+	if managing {
+		if err = tx.QueryRowContext(ctx, `SELECT revision FROM photo_face_state WHERE id=1`).Scan(&baseRevision); err != nil {
+			return out, err
+		}
 	}
 	out = LabelReceipt{OperationID: a.OperationID, Action: a.Action, SourceID: id, Faces: source.Count, Groups: 1, At: time.Now().Unix()}
 	switch a.Action {
-	case "name":
+	case "name", "rename":
 		if !a.AllowDuplicate {
 			var exists bool
 			err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM photo_people p WHERE p.name=? AND p.id<>? AND `+labelExists+`)`, name, id).Scan(&exists)
@@ -271,6 +280,9 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 			}
 		}
 		_, err = tx.ExecContext(ctx, `UPDATE photo_people SET name=?,name_fold=?,manual_name=1,name_source='' WHERE id=?`, name, searchtext.GermanFold(name), id)
+		if a.Action == "rename" {
+			out.Groups = 0
+		}
 	case "assign":
 		target, e := scanLabel(tx.QueryRowContext(ctx, `SELECT `+labelColumns+labelFrom+` WHERE p.id=? AND `+labelExists, a.TargetID))
 		if errors.Is(e, sql.ErrNoRows) {
@@ -286,8 +298,8 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		out.TargetID = a.TargetID
 	case "ignore":
 		_, err = tx.ExecContext(ctx, `UPDATE photo_faces SET ignored=1,manual=1 WHERE person_id=? AND ignored=0`, id)
-	case "detach":
-		if source.Count < 2 {
+	case "detach", "unassign", "favorite":
+		if a.Action == "detach" && source.Count < 2 {
 			return out, ErrLabelConflict
 		}
 		var belongs bool
@@ -296,6 +308,12 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		}
 		if !belongs {
 			return out, ErrLabelConflict
+		}
+		out.Faces = 1
+		out.Groups = 0
+		if a.Action == "favorite" {
+			_, err = tx.ExecContext(ctx, `UPDATE photo_faces SET favorite=? WHERE id=?`, *a.Favorite, a.FaceID)
+			break
 		}
 		result, e := tx.ExecContext(ctx, `INSERT INTO photo_people(name,name_fold,manual_name) VALUES('','',1)`)
 		if e != nil {
@@ -306,20 +324,23 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 			return out, err
 		}
 		_, err = tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=?,manual=1 WHERE id=?`, out.NewID, a.FaceID)
+		if err == nil && a.Action == "unassign" {
+			_, err = tx.ExecContext(ctx, `UPDATE photo_faces SET favorite=0 WHERE id=?`, a.FaceID)
+		}
 		out.Faces = 1
 		out.Groups = 0
 	}
 	if err != nil {
 		return out, err
 	}
+	affected := map[int64]bool{}
 	for _, pid := range []int64{id, out.TargetID, out.NewID} {
 		if pid > 0 {
-			if err = refreshFaceReferencesTx(ctx, tx, pid); err != nil {
-				return out, err
-			}
+			affected[pid] = true
 		}
 	}
-	if _, err = tx.ExecContext(ctx, `UPDATE photo_face_state SET revision=revision+1 WHERE id=1`); err != nil {
+	committedRevision, err := refreshFaceMutationTx(ctx, tx, affected)
+	if err != nil {
 		return out, err
 	}
 	encoded, err = json.Marshal(out)
@@ -332,7 +353,11 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	if err = tx.Commit(); err != nil {
 		return out, err
 	}
-	l.faceRuntime.graph = nil
+	if managing {
+		l.syncFaceMutation(ctx, affected, baseRevision, committedRevision)
+	} else {
+		l.faceRuntime.graph = nil
+	}
 	return out, nil
 }
 func LabelActor(source, subject, username string, accountID int64) string {

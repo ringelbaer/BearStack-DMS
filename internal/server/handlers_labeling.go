@@ -58,6 +58,14 @@ func (s *Server) handleLabelSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleLabelCandidates(w http.ResponseWriter, r *http.Request) {
+	s.handleLabelList(w, r, false)
+}
+
+func (s *Server) handleLabelNamedPeople(w http.ResponseWriter, r *http.Request) {
+	s.handleLabelList(w, r, true)
+}
+
+func (s *Server) handleLabelList(w http.ResponseWriter, r *http.Request, named bool) {
 	w.Header().Set("Cache-Control", "private, no-store")
 	if !r.URL.Query().Has("upper") || r.URL.Query().Get("upper") == "" {
 		s.labelError(w, r, photos.ErrLabelInvalid)
@@ -73,7 +81,12 @@ func (s *Server) handleLabelCandidates(w http.ResponseWriter, r *http.Request) {
 		s.labelError(w, r, err)
 		return
 	}
-	out, err := s.photos.LabelCandidates(r.Context(), after, upper)
+	var out photos.LabelCandidates
+	if named {
+		out, err = s.photos.LabelNamedPeople(r.Context(), after, upper)
+	} else {
+		out, err = s.photos.LabelCandidates(r.Context(), after, upper)
+	}
 	if err != nil {
 		s.labelError(w, r, err)
 		return

@@ -14,7 +14,7 @@ import java.io.IOException
 
 internal class FakeService : LabelingService {
     var upper=2L
-    val session get() = Session("instance","dataset","account",upper)
+    val session get() = Session("instance","dataset","account",upper,namedPeople=true)
     var actionDelay=0L
     val people = mutableMapOf(1L to Person(1,"",1,5,10,listOf(10,11,12,13)),2L to Person(2,"",1,1,20,listOf(20)))
     val receipts = mutableMapOf<String,Receipt>()
@@ -23,6 +23,10 @@ internal class FakeService : LabelingService {
     var failPerson: Long? = null
     override suspend fun session() = session
     override suspend fun candidates(after: Long,upper: Long) = Candidates(people.values.filter { it.id>after && it.id<=upper && it.name.isEmpty() },upper,false)
+    override suspend fun namedPeople(after: Long,upper: Long): Candidates {
+        val page=people.values.filter {it.id>after && it.id<=upper && it.name.isNotEmpty()}.sortedBy {it.id}.take(21)
+        return Candidates(page.take(20),page.take(20).lastOrNull()?.id ?: after,page.size>20)
+    }
     override suspend fun person(id: Long,offset: Int): Person {
         if (failPerson == id) throw IOException("next group unavailable")
         val person=people[id] ?: throw ApiFailure(404,"not_found","gone")
@@ -44,6 +48,23 @@ internal class FakeService : LabelingService {
         val p=people[id] ?: throw ApiFailure(409,"conflict","gone")
         if(p.revision!=request.getLong("revision")) throw ApiFailure(409,"conflict","stale")
         val action=request.getString("action")
+        if(action in listOf("rename","favorite","unassign")) {
+            val face=request.optLong("face_id")
+            val newId=if(action=="unassign") (people.keys.maxOrNull() ?: 0)+1 else 0L
+            when(action) {
+                "rename" -> people[id]=p.copy(name=request.getString("name"),revision=p.revision+1)
+                "favorite" -> people[id]=p.copy(favorites=if(request.getBoolean("favorite")) p.favorites+face else p.favorites-face,revision=p.revision+1)
+                "unassign" -> {
+                    people[newId]=Person(newId,"",1,1,face,listOf(face))
+                    if(p.count==1L) people.remove(id)
+                    else people[id]=p.copy(count=p.count-1,revision=p.revision+1,faces=p.faces.filterNot {it==face},favorites=p.favorites-face)
+                }
+            }
+            val receipt=Receipt(op,action,id,0,newId,if(action=="rename")p.count else 1,0,100)
+            commits++;receipts[op]=receipt
+            if(loseResponse) {loseResponse=false;throw IOException("response lost after commit")}
+            return receipt
+        }
         val receipt=Receipt(op,action,id,0,if(action=="detach") 3 else 0,if(action=="detach")1 else p.count,if(action=="detach")0 else 1,100)
         if(action=="detach") {
             people[3]=Person(3,"",1,1,request.getLong("face_id"),listOf(request.getLong("face_id")))

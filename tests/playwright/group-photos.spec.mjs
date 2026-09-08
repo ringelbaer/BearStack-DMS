@@ -43,7 +43,36 @@ test.afterAll(async ({}, testInfo) => {
   if (root) await rm(root, { recursive: true, force: true });
 });
 
-test("group photos: hover, whole-group naming, ignore, skip and retry", async ({ browser }) => {
+async function expectZoom(page, card) {
+  await expect(card.locator("[data-group-highlight]")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-group-highlight][aria-pressed="true"]')).toHaveCount(1);
+  await expect.poll(async () => card.evaluate(card => {
+    const image = document.querySelector("[data-group-image]");
+    const stage = document.querySelector("[data-group-stage]").getBoundingClientRect();
+    const rect = image.getBoundingClientRect(), box = document.querySelector("[data-group-box]").getBoundingClientRect();
+    const factor = Math.min(rect.width / image.naturalWidth, rect.height / image.naturalHeight);
+    const w = factor * image.naturalWidth, h = factor * image.naturalHeight;
+    const left = rect.left + (rect.width - w) / 2, top = rect.top + (rect.height - h) / 2;
+    const baseFactor = Math.min(stage.width / image.naturalWidth, stage.height / image.naturalHeight);
+    return Math.max(
+      Math.abs(box.left - (left + Number(card.dataset.x) * w)),
+      Math.abs(box.top - (top + Number(card.dataset.y) * h)),
+      Math.abs(box.width - Number(card.dataset.width) * w),
+      Math.abs(box.height - Number(card.dataset.height) * h),
+      // One dimension of the doubled bounding box fills the stage.
+      Math.min(Math.abs(2 * box.width - stage.width), Math.abs(2 * box.height - stage.height)),
+      stage.left - box.left, box.right - stage.right, stage.top - box.top, box.bottom - stage.bottom,
+      // Keep image edges inside the frame only when the whole dimension fits.
+      w >= stage.width ? left - stage.left : Math.abs(left + w / 2 - (stage.left + stage.width / 2)),
+      h >= stage.height ? top - stage.top : Math.abs(top + h / 2 - (stage.top + stage.height / 2)),
+      w >= stage.width ? stage.right - (left + w) : 0,
+      h >= stage.height ? stage.bottom - (top + h) : 0,
+      factor > baseFactor ? 0 : 1000
+    );
+  })).toBeLessThanOrEqual(1.5);
+}
+
+test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", async ({ browser }) => {
   test.setTimeout(60_000);
   const context = await browser.newContext({ httpCredentials: { username: "manager", password: "secret" } });
   const page = await context.newPage();
@@ -64,6 +93,8 @@ test("group photos: hover, whole-group naming, ignore, skip and retry", async ({
   await expect(threshold).toHaveValue("5");
   await expect(surface).toHaveAttribute("data-path", "b.png"); await expect(cards).toHaveCount(6);
   await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  const zoomRequests = [];
+  page.on("request", request => { if (request.url().includes("/photos/people/groups")) zoomRequests.push(request.url()); });
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await cards.first().locator("[data-group-highlight]").hover();
@@ -89,26 +120,99 @@ test("group photos: hover, whole-group naming, ignore, skip and retry", async ({
     if (width > 900) expect(result.gridLeft).toBeGreaterThan(result.photoRight);
     else expect(result.gridTop).toBeGreaterThan(result.photoBottom);
     await page.screenshot({ path: `/tmp/bearstack-group-photos-${width}.png`, fullPage: true });
+    const preview = cards.first().locator("[data-group-highlight]");
+    await preview.click();
+    await expectZoom(page, cards.first());
+    await cards.nth(3).locator("[data-group-highlight]").hover();
+    await expectZoom(page, cards.first());
+    await cards.nth(3).locator("[data-group-highlight]").click();
+    await expectZoom(page, cards.nth(3));
+    await expect(preview).toHaveAttribute("aria-pressed", "false");
+    await cards.nth(3).locator("[data-group-highlight]").click();
+    await expect(image).toHaveCSS("transform", "none");
+    await expect(page.locator('[data-group-highlight][aria-pressed="true"]')).toHaveCount(0);
   }
+  expect(zoomRequests).toEqual([]);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.mouse.move(4, 4);
   await cards.nth(1).locator("[data-group-highlight]").focus();
   await expect(box).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expectZoom(page, cards.nth(1));
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expectZoom(page, cards.nth(1));
+  await page.keyboard.press("Space");
+  await expect(image).toHaveCSS("transform", "none");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  // Natural dimensions already include the decoded photo's orientation.
+  const originalSource = await image.getAttribute("src");
+  for (const [width, height] of [[800, 400], [400, 800]]) {
+    await image.evaluate((img, dimensions) => { img.src = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${dimensions[0]}" height="${dimensions[1]}"><rect width="100%" height="100%" fill="gray"/></svg>`); }, [width, height]);
+    await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth)).toBe(width);
+    await cards.first().locator("[data-group-highlight]").click();
+    await expectZoom(page, cards.first());
+    await page.setViewportSize({ width: 320, height: 900 });
+    await expectZoom(page, cards.first());
+    await cards.first().locator("[data-group-highlight]").click();
+    await expect(image).toHaveCSS("transform", "none");
+    await page.setViewportSize({ width: 1440, height: 900 });
+  }
+  await image.evaluate((img, src) => { img.src = src; }, originalSource);
+  await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0 && img.naturalWidth === img.naturalHeight)).toBe(true);
+  // Small faces amplify layout rounding errors, especially at fractional grid widths.
+  const originalBounds = await cards.first().evaluate(card => ({ x: card.dataset.x, y: card.dataset.y, width: card.dataset.width, height: card.dataset.height }));
+  await cards.first().evaluate(card => { Object.assign(card.dataset, { x: ".4", y: ".4", width: ".005", height: ".007" }); });
+  await page.setViewportSize({ width: 1437, height: 900 });
+  await cards.first().locator("[data-group-highlight]").click();
+  await expectZoom(page, cards.first());
+  await cards.first().locator("[data-group-highlight]").click();
+  await cards.first().evaluate((card, bounds) => { Object.assign(card.dataset, bounds); }, originalBounds);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  // Invalid and entirely out-of-photo regions cannot activate a zoom.
+  const originalX = await cards.first().getAttribute("data-x");
+  for (const x of ["NaN", "2"]) {
+    await cards.first().evaluate((card, value) => { card.dataset.x = value; }, x);
+    await cards.first().locator("[data-group-highlight]").click();
+    await expect(image).toHaveCSS("transform", "none");
+    await expect(cards.first().locator("[data-group-highlight]")).toHaveAttribute("aria-pressed", "false");
+  }
+  await cards.first().evaluate((card, value) => { card.dataset.x = value; }, originalX);
+  await cards.first().locator("[data-group-highlight]").click();
+  await expectZoom(page, cards.first());
   await page.evaluate(() => { window.groupOriginal = document.querySelector("[data-group-image]"); window.groupThumb = document.querySelector("[data-group-face] img"); });
   const modal = page.locator("[data-person-dialog]");
   await cards.first().locator("[data-person-edit]").click();
   await modal.getByRole("combobox", { name: "Name", exact: true }).fill("Ada");
+  await expect(modal.getByRole("option", { name: /Neu anlegen:.*Ada/ }).locator("img")).toHaveCount(0);
   await modal.getByRole("option", { name: /Neu anlegen:.*Ada/ }).click();
   await expect(modal).not.toBeVisible();
   await expect(surface).toHaveAttribute("data-path", "b.png");
   await expect(page.locator("[data-group-count]")).toContainText("5 unbearbeitete");
   await expect(cards.first().locator("[data-person-edit]")).toHaveCount(0);
+  await expectZoom(page, cards.first());
+  await expect(cards.first().locator("[data-group-highlight]")).toHaveAccessibleName("Gesicht im Foto vergrößern: Ada");
   expect(await page.evaluate(() => window.groupOriginal === document.querySelector("[data-group-image]") && window.groupThumb === document.querySelector("[data-group-face] img"))).toBe(true);
   const other = await (await context.request.get(baseURL + "/photos/people/groups?format=json&path=d.png")).json();
   expect(other.photo.faces[0].name).toBe("Ada");
   await cards.nth(1).locator("[data-person-edit]").click();
   await modal.getByRole("combobox", { name: "Name", exact: true }).fill("Ada");
-  await modal.getByRole("option", { name: /^Ada \(#/ }).click();
+  const adaOption = modal.getByRole("option", { name: /^Ada \(#/ });
+  const adaThumbnail = adaOption.locator("img");
+  await expect(adaThumbnail).toHaveAttribute("src", await cards.first().locator("[data-group-highlight] img").getAttribute("src"));
+  await expect(adaThumbnail).toHaveAttribute("alt", "");
+  await expect(adaThumbnail).toHaveAttribute("loading", "lazy");
+  await expect.poll(() => adaThumbnail.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await adaThumbnail.evaluate(img => {
+      const rect = img.getBoundingClientRect(), option = img.closest('[role="option"]').getBoundingClientRect();
+      return Math.abs(rect.width - 40) < 1 && Math.abs(rect.height - 40) < 1 && rect.left >= option.left && rect.right <= option.right;
+    })).toBe(true);
+    expect(await modal.evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth + 1)).toBe(true);
+  }
+  await page.screenshot({ path: "/tmp/bearstack-group-person-thumbnail.png", fullPage: true });
+  // Clicking the image chooses the same person as clicking the name.
+  await adaThumbnail.click();
   await expect(modal).not.toBeVisible();
   await expect(page.locator("[data-group-count]")).toContainText("4 unbearbeitete");
   await page.route("**/photos/people/groups/ignore", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Speichern fehlgeschlagen" }) }));
@@ -128,13 +232,19 @@ test("group photos: hover, whole-group naming, ignore, skip and retry", async ({
   await page.unroute("**/photos/people/groups?*", blockNext);
   await page.getByRole("button", { name: "Ansicht erneut laden" }).click();
   await expect(surface).toHaveAttribute("data-path", "c.png");
+  await expect(image).toHaveCSS("transform", "none");
+  await expect(page.locator('[data-group-highlight][aria-pressed="true"]')).toHaveCount(0);
   const b = await (await context.request.get(baseURL + "/photos/people/groups?format=json&path=b.png")).json();
   expect(b.photo.faces.filter(face => face.ignored)).toHaveLength(4);
   expect(b.photo.faces.filter(face => face.name === "Ada" && !face.ignored)).toHaveLength(2);
   const d = await (await context.request.get(baseURL + "/photos/people/groups?format=json&path=d.png")).json();
   expect(d.photo.faces.filter(face => face.ignored)).toHaveLength(0);
+  await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  await cards.first().locator("[data-group-highlight]").click();
+  await expectZoom(page, cards.first());
   await page.getByRole("link", { name: "Überspringen / nächstes Foto" }).click();
   await expect(page.locator("[data-group-empty]")).toBeVisible();
+  await expect(image).toHaveCSS("transform", "none");
   await page.getByRole("button", { name: "Durchlauf starten" }).click();
   await expect(surface).toHaveAttribute("data-path", "c.png");
   const c = await (await context.request.get(baseURL + "/photos/people/groups?format=json&path=c.png")).json();
@@ -150,6 +260,9 @@ test("group photos: hover, whole-group naming, ignore, skip and retry", async ({
   await page.route("**/photos/people/groups/image/*", route => route.fulfill({ status: 503, body: "preview unavailable" }));
   await page.reload();
   await expect(page.locator("[data-people-status]")).toContainText("Das Foto konnte nicht geladen werden");
+  await cards.first().locator("[data-group-highlight]").click();
+  await expect(image).toHaveCSS("transform", "none");
+  await expect(cards.first().locator("[data-group-highlight]")).toHaveAttribute("aria-pressed", "false");
   await page.unroute("**/photos/people/groups/image/*");
   await page.getByRole("button", { name: "Ansicht erneut laden" }).click();
   await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);

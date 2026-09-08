@@ -17,7 +17,7 @@
   var currentPath = surface.dataset.path || "";
   var remaining = grid.querySelectorAll('[data-person-name=""][data-ignored="false"]').length;
   var busy = false, navigationPending = false, request = 0, controller, retryParams;
-  var hovered, focused;
+  var hovered, focused, zoomed;
   var storageKey = "bearstack.people.groupMinimum:" + surface.dataset.groupUser;
 
   function setBusy(value) {
@@ -30,25 +30,61 @@
     retry.disabled = value;
   }
 
-  function highlight() {
-    var card = hovered || focused;
-    box.hidden = true;
-    if (!card || !card.isConnected || !image.complete || !image.naturalWidth || !image.naturalHeight) return;
+  function faceBounds(card) {
+    if (!card || !card.isConnected) return null;
     var x = Number(card.dataset.x), y = Number(card.dataset.y);
     var width = Number(card.dataset.width), height = Number(card.dataset.height);
-    if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return;
+    if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return null;
     var left = Math.max(0, Math.min(1, x)), top = Math.max(0, Math.min(1, y));
     var right = Math.max(left, Math.min(1, x + width)), bottom = Math.max(top, Math.min(1, y + height));
-    if (right === left || bottom === top) return;
-    var photo = image.getBoundingClientRect(), frame = stage.getBoundingClientRect();
-    var scale = Math.min(photo.width / image.naturalWidth, photo.height / image.naturalHeight);
+    if (right === left || bottom === top) return null;
+    return { left: left, top: top, width: right - left, height: bottom - top };
+  }
+
+  function setZoom(card) {
+    if (zoomed) zoomed.querySelector("[data-group-highlight]").setAttribute("aria-pressed", "false");
+    zoomed = card;
+    if (zoomed) zoomed.querySelector("[data-group-highlight]").setAttribute("aria-pressed", "true");
+  }
+
+  function highlight() {
+    box.hidden = true;
+    if (zoomed && !faceBounds(zoomed)) setZoom(null);
+    if (!image.complete || !image.naturalWidth || !image.naturalHeight) { image.style.transform = ""; return; }
+    var frame = stage.getBoundingClientRect();
+    var frameWidth = frame.width, frameHeight = frame.height;
+    if (!frameWidth || !frameHeight) { image.style.transform = ""; return; }
+    var scale = Math.min(frameWidth / image.naturalWidth, frameHeight / image.naturalHeight);
     var displayWidth = image.naturalWidth * scale, displayHeight = image.naturalHeight * scale;
-    box.style.left = (photo.left - frame.left + (photo.width - displayWidth) / 2 + left * displayWidth) + "px";
-    box.style.top = (photo.top - frame.top + (photo.height - displayHeight) / 2 + top * displayHeight) + "px";
-    box.style.width = ((right - left) * displayWidth) + "px";
-    box.style.height = ((bottom - top) * displayHeight) + "px";
+    var baseLeft = (frameWidth - displayWidth) / 2, baseTop = (frameHeight - displayHeight) / 2;
+    var left = baseLeft, top = baseTop;
+    var region = faceBounds(zoomed);
+    if (region) {
+      // Fit a region twice the face's width and height; retain context at photo edges.
+      var zoom = Math.max(1, Math.min(frameWidth / (2 * region.width * displayWidth), frameHeight / (2 * region.height * displayHeight)));
+      displayWidth *= zoom; displayHeight *= zoom;
+      left = frameWidth / 2 - (region.left + region.width / 2) * displayWidth;
+      top = frameHeight / 2 - (region.top + region.height / 2) * displayHeight;
+      left = displayWidth <= frameWidth ? (frameWidth - displayWidth) / 2 : Math.max(frameWidth - displayWidth, Math.min(0, left));
+      top = displayHeight <= frameHeight ? (frameHeight - displayHeight) / 2 : Math.max(frameHeight - displayHeight, Math.min(0, top));
+      image.style.transform = "translate(" + (left - baseLeft * zoom) + "px, " + (top - baseTop * zoom) + "px) scale(" + zoom + ")";
+    } else image.style.transform = "";
+    region = region || faceBounds(hovered || focused);
+    if (!region) return;
+    box.style.left = (left + region.left * displayWidth) + "px";
+    box.style.top = (top + region.top * displayHeight) + "px";
+    box.style.width = (region.width * displayWidth) + "px";
+    box.style.height = (region.height * displayHeight) + "px";
     box.hidden = false;
   }
+  grid.addEventListener("click", function (event) {
+    var preview = event.target.closest("[data-group-highlight]");
+    if (!preview || busy || navigationPending || !image.complete || !image.naturalWidth) return;
+    var card = preview.closest("[data-group-face]");
+    if (!faceBounds(card)) return;
+    setZoom(zoomed === card ? null : card);
+    highlight();
+  });
   grid.addEventListener("pointerover", function (event) { hovered = event.target.closest("[data-group-face]"); highlight(); });
   grid.addEventListener("pointerleave", function () { hovered = null; highlight(); });
   grid.addEventListener("focusin", function (event) { focused = event.target.closest("[data-group-face]"); highlight(); });
@@ -56,6 +92,7 @@
   image.addEventListener("load", highlight);
   function imageFailed() {
     if (!currentPath) return;
+    setZoom(null); image.style.transform = "";
     box.hidden = true;
     status.textContent = "Das Foto konnte nicht geladen werden. Du kannst die Ansicht erneut laden oder das Foto überspringen.";
     retryParams = { path: currentPath }; retry.hidden = false;
@@ -81,7 +118,8 @@
       preview.append(img); card.append(preview);
     }
     var name = face.name || (face.ignored ? "Ignoriert" : "Unbenannt");
-    preview.setAttribute("aria-label", "Gesicht im Foto markieren: " + name);
+    preview.setAttribute("aria-label", "Gesicht im Foto vergrößern: " + name);
+    preview.setAttribute("aria-pressed", String(card === zoomed));
     var title = card.querySelector("[data-group-name]");
     if (!title) { title = document.createElement("strong"); title.dataset.groupName = ""; card.append(title); }
     title.textContent = name;
@@ -122,7 +160,7 @@
     if (photo) photo.faces.forEach(function (face) { cards.append(faceCard(face, old.get(String(face.id)))); old.delete(String(face.id)); });
     old.forEach(function (card) { card.remove(); });
     grid.append(cards);
-    if (changedPhoto) { hovered = null; focused = null; box.hidden = true; }
+    if (changedPhoto) { hovered = null; focused = null; setZoom(null); image.style.transform = ""; box.hidden = true; }
     if (photo && photo.image_face_id) {
       var source = "/photos/people/groups/image/" + encodeURIComponent(photo.image_face_id);
       if (image.getAttribute("src") !== source || (image.complete && !image.naturalWidth)) image.src = source;

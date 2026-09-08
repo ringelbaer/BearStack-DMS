@@ -199,8 +199,20 @@
           option.dataset.personOption = String(index);
           option.setAttribute("role", "option");
           option.setAttribute("aria-selected", "false");
-          option.textContent = person.create ? "Neu anlegen: „" + person.name + "“" : (person.name || "Unbenannt") + " (#" + person.id + ", " +
+          var label = document.createElement("span");
+          label.textContent = person.create ? "Neu anlegen: „" + person.name + "“" : (person.name || "Unbenannt") + " (#" + person.id + ", " +
             person.count + (person.count === 1 ? " Foto)" : " Fotos)");
+          if (form.hasAttribute("data-person-modal") && !person.create && Number.isSafeInteger(person.face_id) && person.face_id > 0) {
+            var thumbnail = document.createElement("img");
+            thumbnail.className = "person-picker-thumbnail";
+            thumbnail.width = 40; thumbnail.height = 40;
+            thumbnail.alt = ""; thumbnail.loading = "lazy"; thumbnail.decoding = "async";
+            // A missing preview must not hide or disable the person's name.
+            thumbnail.addEventListener("error", function () { this.style.visibility = "hidden"; }, { once: true });
+            thumbnail.src = "/photos/faces/" + encodeURIComponent(person.face_id) + "/thumbnail";
+            option.append(thumbnail);
+          }
+          option.append(label);
           options.append(option);
         });
         list.replaceChildren(options);

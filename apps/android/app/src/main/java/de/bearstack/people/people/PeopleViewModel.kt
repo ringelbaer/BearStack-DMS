@@ -25,6 +25,9 @@ data class PeopleState(
     val naming: Boolean = false, val name: String = "", val suggestions: List<Person> = emptyList(),
     val duplicates: List<Person> = emptyList(), val undoIgnores: List<Long> = emptyList(), val unresolved: Boolean = false,
     val stats: List<Statistics> = emptyList(), val skipped: Int = 0, val canGoBack: Boolean = false,
+    val directory: Boolean = false, val namedPeople: List<Person> = emptyList(),
+    val namedCursor: Long = 0, val namedUpper: Long = 0, val namedHasNext: Boolean = false,
+    val selectedPerson: Person? = null,
 )
 class PeopleViewModel private constructor(application: Application, private val db: LabelingDatabase,
     initialRepository: PeopleRepository?) : AndroidViewModel(application) {
@@ -68,7 +71,7 @@ class PeopleViewModel private constructor(application: Application, private val 
                 if (e is ApiFailure && e.status == 409) {
                     if (e.code == "name_exists") {
                         runCatching { repository?.api?.suggestions(state.value.name, true) }.getOrNull()?.let { names ->
-                            update { it.copy(naming=true,duplicates=names) }
+                            update { it.copy(naming=true,duplicates=names.filterNot { p -> it.directory && p.id==it.selectedPerson?.id }) }
                         }
                     } else {
                         // A changed source or target always requires a new explicit decision.
@@ -77,7 +80,7 @@ class PeopleViewModel private constructor(application: Application, private val 
                             val repo = repository ?: return@runCatching
                             if (repo.api.session().scope != repo.scope) {
                                 clearConnection(); update { it.copy(error="Der Datenbestand wurde geändert. Bitte neu verbinden.") }
-                            } else loadNext()
+                            } else if(state.value.directory) refreshSelectedPerson() else loadNext()
                         }
                     }
                 }
@@ -175,6 +178,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     private var searchPreload: Job? = null
     fun image(face: Long, large: Boolean = false) = api?.image(face,large)
     fun original(face: Long) = api?.original(face)
+    fun gallery(name: String) = api?.gallery(name)
     private fun editable() = state.value.connected && !state.value.busy && !state.value.unresolved
     fun page(delta: Int) { if (editable()) task {
         val old = state.value.person ?: return@task
@@ -183,13 +187,13 @@ class PeopleViewModel private constructor(application: Application, private val 
         update { it.copy(person=p) }; preload(p)
         if (p.revision != old.revision || p.name.isNotEmpty()) { loadNext(); update { it.copy(error="Die Gruppe wurde geändert. Bitte erneut prüfen.") } }
     } }
-    fun startNaming() { if(editable()) update { it.copy(naming=true,name="",suggestions=emptyList(),duplicates=emptyList()) } }
+    fun startNaming() { if(editable()) update { it.copy(naming=true,name=if(it.directory) it.selectedPerson?.name.orEmpty() else "",suggestions=emptyList(),duplicates=emptyList()) } }
     fun closeNaming() { if(editable()) { search?.cancel(); update { it.copy(naming=false,duplicates=emptyList()) } } }
     fun nameChanged(name: String) {
         if (!editable()) return
         update { it.copy(name=name,suggestions=emptyList(),duplicates=emptyList()) }
         search?.cancel()
-        if (name.isBlank()) return
+        if (name.isBlank() || state.value.directory) return
         search = viewModelScope.launch {
             delay(250)
             try {
@@ -203,12 +207,70 @@ class PeopleViewModel private constructor(application: Application, private val 
         search?.cancel()
         if (!allowDuplicate) {
             val duplicates = repository!!.api.suggestions(state.value.name.trim(),true)
+                .filterNot { state.value.directory && it.id==state.value.selectedPerson?.id }
             if (duplicates.isNotEmpty()) { update { it.copy(duplicates=duplicates) }; return@task }
         }
-        mutate("name",name=state.value.name.trim(),allowDuplicate=allowDuplicate)
+        if(state.value.directory) manage("rename",name=state.value.name.trim(),allowDuplicate=allowDuplicate)
+        else mutate("name",name=state.value.name.trim(),allowDuplicate=allowDuplicate)
     } }
     fun assign(target: Person) { if(editable()) task { search?.cancel(); mutate("assign",target=target) } }
     fun detach(face: Long) { if(editable()) task { mutate("detach",face=face) } }
+    fun openDirectory() { if(editable() && !state.value.naming) task {
+        update { it.copy(directory=true,selectedPerson=null,namedPeople=emptyList(),namedHasNext=false) }
+        loadNamedPeople(true)
+    } }
+    fun moreNamedPeople() { if(editable() && state.value.namedHasNext) task { loadNamedPeople(false) } }
+    private suspend fun loadNamedPeople(reset: Boolean) {
+        val repo=repository ?: return
+        val upper=if(reset) {
+            val fresh=repo.api.session()
+            require(fresh.scope==repo.scope) { "Der Datenbestand wurde geändert. Bitte neu verbinden." }
+            require(fresh.namedPeople) { "Der Personenbereich benötigt BearStack 0.43.0 oder neuer." }
+            fresh.upper
+        } else state.value.namedUpper
+        val page=repo.api.namedPeople(if(reset) 0 else state.value.namedCursor,upper)
+        update { it.copy(namedPeople=if(reset) page.people else (it.namedPeople+page.people).distinctBy { p -> p.id },
+            namedCursor=page.next,namedUpper=upper,namedHasNext=page.hasNext) }
+    }
+    fun openPerson(person: Person) { if(editable()) task {
+        update { it.copy(selectedPerson=person) }
+        refreshSelectedPerson()
+    } }
+    private suspend fun refreshSelectedPerson(offset: Int? = null) {
+        val old=state.value.selectedPerson ?: return
+        val remote=repository?.api ?: return
+        var person=try { remote.person(old.id,offset ?: old.offset) }
+            catch(e: ApiFailure) { if(e.status!=404) throw e; null }
+        if(person!=null && person.name.isNotEmpty() && person.count>0 && person.faces.isEmpty()) {
+            person=remote.person(person.id,((person.count-1)/4*4).toInt())
+        }
+        val current=person?.takeIf { it.name.isNotEmpty() && it.count>0 }
+        update { it.copy(selectedPerson=current,namedPeople=it.namedPeople.mapNotNull { p -> if(p.id==old.id) current else p }) }
+    }
+    fun personPage(delta: Int) { if(editable()) task {
+        val old=state.value.selectedPerson ?: return@task
+        refreshSelectedPerson((old.offset+delta*4).coerceAtLeast(0))
+    } }
+    fun closePerson() { if(editable() && !state.value.naming) update { it.copy(selectedPerson=null,error=null) } }
+    fun closeDirectory() { if(editable() && !state.value.naming) task {
+        update { it.copy(directory=false,selectedPerson=null,error=null) }
+        loadNext()
+    } }
+    fun unassign(face: Long) { if(editable()) task { manage("unassign",face=face) } }
+    fun favorite(face: Long) { if(editable()) task {
+        val person=state.value.selectedPerson ?: return@task
+        manage("favorite",face=face,favorite=face !in person.favorites)
+    } }
+    private suspend fun manage(action: String, face: Long = 0, name: String = "", allowDuplicate: Boolean = false,
+        favorite: Boolean? = null) {
+        val person=state.value.selectedPerson ?: return
+        val repo=repository ?: return
+        repo.prepare(person,action,name=name,face=face,allowDuplicate=allowDuplicate,favorite=favorite)
+        update { it.copy(unresolved=true) }
+        repo.resolve()
+        update { it.copy(unresolved=false,naming=false,duplicates=emptyList()) }
+        refreshSelectedPerson()
+    }
     private suspend fun mutate(action: String, name: String = "", target: Person? = null, face: Long = 0, allowDuplicate: Boolean = false) {
         val p = state.value.person ?: return
         val repo = repository ?: return
@@ -270,7 +332,7 @@ class PeopleViewModel private constructor(application: Application, private val 
         whenReady(repo) {
             try { repo.restoreIgnores(setOf(id),show=id) } finally { undoRequests-=id }
             search?.cancel()
-            update {it.copy(naming=false,suggestions=emptyList(),duplicates=emptyList())}
+            update {it.copy(naming=false,suggestions=emptyList(),duplicates=emptyList(),directory=false,selectedPerson=null)}
             loadNext()
         }
     }
@@ -301,8 +363,10 @@ class PeopleViewModel private constructor(application: Application, private val 
         repository?.let { repo ->
             repo.restoreIgnores(repo.state().stagedIgnores.positions().map {it.id}.toSet()-ignoreJobs.keys-undoRequests)
         }
-        update { it.copy(unresolved=false,naming=if(receipt!=null && receipt.source==it.person?.id) false else it.naming) }
-        loadNext()
+        update { it.copy(unresolved=false,naming=if(receipt!=null && (receipt.source==it.person?.id || receipt.source==it.selectedPerson?.id)) false else it.naming) }
+        if(state.value.directory) {
+            if(state.value.selectedPerson!=null) refreshSelectedPerson() else loadNamedPeople(true)
+        } else loadNext()
     }
     fun newPass(skipped: Boolean) { if(editable()) task { repository!!.newPass(skipped); loadNext() } }
     fun switchConnection() { if(!state.value.busy) task { repository?.restoreIgnores(); clearConnection(); store.clear() } }

@@ -3533,10 +3533,15 @@ label span {
 }
 .person-picker-popup[hidden] { display: none; }
 .person-picker-popup [role="option"] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 10px 12px;
   overflow-wrap: anywhere;
   cursor: pointer;
 }
+.person-picker-popup [role="option"] > span { min-width: 0; }
+.person-picker-thumbnail { width: 40px; height: 40px; flex: 0 0 40px; object-fit: contain; border-radius: 4px; background: #303030; }
 .person-picker-popup [role="option"]:hover,
 .person-picker-popup [role="option"][aria-selected="true"] { background: var(--surface-2); }
 .person-picker-popup [role="status"] { margin: 0; padding: 10px 12px; color: var(--muted); font-size: .875rem; }
@@ -3608,14 +3613,15 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 .group-photo-toolbar form { margin: 0; }
 .group-photo-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 1.25rem; align-items: start; }
 .group-photo-stage { position: sticky; top: 1rem; margin: 0; height: min(74vh, 850px); min-height: 260px; background: #111820; border-radius: .75rem; overflow: hidden; }
-.group-photo-stage > img { display: block; width: 100%; height: 100%; object-fit: contain; image-orientation: from-image; }
-.group-photo-box { position: absolute; border: 3px solid #ffcf5c; outline: 1px solid #111820; background: rgb(255 207 92 / .12); pointer-events: none; box-sizing: border-box; }
+.group-photo-stage > img { display: block; width: 100%; height: 100%; object-fit: contain; image-orientation: from-image; transform-origin: 0 0; }
+.group-photo-box { position: absolute; border: 1px solid #ffcf5c; outline: 1px solid #111820; background: rgb(255 207 92 / .12); pointer-events: none; box-sizing: border-box; }
 .group-photo-faces { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: .65rem; }
 .group-photo-face { position: relative; padding: .5rem .5rem 2.3rem; gap: .4rem; }
 .group-photo-face strong { text-align: center; font-size: .9rem; }
 .group-photo-face[data-ignored="true"] { opacity: .65; }
 .group-face-highlight { display: flex; justify-content: center; width: 100%; min-width: 0; border: 0; padding: 0; background: transparent; }
 .group-face-highlight:hover { background: transparent; }
+.group-face-highlight[aria-pressed="true"] { outline: 3px solid #ffcf5c; outline-offset: 2px; }
 .group-photo-face img { width: 100%; max-width: 160px; }
 .group-photo-face .person-edit-button { bottom: .35rem; right: .35rem; }
 .group-photo-hint { margin-top: 0; }

@@ -21,7 +21,7 @@
 <img data-group-image {{with .GroupPhotos.Photo}}{{if .ImageFaceID}}src="/photos/people/groups/image/{{.ImageFaceID}}"{{end}} alt="{{.DisplayPath}}"{{else}}alt="Gruppenfoto"{{end}}>
 <div class="group-photo-box" data-group-box hidden aria-hidden="true"></div>
 </figure>
-<div><p class="group-photo-hint">Zeige auf ein Gesicht, um es im Foto zu markieren. Mit dem Stift benennst du die gesamte Personengruppe oder führst sie mit einer vorhandenen Person zusammen, auch in anderen Fotos.</p>
+<div><p class="group-photo-hint">Zeige auf ein Gesicht, um es im Foto zu markieren. Ein Klick auf die Vorschau vergrößert den Ausschnitt auf die doppelte Breite und Höhe der Gesichtsmarkierung (200 %). Ein weiterer Klick auf dieselbe Vorschau zeigt wieder das ganze Foto. Mit dem Stift benennst du die gesamte Personengruppe oder führst sie mit einer vorhandenen Person zusammen, auch in anderen Fotos.</p>
 <div class="group-photo-faces" data-group-grid>
 {{with .GroupPhotos.Photo}}{{range .Faces}}{{template "group_photo_face" .}}{{end}}{{end}}
 </div></div>
@@ -30,7 +30,7 @@
 <button type="button" class="secondary-button" data-group-retry hidden>Ansicht erneut laden</button>
 </section>
 {{template "person_edit_dialog" .}}
-<noscript><p>Für Gesichtsmarkierungen und den Benenn-Dialog wird JavaScript benötigt. Überspringen und Ignorieren funktionieren auch ohne JavaScript.</p></noscript>
+<noscript><p>Für Gesichtsmarkierungen, Vergrößern und den Benenn-Dialog wird JavaScript benötigt. Überspringen und Ignorieren funktionieren auch ohne JavaScript.</p></noscript>
 <script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
 <script src="{{assetURL "/static/app-group-photos.js"}}" defer></script>
 {{template "foot" .}}
@@ -38,7 +38,7 @@
 
 {{define "group_photo_face"}}
 <div class="group-photo-face person-card" data-group-face="{{.ID}}" data-person-id="{{.PersonID}}" data-person-name="{{.Name}}" data-ignored="{{.Ignored}}" data-x="{{.X}}" data-y="{{.Y}}" data-width="{{.Width}}" data-height="{{.Height}}">
-<button type="button" class="group-face-highlight" data-group-highlight aria-label="Gesicht im Foto markieren: {{if .Name}}{{.Name}}{{else if .Ignored}}Ignoriert{{else}}Unbenannt{{end}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Gesicht"></button>
+<button type="button" class="group-face-highlight" data-group-highlight aria-pressed="false" aria-label="Gesicht im Foto vergrößern: {{if .Name}}{{.Name}}{{else if .Ignored}}Ignoriert{{else}}Unbenannt{{end}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Gesicht"></button>
 <strong data-group-name>{{if .Name}}{{.Name}}{{else if .Ignored}}Ignoriert{{else}}Unbenannt{{end}}</strong>
 {{if and .Ignored .Name}}<span data-group-ignored-label>Ignoriert</span>{{end}}
 {{if and (not .Ignored) (not .Name)}}<button type="button" class="person-edit-button secondary-button" data-person-edit aria-label="Person benennen oder zuordnen" title="Benennen / zuordnen">{{template "person_pencil_icon" .}}</button>{{end}}

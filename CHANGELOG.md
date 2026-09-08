@@ -4,6 +4,20 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.43.0
+
+- Die Bounding Box im Gruppenbildmodus verwendet eine dünnere gelbe Linie (1 statt 3 Pixel); die dunkle Kontrastkontur bleibt erhalten. Kleine UI-Korrektur innerhalb des bereits vorgesehenen Releases 0.43.0.
+
+- Die Autovervollständigung im Benenn-/Zuordnungsmodal zeigt neben jeder vorhandenen Person deren Thumbnail aus der Personenübersicht. Bild und Name wählen dieselbe Person; Tastaturbedienung und sofortiges Speichern bleiben erhalten. „Neu anlegen“ bleibt ohne Bild, fehlgeschlagene Bilder blockieren die Auswahl nicht. Die Vorschlags-API ergänzt `face_id`, nutzt vorhandene Indizes und bleibt auf 60 Ergebnisse begrenzt. Kleine Bilder werden bedarfsabhängig aus dem bestehenden Cache geladen. Teil des bereits vorgesehenen MINOR-Releases 0.43.0; keine zusätzliche Migration.
+
+- Android-App **0.6.0** (versionCode 13): Neuer Bereich „Menü → Personen“ mit seitenweise geladenen benannten Personen und Portraits. Details erlauben Umbenennen, Zurücksetzen einzelner Gesichter auf unbenannt einschließlich des letzten Gesichts, Favorisieren, Galeriesuche im Browser und Originalfoto-Vorschau per Halten/Wischen sowie TalkBack. Originaldateien bleiben erhalten.
+- Additive Labeling-API: Sitzungskapazität `named_people`, `GET /people?after=…&upper=…` und quittierte Aktionen `rename`, `unassign`, `favorite`. Kleine Abfrage-/Sichtbarkeitspakete, keine Gesamtzählung, Revisionsprüfung, atomare Quittungen und inkrementelle Aktualisierung betroffener Personen. Protokoll 1 und das Android-Room-Schema bleiben erhalten; Foto-Schema 24 ergänzt kompatibel einen partiellen Index für benannte Personen. MINOR wegen kompatibler Funktionen.
+- Android-Zuordnungswarteschlange bleibt beim Bereichswechsel erhalten. Entfernte Gesichter folgen als unbenannte Gruppen; unklare Schreibaktionen werden nach Verbindungsfehlern über die gespeicherte Aktions-ID geklärt. Regressionen für große Listen, Rechte, Schutzmarker, Rollback, Konflikte, letzte Gesichter, große Schrift und Vorschaugesten; README, Android-Anleitung, Website und OpenAPI erweitert.
+
+- Im Gruppenbildmodus vergrößert ein Klick auf eine Gesichtsvorschau einen Ausschnitt mit doppelter Breite und Höhe der Bounding Box (200 %). Erneuter Klick zeigt das ganze Foto; ein anderes Thumbnail wechselt direkt zum zugehörigen Gesicht. Enter und Leertaste bedienen denselben Wechsel, die aktive Vorschau ist sichtbar und über `aria-pressed` markiert.
+- Bildränder, Seitenverhältnis und Größenänderungen bleiben berücksichtigt. Benennen erhält den Zoom im selben Foto, Navigation setzt ihn zurück. Die vorhandene Fotovorschau wird im Browser wiederverwendet, ohne zusätzliche Bildabrufe oder serverseitige Bildberechnung.
+- MINOR für die zusätzliche kompatible Web-Bedienfunktion ohne Datenmigration. Browser-Regressionen für Zoom-Geometrie, Fenstergrößen, Tastatur, Gesichtswechsel, Benennen, Navigation und Bildfehler ergänzt; README, Website und OpenAPI-Version aktualisiert.
+
 ### Dependency-Prüfung
 
 - Leere Android-Übergangsabhängigkeit `androidx.room:room-ktx:2.8.4` entfernt. Die verwendeten APIs sind bereits in `room-runtime` enthalten; Room-Compiler, Coroutines, Schema und Versionsnummern bleiben unverändert. Keine Laufzeitänderung.

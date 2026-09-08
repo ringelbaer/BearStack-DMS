@@ -63,6 +63,19 @@ class ServerIntegrationTest {
             repo.prepare(repo.next()!!,"assign",target=api.suggestions("Anna",true).single());repo.resolve()
             repo.prepare(repo.next()!!,"ignore");repo.resolve();assertNull(repo.next())
             assertEquals(5L,api.suggestions("Anna",true).single().count)
+            assertTrue(api.session().namedPeople)
+            var named=api.person(api.namedPeople(0,api.session().upper).people.single().id)
+            val favoriteFace=named.faces.first()
+            repo.prepare(named,"favorite",face=favoriteFace,favorite=true);repo.resolve()
+            named=api.person(named.id)
+            assertTrue(favoriteFace in named.favorites)
+            repo.prepare(named,"rename",name="Anna Neu");repo.resolve()
+            named=api.person(named.id)
+            assertEquals("Anna Neu",named.name)
+            repo.prepare(named,"unassign",face=favoriteFace);val unassigned=repo.resolve()!!
+            val unnamed=repo.next()!!
+            assertEquals(unassigned.newId,unnamed.id);assertEquals("",unnamed.name)
+            assertTrue(unnamed.favorites.isEmpty());assertEquals(4L,api.person(named.id).count)
             val changedPin=Connections.client(Profile(address,"manager","secret","not-the-server-certificate"))
             try {LabelingApi(changedPin,address).session();fail("changed pin accepted")}catch(_:javax.net.ssl.SSLException){}
             finally {changedPin.dispatcher.executorService.shutdown();changedPin.connectionPool.evictAll()}

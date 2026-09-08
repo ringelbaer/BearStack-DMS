@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,10 +30,14 @@ func TestPeopleSuggestionsHTTPContractAndVisibility(t *testing.T) {
 			t.Fatalf("%s: %d %v %s", user, w.Code, w.Header(), w.Body.String())
 		}
 		var result photos.PeopleSuggestions
-		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil || len(result.People) != 1 || result.People[0].Name != "Jürgen" || result.People[0].Count != 1 || result.HasNext {
+		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil || len(result.People) != 1 || result.People[0].Name != "Jürgen" || result.People[0].Count != 1 || result.People[0].FaceID != photo.Faces[0].ID || result.HasNext {
 			t.Fatalf("suggestions: %+v %v", result, err)
 		}
-		for _, unused := range []string{`"total_pages"`, `"face_id"`, `"page"`} {
+		thumbnail := labelRequest(s, "GET", fmt.Sprintf("/photos/faces/%d/thumbnail", result.People[0].FaceID), user, "")
+		if thumbnail.Code != 200 || !strings.HasPrefix(thumbnail.Header().Get("Content-Type"), "image/") {
+			t.Fatalf("%s suggestion thumbnail: %d %s", user, thumbnail.Code, thumbnail.Body.String())
+		}
+		for _, unused := range []string{`"total_pages"`, `"page"`} {
 			if strings.Contains(w.Body.String(), unused) {
 				t.Fatalf("unused metadata %s: %s", unused, w.Body.String())
 			}
@@ -46,5 +51,8 @@ func TestPeopleSuggestionsHTTPContractAndVisibility(t *testing.T) {
 	}
 	if w := labelRequest(s, "GET", path, "reader", ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"people":[]`) {
 		t.Fatalf("new marker ignored: %d %s", w.Code, w.Body.String())
+	}
+	if w := labelRequest(s, "GET", fmt.Sprintf("/photos/faces/%d/thumbnail", photo.Faces[0].ID), "reader", ""); w.Code == 200 {
+		t.Fatal("previously suggested thumbnail remained accessible after protection")
 	}
 }

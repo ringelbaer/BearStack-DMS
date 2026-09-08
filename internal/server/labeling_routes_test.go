@@ -21,6 +21,10 @@ func TestLabelingRoutesPreserveValidationPermissionsAndCacheHeaders(t *testing.T
 	}{
 		{"GET", "/session", "", 200, ""},
 		{"GET", "/candidates?upper=0", "", 200, ""},
+		{"GET", "/people?upper=0", "", 200, ""},
+		{"GET", "/people", "", 400, "invalid"},
+		{"GET", "/people?upper=1&after=-1", "", 400, "invalid"},
+		{"GET", "/people?upper=bad", "", 400, "invalid"},
 		{"GET", "/suggestions?q=Nobody", "", 200, ""},
 		{"GET", "/people/999999", "", 404, "not_found"},
 		{"GET", "/actions/missing-operation?dataset=" + session.Dataset, "", 404, "not_found"},

@@ -26,7 +26,7 @@ var (
 const (
 	indexSchemaSetupTimeout = 30 * time.Second
 	photoSchemaComponent    = "photos"
-	photoSchemaVersion      = 23
+	photoSchemaVersion      = 24
 )
 
 type photoSchemaMigration struct {
@@ -62,6 +62,7 @@ var photoSchemaMigrations = []photoSchemaMigration{
 	{Version: 21, Name: "expiring ignored face thumbnails"},
 	{Version: 22, Name: "favorite and folder-diverse face references"},
 	{Version: 23, Name: "group photo candidate index"},
+	{Version: 24, Name: "named people cursor index"},
 }
 
 func openIndexDB(path string) (*sql.DB, string, error) {
@@ -292,6 +293,12 @@ func runPhotoSchemaMigrations(ctx context.Context, db *sql.DB) error {
 	}
 	for _, migration := range photoSchemaMigrations {
 		if current >= migration.Version {
+			continue
+		}
+		if migration.Version == 24 {
+			if _, err := db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_photo_people_named_id ON photo_people(id) WHERE name<>''`); err != nil {
+				return err
+			}
 			continue
 		}
 		if migration.Version == 23 {

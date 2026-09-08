@@ -36,10 +36,21 @@ func TestSuggestPeopleMatchesKnownOverviewWithoutPagination(t *testing.T) {
 		}
 		for i, person := range got.People {
 			want := page.People[i]
-			if person.ID != want.ID || person.Name != want.Name || person.Count != want.Count || person.Count != 1 {
+			if person.ID != want.ID || person.Name != want.Name || person.Count != want.Count || person.Count != 1 || person.FaceID != want.FaceID || person.FaceID <= 0 {
 				t.Fatalf("%q suggestion %+v vs %+v", q, person, want)
 			}
 		}
+	}
+	before, err := l.SuggestPeople(ctx, "Juergen")
+	if err != nil || len(before.People) != 1 {
+		t.Fatalf("portrait before ignoring: %+v %v", before, err)
+	}
+	if _, err := l.index.db.Exec(`UPDATE photo_faces SET ignored=1 WHERE id=?`, before.People[0].FaceID); err != nil {
+		t.Fatal(err)
+	}
+	after, err := l.SuggestPeople(ctx, "Juergen")
+	if err != nil || len(after.People) != 1 || after.People[0].FaceID <= before.People[0].FaceID || after.People[0].Count != 1 {
+		t.Fatalf("ignored portrait was not replaced: %+v %v", after, err)
 	}
 	if _, err := l.index.db.Exec(`UPDATE photo_faces SET ignored=1 WHERE person_id=2`); err != nil {
 		t.Fatal(err)
