@@ -203,7 +203,12 @@ func (s *Server) handleFaceSettings(w http.ResponseWriter, r *http.Request) {
 		s.faceError(w, r, err)
 		return
 	}
-	status, err := s.photos.FaceStatus(r.Context())
+	var status photos.FaceStatus
+	if r.URL.Query().Get("format") == "json" && r.URL.Query().Get("progress") == "1" {
+		status, err = s.photos.FaceProgress(r.Context())
+	} else {
+		status, err = s.photos.FaceStatus(r.Context())
+	}
 	if err != nil {
 		s.faceError(w, r, err)
 		return

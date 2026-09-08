@@ -99,6 +99,7 @@ func (l *Library) Close() error {
 		return nil
 	}
 	l.faceThumbnails.close()
+	l.faceImages.close()
 	return l.index.close()
 }
 

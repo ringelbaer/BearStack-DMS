@@ -100,7 +100,7 @@ func (l *Library) FaceStatus(ctx context.Context) (FaceStatus, error) {
 	if err := l.RefreshFaceVisibility(ctx); err != nil {
 		return s, err
 	}
-	err := l.index.db.QueryRowContext(ctx, `SELECT (SELECT count(*) FROM photo_face_jobs WHERE status='queued'),(SELECT count(*) FROM photo_face_jobs WHERE status='done'),(SELECT count(*) FROM photo_face_jobs WHERE status='failed'),(SELECT count(*) FROM photo_faces WHERE ignored=0),(SELECT count(DISTINCT person_id) FROM photo_faces WHERE ignored=0)`).Scan(&s.Queued, &s.Done, &s.Failed, &s.Faces, &s.People)
+	s, err := l.faceCounts(ctx)
 	if err != nil {
 		return s, err
 	}

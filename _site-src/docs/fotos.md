@@ -254,6 +254,25 @@ Die Info-Symbole in den Einstellungen der Gesichtserkennung erklären Aktivierun
 
 **Personenrechte:** Seit BearStack 0.36.0 reicht „Fotos bearbeiten“ (`photos_editor` bzw. `photos.edit`) zum Benennen, Zuordnen, Zusammenführen, Ignorieren und Wiederherstellen von Gesichtern sowie für die Android-App. Einstellungen der Gesichtserkennung und das Löschen aller Gesichtsdaten benötigen weiterhin „Fotos verwalten“ (`photos.manage`).
 
+**Optimierungen ab 0.41.1:** Gesichtsausschnitte desselben Fotos teilen dessen
+verkleinerte und ausgerichtete Bildaufbereitung. Der Cache hält höchstens acht Bilder
+und 32 MiB im Arbeitsspeicher. Dateiaustausch und geänderte XMP-Sidecars ändern den
+Cache-Schlüssel; Quell- und Schutzprüfungen bleiben auch bei Cachetreffern aktiv.
+Kann der Index einen geänderten Foto-Fingerprint nicht speichern, wird der Abruf
+abgebrochen, statt alte Gesichtsregionen weiterzuverwenden.
+
+Das fünfsekündliche Status-Polling verwendet `/settings/photos/faces?format=json&progress=1`.
+Dieser Modus liefert Zähler des zuletzt indexierten Bestands, ohne globale
+Dateisystemprüfung und ohne Liste einzelner Dateifehler. Mehrere Aufrufe teilen
+höchstens fünf Sekunden lang denselben Zählerstand. Neue Schutzmarkierungen wirken
+auf diese Zahlen nach der nächsten Index- oder Sichtbarkeitsaktualisierung; konkrete
+Gesichtsabrufe prüfen den Schutz weiterhin sofort. Die vollständige HTML-Ansicht
+und JSON ohne `progress=1` prüfen die Sichtbarkeit wie bisher.
+
+Der gemeinsame Personen-Dialog und seine Suche werden unabhängig von der
+Personenübersicht geladen; die Gruppenbilder-Ansicht benötigt nur ihr eigenes
+Modul und `app-person-dialog.js`.
+
 **Gruppenbilder bearbeiten:** Der Button **Gruppenbilder** unter `/photos/people`
 öffnet `/photos/people/groups` für Fotobearbeiter (`photos.edit`). Die Schwelle ist
 oben einstellbar (0–255, Standard **5**) und wird pro Nutzer und Browser gemerkt.

@@ -71,6 +71,10 @@ BearStack migriert die Foto-Datenbank kompatibel auf Schema 19. Datenbanktrigger
 
 ## Tests
 
+Die Build-Abhängigkeiten enthalten keine separate `ui-tooling-preview`-Deklaration,
+da die App keine `@Preview`-Annotationen verwendet. Die Debug-Werkzeuge für Compose
+und die instrumentierten UI-Tests bleiben erhalten; die App-Version ändert sich dadurch nicht.
+
 ```sh
 # JVM-Tests, Lint und Debug-APK
 make test-android

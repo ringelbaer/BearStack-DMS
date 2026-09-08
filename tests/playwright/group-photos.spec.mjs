@@ -54,6 +54,8 @@ test("group photos: hover, whole-group naming, ignore, skip and retry", async ({
   expect(enabled.ok()).toBe(true);
   await expect.poll(async () => (await (await context.request.get(baseURL + "/settings/photos/faces?format=json")).json()).status.done, { timeout: 20_000 }).toBe(4);
   await page.goto(baseURL + "/photos/people"); await page.getByRole("link", { name: "Gruppenbilder", exact: true }).click();
+  await expect(page.locator('script[src*="/static/app-person-dialog.js"]')).toHaveCount(1);
+  await expect(page.locator('script[src*="/static/app-people.js"]')).toHaveCount(0);
   const surface = page.locator("[data-group-photos]");
   const cards = page.locator("[data-group-face]");
   const image = page.locator("[data-group-image]");

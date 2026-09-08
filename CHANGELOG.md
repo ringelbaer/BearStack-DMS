@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.41.1
+
+- Fehler beim Aktualisieren eines Foto-Fingerprints werden vor Zugriffen auf gespeicherte Gesichter weitergegeben. Gesichtsvorschauen, Favoriten und Gruppenbilder verwenden dieselbe strikte Quellprüfung; fehlgeschlagene Datenbankänderungen erlauben keine alten Gesichtsregionen auf ersetzten Fotos.
+- Mehrere Gesichtsausschnitte teilen die decodierte und ausgerichtete 1.600-Pixel-Fotovorschau. Der Arbeitsspeichercache ist auf 32 MiB und acht Bilder begrenzt, bündelt gleichzeitige Anforderungen und prüft Quell-Fingerprint, Sidecars und Schutzmarkierungen auch bei Cachetreffern. Vollauflösende Originale werden nicht im Cache behalten.
+- Das Status-Polling der Gesichtserkennung liest mit `format=json&progress=1` ausschließlich Zähler aus dem Index, ohne globale Verzeichnisprüfung oder Dateifehlerliste. Gleichzeitige Aufrufe teilen einen höchstens fünf Sekunden alten Zählerstand. Die vollständige Statusansicht und konkrete Gesichtsabrufe behalten ihre Sichtbarkeitsprüfungen.
+- Personen-Dialog, Suche und Stift-Erzeugung liegen im gemeinsamen Modul `app-person-dialog.js`. Gruppenbilder laden dafür nicht mehr das gesamte Personenübersichtsmodul; Benennen, Zuordnen, Fokusführung und Fehlerbehandlung bleiben erhalten.
+- Ungenutzte direkte Android-Abhängigkeit `ui-tooling-preview` entfernt; es gibt keine Preview-Annotationen im Projekt. Keine Änderung der Android-Bedienung oder App-Version.
+- PATCH für Fehlerkorrektur, Performance und UI-Refactor ohne neue Bedienfunktion oder Datenmigration. Regressionen und Bildaufbereitungsbenchmark ergänzt; README, Website und OpenAPI aktualisiert.
+
 ### BearStack 0.41.0
 
 - Neuer Button „Gruppenbilder“ unter Personen für Fotobearbeiter: links das Foto, rechts alle erkannten Gesichtsvorschauen. Hover, Tastaturfokus und Antippen markieren die zugehörige Gesichtsregion; die Darstellung berücksichtigt Seitenverhältnis und EXIF-Ausrichtung.

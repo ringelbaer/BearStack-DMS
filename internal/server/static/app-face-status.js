@@ -9,7 +9,7 @@
     busy = true;
     controller = new AbortController();
     try {
-      var response = await fetch("/settings/photos/faces?format=json", {credentials:"same-origin", signal:controller.signal});
+      var response = await fetch("/settings/photos/faces?format=json&progress=1", {credentials:"same-origin", signal:controller.signal});
       if (!response.ok) return;
       var data = await response.json();
       document.querySelectorAll("[data-face-count]").forEach(function (element) {

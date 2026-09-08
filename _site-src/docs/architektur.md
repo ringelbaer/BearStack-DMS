@@ -144,3 +144,21 @@ Bearbeitung im Modal wirkt wie in der Personenübersicht auf die gesamte Gruppe.
 Die Fotovorschau nutzt den Galerie-Cache mit 1.600 Pixeln und prüft die Quell-Gesichts-ID
 vor der Ausgabe. Die Markierung wird aus normalisierten Koordinaten innerhalb des
 proportional eingepassten Bildes berechnet und bei Größenänderungen aktualisiert.
+
+Ab 0.41.1 liegt die gemeinsame Bildaufbereitung im begrenzten `faceImageCache`.
+Der Schlüssel umfasst Quellpfad, Größe, Änderungszeit und XMP-Fingerprint. Gleichzeitige
+Decodierungen derselben Quelle werden zusammengefasst; ein abgebrochener Aufrufer
+verhindert keinen späteren Versuch eines anderen Aufrufers. Gespeichert werden nur
+unveränderlich verwendete, ausgerichtete NRGBA-Raster bis 1.600 Pixeln; die bisherigen
+JPEG-Ausschnittscaches bleiben bestehen. Beim Schließen der Library wird der
+Arbeitsspeichercache geleert.
+
+`FaceProgress` liest ausschließlich Datenbankzähler und bündelt Aufrufe für fünf
+Sekunden. `FaceStatus` bleibt für die vollständige, frisch geprüfte Ansicht zuständig.
+Die strikte Quellprüfung `refreshFaceSource` wird von einzelnen Gesichtern und
+Gruppenbildern gemeinsam verwendet und gibt Fehler bei Fingerprint-Schreibvorgängen weiter.
+
+Das Webmodul `app-person-dialog.js` kapselt Personensuche, Formularübermittlung und
+Fokusführung. Die aufrufende Ansicht stellt ihren Ladezustand und eine asynchrone
+Aktualisierungsfunktion bereit. Dadurch hängt der Dialog weder von der Auswahlleiste
+der Personenübersicht noch von der Navigation durch Gruppenbilder ab.

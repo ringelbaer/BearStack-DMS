@@ -31,7 +31,7 @@
 </section>
 {{template "person_edit_dialog" .}}
 <noscript><p>Für Gesichtsmarkierungen und den Benenn-Dialog wird JavaScript benötigt. Überspringen und Ignorieren funktionieren auch ohne JavaScript.</p></noscript>
-<script src="{{assetURL "/static/app-people.js"}}" defer></script>
+<script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
 <script src="{{assetURL "/static/app-group-photos.js"}}" defer></script>
 {{template "foot" .}}
 {{end}}
@@ -44,5 +44,3 @@
 {{if and (not .Ignored) (not .Name)}}<button type="button" class="person-edit-button secondary-button" data-person-edit aria-label="Person benennen oder zuordnen" title="Benennen / zuordnen">{{template "person_pencil_icon" .}}</button>{{end}}
 </div>
 {{end}}
-
-{{define "person_pencil_icon"}}<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 5 5M3 21l5-1L21 7a2 2 0 0 0-5-5L3 15Z"/></svg>{{end}}

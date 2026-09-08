@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.41.0
+  version: 0.41.1
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -1550,7 +1550,11 @@ paths:
       operationId: getFaceRecognitionSettings
       summary: Recognition settings and progress
       description: Requires photos.manage. HTML by default; format=json returns settings
-        and status. Service tokens and vectors are never returned.
+        and status. Service tokens and vectors are never returned. Since 0.41.1,
+        progress=1 with format=json reads indexed counts without a filesystem scan
+        or per-file error list. Counts share a snapshot for at most five seconds;
+        newly private/deleted sources affect counts after index/visibility refresh.
+        Concrete face access always performs fresh source and visibility checks.
       parameters:
       - name: format
         in: query
@@ -1559,6 +1563,12 @@ paths:
           enum:
           - json
         description: Request JSON instead of HTML.
+      - name: progress
+        in: query
+        schema:
+          type: integer
+          enum: [1]
+        description: Lightweight indexed counts for JSON polling; omits status.errors. Without this flag, the complete status performs fresh visibility checks.
       responses:
         '200':
           description: Successful response.

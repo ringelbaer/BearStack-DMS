@@ -92,30 +92,7 @@ func (l *Library) refreshGroupPhoto(ctx context.Context, path string) error {
  JOIN media_index m ON m.path=p.name_source WHERE f.path=? AND p.manual_name=0`, path, path); err != nil {
 		return err
 	}
-	private, err := l.MediaAdminOnly(path)
-	if err != nil {
-		return err
-	}
-	if private {
-		return ErrAdminOnly()
-	}
-	// Surface index write failures: stale regions must not survive a replaced file.
-	media, changed, err := l.mediaFromPathData(path)
-	if err != nil {
-		return err
-	}
-	if media.AdminOnly {
-		return ErrAdminOnly()
-	}
-	if media.Type != MediaTypeImage {
-		return sql.ErrNoRows
-	}
-	if changed {
-		if err := l.saveMediaContext(ctx, media); err != nil {
-			return err
-		}
-	}
-	return nil
+	return l.refreshFaceSource(ctx, path)
 }
 
 // GroupPhoto deliberately has no minimum check: editing must not evict the

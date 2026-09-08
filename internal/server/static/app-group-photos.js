@@ -90,13 +90,8 @@
     if ((!face.name || !face.ignored) && ignored) ignored.remove();
     var edit = card.querySelector("[data-person-edit]");
     if (!face.ignored && !face.name && !edit) {
-      edit = document.createElement("button"); edit.type = "button"; edit.className = "person-edit-button secondary-button"; edit.dataset.personEdit = "";
-      edit.setAttribute("aria-label", "Person benennen oder zuordnen"); edit.title = "Benennen / zuordnen";
-      var icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      icon.setAttribute("aria-hidden", "true"); icon.setAttribute("width", "16"); icon.setAttribute("height", "16"); icon.setAttribute("viewBox", "0 0 24 24");
-      icon.setAttribute("fill", "none"); icon.setAttribute("stroke", "currentColor"); icon.setAttribute("stroke-width", "1.8");
-      var path = document.createElementNS("http://www.w3.org/2000/svg", "path"); path.setAttribute("d", "m16 3 5 5M3 21l5-1L21 7a2 2 0 0 0-5-5L3 15Z");
-      icon.append(path); edit.append(icon); card.append(edit);
+      edit = window.BearStackPersonDialog.createEditButton("Person benennen oder zuordnen");
+      card.append(edit);
     }
     if ((face.ignored || face.name) && edit) edit.remove();
     return card;
@@ -195,7 +190,13 @@
     status.textContent = "";
     loadPhoto(retryParams).catch(function () {});
   });
-  surface.addEventListener("person-edit-saved", function (event) { event.detail.refresh = loadPhoto({ path: currentPath }); });
+  window.BearStackPersonDialog.bind({
+    surface: surface,
+    status: status,
+    isBusy: function () { return busy || navigationPending; },
+    onBusy: setBusy,
+    onSave: function () { return loadPhoto({ path: currentPath }); }
+  });
   filter.addEventListener("submit", function () { try { window.localStorage.setItem(storageKey, minimumInput.value); } catch (_) {} });
   if (!new URL(window.location.href).searchParams.has("min")) {
     var saved;

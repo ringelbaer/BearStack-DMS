@@ -1226,6 +1226,22 @@ Fehler werden mit zunehmender Wartezeit bis zu fünfmal versucht und können man
 zurückgesetzt werden. Neustarts setzen die persistente Warteschlange fort.</p>
 <p>Die Info-Symbole in den Einstellungen der Gesichtserkennung erklären Aktivierung, Bilder pro Lauf, Pausen, Referenzlimit und das Löschen der Gesichtsdaten. Die Kontexthilfen lassen sich per Klick oder Tastatur öffnen. Zum Löschen aller Gesichtsdaten sind die Löschbestätigung und das aktuelle Passwort des angemeldeten Nutzers erforderlich. Das Passwort wird vor jeder Zustandsänderung serverseitig geprüft; fehlende oder falsche Bestätigungen lassen Gesichtsdaten und Verarbeitung unverändert. Wiederholte Fehlversuche werden gedrosselt.</p>
 <p><strong>Personenrechte:</strong> Seit BearStack 0.36.0 reicht „Fotos bearbeiten“ (<code>photos_editor</code> bzw. <code>photos.edit</code>) zum Benennen, Zuordnen, Zusammenführen, Ignorieren und Wiederherstellen von Gesichtern sowie für die Android-App. Einstellungen der Gesichtserkennung und das Löschen aller Gesichtsdaten benötigen weiterhin „Fotos verwalten“ (<code>photos.manage</code>).</p>
+<p><strong>Optimierungen ab 0.41.1:</strong> Gesichtsausschnitte desselben Fotos teilen dessen
+verkleinerte und ausgerichtete Bildaufbereitung. Der Cache hält höchstens acht Bilder
+und 32 MiB im Arbeitsspeicher. Dateiaustausch und geänderte XMP-Sidecars ändern den
+Cache-Schlüssel; Quell- und Schutzprüfungen bleiben auch bei Cachetreffern aktiv.
+Kann der Index einen geänderten Foto-Fingerprint nicht speichern, wird der Abruf
+abgebrochen, statt alte Gesichtsregionen weiterzuverwenden.</p>
+<p>Das fünfsekündliche Status-Polling verwendet <code>/settings/photos/faces?format=json&amp;progress=1</code>.
+Dieser Modus liefert Zähler des zuletzt indexierten Bestands, ohne globale
+Dateisystemprüfung und ohne Liste einzelner Dateifehler. Mehrere Aufrufe teilen
+höchstens fünf Sekunden lang denselben Zählerstand. Neue Schutzmarkierungen wirken
+auf diese Zahlen nach der nächsten Index- oder Sichtbarkeitsaktualisierung; konkrete
+Gesichtsabrufe prüfen den Schutz weiterhin sofort. Die vollständige HTML-Ansicht
+und JSON ohne <code>progress=1</code> prüfen die Sichtbarkeit wie bisher.</p>
+<p>Der gemeinsame Personen-Dialog und seine Suche werden unabhängig von der
+Personenübersicht geladen; die Gruppenbilder-Ansicht benötigt nur ihr eigenes
+Modul und <code>app-person-dialog.js</code>.</p>
 <p><strong>Gruppenbilder bearbeiten:</strong> Der Button <strong>Gruppenbilder</strong> unter <code>/photos/people</code>
 öffnet <code>/photos/people/groups</code> für Fotobearbeiter (<code>photos.edit</code>). Die Schwelle ist
 oben einstellbar (0–255, Standard <strong>5</strong>) und wird pro Nutzer und Browser gemerkt.

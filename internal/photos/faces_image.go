@@ -26,15 +26,6 @@ func (l *Library) FaceImage(ctx context.Context, path string) ([]byte, error) {
 	return b.Bytes(), err
 }
 func (l *Library) faceImage(ctx context.Context, path string) (image.Image, error) {
-	if l.faceImageGate != nil {
-		select {
-		case l.faceImageGate <- struct{}{}:
-			defer func() { <-l.faceImageGate }()
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
-	}
-
 	private, err := l.MediaAdminOnly(path)
 	if err != nil {
 		return nil, err
@@ -45,6 +36,47 @@ func (l *Library) faceImage(ctx context.Context, path string) (image.Image, erro
 	abs, err := l.Resolve(path)
 	if err != nil {
 		return nil, err
+	}
+	info, err := os.Stat(abs)
+	if err != nil {
+		return nil, err
+	}
+	key := imageSourceKey(abs, info)
+	img, err := l.faceImages.get(ctx, key, func() (*image.NRGBA, error) {
+		img, err := l.decodeFaceImage(ctx, abs)
+		if err == nil {
+			err = ctx.Err()
+		}
+		if err == nil {
+			err = l.checkFaceImageSource(key)
+		}
+		return img, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	// Recheck source and marker after waiting/decoding, also for shared cache hits.
+	private, err = l.MediaAdminOnly(path)
+	if err != nil {
+		return nil, err
+	}
+	if private {
+		return nil, ErrAdminOnly()
+	}
+	if err := l.checkFaceImageSource(key); err != nil {
+		return nil, err
+	}
+	return img, nil
+}
+
+func (l *Library) decodeFaceImage(ctx context.Context, abs string) (*image.NRGBA, error) {
+	if l.faceImageGate != nil {
+		select {
+		case l.faceImageGate <- struct{}{}:
+			defer func() { <-l.faceImageGate }()
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 	}
 	f, err := os.Open(abs)
 	if err != nil {

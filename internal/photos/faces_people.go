@@ -23,16 +23,7 @@ func (l *Library) Face(ctx context.Context, id int64) (RecognizedFace, error) {
 	if err != nil {
 		return f, err
 	}
-	private, err := l.MediaAdminOnly(f.Path)
-	if err != nil {
-		return f, err
-	}
-	if private {
-		return f, ErrAdminOnly()
-	}
-	// Refresh the source fingerprint before cropping/editing a stored face. A
-	// replaced file must never be cropped using the previous image's regions.
-	if _, err = l.MediaContext(ctx, f.Path); err != nil {
+	if err := l.refreshFaceSource(ctx, f.Path); err != nil {
 		return f, err
 	}
 	var exists int
@@ -40,6 +31,35 @@ func (l *Library) Face(ctx context.Context, id int64) (RecognizedFace, error) {
 		return f, err
 	}
 	return f, nil
+}
+
+// Refresh the fingerprint strictly before using stored face coordinates. A failed
+// index write must not leave regions from a replaced source usable.
+func (l *Library) refreshFaceSource(ctx context.Context, path string) error {
+	private, err := l.MediaAdminOnly(path)
+	if err != nil {
+		return err
+	}
+	if private {
+		return ErrAdminOnly()
+	}
+	// Surface index write failures: stale regions must not survive a replaced file.
+	media, changed, err := l.mediaFromPathData(path)
+	if err != nil {
+		return err
+	}
+	if media.AdminOnly {
+		return ErrAdminOnly()
+	}
+	if media.Type != MediaTypeImage {
+		return sql.ErrNoRows
+	}
+	if changed {
+		if err := l.saveMediaContext(ctx, media); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (l *Library) AutomaticFaces(ctx context.Context, path string) ([]RecognizedFace, error) {

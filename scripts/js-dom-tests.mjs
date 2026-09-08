@@ -1059,7 +1059,7 @@ async function testPeopleRefreshRetainsImagesWhenCountsChange() {
   context.history = { state: null, replaceState() {} };
   context.fetch = async (url, options) => ({ ok: true, json: async () => options.method === "POST" ?
     { ok: true } : { people: [{ id: 1, face_id: 10, name: "Neu", count: 2 }], page: 2, total_pages: 3, has_prev: true, has_next: true } });
-  runScripts(context, ["app-people.js"]);
+  runScripts(context, ["app-person-dialog.js", "app-people.js"]);
   overview.dispatchEvent({ type: "click", target: ignore });
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(status.textContent, "Gesicht ignoriert.");
@@ -1088,7 +1088,7 @@ function testPeopleRemembersPageAndHonorsExplicitFilters() {
     context.location.replace = (url) => { context.redirect = url; };
     context.localStorage = { getItem: (k) => values.get(k), setItem: (k, value) => values.set(k, value) };
     if (blocked) context.localStorage = { getItem() { throw new Error("blocked"); }, setItem() { throw new Error("blocked"); } };
-    runScripts(context, ["app-people.js"]);
+    runScripts(context, ["app-person-dialog.js", "app-people.js"]);
     return { context, values };
   }
   const restored = setup("http://example.test/photos/people");
@@ -1122,7 +1122,7 @@ async function testPeopleMergePrefersNamedSelection() {
     const context = createContext(document);
     let request;
     context.fetch = async (url, options) => { request = { url, options }; return { ok: false, status: 503 }; };
-    runScripts(context, ["app-people.js"]);
+    runScripts(context, ["app-person-dialog.js", "app-people.js"]);
     inputs.forEach((input) => { input.checked = true; overview.dispatchEvent({ type: "change", target: input }); });
     const expected = Math.max(0, names.findIndex(Boolean));
     assert.equal(target.textContent, "3 ausgewählt · Ziel: " + (names[expected] || "Unbenannt"));

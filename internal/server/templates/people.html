@@ -26,7 +26,7 @@
 {{range .People.People}}
   <div class="person-overview-card" data-person-id="{{.ID}}" data-person-name="{{.Name}}">
     <a class="person-card" href="/photos/people/{{.ID}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.FaceID}}/thumbnail" alt=""><strong>{{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}</strong><span>{{.Count}} {{if eq .Count 1}}Foto{{else}}Fotos{{end}}</span></a>
-    {{if $.Auth.CanPhotosEdit}}<label class="person-select"><input type="checkbox" data-person-select value="{{.ID}}" aria-label="Person auswählen: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}"></label><button type="button" class="person-ignore-button" data-ignore-face="{{.FaceID}}" aria-label="Angezeigtes Gesicht ignorieren: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}" title="Angezeigtes Gesicht ignorieren">×</button><button type="button" class="person-edit-button secondary-button" data-person-edit aria-label="Benennen oder zuordnen: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}" title="Benennen / zuordnen"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 5 5M3 21l5-1L21 7a2 2 0 0 0-5-5L3 15Z"/></svg></button>{{end}}
+    {{if $.Auth.CanPhotosEdit}}<label class="person-select"><input type="checkbox" data-person-select value="{{.ID}}" aria-label="Person auswählen: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}"></label><button type="button" class="person-ignore-button" data-ignore-face="{{.FaceID}}" aria-label="Angezeigtes Gesicht ignorieren: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}" title="Angezeigtes Gesicht ignorieren">×</button><button type="button" class="person-edit-button secondary-button" data-person-edit aria-label="Benennen oder zuordnen: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}" title="Benennen / zuordnen">{{template "person_pencil_icon" .}}</button>{{end}}
   </div>
 {{else}}<p>{{if or .People.Query .People.KnownOnly}}Keine Personen für diesen Filter gefunden.{{else}}Noch keine Personen gefunden. {{if .Auth.CanPhotosManage}}Die optionale Erkennung lässt sich in den Einstellungen aktivieren.{{end}}{{end}}</p>{{end}}
 </div>
@@ -72,6 +72,7 @@
   {{if .People.HasNext}}<a class="secondary-button" rel="last" href="?page={{.People.TotalPages}}&amp;q={{queryEscape .People.Query}}{{if .People.KnownOnly}}&amp;known=1{{end}}{{if .People.IgnoredOnly}}&amp;ignored=1{{end}}">Letzte Seite</a>{{else}}<span class="secondary-button" aria-disabled="true">Letzte Seite</span>{{end}}
 </nav>
 {{if .People.PersonID}}<div class="photo-module" data-photo-module data-photo-mode="view">{{template "photo_lightbox" .}}</div>{{end}}
+<script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
 <script src="{{assetURL "/static/app-people.js"}}" defer></script>
 {{template "foot" .}}
 {{end}}
