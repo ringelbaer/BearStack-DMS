@@ -118,7 +118,7 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
             Column(Modifier.fillMaxSize().background(Color.Black.copy(alpha=.94f)).safeDrawingPadding().padding(16.dp),
                 horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 vm.images?.let { images ->
-                    OriginalPhoto(vm.original(face),images,person?.faceBounds?.get(face),zoom,onZoom={zoom=it},onDrag=zoomDrag,
+                    OriginalPhoto(vm.original(face),images,person?.faceBounds?.get(face),zoom,cacheKey=vm.originalKey(face),onZoom={zoom=it},onDrag=zoomDrag,
                         modifier=Modifier.weight(1f).fillMaxWidth(),onNewTouch=if(accessible) null else { {heldDismissed=true} })
                 }
                 person?.facePaths?.get(face)?.takeIf { it.isNotEmpty() }?.let {

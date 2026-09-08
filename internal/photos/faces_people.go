@@ -92,10 +92,10 @@ func (l *Library) AutomaticFaces(ctx context.Context, path string) ([]Recognized
 	return faces, nil
 }
 
-func (l *Library) People(ctx context.Context, id int64, page int, q string, knownOnly bool) (PeoplePage, error) {
-	out := PeoplePage{Query: q, PersonID: id, Page: max(1, page), People: []Person{}, KnownOnly: knownOnly && id == 0}
+func (l *Library) People(ctx context.Context, id int64, page int, q string, knownOnly, unknownOnly bool) (PeoplePage, error) {
+	out := PeoplePage{Query: q, PersonID: id, Page: max(1, page), People: []Person{}, KnownOnly: knownOnly && !unknownOnly && id == 0, UnknownOnly: unknownOnly && id == 0}
 	out.HasPrev = out.Page > 1
-	if err := l.refreshPeoplePageVisibility(ctx, id, q, knownOnly); err != nil {
+	if err := l.refreshPeoplePageVisibility(ctx, id, q, out.KnownOnly, out.UnknownOnly); err != nil {
 		return out, err
 	}
 	if id == 0 {
@@ -103,6 +103,9 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 		knownFilter := ""
 		if out.KnownOnly {
 			knownFilter = " AND p.name <> ''"
+		} else if out.UnknownOnly {
+			// The folded-name equality uses the existing name/order index.
+			knownFilter = " AND p.name_fold = '' AND p.name = ''"
 		}
 		var total int
 		if err := l.index.db.QueryRowContext(ctx, `SELECT count(*) FROM photo_people p WHERE p.name_fold LIKE ? ESCAPE '\'`+knownFilter+` AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=p.id AND ignored=0)`, pattern).Scan(&total); err != nil {
@@ -160,7 +163,7 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 func (l *Library) IgnoredFaces(ctx context.Context, page int, q string, knownOnly bool) (PeoplePage, error) {
 	out := PeoplePage{Query: q, Page: max(1, page), People: []Person{}, Faces: []RecognizedFace{}, KnownOnly: knownOnly, IgnoredOnly: true}
 	out.HasPrev = out.Page > 1
-	if err := l.refreshPeoplePageVisibility(ctx, 0, q, knownOnly); err != nil {
+	if err := l.refreshPeoplePageVisibility(ctx, 0, q, knownOnly, false); err != nil {
 		return out, err
 	}
 	knownFilter := ""

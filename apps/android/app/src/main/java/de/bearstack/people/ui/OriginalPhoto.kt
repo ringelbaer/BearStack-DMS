@@ -28,18 +28,29 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Scale
 import de.bearstack.people.data.remote.FaceBounds
+import de.bearstack.people.people.ORIGINAL_CACHE_PREFIX
+import android.content.Context
+import coil.request.CachePolicy
+
+internal fun originalPhotoRequest(context: Context, model: Any?, cacheKey: String? = null): ImageRequest =
+    ImageRequest.Builder(context).data(model).size(2048).scale(Scale.FIT)
+        .diskCachePolicy(CachePolicy.DISABLED)
+        .apply {
+            // Older servers fall back to the face URL, never to a potentially ambiguous display path.
+            (cacheKey ?: (model as? String))?.let { memoryCacheKey(ORIGINAL_CACHE_PREFIX+it) }
+        }.build()
 
 @Composable
 internal fun OriginalPhoto(model: Any?, images: ImageLoader, bounds: FaceBounds?, zoom: Float,
     onZoom: (Float) -> Unit, onDrag: (Float) -> Unit, modifier: Modifier = Modifier,
-    onNewTouch: (() -> Unit)? = null) {
+    onNewTouch: (() -> Unit)? = null, cacheKey: String? = null) {
     var imageSize by remember(model) { mutableStateOf(Size.Zero) }
     var viewport by remember { mutableStateOf(Size.Zero) }
     var loading by remember(model) { mutableStateOf(true) }
     var failed by remember(model) { mutableStateOf(false) }
     val context=LocalContext.current
     // Decode once at a bounded resolution, never fetch or decode again for each drag update.
-    val request=remember(context,model) { ImageRequest.Builder(context).data(model).size(2048).scale(Scale.FIT).build() }
+    val request=remember(context,model,cacheKey) { originalPhotoRequest(context,model,cacheKey) }
     val transform=originalTransform(viewport,imageSize,bounds,zoom)
     val drag by rememberUpdatedState(onDrag)
     val newTouch by rememberUpdatedState(onNewTouch)

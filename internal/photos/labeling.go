@@ -35,6 +35,7 @@ type LabelPerson struct {
 	Offset   int         `json:"offset"`
 }
 type LabelFace struct {
+	OriginalKey string          `json:"original_key"`
 	Favorite    bool            `json:"favorite"`
 	ID          int64           `json:"id"`
 	DisplayPath string          `json:"display_path"`
@@ -131,18 +132,24 @@ func (l *Library) LabelPerson(ctx context.Context, id int64, offset int) (LabelP
 	}
 	p.Offset = offset
 	p.Faces = []LabelFace{}
-	rows, err := tx.QueryContext(ctx, `SELECT id,path,x,y,width,height,favorite FROM photo_faces WHERE person_id=? AND ignored=0 ORDER BY id LIMIT 4 OFFSET ?`, id, offset)
+	rows, err := tx.QueryContext(ctx, `SELECT f.id,f.path,f.x,f.y,f.width,f.height,f.favorite,m.size_bytes,m.mod_time_unix_nano FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.ignored=0 ORDER BY f.id LIMIT 4 OFFSET ?`, id, offset)
 	if err != nil {
 		return p, err
 	}
 	for rows.Next() {
 		var f LabelFace
 		var source string
-		if err = rows.Scan(&f.ID, &source, &f.Bounds.X, &f.Bounds.Y, &f.Bounds.Width, &f.Bounds.Height, &f.Favorite); err != nil {
+		var size, modified int64
+		if err = rows.Scan(&f.ID, &source, &f.Bounds.X, &f.Bounds.Y, &f.Bounds.Width, &f.Bounds.Height, &f.Favorite, &size, &modified); err != nil {
 			rows.Close()
 			return p, err
 		}
 		f.DisplayPath = mediaDisplayPath(source)
+		// Share decoded originals across faces without exposing filesystem paths.
+		// Indexed file metadata invalidates the key after a detected file change.
+		encoded, _ := json.Marshal([]any{source, size, modified})
+		sum := sha256.Sum256(encoded)
+		f.OriginalKey = hex.EncodeToString(sum[:])
 		p.Faces = append(p.Faces, f)
 	}
 	err = rows.Err()

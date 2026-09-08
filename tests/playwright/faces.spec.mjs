@@ -124,6 +124,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   }
   await page.screenshot({ path: "/tmp/bearstack-people-aspect-fit.png", fullPage: true });
   await page.locator("a.person-card").filter({hasText:"2 Fotos"}).click();
+  await expect(page.getByRole("navigation", { name: "Personenseiten" })).toHaveText("Seite 1 von 1");
+  await expect(page.getByRole("navigation", { name: "Personenseiten" }).getByRole("link")).toHaveCount(0);
   for (const width of [320, 390, 640, 960, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const layout = await page.evaluate(() => {
@@ -232,6 +234,61 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
     });
     expect(result.ok(), await result.text()).toBe(true);
   }
+  const unknownFilter = page.getByRole("checkbox", { name: "Nur unbekannte Personen", exact: true });
+  const knownFilter = page.getByRole("checkbox", { name: "Nur bekannte Personen", exact: true });
+  const ignoredFilter = page.getByRole("checkbox", { name: "Ignorierte Gesichter", exact: true });
+  const filterName = page.locator('[data-people-filter] input[name="q"]');
+  const unknownID = await unnamedCard.getAttribute("data-person-id");
+  await knownFilter.check();
+  await unknownFilter.check();
+  await expect(knownFilter).not.toBeChecked();
+  await ignoredFilter.check();
+  await expect(unknownFilter).not.toBeChecked();
+  await unknownFilter.check();
+  await expect(ignoredFilter).not.toBeChecked();
+  await page.getByRole("button", { name: "Suchen", exact: true }).click();
+  await expect(page.locator("a.person-card")).toHaveCount(1);
+  await expect(unknownFilter).toBeChecked();
+  await expect(namedCard).toHaveCount(0);
+  await unnamedCard.locator("a.person-card").click();
+  await expect(page.getByRole("link", { name: "Alle Personen", exact: true })).toHaveAttribute("href", /unknown=1/);
+  await page.getByRole("link", { name: "Alle Personen", exact: true }).click();
+  await expect(unknownFilter).toBeChecked();
+  await page.goto(baseURL + "/photos/people");
+  await expect(unknownFilter).toBeChecked();
+  await unnamedCard.locator("[data-person-edit]").click();
+  await dialogName.fill("Filter-Test");
+  await personDialog.getByRole("option", { name: /Neu anlegen:.*Filter-Test/ }).click();
+  await expect(personDialog).not.toBeVisible();
+  await expect(page.locator("a.person-card")).toHaveCount(0);
+  await expect(unknownFilter).toBeChecked();
+  await renamePerson(unknownID, "");
+  await page.reload();
+  await expect(page.locator("a.person-card")).toHaveCount(1);
+  await knownFilter.check();
+  await expect(unknownFilter).not.toBeChecked();
+  await filterName.fill("Jürgen");
+  await page.getByRole("button", { name: "Suchen", exact: true }).click();
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+  }
+  await page.getByRole("link", { name: "Alle Filter aufheben" }).click();
+  await expect(filterName).toHaveValue("");
+  for (const filter of [unknownFilter, knownFilter, ignoredFilter]) await expect(filter).not.toBeChecked();
+  await expect(page.locator("a.person-card")).toHaveCount(2);
+  await expect(page.locator(".people-pagination-current")).toHaveText("Seite 1 von 1");
+  await page.goto(baseURL + "/photos/people");
+  await expect(unknownFilter).not.toBeChecked();
+  await expect(page.locator("a.person-card")).toHaveCount(2);
+  const noJS = await browser.newContext({ javaScriptEnabled: false, storageState: await context.storageState(), httpCredentials: { username: "manager", password: "secret" } });
+  const plainPage = await noJS.newPage();
+  await plainPage.goto(baseURL + "/photos/people?unknown=1&known=1&ignored=1&q=NoMatch");
+  await expect(plainPage.locator("a.person-card")).toHaveCount(0);
+  await plainPage.getByRole("link", { name: "Alle Filter aufheben" }).click();
+  await expect(plainPage.locator("a.person-card")).toHaveCount(2);
+  await expect(plainPage.getByRole("checkbox", { name: "Nur unbekannte Personen", exact: true })).not.toBeChecked();
+  await noJS.close();
   await selectPerson("Jürgen");
   const editJuergen = page.locator("[data-people-edit-button]");
   await page.evaluate(() => { window.modalPageMarker = "unchanged"; });
@@ -256,6 +313,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await personDialog.getByRole("button", { name: "Benennen", exact: true }).click();
   await expect(personDialog).not.toBeVisible();
   await expect(page.locator("a.person-card").filter({ hasText: "Jürgen Neu" })).toHaveCount(1);
+  await expect(page.getByRole("navigation", { name: "Personenseiten" })).toHaveText("Seite 1 von 1");
   expect(await page.evaluate(() => window.modalPageMarker)).toBe("unchanged");
   await expect(page.getByRole("button", { name: "Benennen oder zuordnen: Jürgen Neu", exact: true })).toHaveCount(0);
   await selectPerson("Jürgen Neu");

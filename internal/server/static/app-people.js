@@ -2,11 +2,20 @@
   "use strict";
   var pageNavigation = document.querySelector("[data-people-page]");
   var pageStorageKey = pageNavigation ? "bearstack.people.lastPage:" + pageNavigation.dataset.peopleUser : "";
+  var peopleFilter = document.querySelector("[data-people-filter]");
+  if (peopleFilter) peopleFilter.addEventListener("change", function (event) {
+    if (!event.target.checked) return;
+    if (event.target.name === "unknown") {
+      peopleFilter.elements.known.checked = false;
+      peopleFilter.elements.ignored.checked = false;
+    } else if (event.target.name === "known" || event.target.name === "ignored") peopleFilter.elements.unknown.checked = false;
+  });
   function savePeoplePage(page) {
     if (!pageStorageKey) return;
     var address = new URL(window.location.href);
     if (address.pathname !== "/photos/people") return;
-    var saved = { page: page, q: address.searchParams.get("q") || "", known: address.searchParams.get("known") === "1", ignored: address.searchParams.get("ignored") === "1" };
+    var unknown = address.searchParams.get("unknown") === "1";
+    var saved = { page: page, q: address.searchParams.get("q") || "", unknown: unknown, known: !unknown && address.searchParams.get("known") === "1", ignored: !unknown && address.searchParams.get("ignored") === "1" };
     try { window.localStorage.setItem(pageStorageKey, JSON.stringify(saved)); } catch (_) {}
   }
   if (pageNavigation) {
@@ -17,9 +26,12 @@
       var destination = new URL("/photos/people", address.origin);
       destination.searchParams.set("page", String(saved.page));
       destination.searchParams.set("q", saved.q);
-      if (saved.known === true) destination.searchParams.set("known", "1");
-      if (saved.ignored === true) destination.searchParams.set("ignored", "1");
-      if (address.pathname === "/photos/people" && !["page", "q", "known", "ignored"].some(function (key) { return address.searchParams.has(key); })) {
+      if (saved.unknown === true) destination.searchParams.set("unknown", "1");
+      else {
+        if (saved.known === true) destination.searchParams.set("known", "1");
+        if (saved.ignored === true) destination.searchParams.set("ignored", "1");
+      }
+      if (address.pathname === "/photos/people" && !["page", "q", "known", "unknown", "ignored"].some(function (key) { return address.searchParams.has(key); })) {
         if (address.searchParams.has("notice")) destination.searchParams.set("notice", address.searchParams.get("notice"));
         window.location.replace(destination.pathname + destination.search);
         return;
@@ -198,12 +210,12 @@
       disabled.className = "secondary-button"; disabled.setAttribute("aria-disabled", "true"); disabled.textContent = label;
       return disabled;
     }
-    parts.append(boundary(1, "Erste Seite", "first", data.has_prev));
+    if (data.total_pages > 1) parts.append(boundary(1, "Erste Seite", "first", data.has_prev));
     if (data.has_prev) parts.append(pageLink(data.page - 1, "Zurück", "prev"));
     var current = document.createElement("span"); current.className = "people-pagination-current";
     current.setAttribute("aria-current", "page"); current.textContent = "Seite " + data.page + " von " + data.total_pages; parts.append(current);
     if (data.has_next) parts.append(pageLink(data.page + 1, "Weiter", "next"));
-    parts.append(boundary(data.total_pages, "Letzte Seite", "last", data.has_next));
+    if (data.total_pages > 1) parts.append(boundary(data.total_pages, "Letzte Seite", "last", data.has_next));
     pagination.replaceChildren(parts);
   }
 

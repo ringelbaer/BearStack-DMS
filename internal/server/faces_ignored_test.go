@@ -48,9 +48,12 @@ func TestIgnoredFacesFilterAndNamingHTTP(t *testing.T) {
 		if strings.Contains(html, "Benennen und wiederherstellen") != (user != "reader") {
 			t.Fatalf("%s restore permissions", user)
 		}
-		for _, label := range []string{"Erste Seite", "Letzte Seite", "Seite 1 von 1"} {
-			if !strings.Contains(html, label) {
-				t.Fatalf("missing pagination %q", label)
+		if !strings.Contains(html, "Seite 1 von 1") {
+			t.Fatal("missing single-page counter")
+		}
+		for _, label := range []string{"Erste Seite", "Letzte Seite"} {
+			if strings.Contains(html, label) {
+				t.Fatalf("unnecessary single-page navigation %q", label)
 			}
 		}
 		if strings.Contains(html, "data-people-overview") {

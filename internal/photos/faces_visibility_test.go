@@ -34,9 +34,9 @@ func TestPersonVisibilityIsScopedAndChecksNewMarkers(t *testing.T) {
 			case "detail":
 				_, err = l.LabelPerson(ctx, id, 0)
 			case "people":
-				_, err = l.People(ctx, id, 1, "", false)
+				_, err = l.People(ctx, id, 1, "", false, false)
 			case "search":
-				_, err = l.People(ctx, 0, 1, "Alice", true)
+				_, err = l.People(ctx, 0, 1, "Alice", true, false)
 			case "suggestions":
 				_, err = l.LabelSuggestions(ctx, "Alice", false)
 			case "picker":

@@ -123,7 +123,7 @@ func TestFaceScaleMillion(t *testing.T) {
 		t.Fatal("gallery requests exceeded 1s mean budget")
 	}
 	start = time.Now()
-	p, e := l.People(ctx, 0, 1, "", false)
+	p, e := l.People(ctx, 0, 1, "", false, false)
 	if e != nil || len(p.People) != 60 {
 		t.Fatalf("people %d %v", len(p.People), e)
 	}

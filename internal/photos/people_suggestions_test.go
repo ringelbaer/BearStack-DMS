@@ -26,7 +26,7 @@ func TestSuggestPeopleMatchesKnownOverviewWithoutPagination(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, q := range []string{"", "Person", "Person 61", "Juergen", "Jürgen", "%", "_", "absent", "Empty"} {
-		page, err := l.People(ctx, 0, 1, q, true)
+		page, err := l.People(ctx, 0, 1, q, true, false)
 		if err != nil {
 			t.Fatal(err)
 		}

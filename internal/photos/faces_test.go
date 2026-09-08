@@ -59,7 +59,7 @@ func TestFacesGroupSearchAndOverrides(t *testing.T) {
 	finishFace(t, l, 0)
 	finishFace(t, l, 0)
 	finishFace(t, l, 1)
-	p, err := l.People(ctx, 0, 1, "", false)
+	p, err := l.People(ctx, 0, 1, "", false, false)
 	if err != nil || len(p.People) != 2 {
 		t.Fatalf("groups=%+v err=%v", p, err)
 	}
@@ -146,7 +146,7 @@ func TestFacesXMPAndPrivateInvalidation(t *testing.T) {
 	if _, err := l.Face(ctx, a[0].ID); !errors.Is(err, ErrAdminOnly()) {
 		t.Fatalf("private thumbnail access: %v", err)
 	}
-	p, err := l.People(ctx, 0, 1, "", false)
+	p, err := l.People(ctx, 0, 1, "", false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -355,7 +355,7 @@ func TestFacesXMPNameChangeAndLateSeed(t *testing.T) {
 		t.Fatal(err)
 	}
 	finishFace(t, l, 0)
-	p, err := l.People(ctx, 0, 1, "", false)
+	p, err := l.People(ctx, 0, 1, "", false, false)
 	if err != nil || len(p.People) != 1 || p.People[0].Name != "First Name" {
 		t.Fatalf("late seed fragmented group %+v %v", p, err)
 	}
@@ -368,7 +368,7 @@ func TestFacesXMPNameChangeAndLateSeed(t *testing.T) {
 		t.Fatalf("obsolete XMP label retained %+v %v", f, err)
 	}
 	finishFace(t, l, 0)
-	p, err = l.People(ctx, 0, 1, "", false)
+	p, err = l.People(ctx, 0, 1, "", false, false)
 	if err != nil || len(p.People) != 1 || p.People[0].Name != "Updated Name" {
 		t.Fatalf("XMP rename fragmented group %+v %v", p, err)
 	}
@@ -480,7 +480,7 @@ func TestFacesConcurrentIndexAndAnalysis(t *testing.T) {
 	if err = <-indexed; err != nil {
 		t.Fatal(err)
 	}
-	page, err := l.People(ctx, id, 1, "", false)
+	page, err := l.People(ctx, id, 1, "", false, false)
 	if err != nil || len(page.Faces) != 4 || page.Name != "Manuell benannt" {
 		t.Fatalf("concurrent indexing changed assignments: %+v, %v", page, err)
 	}
@@ -524,7 +524,7 @@ func TestFacesConservativeMatching(t *testing.T) {
 			t.Fatalf("uncertain match assigned to existing person: %+v", faces[0])
 		}
 	}
-	page, err := l.People(ctx, 0, 1, "", false)
+	page, err := l.People(ctx, 0, 1, "", false, false)
 	if err != nil || len(page.People) != 4 {
 		t.Fatalf("groups must remain separate: %+v, %v", page, err)
 	}
@@ -549,7 +549,7 @@ func TestPeopleKnownFilterCombinesWithSearch(t *testing.T) {
 	}{
 		{"", false, 2}, {"", true, 1}, {"Juergen", true, 1}, {"Unbenannt", true, 0}, {"Marie", true, 0},
 	} {
-		page, err := l.People(ctx, 0, 1, tc.query, tc.known)
+		page, err := l.People(ctx, 0, 1, tc.query, tc.known, false)
 		if err != nil || len(page.People) != tc.count || page.KnownOnly != tc.known {
 			t.Fatalf("query=%q known=%v: %+v %v", tc.query, tc.known, page, err)
 		}
@@ -560,7 +560,7 @@ func TestPeopleKnownFilterCombinesWithSearch(t *testing.T) {
 	if err := l.RenamePerson(ctx, faces[0].PersonID, "  "); err != nil {
 		t.Fatal(err)
 	}
-	page, err := l.People(ctx, 0, 1, "", true)
+	page, err := l.People(ctx, 0, 1, "", true, false)
 	if err != nil || len(page.People) != 0 {
 		t.Fatalf("cleared name remains known: %+v %v", page, err)
 	}
@@ -572,7 +572,7 @@ func TestMergePeopleBatchAtomic(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		finishFace(t, l, i)
 	}
-	page, err := l.People(ctx, 0, 1, "", false)
+	page, err := l.People(ctx, 0, 1, "", false, false)
 	if err != nil || len(page.People) != 3 {
 		t.Fatalf("people=%+v err=%v", page, err)
 	}
@@ -584,7 +584,7 @@ func TestMergePeopleBatchAtomic(t *testing.T) {
 		if err := l.MergePeople(ctx, source, target, extra); err == nil {
 			t.Fatalf("accepted invalid source %d", extra)
 		}
-		page, err = l.People(ctx, 0, 1, "", false)
+		page, err = l.People(ctx, 0, 1, "", false, false)
 		if err != nil || len(page.People) != 3 {
 			t.Fatalf("failed merge changed groups: %+v %v", page, err)
 		}
@@ -592,7 +592,7 @@ func TestMergePeopleBatchAtomic(t *testing.T) {
 	if err := l.MergePeople(ctx, source, target, other, source); err != nil {
 		t.Fatal(err)
 	}
-	page, err = l.People(ctx, 0, 1, "", false)
+	page, err = l.People(ctx, 0, 1, "", false, false)
 	if err != nil || len(page.People) != 1 || page.People[0].ID != target || page.People[0].Name != "Ziel" || page.People[0].Count != 3 {
 		t.Fatalf("merged people=%+v err=%v", page, err)
 	}

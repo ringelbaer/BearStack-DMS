@@ -181,11 +181,47 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await expectZoom(page, cards.first());
   await page.evaluate(() => { window.groupOriginal = document.querySelector("[data-group-image]"); window.groupThumb = document.querySelector("[data-group-face] img"); });
   const modal = page.locator("[data-person-dialog]");
+  const modalSource = page.locator("[data-group-face][data-person-dialog-source]");
+  const repeatedPerson = cards.nth(2);
+  const originalPersonID = await repeatedPerson.getAttribute("data-person-id");
+  await repeatedPerson.evaluate((card, id) => { card.dataset.personId = id; }, await cards.first().getAttribute("data-person-id"));
+  for (const closing of ["cancel", "escape"]) {
+    await repeatedPerson.locator("[data-person-edit]").click();
+    await expect(modal).toBeVisible();
+    // Repeated detections share a person ID, but only the clicked thumbnail is marked.
+    await expect(modalSource).toHaveCount(1);
+    await expect(modalSource).toHaveAttribute("data-group-face", await repeatedPerson.getAttribute("data-group-face"));
+    await expect(repeatedPerson.locator("[data-group-highlight]")).toHaveCSS("outline-style", "solid");
+    expect(await repeatedPerson.locator("[data-group-highlight]").evaluate(preview => parseFloat(getComputedStyle(preview).outlineWidth))).toBeGreaterThan(0);
+    await expectZoom(page, cards.first());
+    if (closing === "cancel") await modal.getByRole("button", { name: "Abbrechen" }).click();
+    else {
+      const name = modal.getByRole("combobox", { name: "Name", exact: true });
+      await expect(name).toHaveAttribute("aria-expanded", "true");
+      await name.press("Escape");
+      await expect(modal).toBeVisible();
+      await expect(modalSource).toHaveCount(1);
+      await name.press("Escape");
+    }
+    await expect(modal).not.toBeVisible();
+    await expect(modalSource).toHaveCount(0);
+    await expect(repeatedPerson.locator("[data-group-highlight]")).toHaveCSS("outline-style", "none");
+  }
+  await repeatedPerson.evaluate((card, id) => { card.dataset.personId = id; }, originalPersonID);
   await cards.first().locator("[data-person-edit]").click();
+  await expect(modalSource).toHaveCount(1);
+  await expect(modalSource).toHaveAttribute("data-group-face", await cards.first().getAttribute("data-group-face"));
   await modal.getByRole("combobox", { name: "Name", exact: true }).fill("Ada");
   await expect(modal.getByRole("option", { name: /Neu anlegen:.*Ada/ }).locator("img")).toHaveCount(0);
+  await page.route("**/photos/people/*/rename", route => route.fulfill({ status: 503, body: "Unavailable" }));
   await modal.getByRole("option", { name: /Neu anlegen:.*Ada/ }).click();
+  await expect(modal.locator("[data-person-dialog-status]")).toContainText("HTTP 503");
+  await expect(modalSource).toHaveCount(1);
+  await expect(modalSource).toHaveAttribute("data-group-face", await cards.first().getAttribute("data-group-face"));
+  await page.unroute("**/photos/people/*/rename");
+  await modal.getByRole("button", { name: "Benennen", exact: true }).click();
   await expect(modal).not.toBeVisible();
+  await expect(modalSource).toHaveCount(0);
   await expect(surface).toHaveAttribute("data-path", "b.png");
   await expect(page.locator("[data-group-count]")).toContainText("5 unbearbeitete");
   await expect(cards.first().locator("[data-person-edit]")).toHaveCount(0);
@@ -195,6 +231,8 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   const other = await (await context.request.get(baseURL + "/photos/people/groups?format=json&path=d.png")).json();
   expect(other.photo.faces[0].name).toBe("Ada");
   await cards.nth(1).locator("[data-person-edit]").click();
+  await expect(modalSource).toHaveCount(1);
+  await expect(modalSource).toHaveAttribute("data-group-face", await cards.nth(1).getAttribute("data-group-face"));
   await modal.getByRole("combobox", { name: "Name", exact: true }).fill("Ada");
   const adaOption = modal.getByRole("option", { name: /^Ada \(#/ });
   const adaThumbnail = adaOption.locator("img");
@@ -214,6 +252,7 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   // Clicking the image chooses the same person as clicking the name.
   await adaThumbnail.click();
   await expect(modal).not.toBeVisible();
+  await expect(modalSource).toHaveCount(0);
   await expect(page.locator("[data-group-count]")).toContainText("4 unbearbeitete");
   await page.route("**/photos/people/groups/ignore", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Speichern fehlgeschlagen" }) }));
   await page.getByRole("button", { name: "Verbleibende ignorieren" }).click();

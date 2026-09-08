@@ -8,6 +8,12 @@ import org.junit.Test
 import org.json.JSONObject
 
 class LabelingImageTest {
+    @Test fun originalKeysRemainAssociatedWithFacesAndLegacyResponsesAreSafe() {
+        val key="a".repeat(64)
+        val p=LabelingApi(OkHttpClient(),"https://example.test/").person(JSONObject("""{"id":1,"name":"Anna","revision":1,"count":4,"face_id":10,
+            "faces":[{"id":10,"original_key":"$key"},{"id":11,"original_key":"$key"},{"id":12},{"id":13,"original_key":"invalid"}]}"""))
+        assertEquals(mapOf(10L to key,11L to key),p.originalKeys)
+    }
     @Test fun favoritesAndBrowserSearchPreserveFaceIdentityAndProxyPrefix() {
         val api=LabelingApi(OkHttpClient(),"https://example.test/bearstack/")
         val p=api.person(JSONObject("""{"id":1,"name":"Anna","revision":4,"count":3,"face_id":10,

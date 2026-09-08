@@ -1,6 +1,6 @@
 # BearStack Personen für Android
 
-Native, deutschsprachige App für Android 8.0 oder neuer. App-Version **0.6.0**; erforderlich sind **BearStack 0.35.0**, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit `photos.edit` (Rolle „Fotos bearbeiten“/`photos_editor`, `photos_manager` oder Administrator; Freigabe für Fotobearbeiter ab BearStack 0.36.0). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.
+Native, deutschsprachige App für Android 8.0 oder neuer. App-Version **0.6.1**; erforderlich sind **BearStack 0.35.0**, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit `photos.edit` (Rolle „Fotos bearbeiten“/`photos_editor`, `photos_manager` oder Administrator; Freigabe für Fotobearbeiter ab BearStack 0.36.0). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.
 
 ## Bauen und installieren
 
@@ -79,6 +79,10 @@ Die Statistik zählt **Gesichter und Gruppen**, jeweils heute (lokale Zeitzone) 
 
 Ein Durchgang lädt Metadaten in Seiten von maximal 20 Gruppen. Jede Gruppe wird vor Anzeige erneut geprüft. Benannte, leere oder gelöschte Gruppen werden ausgelassen. Vier Bilder werden angezeigt, höchstens die nächste Viereransicht wird vorgeladen. Originalfotos werden erst beim Halten angefordert und für die Anzeige auf Bildschirmgröße dekodiert. Beim Loslassen wird die Vorschau geschlossen; Originalfotos werden nicht vorgeladen. Der Bildcache ist auf 16 MiB begrenzt und hat keinen Disk-Cache.
 
+Ab App **0.6.1** und BearStack **0.43.1** wird das dekodierte Originalfoto bis zu **drei Minuten ab erfolgreichem Laden** über unterschiedliche Gesichter desselben Fotos hinweg wiederverwendet, auch zwischen Zuordnungsmodus und Personenbereich. Weitere Aufrufe verlängern die Frist nicht. Die individuelle Bounding Box und der Zoom werden separat gezeichnet. Der gemeinsame LRU-Bildcache bleibt auf **16 MiB** begrenzt; bei Speicherdruck können Bilder früher verdrängt werden. Ein Verbindungswechsel leert ihn. Es gibt keinen Disk-Cache und kein Vorladen von Originalen. Eine bereits geöffnete Vorschau bleibt nach Fristablauf sichtbar; erneutes Öffnen lädt wieder vom Server. Auf älteren Servern gilt die Frist ebenfalls, die Wiederverwendung bleibt dort auf dieselbe Gesichts-URL beschränkt.
+
+Der Server liefert dazu je Gesicht die optionale, undurchsichtige `original_key`-Kennung aus Originalpfad und indexierten Dateimetadaten. Unterschiedliche Gesichter und Personen desselben Fotos teilen diese Kennung; erkannte Dateiänderungen erzeugen eine neue Kennung. Anzeigeformatierte Pfade werden nicht als Cache-Schlüssel verwendet. Cachetreffer benötigen weder einen erneuten Bildabruf noch eine erneute Dekodierung; ein neuer Abruf nach Ablauf durchläuft wieder die serverseitigen Zugriffsprüfungen. HTTP-Antworten bleiben `private, no-store`; wiederverwendet wird ausschließlich das dekodierte Bild im App-Arbeitsspeicher.
+
 ## API und Datenmigration
 
 Der gemeinsame Vertrag steht in [`openapi.yaml`](https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml), unter `/api/photos/labeling/v1`. Anfragen verwenden HTTP Basic über HTTPS und JSON. Die Sitzung meldet `named_people` ab BearStack 0.43.0. `GET /people?after=…&upper=…` liefert benannte Personen; die Aktionen `rename`, `unassign` und `favorite` erweitern den bestehenden Aktionsendpunkt ohne Protokollwechsel. Operationen tragen eine zufällige ID, Datenbestandskennung, Quellrevision und bei Zuordnung eine Zielrevision. Die Antwort enthält tatsächliche Gesichtszahlen und betroffene Gruppen-IDs.
@@ -105,6 +109,8 @@ make test-go
 ```
 
 Compose-Regressionstests prüfen beim Vor- und Zurückblättern, dass Überschrift, Gesichtsraster und Navigation vor, während und nach dem Laden an derselben Position bleiben, auch bei doppelter Schriftgröße und gescrolltem Inhalt. Während des Ladens bleiben die Blätteraktionen gesperrt. Weitere Regressionen prüfen ablaufende Rücknahmen bei geöffnetem Namens- und Duplikatdialog, das anschließende Speichern jeder ursprünglichen Gruppe sowie die Wiederherstellung beim Hintergrundwechsel. Ein UI-Test ab Android 11 prüft außerdem Dialogidentität, Eingabefokus, sichtbare Bildschirmtastatur und weiteren Textinput beim Ändern und Ausblenden der Rückgängig-Meldung.
+
+Cachetests prüfen tatsächliche HTTPS-Anfragezahlen und die Wiederverwendung desselben dekodierten Bitmaps für unterschiedliche Gesichter, den festen Drei-Minuten-Ablauf, Fehlerantworten, Cacheleeren, Speicherbegrenzung und alte Server ohne Bildkennung.
 
 Zusätzliche Regressionen prüfen die vollständige Personenliste über mehrere Seiten, Umbenennen, Favoritenwechsel, Entfernen des letzten Gesichts, große Schrift, Halten/Wischen/Abbruch und TalkBack-Vorschau. Repository- und ViewModel-Tests sichern verlorene Antworten, Konflikte und den Erhalt der Zuordnungswarteschlange ab. Der echte HTTPS-Integrationstest führt die neuen Verwaltungsaktionen gegen den Go-Server aus.
 

@@ -125,7 +125,8 @@ class PeopleViewModel private constructor(application: Application, private val 
         clearConnection()
         api = remote
         images = ImageLoader.Builder(getApplication()).okHttpClient(client).diskCachePolicy(CachePolicy.DISABLED)
-            .memoryCache { MemoryCache.Builder(getApplication()).maxSizeBytes(16 * 1024 * 1024).build() }.build()
+            .memoryCache { OriginalMemoryCache(MemoryCache.Builder(getApplication()).maxSizeBytes(16 * 1024 * 1024)
+                .weakReferencesEnabled(false).build()) }.build()
         repository = PeopleRepository(db,remote,session)
         update { it.copy(connected=true,certificate=null) }
         collectStatistics()
@@ -178,6 +179,11 @@ class PeopleViewModel private constructor(application: Application, private val 
     private var searchPreload: Job? = null
     fun image(face: Long, large: Boolean = false) = api?.image(face,large)
     fun original(face: Long) = api?.original(face)
+    fun originalKey(face: Long): String? {
+        val current=state.value
+        val person=if(current.directory) current.selectedPerson else current.person
+        return person?.originalKeys?.get(face)?.let { "${repository?.scope}:$it" }
+    }
     fun gallery(name: String) = api?.gallery(name)
     private fun editable() = state.value.connected && !state.value.busy && !state.value.unresolved
     fun page(delta: Int) { if (editable()) task {

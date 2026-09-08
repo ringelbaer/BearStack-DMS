@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.43.0
+  version: 0.44.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -1214,12 +1214,15 @@ paths:
       summary: List automatically grouped people
       description: 'Requires photos.read. HTML by default; format=json or Accept: application/json
         returns a page of at most 60 groups. With ignored=1, returns up to 60 individual
-        ignored faces in faces and an empty people array. Admin-only photos are excluded.
+        ignored faces in faces and an empty people array. Since 0.44.0, unknown=1
+        lists only unnamed groups with active faces, overriding known and ignored.
+        Ignored faces do not contribute portraits or photo counts in this mode.
+        Admin-only photos are excluded.
         Since 0.42.0, format=suggestions returns the first 60 named groups for the web
         autocomplete, with id, name, distinct-photo count and has_next. Since 0.43.0,
         each suggestion also includes face_id for the same active portrait as the people
         overview, served by /photos/faces/{id}/thumbnail. This mode
-        applies q but ignores page, known and ignored; it performs current visibility
+        applies q but ignores page, known, unknown and ignored; it performs current visibility
         and imported-name-source checks without calculating total pages.
         Cache-Control is private, no-store.'
       parameters:
@@ -1243,6 +1246,13 @@ paths:
       - name: known
         in: query
         description: Set to 1 to list only people with a non-empty name; combines with q and pagination.
+        schema:
+          type: string
+          enum: ['0', '1']
+          default: '0'
+      - name: unknown
+        in: query
+        description: Since 0.44.0, set to 1 for unnamed person groups with active, non-ignored faces only. Overrides known=1 and ignored=1; combines with q and pagination. Ignored by format=suggestions and person-detail routes.
         schema:
           type: string
           enum: ['0', '1']
@@ -2045,6 +2055,17 @@ components:
             properties:
               id: {type: integer, format: int64, minimum: 1}
               favorite: {type: boolean, description: "Reference favorite status since 0.40.0. Older servers omit this field."}
+              original_key:
+                type: string
+                pattern: '^[a-f0-9]{64}$'
+                description: >-
+                  Optional opaque original-image identity since 0.43.1. Shared by
+                  faces from the same source; changes when indexed size or modification
+                  time changes. Scoped to the connected instance, dataset and account
+                  by the client. Android 0.6.1 uses this for a bounded decoded-bitmap
+                  memory cache with a fixed 180-second lifetime from loading; cache
+                  hits do not extend it. HTTP responses remain private, no-store.
+                  Older servers omit it; clients fall back to the individual face URL.
               display_path:
                 type: string
                 description: >-
@@ -2772,6 +2793,9 @@ components:
         known_only:
           type: boolean
           description: Whether the overview is filtered to named people.
+        unknown_only:
+          type: boolean
+          description: Since 0.44.0, whether only unnamed groups with active faces are listed. When true, known_only and ignored_only are false.
         query:
           type: string
         people:

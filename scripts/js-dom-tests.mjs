@@ -1055,10 +1055,11 @@ async function testPeopleRefreshRetainsImagesWhenCountsChange() {
     peopleSelectionControls(),
     el("div", { class: "people-pagination" }));
   const context = createContext(document);
-  context.location.href = "http://example.test/photos/people";
+  context.location.href = "http://example.test/photos/people?unknown=1";
   context.history = { state: null, replaceState() {} };
+  let pageData = { page: 2, total_pages: 3, has_prev: true, has_next: true };
   context.fetch = async (url, options) => ({ ok: true, json: async () => options.method === "POST" ?
-    { ok: true } : { people: [{ id: 1, face_id: 10, name: "Neu", count: 2 }], page: 2, total_pages: 3, has_prev: true, has_next: true } });
+    { ok: true } : { people: [{ id: 1, face_id: 10, name: "Neu", count: 2 }], ...pageData } });
   runScripts(context, ["app-person-dialog.js", "app-people.js"]);
   overview.dispatchEvent({ type: "click", target: ignore });
   await new Promise((resolve) => setImmediate(resolve));
@@ -1072,8 +1073,24 @@ async function testPeopleRefreshRetainsImagesWhenCountsChange() {
   const links = document.querySelector(".people-pagination").children;
   assert.equal(links[0].textContent, "Erste Seite");
   assert.equal(new URL(links[0].href, "http://example.test").searchParams.get("page"), "1");
+  assert.equal(new URL(links[0].href, "http://example.test").searchParams.get("unknown"), "1");
   assert.equal(links[links.length - 1].textContent, "Letzte Seite");
   assert.equal(new URL(links[links.length - 1].href, "http://example.test").searchParams.get("page"), "3");
+  assert.equal(new URL(links[links.length - 1].href, "http://example.test").searchParams.get("unknown"), "1");
+  // Refreshes can shrink the result to one page and later restore navigation.
+  for (const [page, total, labels] of [
+    [1, 1, ["Seite 1 von 1"]],
+    [1, 3, ["Erste Seite", "Seite 1 von 3", "Weiter", "Letzte Seite"]],
+    [3, 3, ["Erste Seite", "Zurück", "Seite 3 von 3", "Letzte Seite"]],
+  ]) {
+    pageData = { page, total_pages: total, has_prev: page > 1, has_next: page < total };
+    overview.dispatchEvent({ type: "click", target: ignore });
+    await new Promise((resolve) => setImmediate(resolve));
+    const controls = document.querySelector(".people-pagination").children;
+    assert.deepEqual(Array.from(controls, control => control.textContent), labels);
+    if (total > 1) assert.equal(controls[page === 1 ? 0 : controls.length - 1].getAttribute("aria-disabled"), "true");
+    assert.equal(imageWrites, 0);
+  }
 }
 
 function testPeopleRemembersPageAndHonorsExplicitFilters() {
@@ -1097,11 +1114,23 @@ function testPeopleRemembersPageAndHonorsExplicitFilters() {
   assert.equal(destination.searchParams.get("q"), "Petra");
   assert.equal(destination.searchParams.get("known"), "1");
   assert.equal(destination.searchParams.get("ignored"), "1");
-  for (const query of ["?page=2", "?q=", "?ignored=1", "?known=1"]) {
+  for (const query of ["?page=2", "?q=", "?ignored=1", "?known=1", "?unknown=1", "?unknown=0"]) {
     const explicit = setup("http://example.test/photos/people" + query);
     assert.equal(explicit.context.redirect, undefined);
     assert.equal(JSON.parse(explicit.values.get(key)).page, 2);
   }
+  const unknownState = JSON.stringify({ page: 2, q: "", unknown: true, known: true, ignored: true });
+  const unknown = new URL(setup("http://example.test/photos/people", unknownState).context.redirect, "http://example.test");
+  assert.equal(unknown.searchParams.get("unknown"), "1");
+  assert.equal(unknown.searchParams.has("known"), false);
+  assert.equal(unknown.searchParams.has("ignored"), false);
+  const reset = setup("http://example.test/photos/people?page=1&q=", unknownState);
+  assert.equal(reset.context.redirect, undefined);
+  assert.equal(JSON.parse(reset.values.get(key)).unknown, false);
+  const explicitUnknown = setup("http://example.test/photos/people?unknown=1&known=1&ignored=1");
+  assert.equal(JSON.parse(explicitUnknown.values.get(key)).unknown, true);
+  assert.equal(JSON.parse(explicitUnknown.values.get(key)).known, false);
+  assert.equal(JSON.parse(explicitUnknown.values.get(key)).ignored, false);
   const invalid = setup("http://example.test/photos/people", '{"page":-1,"q":"x"}');
   assert.equal(invalid.context.redirect, undefined);
   const broken = setup("http://example.test/photos/people", "not json");

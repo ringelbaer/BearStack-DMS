@@ -21,7 +21,7 @@ func TestMergePeoplePreservesNamedGroup(t *testing.T) {
 			for i := 0; i < 3; i++ {
 				finishFace(t, l, i)
 			}
-			page, err := l.People(ctx, 0, 1, "", false)
+			page, err := l.People(ctx, 0, 1, "", false, false)
 			if err != nil || len(page.People) != 3 {
 				t.Fatalf("people: %+v %v", page, err)
 			}
@@ -36,12 +36,12 @@ func TestMergePeoplePreservesNamedGroup(t *testing.T) {
 			if err := l.MergePeople(ctx, source, target, other); err != nil {
 				t.Fatal(err)
 			}
-			merged, err := l.People(ctx, 0, 1, "", false)
+			merged, err := l.People(ctx, 0, 1, "", false, false)
 			if err != nil || len(merged.People) != 1 || merged.People[0].ID != target || merged.People[0].Name != tc.want || merged.People[0].Count != 3 {
 				t.Fatalf("merge: %+v %v", merged, err)
 			}
 			if tc.want != "" {
-				known, err := l.People(ctx, 0, 1, tc.want, true)
+				known, err := l.People(ctx, 0, 1, tc.want, true, false)
 				if err != nil || len(known.People) != 1 {
 					t.Fatalf("name search: %+v %v", known, err)
 				}
@@ -60,7 +60,7 @@ func TestMergePeopleNamedAtomic(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		finishFace(t, l, i)
 	}
-	page, err := l.People(ctx, 0, 1, "", false)
+	page, err := l.People(ctx, 0, 1, "", false, false)
 	if err != nil || len(page.People) != 3 {
 		t.Fatalf("people: %+v %v", page, err)
 	}
@@ -83,7 +83,7 @@ func TestMergePeopleNamedAtomic(t *testing.T) {
 	if err := l.MergePeopleNamed(ctx, source, target, "Neu", other); err == nil {
 		t.Fatal("expected rollback")
 	}
-	page, err = l.People(ctx, 0, 1, "", false)
+	page, err = l.People(ctx, 0, 1, "", false, false)
 	if err != nil || len(page.People) != 3 {
 		t.Fatalf("partial merge: %+v %v", page, err)
 	}
@@ -97,7 +97,7 @@ func TestMergePeopleNamedAtomic(t *testing.T) {
 	if err := l.MergePeopleNamed(ctx, source, target, "  Gemeinsam  ", other, source); err != nil {
 		t.Fatal(err)
 	}
-	page, err = l.People(ctx, 0, 1, "Gemeinsam", true)
+	page, err = l.People(ctx, 0, 1, "Gemeinsam", true, false)
 	if err != nil || len(page.People) != 1 || page.People[0].Name != "Gemeinsam" || page.People[0].Count != 3 || page.People[0].ID != target {
 		t.Fatalf("named merge: %+v %v", page, err)
 	}

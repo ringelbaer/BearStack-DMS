@@ -53,11 +53,12 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page := boundedInt(r.URL.Query().Get("page"), 1, 1, 1000000)
+	unknownOnly := id == 0 && r.URL.Query().Get("unknown") == "1"
 	var result photos.PeoplePage
-	if id == 0 && r.URL.Query().Get("ignored") == "1" {
+	if id == 0 && r.URL.Query().Get("ignored") == "1" && !unknownOnly {
 		result, err = s.photos.IgnoredFaces(r.Context(), page, r.URL.Query().Get("q"), r.URL.Query().Get("known") == "1")
 	} else {
-		result, err = s.photos.People(r.Context(), id, page, r.URL.Query().Get("q"), r.URL.Query().Get("known") == "1")
+		result, err = s.photos.People(r.Context(), id, page, r.URL.Query().Get("q"), r.URL.Query().Get("known") == "1", unknownOnly)
 	}
 	if err != nil {
 		s.faceError(w, r, err)

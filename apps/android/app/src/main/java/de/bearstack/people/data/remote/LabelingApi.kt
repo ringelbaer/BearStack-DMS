@@ -20,7 +20,8 @@ data class Session(val instance: String, val dataset: String, val account: Strin
 }
 data class Person(val id: Long, val name: String, val revision: Long, val count: Long, val faceId: Long,
     val faces: List<Long> = emptyList(), val offset: Int = 0, val facePaths: Map<Long,String> = emptyMap(),
-    val faceBounds: Map<Long,FaceBounds> = emptyMap(), val favorites: Set<Long> = emptySet())
+    val faceBounds: Map<Long,FaceBounds> = emptyMap(), val favorites: Set<Long> = emptySet(),
+    val originalKeys: Map<Long,String> = emptyMap())
 data class Candidates(val people: List<Person>, val next: Long, val hasNext: Boolean)
 data class Receipt(val operation: String, val action: String, val source: Long, val target: Long, val newId: Long,
     val faces: Long, val groups: Int, val at: Long)
@@ -109,7 +110,10 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
                     b.optDouble("width").toFloat(), b.optDouble("height").toFloat())?.let { face.getLong("id") to it }
             }.toMap(), if(faces == null) emptySet() else (0 until faces.length()).mapNotNull {
                 faces.getJSONObject(it).takeIf { face -> face.optBoolean("favorite") }?.getLong("id")
-            }.toSet())
+            }.toSet(), if(faces == null) emptyMap() else (0 until faces.length()).mapNotNull {
+                val face=faces.getJSONObject(it)
+                face.optString("original_key").takeIf { key -> key.matches(Regex("[a-f0-9]{64}")) }?.let { face.getLong("id") to it }
+            }.toMap())
     }
     private fun receipt(o: JSONObject) = Receipt(o.getString("operation_id"),o.getString("action"),o.getLong("source_id"),
         o.getLong("target_id"),o.getLong("new_id"),o.getLong("faces"),o.getInt("groups"),o.getLong("at"))

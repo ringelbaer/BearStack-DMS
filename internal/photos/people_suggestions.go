@@ -23,7 +23,7 @@ type PeopleSuggestions struct {
 // current marker/name-source checks still run before querying visible groups.
 func (l *Library) SuggestPeople(ctx context.Context, q string) (PeopleSuggestions, error) {
 	out := PeopleSuggestions{People: []PersonSuggestion{}}
-	if err := l.refreshPeoplePageVisibility(ctx, 0, q, true); err != nil {
+	if err := l.refreshPeoplePageVisibility(ctx, 0, q, true, false); err != nil {
 		return out, err
 	}
 	rows, err := l.index.db.QueryContext(ctx, `SELECT p.id,p.name,

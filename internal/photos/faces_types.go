@@ -31,6 +31,7 @@ type PeoplePage struct {
 	TotalPages  int              `json:"total_pages"`
 	IgnoredOnly bool             `json:"ignored_only"`
 	KnownOnly   bool             `json:"known_only"`
+	UnknownOnly bool             `json:"unknown_only"`
 	Query       string           `json:"query,omitempty"`
 	People      []Person         `json:"people"`
 	Faces       []RecognizedFace `json:"faces,omitempty"`

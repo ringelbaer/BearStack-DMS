@@ -29,7 +29,7 @@ func TestIgnoredFacesFilterPaginationAndRestore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	visible, err := l.People(ctx, 0, 1, "", false)
+	visible, err := l.People(ctx, 0, 1, "", false, false)
 	if err != nil || len(visible.People) != 0 {
 		t.Fatalf("ignored group visible: %+v %v", visible, err)
 	}

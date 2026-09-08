@@ -4,6 +4,25 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.44.0
+
+- Neuer Filter „Nur unbekannte Personen“ unter `/photos/people`: ausschließlich unbenannte Gruppen mit aktiven Gesichtern. Benannte und vollständig ignorierte Gruppen sind ausgeschlossen; Vorschaubild und Fotoanzahl berücksichtigen keine ignorierten Gesichter. Der Filter bleibt beim Blättern, nach Bearbeitungen und über die im Browser gespeicherte Auswahl erhalten. Bekannte und ignorierte Ansichten schließen den neuen Filter in der Bedienung aus.
+- Kleiner Button „Alle Filter aufheben“ leert Namenssuche und alle Personenfilter und öffnet Seite 1, auch ohne JavaScript. Mit JavaScript wird dabei auch die gespeicherte Filterauswahl zurückgesetzt.
+- Die kompatible API ergänzt `unknown=1` und `unknown_only`; bei widersprüchlichen Parametern gewinnt `unknown=1`. SQL-Filterung und der bestehende Namensindex liefern korrekte Seitenzahlen ohne nachträgliches Aussortieren im Browser. Sichtbarkeitsprüfungen berücksichtigen auch importierte Namen, deren geschützte Quelle die Person unbenannt werden lässt.
+- MINOR für den zusätzlichen Filter ohne Datenmigration. Regressionen prüfen aktive/ignorierte Gesichter, Seitenwechsel und Verkleinerung der Ergebnisliste, Schutzmarker, HTTP-Rechte, gespeicherte Filter, Zurücksetzen und Bedienung ohne JavaScript. README, Website und OpenAPI aktualisiert.
+
+### BearStack 0.43.1
+
+- Android-App **0.6.1** (versionCode 14): Originalfotos werden im gemeinsamen 16-MiB-Arbeitsspeichercache für maximal drei Minuten ab erfolgreichem Laden über unterschiedliche Gesichter hinweg wiederverwendet. Cachetreffer verlängern die Frist nicht; Bounding Box und Zoom bleiben separat. Kein Disk-Cache; Verbindungswechsel leert den Cache. Ältere Server verwenden weiterhin getrennte Gesichts-URLs mit derselben Frist.
+- Die Labeling-Detailantwort ergänzt `original_key` aus Originalpfad und indexierten Dateimetadaten. Die Abfrage bleibt auf vier Gesichter begrenzt und benötigt weder zusätzliche Dateizugriffe noch Einzelabfragen. PATCH für die Performance-Verbesserung ohne Datenmigration. Tests prüfen echte HTTPS-Anfragezahlen, Bitmap-Wiederverwendung, Ablauf, Verdrängung, Fehler und geänderte Quelldateien; README, Website und OpenAPI ergänzt.
+
+- Personendetails, Personenübersicht und ignorierte Gesichter zeigen bei genau einer Seite nur noch „Seite 1 von 1“. Die überflüssigen Aktionen „Erste Seite“ und „Letzte Seite“ entfallen auch nach AJAX-Aktualisierungen; mehrseitige Ergebnisse behalten ihre Navigation. UI-Korrektur im bestehenden PATCH 0.43.1 ohne API-Änderung.
+
+- Größere Thumbnails im Gruppenbild-Grid: bis zu 200 × 200 Pixel, breitere Kacheln und eine an die Bildschirmbreite angepasste Spaltenzahl. Zoom- und Modalumrandung folgen weiterhin der Bildfläche. Vorhandene Bildabrufe und Vorschaucache werden weiterverwendet; die UI-Anpassung gehört zum bereits vorgesehenen PATCH 0.43.1.
+
+- Im Gruppenbildmodus erhält das Thumbnail des geöffneten Benenn-/Zuordnungsdialogs eine Umrandung. Die Markierung folgt der tatsächlich angeklickten Vorschau, auch bei mehreren Gesichtern derselben Person, und bleibt bei Speicherfehlern erhalten. Abbrechen, Escape und erfolgreiches Speichern entfernen sie wieder; die Zoomauswahl bleibt erhalten.
+- PATCH für die ergänzte visuelle Zuordnung ohne zusätzliche Bildabrufe, API-Änderung oder Datenmigration. Bestehende Browsertests um Dialogwechsel, doppelte Personenzuordnungen, Fehler und Schließen erweitert; README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.43.0
 
 - Die Bounding Box im Gruppenbildmodus verwendet eine dünnere gelbe Linie (1 statt 3 Pixel); die dunkle Kontrastkontur bleibt erhalten. Kleine UI-Korrektur innerhalb des bereits vorgesehenen Releases 0.43.0.

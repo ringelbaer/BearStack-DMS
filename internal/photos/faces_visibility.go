@@ -13,9 +13,14 @@ import (
 	"bearstack/internal/sqlutil"
 )
 
-func (l *Library) refreshPeoplePageVisibility(ctx context.Context, id int64, q string, knownOnly bool) error {
+func (l *Library) refreshPeoplePageVisibility(ctx context.Context, id int64, q string, knownOnly, unknownOnly bool) error {
 	if id != 0 {
 		return l.refreshPersonIDsVisibility(ctx, id)
+	}
+	if unknownOnly {
+		// Imported names may become unknown when their source is protected.
+		// Check their face directories too before they enter the result set.
+		return l.refreshPeopleVisibility(ctx, `(p.name_fold='' AND p.name='') OR (p.manual_name=0 AND p.name_source<>'')`)
 	}
 	if q == "" && !knownOnly {
 		return l.refreshPeopleVisibility(ctx, "")

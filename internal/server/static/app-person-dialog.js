@@ -27,7 +27,7 @@
     var busy = false;
     var dialogForm = personDialog.querySelector("form");
     var dialogStatus = personDialog.querySelector("[data-person-dialog-status]");
-    var opener, dialogIDs = [];
+    var opener, sourceCard, dialogIDs = [];
     function openPersonDialog(ids, button) {
       if (!ids.length || busy || options.isBusy() || button.disabled) return;
       dialogIDs = ids;
@@ -43,6 +43,8 @@
       personDialog.querySelector("#overview-person-hint").textContent = ids.length > 1 ? "Alle markierten Gruppen werden unter dem neuen Namen oder mit der ausgewählten Person zusammengeführt." : "Ein neuer Name benennt diese Gruppe. Eine vorhandene Person auswählen, um die gesamte Gruppe mit ihr zusammenzuführen.";
       dialogForm.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: ids.length === 1 ? card.dataset.personName : "" } }));
       personDialog.showModal();
+      sourceCard = button.closest("[data-person-id]");
+      if (sourceCard) sourceCard.setAttribute("data-person-dialog-source", "");
     }
     personSurface.addEventListener("click", function (event) {
       var button = event.target.closest("[data-person-edit]");
@@ -53,6 +55,8 @@
     personDialog.querySelector("[data-person-dialog-cancel]").addEventListener("click", function () { if (!busy) personDialog.close(); });
     personDialog.addEventListener("cancel", function (event) { if (busy) event.preventDefault(); });
     personDialog.addEventListener("close", function () {
+      if (sourceCard) sourceCard.removeAttribute("data-person-dialog-source");
+      sourceCard = null;
       dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
       var focus = opener && opener.isConnected && !opener.disabled && !opener.closest("[hidden]") ? opener : personSurface.querySelector("a, button:not([disabled])");
       if (focus) focus.focus({ preventScroll: true });
