@@ -121,3 +121,26 @@ Die Anwendungs-Version steht zentral in `VERSION` und wird in der Weboberfläche
 Bei mehreren Änderungstypen gewinnt die höchste Kategorie. Docs-only- und Test-only-Änderungen erhöhen die Version nicht. Solange BearStack in `0.x` ist, führt der erste echte Major Change auf `1.0.0`.
 
 Für diese Website wurde keine BearStack-Version erhöht, weil sie Dokumentations- und Website-Quellen ergänzt und keine Laufzeitfunktion der Anwendung ändert.
+
+### Gruppenbilder-Bearbeitung
+
+Ab 0.41.0 verwendet die Gruppenbilder-Ansicht einen Pfad-Cursor und den partiellen
+Index `idx_face_group_candidates(path, person_id) WHERE ignored=0` (Foto-Schema 23).
+Die Datenbank zählt unbenannte Gesichter pro Foto; bei importierten Namen wird deren
+aktuelle Sichtbarkeit vor der Ausgabe geprüft. Nur Kandidaten und Namensquellen
+benötigen Dateisystemprüfungen, Embedding-Blobs werden bei der Auswahl nicht gelesen.
+Die Detailabfrage ist auf die maximale Detektionsanzahl von 256 Gesichtern begrenzt.
+
+Ein Hash der angezeigten Gesichter sichert die Sammelaktion ab. Nach Reservierung
+des SQLite-Schreibzugriffs vergleicht der Server den aktuellen Stand und ignoriert
+nur unbenannte, aktive Gesichter dieses Fotos. Änderungen durch Benennen, Verschieben
+oder neue Analyse verhindern die Mutation mit `409`; Teiländerungen werden zurückgerollt.
+Referenzauswahl und Revision werden in derselben Transaktion aktualisiert. Ein aktueller
+Suchindex wird anschließend nur für betroffene Personen angepasst. Ein fehlgeschlagener
+Bildwechsel wird unabhängig von der bereits gespeicherten Mutation wiederholt.
+
+Die bestehende Modal-Vorlage und Personensuche werden gemeinsam genutzt. Eine
+Bearbeitung im Modal wirkt wie in der Personenübersicht auf die gesamte Gruppe.
+Die Fotovorschau nutzt den Galerie-Cache mit 1.600 Pixeln und prüft die Quell-Gesichts-ID
+vor der Ausgabe. Die Markierung wird aus normalisierten Koordinaten innerhalb des
+proportional eingepassten Bildes berechnet und bei Größenänderungen aktualisiert.

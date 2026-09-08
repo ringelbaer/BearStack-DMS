@@ -26,7 +26,7 @@ var (
 const (
 	indexSchemaSetupTimeout = 30 * time.Second
 	photoSchemaComponent    = "photos"
-	photoSchemaVersion      = 22
+	photoSchemaVersion      = 23
 )
 
 type photoSchemaMigration struct {
@@ -61,6 +61,7 @@ var photoSchemaMigrations = []photoSchemaMigration{
 	{Version: 20, Name: "configurable face reference limit"},
 	{Version: 21, Name: "expiring ignored face thumbnails"},
 	{Version: 22, Name: "favorite and folder-diverse face references"},
+	{Version: 23, Name: "group photo candidate index"},
 }
 
 func openIndexDB(path string) (*sql.DB, string, error) {
@@ -291,6 +292,12 @@ func runPhotoSchemaMigrations(ctx context.Context, db *sql.DB) error {
 	}
 	for _, migration := range photoSchemaMigrations {
 		if current >= migration.Version {
+			continue
+		}
+		if migration.Version == 23 {
+			if err := setupGroupPhotos(ctx, db); err != nil {
+				return fmt.Errorf("photo schema migration 23: %w", err)
+			}
 			continue
 		}
 		if migration.Version == 22 {

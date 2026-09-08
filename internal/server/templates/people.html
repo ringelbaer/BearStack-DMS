@@ -1,6 +1,6 @@
 {{define "people.html"}}
 {{template "head" .}}
-<section class="page-head"><div><h1>{{if .People.PersonID}}{{if .People.Name}}{{.People.Name}}{{else}}Unbenannt{{end}}{{else}}Personen{{end}}</h1><p>Automatisch erkannte Gesichter aus deinen Fotos.</p></div><div class="page-actions"><a class="secondary-button" href="/photos">Fotos</a>{{if .People.PersonID}}<a class="secondary-button" href="/photos/people">Alle Personen</a>{{end}}{{if .Auth.CanPhotosManage}}<a class="secondary-button" href="/settings/photos/faces">Gesichtserkennung</a>{{end}}</div></section>
+<section class="page-head"><div><h1>{{if .People.PersonID}}{{if .People.Name}}{{.People.Name}}{{else}}Unbenannt{{end}}{{else}}Personen{{end}}</h1><p>Automatisch erkannte Gesichter aus deinen Fotos.</p></div><div class="page-actions"><a class="secondary-button" href="/photos">Fotos</a>{{if and .Auth.CanPhotosEdit (not .People.PersonID)}}<a class="secondary-button" href="/photos/people/groups">Gruppenbilder</a>{{end}}{{if .People.PersonID}}<a class="secondary-button" href="/photos/people">Alle Personen</a>{{end}}{{if .Auth.CanPhotosManage}}<a class="secondary-button" href="/settings/photos/faces">Gesichtserkennung</a>{{end}}</div></section>
 {{if not .People.PersonID}}
 <form method="get" action="/photos/people" class="filters people-form"><label>Name <input type="search" name="q" value="{{.People.Query}}" placeholder="Person suchen"></label><label class="people-known-filter"><input type="checkbox" name="known" value="1" {{if .People.KnownOnly}}checked{{end}}> Nur bekannte Personen</label><label class="people-known-filter"><input type="checkbox" name="ignored" value="1" {{if .People.IgnoredOnly}}checked{{end}}> Ignorierte Gesichter</label><button>Suchen</button></form>
 {{if .People.IgnoredOnly}}
@@ -31,22 +31,7 @@
 {{else}}<p>{{if or .People.Query .People.KnownOnly}}Keine Personen für diesen Filter gefunden.{{else}}Noch keine Personen gefunden. {{if .Auth.CanPhotosManage}}Die optionale Erkennung lässt sich in den Einstellungen aktivieren.{{end}}{{end}}</p>{{end}}
 </div>
 {{if .Auth.CanPhotosEdit}}
-<dialog class="app-dialog person-edit-dialog" data-person-dialog aria-labelledby="person-dialog-title">
-<form method="post" data-person-picker data-person-create data-person-modal>
-<header><strong id="person-dialog-title">Person benennen oder zuordnen</strong></header>
-<div class="app-dialog-body">
-<div class="person-picker-field">
-<label for="overview-person-search">Name</label>
-<input id="overview-person-search" name="name" maxlength="200" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="overview-person-options" aria-describedby="overview-person-hint" autocomplete="off" data-person-search placeholder="Person suchen oder neuen Namen eingeben" autofocus>
-<input type="hidden" name="target" data-person-target>
-<p id="overview-person-hint">Ein neuer Name benennt diese Gruppe. Eine vorhandene Person auswählen, um die gesamte Gruppe mit ihr zusammenzuführen.</p>
-<div class="person-dialog-suggestions"><div class="person-picker-popup" data-person-popup hidden><div id="overview-person-options" role="listbox" aria-label="Zielpersonen" data-person-options></div><p role="status" data-person-feedback></p></div></div>
-</div>
-<p role="status" data-person-dialog-status></p>
-</div>
-<footer><button type="button" class="secondary-button" data-person-dialog-cancel>Abbrechen</button><button data-person-submit>Benennen</button></footer>
-</form>
-</dialog>
+{{template "person_edit_dialog" .}}
 {{end}}
 {{if .Auth.CanPhotosEdit}}<div class="people-merge" data-people-merge hidden><span data-people-merge-target></span><button type="button" data-people-edit-button>Auswahl benennen / zuordnen</button><button type="button" data-people-merge-button>Personen zusammenführen</button></div>{{end}}
 {{end}}

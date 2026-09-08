@@ -110,11 +110,11 @@ func (l *Library) ensureFaceGraph(ctx context.Context, model string) error {
 	return nil
 }
 
-type faceMatchQuery interface {
+type faceRowsQuery interface {
 	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
 }
 
-func (l *Library) nearestPerson(ctx context.Context, tx faceMatchQuery, v []float32, excluded map[int64]bool) (int64, error) {
+func (l *Library) nearestPerson(ctx context.Context, tx faceRowsQuery, v []float32, excluded map[int64]bool) (int64, error) {
 	rt := &l.faceRuntime
 	if len(rt.people) == 0 {
 		return 0, nil

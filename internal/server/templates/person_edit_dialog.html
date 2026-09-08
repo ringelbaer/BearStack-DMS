@@ -1,0 +1,18 @@
+{{define "person_edit_dialog"}}
+<dialog class="app-dialog person-edit-dialog" data-person-dialog aria-labelledby="person-dialog-title">
+<form method="post" data-person-picker data-person-create data-person-modal>
+<header><strong id="person-dialog-title">Person benennen oder zuordnen</strong></header>
+<div class="app-dialog-body">
+<div class="person-picker-field">
+<label for="overview-person-search">Name</label>
+<input id="overview-person-search" name="name" maxlength="200" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="overview-person-options" aria-describedby="overview-person-hint" autocomplete="off" data-person-search placeholder="Person suchen oder neuen Namen eingeben" autofocus>
+<input type="hidden" name="target" data-person-target>
+<p id="overview-person-hint">Ein neuer Name benennt diese Gruppe. Eine vorhandene Person auswählen, um die gesamte Gruppe mit ihr zusammenzuführen.</p>
+<div class="person-dialog-suggestions"><div class="person-picker-popup" data-person-popup hidden><div id="overview-person-options" role="listbox" aria-label="Zielpersonen" data-person-options></div><p role="status" data-person-feedback></p></div></div>
+</div>
+<p role="status" data-person-dialog-status></p>
+</div>
+<footer><button type="button" class="secondary-button" data-person-dialog-cancel>Abbrechen</button><button data-person-submit>Benennen</button></footer>
+</form>
+</dialog>
+{{end}}

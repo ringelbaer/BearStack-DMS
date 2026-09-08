@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.41.0
+
+- Neuer Button „Gruppenbilder“ unter Personen für Fotobearbeiter: links das Foto, rechts alle erkannten Gesichtsvorschauen. Hover, Tastaturfokus und Antippen markieren die zugehörige Gesichtsregion; die Darstellung berücksichtigt Seitenverhältnis und EXIF-Ausrichtung.
+- Einstellbare Schwelle von 0–255 (Standard 5), pro Nutzer und Browser gespeichert. Nur Fotos mit mehr als dieser Anzahl unbenannter, nicht ignorierter Gesichter gelangen in den Durchlauf. Ein geöffnetes Foto bleibt nach Bearbeitungen auch unterhalb der Schwelle sichtbar.
+- Der gemeinsame Stift-Dialog benennt die gesamte Personengruppe oder führt sie mit einer vorhandenen Person zusammen, einschließlich anderer Fotos. „Verbleibende ignorieren“ betrifft dagegen ausschließlich unbenannte, aktive Gesichter des aktuellen Fotos und wechselt direkt zum nächsten Bild. Änderungen am angezeigten Stand führen zu einem Konflikt statt zu unbeabsichtigten Sammeländerungen.
+- Überspringen verändert keine Gesichtsdaten und gilt nur für den aktuellen Durchlauf. Neue Durchläufe berücksichtigen übersprungene Fotos erneut. Fehler beim Laden des nächsten Fotos lassen sich ohne Wiederholung einer bereits erfolgreichen Ignorieraktion beheben.
+- Foto-Schema 23 ergänzt einen partiellen Auswahlindex; Cursor-Paginierung und gezielte Sichtbarkeitsprüfungen vermeiden wiederholte Gesamtprüfungen. Bestehende Bild-Caches und eine proportionale 1.600-Pixel-Fotovorschau begrenzen Übertragung und Bilderzeugung. MINOR für die kompatible Web-Funktion und automatische Indexmigration; README, Website und OpenAPI aktualisiert.
+
 ### Android 0.5.3
 
 - Das automatische Speichern nach Ablauf einer Rückgängig-Frist wartet auf das Schließen des Namens- oder Duplikatdialogs. Dadurch deaktivieren Änderungen und Ausblenden des Toasts nicht mehr dessen Eingabefeld; Fokus, Tastatur und Namensentwurf bleiben erhalten. Die Rücknahmefrist bleibt bei fünf Sekunden.

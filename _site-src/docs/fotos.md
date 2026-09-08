@@ -254,6 +254,47 @@ Die Info-Symbole in den Einstellungen der Gesichtserkennung erklären Aktivierun
 
 **Personenrechte:** Seit BearStack 0.36.0 reicht „Fotos bearbeiten“ (`photos_editor` bzw. `photos.edit`) zum Benennen, Zuordnen, Zusammenführen, Ignorieren und Wiederherstellen von Gesichtern sowie für die Android-App. Einstellungen der Gesichtserkennung und das Löschen aller Gesichtsdaten benötigen weiterhin „Fotos verwalten“ (`photos.manage`).
 
+**Gruppenbilder bearbeiten:** Der Button **Gruppenbilder** unter `/photos/people`
+öffnet `/photos/people/groups` für Fotobearbeiter (`photos.edit`). Die Schwelle ist
+oben einstellbar (0–255, Standard **5**) und wird pro Nutzer und Browser gemerkt.
+Es erscheinen ausschließlich Fotos mit **mehr als** dieser Anzahl unbenannter,
+nicht ignorierter Gesichter. Benannte und ignorierte Gesichter zählen nicht für die
+Auswahl, werden im geöffneten Foto aber weiterhin als Vorschauen gezeigt.
+
+Links steht eine proportional eingepasste Fotovorschau, rechts das Gesichtsraster.
+Hover, Tastaturfokus oder Antippen einer Vorschau markiert die zugehörige Region
+im Foto. Die Markierung berücksichtigt Bildränder, Seitenverhältnis und die
+EXIF-Ausrichtung. Auf kleinen Bildschirmen stehen Foto und Raster untereinander.
+Der bekannte Stift-Dialog benennt die **gesamte Personengruppe** oder führt sie mit
+einer vorhandenen Person zusammen, einschließlich anderer Fotos. Benannte oder
+ignorierte Gesichter zeigen keinen Stift. Das geöffnete Foto bleibt auch unterhalb
+der Schwelle sichtbar, damit die übrigen Gesichter weiter bearbeitet werden können.
+
+**Verbleibende ignorieren** ignoriert atomar ausschließlich die noch unbenannten,
+aktiven Gesichter des angezeigten Fotos und wechselt danach zum nächsten passenden
+Foto. Bereits benannte Gesichter und dieselben Personen auf anderen Fotos bleiben
+erhalten. Ein zwischenzeitlich geändertes Foto oder eine neue Zuordnung führt zu
+`409`; die Ansicht wird aktualisiert, bevor die Auswahl erneut bestätigt werden
+kann. Schlägt nur das Laden des nächsten Fotos fehl, wiederholt „Ansicht erneut
+laden“ den Bildwechsel, ohne erneut zu ignorieren.
+
+**Überspringen / nächstes Foto** lässt alle Gesichtsdaten unverändert und setzt den
+aktuellen Durchlauf fort. **Durchlauf starten** beginnt wieder am Anfang und zeigt
+auch zuvor übersprungene, weiterhin passende Fotos. Der Pfad-Cursor steht in der URL;
+zum nächsten Foto wird ohne Seitenreload gewechselt. Ignorieren und Überspringen
+funktionieren auch ohne JavaScript, der Modal-Dialog und die Markierungen benötigen
+JavaScript. Private, fehlende oder ersetzte Quellen werden ausgeschlossen.
+
+Die Auswahl liest einen kleinen Index über aktive Gesichter in Pfadreihenfolge;
+sie benötigt weder Offset-Paginierung noch einen vollständigen Dateisystemscan.
+Eine Fotoansicht enthält höchstens 256 Gesichter, deren vorhandene Vorschau-Caches
+weiterverwendet und bei Bedarf erst beim Scrollen geladen werden. Für das große
+Foto wird die Galerie-Vorschau mit maximal 1.600 Pixeln verwendet; ohne passenden
+Vorschaugenerator steht das Original als Fallback zur Verfügung. Foto und unveränderte
+Gesichtsbilder werden beim Benennen nicht erneut geladen. Die automatische Migration
+auf Foto-Schema **23** ergänzt lediglich den Auswahlindex und analysiert keine Bilder neu.
+Die JSON-Ansicht sowie der Ignorieren- und Bild-Endpunkt sind in OpenAPI dokumentiert.
+
 **Referenzen pro Person:** Unter **Einstellungen → Gesichtserkennung** lässt sich
 die Zielanzahl auf 1–100 einstellen; der Standard ist **30**. Seit 0.40.0 werden
 Vergleichsbilder möglichst über verschiedene Galerieordner verteilt. Innerhalb
@@ -289,7 +330,7 @@ Feld unterstützen die Erweiterung nicht. Details und Fehlerantworten stehen in 
 **Metadaten und Korrekturen:** Eindeutige XMP-Gesichtsregionen liefern Namen und
 Referenzen. Manuelle Zuordnungen haben Vorrang. XMP und automatische Gesichter werden
 getrennt gespeichert; Originale und Sidecars werden nicht verändert. Die Foto-DB
-migriert automatisch auf Schema 22. Ihre Sicherung muss die erzeugten Gesichtsdaten
+migriert automatisch auf Schema 23. Ihre Sicherung muss die erzeugten Gesichtsdaten
 sowie manuelle Korrekturen und Favoriten einschließen. Ein Index-Neuaufbau erhält die Korrekturen
 unveränderter Bilder; Dateiaustausch und Löschung entfernen veraltete Analysen.
 Bei einem Modellwechsel werden manuelle Zuordnungen nur auf eindeutig wiedergefundene

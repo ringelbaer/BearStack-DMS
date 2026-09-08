@@ -661,6 +661,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Versionierung">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gruppenbilder-bearbeitung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gruppenbilder-Bearbeitung
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -803,6 +820,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Versionierung">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gruppenbilder-bearbeitung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gruppenbilder-Bearbeitung
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -933,6 +967,25 @@
 </ul>
 <p>Bei mehreren Änderungstypen gewinnt die höchste Kategorie. Docs-only- und Test-only-Änderungen erhöhen die Version nicht. Solange BearStack in <code>0.x</code> ist, führt der erste echte Major Change auf <code>1.0.0</code>.</p>
 <p>Für diese Website wurde keine BearStack-Version erhöht, weil sie Dokumentations- und Website-Quellen ergänzt und keine Laufzeitfunktion der Anwendung ändert.</p>
+<h3 id="gruppenbilder-bearbeitung">Gruppenbilder-Bearbeitung<a class="headerlink" href="#gruppenbilder-bearbeitung" title="Permanent link">&para;</a></h3>
+<p>Ab 0.41.0 verwendet die Gruppenbilder-Ansicht einen Pfad-Cursor und den partiellen
+Index <code>idx_face_group_candidates(path, person_id) WHERE ignored=0</code> (Foto-Schema 23).
+Die Datenbank zählt unbenannte Gesichter pro Foto; bei importierten Namen wird deren
+aktuelle Sichtbarkeit vor der Ausgabe geprüft. Nur Kandidaten und Namensquellen
+benötigen Dateisystemprüfungen, Embedding-Blobs werden bei der Auswahl nicht gelesen.
+Die Detailabfrage ist auf die maximale Detektionsanzahl von 256 Gesichtern begrenzt.</p>
+<p>Ein Hash der angezeigten Gesichter sichert die Sammelaktion ab. Nach Reservierung
+des SQLite-Schreibzugriffs vergleicht der Server den aktuellen Stand und ignoriert
+nur unbenannte, aktive Gesichter dieses Fotos. Änderungen durch Benennen, Verschieben
+oder neue Analyse verhindern die Mutation mit <code>409</code>; Teiländerungen werden zurückgerollt.
+Referenzauswahl und Revision werden in derselben Transaktion aktualisiert. Ein aktueller
+Suchindex wird anschließend nur für betroffene Personen angepasst. Ein fehlgeschlagener
+Bildwechsel wird unabhängig von der bereits gespeicherten Mutation wiederholt.</p>
+<p>Die bestehende Modal-Vorlage und Personensuche werden gemeinsam genutzt. Eine
+Bearbeitung im Modal wirkt wie in der Personenübersicht auf die gesamte Gruppe.
+Die Fotovorschau nutzt den Galerie-Cache mit 1.600 Pixeln und prüft die Quell-Gesichts-ID
+vor der Ausgabe. Die Markierung wird aus normalisierten Koordinaten innerhalb des
+proportional eingepassten Bildes berechnet und bei Größenänderungen aktualisiert.</p>
 
 
 

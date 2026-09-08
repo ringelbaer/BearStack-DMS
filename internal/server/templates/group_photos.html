@@ -1,0 +1,48 @@
+{{define "group_photos.html"}}
+{{template "head" .}}
+<section class="page-head"><div><h1>Gruppenbilder</h1><p>Personen auf Gruppenfotos benennen und verbleibende Gesichter bearbeiten.</p></div><div class="page-actions"><a class="secondary-button" href="/photos/people">Alle Personen</a></div></section>
+<form method="get" action="/photos/people/groups" class="filters group-photo-filter" data-group-filter>
+<label>Mehr als <input type="number" name="min" value="{{.GroupPhotos.Minimum}}" min="0" max="255" required aria-describedby="group-photo-filter-help"> unbearbeitete Gesichter</label>
+<button>Durchlauf starten</button>
+<p id="group-photo-filter-help">Unbearbeitet bedeutet: weder benannt noch ignoriert. Standard: mehr als 5. Übersprungene Fotos erscheinen im nächsten Durchlauf wieder.</p>
+</form>
+<section data-group-photos data-minimum="{{.GroupPhotos.Minimum}}" data-group-user="{{.Auth.Username}}" {{with .GroupPhotos.Photo}}data-path="{{.Path}}" data-revision="{{.Revision}}"{{end}}>
+<p role="status" data-people-status></p>
+<div class="group-photo-toolbar" {{if not .GroupPhotos.Photo}}hidden{{end}} data-group-toolbar>
+<div><h2 data-group-title>{{with .GroupPhotos.Photo}}{{.DisplayPath}}{{end}}</h2><p data-group-count>{{with .GroupPhotos.Photo}}{{.Remaining}} unbearbeitete von {{len .Faces}} erkannten Gesichtern{{end}}</p></div>
+<form method="post" action="/photos/people/groups/ignore" data-group-ignore-form>
+<input type="hidden" name="min" value="{{.GroupPhotos.Minimum}}"><input type="hidden" name="path" value="{{with .GroupPhotos.Photo}}{{.Path}}{{end}}"><input type="hidden" name="revision" value="{{with .GroupPhotos.Photo}}{{.Revision}}{{end}}">
+<button data-group-ignore {{if .GroupPhotos.Photo}}{{if not .GroupPhotos.Photo.Remaining}}disabled{{end}}{{else}}disabled{{end}}>Verbleibende ignorieren</button>
+</form>
+<a class="secondary-button" data-group-skip href="?min={{.GroupPhotos.Minimum}}&amp;after={{with .GroupPhotos.Photo}}{{queryEscape .Path}}{{end}}">Überspringen / nächstes Foto</a>
+</div>
+<div class="group-photo-layout" data-group-layout {{if not .GroupPhotos.Photo}}hidden{{end}}>
+<figure class="group-photo-stage" data-group-stage>
+<img data-group-image {{with .GroupPhotos.Photo}}{{if .ImageFaceID}}src="/photos/people/groups/image/{{.ImageFaceID}}"{{end}} alt="{{.DisplayPath}}"{{else}}alt="Gruppenfoto"{{end}}>
+<div class="group-photo-box" data-group-box hidden aria-hidden="true"></div>
+</figure>
+<div><p class="group-photo-hint">Zeige auf ein Gesicht, um es im Foto zu markieren. Mit dem Stift benennst du die gesamte Personengruppe oder führst sie mit einer vorhandenen Person zusammen, auch in anderen Fotos.</p>
+<div class="group-photo-faces" data-group-grid>
+{{with .GroupPhotos.Photo}}{{range .Faces}}{{template "group_photo_face" .}}{{end}}{{end}}
+</div></div>
+</div>
+<p data-group-empty {{if .GroupPhotos.Photo}}hidden{{end}}>Keine weiteren passenden Gruppenbilder. Mit „Durchlauf starten“ werden auch übersprungene Fotos erneut berücksichtigt.</p>
+<button type="button" class="secondary-button" data-group-retry hidden>Ansicht erneut laden</button>
+</section>
+{{template "person_edit_dialog" .}}
+<noscript><p>Für Gesichtsmarkierungen und den Benenn-Dialog wird JavaScript benötigt. Überspringen und Ignorieren funktionieren auch ohne JavaScript.</p></noscript>
+<script src="{{assetURL "/static/app-people.js"}}" defer></script>
+<script src="{{assetURL "/static/app-group-photos.js"}}" defer></script>
+{{template "foot" .}}
+{{end}}
+
+{{define "group_photo_face"}}
+<div class="group-photo-face person-card" data-group-face="{{.ID}}" data-person-id="{{.PersonID}}" data-person-name="{{.Name}}" data-ignored="{{.Ignored}}" data-x="{{.X}}" data-y="{{.Y}}" data-width="{{.Width}}" data-height="{{.Height}}">
+<button type="button" class="group-face-highlight" data-group-highlight aria-label="Gesicht im Foto markieren: {{if .Name}}{{.Name}}{{else if .Ignored}}Ignoriert{{else}}Unbenannt{{end}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Gesicht"></button>
+<strong data-group-name>{{if .Name}}{{.Name}}{{else if .Ignored}}Ignoriert{{else}}Unbenannt{{end}}</strong>
+{{if and .Ignored .Name}}<span data-group-ignored-label>Ignoriert</span>{{end}}
+{{if and (not .Ignored) (not .Name)}}<button type="button" class="person-edit-button secondary-button" data-person-edit aria-label="Person benennen oder zuordnen" title="Benennen / zuordnen">{{template "person_pencil_icon" .}}</button>{{end}}
+</div>
+{{end}}
+
+{{define "person_pencil_icon"}}<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 5 5M3 21l5-1L21 7a2 2 0 0 0-5-5L3 15Z"/></svg>{{end}}

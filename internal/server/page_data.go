@@ -9,6 +9,7 @@ import (
 )
 
 type PageData struct {
+	GroupPhotos             photos.GroupPhotosPage
 	People                  photos.PeoplePage
 	FaceSettings            FaceSettingsView
 	AppName                 string

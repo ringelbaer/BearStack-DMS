@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.40.0
+  version: 0.41.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -1016,6 +1016,153 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /photos/people/groups:
+    get:
+      tags: [Photos]
+      operationId: getGroupPhotos
+      summary: Browse group photos with remaining unnamed faces
+      description: >-
+        Available since 0.41.0. Requires photos.edit. Without path, returns the first
+        eligible photo after the path cursor, in ascending path order. Eligibility
+        requires strictly more than min faces whose person has no name and which
+        are not ignored. Private, missing and stale sources are excluded. A path
+        selects the current photo even after its remaining count falls below min;
+        path takes precedence over after. All recognized faces, including named and
+        ignored ones, are included in the photo detail. No embeddings are exposed.
+        Skipping advances only the cursor; it never changes stored face data.
+        Omit after and path to start a new pass. HTML by default; request format=json
+        or Accept application/json for JSON. Cache-Control is private, no-store.
+      parameters:
+        - name: min
+          in: query
+          schema: {type: integer, minimum: 0, maximum: 255, default: 5}
+          description: Exclusive threshold for remaining faces; five means at least six.
+        - name: after
+          in: query
+          schema: {type: string, maxLength: 4096}
+          description: Gallery-relative path cursor; omitted starts at the beginning.
+        - name: path
+          in: query
+          schema: {type: string, minLength: 1, maxLength: 4096}
+          description: Read this current photo regardless of its remaining count.
+        - name: format
+          in: query
+          schema: {type: string, enum: [json]}
+      responses:
+        '200':
+          description: Current photo, or null when no eligible photo remains.
+          content:
+            text/html:
+              schema: {type: string}
+            application/json:
+              schema: {$ref: '#/components/schemas/GroupPhotosPage'}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /photos/people/groups/ignore:
+    post:
+      tags: [Photos]
+      operationId: ignoreGroupPhotoRemainingFaces
+      summary: Ignore the current photo's remaining unnamed faces atomically
+      description: >-
+        Available since 0.41.0. Requires photos.edit and the browser same-origin
+        policy. Pass the path and revision of the displayed photo. The revision is
+        checked in the same write transaction as the selection and mutation. Named
+        or already ignored faces and faces in other photos are never affected.
+        A changed snapshot returns 409 without partial edits; refresh the photo
+        before retrying. JSON success acknowledges only the write. Then GET the
+        group photo view using after=path to advance. If this GET fails, retry only
+        navigation. HTML form success redirects to the next eligible photo. For
+        naming and assignment, the UI uses the existing whole-person rename/merge
+        endpoints, not individual-face movement. Responses use Cache-Control no-store.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [path, revision]
+              properties:
+                path: {type: string, minLength: 1, maxLength: 4096}
+                revision: {type: string, minLength: 64, maxLength: 64, description: Opaque snapshot revision from GroupPhoto.}
+                min: {type: integer, minimum: 0, maximum: 255, default: 5, description: Threshold retained for the HTML redirect.}
+      responses:
+        '200':
+          description: Write completed for requests with Accept application/json.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, ignored]
+                properties:
+                  ok: {type: boolean, const: true}
+                  ignored: {type: integer, minimum: 0, maximum: 256}
+        '303':
+          description: Redirect to the next eligible photo for HTML forms.
+          headers:
+            Location:
+              schema: {type: string}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Photo changed; refresh and review the remaining faces.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, code]
+                properties:
+                  error: {type: string}
+                  code: {type: string, const: conflict}
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /photos/people/groups/image/{id}:
+    get:
+      tags: [Photos]
+      operationId: getGroupPhotoImage
+      summary: Get the proportionally fitted full-photo preview for a face
+      description: >-
+        Available since 0.41.0. Requires photos.edit. Resolves the original from a
+        recognized face, including ignored faces still present in the group editor.
+        Reuses the EXIF-oriented gallery preview of at most 1600 pixels. Falls back
+        to the original when no thumbnail backend is available. Private, removed
+        or replaced sources are rejected. Returns an image with Cache-Control no-store.
+        Face bounds are normalized in the EXIF-oriented image, not in the square
+        face thumbnails; clients must account for letterboxing when highlighting.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '200':
+          description: Full-photo preview, or original fallback.
+          content:
+            'image/*':
+              schema: {type: string, format: binary}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /photos/people:
     get:
       tags:
@@ -1772,6 +1919,30 @@ components:
             format: binary
 
   schemas:
+    GroupPhotosPage:
+      type: object
+      required: [minimum, photo]
+      properties:
+        minimum: {type: integer, minimum: 0, maximum: 255, default: 5}
+        photo:
+          oneOf:
+            - $ref: '#/components/schemas/GroupPhoto'
+            - type: 'null'
+    GroupPhoto:
+      type: object
+      required: [path, display_path, revision, remaining, image_face_id, faces]
+      properties:
+        path: {type: string, description: Gallery-relative source path and cursor.}
+        display_path: {type: string, description: Human-readable gallery path.}
+        revision: {type: string, minLength: 64, maxLength: 64, description: Opaque revision protecting bulk ignore.}
+        remaining: {type: integer, minimum: 0, maximum: 256}
+        image_face_id: {type: integer, format: int64, minimum: 1, description: Face ID usable with the group photo image endpoint.}
+        faces:
+          type: array
+          minItems: 1
+          maxItems: 256
+          description: All detections including named and ignored faces, ordered by ID.
+          items: {$ref: '#/components/schemas/RecognizedPhotoFace'}
     FaceFavorite:
       type: object
       required: [id, person_id, favorite]

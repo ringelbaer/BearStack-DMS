@@ -1226,6 +1226,42 @@ Fehler werden mit zunehmender Wartezeit bis zu fünfmal versucht und können man
 zurückgesetzt werden. Neustarts setzen die persistente Warteschlange fort.</p>
 <p>Die Info-Symbole in den Einstellungen der Gesichtserkennung erklären Aktivierung, Bilder pro Lauf, Pausen, Referenzlimit und das Löschen der Gesichtsdaten. Die Kontexthilfen lassen sich per Klick oder Tastatur öffnen. Zum Löschen aller Gesichtsdaten sind die Löschbestätigung und das aktuelle Passwort des angemeldeten Nutzers erforderlich. Das Passwort wird vor jeder Zustandsänderung serverseitig geprüft; fehlende oder falsche Bestätigungen lassen Gesichtsdaten und Verarbeitung unverändert. Wiederholte Fehlversuche werden gedrosselt.</p>
 <p><strong>Personenrechte:</strong> Seit BearStack 0.36.0 reicht „Fotos bearbeiten“ (<code>photos_editor</code> bzw. <code>photos.edit</code>) zum Benennen, Zuordnen, Zusammenführen, Ignorieren und Wiederherstellen von Gesichtern sowie für die Android-App. Einstellungen der Gesichtserkennung und das Löschen aller Gesichtsdaten benötigen weiterhin „Fotos verwalten“ (<code>photos.manage</code>).</p>
+<p><strong>Gruppenbilder bearbeiten:</strong> Der Button <strong>Gruppenbilder</strong> unter <code>/photos/people</code>
+öffnet <code>/photos/people/groups</code> für Fotobearbeiter (<code>photos.edit</code>). Die Schwelle ist
+oben einstellbar (0–255, Standard <strong>5</strong>) und wird pro Nutzer und Browser gemerkt.
+Es erscheinen ausschließlich Fotos mit <strong>mehr als</strong> dieser Anzahl unbenannter,
+nicht ignorierter Gesichter. Benannte und ignorierte Gesichter zählen nicht für die
+Auswahl, werden im geöffneten Foto aber weiterhin als Vorschauen gezeigt.</p>
+<p>Links steht eine proportional eingepasste Fotovorschau, rechts das Gesichtsraster.
+Hover, Tastaturfokus oder Antippen einer Vorschau markiert die zugehörige Region
+im Foto. Die Markierung berücksichtigt Bildränder, Seitenverhältnis und die
+EXIF-Ausrichtung. Auf kleinen Bildschirmen stehen Foto und Raster untereinander.
+Der bekannte Stift-Dialog benennt die <strong>gesamte Personengruppe</strong> oder führt sie mit
+einer vorhandenen Person zusammen, einschließlich anderer Fotos. Benannte oder
+ignorierte Gesichter zeigen keinen Stift. Das geöffnete Foto bleibt auch unterhalb
+der Schwelle sichtbar, damit die übrigen Gesichter weiter bearbeitet werden können.</p>
+<p><strong>Verbleibende ignorieren</strong> ignoriert atomar ausschließlich die noch unbenannten,
+aktiven Gesichter des angezeigten Fotos und wechselt danach zum nächsten passenden
+Foto. Bereits benannte Gesichter und dieselben Personen auf anderen Fotos bleiben
+erhalten. Ein zwischenzeitlich geändertes Foto oder eine neue Zuordnung führt zu
+<code>409</code>; die Ansicht wird aktualisiert, bevor die Auswahl erneut bestätigt werden
+kann. Schlägt nur das Laden des nächsten Fotos fehl, wiederholt „Ansicht erneut
+laden“ den Bildwechsel, ohne erneut zu ignorieren.</p>
+<p><strong>Überspringen / nächstes Foto</strong> lässt alle Gesichtsdaten unverändert und setzt den
+aktuellen Durchlauf fort. <strong>Durchlauf starten</strong> beginnt wieder am Anfang und zeigt
+auch zuvor übersprungene, weiterhin passende Fotos. Der Pfad-Cursor steht in der URL;
+zum nächsten Foto wird ohne Seitenreload gewechselt. Ignorieren und Überspringen
+funktionieren auch ohne JavaScript, der Modal-Dialog und die Markierungen benötigen
+JavaScript. Private, fehlende oder ersetzte Quellen werden ausgeschlossen.</p>
+<p>Die Auswahl liest einen kleinen Index über aktive Gesichter in Pfadreihenfolge;
+sie benötigt weder Offset-Paginierung noch einen vollständigen Dateisystemscan.
+Eine Fotoansicht enthält höchstens 256 Gesichter, deren vorhandene Vorschau-Caches
+weiterverwendet und bei Bedarf erst beim Scrollen geladen werden. Für das große
+Foto wird die Galerie-Vorschau mit maximal 1.600 Pixeln verwendet; ohne passenden
+Vorschaugenerator steht das Original als Fallback zur Verfügung. Foto und unveränderte
+Gesichtsbilder werden beim Benennen nicht erneut geladen. Die automatische Migration
+auf Foto-Schema <strong>23</strong> ergänzt lediglich den Auswahlindex und analysiert keine Bilder neu.
+Die JSON-Ansicht sowie der Ignorieren- und Bild-Endpunkt sind in OpenAPI dokumentiert.</p>
 <p><strong>Referenzen pro Person:</strong> Unter <strong>Einstellungen → Gesichtserkennung</strong> lässt sich
 die Zielanzahl auf 1–100 einstellen; der Standard ist <strong>30</strong>. Seit 0.40.0 werden
 Vergleichsbilder möglichst über verschiedene Galerieordner verteilt. Innerhalb
@@ -1258,7 +1294,7 @@ Feld unterstützen die Erweiterung nicht. Details und Fehlerantworten stehen in 
 <p><strong>Metadaten und Korrekturen:</strong> Eindeutige XMP-Gesichtsregionen liefern Namen und
 Referenzen. Manuelle Zuordnungen haben Vorrang. XMP und automatische Gesichter werden
 getrennt gespeichert; Originale und Sidecars werden nicht verändert. Die Foto-DB
-migriert automatisch auf Schema 22. Ihre Sicherung muss die erzeugten Gesichtsdaten
+migriert automatisch auf Schema 23. Ihre Sicherung muss die erzeugten Gesichtsdaten
 sowie manuelle Korrekturen und Favoriten einschließen. Ein Index-Neuaufbau erhält die Korrekturen
 unveränderter Bilder; Dateiaustausch und Löschung entfernen veraltete Analysen.
 Bei einem Modellwechsel werden manuelle Zuordnungen nur auf eindeutig wiedergefundene

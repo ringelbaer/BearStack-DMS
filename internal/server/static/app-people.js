@@ -300,15 +300,17 @@
     });
   }
 
+  var groupPhotos = document.querySelector("[data-group-photos]");
+  var personSurface = overview || groupPhotos;
   var personDialog = document.querySelector("[data-person-dialog]");
-  if (overview && personDialog) {
+  if (personSurface && personDialog) {
     var dialogForm = personDialog.querySelector("form");
     var dialogStatus = personDialog.querySelector("[data-person-dialog-status]");
     var opener, dialogIDs = [];
     function openPersonDialog(ids, button) {
       if (!ids.length || busy || button.disabled) return;
       dialogIDs = ids;
-      var card = overview.querySelector('[data-person-id="' + ids[0] + '"]');
+      var card = personSurface.querySelector('[data-person-id="' + ids[0] + '"]');
       opener = button;
       dialogForm.dataset.personExclude = ids.length === 1 ? ids[0] : "";
       dialogForm.dataset.personCount = String(ids.length);
@@ -320,8 +322,8 @@
       dialogForm.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: ids.length === 1 ? card.dataset.personName : "" } }));
       personDialog.showModal();
     }
-    editSelectedButton.addEventListener("click", function () { openPersonDialog(Array.from(selected), editSelectedButton); });
-    overview.addEventListener("click", function (event) {
+    if (editSelectedButton) editSelectedButton.addEventListener("click", function () { openPersonDialog(Array.from(selected), editSelectedButton); });
+    personSurface.addEventListener("click", function (event) {
       var button = event.target.closest("[data-person-edit]");
       if (!button || busy || button.disabled) return;
       var card = button.closest("[data-person-id]");
@@ -331,7 +333,7 @@
     personDialog.addEventListener("cancel", function (event) { if (busy) event.preventDefault(); });
     personDialog.addEventListener("close", function () {
       dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
-      var focus = opener && opener.isConnected && !opener.disabled && !opener.closest("[hidden]") ? opener : overview.querySelector("a");
+      var focus = opener && opener.isConnected && !opener.disabled && !opener.closest("[hidden]") ? opener : personSurface.querySelector("a, button:not([disabled])");
       if (focus) focus.focus({ preventScroll: true });
     });
     dialogForm.addEventListener("submit", async function (event) {
@@ -370,7 +372,15 @@
         if (result.ok !== true) throw new Error("Person konnte nicht gespeichert werden.");
         saved = true;
         dialogIDs.forEach(function (id) { selected.delete(id); });
-        await refreshPeople();
+        if (groupPhotos) {
+          // The photo controller supplies its refresh promise synchronously, so
+          // the shared modal can retain its normal save/error/focus lifecycle.
+          var change = { refresh: Promise.resolve() };
+          groupPhotos.dispatchEvent(new CustomEvent("person-edit-saved", { detail: change }));
+          await change.refresh;
+        } else {
+          await refreshPeople();
+        }
         status.textContent = merging ? "Personen zusammengeführt." : "Person benannt.";
         personDialog.close();
       } catch (error) {
