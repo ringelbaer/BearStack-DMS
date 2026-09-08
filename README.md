@@ -82,6 +82,8 @@ Reine Go-Testhelfer liegen in `_test.go`-Dateien und werden nicht in das Anwendu
 
 Ab BearStack 0.39.2 bleiben Gesichtsausschnitte im Web und in der Android-App unverzerrt: Sie werden proportional auf dunkelgrauem Hintergrund in die gleichmäßig quadratischen Kacheln eingepasst. Alte gestreckte Vorschauen werden beim nächsten Abruf einzeln ersetzt; ein App-Update oder vollständiger Cache-Neuaufbau ist dafür nicht nötig. Bereits im App-Speicher geladene Altbilder werden nach erneutem Anmelden oder einem App-Neustart neu geladen.
 
+Ab 0.39.3 erscheinen das Ignorieren-× und der Stift für den Benenn-Dialog in der Personenübersicht nur bei unbenannten Gruppen. Nach dem Benennen oder Zusammenführen passt sich die Darstellung ohne Seitenreload an.
+
 Regressionstests pruefen unter anderem die gleichen Foto-Wertebereiche aus Formular und Datenbank, unterschiedliche HTML-/API-Antworten auf zu hohe Dokumentseiten sowie Fotoframe und Lightbox ohne Galerie-Script. Details zur internen Trennung stehen in der [Architekturbeschreibung](_site-src/docs/architektur.md).
 
 Ab 0.39.1 werden allgemeine, Dokument- und Fotoeinstellungen je Formular atomar gespeichert. Fehler hinterlassen keine teilweise gespeicherten Werte; zusammengehörige Einstellungen werden gemeinsam gelesen und ihre Caches mit Schreibvorgängen synchronisiert. Personenbezogene Prüfungen berücksichtigen die betroffenen Gruppen und die Herkunft importierter Namen. Neue `.adminonly`-Markierungen wirken beim nächsten Zugriff; Gesamtübersichten prüfen weiterhin sämtliche relevanten Gesichtsverzeichnisse. Der Gesichtsabgleich lädt Referenzkandidaten gebündelt. Mailimport und EML-Archivierung verwenden gemeinsame MIME-Decoder einschließlich Windows-1252-Headern.

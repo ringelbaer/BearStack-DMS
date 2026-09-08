@@ -3454,6 +3454,9 @@ label span {
 
 .person-overview-card { position: relative; min-width: 0; }
 .person-overview-card > .person-card { height: 100%; }
+/* The name attribute is also updated during AJAX refreshes. */
+.person-overview-card[data-person-name]:not([data-person-name=""]) > .person-ignore-button,
+.person-overview-card[data-person-name]:not([data-person-name=""]) > .person-edit-button { display: none; }
 .person-ignore-button {
   position: absolute;
   top: 6px;

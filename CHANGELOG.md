@@ -4,6 +4,11 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.39.3
+
+- Bereits benannte Personen zeigen in der Übersicht weder das Ignorieren-× noch den Stift für den Benenn-Dialog. Die Darstellung folgt dem vorhandenen Namensstatus der Karte und aktualisiert sich auch nach AJAX-Aktionen sofort. Unbenannte Personen behalten beide Symbole.
+- Browser-Regressionen für die Sichtbarkeit nach dem Laden, Benennen und Zusammenführen angepasst. PATCH für die UI-Korrektur; README und Website aktualisiert.
+
 ### BearStack 0.39.2
 
 - Gesichtsvorschauen behalten im Web und in der Android-App die Proportionen des vollständigen Ausschnitts. Hoch- und Querformate werden zentriert auf dunkelgrauem Hintergrund eingepasst; die Kacheln bleiben quadratisch. Dies gilt für beide Vorschaugrößen und auch für am Bildrand begrenzte Ausschnitte. Die gemeinsame serverseitige Korrektur benötigt kein App-Update.
