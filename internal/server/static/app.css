@@ -3619,6 +3619,9 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 @media (max-width: 650px) {
   .person-dialog-layout { grid-template-columns: minmax(0,1fr); }
   .person-dialog-preview { height: 220px; }
+  .app-dialog.person-edit-dialog footer { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .person-edit-dialog footer [data-person-submit] { grid-column: 1 / -1; }
+  .person-edit-dialog footer button { min-width: 0; padding-inline: 8px; }
 }
 /* Keep dialog actions stationary when the input loses focus before a click. */
 .person-dialog-suggestions { height: 180px; }

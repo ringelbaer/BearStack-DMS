@@ -277,6 +277,12 @@
     status: status,
     isBusy: function () { return busy || navigationPending; },
     onBusy: setBusy,
+    getIgnoreRequest: function (cards) {
+      var card = cards[0];
+      if (cards.length !== 1 || !card || card.dataset.personName || card.dataset.ignored === "true" || !card.dataset.groupFace) return null;
+      return { action: ignoreForm.action, body: new URLSearchParams({ path: currentPath, revision: surface.dataset.revision, min: String(minimum), face_id: card.dataset.groupFace }) };
+    },
+    onIgnoreConflict: function () { return loadPhoto({ path: currentPath }); },
     onSave: function () { return loadPhoto({ path: currentPath }); }
   });
   filter.addEventListener("submit", function () { try { window.localStorage.setItem(storageKey, minimumInput.value); } catch (_) {} });

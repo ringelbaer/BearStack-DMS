@@ -403,9 +403,10 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await modal.getByRole("option", { name: /Neu anlegen:.*Filtername/ }).click();
   await expect(modal).not.toBeVisible();
   await expect(visibleCards).toHaveCount(5);
-  await visibleCards.first().locator("[data-group-ignore-face]").click();
+  await visibleCards.first().locator("[data-person-edit]").click();
+  await modal.getByRole("button", { name: "Ignorieren", exact: true }).click();
+  await expect(modal).not.toBeVisible();
   await expect(visibleCards).toHaveCount(4);
-  await expect(unnamedOnly).toBeFocused();
   await expect(surface).toHaveAttribute("data-path", "c.png");
   for (const width of [320, 1440]) {
     await page.setViewportSize({ width, height: 900 });
@@ -415,6 +416,16 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await expect(visibleCards).toHaveCount(7);
   await page.reload();
   await expect(unnamedOnly).not.toBeChecked();
+  const staleCard = page.locator('[data-group-face][data-person-name=""][data-ignored="false"]').first();
+  const stalePersonID = await staleCard.getAttribute("data-person-id");
+  await staleCard.locator("[data-person-edit]").click();
+  const changed = await context.request.post(baseURL + "/photos/people/" + stalePersonID + "/rename", { form: { name: "Concurrent modal change" }, headers: { Accept: "application/json", Origin: baseURL } });
+  expect(changed.ok()).toBe(true);
+  await modal.getByRole("button", { name: "Ignorieren", exact: true }).click();
+  await expect(modal.locator("[data-person-dialog-status]")).toContainText("inzwischen geändert");
+  await expect(modal.getByRole("button", { name: "Ignorieren", exact: true })).toBeDisabled();
+  await modal.getByRole("button", { name: "Abbrechen", exact: true }).click();
+  await expect(page.locator('[data-group-face][data-person-name="Concurrent modal change"]')).toHaveAttribute("data-ignored", "false");
   expect(errors).toEqual([]);
   await context.close();
 });

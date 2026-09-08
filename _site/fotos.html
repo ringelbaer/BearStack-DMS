@@ -1268,6 +1268,16 @@ wird erst beim Öffnen geladen; ein Bildfehler blockiert das Benennen nicht. Die
 Personenliste liefert Ordner und Bounding Box mit derselben Seitenabfrage, ohne
 zusätzliche Einzelabfragen pro Person. Rechte und aktuelle Sichtbarkeitsprüfungen
 bleiben auch beim Laden der Fotovorschau wirksam.</p>
+<p>Ab <strong>0.47.1</strong> steht im Benenn-Modal <strong>„Ignorieren“</strong> links neben <strong>„Abbrechen“</strong>.
+Die Aktion ignoriert das angezeigte Gesicht; bei mehreren ausgewählten unbenannten
+Gruppen werden deren angezeigte Vorschaubilder gemeinsam ignoriert. Andere Gesichter
+der Gruppen bleiben aktiv. Bereits benannte Gruppen deaktivieren diese Aktion.
+Ein eingegebener Name wird dabei nicht gespeichert. Nach Erfolg schließt sich das
+Modal und die Ansicht aktualisiert sich. Schreibfehler bleiben im Modal sichtbar;
+schlägt nur das Nachladen nach erfolgreichem Speichern fehl, bleibt erneutes
+Speichern gesperrt. Im Gruppenbildmodus gilt die vorhandene Revisionsprüfung;
+bei einem Konflikt wird das Foto aktualisiert und die Auswahl muss nach Schließen
+des Modals erneut geprüft werden.</p>
 <p><strong>Gruppenbilder bearbeiten:</strong> Der Button <strong>Gruppenbilder</strong> unter <code>/photos/people</code>
 öffnet <code>/photos/people/groups</code> für Fotobearbeiter (<code>photos.edit</code>). Die Schwelle ist
 oben einstellbar (0–255, Standard <strong>5</strong>) und wird pro Nutzer und Browser gemerkt.
@@ -1438,7 +1448,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.47.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.47.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

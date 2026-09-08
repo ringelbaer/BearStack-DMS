@@ -27,6 +27,8 @@
     var busy = false;
     var dialogForm = personDialog.querySelector("form");
     var dialogStatus = personDialog.querySelector("[data-person-dialog-status]");
+    var ignoreButton = personDialog.querySelector("[data-person-dialog-ignore]");
+    var ignoreRequest;
     var preview = personDialog.querySelector("[data-person-preview]");
     var previewImage = personDialog.querySelector("[data-person-preview-image]");
     var previewBox = personDialog.querySelector("[data-person-preview-box]");
@@ -101,6 +103,10 @@
       sourceCard = button.closest("[data-person-id]");
       if (sourceCard) sourceCard.setAttribute("data-person-dialog-source", "");
       showPreview(sourceCard || card);
+      var ignoreCards = sourceCard ? [sourceCard] : ids.map(function (id) { return personSurface.querySelector('[data-person-id="' + id + '"]'); });
+      ignoreRequest = options.getIgnoreRequest ? options.getIgnoreRequest(ignoreCards) : null;
+      ignoreButton.disabled = !ignoreRequest;
+      ignoreButton.title = ignoreRequest ? (ids.length > 1 ? "Angezeigte Gesichter der ausgewählten Gruppen ignorieren" : "Angezeigtes Gesicht ignorieren") : "Nur unbenannte, aktive Gesichter können hier ignoriert werden";
     }
     personSurface.addEventListener("click", function (event) {
       var button = event.target.closest("[data-person-edit]");
@@ -116,16 +122,18 @@
       previewRegion = null;
       if (preview) { previewImage.removeAttribute("src"); previewBox.hidden = true; }
       dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
-      var focus = opener && opener.isConnected && !opener.disabled && !opener.closest("[hidden]") ? opener : personSurface.querySelector("a, button:not([disabled])");
+      var candidates = opener ? [opener] : [];
+      candidates = candidates.concat(Array.from(personSurface.querySelectorAll("a, button:not([disabled])")));
+      var focus = candidates.find(function (control) { return control.isConnected && !control.disabled && !control.closest("[hidden]") && control.getClientRects().length; });
+      if (!focus) focus = document.querySelector("[data-people-filter] select, [data-group-unnamed]");
       if (focus) focus.focus({ preventScroll: true });
     });
-    dialogForm.addEventListener("submit", async function (event) {
-      event.preventDefault();
-      if (busy) return;
-      var body = new URLSearchParams(new FormData(dialogForm));
-      var action = dialogForm.action;
+    async function savePerson(ignoring) {
+      if (busy || (ignoring && (!ignoreRequest || ignoreButton.disabled))) return;
+      var body = ignoring ? ignoreRequest.body : new URLSearchParams(new FormData(dialogForm));
+      var action = ignoring ? ignoreRequest.action : dialogForm.action;
       var merging = action.endsWith("/merge");
-      if (dialogIDs.length > 1) {
+      if (!ignoring && dialogIDs.length > 1) {
         var targetID = body.get("target");
         if (!targetID || targetID === "0") {
           targetID = dialogIDs[0];
@@ -143,19 +151,26 @@
       dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
       dialogForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = true; });
       personDialog.setAttribute("aria-busy", "true");
-      dialogStatus.textContent = "Person wird gespeichert …";
-      var saved = false;
+      dialogStatus.textContent = ignoring ? "Gesicht wird ignoriert …" : "Person wird gespeichert …";
+      var saved = false, conflict = false;
       try {
         var response = await fetch(action, {
           method: "POST", credentials: "same-origin", redirect: "error",
           headers: { Accept: "application/json" }, body: body
         });
-        if (!response.ok) throw new Error("Person konnte nicht gespeichert werden (HTTP " + response.status + ").");
+        if (!response.ok) {
+          if (ignoring && response.status === 409 && options.onIgnoreConflict) {
+            conflict = true;
+            await options.onIgnoreConflict();
+            throw new Error("Das Gruppenbild wurde inzwischen geändert. Bitte den Dialog schließen und die aktualisierte Auswahl erneut prüfen.");
+          }
+          throw new Error((ignoring ? "Gesicht konnte nicht ignoriert werden" : "Person konnte nicht gespeichert werden") + " (HTTP " + response.status + ").");
+        }
         var result = await response.json();
         if (result.ok !== true) throw new Error("Person konnte nicht gespeichert werden.");
         saved = true;
         await options.onSave(dialogIDs);
-        status.textContent = merging ? "Personen zusammengeführt." : "Person benannt.";
+        status.textContent = ignoring ? (dialogIDs.length > 1 ? "Angezeigte Gesichter ignoriert." : "Gesicht ignoriert.") : (merging ? "Personen zusammengeführt." : "Person benannt.");
         personDialog.close();
       } catch (error) {
         dialogStatus.textContent = saved ? "Gespeichert, aber die Ansicht konnte nicht aktualisiert werden. Bitte die Seite neu laden." : error.message;
@@ -165,10 +180,13 @@
         busy = false;
         options.onBusy(busy);
         personDialog.removeAttribute("aria-busy");
-        dialogForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = saved; });
+        dialogForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = saved || conflict; });
+        ignoreButton.disabled = saved || conflict || !ignoreRequest;
         personDialog.querySelector("[data-person-dialog-cancel]").disabled = false;
       }
-    });
+    }
+    dialogForm.addEventListener("submit", function (event) { event.preventDefault(); savePerson(false); });
+    ignoreButton.addEventListener("click", function () { savePerson(true); });
     return { open: openPersonDialog };
   }
 

@@ -86,6 +86,7 @@ test("face settings fit the shared desktop and mobile layout", async ({ browser 
 });
 
 test("face recognition: enable, name, move, merge, ignore and search",async({browser})=>{
+  test.setTimeout(60_000);
   const context=await browser.newContext({httpCredentials:{username:"manager",password:"secret"}});const page=await context.newPage();
   await page.goto(baseURL+"/login");
   await page.getByLabel("Benutzername").fill("manager");await page.locator('input[name="password"]').fill("secret");await page.getByRole("button",{name:"Anmelden"}).click();
@@ -322,6 +323,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.evaluate(() => { window.modalPageMarker = "unchanged"; });
   await editJuergen.click();
   await expect(dialogName).toHaveValue("Jürgen");
+  await expect(personDialog.getByRole("button", { name: "Ignorieren", exact: true })).toBeDisabled();
   await dialogName.fill("");
   await expect(personDialog.locator("[data-person-feedback]")).toHaveText("Keine passende Person gefunden.");
   await expect(personDialog.getByRole("option", { name: /Unbenannt/ })).toHaveCount(0);
@@ -632,5 +634,58 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await personDialog.getByRole("button", { name: "Abbrechen" }).click();
   await expect(personDialog).not.toBeVisible();
   await page.unroute("**/photos/people?**");
+  // Ignoring uses the shown portrait and never submits the entered name.
+  await page.goto(baseURL + "/photos/people?filter=all&page=1");
+  const remainingPerson = await page.locator("[data-person-id]").first().getAttribute("data-person-id");
+  await renamePerson(remainingPerson, "");
+  await page.goto(baseURL + "/photos/people?filter=unknown&page=1");
+  const portraitID = await page.locator("[data-people-overview] [data-face-id]").first().getAttribute("data-face-id");
+  await page.locator("[data-person-edit]").first().click();
+  const modalIgnore = personDialog.getByRole("button", { name: "Ignorieren", exact: true });
+  await expect(modalIgnore).toBeEnabled();
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const left = await modalIgnore.boundingBox();
+    const right = await personDialog.getByRole("button", { name: "Abbrechen", exact: true }).boundingBox();
+    expect(left.x + left.width).toBeLessThanOrEqual(right.x);
+    expect(Math.abs(left.y - right.y)).toBeLessThan(1);
+    expect(await personDialog.evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth + 1)).toBe(true);
+  }
+  await page.screenshot({ path: "/tmp/bearstack-modal-ignore.png", fullPage: true });
+  await dialogName.fill("Nicht als Namen speichern");
+  await page.route("**/photos/faces/edit", route => route.fulfill({ status: 503, body: "Unavailable" }));
+  await modalIgnore.click();
+  await expect(personDialog.locator("[data-person-dialog-status]")).toContainText("HTTP 503");
+  await expect(modalIgnore).toBeEnabled();
+  await expect(personDialog).toBeVisible();
+  await page.unroute("**/photos/faces/edit");
+  const ignoredFromDialog = page.waitForRequest(request => request.method() === "POST" && request.url().endsWith("/photos/faces/edit"));
+  await modalIgnore.click();
+  const ignoreBody = new URLSearchParams((await ignoredFromDialog).postData());
+  expect(ignoreBody.getAll("face_id")).toEqual([portraitID]);
+  expect(ignoreBody.get("action")).toBe("ignore");
+  expect(ignoreBody.has("name")).toBe(false);
+  await expect(personDialog).not.toBeVisible();
+  await expect(page.locator("a.person-card")).toHaveCount(1);
+  await expect(page.locator("[data-people-overview] [data-person-count]")).toHaveText("1 Foto");
+  await expect(page.locator("[data-person-id]").first()).toHaveAttribute("data-person-name", "");
+  // Restore the ignored detection as another group, then ignore both portraits.
+  const restored = await context.request.post(baseURL + "/photos/faces/edit", { form: { face_id: portraitID, action: "move" }, headers: { Accept: "application/json", Origin: baseURL } });
+  expect(restored.ok()).toBe(true);
+  await page.reload();
+  await expect(page.locator("[data-person-select]")).toHaveCount(2);
+  for (const checkbox of await page.locator("[data-person-select]").all()) await checkbox.check();
+  await page.locator("[data-people-edit-button]").click();
+  await expect(dialogName).toHaveValue("");
+  await expect(modalIgnore).toBeEnabled();
+  await page.route("**/photos/people?**", route => route.fulfill({ status: 503, body: "Unavailable" }));
+  await modalIgnore.click();
+  await expect(personDialog.locator("[data-person-dialog-status]")).toContainText("Gespeichert, aber");
+  await expect(modalIgnore).toBeDisabled();
+  await expect(personDialog.locator("[data-person-submit]")).toBeDisabled();
+  await personDialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
+  await page.unroute("**/photos/people?**");
+  await page.reload();
+  await expect(page.locator("a.person-card")).toHaveCount(0);
   await context.close();
 });

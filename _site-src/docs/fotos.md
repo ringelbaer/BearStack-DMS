@@ -306,6 +306,17 @@ Personenliste liefert Ordner und Bounding Box mit derselben Seitenabfrage, ohne
 zusätzliche Einzelabfragen pro Person. Rechte und aktuelle Sichtbarkeitsprüfungen
 bleiben auch beim Laden der Fotovorschau wirksam.
 
+Ab **0.47.1** steht im Benenn-Modal **„Ignorieren“** links neben **„Abbrechen“**.
+Die Aktion ignoriert das angezeigte Gesicht; bei mehreren ausgewählten unbenannten
+Gruppen werden deren angezeigte Vorschaubilder gemeinsam ignoriert. Andere Gesichter
+der Gruppen bleiben aktiv. Bereits benannte Gruppen deaktivieren diese Aktion.
+Ein eingegebener Name wird dabei nicht gespeichert. Nach Erfolg schließt sich das
+Modal und die Ansicht aktualisiert sich. Schreibfehler bleiben im Modal sichtbar;
+schlägt nur das Nachladen nach erfolgreichem Speichern fehl, bleibt erneutes
+Speichern gesperrt. Im Gruppenbildmodus gilt die vorhandene Revisionsprüfung;
+bei einem Konflikt wird das Foto aktualisiert und die Auswahl muss nach Schließen
+des Modals erneut geprüft werden.
+
 **Gruppenbilder bearbeiten:** Der Button **Gruppenbilder** unter `/photos/people`
 öffnet `/photos/people/groups` für Fotobearbeiter (`photos.edit`). Die Schwelle ist
 oben einstellbar (0–255, Standard **5**) und wird pro Nutzer und Browser gemerkt.

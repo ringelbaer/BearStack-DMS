@@ -341,6 +341,12 @@
       status: status,
       isBusy: function () { return busy; },
       onBusy: function (value) { busy = value; updateSelection(); },
+      getIgnoreRequest: function (cards) {
+        if (!cards.length || cards.some(function (card) { return !card || card.dataset.personName || !card.dataset.faceId; })) return null;
+        var body = new URLSearchParams({ action: "ignore" });
+        cards.forEach(function (card) { body.append("face_id", card.dataset.faceId); });
+        return { action: "/photos/faces/edit", body: body };
+      },
       onSave: async function (ids) {
         ids.forEach(function (id) { selected.delete(id); });
         await refreshPeople();

@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.47.1
+
+- „Ignorieren“ im Benenn-Modal links neben „Abbrechen“ verwendet die bestehende Einzelgesichtsaktion. Bei mehreren unbenannten Gruppen werden ausschließlich deren angezeigte Vorschaubilder gemeinsam ignoriert; benannte Gruppen deaktivieren die Aktion. Namenseingaben werden nicht mitgespeichert.
+- Fehler bleiben im Dialog sichtbar, erfolgreiche Aktionen schließen ihn nach Aktualisierung der Ansicht. Gespeicherte Aktionen mit fehlgeschlagenem Nachladen können nicht direkt wiederholt werden. Gruppenbild-Konflikte aktualisieren das Foto und verlangen erneute Prüfung der Auswahl. Mobile Anordnung und Fokus nach dem Ausblenden von Vorschauen berücksichtigt.
+- PATCH für den zusätzlichen Zugang zur vorhandenen Ignorierfunktion, ohne API- oder Datenmigration. Browserprüfungen für Einzel-/Mehrfachauswahl, Fehler, Konflikte und Buttonanordnung; README und Website aktualisiert.
+
 ### BearStack 0.47.0
 
 - Die Personenübersicht verwendet eine exklusive Filterauswahl mit „Alle“, bekannten, unbekannten und ignorierten Personen/Gesichtern. Bei unbekannten Personen entfällt die wiederholte sichtbare Beschriftung „Unbenannt“. `filter` ergänzt die API kompatibel und hat Vorrang vor bisherigen Filterparametern.
