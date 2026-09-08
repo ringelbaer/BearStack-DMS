@@ -22,7 +22,7 @@ func TestDialRejectsInvalidSecurityBeforeNetwork(t *testing.T) {
 	}
 }
 
-func TestImportPDFsFromMessageFiltersSenderAndDecodesAttachment(t *testing.T) {
+func TestImportAttachmentsFromMessageFiltersSenderAndDecodesAttachment(t *testing.T) {
 	raw := strings.Join([]string{
 		"From: Scanner <scanner@example.com>",
 		"Subject: =?utf-8?q?Rechnung_M=C3=A4rz?=",
@@ -43,7 +43,7 @@ func TestImportPDFsFromMessageFiltersSenderAndDecodesAttachment(t *testing.T) {
 	}, "\r\n")
 
 	var attachments []Attachment
-	message, err := ImportPDFsFromMessage(strings.NewReader(raw), "@example.com", 1<<20, func(att Attachment) error {
+	message, err := ImportAttachmentsFromMessage(strings.NewReader(raw), "@example.com", 1<<20, func(att Attachment) error {
 		attachments = append(attachments, att)
 		content, readErr := io.ReadAll(att.Reader)
 		if readErr != nil {
@@ -53,7 +53,7 @@ func TestImportPDFsFromMessageFiltersSenderAndDecodesAttachment(t *testing.T) {
 			t.Fatalf("attachment content = %q", string(content))
 		}
 		return nil
-	})
+	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,12 +123,12 @@ func TestImportAttachmentsFromMessageFindsPDFsAndEMLAttachments(t *testing.T) {
 	}
 }
 
-func TestImportPDFsFromMessageRejectsDisallowedSenderWithoutWalkingAttachments(t *testing.T) {
+func TestImportAttachmentsFromMessageRejectsDisallowedSenderWithoutWalkingAttachments(t *testing.T) {
 	raw := "From: scanner@other.test\r\nSubject: Test\r\nContent-Type: application/pdf\r\n\r\n%PDF"
-	message, err := ImportPDFsFromMessage(strings.NewReader(raw), "example.com", 1<<20, func(Attachment) error {
+	message, err := ImportAttachmentsFromMessage(strings.NewReader(raw), "example.com", 1<<20, func(Attachment) error {
 		t.Fatal("attachment handler should not run")
 		return nil
-	})
+	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,23 +137,23 @@ func TestImportPDFsFromMessageRejectsDisallowedSenderWithoutWalkingAttachments(t
 	}
 }
 
-func TestImportPDFsFromMessageEnforcesMessageLimit(t *testing.T) {
+func TestImportAttachmentsFromMessageEnforcesMessageLimit(t *testing.T) {
 	raw := "From: scanner@example.com\r\nSubject: Test\r\n\r\n" + strings.Repeat("x", 64)
-	_, err := ImportPDFsFromMessage(strings.NewReader(raw), "", 1, nil)
+	_, err := ImportAttachmentsFromMessage(strings.NewReader(raw), "", 1, nil, nil)
 	if !errors.Is(err, ErrMessageTooLarge) {
 		t.Fatalf("err = %v, want ErrMessageTooLarge", err)
 	}
 }
 
-func TestWalkPDFsUsesSafeFallbackFilename(t *testing.T) {
+func TestWalkAttachmentsUsesSafeFallbackFilename(t *testing.T) {
 	header := textproto.MIMEHeader{
 		"Content-Type": []string{"application/pdf"},
 	}
 	var got Attachment
-	if err := WalkPDFs(header, strings.NewReader("%PDF"), func(att Attachment) error {
+	if err := WalkAttachments(header, strings.NewReader("%PDF"), func(att Attachment) error {
 		got = att
 		return nil
-	}); err != nil {
+	}, nil); err != nil {
 		t.Fatal(err)
 	}
 	if got.Filename != "attachment.pdf" {

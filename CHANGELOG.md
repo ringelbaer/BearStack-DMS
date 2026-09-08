@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.41.2
+
+- Ausschließlich in Tests verwendete Helfer zum Vorbelegen der Einstellungs-Caches nach `test_helpers_test.go` verschoben; die zusätzliche Server-Weiterleitung für den App-Namen entfernt.
+- Unbenutzte PDF-Weiterleitungen im Mailimport entfernt. Bestehende Tests rufen die gemeinsamen Anhangsfunktionen direkt auf und tragen deren Namen; Absenderfilter, Größenlimit und sichere Dateinamen bleiben abgedeckt.
+- PATCH für konservatives Aufräumen ohne Änderung des Laufzeitverhaltens oder der HTTP-Verträge. README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.41.1
 
 - Fehler beim Aktualisieren eines Foto-Fingerprints werden vor Zugriffen auf gespeicherte Gesichter weitergegeben. Gesichtsvorschauen, Favoriten und Gruppenbilder verwenden dieselbe strikte Quellprüfung; fehlgeschlagene Datenbankänderungen erlauben keine alten Gesichtsregionen auf ersetzten Fotos.

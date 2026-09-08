@@ -132,10 +132,6 @@ func DeleteMessage(c *Client, uid uint32) error {
 	return c.Expunge(nil)
 }
 
-func ImportPDFsFromMessage(r io.Reader, allowedSenders string, maxUploadBytes int64, handle func(Attachment) error) (Message, error) {
-	return ImportAttachmentsFromMessage(r, allowedSenders, maxUploadBytes, handle, nil)
-}
-
 func ImportAttachmentsFromMessage(r io.Reader, allowedSenders string, maxUploadBytes int64, handlePDF func(Attachment) error, handleEML func(Attachment) error) (Message, error) {
 	r = &limitReader{
 		r:         r,
@@ -192,10 +188,6 @@ func (r *limitReader) Read(p []byte) (int, error) {
 	n, err := r.r.Read(p)
 	r.remaining -= int64(n)
 	return n, err
-}
-
-func WalkPDFs(header textproto.MIMEHeader, body io.Reader, handle func(Attachment) error) error {
-	return WalkAttachments(header, body, handle, nil)
 }
 
 func WalkAttachments(header textproto.MIMEHeader, body io.Reader, handlePDF func(Attachment) error, handleEML func(Attachment) error) error {

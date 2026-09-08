@@ -117,10 +117,6 @@ func (s *Server) appName(ctx context.Context) (string, error) {
 	return s.settingsService().AppName(ctx)
 }
 
-func (s *Server) cacheAppName(value string) {
-	s.settingsService().CacheAppName(value)
-}
-
 func (s *Server) tagDisplayMode(ctx context.Context) (string, error) {
 	return s.settingsService().TagDisplayMode(ctx)
 }
@@ -184,15 +180,6 @@ func (svc settingsService) AppName(ctx context.Context) (string, error) {
 		svc.app.appName = appNameCacheEntry{value: value, loaded: true}
 	}
 	return value, nil
-}
-
-func (svc settingsService) CacheAppName(value string) {
-	if svc.app == nil {
-		return
-	}
-	svc.app.mu.Lock()
-	svc.app.appName = appNameCacheEntry{value: normalizeAppName(value), loaded: true}
-	svc.app.mu.Unlock()
 }
 
 func (svc settingsService) DesktopPreviewMode(ctx context.Context) (string, error) {
@@ -309,19 +296,6 @@ type settingsValues map[string]string
 func (values settingsValues) GetSetting(_ context.Context, key string) (string, bool, error) {
 	value, ok := values[key]
 	return value, ok, nil
-}
-
-func (svc settingsService) CacheRenderSettings(settings renderSettingsSnapshot) {
-	if svc.app == nil {
-		return
-	}
-	settings = normalizeRenderSettingsSnapshot(settings)
-	svc.app.mu.Lock()
-	svc.app.render = renderSettingsCacheEntry{
-		value:     settings,
-		expiresAt: time.Now().Add(renderSettingsCacheTTL),
-	}
-	svc.app.mu.Unlock()
 }
 
 func (svc settingsService) TrashRetentionDays(ctx context.Context) (int, error) {

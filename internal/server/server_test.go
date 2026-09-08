@@ -1132,7 +1132,7 @@ func TestServerAppNameCache(t *testing.T) {
 		t.Fatalf("cached app name after external write = %q", name)
 	}
 
-	server.cacheAppName("Aktualisiert")
+	server.settingsService().CacheAppName("Aktualisiert")
 	name, err = server.appName(ctx)
 	if err != nil {
 		t.Fatal(err)
