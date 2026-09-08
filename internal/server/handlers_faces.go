@@ -124,7 +124,11 @@ func (s *Server) handlePersonMerge(w http.ResponseWriter, r *http.Request) {
 			additional = append(additional, id)
 		}
 		if err == nil {
-			err = s.photos.MergePeople(r.Context(), source, target, additional...)
+			if r.PostForm.Has("new_name") {
+				err = s.photos.MergePeopleNamed(r.Context(), source, target, r.PostForm.Get("new_name"), additional...)
+			} else {
+				err = s.photos.MergePeople(r.Context(), source, target, additional...)
+			}
 		}
 	}
 	if err != nil {

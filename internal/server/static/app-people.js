@@ -36,6 +36,7 @@
   var selected = new Set();
   var merge = document.querySelector("[data-people-merge]");
   var mergeButton = document.querySelector("[data-people-merge-button]");
+  var editSelectedButton = document.querySelector("[data-people-edit-button]");
 
   function mergeSelection() {
     var ids = Array.from(selected);
@@ -56,7 +57,9 @@
       input.checked = selected.has(input.value);
       input.disabled = busy;
     });
-    merge.hidden = selected.size < 2;
+    merge.hidden = selected.size < 1;
+    mergeButton.hidden = selected.size < 2;
+    editSelectedButton.disabled = busy;
     mergeButton.disabled = busy;
     if (selected.size) {
       var target = cards.get(mergeSelection()[0]);
@@ -119,7 +122,15 @@
       card.append(button);
       var edit = document.createElement("button");
       edit.type = "button"; edit.className = "person-edit-button secondary-button";
-      edit.dataset.personEdit = ""; edit.textContent = "Benennen / zuordnen";
+      edit.dataset.personEdit = ""; edit.title = "Benennen / zuordnen";
+      var icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      icon.setAttribute("viewBox", "0 0 24 24"); icon.setAttribute("width", "16"); icon.setAttribute("height", "16");
+      icon.setAttribute("aria-hidden", "true"); icon.setAttribute("fill", "none");
+      icon.setAttribute("stroke", "currentColor"); icon.setAttribute("stroke-width", "1.8");
+      icon.setAttribute("stroke-linecap", "round"); icon.setAttribute("stroke-linejoin", "round");
+      var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", "m16 3 5 5M3 21l5-1L21 7a2 2 0 0 0-5-5L3 15Z");
+      icon.append(path); edit.append(icon);
       edit.setAttribute("aria-label", "Benennen oder zuordnen: " + name);
       card.append(edit);
     }
@@ -264,24 +275,34 @@
   if (overview && personDialog) {
     var dialogForm = personDialog.querySelector("form");
     var dialogStatus = personDialog.querySelector("[data-person-dialog-status]");
-    var opener;
+    var opener, dialogIDs = [];
+    function openPersonDialog(ids, button) {
+      if (!ids.length || busy || button.disabled) return;
+      dialogIDs = ids;
+      var card = overview.querySelector('[data-person-id="' + ids[0] + '"]');
+      opener = button;
+      dialogForm.dataset.personExclude = ids.length === 1 ? ids[0] : "";
+      dialogForm.dataset.personCount = String(ids.length);
+      dialogForm.dataset.renameAction = "/photos/people/" + encodeURIComponent(ids[0]) + "/rename";
+      dialogForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = false; });
+      dialogStatus.textContent = "";
+      personDialog.querySelector("#person-dialog-title").textContent = ids.length > 1 ? ids.length + " Gruppen benennen oder zuordnen" : "Person benennen oder zuordnen";
+      personDialog.querySelector("#overview-person-hint").textContent = ids.length > 1 ? "Alle markierten Gruppen werden unter dem neuen Namen oder mit der ausgewählten Person zusammengeführt." : "Ein neuer Name benennt diese Gruppe. Eine vorhandene Person auswählen, um die gesamte Gruppe mit ihr zusammenzuführen.";
+      dialogForm.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: ids.length === 1 ? card.dataset.personName : "" } }));
+      personDialog.showModal();
+    }
+    editSelectedButton.addEventListener("click", function () { openPersonDialog(Array.from(selected), editSelectedButton); });
     overview.addEventListener("click", function (event) {
       var button = event.target.closest("[data-person-edit]");
       if (!button || busy || button.disabled) return;
       var card = button.closest("[data-person-id]");
-      opener = button;
-      dialogForm.dataset.personExclude = card.dataset.personId;
-      dialogForm.dataset.renameAction = "/photos/people/" + encodeURIComponent(card.dataset.personId) + "/rename";
-      dialogForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = false; });
-      dialogStatus.textContent = "";
-      dialogForm.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: card.dataset.personName } }));
-      personDialog.showModal();
+      openPersonDialog([card.dataset.personId], button);
     });
     personDialog.querySelector("[data-person-dialog-cancel]").addEventListener("click", function () { if (!busy) personDialog.close(); });
     personDialog.addEventListener("cancel", function (event) { if (busy) event.preventDefault(); });
     personDialog.addEventListener("close", function () {
       dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
-      var focus = opener && opener.isConnected && !opener.disabled ? opener : overview.querySelector("a");
+      var focus = opener && opener.isConnected && !opener.disabled && !opener.closest("[hidden]") ? opener : overview.querySelector("a");
       if (focus) focus.focus({ preventScroll: true });
     });
     dialogForm.addEventListener("submit", async function (event) {
@@ -290,6 +311,19 @@
       var body = new URLSearchParams(new FormData(dialogForm));
       var action = dialogForm.action;
       var merging = action.endsWith("/merge");
+      if (dialogIDs.length > 1) {
+        var targetID = body.get("target");
+        if (!targetID || targetID === "0") {
+          targetID = dialogIDs[0];
+          body.set("new_name", body.get("name").trim());
+        }
+        var sources = dialogIDs.filter(function (id) { return id !== targetID; });
+        body.set("target", targetID);
+        sources.slice(1).forEach(function (id) { body.append("person_id", id); });
+        action = "/photos/people/" + encodeURIComponent(sources[0]) + "/merge";
+        merging = true;
+      }
+
       busy = true;
       updateSelection();
       dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
@@ -306,6 +340,7 @@
         var result = await response.json();
         if (result.ok !== true) throw new Error("Person konnte nicht gespeichert werden.");
         saved = true;
+        dialogIDs.forEach(function (id) { selected.delete(id); });
         await refreshPeople();
         status.textContent = merging ? "Personen zusammengeführt." : "Person benannt.";
         personDialog.close();
@@ -350,8 +385,8 @@
       if (allowCreate) {
         var merging = target.value && target.value !== "0";
         form.action = merging ? renameAction.replace(/\/rename$/, "/merge") : renameAction;
-        form.querySelector("[data-person-submit]").textContent = merging ? "Gruppen zusammenführen" : "Benennen";
-        input.setCustomValidity("");
+        form.querySelector("[data-person-submit]").textContent = merging ? "Gruppen zusammenführen" : (Number(form.dataset.personCount) > 1 ? "Benennen und zusammenführen" : "Benennen");
+        input.setCustomValidity(Number(form.dataset.personCount) > 1 && !merging && !input.value.trim() ? "Bitte einen Namen eingeben oder eine Person auswählen." : "");
         return;
       }
       input.setCustomValidity(target.value && (target.value !== "0" || !input.required) ? "" :
@@ -372,11 +407,12 @@
     }
     function choose(index) {
       var person = items[index];
-      if (!person) return;
+      if (!person || input.disabled || popup.hidden) return;
       target.value = String(person.id);
       input.value = person.create ? person.name : (person.name || "Unbenannt") + " (#" + person.id + ")";
       validate();
       close();
+      if (form.hasAttribute("data-person-modal")) form.requestSubmit();
     }
     async function load(direction) {
       cancel();
@@ -392,7 +428,7 @@
       // A selected label contains the ID; opening it again lists alternatives.
       var query = target.value && target.value !== "0" ? "" : input.value.trim();
       try {
-        var response = await fetch("/photos/people?format=json&q=" + encodeURIComponent(query), {
+        var response = await fetch("/photos/people?format=json&known=1&q=" + encodeURIComponent(query), {
           signal: controller.signal, credentials: "same-origin", redirect: "error",
           headers: { Accept: "application/json" }
         });
@@ -400,7 +436,7 @@
         var data = await response.json();
         if (!Array.isArray(data.people)) throw new Error("Ungültige Antwort der Personensuche.");
         if (request !== revision || document.activeElement !== input) return;
-        items = data.people.filter(function (person) { return String(person.id) !== form.dataset.personExclude; });
+        items = data.people.filter(function (person) { return typeof person.name === "string" && person.name.trim() && String(person.id) !== form.dataset.personExclude; });
         if (allowCreate && query) items.push({ id: 0, name: query, create: true });
         var options = document.createDocumentFragment();
         items.forEach(function (person, index) {

@@ -263,6 +263,22 @@ func (l *Library) EditFaces(ctx context.Context, ids []int64, target int64, igno
 }
 
 func (l *Library) MergePeople(ctx context.Context, source, target int64, additional ...int64) error {
+	return l.mergePeople(ctx, source, target, nil, additional...)
+}
+
+// MergePeopleNamed atomically merges groups and gives the target a manual name.
+func (l *Library) MergePeopleNamed(ctx context.Context, source, target int64, name string, additional ...int64) error {
+	name, err := normalizedPersonName(name)
+	if err != nil {
+		return err
+	}
+	if name == "" {
+		return errors.New("Namen eingeben")
+	}
+	return l.mergePeople(ctx, source, target, &name, additional...)
+}
+
+func (l *Library) mergePeople(ctx context.Context, source, target int64, name *string, additional ...int64) error {
 	sources := []int64{source}
 	seen := map[int64]bool{source: true}
 	for _, id := range additional {
@@ -292,6 +308,11 @@ func (l *Library) MergePeople(ctx context.Context, source, target int64, additio
 	for _, id := range append(append([]int64{}, sources...), target) {
 		var exists int
 		if err = tx.QueryRowContext(ctx, `SELECT 1 FROM photo_people WHERE id=? AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=? AND ignored=0)`, id, id).Scan(&exists); err != nil {
+			return err
+		}
+	}
+	if name != nil {
+		if _, err = tx.ExecContext(ctx, `UPDATE photo_people SET name=?,name_fold=?,manual_name=1,name_source='' WHERE id=?`, *name, searchtext.GermanFold(*name), target); err != nil {
 			return err
 		}
 	}

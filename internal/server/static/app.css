@@ -3569,8 +3569,16 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 .ignored-face-form input { width: 100%; min-width: 0; }
 .ignored-face-form button { white-space: normal; }
 
-.person-overview-card:has(.person-edit-button) > .person-card { height: auto; }
-.person-edit-button { width: 100%; margin-top: 6px; padding: 8px; }
+.person-edit-button {
+  position: absolute; right: 6px; bottom: 6px;
+  display: grid; place-items: center;
+  width: 30px; height: 30px; min-height: 30px; padding: 0;
+  border: 1px solid var(--line); border-radius: 50%;
+  color: var(--muted); background: var(--surface);
+}
+.person-edit-button:hover, .person-edit-button:focus-visible { color: var(--primary); }
+.person-overview-card .person-card > span { padding-inline: 30px; }
+
 .person-edit-dialog { max-height: calc(100dvh - 32px); overflow-y: auto; }
 /* Keep dialog actions stationary when the input loses focus before a click. */
 .person-dialog-suggestions { height: 180px; }

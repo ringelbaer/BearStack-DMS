@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.37.0
+  version: 0.38.1
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -1118,7 +1118,7 @@ paths:
         apply. Additional person_id sources merge atomically (at most 60 distinct sources,
         excluding the target). An unnamed target inherits the first non-empty source
         name, including its provenance; a named target keeps its name. Accept
-        application/json returns 200 with ok true.
+        application/json returns 200 with ok true. Optional new_name atomically renames the target while merging; it must be non-empty.
       parameters:
       - name: id
         in: path
@@ -1134,6 +1134,11 @@ paths:
             schema:
               type: object
               properties:
+                new_name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                  description: Optional manual target name applied in the merge transaction.
                 person_id:
                   type: array
                   description: Additional source group IDs; repeated form field.

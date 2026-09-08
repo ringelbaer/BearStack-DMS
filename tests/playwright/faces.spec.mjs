@@ -167,15 +167,19 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.evaluate(() => { window.modalPageMarker = "unchanged"; });
   await editJuergen.click();
   await expect(dialogName).toHaveValue("Jürgen");
+  await dialogName.fill("");
+  await expect(personDialog.locator("[data-person-feedback]")).toHaveText("Keine passende Person gefunden.");
+  await expect(personDialog.getByRole("option", { name: /Unbenannt/ })).toHaveCount(0);
+  await expect(personDialog.getByRole("option")).toHaveCount(0);
+
   await personDialog.getByRole("button", { name: "Abbrechen" }).click();
   await expect(personDialog).not.toBeVisible();
   await expect(editJuergen).toBeFocused();
   await editJuergen.click();
   await dialogName.fill("Jürgen Neu");
   await expect(personDialog.getByRole("option", { name: /Neu anlegen:/ })).toBeVisible();
-  await personDialog.getByRole("option", { name: /Neu anlegen:/ }).click();
   await page.route("**/photos/people/*/rename", route => route.fulfill({ status: 503, body: "Unavailable" }));
-  await personDialog.getByRole("button", { name: "Benennen", exact: true }).click();
+  await personDialog.getByRole("option", { name: /Neu anlegen:/ }).click();
   await expect(personDialog.locator("[data-person-dialog-status]")).toContainText("HTTP 503");
   await expect(dialogName).toHaveValue("Jürgen Neu");
   await page.unroute("**/photos/people/*/rename");
@@ -226,10 +230,10 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await mergeForm.getByRole("button", { name: "Benennen", exact: true }).click();
   await expect(page.getByRole("heading", { name: "nicht-vorhandene-person", exact: true })).toBeVisible();
   await expect(page.locator(".people-management input:not([type=hidden])")).toHaveCount(1);
-  await page.route("**/photos/people?format=json&q=Fehler", route => route.fulfill({ status: 503, body: "Unavailable" }));
+  await page.route("**/photos/people?format=json&known=1&q=Fehler", route => route.fulfill({ status: 503, body: "Unavailable" }));
   await personSearch.fill("Fehler");
   await expect(mergeForm.locator("[data-person-feedback]")).toContainText("Personen konnten nicht geladen werden.");
-  await page.unroute("**/photos/people?format=json&q=Fehler");
+  await page.unroute("**/photos/people?format=json&known=1&q=Fehler");
   await personSearch.fill("Jür");
   await expect(personOptions).toHaveCount(1);
   await expect(personOptions.first()).toContainText("Jürgen");
@@ -256,7 +260,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   const started = new Promise(resolve => { markStarted = resolve; });
   let markFinished;
   const finished = new Promise(resolve => { markFinished = resolve; });
-  await page.route("**/photos/people?format=json&q=Veraltet", async route => {
+  await page.route("**/photos/people?format=json&known=1&q=Veraltet", async route => {
     markStarted();
     await new Promise(resolve => { releaseStale = resolve; });
     try {
@@ -272,7 +276,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(personOptions.first()).toContainText("Jürgen");
   releaseStale();
   await finished;
-  await page.unroute("**/photos/people?format=json&q=Veraltet");
+  await page.unroute("**/photos/people?format=json&known=1&q=Veraltet");
   await expect(personOptions.first()).toContainText("Jürgen");
   // Editing a chosen label must discard its ID; mouse selection restores it.
   await personSearch.fill("Jü");
@@ -382,16 +386,53 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await dialogName.fill("Merge-Ziel");
   await expect(personDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" })).toHaveCount(1);
   await dialogName.press("ArrowDown");
-  await dialogName.press("Enter");
   await page.screenshot({ path: "/tmp/bearstack-people-modal-mobile.png", fullPage: true });
   expect(await personDialog.evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth + 1)).toBe(true);
-  await personDialog.getByRole("button", { name: "Gruppen zusammenführen" }).click();
+  await dialogName.press("Enter");
   await expect(personDialog).not.toBeVisible();
   await expect(page.locator("a.person-card")).toHaveCount(1);
   await expect(page.locator("a.person-card")).toContainText("Merge-Ziel");
   await expect(page.locator("a.person-card")).toContainText("2 Fotos");
   await expect(page.getByLabel("Nur bekannte Personen", { exact: true })).toBeChecked();
   expect(await page.evaluate(() => window.modalPageMarker)).toBe("assign");
+  // Name several selected groups atomically, then assign them to a selected target.
+  async function splitForBulk() {
+    const result = await context.request.post(baseURL + "/photos/faces/edit", {
+      form: { face_id: oldFace, action: "move", name: "Bulk-Quelle" },
+      headers: { Accept: "application/json", Origin: baseURL }
+    });
+    expect(result.ok()).toBe(true);
+    await page.goto(baseURL + "/photos/people?q=&known=1&page=1");
+    await page.evaluate(() => { window.modalPageMarker = "bulk"; });
+    for (const checkbox of await page.locator("[data-person-select]").all()) await checkbox.check();
+    await page.locator("[data-people-edit-button]").click();
+    await expect(personDialog).toContainText("2 Gruppen benennen oder zuordnen");
+  }
+  await splitForBulk();
+  expect(await dialogName.evaluate(input => input.checkValidity())).toBe(false);
+  await dialogName.fill("Gemeinsamer Name");
+  await page.route("**/photos/people/*/merge", route => route.fulfill({ status: 503, body: "Unavailable" }));
+  await personDialog.getByRole("button", { name: "Benennen und zusammenführen", exact: true }).click();
+  await expect(personDialog.locator("[data-person-dialog-status]")).toContainText("HTTP 503");
+  await expect(page.locator("[data-person-select]:checked")).toHaveCount(2);
+  await page.unroute("**/photos/people/*/merge");
+  await personDialog.getByRole("button", { name: "Benennen und zusammenführen", exact: true }).click();
+  await expect(personDialog).not.toBeVisible();
+  await expect(page.locator("a.person-card")).toHaveCount(1);
+  await expect(page.locator("a.person-card")).toContainText("Gemeinsamer Name");
+  await expect(page.locator("[data-person-select]:checked")).toHaveCount(0);
+  expect(await page.evaluate(() => window.modalPageMarker)).toBe("bulk");
+  await splitForBulk();
+  await dialogName.fill("Gemeinsamer Name");
+  await expect(personDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" })).toHaveCount(1);
+  await page.screenshot({ path: "/tmp/bearstack-people-bulk-modal.png", fullPage: true });
+  await personDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" }).click();
+  await expect(personDialog).not.toBeVisible();
+  await expect(page.locator("a.person-card")).toHaveCount(1);
+  await expect(page.locator("a.person-card")).toContainText("Gemeinsamer Name");
+  await expect(page.locator("a.person-card")).toContainText("2 Fotos");
+  await expect(page.locator("[data-person-edit] svg")).toHaveCount(1);
+  expect(await page.evaluate(() => window.modalPageMarker)).toBe("bulk");
   // A saved mutation must not be retried when only refreshing the list fails.
   await page.locator("[data-person-edit]").click();
   await dialogName.fill("Dialog-Gespeichert");

@@ -4,6 +4,16 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.38.1
+
+- Im Benenn-Modal sendet die Auswahl eines Namensvorschlags oder „Neu anlegen“ das Formular direkt per AJAX ab, auch bei Mehrfachauswahl und Tastaturbedienung. Während des Speicherns werden weitere Auswahlen blockiert.
+
+### BearStack 0.38.0
+
+- Autovervollständigungen für Personen zeigen nur benannte Gruppen; die serverseitige Filterung hält Vorschläge auch bei vielen unbenannten Gruppen nutzbar.
+- Das Benennen/Zuordnen an Personenkarten erscheint als dezentes Stiftsymbol in der unteren rechten Ecke.
+- Markierte Gruppen lassen sich gemeinsam im Dialog benennen oder einer vorhandenen Person zuordnen, ohne Seitenreload. Benennen und Zusammenführen erfolgen atomar; Fehler erhalten die Auswahl. Der Merge-Endpunkt unterstützt dafür optional `new_name`.
+
 ### BearStack 0.37.0
 
 - Personen direkt in der Übersicht per „Benennen / zuordnen“ im Dialog bearbeiten: Namensvorschläge, „Neu anlegen“ und Zusammenführen ganzer Gruppen ohne Seitenreload. Filter und Seitenposition bleiben erhalten, Fehler erscheinen im Dialog.
