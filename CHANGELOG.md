@@ -4,6 +4,16 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.37.0
+
+- Personen direkt in der Übersicht per „Benennen / zuordnen“ im Dialog bearbeiten: Namensvorschläge, „Neu anlegen“ und Zusammenführen ganzer Gruppen ohne Seitenreload. Filter und Seitenposition bleiben erhalten, Fehler erscheinen im Dialog.
+- Der bestehende Benennen-Endpunkt unterstützt zusätzlich JSON-Antworten für AJAX. Berechtigungen und Schutz vor fremden Origins bleiben erhalten.
+
+### BearStack 0.36.1
+
+- Die Personendetailseite kombiniert Benennen und Zusammenführen in einem Namensfeld mit Autovervollständigung und „Neu anlegen“. Freie Namen benennen die aktuelle Gruppe; ausgewählte Personen werden als Ziel zum Zusammenführen übernommen. Der Button zeigt die jeweilige Aktion an.
+- Bestehende Endpunkte und Berechtigungen bleiben erhalten; die verzögerte, abbrechbare Suche und Tastaturbedienung werden weiterverwendet.
+
 ### Android 0.5.1
 
 - Zoomrichtung der Originalfoto-Vorschau getauscht: Finger nach unten vergrößert zum Gesicht, Finger nach oben verkleinert zurück zum ganzen Foto. Dies gilt beim Halten und in der dauerhaft geöffneten Vorschau.

@@ -161,8 +161,18 @@ func TestFaceWorkerAndAPI(t *testing.T) {
 	if denied.Code == 304 || denied.Code == 200 {
 		t.Fatalf("unauthenticated cache access: %d", denied.Code)
 	}
-	if response := faceRequest(s, "POST", "/photos/people/"+strconv.FormatInt(f[0].PersonID, 10)+"/rename", "editor", url.Values{"name": {"Marie"}}); response.Code != 303 {
+	if response := faceRequest(s, "POST", "/photos/people/"+strconv.FormatInt(f[0].PersonID, 10)+"/rename", "editor", url.Values{"name": {"Marie"}}); response.Code != 200 || response.Header().Get("Location") != "" || response.Header().Get("Cache-Control") != "no-store" || !strings.Contains(response.Body.String(), `"ok":true`) {
 		t.Fatalf("editor rename: %d %s", response.Code, response.Body.String())
+	}
+
+	request = httptest.NewRequest("POST", "/photos/people/"+strconv.FormatInt(f[0].PersonID, 10)+"/rename", strings.NewReader(url.Values{"name": {"Marie AJAX"}}.Encode()))
+	request.SetBasicAuth("editor", "secret")
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Set("Accept", "text/html")
+	renamed := httptest.NewRecorder()
+	s.Handler().ServeHTTP(renamed, request)
+	if renamed.Code != http.StatusSeeOther || renamed.Header().Get("Location") == "" {
+		t.Fatalf("HTML rename: %d %s", renamed.Code, renamed.Body.String())
 	}
 	w = faceRequest(s, "GET", "/photos/media/info?path=one.jpg", "reader", nil)
 	if w.Code != 200 || !strings.Contains(w.Body.String(), `"automatic_faces"`) || strings.Contains(w.Body.String(), "embedding") {

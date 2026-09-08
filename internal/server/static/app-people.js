@@ -84,6 +84,8 @@
         ignore.dataset.ignoreFace = person.face_id;
         ignore.setAttribute("aria-label", "Angezeigtes Gesicht ignorieren: " + name);
       }
+      var edit = existing.querySelector("[data-person-edit]");
+      if (edit) edit.setAttribute("aria-label", "Benennen oder zuordnen: " + name);
       return existing;
     }
     var card = document.createElement("div");
@@ -115,6 +117,11 @@
       button.title = "Angezeigtes Gesicht ignorieren";
       button.setAttribute("aria-label", "Angezeigtes Gesicht ignorieren: " + name);
       card.append(button);
+      var edit = document.createElement("button");
+      edit.type = "button"; edit.className = "person-edit-button secondary-button";
+      edit.dataset.personEdit = ""; edit.textContent = "Benennen / zuordnen";
+      edit.setAttribute("aria-label", "Benennen oder zuordnen: " + name);
+      card.append(edit);
     }
     return card;
   }
@@ -253,12 +260,77 @@
     });
   }
 
+  var personDialog = document.querySelector("[data-person-dialog]");
+  if (overview && personDialog) {
+    var dialogForm = personDialog.querySelector("form");
+    var dialogStatus = personDialog.querySelector("[data-person-dialog-status]");
+    var opener;
+    overview.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-person-edit]");
+      if (!button || busy || button.disabled) return;
+      var card = button.closest("[data-person-id]");
+      opener = button;
+      dialogForm.dataset.personExclude = card.dataset.personId;
+      dialogForm.dataset.renameAction = "/photos/people/" + encodeURIComponent(card.dataset.personId) + "/rename";
+      dialogForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = false; });
+      dialogStatus.textContent = "";
+      dialogForm.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: card.dataset.personName } }));
+      personDialog.showModal();
+    });
+    personDialog.querySelector("[data-person-dialog-cancel]").addEventListener("click", function () { if (!busy) personDialog.close(); });
+    personDialog.addEventListener("cancel", function (event) { if (busy) event.preventDefault(); });
+    personDialog.addEventListener("close", function () {
+      dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
+      var focus = opener && opener.isConnected && !opener.disabled ? opener : overview.querySelector("a");
+      if (focus) focus.focus({ preventScroll: true });
+    });
+    dialogForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      if (busy) return;
+      var body = new URLSearchParams(new FormData(dialogForm));
+      var action = dialogForm.action;
+      var merging = action.endsWith("/merge");
+      busy = true;
+      updateSelection();
+      dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
+      dialogForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = true; });
+      personDialog.setAttribute("aria-busy", "true");
+      dialogStatus.textContent = "Person wird gespeichert …";
+      var saved = false;
+      try {
+        var response = await fetch(action, {
+          method: "POST", credentials: "same-origin", redirect: "error",
+          headers: { Accept: "application/json" }, body: body
+        });
+        if (!response.ok) throw new Error("Person konnte nicht gespeichert werden (HTTP " + response.status + ").");
+        var result = await response.json();
+        if (result.ok !== true) throw new Error("Person konnte nicht gespeichert werden.");
+        saved = true;
+        await refreshPeople();
+        status.textContent = merging ? "Personen zusammengeführt." : "Person benannt.";
+        personDialog.close();
+      } catch (error) {
+        dialogStatus.textContent = saved ? "Gespeichert, aber die Ansicht konnte nicht aktualisiert werden. Bitte die Seite neu laden." : error.message;
+        // Do not offer the same mutation again after a successful save.
+        if (saved && opener && opener.isConnected) opener.disabled = true;
+      } finally {
+        busy = false;
+        updateSelection();
+        personDialog.removeAttribute("aria-busy");
+        dialogForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = saved; });
+        personDialog.querySelector("[data-person-dialog-cancel]").disabled = false;
+      }
+    });
+  }
+
   document.querySelectorAll("[data-person-picker]").forEach(function (form) {
     var input = form.querySelector("[data-person-search]");
     var target = form.querySelector("[data-person-target]");
     var list = form.querySelector("[data-person-options]");
     var popup = form.querySelector("[data-person-popup]");
     var feedback = form.querySelector("[data-person-feedback]");
+    var allowCreate = form.hasAttribute("data-person-create");
+    var renameAction = allowCreate ? form.action : "";
     var items = [], active = -1, revision = 0;
     var timer, controller, pendingDirection;
 
@@ -275,6 +347,13 @@
       active = -1;
     }
     function validate() {
+      if (allowCreate) {
+        var merging = target.value && target.value !== "0";
+        form.action = merging ? renameAction.replace(/\/rename$/, "/merge") : renameAction;
+        form.querySelector("[data-person-submit]").textContent = merging ? "Gruppen zusammenführen" : "Benennen";
+        input.setCustomValidity("");
+        return;
+      }
       input.setCustomValidity(target.value && (target.value !== "0" || !input.required) ? "" :
         "Bitte eine Person aus den Vorschlägen auswählen.");
     }
@@ -295,7 +374,7 @@
       var person = items[index];
       if (!person) return;
       target.value = String(person.id);
-      input.value = (person.name || "Unbenannt") + " (#" + person.id + ")";
+      input.value = person.create ? person.name : (person.name || "Unbenannt") + " (#" + person.id + ")";
       validate();
       close();
     }
@@ -322,6 +401,7 @@
         if (!Array.isArray(data.people)) throw new Error("Ungültige Antwort der Personensuche.");
         if (request !== revision || document.activeElement !== input) return;
         items = data.people.filter(function (person) { return String(person.id) !== form.dataset.personExclude; });
+        if (allowCreate && query) items.push({ id: 0, name: query, create: true });
         var options = document.createDocumentFragment();
         items.forEach(function (person, index) {
           var option = document.createElement("div");
@@ -329,7 +409,7 @@
           option.dataset.personOption = String(index);
           option.setAttribute("role", "option");
           option.setAttribute("aria-selected", "false");
-          option.textContent = (person.name || "Unbenannt") + " (#" + person.id + ", " +
+          option.textContent = person.create ? "Neu anlegen: „" + person.name + "“" : (person.name || "Unbenannt") + " (#" + person.id + ", " +
             person.count + (person.count === 1 ? " Foto)" : " Fotos)");
           options.append(option);
         });
@@ -361,7 +441,7 @@
       } else if (event.key === "Enter" && !popup.hidden && active >= 0) {
         event.preventDefault();
         choose(active);
-      } else if (event.key === "Escape") {
+      } else if (event.key === "Escape" && !popup.hidden) {
         event.preventDefault();
         event.stopPropagation();
         close();
@@ -375,6 +455,14 @@
       var option = event.target.closest("[data-person-option]");
       if (option) choose(Number(option.dataset.personOption));
     });
+    form.addEventListener("person-picker-reset", function (event) {
+      close();
+      renameAction = form.dataset.renameAction;
+      target.value = "";
+      input.value = event.detail.name || "";
+      validate();
+    });
+    form.addEventListener("person-picker-close", close);
     input.addEventListener("blur", close);
     validate();
   });

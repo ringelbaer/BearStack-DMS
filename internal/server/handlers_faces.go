@@ -97,6 +97,11 @@ func (s *Server) handlePersonRename(w http.ResponseWriter, r *http.Request) {
 		s.faceError(w, r, err)
 		return
 	}
+	if wantsJSON(r) {
+		w.Header().Set("Cache-Control", "no-store")
+		_ = writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+		return
+	}
 	redirectWithNotice(w, r, "/photos/people/"+strconv.FormatInt(id, 10), "Person gespeichert.")
 }
 func (s *Server) handlePersonMerge(w http.ResponseWriter, r *http.Request) {

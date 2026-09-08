@@ -3568,3 +3568,11 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 .ignored-face-form { display: flex; flex-direction: column; gap: .5rem; width: 100%; min-width: 0; }
 .ignored-face-form input { width: 100%; min-width: 0; }
 .ignored-face-form button { white-space: normal; }
+
+.person-overview-card:has(.person-edit-button) > .person-card { height: auto; }
+.person-edit-button { width: 100%; margin-top: 6px; padding: 8px; }
+.person-edit-dialog { max-height: calc(100dvh - 32px); overflow-y: auto; }
+/* Keep dialog actions stationary when the input loses focus before a click. */
+.person-dialog-suggestions { height: 180px; }
+.person-edit-dialog .person-picker-popup { position: static; max-height: 180px; }
+.person-edit-dialog [data-person-dialog-status]:empty { display: none; }

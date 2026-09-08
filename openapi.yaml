@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.36.0
+  version: 0.37.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -1060,7 +1060,7 @@ paths:
       operationId: renamePhotoPerson
       summary: Name or rename a person
       description: Requires photos.edit. Form writes redirect to the corresponding
-        HTML page. Existing authentication, same-origin protection and audit logging
+        HTML page; Accept application/json returns an OK object without redirect. Existing authentication, same-origin protection and audit logging
         apply.
       parameters:
       - name: id
@@ -1082,6 +1082,17 @@ paths:
                   maxLength: 200
               required: []
       responses:
+        '200':
+          description: Saved (Accept application/json); response is not cached.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+                    enum: [true]
         '303':
           description: Saved; Location points to the corresponding page.
           headers:
