@@ -23,7 +23,12 @@ test.beforeAll(async () => {
     if(request.headers.authorization!=="Bearer "+token){response.writeHead(401);response.end();return;}
     response.setHeader("Content-Type","application/json");
     if(request.url==="/health"){response.end(JSON.stringify({ready:true,protocol:1,model}));return;}
-    request.resume();request.on("end",()=>{const embedding=Array(128).fill(0);embedding[calls++===2?1:0]=1;response.end(JSON.stringify({model,faces:[{x:.1,y:.1,width:.5,height:.5,confidence:.99,embedding}]}));});
+    request.resume();request.on("end",()=>{
+      const landscape=calls++===2;
+      const embedding=Array(128).fill(0);embedding[landscape?1:0]=1;
+      const bounds=landscape?{x:.3,y:.1,width:.4,height:.2}:{x:.35,y:.05,width:.25,height:.5};
+      response.end(JSON.stringify({model,faces:[{...bounds,confidence:.99,embedding}]}));
+    });
   });
   await new Promise(resolve=>service.listen(0,"127.0.0.1",resolve));
   const appPort=await freePort();baseURL=`http://127.0.0.1:${appPort}`;
@@ -97,6 +102,27 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   const settingsResponse = await context.request.get(baseURL + "/settings/photos/faces?format=json");
   expect((await settingsResponse.json()).settings.reference_limit).toBe(50);
   await page.goto(baseURL+"/photos/people");await expect(page.locator("a.person-card")).toHaveCount(2);
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const preview of await page.locator("a.person-card img").all()) {
+      await expect.poll(() => preview.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+      const result = await preview.evaluate(img => {
+        const rect = img.getBoundingClientRect();
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+        const context = canvas.getContext("2d");
+        context.drawImage(img, 0, 0);
+        return { width: rect.width, height: rect.height, fit: getComputedStyle(img).objectFit,
+          padding: [...context.getImageData(2, 2, 1, 1).data] };
+      });
+      expect(Math.abs(result.width - result.height), `square tile at ${width}px`).toBeLessThanOrEqual(1);
+      expect(result.fit).toBe("contain");
+      for (const [index, value] of [17, 24, 32, 255].entries()) {
+        expect(Math.abs(result.padding[index] - value), "neutral padding around rectangular crop").toBeLessThanOrEqual(5);
+      }
+    }
+  }
+  await page.screenshot({ path: "/tmp/bearstack-people-aspect-fit.png", fullPage: true });
   await page.locator("a.person-card").filter({hasText:"2 Fotos"}).click();
   for (const width of [320, 390, 640, 960, 1440]) {
     await page.setViewportSize({ width, height: 900 });

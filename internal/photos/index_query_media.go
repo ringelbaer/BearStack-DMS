@@ -38,7 +38,7 @@ type indexMediaOptions struct {
 
 func (l *Library) indexMedia(ctx context.Context, opts indexMediaOptions) ([]Media, int, error) {
 	if queryHasPerson(opts.Query) {
-		if err := l.RefreshFaceVisibility(ctx); err != nil {
+		if err := l.refreshPeopleVisibility(ctx, ""); err != nil {
 			return nil, 0, err
 		}
 	}

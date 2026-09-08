@@ -162,9 +162,7 @@ func New(cfg config.Config, repo *repository.Repository, store *storage.Store, l
 	s.apps.mail.importer = newMailImportService(cfg.MaxUploadBytes, repo, store, logger, s.apps.documents.importer, s.recordAuditLog)
 	s.apps.documents.trash = newTrashService(repo, store, logger, s.trashRetentionDays, s.invalidateDocumentCountCache)
 	if photoLibrary != nil {
-		if settings, err := s.photoSettings(context.Background()); err == nil {
-			s.configurePhotoThumbnailer(settings)
-		} else if logger != nil {
+		if _, err := s.photoSettings(context.Background()); err != nil && logger != nil {
 			logger.Warn("photo thumbnail settings failed", "error", err)
 		}
 	}

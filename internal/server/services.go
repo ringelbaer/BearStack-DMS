@@ -13,7 +13,7 @@ type settingReader interface {
 }
 
 type settingWriter interface {
-	SaveSetting(context.Context, string, string) error
+	SaveSettings(context.Context, map[string]string) error
 }
 
 type mailImportRunner interface {

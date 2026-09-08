@@ -109,7 +109,10 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                 enabled=enabled && !statistics && !menu && !state.naming && (state.person!=null || state.canGoBack),
                 onSwipe={when(it) { SwipeAction.Ignore -> vm.ignore(); SwipeAction.Skip -> vm.skip(); SwipeAction.Back -> vm.back() }},
                 modifier=Modifier.fillMaxSize().padding(padding).imePadding()) {
-                if(state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                // Keep the progress slot and column spacing stable across loading transitions.
+                Box(Modifier.fillMaxWidth().height(4.dp)) {
+                    if(state.busy) LinearProgressIndicator(Modifier.fillMaxSize())
+                }
                 state.error?.let { error ->
                     Card(colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.errorContainer)) {
                         Column(Modifier.padding(16.dp)) {

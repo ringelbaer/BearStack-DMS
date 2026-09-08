@@ -85,7 +85,7 @@ func (c *faceThumbnailCache) register(ctx context.Context, key string, faceID in
 	return err == nil && n == 1
 }
 
-func (c *faceThumbnailCache) get(ctx context.Context, faceID int64, key string, render func() ([]byte, error)) ([]byte, error) {
+func (c *faceThumbnailCache) get(ctx context.Context, faceID int64, key string, render func() ([]byte, error), obsoleteKeys ...string) ([]byte, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -133,7 +133,16 @@ func (c *faceThumbnailCache) get(ctx context.Context, faceID int64, key string, 
 			// Never renew the expiry of old bytes if publishing their replacement
 			// fails. Missing files with a registered deadline are safe to retry.
 			if e := os.Remove(path); (e == nil || errors.Is(e, os.ErrNotExist)) && c.register(ctx, key, faceID) {
-				_ = writeFaceCache(path, b)
+				// Only a successfully rendered and registered replacement retires
+				// old formats. Failed cleanup prevents caching, allowing a retry.
+				for _, obsolete := range obsoleteKeys {
+					if err := c.retireLegacy(ctx, hashFaceThumbnailKey(obsolete), faceID); err != nil {
+						cacheable = false
+					}
+				}
+				if cacheable {
+					_ = writeFaceCache(path, b)
+				}
 			}
 		}
 	}
@@ -142,6 +151,19 @@ func (c *faceThumbnailCache) get(ctx context.Context, faceID int64, key string, 
 	close(f.done)
 	c.mu.Unlock()
 	return bytes.Clone(b), err
+}
+
+// Caller holds c.mu. Only the exact superseded preview is removed; unknown
+// files and other sizes/fingerprints are never scanned or removed.
+func (c *faceThumbnailCache) retireLegacy(ctx context.Context, key string, faceID int64) error {
+	if err := os.Remove(c.path(key)); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if c.db == nil {
+		return nil
+	}
+	_, err := c.db.ExecContext(ctx, `DELETE FROM photo_face_thumbnail_cache WHERE cache_key=? AND face_id=?`, key, faceID)
+	return err
 }
 
 func writeFaceCache(path string, b []byte) error {

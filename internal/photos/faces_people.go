@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"bearstack/internal/searchtext"
+	"bearstack/internal/sqlutil"
 )
 
 const faceColumns = `f.id,f.person_id,p.name,f.path,f.x,f.y,f.width,f.height,f.manual,f.ignored,p.name_source`
@@ -74,7 +75,7 @@ func (l *Library) AutomaticFaces(ctx context.Context, path string) ([]Recognized
 func (l *Library) People(ctx context.Context, id int64, page int, q string, knownOnly bool) (PeoplePage, error) {
 	out := PeoplePage{Query: q, PersonID: id, Page: max(1, page), People: []Person{}, KnownOnly: knownOnly && id == 0}
 	out.HasPrev = out.Page > 1
-	if err := l.RefreshFaceVisibility(ctx); err != nil {
+	if err := l.refreshPeoplePageVisibility(ctx, id, q, knownOnly); err != nil {
 		return out, err
 	}
 	if id == 0 {
@@ -139,7 +140,7 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 func (l *Library) IgnoredFaces(ctx context.Context, page int, q string, knownOnly bool) (PeoplePage, error) {
 	out := PeoplePage{Query: q, Page: max(1, page), People: []Person{}, Faces: []RecognizedFace{}, KnownOnly: knownOnly, IgnoredOnly: true}
 	out.HasPrev = out.Page > 1
-	if err := l.RefreshFaceVisibility(ctx); err != nil {
+	if err := l.refreshPeoplePageVisibility(ctx, 0, q, knownOnly); err != nil {
 		return out, err
 	}
 	knownFilter := ""
@@ -180,7 +181,7 @@ func (l *Library) RenamePerson(ctx context.Context, id int64, name string) error
 	if err != nil {
 		return err
 	}
-	if err = l.RefreshFaceVisibility(ctx); err != nil {
+	if err = l.refreshPersonIDsVisibility(ctx, id); err != nil {
 		return err
 	}
 	res, err := l.index.db.ExecContext(ctx, `UPDATE photo_people SET name=?,name_fold=?,manual_name=1,name_source='' WHERE id=? AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=? AND ignored=0)`, name, searchtext.GermanFold(name), id, id)
@@ -204,7 +205,12 @@ func (l *Library) EditFaces(ctx context.Context, ids []int64, target int64, igno
 	if err != nil {
 		return err
 	}
-	if err = l.RefreshFaceVisibility(ctx); err != nil {
+	args := make([]any, 1, len(ids)+1)
+	args[0] = target
+	for _, id := range ids {
+		args = append(args, id)
+	}
+	if err = l.refreshPeopleVisibility(ctx, `p.id=? OR p.id IN (SELECT person_id FROM photo_faces WHERE id IN (`+sqlutil.Placeholders(len(ids))+`))`, args...); err != nil {
 		return err
 	}
 	l.faceRuntime.mu.Lock()
@@ -295,7 +301,7 @@ func (l *Library) mergePeople(ctx context.Context, source, target int64, name *s
 			return errors.New("verschiedene Personen auswählen")
 		}
 	}
-	if err := l.RefreshFaceVisibility(ctx); err != nil {
+	if err := l.refreshPersonIDsVisibility(ctx, append(append([]int64{}, sources...), target)...); err != nil {
 		return err
 	}
 	l.faceRuntime.mu.Lock()

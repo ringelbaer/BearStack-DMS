@@ -11,6 +11,7 @@ import (
 
 	"bearstack/internal/facerec"
 	"bearstack/internal/searchtext"
+	"bearstack/internal/sqlutil"
 
 	"github.com/coder/hnsw"
 )
@@ -103,32 +104,68 @@ func (l *Library) ensureFaceGraph(ctx context.Context, model string) error {
 	return nil
 }
 
-func (l *Library) nearestPerson(ctx context.Context, tx *sql.Tx, v []float32, excluded map[int64]bool) int64 {
+type faceMatchQuery interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+}
+
+func (l *Library) nearestPerson(ctx context.Context, tx faceMatchQuery, v []float32, excluded map[int64]bool) (int64, error) {
 	rt := &l.faceRuntime
 	if len(rt.people) == 0 {
-		return 0
+		return 0, nil
 	}
+	neighbors := rt.graph.Search(v, max(25, rt.referenceLimit+1))
+	args := make([]any, 0, len(neighbors))
+	for _, node := range neighbors {
+		if !excluded[rt.people[node.Key]] {
+			args = append(args, node.Key)
+		}
+	}
+	if len(args) == 0 {
+		return 0, nil
+	}
+	// One bounded query replaces one query per graph neighbor. Read from the
+	// current transaction so removed/ignored/private references cannot match.
+	rows, err := tx.QueryContext(ctx, `SELECT f.id,f.person_id,f.path,p.name_source FROM photo_faces f
+ JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path
+ WHERE f.id IN (`+sqlutil.Placeholders(len(args))+`) AND f.ignored=0 AND m.admin_only=0`, args...)
+	if err != nil {
+		return 0, err
+	}
+	type candidate struct {
+		person           int64
+		path, nameSource string
+	}
+	candidates := make(map[int64]candidate, len(args))
+	for rows.Next() {
+		var id int64
+		var c candidate
+		if err := rows.Scan(&id, &c.person, &c.path, &c.nameSource); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		candidates[id] = c
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return 0, err
+	}
+	visibility := newFaceDirectoryVisibility(l.root)
 	scores := map[int64]float64{}
-	for _, n := range rt.graph.Search(v, max(25, rt.referenceLimit+1)) {
-		p := rt.people[n.Key]
-		var source, labelSource string
-		if err := tx.QueryRowContext(ctx, `SELECT f.path,p.name_source FROM photo_faces f JOIN photo_people p ON p.id=f.person_id WHERE f.id=? AND f.ignored=0`, n.Key).Scan(&source, &labelSource); err != nil {
+	for _, n := range neighbors {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+		c, exists := candidates[n.Key]
+		if !exists || c.person != rt.people[n.Key] || visibility.private(parentPath(c.path)) {
 			continue
 		}
-		if private, e := l.MediaAdminOnly(source); e != nil || private {
-			continue
-		}
-		if labelSource != "" {
-			if private, e := l.MediaAdminOnly(labelSource); e != nil || private {
-				continue
-			}
-		}
-		if excluded[p] {
+		if c.nameSource != "" && visibility.private(parentPath(c.nameSource)) {
 			continue
 		}
 		score := cosine(v, n.Value)
-		if old, ok := scores[p]; !ok || score > old {
-			scores[p] = score
+		if old, ok := scores[c.person]; !ok || score > old {
+			scores[c.person] = score
 		}
 	}
 	best, second := -1.0, -1.0
@@ -148,12 +185,12 @@ func (l *Library) nearestPerson(ctx context.Context, tx *sql.Tx, v []float32, ex
 	// duplicate references dominate its neighborhood. Do not interpret a missing
 	// runner-up as an infinitely large margin if other people exist in the graph.
 	if second == -1 && len(rt.nodes) > len(excluded)+1 {
-		return 0
+		return 0, nil
 	}
 	if best < 0.55 || best-second < 0.08 {
-		return 0
+		return 0, nil
 	}
-	return id
+	return id, nil
 }
 
 func overlap(a, b Face) float64 {
@@ -291,7 +328,10 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 						return err
 					}
 					if count == 0 {
-						candidate := l.nearestPerson(ctx, tx, d.Embedding, used)
+						candidate, matchErr := l.nearestPerson(ctx, tx, d.Embedding, used)
+						if matchErr != nil {
+							return matchErr
+						}
 						if candidate != 0 {
 							var currentName string
 							var manualName bool
@@ -323,7 +363,10 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 			}
 		}
 		if person == 0 && !ignored && !xmpConflict {
-			person = l.nearestPerson(ctx, tx, d.Embedding, used)
+			person, err = l.nearestPerson(ctx, tx, d.Embedding, used)
+			if err != nil {
+				return err
+			}
 		}
 		if person == 0 {
 			res, e := tx.ExecContext(ctx, `INSERT INTO photo_people DEFAULT VALUES`)

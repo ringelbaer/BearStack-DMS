@@ -88,7 +88,7 @@ func scanLabel(row interface{ Scan(...any) error }) (LabelPerson, error) {
 }
 func (l *Library) LabelCandidates(ctx context.Context, after, upper int64) (LabelCandidates, error) {
 	out := LabelCandidates{People: []LabelPerson{}, Next: after}
-	if err := l.RefreshFaceVisibility(ctx); err != nil {
+	if err := l.refreshPeopleVisibility(ctx, `p.id>? AND p.id<=?`, after, upper); err != nil {
 		return out, err
 	}
 	rows, err := l.index.db.QueryContext(ctx, `SELECT `+labelColumns+labelFrom+` WHERE p.name='' AND p.id>? AND p.id<=? AND `+labelExists+` ORDER BY p.id LIMIT 21`, after, upper)
@@ -113,7 +113,7 @@ func (l *Library) LabelCandidates(ctx context.Context, after, upper int64) (Labe
 	return out, rows.Err()
 }
 func (l *Library) LabelPerson(ctx context.Context, id int64, offset int) (LabelPerson, error) {
-	if err := l.RefreshFaceVisibility(ctx); err != nil {
+	if err := l.refreshPersonIDsVisibility(ctx, id); err != nil {
 		return LabelPerson{}, err
 	}
 	tx, err := l.index.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -146,14 +146,14 @@ func (l *Library) LabelPerson(ctx context.Context, id int64, offset int) (LabelP
 	return p, err
 }
 func (l *Library) LabelSuggestions(ctx context.Context, q string, exact bool) ([]LabelPerson, error) {
-	if err := l.RefreshFaceVisibility(ctx); err != nil {
-		return nil, err
-	}
 	filter := `p.name_fold LIKE ? ESCAPE '\'`
 	arg := searchtext.LikeContainsPattern(searchtext.GermanFold(q))
 	if exact {
 		filter = `p.name=?`
 		arg, _ = normalizedPersonName(q)
+	}
+	if err := l.refreshPeopleVisibility(ctx, `p.name<>'' AND `+filter, arg); err != nil {
+		return nil, err
 	}
 	rows, err := l.index.db.QueryContext(ctx, `SELECT `+labelColumns+labelFrom+` WHERE p.name<>'' AND `+filter+` AND `+labelExists+` ORDER BY p.name_fold,p.id LIMIT 20`, arg)
 	if err != nil {
@@ -204,7 +204,13 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	}{id, a})
 	sum := sha256.Sum256(encoded)
 	fingerprint := hex.EncodeToString(sum[:])
-	if err = l.RefreshFaceVisibility(ctx); err != nil {
+	visibilityFilter := `p.id IN (?,?)`
+	visibilityArgs := []any{id, a.TargetID}
+	if a.Action == "name" && !a.AllowDuplicate {
+		visibilityFilter += ` OR p.name=?`
+		visibilityArgs = append(visibilityArgs, name)
+	}
+	if err = l.refreshPeopleVisibility(ctx, visibilityFilter, visibilityArgs...); err != nil {
 		return out, err
 	}
 	l.faceRuntime.mu.Lock()

@@ -29,6 +29,7 @@ func NormalizeFolderPreviewCount(value int) int {
 }
 
 type Library struct {
+	faceVisibility faceVisibilityState
 	faceImageGate  chan struct{}
 	faceRuntime    faceRuntime
 	faceThumbnails faceThumbnailCache

@@ -115,9 +115,11 @@ func TestLegacyFaceCacheMigrationPreservesPreviews(t *testing.T) {
 	var expires int64
 	for _, p := range previews {
 		assertLegacyFaceCacheFile(t, p.path, p.data, p.stamp)
-		got, err := reopened.FaceThumbnailSize(ctx, p.faceID, p.size)
-		if err != nil || !bytes.Equal(got, p.data) {
-			t.Fatalf("old preview not reused: %q %v", got, err)
+		// Inventory migration preserves old bytes. The public thumbnail API
+		// replaces their stretched rendering separately, only when requested.
+		got := reopened.faceThumbnails.read(ctx, strings.TrimSuffix(filepath.Base(p.path), ".jpg"))
+		if !bytes.Equal(got, p.data) {
+			t.Fatalf("old preview not inventoried: %q", got)
 		}
 		assertLegacyFaceCacheFile(t, p.path, p.data, p.stamp)
 	}
@@ -168,8 +170,19 @@ func TestLegacyFaceCacheOnDemandAdoption(t *testing.T) {
 		t.Fatal(err)
 	}
 	path, data, stamp := legacyFaceCacheFile(t, l, face, 160)
+	abs := filepath.Join(l.Root(), face.Path)
+	info, err := os.Stat(abs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key := faceThumbnailKey(face, 160, abs, info.Size(), info.ModTime().UnixNano())
+	readLegacy := func() ([]byte, error) {
+		return l.faceThumbnails.get(ctx, face.ID, key, func() ([]byte, error) {
+			return l.renderFaceThumbnail(ctx, face, 160)
+		})
+	}
 	for range 2 {
-		b, err := l.FaceThumbnail(ctx, face.ID)
+		b, err := readLegacy()
 		if err != nil || !bytes.Equal(b, data) {
 			t.Fatalf("rendered before background migration: %q %v", b, err)
 		}
@@ -186,7 +199,7 @@ func TestLegacyFaceCacheOnDemandAdoption(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	b, err := l.FaceThumbnail(ctx, face.ID)
+	b, err := readLegacy()
 	if err != nil || bytes.Equal(b, data) {
 		t.Fatalf("expired legacy file served: %q %v", b, err)
 	}
@@ -264,7 +277,7 @@ func TestLegacyFaceCacheMetadataFailurePreservesFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Rendering can still satisfy this request, but a metadata failure must not
-	// remove or rewrite a pre-existing file. A later request can adopt it safely.
+	// remove or rewrite a pre-existing file. A later request can replace it safely.
 	if _, err := l.FaceThumbnail(ctx, faces[0].ID); err != nil {
 		t.Fatal(err)
 	}
@@ -273,10 +286,12 @@ func TestLegacyFaceCacheMetadataFailurePreservesFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	b, err := l.FaceThumbnail(ctx, faces[0].ID)
-	if err != nil || !bytes.Equal(b, data) {
-		t.Fatalf("legacy adoption did not recover: %q %v", b, err)
+	if err != nil || bytes.Equal(b, data) {
+		t.Fatalf("preview replacement did not recover: %v", err)
 	}
-	assertLegacyFaceCacheFile(t, path, data, stamp)
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("superseded preview remains: %v", err)
+	}
 }
 
 func TestLegacyFaceCacheBackfillUsesBoundedIndexRange(t *testing.T) {

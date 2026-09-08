@@ -28,7 +28,7 @@ func TestAllFaceThumbnailRoutesUsePhotoCache(t *testing.T) {
 	}
 	embedding := make([]float32, facerec.Dimensions)
 	embedding[0] = 1
-	if err := s.photos.CommitFaceResult(ctx, job, facerec.Result{Model: facerec.Model, Faces: []facerec.Detection{{X: .1, Y: .1, Width: .5, Height: .5, Confidence: .99, Embedding: embedding}}}); err != nil {
+	if err := s.photos.CommitFaceResult(ctx, job, facerec.Result{Model: facerec.Model, Faces: []facerec.Detection{{X: .25, Y: .25, Width: .25, Height: .5, Confidence: .99, Embedding: embedding}}}); err != nil {
 		t.Fatal(err)
 	}
 	faces, err := s.photos.AutomaticFaces(ctx, job.Path)
@@ -49,6 +49,15 @@ func TestAllFaceThumbnailRoutesUsePhotoCache(t *testing.T) {
 				t.Fatalf("initial request: %d %s", first.Code, first.Body.String())
 			}
 			original := bytes.Clone(first.Body.Bytes())
+			preview, err := jpeg.Decode(bytes.NewReader(original))
+			if err != nil || preview.Bounds() != image.Rect(0, 0, size, size) {
+				t.Fatalf("square preview: %v", err)
+			}
+			padding := color.NRGBAModel.Convert(preview.At(0, size/2)).(color.NRGBA)
+			center := color.NRGBAModel.Convert(preview.At(size/2, size/2)).(color.NRGBA)
+			if padding.R < 12 || padding.R > 22 || padding.G < 19 || padding.G > 29 || padding.B < 27 || padding.B > 37 || center.R > 5 || center.G > 5 || center.B > 5 {
+				t.Fatalf("portrait crop must have neutral side padding: padding=%v center=%v", padding, center)
+			}
 			files, err := filepath.Glob(filepath.Join(cacheDir, "*", "*", "*.jpg"))
 			if err != nil {
 				t.Fatal(err)

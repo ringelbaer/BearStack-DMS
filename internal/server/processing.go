@@ -24,7 +24,6 @@ func (s *Server) RunPhotoThumbnailWorker(ctx context.Context) {
 				s.log.Warn("photo thumbnail settings failed", "error", err)
 			}
 		} else if settings.ThumbnailWorkerEnabled {
-			s.configurePhotoThumbnailer(settings)
 			generated, err := s.ensurePhotoThumbnails(ctx, settings)
 			if err != nil && ctx.Err() == nil {
 				if s.log != nil {
@@ -95,7 +94,6 @@ func (s *Server) ensurePhotoThumbnails(ctx context.Context, settings PhotoSettin
 	if s.photos == nil {
 		return 0, nil
 	}
-	s.configurePhotoThumbnailer(settings)
 	release, err := s.acquirePhotoJob(ctx)
 	if err != nil {
 		return 0, err
@@ -126,7 +124,6 @@ func (s *Server) startPhotoThumbnailJobForSizes(settings PhotoSettings, sizes []
 	if !s.background.start(func() {
 		defer release()
 		ctx := s.backgroundJobContext()
-		s.configurePhotoThumbnailer(settings)
 		generated, err := s.photos.EnsureThumbnails(ctx, sizes, settings.ThumbnailWorkerBatchSize)
 		if err != nil {
 			if s.log != nil {

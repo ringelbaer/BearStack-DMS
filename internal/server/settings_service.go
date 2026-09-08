@@ -3,6 +3,8 @@ package server
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -79,12 +81,15 @@ type PhotoSettings struct {
 type settingsStore interface {
 	settingReader
 	settingWriter
+	SaveSetting(context.Context, string, string) error
+	GetSettings(context.Context, ...string) (map[string]string, error)
 }
 
 type settingsService struct {
-	store settingsStore
-	app   *appSettingsState
-	photo *photoSettingsState
+	store      settingsStore
+	app        *appSettingsState
+	photo      *photoSettingsState
+	applyPhoto func(PhotoSettings)
 }
 
 func (s *Server) settingsService() settingsService {
@@ -97,6 +102,9 @@ func (s *Server) settingsService() settingsService {
 	}
 	if s.repo != nil {
 		svc.store = s.repo
+	}
+	if s.photos != nil {
+		svc.applyPhoto = s.configurePhotoThumbnailer
 	}
 	return svc
 }
@@ -155,19 +163,26 @@ func (svc settingsService) AppName(ctx context.Context) (string, error) {
 	}
 	if svc.app != nil {
 		svc.app.mu.RLock()
+		entry := svc.app.appName
+		svc.app.mu.RUnlock()
+		if entry.loaded {
+			return entry.value, nil
+		}
+		svc.app.mu.Lock()
+		defer svc.app.mu.Unlock()
 		if svc.app.appName.loaded {
 			value := svc.app.appName.value
-			svc.app.mu.RUnlock()
 			return value, nil
 		}
-		svc.app.mu.RUnlock()
 	}
 
 	value, err := appName(ctx, svc.store)
 	if err != nil {
 		return "", err
 	}
-	svc.CacheAppName(value)
+	if svc.app != nil {
+		svc.app.appName = appNameCacheEntry{value: value, loaded: true}
+	}
 	return value, nil
 }
 
@@ -239,22 +254,61 @@ func (svc settingsService) ReloadRenderSettings(ctx context.Context) (renderSett
 	if svc.store == nil {
 		return defaultRenderSettingsSnapshot(), nil
 	}
+	if svc.app != nil {
+		svc.app.mu.Lock()
+		defer svc.app.mu.Unlock()
+	}
+	values, err := svc.store.GetSettings(ctx, tagDisplayModeSettingKey, themeModeSettingKey, homePageSettingKey, documentCloudEnabledSettingKey)
+	if err != nil {
+		return renderSettingsSnapshot{}, err
+	}
+	snapshot := settingsValues(values)
 	settings := defaultRenderSettingsSnapshot()
-	var err error
-	if settings.TagDisplayMode, err = tagDisplayMode(ctx, svc.store); err != nil {
+	if settings.TagDisplayMode, err = tagDisplayMode(ctx, snapshot); err != nil {
 		return renderSettingsSnapshot{}, err
 	}
-	if settings.ThemeMode, err = themeMode(ctx, svc.store); err != nil {
+	if settings.ThemeMode, err = themeMode(ctx, snapshot); err != nil {
 		return renderSettingsSnapshot{}, err
 	}
-	if settings.HomePage, err = homePage(ctx, svc.store); err != nil {
+	if settings.HomePage, err = homePage(ctx, snapshot); err != nil {
 		return renderSettingsSnapshot{}, err
 	}
-	if settings.DocumentCloudEnabled, err = documentCloudEnabled(ctx, svc.store); err != nil {
+	if settings.DocumentCloudEnabled, err = documentCloudEnabled(ctx, snapshot); err != nil {
 		return renderSettingsSnapshot{}, err
 	}
-	svc.CacheRenderSettings(settings)
+	if svc.app != nil {
+		svc.app.render = renderSettingsCacheEntry{value: settings, expiresAt: time.Now().Add(renderSettingsCacheTTL)}
+	}
 	return settings, nil
+}
+
+// SaveSettings serializes commits and cache invalidation with cache loads. A
+// delayed reader or writer must never publish a snapshot older than the commit.
+func (svc settingsService) SaveSettings(ctx context.Context, values map[string]string) error {
+	if svc.store == nil {
+		return nil
+	}
+	if svc.app != nil {
+		svc.app.mu.Lock()
+		defer svc.app.mu.Unlock()
+	}
+	if err := svc.store.SaveSettings(ctx, values); err != nil {
+		return err
+	}
+	if svc.app != nil {
+		if value, changed := values[appNameSettingKey]; changed {
+			svc.app.appName = appNameCacheEntry{value: normalizeAppName(value), loaded: true}
+		}
+		svc.app.render = renderSettingsCacheEntry{}
+	}
+	return nil
+}
+
+type settingsValues map[string]string
+
+func (values settingsValues) GetSetting(_ context.Context, key string) (string, bool, error) {
+	value, ok := values[key]
+	return value, ok, nil
 }
 
 func (svc settingsService) CacheRenderSettings(settings renderSettingsSnapshot) {
@@ -291,19 +345,28 @@ func (svc settingsService) PhotoSettings(ctx context.Context) (PhotoSettings, er
 	now := time.Now()
 	if svc.photo != nil {
 		svc.photo.mu.RLock()
+		cached := svc.photo.cache
+		svc.photo.mu.RUnlock()
+		if now.Before(cached.expiresAt) {
+			return cached.value, nil
+		}
+		svc.photo.mu.Lock()
+		defer svc.photo.mu.Unlock()
 		entry := svc.photo.cache
 		if now.Before(entry.expiresAt) {
-			svc.photo.mu.RUnlock()
 			return entry.value, nil
 		}
-		svc.photo.mu.RUnlock()
 	}
 
-	settings, err := photoSettings(ctx, svc.store)
+	values, err := svc.store.GetSettings(ctx, photoSettingKeys...)
 	if err != nil {
 		return PhotoSettings{}, err
 	}
-	svc.cachePhotoSettings(settings)
+	settings, err := photoSettings(ctx, settingsValues(values))
+	if err != nil {
+		return PhotoSettings{}, err
+	}
+	svc.publishPhotoSettings(settings)
 	return settings, nil
 }
 
@@ -311,23 +374,30 @@ func (svc settingsService) SavePhotoSettings(ctx context.Context, settings Photo
 	if svc.store == nil {
 		return nil
 	}
+	if svc.photo != nil {
+		svc.photo.mu.Lock()
+		defer svc.photo.mu.Unlock()
+	}
 	if err := savePhotoSettings(ctx, svc.store, settings); err != nil {
 		return err
 	}
-	svc.cachePhotoSettings(settings)
+	svc.publishPhotoSettings(settings)
 	return nil
 }
 
-func (svc settingsService) cachePhotoSettings(settings PhotoSettings) {
+// The caller holds photo.mu across loading/saving and publication. Jobs must
+// never reapply an older settings snapshot after a newer one was committed.
+func (svc settingsService) publishPhotoSettings(settings PhotoSettings) {
+	if svc.applyPhoto != nil {
+		svc.applyPhoto(settings)
+	}
 	if svc.photo == nil {
 		return
 	}
-	svc.photo.mu.Lock()
 	svc.photo.cache = photoSettingsCacheEntry{
 		value:     settings,
 		expiresAt: time.Now().Add(photoSettingsCacheTTL),
 	}
-	svc.photo.mu.Unlock()
 }
 
 func appName(ctx context.Context, settings settingReader) (string, error) {
@@ -719,8 +789,14 @@ func photoSettings(ctx context.Context, settings settingReader) (PhotoSettings, 
 	return normalizePhotoSettings(result), nil
 }
 
+var photoSettingKeys = slices.Sorted(maps.Keys(photoSettingValues(PhotoSettings{})))
+
 func savePhotoSettings(ctx context.Context, store settingWriter, settings PhotoSettings) error {
-	values := map[string]string{
+	return store.SaveSettings(ctx, photoSettingValues(settings))
+}
+
+func photoSettingValues(settings PhotoSettings) map[string]string {
+	return map[string]string{
 		photoPageSizeSettingKey:                strconv.Itoa(settings.PageSize),
 		photoFolderPreviewCountSettingKey:      strconv.Itoa(settings.FolderPreviewCount),
 		photoFolderThumbnailSizeSettingKey:     strconv.Itoa(settings.FolderThumbnailSize),
@@ -739,12 +815,6 @@ func savePhotoSettings(ctx context.Context, store settingWriter, settings PhotoS
 		photoThumbnailWorkerBatchSettingKey:    strconv.Itoa(settings.ThumbnailWorkerBatchSize),
 		photoThumbnailConcurrencySettingKey:    strconv.Itoa(settings.ThumbnailConcurrency),
 	}
-	for key, value := range values {
-		if err := store.SaveSetting(ctx, key, value); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func intSetting(ctx context.Context, settings settingReader, key string, fallback int) (int, error) {

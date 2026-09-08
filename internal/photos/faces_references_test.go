@@ -192,7 +192,7 @@ func TestFaceReferenceLimitPreservesAmbiguityCheck(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tx.Rollback()
-	if id := l.nearestPerson(ctx, tx, faceDetection(0).Embedding, nil); id != 0 {
+	if id, err := l.nearestPerson(ctx, tx, faceDetection(0).Embedding, nil); err != nil || id != 0 {
 		t.Fatalf("second person's ambiguity hidden by reference cap: chose %d", id)
 	}
 }

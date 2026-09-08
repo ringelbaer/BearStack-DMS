@@ -1027,6 +1027,14 @@ function testPhotoMediaHelpersWorkWithoutGallery() {
   assert.equal(context.window.BearStack.photos.formatPhotoRating("2.5"), "2,5 Sterne");
 }
 
+function peopleSelectionControls() {
+  return el("div", { "data-people-merge": "" }, [
+    el("span", { "data-people-merge-target": "" }),
+    el("button", { "data-people-edit-button": "" }),
+    el("button", { "data-people-merge-button": "" }),
+  ]);
+}
+
 async function testPeopleRefreshRetainsImagesWhenCountsChange() {
   const document = new TestDocument();
   const img = el("img", { src: "/photos/faces/10/thumbnail" });
@@ -1044,7 +1052,7 @@ async function testPeopleRefreshRetainsImagesWhenCountsChange() {
   const overview = el("div", { "data-people-overview": "", "data-can-ignore": "true" }, [card]);
   const status = el("p", { "data-people-status": "" });
   document.body.append(overview, status,
-    el("div", { "data-people-merge": "" }, [el("button", { "data-people-merge-button": "" })]),
+    peopleSelectionControls(),
     el("div", { class: "people-pagination" }));
   const context = createContext(document);
   context.location.href = "http://example.test/photos/people";
@@ -1107,9 +1115,10 @@ async function testPeopleMergePrefersNamedSelection() {
     const inputs = names.map((name, index) => el("input", { "data-person-select": "", value: String(index + 1) }));
     const cards = names.map((name, index) => el("div", { "data-person-id": String(index + 1), "data-person-name": name }, [el("strong", { text: name || "Unbenannt" }), inputs[index]]));
     const overview = el("div", { "data-people-overview": "", "data-can-ignore": "true" }, cards);
-    const target = el("span", { "data-people-merge-target": "" });
-    const button = el("button", { "data-people-merge-button": "" });
-    document.body.append(overview, el("p", { "data-people-status": "" }), el("div", { "data-people-merge": "" }, [target, button]));
+    const controls = peopleSelectionControls();
+    const target = controls.querySelector("[data-people-merge-target]");
+    const button = controls.querySelector("[data-people-merge-button]");
+    document.body.append(overview, el("p", { "data-people-status": "" }), controls);
     const context = createContext(document);
     let request;
     context.fetch = async (url, options) => { request = { url, options }; return { ok: false, status: 503 }; };

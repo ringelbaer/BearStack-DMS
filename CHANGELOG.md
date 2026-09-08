@@ -4,6 +4,26 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.39.2
+
+- Gesichtsvorschauen behalten im Web und in der Android-App die Proportionen des vollständigen Ausschnitts. Hoch- und Querformate werden zentriert auf dunkelgrauem Hintergrund eingepasst; die Kacheln bleiben quadratisch. Dies gilt für beide Vorschaugrößen und auch für am Bildrand begrenzte Ausschnitte. Die gemeinsame serverseitige Korrektur benötigt kein App-Update.
+- Ein neuer Rendering-Schlüssel ersetzt gestreckte Cachebilder beim nächsten Abruf. Nur die konkret ersetzte alte Vorschau wird entfernt; es gibt keinen vollständigen Cache-Neuaufbau. Bestehende Cachefristen und Bereinigung bleiben für nicht aufgerufene Altbilder erhalten. Neu erzeugte Vorschauen ignorierter Gesichter erhalten weiterhin höchstens 48 Stunden. Fehler beim Aufräumen werden erneut versucht, ohne die Anzeige zu blockieren.
+- Bildtests für Seitenverhältnisse, Randbeschnitt und beide Größen sowie Regressionen für Cacheersatz, Fehlerversuche, Web-/Android-Endpunkte und quadratische Browser-Kacheln ergänzt. Server-PATCH ohne Datenmigration; README und Website aktualisiert.
+
+### Android 0.5.2
+
+- Der Ladebalken in der Personenbearbeitung erhält einen dauerhaft reservierten Bereich. Ein- und Ausblenden verändern weder die Höhe noch die Abstände der Inhaltsliste; Überschrift, Gesichtsraster und Navigation springen beim Laden nicht mehr vertikal. Im Ruhezustand wird keine Ladeanimation ausgeführt.
+- Compose-Regressionstests für Vor- und Zurückblättern sowie gescrollte Inhalte mit großer Schrift ergänzt. Android-PATCH auf 0.5.2 (`versionCode` 11); die unabhängige BearStack-Serverversion bleibt bei 0.39.1. README, Android-Anleitung und Website aktualisiert.
+
+### BearStack 0.39.1
+
+- DOM-Testfixtures der Personenübersicht enthalten wieder die vollständige Auswahlleiste; der JavaScript-Testlauf führt alle Regressionen aus. Browser-Navigationstests erwarten das bestehende Ziel `/settings/general` des Systemmenüs.
+- Allgemeine, Dokument- und Fotoeinstellungen werden pro Formular in einer SQLite-Transaktion gespeichert. Zusammengehörige Einstellungen werden mit einer gemeinsamen Abfrage gelesen; Cache-Ladevorgänge, Speicherung und Übernahme der Foto-Worker-Einstellung sind synchronisiert. Fehlgeschlagene Schreibvorgänge erhalten Datenbank, Cache und Laufzeiteinstellung.
+- Personenbezogene Sichtbarkeitsprüfungen beschränken sich auf betroffene Gruppen einschließlich der Herkunft importierter Namen. Reine Personenansichten prüfen keine unbeteiligten Auftragsverzeichnisse. Gemeinsame Vorfahren werden je Prüfung einmal geprüft; wartende gleichartige Anfragen teilen eine anschließend gestartete Prüfung. Fertige Ergebnisse werden nicht zwischengespeichert, damit neue `.adminonly`-Markierungen beim nächsten Zugriff wirken. Gesamtübersichten prüfen weiterhin alle relevanten Gesichtsverzeichnisse. Dateisystemfehler blockieren die Abfrage, ohne bei vorübergehend unerreichbaren Verzeichnissen Gesichtsdaten zu löschen.
+- Der Gesichtsabgleich lädt bis zu 101 Referenzkandidaten je Suchlauf in einer SQL-Abfrage und prüft gemeinsame Verzeichnisse einmal. Ignorierte, entfernte oder private Referenzen bleiben ausgeschlossen; Datenbankfehler brechen die Verarbeitung ab.
+- Gemeinsame MIME-Helfer für Mailimport und EML-Archivierung vereinheitlichen Transferdecoder, Content-Type, Anhangsnamen und Zeichensatzverarbeitung. MIME-Header mit Windows-1252 werden auch beim Mailimport korrekt dekodiert.
+- Regressionen für atomaren Rollback, konkurrierende Einstellungen, Sichtbarkeitsumfang, neue Schutzmarkierungen, Namensherkunft und gebündelte Referenzabfragen ergänzt; neuer Verzeichnisbenchmark `BenchmarkFaceVisibility`. PATCH für Fehlerkorrekturen, Performance und interne Vereinheitlichung ohne Datenmigration.
+
 ### BearStack 0.39.0
 
 - Vorschauen ignorierter Gesichter werden höchstens 48 Stunden gespeichert und anschließend auch ohne weitere Aufrufe automatisch entfernt. Zugriffe und wiederholtes Ignorieren verlängern bestehende Fristen nicht; bei Bedarf neu erzeugte Vorschauen erhalten erneut höchstens 48 Stunden. Dies gilt für Web- und Android-/Labeling-Aktionen und beide Vorschaugrößen.

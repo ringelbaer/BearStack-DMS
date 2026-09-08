@@ -77,7 +77,9 @@ Zusätzlich zur Startkonfiguration speichert BearStack über die Weboberfläche 
 
 Dokumentlisten für HTML und JSON nutzen denselben Abfrage-Service. Er erhält Filter und Optionen für OCR-Daten beziehungsweise das Überspringen von Seiten außerhalb des gültigen Bereichs und liefert Dokumente, Gesamtzahl und optional OCR-Jobs. HTTP-Anfragen, Redirects und Navigationslinks bleiben in der Darstellungsschicht. HTML-Seiten werden wie bisher auf die letzte vorhandene Seite umgeleitet; die API darf eine leere Seite zurückgeben. Vor einer HTML-Umleitung wird nur gezählt, und API-Abfragen benötigen keine OCR-Abfrage.
 
-Fotoeinstellungen werden an ihrer Quelle eingelesen und anschließend gemeinsam normalisiert. Zahlenbereiche stehen dadurch an einer Stelle. Fehlende oder ungültige Datenbankwerte behalten ihre Defaults; Formular-Checkboxen sind weiterhin nur mit dem Wert `1` aktiviert. Speicherung und Cache-Verhalten bleiben unverändert.
+Fotoeinstellungen werden an ihrer Quelle eingelesen und anschließend gemeinsam normalisiert. Zahlenbereiche stehen dadurch an einer Stelle. Fehlende oder ungültige Datenbankwerte behalten ihre Defaults; Formular-Checkboxen sind weiterhin nur mit dem Wert `1` aktiviert. Allgemeine, Dokument- und Fotoeinstellungen werden je Formular in einer SQLite-Transaktion gespeichert. Zusammengehörige Werte werden mit einer gemeinsamen Abfrage gelesen. Cache-Ladevorgänge und Schreibvorgänge sind synchronisiert; nur erfolgreiche Commits aktualisieren Caches und die Foto-Worker-Einstellung.
+
+Mailimport und EML-Archivierung teilen MIME-Helfer für Transfer-Encoding, Content-Type, Anhangsnamen und Zeichensätze. Welche Anhänge verarbeitet werden, ihre Größenlimits und die Archivdarstellung bleiben Aufgaben der jeweiligen Module.
 
 Das Browsermodul `app-photos-media.js` stellt die gemeinsam verwendeten Medien-Helfer bereit, darunter die Übernahme von Fotometadaten und die Auswahl einer passenden Bildauflösung. Galerie und Fotoframe verwenden diese Helfer; der Fotoframe kann unabhängig vom Galerie-Script arbeiten. Das gemeinsame Modul wird vor seinen Verbrauchern geladen.
 
@@ -87,6 +89,10 @@ Die Lightbox mit Zoom, Touch-Gesten, Vollbild, Diashow und Video-/Audiowiedergab
 
 BearStack trennt Dokumente und Fotodaten, nutzt Caches für aufwendige Medienarbeit und führt OCR sowie Vorschau-Erzeugung im Hintergrund aus. Das ist besonders wichtig, wenn Archive über die Zeit wachsen oder viele Bilder in einem bestehenden Fotoverzeichnis liegen.
 
+Personendetails, gefilterte Personenlisten und Bearbeitungsaktionen prüfen die Verzeichnisse der betroffenen Gruppen einschließlich der Herkunft importierter Namen. Reine Personenansichten beziehen keine unbeteiligten Auftragsverzeichnisse ein. Gesamtübersichten mit exakten Zählwerten prüfen weiterhin alle relevanten Gesichtsverzeichnisse. Gemeinsame Vorfahren werden pro Prüfung einmal geprüft; wartende gleichartige Anfragen können eine anschließend gestartete Prüfung teilen. Fertige Prüfergebnisse werden nicht zwischengespeichert, damit neue `.adminonly`-Markierungen beim nächsten Zugriff berücksichtigt werden. Fehlende Verzeichnisse, Symlinks und Zugriffsfehler blockieren die betroffene Abfrage. Ein vorübergehend nicht erreichbares Fotoverzeichnis löscht dabei keine gespeicherten Gesichtsdaten.
+
+Der Gesichtsabgleich liest bis zu 101 Referenzkandidaten je Suchlauf in einer gemeinsamen SQL-Abfrage innerhalb der bestehenden Transaktion. Ignorierte, entfernte und private Referenzen werden ausgeschlossen; gemeinsam genutzte Verzeichnisse werden einmal geprüft. Datenbankfehler brechen die Verarbeitung ab.
+
 ## Performance-Benchmark
 
 Die Go-Benchmarks decken zwei zentrale Lastprofile ab: Dokumentlisten mit Suche, Tag-Filtern und Pagination sowie Fotolisten mit großen Indexen, Thumbnail-Status, GPX-Daten und Index-Neuaufbau. Die Dokument-Benchmarks arbeiten mit 1.000, 10.000 und 50.000 Dokumenten. Die Foto-Benchmarks simulieren unter anderem 300.000 Medien in bis zu 5.000 Galerien, geänderte Ordner, viele Tags und Blog-Dateien im Fotoverzeichnis.
@@ -95,6 +101,7 @@ Die Go-Benchmarks decken zwei zentrale Lastprofile ab: Dokumentlisten mit Suche,
 go test ./internal/repository -bench=BenchmarkList -benchmem
 go test ./internal/photos -bench=BenchmarkPhoto -benchmem
 go test ./internal/photos -bench=BenchmarkMillionPhotoRebuildIndexScenarios -benchmem
+go test ./internal/photos -run '^$' -bench '^BenchmarkFaceVisibility$' -benchmem
 ```
 
 Für vergleichbare Messungen sollten Benchmarks auf einem ruhigen System laufen, idealerweise mit derselben Go-Version, demselben Datenträger und mehreren Wiederholungen. Die Zahlen hängen stark von CPU, Speicher, Dateisystem und SQLite-I/O ab; die Benchmarks sind deshalb vor allem als Regressionsschutz und Größenordnung für eigene Installationen gedacht.

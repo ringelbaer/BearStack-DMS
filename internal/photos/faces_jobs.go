@@ -6,49 +6,6 @@ import (
 	"time"
 )
 
-// RefreshFaceVisibility checks filesystem markers before exposing aggregate names/counts.
-// No image files are decoded and shared directory ancestors are checked once per call.
-func (l *Library) RefreshFaceVisibility(ctx context.Context) error {
-	if l == nil || !l.index.available() {
-		return nil
-	}
-	rows, err := l.index.db.QueryContext(ctx, `SELECT directory FROM photo_face_directories WHERE face_count>0 UNION SELECT directory FROM photo_face_job_directories WHERE job_count>0`)
-	if err != nil {
-		return err
-	}
-	var dirs []string
-	for rows.Next() {
-		var d string
-		if err = rows.Scan(&d); err != nil {
-			rows.Close()
-			return err
-		}
-		dirs = append(dirs, d)
-	}
-	err = rows.Err()
-	rows.Close()
-	if err != nil {
-		return err
-	}
-	cache := map[string]bool{}
-	for _, d := range dirs {
-		if err = ctx.Err(); err != nil {
-			return err
-		}
-		abs, e := l.Resolve(d)
-		private := true
-		if e == nil {
-			private = directoryAdminOnlyFromAbsCached(d, abs, cache)
-		}
-		if private {
-			if _, err = l.index.db.ExecContext(ctx, `UPDATE media_index SET admin_only=1 WHERE directory=? AND admin_only=0`, d); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (l *Library) PrepareFaceQueue(ctx context.Context, model string) error {
 	if err := l.RefreshFaceVisibility(ctx); err != nil {
 		return err

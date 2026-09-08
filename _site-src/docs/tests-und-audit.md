@@ -36,6 +36,10 @@ Die Standardprüfung kombiniert Go-Tests und JavaScript-Syntaxchecks:
 make test
 ```
 
+Nach den Syntaxchecks führt `make test-js` auch die DOM-Regressionen aus. Die Personen-Fixtures verwenden eine gemeinsame vollständige Auswahlleiste, damit ein neuer Bedienknopf den restlichen Testlauf nicht durch veraltete Fixtures blockiert.
+
+Regressionen prüfen atomare Einstellungen bei Schreibfehlern, konsistente Datenbank-Snapshots und konkurrierende Cache-Ladevorgänge. Fototests sichern die Beschränkung auf betroffene Personen, importierte Namensquellen, neue Schutzmarkierungen, wartende Prüfungen und eine gebündelte Referenzabfrage ab. Gemeinsame MIME-Fixtures decken Transferdecoder sowie UTF-8-, Windows-1252- und RFC-2231-Anhangsnamen ab. Bildtests prüfen proportionale Gesichtsausschnitte in quadratischen Vorschauen für Hochformat, Querformat, quadratische Regionen und Randbeschnitt bei 160 und 640 Pixeln. Weitere Regressionen sichern den bedarfsweisen Ersatz gestreckter Cachebilder, Fehlerwiederholungen und dieselbe Auslieferung über Web- und Android-/Labeling-Endpunkte ab; Browser-Tests prüfen Hintergrund und quadratische Kacheln auf Desktop und Mobilgeräten.
+
 Einzeln:
 
 ```sh

@@ -3,14 +3,11 @@ package mailimport
 
 import (
 	"crypto/tls"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
 	"log"
-	"mime"
 	"mime/multipart"
-	"mime/quotedprintable"
 	"net"
 	"net/mail"
 	"net/textproto"
@@ -19,6 +16,7 @@ import (
 	"time"
 
 	"bearstack/internal/document"
+	"bearstack/internal/mailmime"
 	"bearstack/internal/uploadlimit"
 
 	"github.com/emersion/go-imap"
@@ -149,7 +147,7 @@ func ImportAttachmentsFromMessage(r io.Reader, allowedSenders string, maxUploadB
 	}
 
 	result := Message{
-		Subject: decodeHeader(msg.Header.Get("Subject")),
+		Subject: mailmime.DecodeHeader(msg.Header.Get("Subject")),
 		From:    SenderAddress(msg.Header.Get("From")),
 	}
 	if !SenderAllowed(result.From, allowedSenders) {
@@ -201,8 +199,8 @@ func WalkPDFs(header textproto.MIMEHeader, body io.Reader, handle func(Attachmen
 }
 
 func WalkAttachments(header textproto.MIMEHeader, body io.Reader, handlePDF func(Attachment) error, handleEML func(Attachment) error) error {
-	mediaType, params := mediaType(header)
-	body = transferReader(header, body)
+	mediaType, params := mailmime.MediaType(header)
+	body = mailmime.TransferReader(header, body)
 
 	if filename, ok := emlAttachmentFilename(header, mediaType, params); ok {
 		if handleEML == nil {
@@ -245,25 +243,8 @@ func WalkAttachments(header textproto.MIMEHeader, body io.Reader, handlePDF func
 	return handlePDF(Attachment{Filename: filename, Reader: body})
 }
 
-func mediaType(header textproto.MIMEHeader) (string, map[string]string) {
-	contentType := header.Get("Content-Type")
-	if strings.TrimSpace(contentType) == "" {
-		return "text/plain", nil
-	}
-	mediaType, params, err := mime.ParseMediaType(contentType)
-	if err != nil {
-		return strings.ToLower(strings.TrimSpace(contentType)), nil
-	}
-	return strings.ToLower(mediaType), params
-}
-
 func pdfAttachmentFilename(header textproto.MIMEHeader, mediaType string, params map[string]string) (string, bool) {
-	disposition, dispositionParams, _ := mime.ParseMediaType(header.Get("Content-Disposition"))
-	filename := dispositionParams["filename"]
-	if filename == "" && params != nil {
-		filename = params["name"]
-	}
-	filename = strings.TrimSpace(decodeHeader(filename))
+	filename, disposition := mailmime.AttachmentFilename(header, params)
 	isPDF := strings.EqualFold(mediaType, "application/pdf") || strings.EqualFold(filepath.Ext(filename), ".pdf")
 	if !isPDF {
 		return "", false
@@ -280,12 +261,7 @@ func pdfAttachmentFilename(header textproto.MIMEHeader, mediaType string, params
 }
 
 func emlAttachmentFilename(header textproto.MIMEHeader, mediaType string, params map[string]string) (string, bool) {
-	disposition, dispositionParams, _ := mime.ParseMediaType(header.Get("Content-Disposition"))
-	filename := dispositionParams["filename"]
-	if filename == "" && params != nil {
-		filename = params["name"]
-	}
-	filename = strings.TrimSpace(decodeHeader(filename))
+	filename, disposition := mailmime.AttachmentFilename(header, params)
 	isEML := strings.EqualFold(mediaType, "message/rfc822") || strings.EqualFold(filepath.Ext(filename), ".eml")
 	if !isEML {
 		return "", false
@@ -301,31 +277,8 @@ func emlAttachmentFilename(header textproto.MIMEHeader, mediaType string, params
 	return filename, true
 }
 
-func transferReader(header textproto.MIMEHeader, r io.Reader) io.Reader {
-	switch strings.ToLower(strings.TrimSpace(header.Get("Content-Transfer-Encoding"))) {
-	case "base64":
-		return base64.NewDecoder(base64.StdEncoding, r)
-	case "quoted-printable":
-		return quotedprintable.NewReader(r)
-	default:
-		return r
-	}
-}
-
-func decodeHeader(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return ""
-	}
-	decoded, err := new(mime.WordDecoder).DecodeHeader(value)
-	if err != nil {
-		return value
-	}
-	return decoded
-}
-
 func SenderAddress(value string) string {
-	value = strings.TrimSpace(decodeHeader(value))
+	value = strings.TrimSpace(mailmime.DecodeHeader(value))
 	if value == "" {
 		return ""
 	}

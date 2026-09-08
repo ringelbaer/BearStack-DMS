@@ -103,16 +103,7 @@ func (s *Server) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 		values[trashRetentionDaysSettingKey] = strconv.Itoa(normalizeTrashRetentionDays(r.PostForm.Get("trash_retention_days")))
 		values[folderTagMinDocumentsSettingKey] = strconv.Itoa(normalizeFolderTagMinDocuments(r.PostForm.Get("folder_tag_min_documents")))
 	}
-	for key, value := range values {
-		if err := s.repo.SaveSetting(r.Context(), key, value); err != nil {
-			s.renderHTTPError(w, r, err)
-			return
-		}
-	}
-	if saveGeneral {
-		s.cacheAppName(values[appNameSettingKey])
-	}
-	if _, err := s.settingsService().ReloadRenderSettings(r.Context()); err != nil {
+	if err := s.settingsService().SaveSettings(r.Context(), values); err != nil {
 		s.renderHTTPError(w, r, err)
 		return
 	}
@@ -145,7 +136,6 @@ func (s *Server) handleSavePhotoSettings(w http.ResponseWriter, r *http.Request)
 		s.renderHTTPError(w, r, err)
 		return
 	}
-	s.configurePhotoThumbnailer(settings)
 	redirectWithNotice(w, r, "/settings/photos", "Foto-Einstellungen gespeichert.")
 }
 

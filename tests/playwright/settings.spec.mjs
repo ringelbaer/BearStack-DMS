@@ -132,7 +132,7 @@ for (const theme of ["default", "design2"]) {
       await expect(footer.getByRole("link", { name: "Log", exact: true })).toHaveAttribute("aria-current", "page");
       await page.getByLabel("Systemmenü öffnen", { exact: true }).click();
       await menu.getByRole("link", { name: "Einstellungen", exact: true }).click();
-      await expect(page).toHaveURL(baseURL + "/settings");
+      await expect(page).toHaveURL(baseURL + "/settings/general");
       await page.getByLabel("Systemmenü öffnen", { exact: true }).click();
       await expect(menu.getByRole("link", { name: "Einstellungen", exact: true })).toHaveAttribute("aria-current", "page");
       await menu.getByRole("link", { name: "Konto · admin", exact: true }).click();
@@ -168,7 +168,7 @@ test("system menu icons and footer links are reachable with the keyboard", async
     await page.keyboard.press("Shift+Tab");
     await expect(menu.getByRole("link", { name: "Einstellungen", exact: true })).toBeFocused();
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(baseURL + "/settings");
+    await expect(page).toHaveURL(baseURL + "/settings/general");
     const api = page.locator(".app-footer").getByRole("link", { name: "API", exact: true });
     await api.focus();
     await page.keyboard.press("Tab");

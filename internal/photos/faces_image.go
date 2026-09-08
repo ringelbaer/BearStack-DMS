@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"image"
+	"image/color"
 	"image/jpeg"
 	"math"
 	"os"
@@ -128,10 +129,13 @@ func (l *Library) FaceThumbnailSize(ctx context.Context, id int64, size int) ([]
 	if err != nil {
 		return nil, err
 	}
-	key := faceThumbnailKey(f, size, abs, info.Size(), info.ModTime().UnixNano())
+	legacyKey := faceThumbnailKey(f, size, abs, info.Size(), info.ModTime().UnixNano())
+	// Old previews stretched the crop. Replace them on demand without a full
+	// cache scan or rebuilding the library at startup.
+	key := "aspect-fit-v2:" + legacyKey
 	b, err := l.faceThumbnails.get(ctx, id, key, func() ([]byte, error) {
 		return l.renderFaceThumbnail(ctx, f, size)
-	})
+	}, legacyKey)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +157,13 @@ func (l *Library) renderFaceThumbnail(ctx context.Context, f RecognizedFace, siz
 		return nil, errors.New("leere Gesichtsregion")
 	}
 	dst := image.NewNRGBA(image.Rect(0, 0, size, size))
-	draw.ApproxBiLinear.Scale(dst, dst.Bounds(), img, r, draw.Src, nil)
+	// Keep the complete crop and its proportions inside the square tile. The
+	// opaque neutral background also handles transparent source images.
+	draw.Draw(dst, dst.Bounds(), image.NewUniform(color.NRGBA{R: 17, G: 24, B: 32, A: 255}), image.Point{}, draw.Src)
+	scale := float64(size) / float64(max(r.Dx(), r.Dy()))
+	cw, ch := max(1, int(math.Round(float64(r.Dx())*scale))), max(1, int(math.Round(float64(r.Dy())*scale)))
+	x, y := (size-cw)/2, (size-ch)/2
+	draw.ApproxBiLinear.Scale(dst, image.Rect(x, y, x+cw, y+ch), img, r, draw.Over, nil)
 	// Check again after decoding, in case the folder became private meanwhile.
 	private, err := l.MediaAdminOnly(f.Path)
 	if err != nil {

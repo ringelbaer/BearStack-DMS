@@ -4,14 +4,11 @@ package mailarchive
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"html"
 	"io"
-	"mime"
 	"mime/multipart"
-	"mime/quotedprintable"
 	"net/mail"
 	"net/textproto"
 	"net/url"
@@ -23,11 +20,9 @@ import (
 	"time"
 
 	"bearstack/internal/documentconvert"
+	"bearstack/internal/mailmime"
 	"bearstack/internal/storage"
 	"bearstack/internal/uploadlimit"
-
-	"golang.org/x/text/encoding/htmlindex"
-	"golang.org/x/text/transform"
 )
 
 var ErrMessageTooLarge = errors.New("EML-Anhang überschreitet das konfigurierte Größenlimit")
@@ -206,7 +201,7 @@ func parseMessage(r io.Reader, tempDir string, maxBytes int64) (messageData, err
 		return messageData{}, err
 	}
 	data := messageData{
-		Subject:   decodeHeader(msg.Header.Get("Subject")),
+		Subject:   mailmime.DecodeHeader(msg.Header.Get("Subject")),
 		From:      decodeAddressHeader(msg.Header.Get("From")),
 		To:        decodeAddressHeader(msg.Header.Get("To")),
 		Cc:        decodeAddressHeader(msg.Header.Get("Cc")),
@@ -235,10 +230,9 @@ func parseMessage(r io.Reader, tempDir string, maxBytes int64) (messageData, err
 }
 
 func walkPart(header textproto.MIMEHeader, body io.Reader, data *messageData, tempDir string, maxBytes int64) error {
-	mediaType, params := parseMediaType(header)
-	body = transferReader(header, body)
-	filename := attachmentFilename(header, params)
-	disposition, _, _ := mime.ParseMediaType(header.Get("Content-Disposition"))
+	mediaType, params := mailmime.MediaType(header)
+	body = mailmime.TransferReader(header, body)
+	filename, disposition := mailmime.AttachmentFilename(header, params)
 	isAttachment := filename != "" || strings.EqualFold(disposition, "attachment")
 
 	if strings.EqualFold(mediaType, "message/rfc822") {
@@ -475,40 +469,8 @@ func archiveFilename(msg messageData) string {
 	return filename
 }
 
-func parseMediaType(header textproto.MIMEHeader) (string, map[string]string) {
-	contentType := strings.TrimSpace(header.Get("Content-Type"))
-	if contentType == "" {
-		return "text/plain", map[string]string{}
-	}
-	mediaType, params, err := mime.ParseMediaType(contentType)
-	if err != nil {
-		return strings.ToLower(contentType), map[string]string{}
-	}
-	return strings.ToLower(mediaType), params
-}
-
-func attachmentFilename(header textproto.MIMEHeader, params map[string]string) string {
-	_, dispositionParams, _ := mime.ParseMediaType(header.Get("Content-Disposition"))
-	filename := dispositionParams["filename"]
-	if filename == "" && params != nil {
-		filename = params["name"]
-	}
-	return strings.TrimSpace(decodeHeader(filename))
-}
-
 func isPDFAttachment(mediaType, filename string) bool {
 	return strings.EqualFold(mediaType, "application/pdf") || strings.EqualFold(filepath.Ext(filename), ".pdf")
-}
-
-func transferReader(header textproto.MIMEHeader, r io.Reader) io.Reader {
-	switch strings.ToLower(strings.TrimSpace(header.Get("Content-Transfer-Encoding"))) {
-	case "base64":
-		return base64.NewDecoder(base64.StdEncoding, r)
-	case "quoted-printable":
-		return quotedprintable.NewReader(r)
-	default:
-		return r
-	}
 }
 
 func readTextBody(r io.Reader, params map[string]string) (string, error) {
@@ -516,7 +478,7 @@ func readTextBody(r io.Reader, params map[string]string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	text, err := decodeBytes(raw, params["charset"])
+	text, err := mailmime.DecodeBytes(raw, params["charset"])
 	if err != nil {
 		text = string(raw)
 	}
@@ -538,22 +500,6 @@ func readTextLimited(r io.Reader, limit int64) ([]byte, bool, error) {
 		return raw[:int(limit)], true, nil
 	}
 	return raw, false, nil
-}
-
-func decodeBytes(raw []byte, charset string) (string, error) {
-	charset = strings.TrimSpace(charset)
-	if charset == "" || strings.EqualFold(charset, "utf-8") || strings.EqualFold(charset, "us-ascii") {
-		return string(raw), nil
-	}
-	enc, err := htmlindex.Get(charset)
-	if err != nil {
-		return "", err
-	}
-	decoded, _, err := transform.Bytes(enc.NewDecoder(), raw)
-	if err != nil {
-		return "", err
-	}
-	return string(decoded), nil
 }
 
 var (
@@ -614,20 +560,8 @@ func htmlToText(value string) string {
 	return strings.TrimSpace(value)
 }
 
-func decodeHeader(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return ""
-	}
-	decoded, err := (&mime.WordDecoder{CharsetReader: charsetReader}).DecodeHeader(value)
-	if err != nil {
-		return value
-	}
-	return decoded
-}
-
 func decodeAddressHeader(value string) string {
-	value = decodeHeader(value)
+	value = mailmime.DecodeHeader(value)
 	if value == "" {
 		return ""
 	}
@@ -644,18 +578,6 @@ func decodeAddressHeader(value string) string {
 		out = append(out, strings.TrimSpace(address.Name)+" <"+address.Address+">")
 	}
 	return strings.Join(out, ", ")
-}
-
-func charsetReader(charset string, input io.Reader) (io.Reader, error) {
-	charset = strings.TrimSpace(charset)
-	if charset == "" || strings.EqualFold(charset, "utf-8") || strings.EqualFold(charset, "us-ascii") {
-		return input, nil
-	}
-	enc, err := htmlindex.Get(charset)
-	if err != nil {
-		return nil, err
-	}
-	return transform.NewReader(input, enc.NewDecoder()), nil
 }
 
 func readLimited(r io.Reader, limit int64) ([]byte, error) {
