@@ -23,13 +23,6 @@ type trashService struct {
 	invalidateDocumentCountCache func()
 }
 
-func (s *Server) trashService() *trashService {
-	if s.apps.documents.trash.repo == nil && s.apps.documents.trash.store == nil {
-		s.apps.documents.trash = newTrashService(s.repo, s.store, s.log, s.trashRetentionDays, s.invalidateDocumentCountCache)
-	}
-	return &s.apps.documents.trash
-}
-
 func newTrashService(repo *repository.Repository, store *storage.Store, log *slog.Logger, retentionDays func(context.Context) (int, error), invalidateDocumentCountCache func()) trashService {
 	return trashService{
 		repo:                         repo,

@@ -33,13 +33,6 @@ type thumbnailService struct {
 	jobs  chan struct{}
 }
 
-func (s *Server) thumbnailService() thumbnailRunner {
-	if s.apps.documents.thumbnails != nil {
-		return s.apps.documents.thumbnails
-	}
-	return newThumbnailService(s.repo, s.store, s.log, nil)
-}
-
 func newThumbnailService(repo *repository.Repository, store *storage.Store, log *slog.Logger, jobs chan struct{}) *thumbnailService {
 	return &thumbnailService{
 		repo:  repo,

@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.41.4
+
+- Die acht Labeling-Endpunkte sind direkt eigenen Handlern zugeordnet. Die zweite Verteilung anhand von Pfad-Endungen und HTTP-Methode entfällt; Zugriffsrechte, Validierung, Fehlercodes, Cache-Header und Bildauslieferung bleiben erhalten.
+- Services werden über einen gemeinsamen, durch `sync.Once` geschützten Aufbau erzeugt. Produktionsstart und teilweise aufgebaute Test-Server verwenden dieselben Instanzen und Worker-Kanäle; vorgegebene Services bleiben erhalten. Die Initialisierung startet keine Hintergrundarbeit.
+- Favoriten- und Gruppenbildaktionen teilen den Abschluss von Referenzaktualisierung und Revision innerhalb ihrer Transaktion sowie die anschließende Cache-Synchronisierung. Ein Fehler nach erfolgreichem Commit verwirft den Suchcache für den nächsten Aufbau, ohne die gespeicherte Aktion als fehlgeschlagen auszugeben.
+- PATCH für interne Refactors ohne Datenmigration oder Änderung der HTTP-Verträge. Regressionen für parallelen Service-Aufbau, Routen, Rollback und Cache-Wiederherstellung ergänzt; README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.41.3
 
 - Navigation und beschriftete Auswahloptionen aus dem Einstellungsservice ausgelagert. Die Startseitenauflösung erhält Modulstatus und Rechte explizit; atomare Speicherung, Cache-Synchronisierung und Worker-Konfiguration bleiben unverändert.

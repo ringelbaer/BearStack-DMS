@@ -190,24 +190,13 @@ func (l *Library) IgnoreGroupPhoto(ctx context.Context, path, revision string) (
  AND person_id IN (SELECT id FROM photo_people WHERE name='')`, path); err != nil {
 		return 0, err
 	}
-	for person := range affected {
-		if err := refreshFaceReferencesTx(ctx, tx, person); err != nil {
-			return 0, err
-		}
-	}
-	var committedRevision int64
-	if err := tx.QueryRowContext(ctx, `UPDATE photo_face_state SET revision=revision+1 WHERE id=1 RETURNING revision`).Scan(&committedRevision); err != nil {
+	committedRevision, err := refreshFaceMutationTx(ctx, tx, affected)
+	if err != nil {
 		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
-	if l.faceRuntime.graph != nil && l.faceRuntime.revision == baseRevision {
-		if err := l.syncFaceGraphPeople(ctx, affected, committedRevision); err != nil {
-			l.faceRuntime.graph = nil
-		}
-	} else {
-		l.faceRuntime.graph = nil
-	}
+	l.syncFaceMutation(ctx, affected, baseRevision, committedRevision)
 	return photo.Remaining, nil
 }

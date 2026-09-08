@@ -39,13 +39,6 @@ const (
 	ocrQueueBatchSize    = 32
 )
 
-func (s *Server) ocrService() ocrRunner {
-	if s.apps.documents.ocr == nil {
-		s.apps.documents.ocr = newOCRService(s.repo, s.store, s.log, make(chan struct{}, 1), s.invalidateDocumentCountCache, s.recordAuditLog)
-	}
-	return s.apps.documents.ocr
-}
-
 func newOCRService(repo *repository.Repository, store *storage.Store, log *slog.Logger, wake chan struct{}, invalidateDocumentCountCache func(), recordAuditLog func(context.Context, document.AuditLogEntry)) *ocrService {
 	return &ocrService{
 		repo:                         repo,

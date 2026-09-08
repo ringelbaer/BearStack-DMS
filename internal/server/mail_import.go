@@ -32,13 +32,6 @@ type mailImportService struct {
 	recordAuditLog func(context.Context, document.AuditLogEntry)
 }
 
-func (s *Server) mailImportService() mailImportRunner {
-	if s.apps.mail.importer == nil {
-		s.apps.mail.importer = newMailImportService(s.cfg.MaxUploadBytes, s.repo, s.store, s.log, s.documentImporter(), s.recordAuditLog)
-	}
-	return s.apps.mail.importer
-}
-
 func newMailImportService(maxUploadBytes int64, repo *repository.Repository, store *storage.Store, log *slog.Logger, importer documentImporter, recordAuditLog func(context.Context, document.AuditLogEntry)) *mailImportService {
 	return &mailImportService{
 		maxUploadBytes: maxUploadBytes,

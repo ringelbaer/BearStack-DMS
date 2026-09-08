@@ -64,25 +64,14 @@ func (l *Library) SetFaceFavorite(ctx context.Context, id, person int64, favorit
 	if _, err = tx.ExecContext(ctx, `UPDATE photo_faces SET favorite=? WHERE id=?`, favorite, id); err != nil {
 		return out, err
 	}
-	if err = refreshFaceReferencesTx(ctx, tx, person); err != nil {
-		return out, err
-	}
-	var committedRevision int64
-	if err = tx.QueryRowContext(ctx, `UPDATE photo_face_state SET revision=revision+1 WHERE id=1 RETURNING revision`).Scan(&committedRevision); err != nil {
+	affected := map[int64]bool{person: true}
+	committedRevision, err := refreshFaceMutationTx(ctx, tx, affected)
+	if err != nil {
 		return out, err
 	}
 	if err = tx.Commit(); err != nil {
 		return out, err
 	}
-	if l.faceRuntime.graph != nil && l.faceRuntime.revision == baseRevision {
-		// Avoid rebuilding the whole collection for one star. A failed cache
-		// refresh invalidates the graph for the next analysis; the write succeeded.
-		if err := l.syncFaceGraphPeople(ctx, map[int64]bool{person: true}, committedRevision); err != nil {
-			l.faceRuntime.graph = nil
-		}
-	} else {
-		// Never acknowledge unrelated changes missing from the cached graph.
-		l.faceRuntime.graph = nil
-	}
+	l.syncFaceMutation(ctx, affected, baseRevision, committedRevision)
 	return out, nil
 }

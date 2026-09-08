@@ -112,12 +112,17 @@ func TestHandlePreviewConvertsPlainTextDocumentWithoutSoffice(t *testing.T) {
 		repo:  repo,
 		store: store,
 		log:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+		apps:  serverApplications{documents: documentApplication{thumbnails: thumbnailRunnerStub{}}},
 	}
 	req := httptest.NewRequest(http.MethodGet, "/documents/"+strconv.FormatInt(docID, 10)+"/preview", nil)
 	req.SetPathValue("id", strconv.FormatInt(docID, 10))
 	rec := httptest.NewRecorder()
 
+	previewService := server.officePreviewService()
 	server.handlePreview(rec, req)
+	if server.officePreviewService() != previewService {
+		t.Fatal("office preview fallback was recreated")
+	}
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d body = %s", rec.Code, rec.Body.String())

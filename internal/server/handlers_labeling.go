@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	"bearstack/internal/photos"
 )
@@ -44,127 +43,140 @@ func labelInt(r *http.Request, key string, max int64) (int64, error) {
 	}
 	return n, nil
 }
-func (s *Server) handleLabeling(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleLabelSession(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "private, no-store")
-	base := "/api/photos/labeling/v1"
-	switch r.URL.Path {
-	case base + "/session":
-		session, err := s.photos.LabelSession(r.Context())
-		if err != nil {
-			s.labelError(w, r, err)
-			return
-		}
-		_ = writeJSON(w, 200, struct {
-			photos.LabelSession
-			Account   string `json:"account"`
-			CanManage bool   `json:"can_manage"`
-		}{session, labelActor(r), true})
-		return
-	case base + "/candidates":
-		if !r.URL.Query().Has("upper") || r.URL.Query().Get("upper") == "" {
-			s.labelError(w, r, photos.ErrLabelInvalid)
-			return
-		}
-		after, err := labelInt(r, "after", 1<<62)
-		if err != nil {
-			s.labelError(w, r, err)
-			return
-		}
-		upper, err := labelInt(r, "upper", 1<<62)
-		if err != nil {
-			s.labelError(w, r, err)
-			return
-		}
-		out, err := s.photos.LabelCandidates(r.Context(), after, upper)
-		if err != nil {
-			s.labelError(w, r, err)
-			return
-		}
-		_ = writeJSON(w, 200, out)
-		return
-	case base + "/suggestions":
-		q := r.URL.Query().Get("q")
-		if len(q) > 800 {
-			s.labelError(w, r, photos.ErrLabelInvalid)
-			return
-		}
-		out, err := s.photos.LabelSuggestions(r.Context(), q, r.URL.Query().Get("exact") == "1")
-		if err != nil {
-			s.labelError(w, r, err)
-			return
-		}
-		_ = writeJSON(w, 200, map[string]any{"people": out})
+	session, err := s.photos.LabelSession(r.Context())
+	if err != nil {
+		s.labelError(w, r, err)
 		return
 	}
-	if operation := r.PathValue("operation"); operation != "" {
-		out, err := s.photos.LabelReceipt(r.Context(), labelActor(r), operation, r.URL.Query().Get("dataset"))
-		if err != nil {
-			s.labelError(w, r, err)
-			return
-		}
-		_ = writeJSON(w, 200, out)
+	_ = writeJSON(w, 200, struct {
+		photos.LabelSession
+		Account   string `json:"account"`
+		CanManage bool   `json:"can_manage"`
+	}{session, labelActor(r), true})
+}
+
+func (s *Server) handleLabelCandidates(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
+	if !r.URL.Query().Has("upper") || r.URL.Query().Get("upper") == "" {
+		s.labelError(w, r, photos.ErrLabelInvalid)
 		return
 	}
+	after, err := labelInt(r, "after", 1<<62)
+	if err != nil {
+		s.labelError(w, r, err)
+		return
+	}
+	upper, err := labelInt(r, "upper", 1<<62)
+	if err != nil {
+		s.labelError(w, r, err)
+		return
+	}
+	out, err := s.photos.LabelCandidates(r.Context(), after, upper)
+	if err != nil {
+		s.labelError(w, r, err)
+		return
+	}
+	_ = writeJSON(w, 200, out)
+}
+
+func (s *Server) handleLabelSuggestions(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
+	q := r.URL.Query().Get("q")
+	if len(q) > 800 {
+		s.labelError(w, r, photos.ErrLabelInvalid)
+		return
+	}
+	out, err := s.photos.LabelSuggestions(r.Context(), q, r.URL.Query().Get("exact") == "1")
+	if err != nil {
+		s.labelError(w, r, err)
+		return
+	}
+	_ = writeJSON(w, 200, map[string]any{"people": out})
+}
+
+func (s *Server) handleLabelReceipt(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
+	operation := r.PathValue("operation")
+	out, err := s.photos.LabelReceipt(r.Context(), labelActor(r), operation, r.URL.Query().Get("dataset"))
+	if err != nil {
+		s.labelError(w, r, err)
+		return
+	}
+	_ = writeJSON(w, 200, out)
+}
+
+func (s *Server) handleLabelAction(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
 	id, err := faceID(r.PathValue("id"))
 	if err != nil {
 		s.labelError(w, r, photos.ErrLabelInvalid)
 		return
 	}
-	if r.Method == http.MethodPost {
-		r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
-		var action photos.LabelAction
-		decoder := json.NewDecoder(r.Body)
-		decoder.DisallowUnknownFields()
-		if err = decoder.Decode(&action); err != nil {
-			s.labelError(w, r, photos.ErrLabelInvalid)
-			return
-		}
-		if err = decoder.Decode(&struct{}{}); err != io.EOF {
-			s.labelError(w, r, photos.ErrLabelInvalid)
-			return
-		}
-		setAuditTarget(r, "Person:"+strconv.FormatInt(id, 10))
-		out, err := s.photos.ApplyLabelAction(r.Context(), labelActor(r), id, action)
-		if err != nil {
-			s.labelError(w, r, err)
-			return
-		}
-		_ = writeJSON(w, 200, out)
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
+	var action photos.LabelAction
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err = decoder.Decode(&action); err != nil {
+		s.labelError(w, r, photos.ErrLabelInvalid)
 		return
 	}
-	if strings.HasSuffix(r.URL.Path, "/thumbnail") || strings.HasSuffix(r.URL.Path, "/original") {
-		face, err := s.photos.Face(r.Context(), id)
-		if err == nil && face.Ignored {
-			err = sql.ErrNoRows
-		}
-		if err != nil {
-			s.labelError(w, r, err)
-			return
-		}
-		if strings.HasSuffix(r.URL.Path, "/original") {
-			s.servePhotoMedia(w, r, face.Path, photoMediaCacheNoStore)
-			return
-		}
-		size, err := labelInt(r, "size", 640)
-		if err != nil {
-			s.labelError(w, r, err)
-			return
-		}
-		if size == 0 {
-			size = 160
-		}
-		if size != 160 && size != 640 {
-			s.labelError(w, r, photos.ErrLabelInvalid)
-			return
-		}
-		b, err := s.photos.FaceThumbnailSize(r.Context(), id, int(size))
-		if err != nil {
-			s.labelError(w, r, err)
-			return
-		}
-		w.Header().Set("Content-Type", "image/jpeg")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		_, _ = w.Write(b)
+	if err = decoder.Decode(&struct{}{}); err != io.EOF {
+		s.labelError(w, r, photos.ErrLabelInvalid)
+		return
+	}
+	setAuditTarget(r, "Person:"+strconv.FormatInt(id, 10))
+	out, err := s.photos.ApplyLabelAction(r.Context(), labelActor(r), id, action)
+	if err != nil {
+		s.labelError(w, r, err)
+		return
+	}
+	_ = writeJSON(w, 200, out)
+}
+
+func (s *Server) handleLabelThumbnail(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
+	face, ok := s.labelingFace(w, r)
+	if !ok {
+		return
+	}
+	size, err := labelInt(r, "size", 640)
+	if err != nil {
+		s.labelError(w, r, err)
+		return
+	}
+	if size == 0 {
+		size = 160
+	}
+	if size != 160 && size != 640 {
+		s.labelError(w, r, photos.ErrLabelInvalid)
+		return
+	}
+	b, err := s.photos.FaceThumbnailSize(r.Context(), face.ID, int(size))
+	if err != nil {
+		s.labelError(w, r, err)
+		return
+	}
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	_, _ = w.Write(b)
+}
+
+func (s *Server) handleLabelOriginal(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
+	face, ok := s.labelingFace(w, r)
+	if !ok {
+		return
+	}
+	s.servePhotoMedia(w, r, face.Path, photoMediaCacheNoStore)
+}
+
+func (s *Server) handleLabelPerson(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
+	id, err := faceID(r.PathValue("id"))
+	if err != nil {
+		s.labelError(w, r, photos.ErrLabelInvalid)
 		return
 	}
 	offset, err := labelInt(r, "offset", 1<<30)
@@ -178,4 +190,21 @@ func (s *Server) handleLabeling(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = writeJSON(w, 200, out)
+}
+
+func (s *Server) labelingFace(w http.ResponseWriter, r *http.Request) (photos.RecognizedFace, bool) {
+	id, err := faceID(r.PathValue("id"))
+	if err != nil {
+		s.labelError(w, r, photos.ErrLabelInvalid)
+		return photos.RecognizedFace{}, false
+	}
+	face, err := s.photos.Face(r.Context(), id)
+	if err == nil && face.Ignored {
+		err = sql.ErrNoRows
+	}
+	if err != nil {
+		s.labelError(w, r, err)
+		return photos.RecognizedFace{}, false
+	}
+	return face, true
 }

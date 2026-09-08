@@ -48,6 +48,7 @@ type Server struct {
 	authWriteMu       sync.Mutex
 	preferenceWriteMu sync.Mutex
 	earlyAudit        auditRejectionLimiter
+	servicesOnce      sync.Once
 	apps              serverApplications
 	jobCtxMu          sync.Mutex
 	jobCtx            context.Context
@@ -155,12 +156,7 @@ func New(cfg config.Config, repo *repository.Repository, store *storage.Store, l
 	}
 	s.faceWorker.wake = make(chan struct{}, 1)
 	s.apps.photo.jobs = make(chan struct{}, 1)
-	s.apps.documents.thumbnails = newThumbnailService(repo, store, logger, make(chan struct{}, 1))
-	s.apps.documents.ocr = newOCRService(repo, store, logger, make(chan struct{}, 1), s.invalidateDocumentCountCache, s.recordAuditLog)
-	s.apps.documents.postImport = newDocumentPostProcessor(repo, store, s.apps.documents.thumbnails, logger, s.invalidateDocumentCountCache)
-	s.apps.documents.importer = newDocumentImporter(repo, store, logger, s.afterDocumentCreate)
-	s.apps.mail.importer = newMailImportService(cfg.MaxUploadBytes, repo, store, logger, s.apps.documents.importer, s.recordAuditLog)
-	s.apps.documents.trash = newTrashService(repo, store, logger, s.trashRetentionDays, s.invalidateDocumentCountCache)
+	s.initServices()
 	if photoLibrary != nil {
 		if _, err := s.photoSettings(context.Background()); err != nil && logger != nil {
 			logger.Warn("photo thumbnail settings failed", "error", err)

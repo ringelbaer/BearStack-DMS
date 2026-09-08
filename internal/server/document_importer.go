@@ -13,21 +13,6 @@ import (
 type documentImporter = documentimport.Importer
 type documentPostProcessor = documentimport.PostProcessor
 
-func (s *Server) documentImporter() documentImporter {
-	if s.apps.documents.importer.Repo != nil || s.apps.documents.importer.Store != nil {
-		return s.apps.documents.importer
-	}
-	return newDocumentImporter(s.repo, s.store, s.log, s.afterDocumentCreate)
-}
-
-func (s *Server) documentPostProcessor() *documentPostProcessor {
-	if s.apps.documents.postImport != nil {
-		return s.apps.documents.postImport
-	}
-	s.apps.documents.postImport = newDocumentPostProcessor(s.repo, s.store, s.thumbnailService(), s.log, s.invalidateDocumentCountCache)
-	return s.apps.documents.postImport
-}
-
 func (s *Server) afterDocumentCreate(doc document.Document) {
 	s.invalidateDocumentCountCache()
 	s.documentPostProcessor().Enqueue(doc)

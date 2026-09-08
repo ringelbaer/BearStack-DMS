@@ -15,12 +15,7 @@ import (
 var officePreviewJobs = make(chan struct{}, 1)
 
 func (s *Server) ensureDocumentOfficePreview(ctx context.Context, doc document.Document) (string, error) {
-	if previewer, ok := s.thumbnailService().(interface {
-		EnsureOfficePreview(context.Context, document.Document) (string, error)
-	}); ok {
-		return previewer.EnsureOfficePreview(ctx, doc)
-	}
-	return newThumbnailService(s.repo, s.store, s.log, nil).EnsureOfficePreview(ctx, doc)
+	return s.officePreviewService().EnsureOfficePreview(ctx, doc)
 }
 
 func (t thumbnailService) EnsureOfficePreview(ctx context.Context, doc document.Document) (string, error) {
