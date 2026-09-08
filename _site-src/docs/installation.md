@@ -238,6 +238,8 @@ BEARSTACK_TLS_ENABLED=1 go run ./cmd/bearstack
 
 Mit `auto_cert=true` erzeugt BearStack ein lokales Self-Signed-Zertifikat unter `data/tls/`. Browser melden dieses Zertifikat als nicht vertrauenswürdig. Für echte Zertifikate `tls.cert_file` und `tls.key_file` bzw. `BEARSTACK_TLS_CERT_FILE` und `BEARSTACK_TLS_KEY_FILE` setzen.
 
+Ab 0.42.1 ersetzt die automatische Erzeugung Zertifikat und Schlüssel jeweils atomar über temporäre Dateien. Private Schlüssel erhalten `0600`, auch wenn eine vorhandene Datei offenere Rechte hatte. Vorhandene Symlink-Ziele werden dabei nicht überschrieben. Explizit konfigurierte Zertifikate und Schlüssel werden weiterhin nur gelesen.
+
 Wenn TLS aktiv ist, akzeptiert BearStack auf demselben `addr` sowohl HTTPS als auch plain HTTP. HTTP-Anfragen auf diesem Port werden permanent auf `https://` weitergeleitet.
 
 ## systemd

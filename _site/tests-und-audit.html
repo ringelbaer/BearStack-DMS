@@ -657,6 +657,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dependency-prufung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Dependency-Prüfung
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#performance-benchmarks" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -771,6 +782,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dependency-prufung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Dependency-Prüfung
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#performance-benchmarks" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -866,6 +888,17 @@
 <p>Für Änderungen an riskanten Bereichen gilt: fokussierte Regressionstests vor breit angelegten Refactors. Wenn eine Änderung Performance berührt, sind Benchmarks oder nachvollziehbare Messungen sinnvoller als reine Einschätzung.</p>
 <p>Bei Versionsänderungen muss <code>info.version</code> in <code>openapi.yaml</code> mit der Root-Datei <code>VERSION</code> übereinstimmen. Der Go-Test <code>TestOpenAPISpecMatchesApplicationVersion</code> prüft diesen Abgleich für die eingebettete API-Beschreibung.</p>
 <p>Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle Suiten verwenden denselben Helfer für Start, Gesundheitsprüfung und geordnetes Beenden; temporäre Daten werden erst nach Prozessende entfernt. Die Testabhängigkeit ist in <code>package-lock.json</code> festgelegt und wird bei Bedarf mit <code>npm ci --ignore-scripts</code> installiert. Ein vorhandener <code>GOCACHE</code> wird weiterverwendet.</p>
+<p>Sicherheitsregressionen ab 0.42.1 prüfen defekte <code>.adminonly</code>-Symlinks über Ordner-, Medien-, Batch- und Gesichtsprüfungen sowie die HTTP-Routen. Verweigerte Verzeichniszugriffe dürfen keine Gesichtsdaten löschen; unauflösbare Indexpfade dürfen private Einträge beim Start nicht veröffentlichen. TLS-Tests prüfen bei erneuter automatischer Erzeugung die Schlüsselrechte <code>0600</code>, unveränderte Symlink-Ziele und das Entfernen temporärer Dateien.</p>
+<h2 id="dependency-prufung">Dependency-Prüfung<a class="headerlink" href="#dependency-prufung" title="Permanent link">&para;</a></h2>
+<p>Die Prüfung vom 8. September 2026 entfernt nur <code>androidx.room:room-ktx:2.8.4</code> aus dem Android-Build. Das Artefakt enthält keine Klassen; seine APIs sind bereits im explizit eingebundenen <code>room-runtime</code> enthalten (<a href="https://developer.android.com/jetpack/androidx/releases/room">Room-Releases</a>). Es gibt keine Änderung am Datenbankschema oder am Laufzeitverhalten und keinen zusätzlichen Versionssprung.</p>
+<p>Ein Vorher-/Nachher-Vergleich der aufgelösten Abhängigkeiten umfasst sechs Android-Konfigurationen: Debug-Compile-/Runtime-Classpath, Release-Runtime, JVM-Test-Runtime sowie Compile-/Runtime-Classpath der instrumentierten Tests. Alle übrigen Module behalten dieselben Versionen; <code>room-ktx</code> entfällt dort, wo es zuvor enthalten war.</p>
+<p>Alle acht direkten Go-Module haben Importpfade; <code>golang.org/x/sys</code> wird beispielsweise im Linux-Indexworker verwendet. <code>go mod tidy -diff</code> bleibt leer, <code>go mod why -m all</code> erklärt die Abhängigkeitsketten. Einträge in <code>go.sum</code> werden nicht allein aufgrund fehlender direkter Imports gelöscht. Playwright ist ausschließlich ein Testwerkzeug. NumPy und OpenCV werden vom Gesichtsdienst verwendet; Zensical und Pygments bauen die Website einschließlich Syntaxhervorhebung. Auch Chromium, LibreOffice, Poppler, Tesseract und FFmpeg werden für Mailarchivierung, Vorschauen, OCR oder Thumbnails aufgerufen.</p>
+<p>Bei Updates verdienen diese Punkte besondere Aufmerksamkeit:</p>
+<ul>
+<li><strong>Android-Build:</strong> <code>apps/android/gradle.properties</code> aktiviert Legacy-DSL und externes Kotlin. Gradle meldet bereits abgekündigte Optionen; vor AGP 10 sind DSL-/Kotlin- und kapt-Migrationen nötig (<a href="https://developer.android.com/build/releases/gradle-plugin-roadmap">AGP-Migrationsplan</a>). Das ist ein eigener Umbau, keine Entfernung ungenutzter Plugins.</li>
+<li><strong>Aufgelöste Versionen:</strong> Die Android-Deklarationen für Lifecycle nennen 2.8.7, tatsächlich wird über den Abhängigkeitsgraphen 2.9.4 aufgelöst. Gradle-Lockfiles und Verifikationsmetadaten sind nicht vorhanden. Website-Dependencies haben teilweise offene transitive Versionsbereiche; Docker-Basisimages und apt-Pakete sind ebenfalls nicht vollständig eingefroren. Bei Updates deshalb den effektiven Graphen und die erzeugten Artefakte vergleichen.</li>
+<li><strong>Gebündelte Komponenten:</strong> PDF.js liegt versioniert unter <code>internal/server/static/vendor</code> und wird nicht über <code>package.json</code> gepflegt. Viewer, Worker und Zusatzdateien müssen zusammen aktualisiert werden. Die Go-SQLite-/HNSW-Ketten und der Python-Gesichtsdienst sind funktional erforderlich; Updates brauchen insbesondere Datenbank-, Gesichtsabgleich-, Modell- und Plattformtests. Die Modellkennung und Prüfsummen gehören zum internen Gesichtsprotokoll.</li>
+</ul>
 <h2 id="performance-benchmarks">Performance-Benchmarks<a class="headerlink" href="#performance-benchmarks" title="Permanent link">&para;</a></h2>
 <p>BearStack enthält Benchmarks für Dokumentlisten, Feldwertvorschläge und das Fotomodul. Sie messen Suche, Tag-Filter, Pagination, Ähnlichkeitssuche mit 1.500 Feldwerten, große Fotoindexe, GPX-Daten, Thumbnail-Status und Index-Neuaufbau.</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/repository<span class="w"> </span>-bench<span class="o">=</span>BenchmarkList<span class="w"> </span>-benchmem
@@ -939,7 +972,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.42.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.42.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

@@ -1060,6 +1060,7 @@
 <li><code>.order_random.pg2conf</code></li>
 </ul>
 <p>Ein Ordner mit der Datei <code>.adminonly</code> ist nur für Benutzer mit der Rolle <code>admin</code> zugänglich. Admin-only-Inhalte sind auch für Admins standardmäßig in Galerie, Suche, Zufall, Fotoframe, Kartenansicht und Foto-Tag-Listen ausgeblendet. Admins können sie im Sortieren-Menü der Galerie per Schalter einblenden; die Auswahl bleibt in der aktuellen Session gespeichert. Direkte Medien- und Thumbnail-URLs bleiben weiterhin nur Admins vorbehalten.</p>
+<p>Auch ein Symlink namens <code>.adminonly</code> schützt ab 0.42.1 den Ordner, unabhängig davon, ob sein Ziel erreichbar ist. Fehler beim Lesen der Markierung erlauben keinen öffentlichen Zugriff. Kann der Sichtbarkeitsabgleich beim Start einen indizierten Pfad wegen Zugriffsfehlern oder Symlinks nicht sicher prüfen, startet das Fotomodul nicht; Indexflags und Gesichtsdaten bleiben dabei unverändert. In diesem Fall den gemeldeten Pfad beziehungsweise dessen Zugriffsrechte korrigieren und BearStack erneut starten.</p>
 <h2 id="berechtigungen">Berechtigungen<a class="headerlink" href="#berechtigungen" title="Permanent link">&para;</a></h2>
 <p>Fotorechte sind capability-basiert und werden über Rollen oder einzelne Permissions vergeben:</p>
 <table>
@@ -1382,7 +1383,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.42.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.42.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

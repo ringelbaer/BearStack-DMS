@@ -4,6 +4,7 @@ package photos
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"bearstack/internal/fsutil"
 	"bearstack/internal/sqlutil"
@@ -25,10 +26,17 @@ func (l *Library) refreshAdminOnlyIndexFlags(ctx context.Context) error {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		adminOnly := 0
-		if _, abs, err := paths.Resolve(rel, true, ErrPathEscapesRoot()); err == nil {
-			adminOnly = boolInt(directoryAdminOnlyFromAbsCached(rel, abs, adminOnlyCache))
+		_, abs, err := paths.Resolve(rel, true, ErrPathEscapesRoot())
+		if err != nil {
+			// Do not publish private index entries or modify face data when the
+			// current directory cannot be checked safely. No writes have begun.
+			return fmt.Errorf("check photo directory visibility %q: %w", rel, err)
 		}
+		private, err := directoryAdminOnlyFromAbsCached(rel, abs, adminOnlyCache)
+		if err != nil {
+			return fmt.Errorf("check photo directory marker %q: %w", rel, err)
+		}
+		adminOnly := boolInt(private)
 		byVisibility[adminOnly] = append(byVisibility[adminOnly], rel)
 	}
 	if len(dirs) == 0 {

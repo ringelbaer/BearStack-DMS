@@ -4,7 +4,7 @@ Native, deutschsprachige App für Android 8.0 oder neuer. App-Version **0.5.3**;
 
 ## Bauen und installieren
 
-`apps/android/` in Android Studio als eigenes Projekt öffnen. Voraussetzungen: JDK 17 oder 21 und Android-SDK mit Plattform 36. Das Projekt verwendet den Gradle Wrapper 8.13, AGP 8.13.2 und Kotlin 2.3.21. SDK-Pfad über `ANDROID_HOME` oder eine ignorierte `apps/android/local.properties` mit `sdk.dir=…` setzen.
+`apps/android/` in Android Studio als eigenes Projekt öffnen. Voraussetzungen: JDK 17 oder 21 und Android-SDK mit Plattform 36. Das Projekt verwendet den Gradle Wrapper 9.6.0, AGP 9.4.0 und Kotlin 2.3.21. SDK-Pfad über `ANDROID_HOME` oder eine ignorierte `apps/android/local.properties` mit `sdk.dir=…` setzen.
 
 ```sh
 ./scripts/check-android.sh
@@ -70,6 +70,8 @@ Der gemeinsame Vertrag steht in [`openapi.yaml`](https://github.com/ringelbaer/B
 BearStack migriert die Foto-Datenbank kompatibel auf Schema 19. Datenbanktrigger erhöhen Revisionen auch bei Web- und Hintergrundänderungen. Mutation und Quittung werden in derselben SQLite-Transaktion gespeichert. Quittungen sind kontogebunden und bleiben bis zum Löschen der Gesichtserkennungsdaten erhalten. Dieser Reset erzeugt eine neue Datenbestandskennung. Die Foto-Datenbank einschließlich dieser Tabellen gemeinsam sichern und wiederherstellen. Bestehende Web-Endpunkte bleiben erhalten; ausgeschlossene geschützte Fotos werden auch über diese API nicht angeboten.
 
 ## Tests
+
+Die leere Übergangsabhängigkeit `androidx.room:room-ktx` wird nicht mehr separat eingebunden. Ihre APIs liegen im bereits verwendeten `room-runtime:2.8.4`; Room-Compiler, Coroutines und Datenbankschema bleiben unverändert. Vor einem Upgrade auf AGP 10 müssen die Legacy-DSL-/Kotlin-Optionen in `gradle.properties` und die kapt-Anbindung migriert werden. Siehe [Room-Releases](https://developer.android.com/jetpack/androidx/releases/room) und [AGP-Migrationsplan](https://developer.android.com/build/releases/gradle-plugin-roadmap).
 
 ```sh
 # JVM-Tests, Lint und Debug-APK

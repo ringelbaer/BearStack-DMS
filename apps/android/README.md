@@ -4,7 +4,7 @@ Native, deutschsprachige App für Android 8.0 oder neuer. App-Version **0.5.3**;
 
 ## Bauen und installieren
 
-`apps/android/` in Android Studio als eigenes Projekt öffnen. Voraussetzungen: JDK 17 oder 21 und Android-SDK mit Plattform 36. Das Projekt verwendet den Gradle Wrapper 8.13, AGP 8.13.2 und Kotlin 2.3.21. SDK-Pfad über `ANDROID_HOME` oder eine ignorierte `apps/android/local.properties` mit `sdk.dir=…` setzen.
+`apps/android/` in Android Studio als eigenes Projekt öffnen. Voraussetzungen: JDK 17 oder 21 und Android-SDK mit Plattform 36. Das Projekt verwendet den Gradle Wrapper 9.6.0, AGP 9.4.0 und Kotlin 2.3.21. SDK-Pfad über `ANDROID_HOME` oder eine ignorierte `apps/android/local.properties` mit `sdk.dir=…` setzen.
 
 ```sh
 ./scripts/check-android.sh
@@ -74,6 +74,8 @@ BearStack migriert die Foto-Datenbank kompatibel auf Schema 19. Datenbanktrigger
 Die Build-Abhängigkeiten enthalten keine separate `ui-tooling-preview`-Deklaration,
 da die App keine `@Preview`-Annotationen verwendet. Die Debug-Werkzeuge für Compose
 und die instrumentierten UI-Tests bleiben erhalten; die App-Version ändert sich dadurch nicht.
+
+Auch die leere Übergangsabhängigkeit `androidx.room:room-ktx` entfällt: Seit Room 2.7 liegen ihre APIs in `room-runtime`, das hier bereits explizit mit 2.8.4 eingebunden ist. Room-Compiler, Coroutines und Datenbankschema bleiben unverändert. Die Entfernung enthält keine Laufzeitänderung und erfordert keinen Versionssprung. Vor einem Upgrade auf AGP 10 müssen die Legacy-DSL-/Kotlin-Optionen in `gradle.properties` und die kapt-Anbindung migriert werden; sie sind für den aktuellen Aufbau weiterhin erforderlich. Siehe [Room-Releases](https://developer.android.com/jetpack/androidx/releases/room) und [AGP-Migrationsplan](https://developer.android.com/build/releases/gradle-plugin-roadmap).
 
 ```sh
 # JVM-Tests, Lint und Debug-APK

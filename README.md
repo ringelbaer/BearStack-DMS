@@ -94,6 +94,8 @@ Ab 0.41.3 liegen Startseiten- und Navigationsregeln in `navigation.go`, Auswahlo
 
 Ab 0.42.0 verwendet WebDAV schlanke Dokumentabfragen und lädt beim Auflösen von Zwischenordnern keine Dokumentlisten. Die Personen-Autovervollständigung erhält über `GET /photos/people?format=suggestions&q=...` bis zu 60 benannte Gruppen mit ID, Name, Fotoanzahl und `has_next`, ohne Gesamtzählung oder Thumbnail-ID. Die vollständige JSON-Personenübersicht bleibt unverändert. Versionierte PDF.js-Dateien werden langfristig im Browser gecacht; die Foto-Initialisierung teilt Pfadprüfungen gemeinsamer Vorfahren innerhalb ihres Durchlaufs. Neue Zugriffe prüfen Schutzmarkierungen und Symlinks weiterhin aktuell. Version 0.42.0 ist wegen der zusätzlichen API-Darstellung ein MINOR-Release ohne Datenmigration.
 
+Ab 0.42.1 schützen auch defekte `.adminonly`-Symlinks einen Fotoordner. Marker-Lesefehler werden weitergegeben; kann der Startabgleich einen Indexpfad wegen Zugriffsfehlern oder Symlinks nicht sicher prüfen, bricht er vor Datenbankänderungen ab. Automatisch erzeugte TLS-Dateien werden atomar ersetzt, private Schlüssel stets mit `0600` und ohne vorhandenen Symlinks zu folgen. Sicherheitskorrekturen als PATCH ohne Datenmigration.
+
 Ab 0.41.4 verwenden die Labeling-Endpunkte eigene Handler und die internen Services einen gemeinsamen, gegen parallele Erstaufrufe geschützten Aufbau. Favoriten- und Gruppenbildaktionen teilen die Referenz-/Revisionsaktualisierung und die Cache-Synchronisierung nach erfolgreichem Commit. Tests sichern gleiche Service-Instanzen, die API-Verträge sowie Rollback und Cache-Wiederherstellung ab.
 
 Ab 0.39.1 werden allgemeine, Dokument- und Fotoeinstellungen je Formular atomar gespeichert. Fehler hinterlassen keine teilweise gespeicherten Werte; zusammengehörige Einstellungen werden gemeinsam gelesen und ihre Caches mit Schreibvorgängen synchronisiert. Personenbezogene Prüfungen berücksichtigen die betroffenen Gruppen und die Herkunft importierter Namen. Neue `.adminonly`-Markierungen wirken beim nächsten Zugriff; Gesamtübersichten prüfen weiterhin sämtliche relevanten Gesichtsverzeichnisse. Der Gesichtsabgleich lädt Referenzkandidaten gebündelt. Mailimport und EML-Archivierung verwenden gemeinsame MIME-Decoder einschließlich Windows-1252-Headern.
@@ -114,6 +116,8 @@ go tool cover -func=/tmp/bearstack-coverage.out
 Die Foto-Lightbox liegt in `app-photos-lightbox.js`. Die Galerie initialisiert das Modul mit expliziten Abhaengigkeiten fuer Bearbeitungsmodus, gebuendeltes Metadaten-Nachladen und Kartenhelfer; gemeinsame Medienfunktionen kommen aus `app-photos-media.js`.
 
 ## Build
+
+Die Dependency-Prüfung entfernt ausschließlich das leere Android-Artefakt `room-ktx`; dessen APIs sind bereits in `room-runtime` enthalten. Go-Module, Browser-Testwerkzeuge, Python-Pakete und Programme für Dokument-/Bildverarbeitung werden verwendet und bleiben bestehen. Die Bereinigung ändert kein Laufzeitverhalten und benötigt keinen zusätzlichen Versionssprung. Update-Risiken und Prüfwege stehen unter [Tests und Audit](_site-src/docs/tests-und-audit.md#dependency-prufung).
 
 Lokal ueber Make:
 

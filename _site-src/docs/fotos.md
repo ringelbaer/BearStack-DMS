@@ -99,6 +99,8 @@ Ordner können nach Ordnerstandard, Name, Datum oder zufällig sortiert werden. 
 
 Ein Ordner mit der Datei `.adminonly` ist nur für Benutzer mit der Rolle `admin` zugänglich. Admin-only-Inhalte sind auch für Admins standardmäßig in Galerie, Suche, Zufall, Fotoframe, Kartenansicht und Foto-Tag-Listen ausgeblendet. Admins können sie im Sortieren-Menü der Galerie per Schalter einblenden; die Auswahl bleibt in der aktuellen Session gespeichert. Direkte Medien- und Thumbnail-URLs bleiben weiterhin nur Admins vorbehalten.
 
+Auch ein Symlink namens `.adminonly` schützt ab 0.42.1 den Ordner, unabhängig davon, ob sein Ziel erreichbar ist. Fehler beim Lesen der Markierung erlauben keinen öffentlichen Zugriff. Kann der Sichtbarkeitsabgleich beim Start einen indizierten Pfad wegen Zugriffsfehlern oder Symlinks nicht sicher prüfen, startet das Fotomodul nicht; Indexflags und Gesichtsdaten bleiben dabei unverändert. In diesem Fall den gemeldeten Pfad beziehungsweise dessen Zugriffsrechte korrigieren und BearStack erneut starten.
+
 ## Berechtigungen
 
 Fotorechte sind capability-basiert und werden über Rollen oder einzelne Permissions vergeben:

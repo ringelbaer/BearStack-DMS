@@ -75,3 +75,57 @@ func TestServerTLSConfigRequiresTLS12(t *testing.T) {
 		t.Fatalf("MinVersion = %x, want %x", cfg.MinVersion, tls.VersionTLS12)
 	}
 }
+
+func TestLocalTLSRegenerationReplacesKeyPrivately(t *testing.T) {
+	for _, symlink := range []bool{false, true} {
+		name := "existing-readable-key"
+		if symlink {
+			name = "symlink-key"
+		}
+		t.Run(name, func(t *testing.T) {
+			dataDir := t.TempDir()
+			dir := filepath.Join(dataDir, "tls")
+			if err := os.Mkdir(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			keyPath := filepath.Join(dir, "bearstack-local.key")
+			existing := keyPath
+			if symlink {
+				existing = filepath.Join(t.TempDir(), "other.key")
+				if err := os.Symlink(existing, keyPath); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := os.WriteFile(existing, []byte("existing data"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Chmod(existing, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			certFile, keyFile, err := tlsCertificateFiles(config.Config{DataDir: dataDir, TLS: config.TLSConfig{AutoCert: true}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := tls.LoadX509KeyPair(certFile, keyFile); err != nil {
+				t.Fatal(err)
+			}
+			info, err := os.Lstat(keyFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 {
+				t.Errorf("private key mode = %s, want regular 0600", info.Mode())
+			}
+			if symlink {
+				data, err := os.ReadFile(existing)
+				if err != nil || string(data) != "existing data" {
+					t.Error("regeneration modified the symlink target")
+				}
+			}
+			entries, err := os.ReadDir(dir)
+			if err != nil || len(entries) != 2 {
+				t.Fatalf("temporary TLS files left behind: %d entries, %v", len(entries), err)
+			}
+		})
+	}
+}

@@ -48,7 +48,10 @@ func (l *Library) MediaBatchContext(ctx context.Context, paths []string) ([]Medi
 		if err != nil {
 			return nil, err
 		}
-		private := directoryAdminOnlyFromAbsCached(parentPath(path), filepath.Dir(abs), privateDirs)
+		private, err := directoryAdminOnlyFromAbsCached(parentPath(path), filepath.Dir(abs), privateDirs)
+		if err != nil {
+			return nil, err
+		}
 		kind, _ := supportedKind(path)
 		media, refresh, err := l.mediaFromPathInfo(path, abs, info, kind, cache, private, true)
 		if err != nil {

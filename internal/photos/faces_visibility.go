@@ -207,12 +207,5 @@ func (v *faceDirectoryVisibility) check(dir string) (private bool, err error) {
 	if !info.IsDir() {
 		return false, os.ErrNotExist
 	}
-	marker, err := os.Stat(filepath.Join(abs, AdminOnlyMarkerName))
-	if errors.Is(err, os.ErrNotExist) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return !marker.IsDir(), nil
+	return checkAdminOnlyMarker(abs)
 }

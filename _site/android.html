@@ -890,7 +890,7 @@
 <h1 id="bearstack-personen-fur-android">BearStack Personen für Android<a class="headerlink" href="#bearstack-personen-fur-android" title="Permanent link">&para;</a></h1>
 <p>Native, deutschsprachige App für Android 8.0 oder neuer. App-Version <strong>0.5.3</strong>; erforderlich sind <strong>BearStack 0.35.0</strong>, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit <code>photos.edit</code> (Rolle „Fotos bearbeiten“/<code>photos_editor</code>, <code>photos_manager</code> oder Administrator; Freigabe für Fotobearbeiter ab BearStack 0.36.0). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
-<p><code>apps/android/</code> in Android Studio als eigenes Projekt öffnen. Voraussetzungen: JDK 17 oder 21 und Android-SDK mit Plattform 36. Das Projekt verwendet den Gradle Wrapper 8.13, AGP 8.13.2 und Kotlin 2.3.21. SDK-Pfad über <code>ANDROID_HOME</code> oder eine ignorierte <code>apps/android/local.properties</code> mit <code>sdk.dir=…</code> setzen.</p>
+<p><code>apps/android/</code> in Android Studio als eigenes Projekt öffnen. Voraussetzungen: JDK 17 oder 21 und Android-SDK mit Plattform 36. Das Projekt verwendet den Gradle Wrapper 9.6.0, AGP 9.4.0 und Kotlin 2.3.21. SDK-Pfad über <code>ANDROID_HOME</code> oder eine ignorierte <code>apps/android/local.properties</code> mit <code>sdk.dir=…</code> setzen.</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./scripts/check-android.sh
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>adb<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>apps/android/app/build/outputs/apk/debug/app-debug.apk
 </span></code></pre></div>
@@ -931,6 +931,7 @@
 <p>Der gemeinsame Vertrag steht in <a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml"><code>openapi.yaml</code></a>, unter <code>/api/photos/labeling/v1</code>. Anfragen verwenden HTTP Basic über HTTPS und JSON. Operationen tragen eine zufällige ID, Datenbestandskennung, Quellrevision und bei Zuordnung eine Zielrevision. Die Antwort enthält tatsächliche Gesichtszahlen und betroffene Gruppen-IDs.</p>
 <p>BearStack migriert die Foto-Datenbank kompatibel auf Schema 19. Datenbanktrigger erhöhen Revisionen auch bei Web- und Hintergrundänderungen. Mutation und Quittung werden in derselben SQLite-Transaktion gespeichert. Quittungen sind kontogebunden und bleiben bis zum Löschen der Gesichtserkennungsdaten erhalten. Dieser Reset erzeugt eine neue Datenbestandskennung. Die Foto-Datenbank einschließlich dieser Tabellen gemeinsam sichern und wiederherstellen. Bestehende Web-Endpunkte bleiben erhalten; ausgeschlossene geschützte Fotos werden auch über diese API nicht angeboten.</p>
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
+<p>Die leere Übergangsabhängigkeit <code>androidx.room:room-ktx</code> wird nicht mehr separat eingebunden. Ihre APIs liegen im bereits verwendeten <code>room-runtime:2.8.4</code>; Room-Compiler, Coroutines und Datenbankschema bleiben unverändert. Vor einem Upgrade auf AGP 10 müssen die Legacy-DSL-/Kotlin-Optionen in <code>gradle.properties</code> und die kapt-Anbindung migriert werden. Siehe <a href="https://developer.android.com/jetpack/androidx/releases/room">Room-Releases</a> und <a href="https://developer.android.com/build/releases/gradle-plugin-roadmap">AGP-Migrationsplan</a>.</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># JVM-Tests, Lint und Debug-APK</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>make<span class="w"> </span>test-android
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -1024,7 +1025,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.42.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.42.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

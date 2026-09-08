@@ -4,6 +4,17 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### Dependency-Prüfung
+
+- Leere Android-Übergangsabhängigkeit `androidx.room:room-ktx:2.8.4` entfernt. Die verwendeten APIs sind bereits in `room-runtime` enthalten; Room-Compiler, Coroutines, Schema und Versionsnummern bleiben unverändert. Keine Laufzeitänderung.
+- Go-Module über Importpfade, `go mod tidy -diff` und `go mod why` geprüft; Browser-/Python-Pakete sowie externe OCR-, Vorschau- und Bildwerkzeuge werden weiterhin benötigt. Android-Dokumentation auf die vorhandenen Versionen Gradle 9.6.0 und AGP 9.4.0 korrigiert; Update-Risiken dokumentiert.
+
+### BearStack 0.42.1
+
+- `.adminonly`-Symlinks schützen Fotoordner auch bei fehlenden, zyklischen oder unzugänglichen Zielen. Galerie, Medienzugriff, Batchabfragen und Gesichtslisten verwenden dieselbe Markerprüfung. Lesefehler werden bei Zugriffs- und Startprüfungen weitergegeben; der Startabgleich bricht bei unauflösbaren Indexpfaden vor Schreibzugriffen ab, statt private Einträge öffentlich zu setzen oder Gesichtsdaten zu löschen.
+- Automatisch erzeugte TLS-Zertifikate und Schlüssel werden über temporäre Dateien atomar ersetzt. Private Schlüssel erhalten stets `0600`; vorhandene Dateirechte werden nicht übernommen und Symlink-Ziele nicht überschrieben.
+- PATCH für Sicherheitskorrekturen ohne Datenmigration. Regressionen reproduzieren defekte Schutzmarker, verweigerte Verzeichniszugriffe, Indexfreigaben und unsichere TLS-Neuerzeugung. README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.42.0
 
 - WebDAV liest ausschließlich die für Dateinamen, Auslieferung und HTTP-Metadaten benötigten Dokumentfelder. Zusatzabfragen für Tags, eigene Felder, Duplikate und Verknüpfungen entfallen; Zwischenordner werden ohne Dokumentlisten aufgelöst. Filter, Reihenfolge, Namenskollisionen und HTTP-Metadaten bleiben erhalten.

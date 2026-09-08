@@ -82,13 +82,37 @@ func generateLocalTLSCertificate(certFile, keyFile, addr string) error {
 	}
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
 
-	if err := os.WriteFile(certFile, certPEM, 0o644); err != nil {
+	if err := writeLocalTLSFile(certFile, certPEM, 0o644); err != nil {
 		return fmt.Errorf("write tls certificate: %w", err)
 	}
-	if err := os.WriteFile(keyFile, keyPEM, 0o600); err != nil {
+	if err := writeLocalTLSFile(keyFile, keyPEM, 0o600); err != nil {
 		return fmt.Errorf("write tls private key: %w", err)
 	}
 	return nil
+}
+
+// Replace generated files without following existing symlinks or inheriting
+// permissions from an earlier file. Private key bytes are written only to 0600.
+func writeLocalTLSFile(path string, data []byte, perm os.FileMode) error {
+	file, err := os.CreateTemp(filepath.Dir(path), ".bearstack-tls-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(file.Name())
+	defer file.Close()
+	if err := file.Chmod(perm); err != nil {
+		return err
+	}
+	if _, err := file.Write(data); err != nil {
+		return err
+	}
+	if err := file.Sync(); err != nil {
+		return err
+	}
+	if err := file.Close(); err != nil {
+		return err
+	}
+	return os.Rename(file.Name(), path)
 }
 
 func localTLSDNSNames(addr string) []string {

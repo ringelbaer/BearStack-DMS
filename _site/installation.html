@@ -1213,6 +1213,7 @@
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nv">BEARSTACK_TLS_ENABLED</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>go<span class="w"> </span>run<span class="w"> </span>./cmd/bearstack
 </span></code></pre></div>
 <p>Mit <code>auto_cert=true</code> erzeugt BearStack ein lokales Self-Signed-Zertifikat unter <code>data/tls/</code>. Browser melden dieses Zertifikat als nicht vertrauenswürdig. Für echte Zertifikate <code>tls.cert_file</code> und <code>tls.key_file</code> bzw. <code>BEARSTACK_TLS_CERT_FILE</code> und <code>BEARSTACK_TLS_KEY_FILE</code> setzen.</p>
+<p>Ab 0.42.1 ersetzt die automatische Erzeugung Zertifikat und Schlüssel jeweils atomar über temporäre Dateien. Private Schlüssel erhalten <code>0600</code>, auch wenn eine vorhandene Datei offenere Rechte hatte. Vorhandene Symlink-Ziele werden dabei nicht überschrieben. Explizit konfigurierte Zertifikate und Schlüssel werden weiterhin nur gelesen.</p>
 <p>Wenn TLS aktiv ist, akzeptiert BearStack auf demselben <code>addr</code> sowohl HTTPS als auch plain HTTP. HTTP-Anfragen auf diesem Port werden permanent auf <code>https://</code> weitergeleitet.</p>
 <h2 id="systemd">systemd<a class="headerlink" href="#systemd" title="Permanent link">&para;</a></h2>
 <p>Eine Beispiel-Unit liegt in <code>deploy/bearstack.service</code> und nutzt eine JSON-Konfiguration:</p>
@@ -1360,7 +1361,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.42.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.42.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

@@ -78,6 +78,22 @@ Bei Versionsänderungen muss `info.version` in `openapi.yaml` mit der Root-Datei
 
 Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle Suiten verwenden denselben Helfer für Start, Gesundheitsprüfung und geordnetes Beenden; temporäre Daten werden erst nach Prozessende entfernt. Die Testabhängigkeit ist in `package-lock.json` festgelegt und wird bei Bedarf mit `npm ci --ignore-scripts` installiert. Ein vorhandener `GOCACHE` wird weiterverwendet.
 
+Sicherheitsregressionen ab 0.42.1 prüfen defekte `.adminonly`-Symlinks über Ordner-, Medien-, Batch- und Gesichtsprüfungen sowie die HTTP-Routen. Verweigerte Verzeichniszugriffe dürfen keine Gesichtsdaten löschen; unauflösbare Indexpfade dürfen private Einträge beim Start nicht veröffentlichen. TLS-Tests prüfen bei erneuter automatischer Erzeugung die Schlüsselrechte `0600`, unveränderte Symlink-Ziele und das Entfernen temporärer Dateien.
+
+## Dependency-Prüfung
+
+Die Prüfung vom 8. September 2026 entfernt nur `androidx.room:room-ktx:2.8.4` aus dem Android-Build. Das Artefakt enthält keine Klassen; seine APIs sind bereits im explizit eingebundenen `room-runtime` enthalten ([Room-Releases](https://developer.android.com/jetpack/androidx/releases/room)). Es gibt keine Änderung am Datenbankschema oder am Laufzeitverhalten und keinen zusätzlichen Versionssprung.
+
+Ein Vorher-/Nachher-Vergleich der aufgelösten Abhängigkeiten umfasst sechs Android-Konfigurationen: Debug-Compile-/Runtime-Classpath, Release-Runtime, JVM-Test-Runtime sowie Compile-/Runtime-Classpath der instrumentierten Tests. Alle übrigen Module behalten dieselben Versionen; `room-ktx` entfällt dort, wo es zuvor enthalten war.
+
+Alle acht direkten Go-Module haben Importpfade; `golang.org/x/sys` wird beispielsweise im Linux-Indexworker verwendet. `go mod tidy -diff` bleibt leer, `go mod why -m all` erklärt die Abhängigkeitsketten. Einträge in `go.sum` werden nicht allein aufgrund fehlender direkter Imports gelöscht. Playwright ist ausschließlich ein Testwerkzeug. NumPy und OpenCV werden vom Gesichtsdienst verwendet; Zensical und Pygments bauen die Website einschließlich Syntaxhervorhebung. Auch Chromium, LibreOffice, Poppler, Tesseract und FFmpeg werden für Mailarchivierung, Vorschauen, OCR oder Thumbnails aufgerufen.
+
+Bei Updates verdienen diese Punkte besondere Aufmerksamkeit:
+
+- **Android-Build:** `apps/android/gradle.properties` aktiviert Legacy-DSL und externes Kotlin. Gradle meldet bereits abgekündigte Optionen; vor AGP 10 sind DSL-/Kotlin- und kapt-Migrationen nötig ([AGP-Migrationsplan](https://developer.android.com/build/releases/gradle-plugin-roadmap)). Das ist ein eigener Umbau, keine Entfernung ungenutzter Plugins.
+- **Aufgelöste Versionen:** Die Android-Deklarationen für Lifecycle nennen 2.8.7, tatsächlich wird über den Abhängigkeitsgraphen 2.9.4 aufgelöst. Gradle-Lockfiles und Verifikationsmetadaten sind nicht vorhanden. Website-Dependencies haben teilweise offene transitive Versionsbereiche; Docker-Basisimages und apt-Pakete sind ebenfalls nicht vollständig eingefroren. Bei Updates deshalb den effektiven Graphen und die erzeugten Artefakte vergleichen.
+- **Gebündelte Komponenten:** PDF.js liegt versioniert unter `internal/server/static/vendor` und wird nicht über `package.json` gepflegt. Viewer, Worker und Zusatzdateien müssen zusammen aktualisiert werden. Die Go-SQLite-/HNSW-Ketten und der Python-Gesichtsdienst sind funktional erforderlich; Updates brauchen insbesondere Datenbank-, Gesichtsabgleich-, Modell- und Plattformtests. Die Modellkennung und Prüfsummen gehören zum internen Gesichtsprotokoll.
+
 ## Performance-Benchmarks
 
 BearStack enthält Benchmarks für Dokumentlisten, Feldwertvorschläge und das Fotomodul. Sie messen Suche, Tag-Filter, Pagination, Ähnlichkeitssuche mit 1.500 Feldwerten, große Fotoindexe, GPX-Daten, Thumbnail-Status und Index-Neuaufbau.

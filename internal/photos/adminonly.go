@@ -31,7 +31,7 @@ func (l *Library) FolderAdminOnly(rel string) (bool, error) {
 	if !info.IsDir() {
 		return false, os.ErrNotExist
 	}
-	return l.directoryAdminOnlyFromAbs(clean, abs), nil
+	return checkDirectoryAdminOnly(clean, abs)
 }
 
 func (l *Library) MediaAdminOnly(rel string) (bool, error) {
@@ -61,7 +61,11 @@ func (l *Library) MediaAdminOnlyBatch(paths []string) (map[string]bool, error) {
 		if err != nil {
 			return nil, err
 		}
-		result[clean] = directoryAdminOnlyFromAbsCached(parent, abs, cache)
+		private, err := directoryAdminOnlyFromAbsCached(parent, abs, cache)
+		if err != nil {
+			return nil, err
+		}
+		result[clean] = private
 	}
 	return result, nil
 }
@@ -78,51 +82,61 @@ func (l *Library) fileAdminOnly(rel string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return l.directoryAdminOnlyFromAbs(parentPath(clean), abs), nil
+	return checkDirectoryAdminOnly(parentPath(clean), abs)
 }
 
 func (l *Library) directoryAdminOnly(rel string) bool {
 	abs, err := l.Resolve(rel)
 	if err != nil {
-		return false
+		return true
 	}
 	return l.directoryAdminOnlyFromAbs(rel, abs)
 }
 
 func (l *Library) directoryAdminOnlyFromAbs(rel, abs string) bool {
+	private, err := checkDirectoryAdminOnly(rel, abs)
+	return private || err != nil
+}
+
+func checkDirectoryAdminOnly(rel, abs string) (bool, error) {
 	for {
-		if adminOnlyMarkerExists(abs) {
-			return true
+		private, err := checkAdminOnlyMarker(abs)
+		if private || err != nil {
+			return private, err
 		}
 		if rel == "" {
-			return false
+			return false, nil
 		}
 		rel = parentPath(rel)
 		abs = filepath.Dir(abs)
 	}
 }
 
-func directoryAdminOnlyFromAbsCached(rel, abs string, cache map[string]bool) bool {
+func directoryAdminOnlyFromAbsCached(rel, abs string, cache map[string]bool) (bool, error) {
 	visited := make([]string, 0, 4)
 	for {
 		if adminOnly, ok := cache[rel]; ok {
 			for _, path := range visited {
 				cache[path] = adminOnly
 			}
-			return adminOnly
+			return adminOnly, nil
 		}
 		visited = append(visited, rel)
-		if adminOnlyMarkerExists(abs) {
+		private, err := checkAdminOnlyMarker(abs)
+		if err != nil {
+			return false, err
+		}
+		if private {
 			for _, path := range visited {
 				cache[path] = true
 			}
-			return true
+			return true, nil
 		}
 		if rel == "" {
 			for _, path := range visited {
 				cache[path] = false
 			}
-			return false
+			return false, nil
 		}
 		rel = parentPath(rel)
 		abs = filepath.Dir(abs)
@@ -130,6 +144,19 @@ func directoryAdminOnlyFromAbsCached(rel, abs string, cache map[string]bool) boo
 }
 
 func adminOnlyMarkerExists(absDir string) bool {
-	info, err := os.Stat(filepath.Join(absDir, AdminOnlyMarkerName))
-	return err == nil && !info.IsDir()
+	private, err := checkAdminOnlyMarker(absDir)
+	return private || err != nil
+}
+
+func checkAdminOnlyMarker(absDir string) (bool, error) {
+	// A marker symlink protects the directory even if its target is missing or
+	// inaccessible. Only a definitely absent marker permits public access.
+	info, err := os.Lstat(filepath.Join(absDir, AdminOnlyMarkerName))
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return !info.IsDir(), nil
 }
