@@ -1255,14 +1255,22 @@ oben einstellbar (0–255, Standard <strong>5</strong>) und wird pro Nutzer und 
 Es erscheinen ausschließlich Fotos mit <strong>mehr als</strong> dieser Anzahl unbenannter,
 nicht ignorierter Gesichter. Benannte und ignorierte Gesichter zählen nicht für die
 Auswahl, werden im geöffneten Foto aber weiterhin als Vorschauen gezeigt.</p>
+<p>Ab <strong>0.46.0</strong> blendet <strong>„Nur Unbenannte anzeigen“</strong> im Gesichtsraster benannte
+und ignorierte Vorschauen aus. Der Filter wirkt sofort ohne zusätzlichen
+Serverabruf und merkt sich die Auswahl pro Benutzer im Browser. Nach Benennen,
+Zuordnen oder Ignorieren wird das Raster automatisch angepasst. Wird eine
+vergrößerte Vorschau ausgeblendet, erscheint wieder das ganze Foto. Ohne passende
+Gesichter erscheint ein Hinweis; das aktuelle Foto bleibt geöffnet. Ausschalten
+zeigt wieder alle Vorschauen. Der Anzeigefilter benötigt JavaScript und ändert
+weder die Auswahl der Gruppenfotos noch die Aktion „Verbleibende ignorieren“.</p>
 <p>Links steht eine proportional eingepasste Fotovorschau, rechts das Gesichtsraster.
 Ab <strong>0.43.1</strong> zeigt das Raster größere Gesichtsvorschauen mit bis zu <strong>200 × 200 Pixeln</strong>.
 Die Spaltenzahl passt sich der verfügbaren Breite an; auf schmalen Bildschirmen
 werden die Kacheln untereinander angeordnet. Vorhandene Vorschaubilder und Cache
 werden weiterverwendet.
 Hover oder Tastaturfokus einer Vorschau markiert die zugehörige Region im Foto.
-Ab <strong>0.43.0</strong> vergrößert ein Klick oder Antippen den Ausschnitt auf <strong>200 % der
-Bounding Box</strong>: Ein Bereich mit doppelter Breite und Höhe der Gesichtsmarkierung
+Ab <strong>0.45.1</strong> vergrößert ein Klick oder Antippen den Ausschnitt auf <strong>300 % der
+Bounding Box</strong>: Ein Bereich mit dreifacher Breite und Höhe der Gesichtsmarkierung
 wird proportional in die Fotoansicht eingepasst. Am Bildrand wird der Ausschnitt
 ins Foto verschoben; große Gesichtsregionen verkleinern das Foto nicht weiter.
 Ein weiterer Klick auf dieselbe Vorschau zeigt wieder das vollständige Foto,
@@ -1411,7 +1419,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.45.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.46.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

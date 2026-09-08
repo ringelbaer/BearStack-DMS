@@ -4,6 +4,7 @@
   if (!surface) return;
   var filter = document.querySelector("[data-group-filter]");
   var minimumInput = filter.querySelector('[name="min"]');
+  var unnamedFilter = filter.querySelector("[data-group-unnamed]");
   var grid = surface.querySelector("[data-group-grid]");
   var stage = surface.querySelector("[data-group-stage]");
   var image = surface.querySelector("[data-group-image]");
@@ -19,6 +20,24 @@
   var busy = false, navigationPending = false, request = 0, controller, retryParams;
   var hovered, focused, zoomed;
   var storageKey = "bearstack.people.groupMinimum:" + surface.dataset.groupUser;
+  var unnamedStorageKey = "bearstack.people.groupUnnamed:" + surface.dataset.groupUser;
+
+  function filterFaces() {
+    var visible = 0;
+    grid.querySelectorAll("[data-group-face]").forEach(function (card) {
+      card.hidden = unnamedFilter.checked && (card.dataset.personName !== "" || card.dataset.ignored === "true");
+      if (!card.hidden) visible++;
+    });
+    if (hovered && hovered.hidden) hovered = null;
+    if (focused && focused.hidden) focused = null;
+    if (zoomed && zoomed.hidden) setZoom(null);
+    surface.querySelector("[data-group-filter-empty]").hidden = !currentPath || !unnamedFilter.checked || visible > 0;
+    highlight();
+  }
+  unnamedFilter.addEventListener("change", function () {
+    try { window.localStorage.setItem(unnamedStorageKey, String(unnamedFilter.checked)); } catch (_) {}
+    filterFaces();
+  });
 
   function setBusy(value) {
     busy = value;
@@ -60,8 +79,8 @@
     var left = baseLeft, top = baseTop;
     var region = faceBounds(zoomed);
     if (region) {
-      // Fit a region twice the face's width and height; retain context at photo edges.
-      var zoom = Math.max(1, Math.min(frameWidth / (2 * region.width * displayWidth), frameHeight / (2 * region.height * displayHeight)));
+      // Fit a region three times the face's width and height; retain context at photo edges.
+      var zoom = Math.max(1, Math.min(frameWidth / (3 * region.width * displayWidth), frameHeight / (3 * region.height * displayHeight)));
       displayWidth *= zoom; displayHeight *= zoom;
       left = frameWidth / 2 - (region.left + region.width / 2) * displayWidth;
       top = frameHeight / 2 - (region.top + region.height / 2) * displayHeight;
@@ -186,7 +205,7 @@
     if (photo) address.searchParams.set("path", photo.path);
     else if (params.after) address.searchParams.set("after", params.after);
     window.history.replaceState(null, "", address.pathname + address.search);
-    highlight();
+    filterFaces();
   }
 
   async function loadPhoto(params) {
@@ -241,7 +260,8 @@
       status.textContent = single ? "Gesicht ignoriert." : result.ignored + " Gesichter ignoriert.";
       if (focusPreview) {
         var card = grid.querySelector('[data-group-face="' + faceID + '"]');
-        if (card) card.querySelector("[data-group-highlight]").focus({ preventScroll: true });
+        if (card && !card.hidden) card.querySelector("[data-group-highlight]").focus({ preventScroll: true });
+        else unnamedFilter.focus({ preventScroll: true });
       }
     } catch (error) {
       status.textContent = navigationPending ? (single ? "Gesicht gespeichert. Die Ansicht konnte nicht aktualisiert werden; bitte die Ansicht erneut laden." : "Gesichter gespeichert. Das nächste Foto konnte nicht geladen werden; bitte die Ansicht erneut laden.") : error.message;
@@ -260,6 +280,9 @@
     onSave: function () { return loadPhoto({ path: currentPath }); }
   });
   filter.addEventListener("submit", function () { try { window.localStorage.setItem(storageKey, minimumInput.value); } catch (_) {} });
+  try { unnamedFilter.checked = window.localStorage.getItem(unnamedStorageKey) === "true"; } catch (_) {}
+  filter.querySelector("[data-group-unnamed-control]").hidden = false;
+  filterFaces();
   if (!new URL(window.location.href).searchParams.has("min")) {
     var saved;
     try { saved = window.localStorage.getItem(storageKey); } catch (_) {}

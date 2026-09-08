@@ -3607,6 +3607,8 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 .filters.group-photo-filter { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
 .group-photo-filter label { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 .group-photo-filter input { width: 6rem; }
+.group-photo-filter input[type="checkbox"] { width: auto; }
+.group-photo-filter [hidden] { display: none !important; }
 .group-photo-filter p { flex-basis: 100%; width: 100%; margin: 0; }
 .group-photo-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-block: 1rem; }
 .group-photo-toolbar > div { flex: 1 1 20rem; min-width: 0; }

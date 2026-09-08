@@ -88,7 +88,7 @@ Reine Go-Testhelfer liegen in `_test.go`-Dateien und werden nicht in das Anwendu
 
 Ab BearStack 0.39.2 bleiben Gesichtsausschnitte im Web und in der Android-App unverzerrt: Sie werden proportional auf dunkelgrauem Hintergrund in die gleichmäßig quadratischen Kacheln eingepasst. Alte gestreckte Vorschauen werden beim nächsten Abruf einzeln ersetzt; ein App-Update oder vollständiger Cache-Neuaufbau ist dafür nicht nötig. Bereits im App-Speicher geladene Altbilder werden nach erneutem Anmelden oder einem App-Neustart neu geladen.
 
-Ab 0.41.0 führt **Gruppenbilder** unter `/photos/people` zur Bearbeitung ganzer Gruppenfotos: links das Foto, rechts alle erkannten Gesichter mit Markierung im Foto bei Hover oder Tastaturfokus. Ab 0.43.0 vergrößert ein Klick auf ein Thumbnail den Ausschnitt auf die doppelte Breite und Höhe der Bounding Box (200 %); ein erneuter Klick zeigt wieder das ganze Foto. Die einstellbare Schwelle zählt nur unbenannte, nicht ignorierte Gesichter; „mehr als 5“ bedeutet mindestens sechs. Benennen und Zuordnen im bekannten Modal betrifft die gesamte Personengruppe. „Verbleibende ignorieren“ betrifft ausschließlich die noch unbearbeiteten Gesichter dieses Fotos. Ignorieren und Überspringen wechseln direkt zum nächsten passenden Foto; übersprungene Fotos erscheinen im nächsten Durchlauf wieder.
+Ab 0.41.0 führt **Gruppenbilder** unter `/photos/people` zur Bearbeitung ganzer Gruppenfotos: links das Foto, rechts alle erkannten Gesichter mit Markierung im Foto bei Hover oder Tastaturfokus. Ab 0.45.1 vergrößert ein Klick auf ein Thumbnail den Ausschnitt auf die dreifache Breite und Höhe der Bounding Box (300 %); ein erneuter Klick zeigt wieder das ganze Foto. Die einstellbare Schwelle zählt nur unbenannte, nicht ignorierte Gesichter; „mehr als 5“ bedeutet mindestens sechs. Benennen und Zuordnen im bekannten Modal betrifft die gesamte Personengruppe. „Verbleibende ignorieren“ betrifft ausschließlich die noch unbearbeiteten Gesichter dieses Fotos. Ignorieren und Überspringen wechseln direkt zum nächsten passenden Foto; übersprungene Fotos erscheinen im nächsten Durchlauf wieder.
 
 Ab 0.40.0 lassen sich einzelne Gesichter in der Web-Detailansicht einer Person mit einem Stern als Vergleichsbilder favorisieren. Alle Favoriten werden beim Gesichtsabgleich berücksichtigt, auch oberhalb der eingestellten Referenzanzahl. Freie Plätze werden möglichst über verschiedene Galerieordner verteilt. Ab Android-App 0.6.0 und BearStack 0.43.0 ist die Favorisierung auch im neuen Personenbereich verfügbar.
 
@@ -531,14 +531,23 @@ Es erscheinen ausschließlich Fotos mit **mehr als** dieser Anzahl unbenannter,
 nicht ignorierter Gesichter. Benannte und ignorierte Gesichter zählen nicht für die
 Auswahl, werden im geöffneten Foto aber weiterhin als Vorschauen gezeigt.
 
+Ab **0.46.0** blendet **„Nur Unbenannte anzeigen“** im Gesichtsraster benannte
+und ignorierte Vorschauen aus. Der Filter wirkt sofort ohne zusätzlichen
+Serverabruf und merkt sich die Auswahl pro Benutzer im Browser. Nach Benennen,
+Zuordnen oder Ignorieren wird das Raster automatisch angepasst. Wird eine
+vergrößerte Vorschau ausgeblendet, erscheint wieder das ganze Foto. Ohne passende
+Gesichter erscheint ein Hinweis; das aktuelle Foto bleibt geöffnet. Ausschalten
+zeigt wieder alle Vorschauen. Der Anzeigefilter benötigt JavaScript und ändert
+weder die Auswahl der Gruppenfotos noch die Aktion „Verbleibende ignorieren“.
+
 Links steht eine proportional eingepasste Fotovorschau, rechts das Gesichtsraster.
 Ab **0.43.1** zeigt das Raster größere Gesichtsvorschauen mit bis zu **200 × 200 Pixeln**.
 Die Spaltenzahl passt sich der verfügbaren Breite an; auf schmalen Bildschirmen
 werden die Kacheln untereinander angeordnet. Vorhandene Vorschaubilder und Cache
 werden weiterverwendet.
 Hover oder Tastaturfokus einer Vorschau markiert die zugehörige Region im Foto.
-Ab **0.43.0** vergrößert ein Klick oder Antippen den Ausschnitt auf **200 % der
-Bounding Box**: Ein Bereich mit doppelter Breite und Höhe der Gesichtsmarkierung
+Ab **0.45.1** vergrößert ein Klick oder Antippen den Ausschnitt auf **300 % der
+Bounding Box**: Ein Bereich mit dreifacher Breite und Höhe der Gesichtsmarkierung
 wird proportional in die Fotoansicht eingepasst. Am Bildrand wird der Ausschnitt
 ins Foto verschoben; große Gesichtsregionen verkleinern das Foto nicht weiter.
 Ein weiterer Klick auf dieselbe Vorschau zeigt wieder das vollständige Foto,

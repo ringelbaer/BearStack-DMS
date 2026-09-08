@@ -59,8 +59,8 @@ async function expectZoom(page, card) {
       Math.abs(box.top - (top + Number(card.dataset.y) * h)),
       Math.abs(box.width - Number(card.dataset.width) * w),
       Math.abs(box.height - Number(card.dataset.height) * h),
-      // One dimension of the doubled bounding box fills the stage.
-      Math.min(Math.abs(2 * box.width - stage.width), Math.abs(2 * box.height - stage.height)),
+      // One dimension of the tripled bounding box fills the stage.
+      Math.min(Math.abs(3 * box.width - stage.width), Math.abs(3 * box.height - stage.height)),
       stage.left - box.left, box.right - stage.right, stage.top - box.top, box.bottom - stage.bottom,
       // Keep image edges inside the frame only when the whole dimension fits.
       w >= stage.width ? left - stage.left : Math.abs(left + w / 2 - (stage.left + stage.width / 2)),
@@ -369,5 +369,52 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await expect(fallback.locator("[data-group-count]")).toContainText("3 unbearbeitete");
   await fallback.getByRole("button", { name: "Verbleibende ignorieren" }).click();
   await expect(fallback.locator("[data-group-photos]")).toHaveAttribute("data-path", "c.png");
-  await noJS.close(); await context.close();
+  await expect(fallback.locator("[data-group-unnamed-control]")).toBeHidden();
+  await noJS.close();
+
+  await page.goto(baseURL + "/photos/people/groups?min=5&path=b.png");
+  const unnamedOnly = page.getByRole("checkbox", { name: "Nur Unbenannte anzeigen", exact: true });
+  await expect(unnamedOnly).not.toBeChecked();
+  await expect(cards).toHaveCount(6);
+  await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  await cards.first().locator("[data-group-highlight]").click();
+  const filterRequests = [];
+  page.on("request", request => filterRequests.push(request.url()));
+  await unnamedOnly.check();
+  await expect(page.locator("[data-group-face]:visible")).toHaveCount(0);
+  await expect(page.locator("[data-group-filter-empty]")).toBeVisible();
+  await expect(image).toHaveCSS("transform", "none");
+  await unnamedOnly.uncheck();
+  await expect(page.locator("[data-group-face]:visible")).toHaveCount(6);
+  await expect(page.locator("[data-group-filter-empty]")).toBeHidden();
+  expect(filterRequests).toEqual([]);
+  await unnamedOnly.check();
+  await page.reload();
+  await expect(unnamedOnly).toBeChecked();
+  await expect(page.locator("[data-group-face]:visible")).toHaveCount(0);
+  // A fresh pass retains the filter and actions remove only processed thumbnails.
+  await page.getByRole("button", { name: "Durchlauf starten" }).click();
+  await expect(surface).toHaveAttribute("data-path", "c.png");
+  await expect(unnamedOnly).toBeChecked();
+  await expect(page.locator("[data-group-face]:visible")).toHaveCount(6);
+  const visibleCards = page.locator("[data-group-face]:visible");
+  await visibleCards.first().locator("[data-person-edit]").click();
+  await modal.getByRole("combobox", { name: "Name", exact: true }).fill("Filtername");
+  await modal.getByRole("option", { name: /Neu anlegen:.*Filtername/ }).click();
+  await expect(modal).not.toBeVisible();
+  await expect(visibleCards).toHaveCount(5);
+  await visibleCards.first().locator("[data-group-ignore-face]").click();
+  await expect(visibleCards).toHaveCount(4);
+  await expect(unnamedOnly).toBeFocused();
+  await expect(surface).toHaveAttribute("data-path", "c.png");
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+  }
+  await unnamedOnly.uncheck();
+  await expect(visibleCards).toHaveCount(7);
+  await page.reload();
+  await expect(unnamedOnly).not.toBeChecked();
+  expect(errors).toEqual([]);
+  await context.close();
 });

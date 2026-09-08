@@ -4,6 +4,7 @@
 <form method="get" action="/photos/people/groups" class="filters group-photo-filter" data-group-filter>
 <label>Mehr als <input type="number" name="min" value="{{.GroupPhotos.Minimum}}" min="0" max="255" required aria-describedby="group-photo-filter-help"> unbearbeitete Gesichter</label>
 <button>Durchlauf starten</button>
+<label data-group-unnamed-control hidden><input type="checkbox" data-group-unnamed> Nur Unbenannte anzeigen</label>
 <p id="group-photo-filter-help">Unbearbeitet bedeutet: weder benannt noch ignoriert. Standard: mehr als 5. Übersprungene Fotos erscheinen im nächsten Durchlauf wieder.</p>
 </form>
 <section data-group-photos data-minimum="{{.GroupPhotos.Minimum}}" data-group-user="{{.Auth.Username}}" {{with .GroupPhotos.Photo}}data-path="{{.Path}}" data-revision="{{.Revision}}"{{end}}>
@@ -21,10 +22,10 @@
 <img data-group-image {{with .GroupPhotos.Photo}}{{if .ImageFaceID}}src="/photos/people/groups/image/{{.ImageFaceID}}"{{end}} alt="{{.DisplayPath}}"{{else}}alt="Gruppenfoto"{{end}}>
 <div class="group-photo-box" data-group-box hidden aria-hidden="true"></div>
 </figure>
-<div><p class="group-photo-hint">Zeige auf ein Gesicht, um es im Foto zu markieren. Ein Klick auf die Vorschau vergrößert den Ausschnitt auf die doppelte Breite und Höhe der Gesichtsmarkierung (200 %). Ein weiterer Klick auf dieselbe Vorschau zeigt wieder das ganze Foto. Mit × ignorierst du nur dieses Gesicht im aktuellen Foto. Mit dem Stift benennst du die gesamte Personengruppe oder führst sie mit einer vorhandenen Person zusammen, auch in anderen Fotos.</p>
+<div><p class="group-photo-hint">Zeige auf ein Gesicht, um es im Foto zu markieren. Ein Klick auf die Vorschau vergrößert den Ausschnitt auf die dreifache Breite und Höhe der Gesichtsmarkierung (300 %). Ein weiterer Klick auf dieselbe Vorschau zeigt wieder das ganze Foto. Mit × ignorierst du nur dieses Gesicht im aktuellen Foto. Mit dem Stift benennst du die gesamte Personengruppe oder führst sie mit einer vorhandenen Person zusammen, auch in anderen Fotos.</p>
 <div class="group-photo-faces" data-group-grid>
 {{with .GroupPhotos.Photo}}{{range .Faces}}{{template "group_photo_face" .}}{{end}}{{end}}
-</div></div>
+</div><p data-group-filter-empty hidden>Keine unbenannten Gesichter in diesem Foto.</p></div>
 </div>
 <p data-group-empty {{if .GroupPhotos.Photo}}hidden{{end}}>Keine weiteren passenden Gruppenbilder. Mit „Durchlauf starten“ werden auch übersprungene Fotos erneut berücksichtigt.</p>
 <button type="button" class="secondary-button" data-group-retry hidden>Ansicht erneut laden</button>

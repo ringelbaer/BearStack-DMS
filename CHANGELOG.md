@@ -4,6 +4,16 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.46.0
+
+- Gruppenbilder ergänzen „Nur Unbenannte anzeigen“: benannte und ignorierte Gesichtsvorschauen werden unmittelbar ausgeblendet, auch nach Bearbeitungen. Die Auswahl bleibt pro Benutzer im Browser gespeichert; Fotoauswahl und Sammelaktion behalten ihre Bedeutung. Ausgeblendete Zoomziele werden zurückgesetzt; leere Ergebnisse erhalten einen Hinweis.
+- MINOR für den zusätzlichen Anzeigefilter. Die vorhandenen Kartendaten werden im Browser gefiltert, ohne zusätzliche Server- oder Bildabrufe. Keine API- oder Schemaänderung. README, Website und Browserprüfungen aktualisiert.
+
+### BearStack 0.45.1
+
+- Im Gruppenbildmodus zeigt ein Thumbnail-Klick jetzt einen Ausschnitt mit dreifacher Breite und Höhe der Bounding Box (300 % statt 200 %). Ein erneuter Klick zeigt das vollständige Foto. Bildränder, Tastaturbedienung und Wiederverwendung der geladenen Vorschau bleiben berücksichtigt.
+- PATCH für die Anpassung des bestehenden Ausschnitts; keine API- oder Datenmigration. Browser-Geometrieprüfungen, README und Website auf 300 % aktualisiert.
+
 ### BearStack 0.45.0
 
 - Android-App **0.7.1** (versionCode 16): kleineres „×“ samt Schaltflächenhintergrund im Personenbereich bei weiterhin mindestens 48 dp Touchfläche. Kleine UI-Korrektur im bereits vorgesehenen Release 0.45.0; API unverändert.

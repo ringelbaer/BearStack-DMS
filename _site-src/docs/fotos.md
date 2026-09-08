@@ -292,14 +292,23 @@ Es erscheinen ausschließlich Fotos mit **mehr als** dieser Anzahl unbenannter,
 nicht ignorierter Gesichter. Benannte und ignorierte Gesichter zählen nicht für die
 Auswahl, werden im geöffneten Foto aber weiterhin als Vorschauen gezeigt.
 
+Ab **0.46.0** blendet **„Nur Unbenannte anzeigen“** im Gesichtsraster benannte
+und ignorierte Vorschauen aus. Der Filter wirkt sofort ohne zusätzlichen
+Serverabruf und merkt sich die Auswahl pro Benutzer im Browser. Nach Benennen,
+Zuordnen oder Ignorieren wird das Raster automatisch angepasst. Wird eine
+vergrößerte Vorschau ausgeblendet, erscheint wieder das ganze Foto. Ohne passende
+Gesichter erscheint ein Hinweis; das aktuelle Foto bleibt geöffnet. Ausschalten
+zeigt wieder alle Vorschauen. Der Anzeigefilter benötigt JavaScript und ändert
+weder die Auswahl der Gruppenfotos noch die Aktion „Verbleibende ignorieren“.
+
 Links steht eine proportional eingepasste Fotovorschau, rechts das Gesichtsraster.
 Ab **0.43.1** zeigt das Raster größere Gesichtsvorschauen mit bis zu **200 × 200 Pixeln**.
 Die Spaltenzahl passt sich der verfügbaren Breite an; auf schmalen Bildschirmen
 werden die Kacheln untereinander angeordnet. Vorhandene Vorschaubilder und Cache
 werden weiterverwendet.
 Hover oder Tastaturfokus einer Vorschau markiert die zugehörige Region im Foto.
-Ab **0.43.0** vergrößert ein Klick oder Antippen den Ausschnitt auf **200 % der
-Bounding Box**: Ein Bereich mit doppelter Breite und Höhe der Gesichtsmarkierung
+Ab **0.45.1** vergrößert ein Klick oder Antippen den Ausschnitt auf **300 % der
+Bounding Box**: Ein Bereich mit dreifacher Breite und Höhe der Gesichtsmarkierung
 wird proportional in die Fotoansicht eingepasst. Am Bildrand wird der Ausschnitt
 ins Foto verschoben; große Gesichtsregionen verkleinern das Foto nicht weiter.
 Ein weiterer Klick auf dieselbe Vorschau zeigt wieder das vollständige Foto,
