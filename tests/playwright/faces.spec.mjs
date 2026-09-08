@@ -234,39 +234,67 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
     });
     expect(result.ok(), await result.text()).toBe(true);
   }
-  const unknownFilter = page.getByRole("checkbox", { name: "Nur unbekannte Personen", exact: true });
-  const knownFilter = page.getByRole("checkbox", { name: "Nur bekannte Personen", exact: true });
-  const ignoredFilter = page.getByRole("checkbox", { name: "Ignorierte Gesichter", exact: true });
+  const peopleFilter = page.getByRole("combobox", { name: "Personenfilter", exact: true });
   const filterName = page.locator('[data-people-filter] input[name="q"]');
   const unknownID = await unnamedCard.getAttribute("data-person-id");
-  await knownFilter.check();
-  await unknownFilter.check();
-  await expect(knownFilter).not.toBeChecked();
-  await ignoredFilter.check();
-  await expect(unknownFilter).not.toBeChecked();
-  await unknownFilter.check();
-  await expect(ignoredFilter).not.toBeChecked();
+  await expect(peopleFilter.locator("option")).toHaveCount(4);
+  await peopleFilter.selectOption("unknown");
   await page.getByRole("button", { name: "Suchen", exact: true }).click();
   await expect(page.locator("a.person-card")).toHaveCount(1);
-  await expect(unknownFilter).toBeChecked();
+  await expect(peopleFilter).toHaveValue("unknown");
   await expect(namedCard).toHaveCount(0);
+  await expect(unnamedCard.locator("strong")).toBeHidden();
+  await expect(unnamedCard.locator("a.person-card")).toHaveAccessibleName("Person anzeigen: Unbenannt");
   await unnamedCard.locator("a.person-card").click();
   await expect(page.getByRole("link", { name: "Alle Personen", exact: true })).toHaveAttribute("href", /unknown=1/);
   await page.getByRole("link", { name: "Alle Personen", exact: true }).click();
-  await expect(unknownFilter).toBeChecked();
+  await expect(peopleFilter).toHaveValue("unknown");
   await page.goto(baseURL + "/photos/people");
-  await expect(unknownFilter).toBeChecked();
+  await expect(peopleFilter).toHaveValue("unknown");
+  const displayMenu = page.locator("[data-people-display]");
+  const imageBeforeSettings = await unnamedCard.locator("img").getAttribute("src");
+  await displayMenu.locator("summary").click();
+  await expect(displayMenu.getByLabel("Fotoanzahl anzeigen", { exact: true })).toBeChecked();
+  await expect(displayMenu.getByLabel("Ordnername anzeigen", { exact: true })).not.toBeChecked();
+  await displayMenu.getByLabel("Ordnername anzeigen", { exact: true }).check();
+  await displayMenu.getByLabel("Fotoanzahl anzeigen", { exact: true }).uncheck();
+  const thumbnailSize = displayMenu.getByRole("combobox", { name: "Thumbnailgröße", exact: true });
+  for (const [size, pixels] of [["s", 160], ["m", 224], ["l", 320]]) {
+    await thumbnailSize.selectOption(size);
+    const actualWidth = await unnamedCard.locator("img").evaluate(img => img.getBoundingClientRect().width);
+    expect(actualWidth).toBeLessThanOrEqual(pixels);
+    expect(actualWidth).toBeGreaterThan(pixels - 20);
+  }
+  await displayMenu.press("Escape");
+  await expect(unnamedCard.locator("[data-person-count]")).toBeHidden();
+  await expect(unnamedCard.locator("[data-person-folder]")).toBeVisible();
+  await expect(unnamedCard.locator("img")).toHaveAttribute("src", imageBeforeSettings);
+  await page.reload();
+  await expect(unnamedCard.locator("img")).toHaveCSS("width", "320px");
+  await expect(unnamedCard.locator("[data-person-count]")).toBeHidden();
+  await expect(unnamedCard.locator("[data-person-folder]")).toBeVisible();
   await unnamedCard.locator("[data-person-edit]").click();
+  const modalImage = personDialog.locator("[data-person-preview-image]");
+  await expect.poll(() => modalImage.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  await expect(personDialog.locator("[data-person-preview-box]")).toBeVisible();
+  expect(await personDialog.evaluate(dialog => dialog.querySelector("[data-person-preview]").getBoundingClientRect().right <= dialog.querySelector(".person-dialog-fields").getBoundingClientRect().left)).toBe(true);
+  await page.screenshot({ path: "/tmp/bearstack-people-modal-preview.png", fullPage: true });
   await dialogName.fill("Filter-Test");
   await personDialog.getByRole("option", { name: /Neu anlegen:.*Filter-Test/ }).click();
   await expect(personDialog).not.toBeVisible();
   await expect(page.locator("a.person-card")).toHaveCount(0);
-  await expect(unknownFilter).toBeChecked();
+  await expect(peopleFilter).toHaveValue("unknown");
   await renamePerson(unknownID, "");
   await page.reload();
   await expect(page.locator("a.person-card")).toHaveCount(1);
-  await knownFilter.check();
-  await expect(unknownFilter).not.toBeChecked();
+  await expect(unnamedCard.locator("strong")).toBeHidden();
+  await expect(unnamedCard.locator("[data-person-count]")).toBeHidden();
+  await displayMenu.locator("summary").click();
+  await displayMenu.getByLabel("Fotoanzahl anzeigen", { exact: true }).check();
+  await displayMenu.getByLabel("Ordnername anzeigen", { exact: true }).uncheck();
+  await thumbnailSize.selectOption("s");
+  await displayMenu.press("Escape");
+  await peopleFilter.selectOption("known");
   await filterName.fill("Jürgen");
   await page.getByRole("button", { name: "Suchen", exact: true }).click();
   for (const width of [320, 1440]) {
@@ -275,11 +303,11 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   }
   await page.getByRole("link", { name: "Alle Filter aufheben" }).click();
   await expect(filterName).toHaveValue("");
-  for (const filter of [unknownFilter, knownFilter, ignoredFilter]) await expect(filter).not.toBeChecked();
+  await expect(peopleFilter).toHaveValue("all");
   await expect(page.locator("a.person-card")).toHaveCount(2);
   await expect(page.locator(".people-pagination-current")).toHaveText("Seite 1 von 1");
   await page.goto(baseURL + "/photos/people");
-  await expect(unknownFilter).not.toBeChecked();
+  await expect(peopleFilter).toHaveValue("all");
   await expect(page.locator("a.person-card")).toHaveCount(2);
   const noJS = await browser.newContext({ javaScriptEnabled: false, storageState: await context.storageState(), httpCredentials: { username: "manager", password: "secret" } });
   const plainPage = await noJS.newPage();
@@ -287,7 +315,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(plainPage.locator("a.person-card")).toHaveCount(0);
   await plainPage.getByRole("link", { name: "Alle Filter aufheben" }).click();
   await expect(plainPage.locator("a.person-card")).toHaveCount(2);
-  await expect(plainPage.getByRole("checkbox", { name: "Nur unbekannte Personen", exact: true })).not.toBeChecked();
+  await expect(plainPage.getByRole("combobox", { name: "Personenfilter", exact: true })).toHaveValue("all");
   await noJS.close();
   await selectPerson("Jürgen");
   const editJuergen = page.locator("[data-people-edit-button]");
@@ -321,9 +349,9 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await dialogName.fill("Jürgen");
   await personDialog.getByRole("button", { name: "Benennen", exact: true }).click();
   await expect(personDialog).not.toBeVisible();
-  await page.getByLabel("Nur bekannte Personen", { exact: true }).check();
+  await peopleFilter.selectOption("known");
   await page.getByRole("button", { name: "Suchen", exact: true }).click();
-  await expect(page.getByLabel("Nur bekannte Personen", { exact: true })).toBeChecked();
+  await expect(peopleFilter).toHaveValue("known");
   await expect(page.locator("a.person-card")).toHaveCount(1);
   await expect(page.locator("a.person-card")).toContainText("Jürgen");
   const knownPage = await context.request.get(baseURL + "/photos/people?format=json&known=1");
@@ -444,7 +472,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   expect(await (await ignoredResponse).json()).toEqual({ ok: true });
   await expect(page.locator("[data-people-status]")).toHaveText("Gesicht ignoriert.");
   await expect(ignore).not.toHaveAttribute("data-ignore-face", oldFace);
-  await expect(page.getByLabel("Nur bekannte Personen", { exact: true })).not.toBeChecked();
+  await expect(peopleFilter).toHaveValue("all");
   await expect(page).toHaveURL(baseURL + "/photos/people?q=&known=0&page=1");
   expect(await page.evaluate(() => window.peoplePageMarker)).toBe("unchanged");
   await expect(ignoreCard).toContainText("1 Foto");
@@ -551,7 +579,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(page.locator("a.person-card")).toHaveCount(1);
   await expect(page.locator("a.person-card")).toContainText("Merge-Ziel");
   await expect(page.locator("a.person-card")).toContainText("2 Fotos");
-  await expect(page.getByLabel("Nur bekannte Personen", { exact: true })).toBeChecked();
+  await expect(peopleFilter).toHaveValue("known");
   expect(await page.evaluate(() => window.modalPageMarker)).toBe("assign");
   // Name several selected groups atomically, then assign them to a selected target.
   async function splitForBulk() {

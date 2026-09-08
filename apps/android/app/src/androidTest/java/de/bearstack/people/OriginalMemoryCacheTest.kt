@@ -11,7 +11,8 @@ import coil.request.ErrorResult
 import coil.request.SuccessResult
 import de.bearstack.people.people.*
 import de.bearstack.people.ui.originalPhotoRequest
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -40,7 +41,14 @@ class OriginalMemoryCacheTest {
         suspend fun load(face: Int, key: String) = loader.execute(originalPhotoRequest(context,server.url("/faces/$face/original").toString(),key))
         try {
             server.enqueue(response())
-            val first=load(1,"account:photo-a") as SuccessResult
+            val prefetched=CompletableDeferred<SuccessResult>()
+            val preloadJob=launch {
+                WifiOriginalPreloader(MutableStateFlow(true)) {true}.preload(listOf("account:photo-a")) {
+                    prefetched.complete(load(1,it) as SuccessResult)
+                }
+            }
+            val first=withTimeout(5000) {prefetched.await()}
+            preloadJob.cancelAndJoin()
             assertEquals(DataSource.NETWORK,first.dataSource)
             now.set(ORIGINAL_CACHE_TTL_MS-1)
             val otherFace=load(2,"account:photo-a") as SuccessResult

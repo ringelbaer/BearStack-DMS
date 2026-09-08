@@ -2,20 +2,13 @@
   "use strict";
   var pageNavigation = document.querySelector("[data-people-page]");
   var pageStorageKey = pageNavigation ? "bearstack.people.lastPage:" + pageNavigation.dataset.peopleUser : "";
-  var peopleFilter = document.querySelector("[data-people-filter]");
-  if (peopleFilter) peopleFilter.addEventListener("change", function (event) {
-    if (!event.target.checked) return;
-    if (event.target.name === "unknown") {
-      peopleFilter.elements.known.checked = false;
-      peopleFilter.elements.ignored.checked = false;
-    } else if (event.target.name === "known" || event.target.name === "ignored") peopleFilter.elements.unknown.checked = false;
-  });
   function savePeoplePage(page) {
     if (!pageStorageKey) return;
     var address = new URL(window.location.href);
     if (address.pathname !== "/photos/people") return;
-    var unknown = address.searchParams.get("unknown") === "1";
-    var saved = { page: page, q: address.searchParams.get("q") || "", unknown: unknown, known: !unknown && address.searchParams.get("known") === "1", ignored: !unknown && address.searchParams.get("ignored") === "1" };
+    var mode = address.searchParams.get("filter");
+    var unknown = mode ? mode === "unknown" : address.searchParams.get("unknown") === "1";
+    var saved = { page: page, q: address.searchParams.get("q") || "", unknown: unknown, known: mode ? mode === "known" : !unknown && address.searchParams.get("known") === "1", ignored: mode ? mode === "ignored" : !unknown && address.searchParams.get("ignored") === "1" };
     try { window.localStorage.setItem(pageStorageKey, JSON.stringify(saved)); } catch (_) {}
   }
   if (pageNavigation) {
@@ -31,7 +24,7 @@
         if (saved.known === true) destination.searchParams.set("known", "1");
         if (saved.ignored === true) destination.searchParams.set("ignored", "1");
       }
-      if (address.pathname === "/photos/people" && !["page", "q", "known", "unknown", "ignored"].some(function (key) { return address.searchParams.has(key); })) {
+      if (address.pathname === "/photos/people" && !["page", "q", "known", "unknown", "ignored", "filter"].some(function (key) { return address.searchParams.has(key); })) {
         if (address.searchParams.has("notice")) destination.searchParams.set("notice", address.searchParams.get("notice"));
         window.location.replace(destination.pathname + destination.search);
         return;
@@ -41,6 +34,36 @@
       }
     }
     savePeoplePage(Number(pageNavigation.dataset.peoplePage));
+  }
+  var peopleView = document.querySelector("[data-people-view]");
+  if (peopleView) {
+    var displayMenu = peopleView.querySelector("[data-people-display]");
+    var folderSetting = displayMenu.querySelector("[data-display-folders]");
+    var countSetting = displayMenu.querySelector("[data-display-count]");
+    var sizeSetting = displayMenu.querySelector("[data-display-size]");
+    var displayKey = "bearstack.people.display:" + peopleView.dataset.peopleUser;
+    var displaySettings;
+    try { displaySettings = JSON.parse(window.localStorage.getItem(displayKey)); } catch (_) {}
+    if (displaySettings && typeof displaySettings === "object") {
+      folderSetting.checked = displaySettings.folders === true;
+      countSetting.checked = displaySettings.count !== false;
+      sizeSetting.value = ["s", "m", "l"].includes(displaySettings.size) ? displaySettings.size : "s";
+    }
+    function applyDisplaySettings() {
+      peopleView.dataset.showFolders = String(folderSetting.checked);
+      peopleView.dataset.showCount = String(countSetting.checked);
+      peopleView.dataset.size = sizeSetting.value;
+    }
+    applyDisplaySettings();
+    displayMenu.hidden = false;
+    displayMenu.addEventListener("change", function () {
+      applyDisplaySettings();
+      try { window.localStorage.setItem(displayKey, JSON.stringify({ folders: folderSetting.checked, count: countSetting.checked, size: sizeSetting.value })); } catch (_) {}
+    });
+    displayMenu.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") { displayMenu.open = false; displayMenu.querySelector("summary").focus(); }
+    });
+    document.addEventListener("click", function (event) { if (!displayMenu.contains(event.target)) displayMenu.open = false; });
   }
   var favoriteStatus = document.querySelector("[data-face-favorite-status]");
   document.querySelectorAll("button[data-face-favorite]").forEach(function (button) {
@@ -117,10 +140,16 @@
     // Update text in place so a changed count/name never reloads the image.
     if (existing) {
       existing.dataset.personName = person.name || "";
+      existing.dataset.faceId = String(person.face_id);
+      ["x", "y", "width", "height"].forEach(function (key) { if (person.portrait) existing.dataset[key] = String(person.portrait[key]); else delete existing.dataset[key]; });
+      existing.querySelector(".person-card").setAttribute("aria-label", "Person anzeigen: " + name);
       var existingImage = existing.querySelector("img");
       if (existingImage.getAttribute("src") !== thumbnail) existingImage.src = thumbnail;
       existing.querySelector("strong").textContent = name;
+      existing.querySelector("strong").hidden = overview.dataset.unknownOnly === "true" && !person.name;
       existing.querySelector(".person-card > span").textContent = countText;
+      var folder = existing.querySelector("[data-person-folder]");
+      if (folder) folder.textContent = person.directory || "";
       var checkbox = existing.querySelector("[data-person-select]");
       if (checkbox) checkbox.setAttribute("aria-label", "Person auswählen: " + name);
       var ignore = existing.querySelector("[data-ignore-face]");
@@ -136,16 +165,21 @@
     card.className = "person-overview-card";
     card.dataset.personId = person.id;
     card.dataset.personName = person.name || "";
+    card.dataset.faceId = String(person.face_id);
+    ["x", "y", "width", "height"].forEach(function (key) { if (person.portrait) card.dataset[key] = String(person.portrait[key]); });
     var link = document.createElement("a");
     link.className = "person-card";
+    link.setAttribute("aria-label", "Person anzeigen: " + name);
     link.href = "/photos/people/" + encodeURIComponent(person.id);
     var img = document.createElement("img");
     img.loading = "lazy"; img.width = 160; img.height = 160; img.alt = "";
     img.src = thumbnail;
     var title = document.createElement("strong"); title.textContent = name;
+    title.hidden = overview.dataset.unknownOnly === "true" && !person.name;
     var count = document.createElement("span");
-    count.textContent = countText;
-    link.append(img, title, count); card.append(link);
+    count.textContent = countText; count.dataset.personCount = "";
+    var folder = document.createElement("span"); folder.dataset.personFolder = ""; folder.title = "Ordner des Vorschaubilds"; folder.textContent = person.directory || "";
+    link.append(img, title, count, folder); card.append(link);
     if (overview.dataset.canIgnore === "true") {
       var label = document.createElement("label");
       label.className = "person-select";
@@ -177,6 +211,7 @@
       return data;
     }
     var data = await load();
+    overview.dataset.unknownOnly = String(data.unknown_only === true);
     var address = new URL(window.location.href);
     address.searchParams.set("page", String(data.page));
     window.history.replaceState(window.history.state, "", address);

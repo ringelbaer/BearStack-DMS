@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"path"
 	"strings"
 
 	"bearstack/internal/searchtext"
@@ -112,15 +113,31 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 			return out, err
 		}
 		out.setTotal(total)
-		rows, err := l.index.db.QueryContext(ctx, `SELECT p.id,p.name,(SELECT count(DISTINCT path) FROM photo_faces WHERE person_id=p.id AND ignored=0),(SELECT min(id) FROM photo_faces WHERE person_id=p.id AND ignored=0) FROM photo_people p WHERE p.name_fold LIKE ? ESCAPE '\'`+knownFilter+` AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=p.id AND ignored=0) ORDER BY p.name_fold,p.id LIMIT 61 OFFSET ?`, pattern, (out.Page-1)*60)
+		// Materialize the page first: portrait geometry and directory need at most
+		// 61 primary-key lookups, regardless of the number of groups or page offset.
+		rows, err := l.index.db.QueryContext(ctx, `WITH page AS MATERIALIZED (
+ SELECT p.id,p.name,p.name_fold,
+ (SELECT count(DISTINCT path) FROM photo_faces WHERE person_id=p.id AND ignored=0) AS photo_count,
+ (SELECT min(id) FROM photo_faces WHERE person_id=p.id AND ignored=0) AS face_id
+ FROM photo_people p WHERE p.name_fold LIKE ? ESCAPE '\'`+knownFilter+`
+ AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=p.id AND ignored=0)
+ ORDER BY p.name_fold,p.id LIMIT 61 OFFSET ?)
+ SELECT p.id,p.name,p.photo_count,f.id,f.path,f.x,f.y,f.width,f.height
+ FROM page p JOIN photo_faces f ON f.id=p.face_id ORDER BY p.name_fold,p.id`, pattern, (out.Page-1)*60)
 		if err != nil {
 			return out, err
 		}
 		defer rows.Close()
 		for rows.Next() {
 			var p Person
-			if err = rows.Scan(&p.ID, &p.Name, &p.Count, &p.FaceID); err != nil {
+			var source string
+			p.Portrait = &FaceRegion{}
+			if err = rows.Scan(&p.ID, &p.Name, &p.Count, &p.FaceID, &source, &p.Portrait.X, &p.Portrait.Y, &p.Portrait.Width, &p.Portrait.Height); err != nil {
 				return out, err
+			}
+			p.Directory = path.Dir(source)
+			if p.Directory == "." {
+				p.Directory = "Fotos"
 			}
 			out.People = append(out.People, p)
 		}

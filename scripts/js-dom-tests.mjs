@@ -1114,7 +1114,7 @@ function testPeopleRemembersPageAndHonorsExplicitFilters() {
   assert.equal(destination.searchParams.get("q"), "Petra");
   assert.equal(destination.searchParams.get("known"), "1");
   assert.equal(destination.searchParams.get("ignored"), "1");
-  for (const query of ["?page=2", "?q=", "?ignored=1", "?known=1", "?unknown=1", "?unknown=0"]) {
+  for (const query of ["?page=2", "?q=", "?ignored=1", "?known=1", "?unknown=1", "?unknown=0", "?filter=all", "?filter=known", "?filter=unknown", "?filter=ignored"]) {
     const explicit = setup("http://example.test/photos/people" + query);
     assert.equal(explicit.context.redirect, undefined);
     assert.equal(JSON.parse(explicit.values.get(key)).page, 2);

@@ -20,6 +20,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.platform.ViewConfiguration
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.*
@@ -130,8 +135,8 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                     Text("${person.offset+1}–${minOf(person.offset+4L,person.count)} von ${person.count} Gesichtern")
                     FaceGrid(person,enabled,vm.images,vm::image,onDetach=vm::detach,
                         onHold={ held=it;heldDismissed=false;zoom=0f },
-                        onZoom={held=it;heldDismissed=false;zoom=0f;accessibleZoom=true},onZoomDrag=zoomDrag)
-                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
+                        onZoom={held=it;heldDismissed=false;zoom=0f;accessibleZoom=true},onZoomDrag=zoomDrag,onPrefetch=vm::prefetchOriginals)
+                    if(person.count>4) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
                         OutlinedButton(onClick={vm.page(-1)},enabled=enabled && person.offset>0) { Text("Zurück") }
                         OutlinedButton(onClick={vm.page(1)},enabled=enabled && person.offset+4<person.count) { Text("Weiter") }
                     }
@@ -170,58 +175,72 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
 @Composable
 fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Long, Boolean) -> String?,
     onDetach: (Long) -> Unit, onHold: (Long?) -> Unit, onZoom: (Long) -> Unit,
-    onZoomDrag: (Float) -> Unit = {}, managing: Boolean = false, onFavorite: (Long) -> Unit = {}) {
-    var holding by remember { mutableStateOf(false) }
-    val active by rememberUpdatedState(enabled)
-    val hold by rememberUpdatedState(onHold)
-    val zoomDrag by rememberUpdatedState(onZoomDrag)
-    Column(Modifier.fillMaxWidth().testTag("face-grid"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        person.faces.chunked(2).forEach { row ->
-            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                row.forEach { face ->
-                    key(face) {
-                        Column(Modifier.weight(1f)) {
-                            Box(Modifier.fillMaxWidth().testTag("face-$face").aspectRatio(1f).clip(RoundedCornerShape(16.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                                .semantics { contentDescription="Gesicht ${person.faces.indexOf(face)+person.offset+1}"
-                                    customActions=listOf(CustomAccessibilityAction("Originalfoto anzeigen") { if(active) {onZoom(face);true} else false }) }
-                                .pointerInput(face) {
-                                    awaitEachGesture {
-                                        val down=awaitFirstDown()
-                                        if(!active) return@awaitEachGesture
-                                        val pressed=awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
-                                        if(!active) return@awaitEachGesture
-                                        holding=true
-                                        try {
-                                            hold(face)
-                                            // The original tile owns this pointer even while the overlay is visible.
-                                            // Keep tracking outside its bounds, but cancel on competing/multiple pointers.
-                                            while(true) {
-                                                val event=awaitPointerEvent()
-                                                val change=event.changes.singleOrNull { it.id==pressed.id } ?: break
-                                                if(event.changes.size!=1 || change.isConsumed) break
-                                                if(!change.pressed) { change.consume();break }
-                                                zoomDrag(change.position.y-change.previousPosition.y)
-                                                change.consume()
-                                            }
-                                        } finally { holding=false;hold(null) }
-                                    }
-                                }) {
-                                if(images!=null) AsyncImage(image(face,false),null,imageLoader=images,
-                                    modifier=Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
-                                if(managing || person.count>1) FilledTonalIconButton(onClick={onDetach(face)},enabled=enabled && !holding,
-                                    modifier=Modifier.align(Alignment.BottomStart).padding(4.dp).size(48.dp)
-                                        .padding(if(managing) 8.dp else 0.dp)
-                                        .semantics { contentDescription=if(managing) "Zuordnung entfernen" else "Dieses Gesicht einzeln benennen" }) { Text("×",style=if(managing) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineMedium) }
-                                if(managing) FilledTonalIconButton(onClick={onFavorite(face)},enabled=enabled && !holding,
-                                    modifier=Modifier.align(Alignment.BottomEnd).padding(4.dp).size(48.dp).semantics {
-                                        contentDescription=if(face in person.favorites) "Favorisierung aufheben" else "Bild favorisieren"
-                                        stateDescription=if(face in person.favorites) "Favorisiert" else "Nicht favorisiert"
-                                    }) { Text(if(face in person.favorites) "★" else "☆",style=MaterialTheme.typography.headlineMedium) }
-                            }
-                            person.facePaths[face]?.takeIf {it.isNotEmpty()}?.let {
-                                Text(it,style=MaterialTheme.typography.bodySmall,
-                                    modifier=Modifier.fillMaxWidth().padding(top=6.dp).testTag("face-path-$face"))
+    onZoomDrag: (Float) -> Unit = {}, managing: Boolean = false, onFavorite: (Long) -> Unit = {},
+    onPrefetch: suspend (List<Long>) -> Unit = {}) {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val prefetch by rememberUpdatedState(onPrefetch)
+    LaunchedEffect(person.id,person.faces,images,lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { prefetch(person.faces) }
+    }
+    val systemConfiguration = LocalViewConfiguration.current
+    val previewConfiguration = remember(systemConfiguration) {
+        object : ViewConfiguration by systemConfiguration {
+            override val longPressTimeoutMillis = minOf(250L,systemConfiguration.longPressTimeoutMillis)
+        }
+    }
+    CompositionLocalProvider(LocalViewConfiguration provides previewConfiguration) {
+        var holding by remember { mutableStateOf(false) }
+        val active by rememberUpdatedState(enabled)
+        val hold by rememberUpdatedState(onHold)
+        val zoomDrag by rememberUpdatedState(onZoomDrag)
+        Column(Modifier.fillMaxWidth().testTag("face-grid"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            person.faces.chunked(2).forEach { row ->
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    row.forEach { face ->
+                        key(face) {
+                            Column(Modifier.weight(1f)) {
+                                Box(Modifier.fillMaxWidth().testTag("face-$face").aspectRatio(1f).clip(RoundedCornerShape(16.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                    .semantics { contentDescription="Gesicht ${person.faces.indexOf(face)+person.offset+1}"
+                                        customActions=listOf(CustomAccessibilityAction("Originalfoto anzeigen") { if(active) {onZoom(face);true} else false }) }
+                                    .pointerInput(face) {
+                                        awaitEachGesture {
+                                            val down=awaitFirstDown()
+                                            if(!active) return@awaitEachGesture
+                                            val pressed=awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
+                                            if(!active) return@awaitEachGesture
+                                            holding=true
+                                            try {
+                                                hold(face)
+                                                // The original tile owns this pointer even while the overlay is visible.
+                                                // Keep tracking outside its bounds, but cancel on competing/multiple pointers.
+                                                while(true) {
+                                                    val event=awaitPointerEvent()
+                                                    val change=event.changes.singleOrNull { it.id==pressed.id } ?: break
+                                                    if(event.changes.size!=1 || change.isConsumed) break
+                                                    if(!change.pressed) { change.consume();break }
+                                                    zoomDrag(change.position.y-change.previousPosition.y)
+                                                    change.consume()
+                                                }
+                                            } finally { holding=false;hold(null) }
+                                        }
+                                    }) {
+                                    if(images!=null) AsyncImage(image(face,false),null,imageLoader=images,
+                                        modifier=Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
+                                    if(managing || person.count>1) FilledTonalIconButton(onClick={onDetach(face)},enabled=enabled && !holding,
+                                        modifier=Modifier.align(Alignment.BottomStart).padding(4.dp).size(48.dp)
+                                            .padding(if(managing) 8.dp else 0.dp)
+                                            .semantics { contentDescription=if(managing) "Zuordnung entfernen" else "Dieses Gesicht einzeln benennen" }) { Text("×",style=if(managing) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineMedium) }
+                                    if(managing) FilledTonalIconButton(onClick={onFavorite(face)},enabled=enabled && !holding,
+                                        modifier=Modifier.align(Alignment.BottomEnd).padding(4.dp).size(48.dp).semantics {
+                                            contentDescription=if(face in person.favorites) "Favorisierung aufheben" else "Bild favorisieren"
+                                            stateDescription=if(face in person.favorites) "Favorisiert" else "Nicht favorisiert"
+                                        }) { Text(if(face in person.favorites) "★" else "☆",style=MaterialTheme.typography.headlineMedium) }
+                                }
+                                person.facePaths[face]?.takeIf {it.isNotEmpty()}?.let {
+                                    Text(it,style=MaterialTheme.typography.bodySmall,
+                                        modifier=Modifier.fillMaxWidth().padding(top=6.dp).testTag("face-path-$face"))
+                                }
                             }
                         }
                     }
@@ -230,6 +249,7 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
         }
     }
 }
+
 @Composable
 internal fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Boolean) {
     val focus = remember { FocusRequester() }

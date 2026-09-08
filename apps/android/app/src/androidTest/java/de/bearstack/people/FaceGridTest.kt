@@ -75,7 +75,7 @@ class FaceGridTest {
                 {detaches++},{held=it},{},onZoomDrag={drag+=it})
         } } }
         compose.onNodeWithTag("face-10").performTouchInput { down(center) }
-        compose.mainClock.advanceTimeBy(800)
+        compose.mainClock.advanceTimeBy(300)
         compose.runOnIdle {assertEquals(10L,held)}
         compose.onNodeWithTag("face-10").performTouchInput { moveBy(Offset(0f,-300f)) }
         compose.runOnIdle {assertEquals(10L,held);assertEquals(-300f,drag,.01f)}

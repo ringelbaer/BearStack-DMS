@@ -4,7 +4,16 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.47.0
+
+- Die Personenübersicht verwendet eine exklusive Filterauswahl mit „Alle“, bekannten, unbekannten und ignorierten Personen/Gesichtern. Bei unbekannten Personen entfällt die wiederholte sichtbare Beschriftung „Unbenannt“. `filter` ergänzt die API kompatibel und hat Vorrang vor bisherigen Filterparametern.
+- Das …-Menü speichert Ordneranzeige, Fotoanzahl und Thumbnailgrößen S/M/L pro Benutzer im Browser. Der Ordner des Vorschaubilds steht unter der Fotoanzahl; die Standardeinstellung bleibt S mit Fotoanzahl und ohne Ordner. Änderungen gelten sofort und nach AJAX-Aktionen, ohne Bilder erneut abzurufen.
+- Das gemeinsame Benenn-Modal zeigt links eine 300-%-Bounding-Box-Fotovorschau, auf Mobilgeräten darüber. Personengruppen liefern repräsentativen Ordner und Gesichtsgeometrie direkt mit der Seitenabfrage. Bildfehler lassen Benennen und Zuordnen weiter zu.
+- MINOR für neue Anzeigeoptionen und additive API-Felder ohne Datenmigration. README, Website, OpenAPI und Tests für Filter, Sichtbarkeit, Vorschauen und gespeicherte Darstellung aktualisiert.
+
 ### BearStack 0.46.0
+
+- Android-App **0.8.0** (versionCode 17): Seitennavigation im Benennen-Modus nur bei mehr als vier Fotos; Originalvorschau nach 250 ms Halten. Aktive WLAN-Verbindungen erlauben serielles Vorladen der angezeigten Originale im bestehenden Drei-Minuten-/16-MiB-Cache. Ansichts-, Netzwerk- und Hintergrundwechsel brechen Vorladen ab. MINOR für die kompatible WLAN-Funktion im vorgesehenen Release; API unverändert. Tests für Navigation, Gesten, WLAN-Abbruch, Serialisierung und HTTPS-Cache-Wiederverwendung.
 
 - Gruppenbilder ergänzen „Nur Unbenannte anzeigen“: benannte und ignorierte Gesichtsvorschauen werden unmittelbar ausgeblendet, auch nach Bearbeitungen. Die Auswahl bleibt pro Benutzer im Browser gespeichert; Fotoauswahl und Sammelaktion behalten ihre Bedeutung. Ausgeblendete Zoomziele werden zurückgesetzt; leere Ergebnisse erhalten einen Hinweis.
 - MINOR für den zusätzlichen Anzeigefilter. Die vorhandenen Kartendaten werden im Browser gefiltert, ohne zusätzliche Server- oder Bildabrufe. Keine API- oder Schemaänderung. README, Website und Browserprüfungen aktualisiert.

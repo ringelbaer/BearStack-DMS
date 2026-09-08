@@ -22,10 +22,18 @@ type RecognizedFace struct {
 	Favorite   bool    `json:"favorite"`
 }
 type Person struct {
-	ID     int64  `json:"id"`
-	Name   string `json:"name"`
-	Count  int    `json:"count"`
-	FaceID int64  `json:"face_id"`
+	ID        int64       `json:"id"`
+	Name      string      `json:"name"`
+	Count     int         `json:"count"`
+	FaceID    int64       `json:"face_id"`
+	Directory string      `json:"directory,omitempty"`
+	Portrait  *FaceRegion `json:"portrait,omitempty"`
+}
+type FaceRegion struct {
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
 }
 type PeoplePage struct {
 	TotalPages  int              `json:"total_pages"`

@@ -54,11 +54,24 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 	}
 	page := boundedInt(r.URL.Query().Get("page"), 1, 1, 1000000)
 	unknownOnly := id == 0 && r.URL.Query().Get("unknown") == "1"
+	knownOnly := r.URL.Query().Get("known") == "1"
+	ignoredOnly := r.URL.Query().Get("ignored") == "1"
+	if id == 0 && r.URL.Query().Has("filter") {
+		switch r.URL.Query().Get("filter") {
+		case "all", "known", "unknown", "ignored":
+			unknownOnly = r.URL.Query().Get("filter") == "unknown"
+			knownOnly = r.URL.Query().Get("filter") == "known"
+			ignoredOnly = r.URL.Query().Get("filter") == "ignored"
+		default:
+			s.faceError(w, r, errors.New("ungültiger Personenfilter"))
+			return
+		}
+	}
 	var result photos.PeoplePage
-	if id == 0 && r.URL.Query().Get("ignored") == "1" && !unknownOnly {
-		result, err = s.photos.IgnoredFaces(r.Context(), page, r.URL.Query().Get("q"), r.URL.Query().Get("known") == "1")
+	if id == 0 && ignoredOnly && !unknownOnly {
+		result, err = s.photos.IgnoredFaces(r.Context(), page, r.URL.Query().Get("q"), knownOnly)
 	} else {
-		result, err = s.photos.People(r.Context(), id, page, r.URL.Query().Get("q"), r.URL.Query().Get("known") == "1", unknownOnly)
+		result, err = s.photos.People(r.Context(), id, page, r.URL.Query().Get("q"), knownOnly, unknownOnly)
 	}
 	if err != nil {
 		s.faceError(w, r, err)

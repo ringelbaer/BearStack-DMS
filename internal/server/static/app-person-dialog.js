@@ -27,6 +27,61 @@
     var busy = false;
     var dialogForm = personDialog.querySelector("form");
     var dialogStatus = personDialog.querySelector("[data-person-dialog-status]");
+    var preview = personDialog.querySelector("[data-person-preview]");
+    var previewImage = personDialog.querySelector("[data-person-preview-image]");
+    var previewBox = personDialog.querySelector("[data-person-preview-box]");
+    var previewStatus = personDialog.querySelector("[data-person-preview-status]");
+    var previewRegion;
+    function drawPreview() {
+      if (!preview || !previewRegion || !previewImage.complete || !previewImage.naturalWidth) return;
+      var frame = preview.getBoundingClientRect();
+      if (!frame.width || !frame.height) return;
+      var scale = Math.min(frame.width / previewImage.naturalWidth, frame.height / previewImage.naturalHeight);
+      var width = previewImage.naturalWidth * scale, height = previewImage.naturalHeight * scale;
+      var baseLeft = (frame.width - width) / 2, baseTop = (frame.height - height) / 2;
+      var zoom = Math.max(1, Math.min(frame.width / (3 * previewRegion.width * width), frame.height / (3 * previewRegion.height * height)));
+      width *= zoom; height *= zoom;
+      var left = frame.width / 2 - (previewRegion.x + previewRegion.width / 2) * width;
+      var top = frame.height / 2 - (previewRegion.y + previewRegion.height / 2) * height;
+      left = width <= frame.width ? (frame.width - width) / 2 : Math.max(frame.width - width, Math.min(0, left));
+      top = height <= frame.height ? (frame.height - height) / 2 : Math.max(frame.height - height, Math.min(0, top));
+      previewImage.style.transform = "translate(" + (left - baseLeft * zoom) + "px, " + (top - baseTop * zoom) + "px) scale(" + zoom + ")";
+      previewBox.style.left = (left + previewRegion.x * width) + "px";
+      previewBox.style.top = (top + previewRegion.y * height) + "px";
+      previewBox.style.width = (previewRegion.width * width) + "px";
+      previewBox.style.height = (previewRegion.height * height) + "px";
+      previewBox.hidden = false;
+    }
+    function showPreview(card) {
+      if (!preview) return;
+      previewRegion = null;
+      previewBox.hidden = true;
+      previewImage.style.transform = "";
+      previewImage.hidden = true;
+      previewImage.removeAttribute("src");
+      var id = card.dataset.groupFace || card.dataset.faceId;
+      var x = Number(card.dataset.x), y = Number(card.dataset.y), w = Number(card.dataset.width), h = Number(card.dataset.height);
+      var left = Math.max(0, Math.min(1, x)), top = Math.max(0, Math.min(1, y));
+      var right = Math.max(left, Math.min(1, x + w)), bottom = Math.max(top, Math.min(1, y + h));
+      if (!id || ![x,y,w,h].every(Number.isFinite) || w <= 0 || h <= 0 || right <= left || bottom <= top) {
+        previewStatus.textContent = "Keine Fotovorschau verfügbar.";
+        return;
+      }
+      previewRegion = { x: left, y: top, width: right - left, height: bottom - top };
+      previewStatus.textContent = "Fotovorschau wird geladen …";
+      previewImage.hidden = false;
+      previewImage.src = "/photos/people/groups/image/" + encodeURIComponent(id);
+    }
+    if (preview) {
+      previewImage.addEventListener("load", function () { previewStatus.textContent = ""; drawPreview(); });
+      previewImage.addEventListener("error", function () {
+        if (!previewImage.getAttribute("src")) return;
+        previewBox.hidden = true; previewImage.hidden = true;
+        previewStatus.textContent = "Fotovorschau konnte nicht geladen werden.";
+      });
+      if (window.ResizeObserver) new ResizeObserver(drawPreview).observe(preview);
+      else window.addEventListener("resize", drawPreview);
+    }
     var opener, sourceCard, dialogIDs = [];
     function openPersonDialog(ids, button) {
       if (!ids.length || busy || options.isBusy() || button.disabled) return;
@@ -45,6 +100,7 @@
       personDialog.showModal();
       sourceCard = button.closest("[data-person-id]");
       if (sourceCard) sourceCard.setAttribute("data-person-dialog-source", "");
+      showPreview(sourceCard || card);
     }
     personSurface.addEventListener("click", function (event) {
       var button = event.target.closest("[data-person-edit]");
@@ -57,6 +113,8 @@
     personDialog.addEventListener("close", function () {
       if (sourceCard) sourceCard.removeAttribute("data-person-dialog-source");
       sourceCard = null;
+      previewRegion = null;
+      if (preview) { previewImage.removeAttribute("src"); previewBox.hidden = true; }
       dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
       var focus = opener && opener.isConnected && !opener.disabled && !opener.closest("[hidden]") ? opener : personSurface.querySelector("a, button:not([disabled])");
       if (focus) focus.focus({ preventScroll: true });

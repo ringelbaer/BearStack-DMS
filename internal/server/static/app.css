@@ -3408,6 +3408,18 @@ label span {
 
 /* Persons use bounded, lazy face previews even for large collections. */
 .people-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr)); gap:1rem; margin:1rem 0; }
+[data-people-view][data-size="m"] .people-grid { grid-template-columns: repeat(auto-fill,minmax(min(100%,256px),1fr)); }
+[data-people-view][data-size="l"] .people-grid { grid-template-columns: repeat(auto-fill,minmax(min(100%,352px),1fr)); }
+[data-people-view][data-size="m"] .people-grid .person-card img { width: 224px; }
+[data-people-view][data-size="l"] .people-grid .person-card img { width: 320px; }
+[data-people-view] [hidden], [data-people-view][data-show-count="false"] [data-people-overview] [data-person-count], [data-people-view][data-show-folders="false"] [data-person-folder] { display: none !important; }
+.people-display-menu { position: relative; width: max-content; margin: 0 0 .5rem auto; z-index: 13; }
+.people-display-menu > summary { list-style: none; cursor: pointer; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .25rem .8rem; font-size: 1.4rem; background: var(--surface); }
+.people-display-menu > summary::-webkit-details-marker { display: none; }
+.people-display-options { position: absolute; right: 0; top: 100%; width: min(280px,calc(100vw - 48px)); padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); box-shadow: 0 6px 20px rgb(0 0 0 / .15); display: grid; gap: .75rem; }
+.people-display-options label { display: flex; align-items: center; gap: .5rem; }
+.people-display-options input { width: auto; }
+.people-display-options select { width: auto; margin-left: auto; }
 .person-card { display:flex; flex-direction:column; align-items:center; gap:.5rem; padding:1rem; border:1px solid var(--border,#ddd); border-radius:.75rem; overflow-wrap:anywhere; min-width:0; }
 .person-card img { display:block; width:160px; max-width:100%; height:auto; aspect-ratio:1; object-fit:contain; background:#111820; border-radius:.5rem; }
 
@@ -3597,6 +3609,17 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 .person-overview-card .person-card > span { padding-inline: 30px; }
 
 .person-edit-dialog { max-height: calc(100dvh - 32px); overflow-y: auto; }
+.app-dialog.person-edit-dialog { width: min(1000px,calc(100vw - 32px)); max-width: calc(100vw - 32px); }
+.person-dialog-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 1.25rem; }
+.person-dialog-fields { min-width: 0; }
+.person-dialog-preview { position: relative; margin: 0; height: 400px; overflow: hidden; border-radius: .5rem; background: #111820; }
+.person-dialog-preview img { width: 100%; height: 100%; display: block; object-fit: contain; transform-origin: 0 0; }
+.person-dialog-preview p { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; color: #fff; }
+.person-dialog-preview p:empty, .person-dialog-preview [hidden] { display: none !important; }
+@media (max-width: 650px) {
+  .person-dialog-layout { grid-template-columns: minmax(0,1fr); }
+  .person-dialog-preview { height: 220px; }
+}
 /* Keep dialog actions stationary when the input loses focus before a click. */
 .person-dialog-suggestions { height: 180px; }
 .person-edit-dialog .person-picker-popup { position: static; max-height: 180px; }

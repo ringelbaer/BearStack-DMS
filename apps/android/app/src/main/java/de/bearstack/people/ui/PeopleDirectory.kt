@@ -137,7 +137,7 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
                             FaceGrid(person.copy(faces=listOf(face),offset=index),browsing,vm.images,vm::image,onDetach=vm::requestUnassign,
                                 onHold={held=it;heldDismissed=false;zoom=0f},
                                 onZoom={held=it;heldDismissed=false;zoom=0f;accessible=true},
-                                onZoomDrag=zoomDrag,managing=true,onFavorite=vm::favorite)
+                                onZoomDrag=zoomDrag,managing=true,onFavorite=vm::favorite,onPrefetch=vm::prefetchOriginals)
                         }
                         item(key="footer",span={GridItemSpan(maxLineSpan)}) {
                             Text(if(person.faces.size<person.count) "Weitere Bilder werden beim Scrollen geladen." else "Alle Bilder geladen.",

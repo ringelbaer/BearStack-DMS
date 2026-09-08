@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.46.0
+  version: 0.47.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -1242,12 +1242,12 @@ paths:
         ignored faces in faces and an empty people array. Since 0.44.0, unknown=1
         lists only unnamed groups with active faces, overriding known and ignored.
         Ignored faces do not contribute portraits or photo counts in this mode.
-        Admin-only photos are excluded.
+        Admin-only photos are excluded. Since 0.47.0, filter selects one of all, known, unknown or ignored and overrides the legacy flags. Overview entries additionally include the representative portrait bounds and its relative directory, resolved in the paginated query.
         Since 0.42.0, format=suggestions returns the first 60 named groups for the web
         autocomplete, with id, name, distinct-photo count and has_next. Since 0.43.0,
         each suggestion also includes face_id for the same active portrait as the people
         overview, served by /photos/faces/{id}/thumbnail. This mode
-        applies q but ignores page, known, unknown and ignored; it performs current visibility
+        applies q but ignores page, filter, known, unknown and ignored; it performs current visibility
         and imported-name-source checks without calculating total pages.
         Cache-Control is private, no-store.'
       parameters:
@@ -1282,6 +1282,12 @@ paths:
           type: string
           enum: ['0', '1']
           default: '0'
+      - name: filter
+        in: query
+        description: Since 0.47.0, exclusive overview filter. Overrides known, unknown and ignored when supplied; all lists active groups. Ignored by suggestions and person-detail routes.
+        schema:
+          type: string
+          enum: [all, known, unknown, ignored]
       - name: format
         in: query
         schema:
@@ -2775,6 +2781,18 @@ components:
           type: integer
           format: int64
           minimum: 1
+        directory:
+          type: string
+          description: Since 0.47.0, relative parent directory of the representative active portrait; Fotos for the photo root. Other photos of the person may be in other directories.
+        portrait:
+          type: object
+          description: Since 0.47.0, normalized bounds of face_id in the oriented photo. Used for the naming dialog's 300-percent bounding-box preview.
+          required: [x, y, width, height]
+          properties:
+            x: {type: number}
+            y: {type: number}
+            width: {type: number}
+            height: {type: number}
     PhotoPeopleSuggestions:
       type: object
       additionalProperties: false

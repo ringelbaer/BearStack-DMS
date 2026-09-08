@@ -27,6 +27,21 @@ class LoadingLayoutTest {
 
     @Test fun loadingKeepsScrolledContentInPlaceWithLargeFont() = checkLoadingLayout(2f,true)
 
+    @Test fun fourFacesDoNotShowPagination() {
+        val app=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as Application
+        val db=Room.inMemoryDatabaseBuilder(app,LabelingDatabase::class.java).build()
+        val fake=FakeService().apply { people[1]=people.getValue(1).copy(count=4) }
+        val store=ViewModelStore()
+        lateinit var vm: PeopleViewModel
+        compose.runOnUiThread {vm=PeopleViewModel(app,db,fake,fake.session);store.put("test",vm)}
+        try {
+            compose.setContent {PeopleApp(vm)}
+            compose.waitUntil(10_000){!vm.state.value.busy && vm.state.value.person!=null}
+            compose.onNodeWithText("Zurück").assertDoesNotExist()
+            compose.onNodeWithText("Weiter").assertDoesNotExist()
+        } finally {compose.runOnUiThread {store.clear()}}
+    }
+
     private fun checkLoadingLayout(fontScale: Float, scrollToNavigation: Boolean) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as Application
         val db=Room.inMemoryDatabaseBuilder(app,LabelingDatabase::class.java).build()

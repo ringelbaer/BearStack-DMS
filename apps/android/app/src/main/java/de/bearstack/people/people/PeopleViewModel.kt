@@ -36,6 +36,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     internal constructor(application: Application, database: LabelingDatabase) : this(application,database,null)
     internal constructor(application: Application, database: LabelingDatabase, service: LabelingService, session: Session) :
         this(application, database, PeopleRepository(database, service, session))
+    private val originalPreloader = WifiOriginalPreloader(application, viewModelScope)
     private val store = ProfileStore(application)
     private val mutable = MutableStateFlow(PeopleState())
     val state = mutable.asStateFlow()
@@ -185,6 +186,17 @@ class PeopleViewModel private constructor(application: Application, private val 
         val current=state.value
         val person=if(current.directory) current.selectedPerson else current.person
         return person?.originalKeys?.get(face)?.let { "${repository?.scope}:$it" }
+    }
+    suspend fun prefetchOriginals(faces: List<Long>) {
+        val loader = images ?: return
+        val remote = api ?: return
+        val requests = faces.associate { face ->
+            val url = remote.original(face)
+            (originalKey(face) ?: url) to de.bearstack.people.ui.originalPhotoRequest(getApplication(),url,originalKey(face))
+        }
+        originalPreloader.preload(requests.keys.toList()) { key ->
+            if (images === loader) loader.execute(requests.getValue(key))
+        }
     }
     fun gallery(name: String) = api?.gallery(name)
     private fun editable() = state.value.connected && !state.value.busy && !state.value.unresolved

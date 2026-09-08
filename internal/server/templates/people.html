@@ -2,7 +2,15 @@
 {{template "head" .}}
 <section class="page-head"><div><h1>{{if .People.PersonID}}{{if .People.Name}}{{.People.Name}}{{else}}Unbenannt{{end}}{{else}}Personen{{end}}</h1><p>Automatisch erkannte Gesichter aus deinen Fotos.</p></div><div class="page-actions"><a class="secondary-button" href="/photos">Fotos</a>{{if and .Auth.CanPhotosEdit (not .People.PersonID)}}<a class="secondary-button" href="/photos/people/groups">Gruppenbilder</a>{{end}}{{if .People.PersonID}}<a class="secondary-button" href="/photos/people">Alle Personen</a>{{end}}{{if .Auth.CanPhotosManage}}<a class="secondary-button" href="/settings/photos/faces">Gesichtserkennung</a>{{end}}</div></section>
 {{if not .People.PersonID}}
-<form method="get" action="/photos/people" class="filters people-form" data-people-filter><label>Name <input type="search" name="q" value="{{.People.Query}}" placeholder="Person suchen"></label><label class="people-known-filter"><input type="checkbox" name="known" value="1" {{if .People.KnownOnly}}checked{{end}}> Nur bekannte Personen</label><label class="people-known-filter"><input type="checkbox" name="unknown" value="1" {{if .People.UnknownOnly}}checked{{end}}> Nur unbekannte Personen</label><label class="people-known-filter"><input type="checkbox" name="ignored" value="1" {{if .People.IgnoredOnly}}checked{{end}}> Ignorierte Gesichter</label><div class="people-filter-actions"><button>Suchen</button><a class="secondary-button people-filter-reset" href="/photos/people?page=1&amp;q=">Alle Filter aufheben</a></div></form>
+<div data-people-view data-people-user="{{.Auth.Username}}" data-size="s" data-show-count="true" data-show-folders="false">
+<details class="people-display-menu" data-people-display hidden>
+<summary aria-label="Anzeigeeinstellungen" title="Anzeigeeinstellungen">…</summary>
+<div class="people-display-options">
+<label><input type="checkbox" data-display-folders> Ordnername anzeigen</label>
+<label><input type="checkbox" data-display-count checked> Fotoanzahl anzeigen</label>
+<label>Thumbnailgröße <select data-display-size><option value="s">S</option><option value="m">M</option><option value="l">L</option></select></label>
+</div></details>
+<form method="get" action="/photos/people" class="filters people-form" data-people-filter><label>Name <input type="search" name="q" value="{{.People.Query}}" placeholder="Person suchen"></label><label>Personenfilter <select name="filter"><option value="all" {{if not (or .People.KnownOnly .People.UnknownOnly .People.IgnoredOnly)}}selected{{end}}>Alle</option><option value="known" {{if and .People.KnownOnly (not .People.IgnoredOnly)}}selected{{end}}>Nur bekannte Personen</option><option value="unknown" {{if .People.UnknownOnly}}selected{{end}}>Nur unbekannte Personen</option><option value="ignored" {{if .People.IgnoredOnly}}selected{{end}}>Ignorierte Gesichter</option></select></label><div class="people-filter-actions"><button>Suchen</button><a class="secondary-button people-filter-reset" href="/photos/people?page=1&amp;q=">Alle Filter aufheben</a></div></form>
 {{if .People.IgnoredOnly}}
 <p>Beim Benennen wird das Gesicht wieder sichtbar und einer neuen Person mit diesem Namen zugeordnet.</p>
 <div class="people-grid">
@@ -22,10 +30,10 @@
 </div>
 {{else}}
 <p role="status" data-people-status></p>
-<div class="people-grid" data-people-overview data-can-ignore="{{if .Auth.CanPhotosEdit}}true{{else}}false{{end}}">
+<div class="people-grid" data-people-overview data-unknown-only="{{.People.UnknownOnly}}" data-can-ignore="{{if .Auth.CanPhotosEdit}}true{{else}}false{{end}}">
 {{range .People.People}}
-  <div class="person-overview-card" data-person-id="{{.ID}}" data-person-name="{{.Name}}">
-    <a class="person-card" href="/photos/people/{{.ID}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.FaceID}}/thumbnail" alt=""><strong>{{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}</strong><span>{{.Count}} {{if eq .Count 1}}Foto{{else}}Fotos{{end}}</span></a>
+  <div class="person-overview-card" data-person-id="{{.ID}}" data-person-name="{{.Name}}" data-face-id="{{.FaceID}}" {{with .Portrait}}data-x="{{.X}}" data-y="{{.Y}}" data-width="{{.Width}}" data-height="{{.Height}}"{{end}}>
+    <a class="person-card" href="/photos/people/{{.ID}}" aria-label="Person anzeigen: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.FaceID}}/thumbnail" alt=""><strong {{if and $.People.UnknownOnly (not .Name)}}hidden{{end}}>{{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}</strong><span data-person-count>{{.Count}} {{if eq .Count 1}}Foto{{else}}Fotos{{end}}</span><span data-person-folder title="Ordner des Vorschaubilds">{{.Directory}}</span></a>
     {{if $.Auth.CanPhotosEdit}}<label class="person-select"><input type="checkbox" data-person-select value="{{.ID}}" aria-label="Person auswählen: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}"></label><button type="button" class="person-ignore-button" data-ignore-face="{{.FaceID}}" aria-label="Angezeigtes Gesicht ignorieren: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}" title="Angezeigtes Gesicht ignorieren">×</button><button type="button" class="person-edit-button secondary-button" data-person-edit aria-label="Benennen oder zuordnen: {{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}" title="Benennen / zuordnen">{{template "person_pencil_icon" .}}</button>{{end}}
   </div>
 {{else}}<p>{{if or .People.Query .People.KnownOnly .People.UnknownOnly}}Keine Personen für diesen Filter gefunden.{{else}}Noch keine Personen gefunden. {{if .Auth.CanPhotosManage}}Die optionale Erkennung lässt sich in den Einstellungen aktivieren.{{end}}{{end}}</p>{{end}}
@@ -35,6 +43,7 @@
 {{end}}
 {{if .Auth.CanPhotosEdit}}<div class="people-merge" data-people-merge hidden><span data-people-merge-target></span><button type="button" data-people-edit-button>Auswahl benennen / zuordnen</button><button type="button" data-people-merge-button>Personen zusammenführen</button></div>{{end}}
 {{end}}
+</div>
 {{else}}
 {{if .Auth.CanPhotosEdit}}
 <section class="people-management"><form method="post" action="/photos/people/{{.People.PersonID}}/rename" class="filters people-form" data-person-picker data-person-create data-person-exclude="{{.People.PersonID}}">
