@@ -35,6 +35,10 @@ func CleanRelativePath(value string, allowEmpty bool, escapeErr error) (string, 
 }
 
 func ResolveWithinRoot(root, rel string, allowEmpty bool, escapeErr error) (string, string, error) {
+	return resolveWithinRoot(root, rel, allowEmpty, escapeErr, os.Lstat)
+}
+
+func resolveWithinRoot(root, rel string, allowEmpty bool, escapeErr error, lstat func(string) (os.FileInfo, error)) (string, string, error) {
 	clean, err := CleanRelativePath(rel, allowEmpty, escapeErr)
 	if err != nil {
 		return "", "", err
@@ -43,13 +47,17 @@ func ResolveWithinRoot(root, rel string, allowEmpty bool, escapeErr error) (stri
 	if abs != root && !strings.HasPrefix(abs, root+string(os.PathSeparator)) {
 		return "", "", escapeErr
 	}
-	if err := RejectSymlinkPath(root, clean, escapeErr); err != nil {
+	if err := rejectSymlinkPath(root, clean, escapeErr, lstat); err != nil {
 		return "", "", err
 	}
 	return clean, abs, nil
 }
 
 func RejectSymlinkPath(root, rel string, escapeErr error) error {
+	return rejectSymlinkPath(root, rel, escapeErr, os.Lstat)
+}
+
+func rejectSymlinkPath(root, rel string, escapeErr error, lstat func(string) (os.FileInfo, error)) error {
 	if rel == "" {
 		return nil
 	}
@@ -59,7 +67,7 @@ func RejectSymlinkPath(root, rel string, escapeErr error) error {
 			continue
 		}
 		current = filepath.Join(current, part)
-		info, err := os.Lstat(current)
+		info, err := lstat(current)
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		}

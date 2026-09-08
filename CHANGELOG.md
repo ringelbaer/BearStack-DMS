@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.42.0
+
+- WebDAV liest ausschließlich die für Dateinamen, Auslieferung und HTTP-Metadaten benötigten Dokumentfelder. Zusatzabfragen für Tags, eigene Felder, Duplikate und Verknüpfungen entfallen; Zwischenordner werden ohne Dokumentlisten aufgelöst. Filter, Reihenfolge, Namenskollisionen und HTTP-Metadaten bleiben erhalten.
+- Die Personen-Autovervollständigung verwendet `GET /photos/people?format=suggestions&q=...`: höchstens 60 benannte Gruppen mit ID, Name, Fotoanzahl und `has_next`, ohne Gesamtzählung oder Thumbnail-ID. Suchsemantik, Rechte und aktuelle Prüfungen von Schutzmarkierungen und importierten Namen bleiben erhalten; die vollständige Personenübersicht behält ihr bisheriges Format.
+- Mitgelieferte PDF.js-Versionsverzeichnisse erhalten auch ohne Versionsparameter ein Jahr Browser-Cache mit `immutable`, einschließlich Worker, Schriften und Codecs. Versionswechsel verwenden neue Pfade; unversionierte Assets behalten ihre bisherigen Cache-Regeln.
+- Die Foto-Initialisierung teilt Symlink- und Pfadprüfungen gemeinsamer Vorfahren innerhalb eines Durchlaufs. Ein neuer Start und spätere Dateizugriffe prüfen das Dateisystem erneut; Fehlerbehandlung und der synchrone Sichtbarkeitsabgleich bleiben erhalten.
+- MINOR wegen der zusätzlichen kompatiblen API-Darstellung für Vorschläge; die übrigen Änderungen sind Performance-Optimierungen. Keine Datenmigration. Regressionen und Vergleichsbenchmarks ergänzt; README, Website und OpenAPI aktualisiert.
+
 ### BearStack 0.41.4
 
 - Die acht Labeling-Endpunkte sind direkt eigenen Handlern zugeordnet. Die zweite Verteilung anhand von Pfad-Endungen und HTTP-Methode entfällt; Zugriffsrechte, Validierung, Fehlercodes, Cache-Header und Bildauslieferung bleiben erhalten.

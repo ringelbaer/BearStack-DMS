@@ -42,6 +42,16 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if id == 0 && r.URL.Query().Get("format") == "suggestions" {
+		w.Header().Set("Cache-Control", "private, no-store")
+		result, err := s.photos.SuggestPeople(r.Context(), r.URL.Query().Get("q"))
+		if err != nil {
+			s.faceError(w, r, err)
+			return
+		}
+		_ = writeJSON(w, http.StatusOK, result)
+		return
+	}
 	page := boundedInt(r.URL.Query().Get("page"), 1, 1, 1000000)
 	var result photos.PeoplePage
 	if id == 0 && r.URL.Query().Get("ignored") == "1" {

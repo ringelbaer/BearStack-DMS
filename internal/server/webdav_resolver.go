@@ -63,7 +63,7 @@ func (resolver webDAVResolver) resolveSearchFavoriteResource(ctx context.Context
 	}
 
 	filter := searchFavoriteFilter(favorite, time.Now(), 0, 0)
-	docs, err := s.repo.ListDocuments(ctx, filter)
+	docs, err := s.repo.ListDocumentFiles(ctx, filter)
 	if err != nil {
 		return webDAVResource{}, err
 	}
@@ -79,7 +79,7 @@ func (resolver webDAVResolver) resolveVirtualResource(ctx context.Context, segme
 	current := webDAVResource{Name: "", Segments: nil, IsDir: true}
 	for i, segment := range segments {
 		candidates := webDAVSegmentCandidates(segment)
-		listing, err := resolver.Children(ctx, current)
+		listing, err := resolver.children(ctx, current, i == len(segments)-1)
 		if err != nil {
 			return webDAVResource{}, err
 		}
@@ -106,6 +106,10 @@ func (resolver webDAVResolver) resolveVirtualResource(ctx context.Context, segme
 }
 
 func (resolver webDAVResolver) Children(ctx context.Context, resource webDAVResource) ([]webDAVResource, error) {
+	return resolver.children(ctx, resource, true)
+}
+
+func (resolver webDAVResolver) children(ctx context.Context, resource webDAVResource, includeFiles bool) ([]webDAVResource, error) {
 	if !resource.IsDir {
 		return nil, nil
 	}
@@ -116,7 +120,7 @@ func (resolver webDAVResolver) Children(ctx context.Context, resource webDAVReso
 		return resolver.searchFavoriteChildren(ctx, resource)
 	}
 
-	return resolver.virtualChildren(ctx, resource)
+	return resolver.virtualChildren(ctx, resource, includeFiles)
 }
 
 func (resolver webDAVResolver) rootChildren(ctx context.Context) ([]webDAVResource, error) {
@@ -133,7 +137,7 @@ func (resolver webDAVResolver) rootChildren(ctx context.Context) ([]webDAVResour
 	return children, nil
 }
 
-func (resolver webDAVResolver) virtualChildren(ctx context.Context, resource webDAVResource) ([]webDAVResource, error) {
+func (resolver webDAVResolver) virtualChildren(ctx context.Context, resource webDAVResource, includeFiles bool) ([]webDAVResource, error) {
 	s := resolver.server
 	selection := resource.Selection
 	filter := document.ListFilter{
@@ -148,10 +152,10 @@ func (resolver webDAVResolver) virtualChildren(ctx context.Context, resource web
 	parentSegments := append([]string(nil), resource.Segments...)
 	children, reserved := webDAVResourcesFromFolderViewItems(items, parentSegments)
 
-	if selection.Depth() == 0 {
+	if selection.Depth() == 0 || !includeFiles {
 		return children, nil
 	}
-	docs, err := s.repo.ListDocuments(ctx, filter)
+	docs, err := s.repo.ListDocumentFiles(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +190,7 @@ func (resolver webDAVResolver) searchFavoriteChildren(ctx context.Context, resou
 	if err != nil {
 		return nil, err
 	}
-	docs, err := s.repo.ListDocuments(ctx, filter)
+	docs, err := s.repo.ListDocumentFiles(ctx, filter)
 	if err != nil {
 		return nil, err
 	}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 
+	"bearstack/internal/fsutil"
 	"bearstack/internal/sqlutil"
 )
 
@@ -19,12 +20,13 @@ func (l *Library) refreshAdminOnlyIndexFlags(ctx context.Context) error {
 	// Resolve current marker state before acquiring the database write lock.
 	var byVisibility [2][]string
 	adminOnlyCache := map[string]bool{}
+	paths := fsutil.NewRootPathBatch(l.root)
 	for _, rel := range dirs {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
 		adminOnly := 0
-		if abs, err := l.Resolve(rel); err == nil {
+		if _, abs, err := paths.Resolve(rel, true, ErrPathEscapesRoot()); err == nil {
 			adminOnly = boolInt(directoryAdminOnlyFromAbsCached(rel, abs, adminOnlyCache))
 		}
 		byVisibility[adminOnly] = append(byVisibility[adminOnly], rel)

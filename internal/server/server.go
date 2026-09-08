@@ -173,13 +173,21 @@ type precompressedStaticAsset struct {
 func cacheStaticAssets(staticFS fs.FS) http.Handler {
 	next := http.FileServer(http.FS(staticFS))
 	gzipped := precompressStaticAssets(staticFS)
+	versionedPDFJS := versionedPDFJSPrefixes(staticFS)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Query().Get("v") != "" {
+		assetName := staticAssetName(r.URL.Path)
+		immutable := r.URL.Query().Get("v") != ""
+		for _, prefix := range versionedPDFJS {
+			if strings.HasPrefix(assetName, prefix) {
+				immutable = true
+				break
+			}
+		}
+		if immutable {
 			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 		} else {
 			w.Header().Set("Cache-Control", "public, max-age=300")
 		}
-		assetName := staticAssetName(r.URL.Path)
 		if assetName != "" && isCompressibleStaticPath(assetName) {
 			w.Header().Add("Vary", "Accept-Encoding")
 		}
@@ -191,6 +199,25 @@ func cacheStaticAssets(staticFS fs.FS) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// PDF.js resolves workers, fonts and codecs relative to its version directory,
+// without the content query parameter used by template assets. Discover only
+// shipped release directories once; replacing their contents requires a new URL.
+func versionedPDFJSPrefixes(staticFS fs.FS) []string {
+	dirs, _ := fs.Glob(staticFS, "vendor/pdfjs-*.*.*")
+	var prefixes []string
+	for _, dir := range dirs {
+		parts := strings.Split(strings.TrimPrefix(path.Base(dir), "pdfjs-"), ".")
+		valid := len(parts) == 3
+		for _, part := range parts {
+			valid = valid && part != "" && strings.Trim(part, "0123456789") == ""
+		}
+		if info, err := fs.Stat(staticFS, dir); valid && err == nil && info.IsDir() {
+			prefixes = append(prefixes, dir+"/")
+		}
+	}
+	return prefixes
 }
 
 func precompressStaticAssets(staticFS fs.FS) map[string]precompressedStaticAsset {

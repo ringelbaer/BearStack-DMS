@@ -12,9 +12,13 @@ import (
 var documentSearchColumns = []string{"original_name", "title", "description", "tags", "search_text"}
 
 func buildListQuery(filter document.ListFilter) (string, []any) {
+	return buildDocumentListQuery(filter, summarySelect())
+}
+
+func buildDocumentListQuery(filter document.ListFilter, selectSQL string) (string, []any) {
 	whereClause, args := buildListWhere(filter)
 
-	query := summarySelect() + "\n" + whereClause + "\nORDER BY " + buildListOrderBy(filter)
+	query := selectSQL + "\n" + whereClause + "\nORDER BY " + buildListOrderBy(filter)
 	if filter.Limit > 0 {
 		query += "\nLIMIT ?"
 		args = append(args, filter.Limit)

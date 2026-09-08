@@ -182,7 +182,7 @@
       // A selected label contains the ID; opening it again lists alternatives.
       var query = target.value && target.value !== "0" ? "" : input.value.trim();
       try {
-        var response = await fetch("/photos/people?format=json&known=1&q=" + encodeURIComponent(query), {
+        var response = await fetch("/photos/people?format=suggestions&q=" + encodeURIComponent(query), {
           signal: controller.signal, credentials: "same-origin", redirect: "error",
           headers: { Accept: "application/json" }
         });

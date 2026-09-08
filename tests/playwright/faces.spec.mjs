@@ -302,10 +302,10 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await mergeForm.getByRole("button", { name: "Benennen", exact: true }).click();
   await expect(page.getByRole("heading", { name: "nicht-vorhandene-person", exact: true })).toBeVisible();
   await expect(page.locator(".people-management input:not([type=hidden])")).toHaveCount(1);
-  await page.route("**/photos/people?format=json&known=1&q=Fehler", route => route.fulfill({ status: 503, body: "Unavailable" }));
+  await page.route("**/photos/people?format=suggestions&q=Fehler", route => route.fulfill({ status: 503, body: "Unavailable" }));
   await personSearch.fill("Fehler");
   await expect(mergeForm.locator("[data-person-feedback]")).toContainText("Personen konnten nicht geladen werden.");
-  await page.unroute("**/photos/people?format=json&known=1&q=Fehler");
+  await page.unroute("**/photos/people?format=suggestions&q=Fehler");
   await personSearch.fill("Jür");
   await expect(personOptions).toHaveCount(1);
   await expect(personOptions.first()).toContainText("Jürgen");
@@ -332,7 +332,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   const started = new Promise(resolve => { markStarted = resolve; });
   let markFinished;
   const finished = new Promise(resolve => { markFinished = resolve; });
-  await page.route("**/photos/people?format=json&known=1&q=Veraltet", async route => {
+  await page.route("**/photos/people?format=suggestions&q=Veraltet", async route => {
     markStarted();
     await new Promise(resolve => { releaseStale = resolve; });
     try {
@@ -348,7 +348,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(personOptions.first()).toContainText("Jürgen");
   releaseStale();
   await finished;
-  await page.unroute("**/photos/people?format=json&known=1&q=Veraltet");
+  await page.unroute("**/photos/people?format=suggestions&q=Veraltet");
   await expect(personOptions.first()).toContainText("Jürgen");
   // Editing a chosen label must discard its ID; mouse selection restores it.
   await personSearch.fill("Jü");

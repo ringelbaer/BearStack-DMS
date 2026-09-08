@@ -11,7 +11,7 @@ import (
 )
 
 func TestPersonVisibilityIsScopedAndChecksNewMarkers(t *testing.T) {
-	for _, operation := range []string{"detail", "people", "search", "suggestions", "rename"} {
+	for _, operation := range []string{"detail", "people", "search", "suggestions", "picker", "rename"} {
 		t.Run(operation, func(t *testing.T) {
 			ctx := context.Background()
 			l := faceLibrary(t, "one/a.jpg", "other/b.jpg")
@@ -39,6 +39,8 @@ func TestPersonVisibilityIsScopedAndChecksNewMarkers(t *testing.T) {
 				_, err = l.People(ctx, 0, 1, "Alice", true)
 			case "suggestions":
 				_, err = l.LabelSuggestions(ctx, "Alice", false)
+			case "picker":
+				_, err = l.SuggestPeople(ctx, "Alice")
 			case "rename":
 				err = l.RenamePerson(ctx, id, "Alice")
 			}
