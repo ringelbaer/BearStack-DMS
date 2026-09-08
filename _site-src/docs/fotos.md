@@ -175,6 +175,16 @@ ausgeführt; für die Installation der Python-Pakete und Modelle wird Internetzu
     Die Modelldateien bleiben lokal erhalten; dieser Schritt ist nur bei der Einrichtung
     oder einem vorgesehenen Modellupdate nötig.
 
+    Scheitert der Download unter macOS mit `CERTIFICATE_VERIFY_FAILED`, kann der
+    Python-Installation ihr CA-Bundle fehlen. Ist `/etc/ssl/cert.pem` vorhanden,
+    lässt sich das System-CA-Bundle für diesen Aufruf verwenden:
+
+    ```sh
+    SSL_CERT_FILE=/etc/ssl/cert.pem .venv-faces/bin/python services/faces/download_models.py "$HOME/.local/share/bearstack-face-models"
+    ```
+
+    TLS-Zertifikate und Modell-Prüfsummen werden dabei weiterhin geprüft.
+
 2. **Gemeinsamen Token erzeugen:**
 
     ```sh

@@ -90,6 +90,8 @@ Ab 0.39.3 erscheinen das Ignorieren-× und der Stift für den Benenn-Dialog in d
 
 Regressionstests pruefen unter anderem die gleichen Foto-Wertebereiche aus Formular und Datenbank, unterschiedliche HTML-/API-Antworten auf zu hohe Dokumentseiten sowie Fotoframe und Lightbox ohne Galerie-Script. Details zur internen Trennung stehen in der [Architekturbeschreibung](_site-src/docs/architektur.md).
 
+Ab 0.41.3 liegen Startseiten- und Navigationsregeln in `navigation.go`, Auswahloptionen in `settings_presenter.go` und Regeln zur Benutzerverwaltung im Account-Modul. Handler und Darstellung verwenden dieselben geprüften Rechteentscheidungen. Einstellungen werden weiterhin atomar gespeichert; Berechtigungen und HTTP-Verträge bleiben unverändert.
+
 Ab 0.39.1 werden allgemeine, Dokument- und Fotoeinstellungen je Formular atomar gespeichert. Fehler hinterlassen keine teilweise gespeicherten Werte; zusammengehörige Einstellungen werden gemeinsam gelesen und ihre Caches mit Schreibvorgängen synchronisiert. Personenbezogene Prüfungen berücksichtigen die betroffenen Gruppen und die Herkunft importierter Namen. Neue `.adminonly`-Markierungen wirken beim nächsten Zugriff; Gesamtübersichten prüfen weiterhin sämtliche relevanten Gesichtsverzeichnisse. Der Gesichtsabgleich lädt Referenzkandidaten gebündelt. Mailimport und EML-Archivierung verwenden gemeinsame MIME-Decoder einschließlich Windows-1252-Headern.
 
 `make test-js` führt nach den Syntaxchecks auch die DOM-Regressionen in `scripts/js-dom-tests.mjs` aus. Weitere Tests sichern Rollback, konkurrierende Einstellungen, neue Schutzmarkierungen und die Zahl der Referenzabfragen ab. `go test ./internal/photos -run '^$' -bench '^BenchmarkFaceVisibility$' -benchmem` vergleicht eine Gesamtprüfung mit einer gezielten Personenprüfung bei 1.000 Verzeichnissen.
@@ -399,6 +401,16 @@ ausgeführt; für die Installation der Python-Pakete und Modelle wird Internetzu
     festgelegten Modelle samt Lizenzhinweisen und prüft ihre SHA-256-Prüfsummen.
     Die Modelldateien bleiben lokal erhalten; dieser Schritt ist nur bei der Einrichtung
     oder einem vorgesehenen Modellupdate nötig.
+
+    Scheitert der Download unter macOS mit `CERTIFICATE_VERIFY_FAILED`, kann der
+    Python-Installation ihr CA-Bundle fehlen. Ist `/etc/ssl/cert.pem` vorhanden,
+    lässt sich das System-CA-Bundle für diesen Aufruf verwenden:
+
+    ```sh
+    SSL_CERT_FILE=/etc/ssl/cert.pem .venv-faces/bin/python services/faces/download_models.py "$HOME/.local/share/bearstack-face-models"
+    ```
+
+    TLS-Zertifikate und Modell-Prüfsummen werden dabei weiterhin geprüft.
 
 2. **Gemeinsamen Token erzeugen:**
 

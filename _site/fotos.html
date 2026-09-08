@@ -1157,20 +1157,26 @@ ausgeführt; für die Installation der Python-Pakete und Modelle wird Internetzu
 festgelegten Modelle samt Lizenzhinweisen und prüft ihre SHA-256-Prüfsummen.
 Die Modelldateien bleiben lokal erhalten; dieser Schritt ist nur bei der Einrichtung
 oder einem vorgesehenen Modellupdate nötig.</p>
+<p>Scheitert der Download unter macOS mit <code>CERTIFICATE_VERIFY_FAILED</code>, kann der
+Python-Installation ihr CA-Bundle fehlen. Ist <code>/etc/ssl/cert.pem</code> vorhanden,
+lässt sich das System-CA-Bundle für diesen Aufruf verwenden:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nv">SSL_CERT_FILE</span><span class="o">=</span>/etc/ssl/cert.pem<span class="w"> </span>.venv-faces/bin/python<span class="w"> </span>services/faces/download_models.py<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.local/share/bearstack-face-models&quot;</span>
+</span></code></pre></div>
+<p>TLS-Zertifikate und Modell-Prüfsummen werden dabei weiterhin geprüft.</p>
 </li>
 <li>
 <p><strong>Gemeinsamen Token erzeugen:</strong></p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> </span><span class="m">32</span>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> </span><span class="m">32</span>
 </span></code></pre></div>
 <p>Den erzeugten Wert in den folgenden Beispielen anstelle von <code>TOKEN_HIER_EINTRAGEN</code>
 verwenden. Erkennungsdienst und BearStack müssen denselben Token erhalten.</p>
 </li>
 <li>
 <p><strong>Erkennungsdienst in einem eigenen Terminal starten:</strong></p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_MODELS_DIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.local/share/bearstack-face-models&quot;</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_SERVICE_TOKEN</span><span class="o">=</span><span class="s1">&#39;TOKEN_HIER_EINTRAGEN&#39;</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_BIND</span><span class="o">=</span><span class="m">127</span>.0.0.1
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>.venv-faces/bin/python<span class="w"> </span>services/faces/server.py
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_MODELS_DIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.local/share/bearstack-face-models&quot;</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_SERVICE_TOKEN</span><span class="o">=</span><span class="s1">&#39;TOKEN_HIER_EINTRAGEN&#39;</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_BIND</span><span class="o">=</span><span class="m">127</span>.0.0.1
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>.venv-faces/bin/python<span class="w"> </span>services/faces/server.py
 </span></code></pre></div>
 <p>Der Dienst lauscht auf <code>127.0.0.1:8091</code>. Er benötigt Leserechte auf die Modelle,
 aber keine Rechte auf Fotoverzeichnis oder BearStack-Datenbank. Das Terminal bleibt
@@ -1179,10 +1185,10 @@ seine Variablen müssen in der Prozessumgebung gesetzt sein.</p>
 </li>
 <li>
 <p><strong>Erreichbarkeit in einem zweiten Terminal prüfen:</strong></p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_SERVICE_TOKEN</span><span class="o">=</span><span class="s1">&#39;TOKEN_HIER_EINTRAGEN&#39;</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>curl<span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$BEARSTACK_FACE_SERVICE_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>http://127.0.0.1:8091/health
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_SERVICE_TOKEN</span><span class="o">=</span><span class="s1">&#39;TOKEN_HIER_EINTRAGEN&#39;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>curl<span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$BEARSTACK_FACE_SERVICE_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>http://127.0.0.1:8091/health
 </span></code></pre></div>
 <p>Die JSON-Antwort muss <code>"ready": true</code>, <code>"protocol": 1</code> und die Modellkennung
 <code>yunet-2023mar-sface-2021dec-v1</code> enthalten. Bei HTTP 401 stimmt der Token nicht;
@@ -1191,8 +1197,8 @@ bei einem Verbindungsfehler zuerst das Dienstterminal prüfen.</p>
 <li>
 <p><strong>BearStack verbinden und neu starten:</strong> Die folgenden Werte in die von BearStack
     gelesene <code>.env</code>-Datei beziehungsweise seine Prozessumgebung eintragen:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>BEARSTACK_PHOTOS_FACE_SERVICE_URL=http://127.0.0.1:8091
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN=TOKEN_HIER_EINTRAGEN
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>BEARSTACK_PHOTOS_FACE_SERVICE_URL=http://127.0.0.1:8091
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN=TOKEN_HIER_EINTRAGEN
 </span></code></pre></div>
 <p>Bei der systemd-Beispielinstallation können stattdessen die Felder
 <code>face_service_url</code> und <code>face_service_token</code> im vorhandenen <code>photos</code>-Objekt in

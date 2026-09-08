@@ -2,6 +2,31 @@ package server
 
 import "testing"
 
+func TestResolveHomePageUsesExplicitModuleStateAndPermissions(t *testing.T) {
+	tests := []struct {
+		name, page    string
+		auth          AuthPermissions
+		photos, cloud bool
+		want          string
+	}{
+		{name: "configured folders", page: homePageFolders, auth: AuthPermissions{CanDocumentsRead: true}, want: homePageFolders},
+		{name: "cloud enabled", page: homePageCloud, auth: AuthPermissions{CanDocumentsRead: true}, cloud: true, want: homePageCloud},
+		{name: "cloud disabled", page: homePageCloud, auth: AuthPermissions{CanDocumentsRead: true}, want: homePageDocuments},
+		{name: "photos enabled", page: homePagePhotos, auth: AuthPermissions{CanPhotosRead: true}, photos: true, want: homePagePhotos},
+		{name: "photos disabled", page: homePagePhotos, auth: AuthPermissions{CanDocumentsRead: true, CanPhotosRead: true}, want: homePageDocuments},
+		{name: "photos without permission", page: homePagePhotos, auth: AuthPermissions{CanDocumentsRead: true}, photos: true, want: homePageDocuments},
+		{name: "photo reader leaves document home", page: homePageFolders, auth: AuthPermissions{CanPhotosRead: true}, photos: true, want: homePagePhotos},
+		{name: "no content rights", page: homePagePhotos, auth: AuthPermissions{CanSystemManage: true}, photos: true, want: homePageDocuments},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := resolveHomePage(test.page, test.auth, test.photos, test.cloud); got != test.want {
+				t.Fatalf("home page = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
 func TestHomeURLForPermissionsUsesAnAccessibleLandingPage(t *testing.T) {
 	tests := []struct {
 		name          string

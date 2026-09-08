@@ -4,6 +4,16 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.41.3
+
+- Navigation und beschriftete Auswahloptionen aus dem Einstellungsservice ausgelagert. Die Startseitenauflösung erhält Modulstatus und Rechte explizit; atomare Speicherung, Cache-Synchronisierung und Worker-Konfiguration bleiben unverändert.
+- Regeln für Benutzerverwaltung und Rechteweitergabe im Account-Modul gebündelt. Handler und Darstellung verwenden dieselben Regeln über einen Adapter vom authentifizierten Principal; Session- und Schreibabläufe bleiben bestehen.
+- PATCH für interne Refactors ohne Änderung an HTTP-Verträgen, Datenformaten oder Berechtigungen. Regeltests ins Account-Modul verschoben, Grenzfälle und Startseitenmatrix ergänzt; README, Website und OpenAPI-Version aktualisiert.
+
+### Dokumentation
+
+- Native Gesichtserkennung: macOS-Hinweis für fehlende Python-CA-Bundles beim Modell-Download ergänzt. Das vorhandene System-CA-Bundle lässt sich mit `SSL_CERT_FILE` verwenden; Zertifikats- und Modell-Prüfungen bleiben aktiv. Keine Änderung am Anwendungscode oder an der Version.
+
 ### BearStack 0.41.2
 
 - Ausschließlich in Tests verwendete Helfer zum Vorbelegen der Einstellungs-Caches nach `test_helpers_test.go` verschoben; die zusätzliche Server-Weiterleitung für den App-Namen entfernt.

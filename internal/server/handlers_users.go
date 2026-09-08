@@ -54,7 +54,7 @@ func (s *Server) handleNewUser(w http.ResponseWriter, r *http.Request) {
 		s.renderForbidden(w, r)
 		return
 	}
-	if !bootstrap && !actorCanCreateUser(principal) {
+	if !bootstrap && !principal.managementActor().CanCreateUser() {
 		s.renderForbidden(w, r)
 		return
 	}
@@ -82,7 +82,7 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	bootstrap := s.userBootstrapAllowed(r, users)
 	principal, hasPrincipal := authPrincipalFromContext(r.Context())
-	if !bootstrap && (!hasPrincipal || !actorCanCreateUser(principal)) {
+	if !bootstrap && (!hasPrincipal || !principal.managementActor().CanCreateUser()) {
 		s.renderForbidden(w, r)
 		return
 	}
@@ -107,7 +107,7 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		form.SelectedPermissions = map[string]bool{}
 	} else if accessErr != nil {
 		fieldErrors["permissions"] = friendlyAccessError(accessErr)
-	} else if err := validateDelegatedAccess(principal, role, permissions); err != nil {
+	} else if err := principal.managementActor().ValidateDelegatedAccess(role, permissions); err != nil {
 		fieldErrors["permissions"] = err.Error()
 	}
 	password := r.FormValue("new_password")
@@ -224,7 +224,7 @@ func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	role, permissions, _, err := account.NormalizeAccess(form.Role, selectedPermissions)
 	if err != nil {
 		fieldErrors["permissions"] = friendlyAccessError(err)
-	} else if err := validateDelegatedAccess(principal, role, permissions); err != nil {
+	} else if err := principal.managementActor().ValidateDelegatedAccess(role, permissions); err != nil {
 		fieldErrors["permissions"] = err.Error()
 	}
 	confirmationStatus := s.currentPasswordFormStatus(w, r, fieldErrors)
@@ -511,7 +511,7 @@ func (s *Server) handleChangeUserPreferences(w http.ResponseWriter, r *http.Requ
 	allowed := false
 	if source == authSourceDatabase {
 		allowed = principal.Source == authSourceDatabase && principal.AccountID == databaseUser.ID
-		allowed = allowed || actorCanManageUser(principal, databaseUser)
+		allowed = allowed || principal.managementActor().CanManageUser(databaseUser)
 	} else {
 		allowed = actorCanManageConfigPreference(principal, configuredUser)
 	}
@@ -532,7 +532,7 @@ func (s *Server) handleChangeUserPreferences(w http.ResponseWriter, r *http.Requ
 		currentAllowed := false
 		if source == authSourceDatabase {
 			currentAllowed = principal.Source == authSourceDatabase && principal.AccountID == currentDatabaseUser.ID
-			currentAllowed = currentAllowed || actorCanManageUser(principal, currentDatabaseUser)
+			currentAllowed = currentAllowed || principal.managementActor().CanManageUser(currentDatabaseUser)
 		} else {
 			currentAllowed = actorCanManageConfigPreference(principal, currentConfiguredUser)
 		}
@@ -708,7 +708,7 @@ func (s *Server) editableUserFromRequest(w http.ResponseWriter, r *http.Request)
 	}
 	setAuditTarget(r, "Benutzer:"+user.Username)
 	principal, ok := authPrincipalFromContext(r.Context())
-	if !ok || !actorCanManageUser(principal, user) {
+	if !ok || !principal.managementActor().CanManageUser(user) {
 		s.renderForbidden(w, r)
 		return account.User{}, authPrincipal{}, false
 	}
@@ -919,49 +919,6 @@ func friendlyAccessError(err error) string {
 	default:
 		return "Die ausgewählten Zugriffsrechte sind ungültig."
 	}
-}
-
-func validateDelegatedAccess(actor authPrincipal, role string, permissions []string) error {
-	if account.IsAdministratorRole(actor.Role) {
-		return nil
-	}
-	if account.IsAdministratorRole(role) || account.IsUserManager(role, permissions) {
-		return errors.New("Nur Administratoren dürfen Administratoren oder weitere Nutzerverwalter anlegen und verwalten.")
-	}
-	requested, err := account.CapabilitiesFor(role, permissions)
-	if err != nil {
-		return err
-	}
-	actorCapabilities := account.Capabilities(actor.capabilities)
-	if requested&^actorCapabilities != 0 {
-		return errors.New("Sie dürfen nur Rechte vergeben, die Sie selbst besitzen.")
-	}
-	return nil
-}
-
-func actorCanCreateUser(actor authPrincipal) bool {
-	if account.IsAdministratorRole(actor.Role) {
-		return true
-	}
-	capabilities := account.Capabilities(actor.capabilities) &^ account.CapabilitySystemUsersManage
-	return capabilities != 0
-}
-
-func actorCanManageUser(actor authPrincipal, target account.User) bool {
-	if actor.Username == "" || actor.Username == target.Username {
-		return false
-	}
-	if account.IsAdministratorRole(actor.Role) {
-		return true
-	}
-	if account.IsAdministratorRole(target.Role) || account.IsUserManager(target.Role, target.Permissions) {
-		return false
-	}
-	targetCapabilities, err := account.CapabilitiesFor(target.Role, target.Permissions)
-	if err != nil {
-		return false
-	}
-	return targetCapabilities&^account.Capabilities(actor.capabilities) == 0
 }
 
 func defaultAssignableUserRole(actor authPrincipal, bootstrap bool) string {

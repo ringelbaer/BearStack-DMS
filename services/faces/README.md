@@ -17,6 +17,16 @@ export BEARSTACK_FACE_SERVICE_TOKEN='your-random-token-of-at-least-32-characters
 .venv-faces/bin/python services/faces/server.py
 ```
 
+If model downloads fail on macOS with `CERTIFICATE_VERIFY_FAILED`, the Python
+installation may be missing its default CA bundle. When `/etc/ssl/cert.pem`
+exists, use the system CA bundle for the download:
+
+```sh
+SSL_CERT_FILE=/etc/ssl/cert.pem .venv-faces/bin/python services/faces/download_models.py /your/model/directory
+```
+
+TLS certificate verification and model checksum validation remain enabled.
+
 The native default is `127.0.0.1:8091`. Configure BearStack with
 `BEARSTACK_PHOTOS_FACE_SERVICE_URL=http://127.0.0.1:8091` and the same token in
 `BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN`, then enable recognition in the UI.

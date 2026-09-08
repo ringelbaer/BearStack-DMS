@@ -42,16 +42,16 @@ func TestDelegatedUserManagerCanOnlyGrantOwnedOrdinaryRights(t *testing.T) {
 		capabilities: authCapabilities(account.CapabilitySystemUsersManage |
 			account.CapabilityPhotosRead),
 	}
-	if err := validateDelegatedAccess(manager, account.RolePhotosRead, nil); err != nil {
+	if err := manager.managementActor().ValidateDelegatedAccess(account.RolePhotosRead, nil); err != nil {
 		t.Fatalf("grant owned right: %v", err)
 	}
-	if err := validateDelegatedAccess(manager, account.RolePhotosEditor, nil); err == nil {
+	if err := manager.managementActor().ValidateDelegatedAccess(account.RolePhotosEditor, nil); err == nil {
 		t.Fatal("granting unowned photo edit right succeeded")
 	}
-	if err := validateDelegatedAccess(manager, account.RoleAdmin, nil); err == nil {
+	if err := manager.managementActor().ValidateDelegatedAccess(account.RoleAdmin, nil); err == nil {
 		t.Fatal("granting admin role succeeded")
 	}
-	if err := validateDelegatedAccess(manager, account.RoleCustom, []string{account.PermissionSystemUsersManage}); err == nil {
+	if err := manager.managementActor().ValidateDelegatedAccess(account.RoleCustom, []string{account.PermissionSystemUsersManage}); err == nil {
 		t.Fatal("granting user-manager permission succeeded")
 	}
 }

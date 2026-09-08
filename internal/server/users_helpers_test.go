@@ -11,63 +11,6 @@ import (
 	"bearstack/internal/config"
 )
 
-func TestUserDelegationHelpersEnforceSubsetAndAdministratorBoundaries(t *testing.T) {
-	administrator := authPrincipal{
-		Username:     "admin",
-		Role:         account.RoleAdmin,
-		capabilities: authCapabilities(account.AllCapabilities),
-	}
-	delegate := authPrincipal{
-		Username: "manager",
-		Role:     account.RoleCustom,
-		capabilities: authCapabilities(
-			account.CapabilitySystemUsersManage |
-				account.CapabilityDocumentsRead |
-				account.CapabilityDocumentsWebDAVRead |
-				account.CapabilityDocumentsUpload,
-		),
-	}
-
-	tests := []struct {
-		name        string
-		actor       authPrincipal
-		role        string
-		permissions []string
-		wantErr     bool
-	}{
-		{name: "administrator assigns administrator", actor: administrator, role: account.RoleAdmin},
-		{name: "administrator assigns user manager", actor: administrator, role: account.RoleCustom, permissions: []string{account.PermissionSystemUsersManage}},
-		{name: "delegate assigns subset role", actor: delegate, role: account.RoleDocumentsRead},
-		{name: "delegate assigns subset individual permission", actor: delegate, role: account.RoleCustom, permissions: []string{account.PermissionDocumentsUpload}},
-		{name: "delegate cannot assign administrator", actor: delegate, role: account.RoleAdmin, wantErr: true},
-		{name: "delegate cannot assign user manager", actor: delegate, role: account.RoleCustom, permissions: []string{account.PermissionSystemUsersManage}, wantErr: true},
-		{name: "delegate cannot assign missing capability", actor: delegate, role: account.RolePhotosRead, wantErr: true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateDelegatedAccess(tt.actor, tt.role, tt.permissions)
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("validateDelegatedAccess() error = %v, want error %v", err, tt.wantErr)
-			}
-		})
-	}
-
-	if !actorCanCreateUser(administrator) {
-		t.Fatal("administrator cannot create users")
-	}
-	if !actorCanCreateUser(delegate) {
-		t.Fatal("delegate with assignable domain rights cannot create users")
-	}
-	usersOnlyDelegate := authPrincipal{
-		Username:     "users-only",
-		Role:         account.RoleCustom,
-		capabilities: authCapabilities(account.CapabilitySystemUsersManage),
-	}
-	if actorCanCreateUser(usersOnlyDelegate) {
-		t.Fatal("delegate without an assignable domain right can create users")
-	}
-}
-
 func TestAdditionalPermissionsForRoleRemovesInheritedRights(t *testing.T) {
 	got := additionalPermissionsForRole(account.RoleDocumentsRead, []string{
 		account.PermissionDocumentsRead,
@@ -77,49 +20,6 @@ func TestAdditionalPermissionsForRoleRemovesInheritedRights(t *testing.T) {
 	want := []string{account.PermissionDocumentsUpload}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("additional permissions = %#v, want %#v", got, want)
-	}
-}
-
-func TestActorCanManageUserProtectsSelfAndPrivilegedTargets(t *testing.T) {
-	administrator := authPrincipal{
-		Username:     "admin",
-		Role:         account.RoleAdmin,
-		capabilities: authCapabilities(account.AllCapabilities),
-	}
-	delegate := authPrincipal{
-		Username: "manager",
-		Role:     account.RoleCustom,
-		capabilities: authCapabilities(
-			account.CapabilitySystemUsersManage |
-				account.CapabilityDocumentsRead |
-				account.CapabilityDocumentsWebDAVRead |
-				account.CapabilityDocumentsUpload,
-		),
-	}
-
-	tests := []struct {
-		name   string
-		actor  authPrincipal
-		target account.User
-		want   bool
-	}{
-		{name: "administrator manages ordinary user", actor: administrator, target: account.User{Username: "reader", Role: account.RoleDocumentsRead}, want: true},
-		{name: "administrator manages another administrator", actor: administrator, target: account.User{Username: "other-admin", Role: account.RoleAdmin}, want: true},
-		{name: "administrator cannot manage self", actor: administrator, target: account.User{Username: "admin", Role: account.RoleAdmin}},
-		{name: "delegate manages subset user", actor: delegate, target: account.User{Username: "reader", Role: account.RoleDocumentsRead}, want: true},
-		{name: "delegate manages subset custom user", actor: delegate, target: account.User{Username: "uploader", Role: account.RoleCustom, Permissions: []string{account.PermissionDocumentsUpload}}, want: true},
-		{name: "delegate cannot manage self", actor: delegate, target: account.User{Username: "manager", Role: account.RoleDocumentsRead}},
-		{name: "delegate cannot manage administrator", actor: delegate, target: account.User{Username: "admin", Role: account.RoleAdmin}},
-		{name: "delegate cannot manage another user manager", actor: delegate, target: account.User{Username: "other-manager", Role: account.RoleCustom, Permissions: []string{account.PermissionSystemUsersManage}}},
-		{name: "delegate cannot manage wider access", actor: delegate, target: account.User{Username: "photos", Role: account.RolePhotosRead}},
-		{name: "anonymous actor cannot manage", target: account.User{Username: "reader", Role: account.RoleDocumentsRead}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := actorCanManageUser(tt.actor, tt.target); got != tt.want {
-				t.Fatalf("actorCanManageUser() = %v, want %v", got, tt.want)
-			}
-		})
 	}
 }
 

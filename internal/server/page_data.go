@@ -145,23 +145,6 @@ type SearchFavoriteDateOption struct {
 	Label string
 }
 
-type TagDisplayOption struct {
-	Value string
-	Label string
-}
-
-type ThemeOption struct {
-	Value       string
-	Label       string
-	Description string
-}
-
-type HomePageOption struct {
-	Value string
-	Label string
-	URL   string
-}
-
 type TagCloudView struct {
 	HasPrimaryTags bool
 	Items          []TagCloudItemView
@@ -181,11 +164,6 @@ type TagCloudItemView struct {
 	Primary    bool
 	SizeRem    float64
 	CloudStyle template.CSS
-}
-
-type TrashRetentionOption struct {
-	Value int
-	Label string
 }
 
 type CustomFaviconView struct {

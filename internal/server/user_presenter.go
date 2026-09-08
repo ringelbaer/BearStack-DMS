@@ -16,7 +16,7 @@ func (s *Server) userManagementListView(users []account.User, actor authPrincipa
 	configuredAccounts := s.authConfigAccountViews()
 	result := UserManagementView{
 		Users:             make([]ManagedUserView, 0, len(users)+len(configuredAccounts)),
-		CanCreate:         actorCanCreateUser(actor),
+		CanCreate:         actor.managementActor().CanCreateUser(),
 		CurrentUsername:   actor.Username,
 		CurrentUserSource: actor.Source,
 		CurrentUserID:     actor.AccountID,
@@ -70,8 +70,8 @@ func (s *Server) managedUserView(user account.User, actor authPrincipal) Managed
 		RoleLabel:               roleLabel(user.Role),
 		Active:                  user.Enabled,
 		Current:                 current,
-		Editable:                actorCanManageUser(actor, user),
-		CanManagePreferences:    current || actorCanManageUser(actor, user),
+		Editable:                actor.managementActor().CanManageUser(user),
+		CanManagePreferences:    current || actor.managementActor().CanManageUser(user),
 		CustomPDFPreviewEnabled: preference.CustomPDFPreviewEnabled,
 		PreferenceVersion:       preference.RowVersion,
 		Version:                 user.RowVersion,
@@ -86,7 +86,7 @@ func userManagementFormView(actor authPrincipal, form ManagedUserFormView, creat
 		disabled := false
 		if bootstrap {
 			disabled = descriptor.Name != account.RoleAdmin
-		} else if descriptor.Name != account.RoleCustom && validateDelegatedAccess(actor, descriptor.Name, nil) != nil {
+		} else if descriptor.Name != account.RoleCustom && actor.managementActor().ValidateDelegatedAccess(descriptor.Name, nil) != nil {
 			disabled = true
 		}
 		roles = append(roles, UserRoleOptionView{
@@ -140,7 +140,7 @@ func userManagementFormView(actor authPrincipal, form ManagedUserFormView, creat
 		PermissionGroups: groups,
 		Creating:         creating,
 		Bootstrap:        bootstrap,
-		CanCreate:        bootstrap || actorCanCreateUser(actor),
+		CanCreate:        bootstrap || actor.managementActor().CanCreateUser(),
 		CurrentUsername:  actor.Username,
 	}
 }

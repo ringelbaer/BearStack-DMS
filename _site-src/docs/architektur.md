@@ -75,6 +75,10 @@ Zusätzlich zur Startkonfiguration speichert BearStack über die Weboberfläche 
 
 ## Abfragen und Darstellung
 
+Ab 0.41.3 trennt `internal/server/navigation.go` erreichbare Startseiten und URLs vom Einstellungsservice. Die reine Startseitenauflösung erhält Berechtigungen und Modulstatus explizit; `settings_presenter.go` enthält die beschrifteten Auswahloptionen. Speicherung, Normalisierung und synchronisierte Caches bleiben im Einstellungsservice.
+
+Die fachlichen Regeln zur Rechteweitergabe und Benutzerverwaltung liegen in `internal/account/management.go`. Der Server übergibt Identität, Rolle und effektive Fähigkeiten über einen kleinen Principal-Adapter. Handler und HTML-Darstellung verwenden dieselben Regeln; Routenberechtigungen, Session-Prüfung, Passwortverarbeitung und synchronisierte Schreibabläufe bleiben Aufgaben des Servers.
+
 Dokumentlisten für HTML und JSON nutzen denselben Abfrage-Service. Er erhält Filter und Optionen für OCR-Daten beziehungsweise das Überspringen von Seiten außerhalb des gültigen Bereichs und liefert Dokumente, Gesamtzahl und optional OCR-Jobs. HTTP-Anfragen, Redirects und Navigationslinks bleiben in der Darstellungsschicht. HTML-Seiten werden wie bisher auf die letzte vorhandene Seite umgeleitet; die API darf eine leere Seite zurückgeben. Vor einer HTML-Umleitung wird nur gezählt, und API-Abfragen benötigen keine OCR-Abfrage.
 
 Fotoeinstellungen werden an ihrer Quelle eingelesen und anschließend gemeinsam normalisiert. Zahlenbereiche stehen dadurch an einer Stelle. Fehlende oder ungültige Datenbankwerte behalten ihre Defaults; Formular-Checkboxen sind weiterhin nur mit dem Wert `1` aktiviert. Allgemeine, Dokument- und Fotoeinstellungen werden je Formular in einer SQLite-Transaktion gespeichert. Zusammengehörige Werte werden mit einer gemeinsamen Abfrage gelesen. Cache-Ladevorgänge und Schreibvorgänge sind synchronisiert; nur erfolgreiche Commits aktualisieren Caches und die Foto-Worker-Einstellung.

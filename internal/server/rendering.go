@@ -399,7 +399,7 @@ func (s *Server) withRenderSettings(r *http.Request, data PageData) PageData {
 		data.HomePageOptions = homePageOptions(s.photos != nil, data.DocumentCloudEnabled)
 	}
 	if data.HomePage == "" {
-		data.HomePage = s.resolveHomePage(renderSettings.HomePage, data.Auth, data.DocumentCloudEnabled)
+		data.HomePage = resolveHomePage(renderSettings.HomePage, data.Auth, s.photos != nil, data.DocumentCloudEnabled)
 	} else {
 		data.HomePage = normalizeAvailableHomePage(data.HomePage, s.photos != nil, data.DocumentCloudEnabled)
 	}
