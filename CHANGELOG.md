@@ -4,6 +4,20 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### Android 0.5.3
+
+- Das automatische Speichern nach Ablauf einer Rückgängig-Frist wartet auf das Schließen des Namens- oder Duplikatdialogs. Dadurch deaktivieren Änderungen und Ausblenden des Toasts nicht mehr dessen Eingabefeld; Fokus, Tastatur und Namensentwurf bleiben erhalten. Die Rücknahmefrist bleibt bei fünf Sekunden.
+- Wartende Schreibvorgänge werden weiterhin einzeln für die ursprünglich ignorierten Gruppen ausgeführt. Beim Hintergrundwechsel bleiben noch nicht gesendete Gruppen wiederherstellbar. Regressionen für mehrere Fristen, Texteingabe und Tastatur, Duplikatdialog sowie Hintergrundwechsel ergänzt.
+- Android-PATCH auf 0.5.3 (`versionCode` 12); unabhängige Serverversion und API-Vertrag bleiben unverändert. README, Android-Anleitung und Website aktualisiert.
+
+### BearStack 0.40.0
+
+- Vergleichsbilder werden möglichst über verschiedene Galerieordner verteilt. Innerhalb eines Ordners bleiben manuelle Zuordnung und Erkennungssicherheit ausschlaggebend; bereits durch Favoriten vertretene Ordner werden beim Auffüllen berücksichtigt.
+- Einzelne Gesichter lassen sich in benannten und unbenannten Personengruppen der Weboberfläche per Stern favorisieren. Alle aktiven Favoriten werden vollständig verglichen, auch oberhalb der eingestellten Referenzanzahl. Weniger Favoriten werden soweit möglich bis zur Zielanzahl ergänzt. Die Markierung speichert ohne Seitenreload und bleibt nach Neustart, Verschieben und Zusammenführen erhalten. Bei erneuter Erkennung wird sie nur auf eindeutig wiedergefundene Regionen übertragen.
+- Additive API für spätere App-Unterstützung: `GET`/`PUT /api/photos/labeling/v1/faces/{id}/favorite`, Favoritenstatus in Personendetails und `face_favorites` in der Labeling-Sitzung. Änderungen benötigen `photos.edit`, setzen explizit den gewünschten Zustand und prüfen die erwartete Personengruppe. Die Android-Oberfläche bleibt unverändert.
+- Automatische Migration des Fotoindex auf Schema 22 mit Favoritenstatus, Auswahlindex und fortsetzbarer Referenz-Neuauswahl ohne neue Bildanalyse. Favoritenänderung und Referenzen werden atomar gespeichert; ein aktueller Suchindex wird nur für die betroffene Person inkrementell angepasst. Private, ignorierte und entfernte Gesichter bleiben ausgeschlossen; Favoriten verdrängen keine regulären Konkurrenten aus dem HNSW-Index. Die Kandidatenprüfung verwendet SQL-Pakete mit höchstens 512 IDs.
+- Regressionen für Auswahl, Migration, Speicherung, Wiedererkennung, Sichtbarkeit, API-Rechte und Browserbedienung sowie ein Benchmark für große Personengruppen ergänzt. MINOR für kompatible Funktionen und Datenmigration; README, OpenAPI und Website aktualisiert.
+
 ### BearStack 0.39.3
 
 - Bereits benannte Personen zeigen in der Übersicht weder das Ignorieren-× noch den Stift für den Benenn-Dialog. Die Darstellung folgt dem vorhandenen Namensstatus der Karte und aktualisiert sich auch nach AJAX-Aktionen sofort. Unbenannte Personen behalten beide Symbole.

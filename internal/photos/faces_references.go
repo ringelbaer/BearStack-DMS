@@ -9,6 +9,42 @@ import (
 const DefaultFaceReferenceLimit = 30
 const MaxFaceReferenceLimit = 100
 
+func refreshFaceReferencesTx(ctx context.Context, tx *sql.Tx, person int64) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM photo_face_references WHERE person_id=?`, person); err != nil {
+		return err
+	}
+	var limit int
+	if err := tx.QueryRowContext(ctx, `SELECT reference_limit FROM photo_face_reference_settings WHERE id=1`).Scan(&limit); err != nil {
+		return err
+	}
+	// The partial favorite index avoids ranking the whole group when favorites
+	// already fill the target. Read metadata only, never embeddings or originals.
+	result, err := tx.ExecContext(ctx, `INSERT OR REPLACE INTO photo_face_references(face_id,person_id)
+ SELECT f.id,f.person_id FROM photo_faces f INDEXED BY idx_face_favorites JOIN media_index m ON m.path=f.path
+ WHERE f.person_id=? AND f.favorite=1 AND f.ignored=0 AND m.admin_only=0
+ AND f.model=(SELECT model FROM photo_face_state WHERE id=1)`, person)
+	if err != nil {
+		return err
+	}
+	favorites, err := result.RowsAffected()
+	if err != nil || favorites >= int64(limit) {
+		return err
+	}
+	// Round-robin across folders, counting favorites as occupied slots in their
+	// folders. A single streaming CTE avoids materializing all ranked rows twice.
+	_, err = tx.ExecContext(ctx, `WITH ranked AS (
+ SELECT f.id,f.person_id,f.favorite,f.manual,f.confidence,
+ row_number() OVER (PARTITION BY f.directory ORDER BY f.favorite DESC,f.manual DESC,f.confidence DESC,f.id) AS directory_rank
+ FROM photo_faces f JOIN media_index m ON m.path=f.path
+ WHERE f.person_id=? AND f.ignored=0 AND m.admin_only=0
+ AND f.model=(SELECT model FROM photo_face_state WHERE id=1)
+ ) INSERT OR REPLACE INTO photo_face_references(face_id,person_id)
+ SELECT id,person_id FROM ranked WHERE favorite=0
+ ORDER BY directory_rank,manual DESC,confidence DESC,id
+ LIMIT ?`, person, int64(limit)-favorites)
+	return err
+}
+
 func setupFaceReferenceSettings(ctx context.Context, db *sql.DB) error {
 	_, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS photo_face_reference_settings (
  id INTEGER PRIMARY KEY CHECK(id=1),

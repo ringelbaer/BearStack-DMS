@@ -450,6 +450,8 @@ func auditActionTarget(r *http.Request) (string, string) {
 		return "Papierkorb leeren", ""
 	case "POST /api/photos/labeling/v1/people/{id}/actions":
 		return "Fotoperson über Benennungs-API bearbeiten", idAuditTarget("Person", r.PathValue("id"))
+	case "PUT /api/photos/labeling/v1/faces/{id}/favorite", "POST /photos/faces/{id}/favorite":
+		return "Vergleichsgesicht favorisieren", idAuditTarget("Gesicht", r.PathValue("id"))
 	case "POST /photos/people/{id}/rename":
 		return "Fotoperson benennen", idAuditTarget("Person", r.PathValue("id"))
 	case "POST /photos/people/{id}/merge":

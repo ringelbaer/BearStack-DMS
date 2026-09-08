@@ -218,12 +218,13 @@ class PeopleViewModel private constructor(application: Application, private val 
         update { it.copy(unresolved=false,naming=false,duplicates=emptyList(),error=null) }
         loadNext()
     }
-    private suspend fun awaitReady(repo: PeopleRepository): Boolean {
+    private suspend fun awaitReady(repo: PeopleRepository, waitForNaming: Boolean = false): Boolean {
+        fun ready(value: PeopleState) = !value.busy && !value.unresolved && (!waitForNaming || !value.naming)
         while(repository===repo) {
-            state.first { !it.busy && !it.unresolved }
+            state.first { ready(it) }
             // Several expired timers may wake together. Recheck the live state
             // before claiming the single writer; none may silently be dropped.
-            if(repository===repo && !state.value.busy && !state.value.unresolved) return true
+            if(repository===repo && ready(state.value)) return true
         }
         return false
     }
@@ -242,7 +243,9 @@ class PeopleViewModel private constructor(application: Application, private val 
             ignoreJobs[person.id]=viewModelScope.launch {
                 delay(5000)
                 update {it.copy(undoIgnores=it.undoIgnores-person.id)}
-                if(awaitReady(repo)) task(clearError=false) {
+                // An expired toast must not disable the open name field and end its IME session.
+                // Keep the five-second undo deadline, but claim the writer only after naming closes.
+                if(awaitReady(repo,waitForNaming=true)) task(clearError=false) {
                     ignoreJobs.remove(person.id)
                     if(inBackground) { repo.restoreIgnores(setOf(person.id)); return@task }
                     // Commit the captured group, never the card now on screen.

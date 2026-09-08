@@ -27,7 +27,7 @@ Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie `127.0
 
 ## Android-App zum Personenbenennen
 
-Ab BearStack **0.30.0** steht unter [`apps/android/`](apps/android/README.md) eine native Android-App (Android 8.0+, App-Version 0.5.2) zur Verfügung. Sie zeigt bis zu vier Gesichtsausschnitte, unterstützt Benennen und Zuordnen mit Namensvorschlägen, Abtrennen, Ignorieren mit klickbarer Rückgängig-Meldung am oberen Bildschirmrand bei weiter bedienbarer Ansicht und lokale Statistiken. Die aktuelle App benötigt BearStack **0.35.0**: Beim Halten eines Gesichtsausschnitts zeigt sie das vollständige Originalfoto, beim Loslassen wieder das Grid. Eine dünne Bounding Box markiert das Gesicht; Herunterwischen während des Haltens zoomt zum Gesicht, Hochwischen wieder heraus. Unter Ausschnitten und Originalfoto steht der vollständige, nach Galerieregeln aufbereitete Bildpfad. Wischaktionen funktionieren auch auf dem freien Hintergrund der Bearbeitungsansicht. Rechtswischen holt die zuletzt übersprungene Person zurück und korrigiert die lokale Statistik. Erforderlich sind HTTPS und ein Konto mit Personenrechten; ab BearStack 0.36.0 reicht dafür „Fotos bearbeiten“ (`photos.edit`). Selbstsignierte Zertifikate werden vor der Anmeldung über ihren SHA-256-Fingerabdruck bestätigt. Ab App 0.5.2 bleibt der Inhalt beim Ein- und Ausblenden des Ladebalkens an derselben Position. App 0.4.1 behebt den allgemeinen Fehler beim Kontowechsel; falsche Zugangsdaten und fehlende Personenrechte werden auch im Zertifikatsdialog angezeigt.
+Ab BearStack **0.30.0** steht unter [`apps/android/`](apps/android/README.md) eine native Android-App (Android 8.0+, App-Version 0.5.3) zur Verfügung. Sie zeigt bis zu vier Gesichtsausschnitte, unterstützt Benennen und Zuordnen mit Namensvorschlägen, Abtrennen, Ignorieren mit klickbarer Rückgängig-Meldung am oberen Bildschirmrand bei weiter bedienbarer Ansicht und lokale Statistiken. Die aktuelle App benötigt BearStack **0.35.0**: Beim Halten eines Gesichtsausschnitts zeigt sie das vollständige Originalfoto, beim Loslassen wieder das Grid. Eine dünne Bounding Box markiert das Gesicht; Herunterwischen während des Haltens zoomt zum Gesicht, Hochwischen wieder heraus. Unter Ausschnitten und Originalfoto steht der vollständige, nach Galerieregeln aufbereitete Bildpfad. Wischaktionen funktionieren auch auf dem freien Hintergrund der Bearbeitungsansicht. Rechtswischen holt die zuletzt übersprungene Person zurück und korrigiert die lokale Statistik. Erforderlich sind HTTPS und ein Konto mit Personenrechten; ab BearStack 0.36.0 reicht dafür „Fotos bearbeiten“ (`photos.edit`). Selbstsignierte Zertifikate werden vor der Anmeldung über ihren SHA-256-Fingerabdruck bestätigt. Ab App 0.5.2 bleibt der Inhalt beim Ein- und Ausblenden des Ladebalkens an derselben Position. Ab App 0.5.3 warten automatische Ignorier-Schreibvorgänge auf das Schließen eines offenen Namensdialogs; ablaufende Rückgängig-Meldungen unterbrechen dessen Texteingabe und Tastatur nicht mehr. App 0.4.1 behebt den allgemeinen Fehler beim Kontowechsel; falsche Zugangsdaten und fehlende Personenrechte werden auch im Zertifikatsdialog angezeigt.
 
 `make test-android` prüft die App und baut eine Debug-APK. Einrichtung, Gesten, Zertifikatsabgleich, Emulator-Integrationstest und private Release-Signierung stehen in der [Android-Anleitung](apps/android/README.md). Der gemeinsame Vertrag bleibt [`openapi.yaml`](openapi.yaml), neue Endpunkte liegen unter `/api/photos/labeling/v1`. Android hat einen eigenen Gradle-Build und wird nicht in Go- oder Docker-Builds einbezogen.
 
@@ -81,6 +81,8 @@ Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle Suite
 Reine Go-Testhelfer liegen in `_test.go`-Dateien und werden nicht in das Anwendungsbinary übernommen. Die GPX-Benchmarks setzen für Messungen ohne Cache neben den Einträgen auch LRU-Verwaltung und Speicherzähler zurück.
 
 Ab BearStack 0.39.2 bleiben Gesichtsausschnitte im Web und in der Android-App unverzerrt: Sie werden proportional auf dunkelgrauem Hintergrund in die gleichmäßig quadratischen Kacheln eingepasst. Alte gestreckte Vorschauen werden beim nächsten Abruf einzeln ersetzt; ein App-Update oder vollständiger Cache-Neuaufbau ist dafür nicht nötig. Bereits im App-Speicher geladene Altbilder werden nach erneutem Anmelden oder einem App-Neustart neu geladen.
+
+Ab 0.40.0 lassen sich einzelne Gesichter in der Web-Detailansicht einer Person mit einem Stern als Vergleichsbilder favorisieren. Alle Favoriten werden beim Gesichtsabgleich berücksichtigt, auch oberhalb der eingestellten Referenzanzahl. Freie Plätze werden möglichst über verschiedene Galerieordner verteilt. Die dokumentierte Favoriten-API ist für eine spätere App-Erweiterung verfügbar; die Android-Oberfläche bleibt unverändert.
 
 Ab 0.39.3 erscheinen das Ignorieren-× und der Stift für den Benenn-Dialog in der Personenübersicht nur bei unbenannten Gruppen. Nach dem Benennen oder Zusammenführen passt sich die Darstellung ohne Seitenreload an.
 
@@ -476,20 +478,42 @@ Die Info-Symbole in den Einstellungen der Gesichtserkennung erklären Aktivierun
 **Personenrechte:** Seit BearStack 0.36.0 reicht „Fotos bearbeiten“ (`photos_editor` bzw. `photos.edit`) zum Benennen, Zuordnen, Zusammenführen, Ignorieren und Wiederherstellen von Gesichtern sowie für die Android-App. Einstellungen der Gesichtserkennung und das Löschen aller Gesichtsdaten benötigen weiterhin „Fotos verwalten“ (`photos.manage`).
 
 **Referenzen pro Person:** Unter **Einstellungen → Gesichtserkennung** lässt sich
-seit 0.34.0 das Limit auf 1–100 einstellen; der Standard ist **30**. BearStack wählt
-bis zu dieser Anzahl aus den bereits zugeordneten Gesichtern aus, bevorzugt manuelle
-Zuordnungen und danach die Erkennungssicherheit. Eine Verteilung über Aufnahmejahre
-ist damit noch nicht verbunden. Mehr Referenzen benötigen mehr Arbeitsspeicher für
-den Suchindex. Änderungen werden vor der nächsten Analyse in kurzen, fortsetzbaren
-Schritten übernommen; Fotos müssen dafür nicht erneut analysiert werden. Die
-Einstellung bleibt nach Neustart erhalten und kann auch bei pausierter Verarbeitung
-geändert werden. Bestehende Gruppen werden dadurch nicht automatisch zusammengeführt.
+die Zielanzahl auf 1–100 einstellen; der Standard ist **30**. Seit 0.40.0 werden
+Vergleichsbilder möglichst über verschiedene Galerieordner verteilt. Innerhalb
+eines Ordners haben manuelle Zuordnungen Vorrang, danach die Erkennungssicherheit.
+Die Auswahl ist bei unveränderten Daten stabil.
+
+**Favorisierte Gesichter:** In der Web-Detailansicht einer benannten oder unbenannten
+Person können Fotobearbeiter einzelne Gesichter mit einem Stern favorisieren.
+Alle aktiven Favoriten werden bei jedem Abgleich vollständig verglichen, auch wenn
+ihre Anzahl das eingestellte Limit übersteigt. Bei weniger Favoriten füllen
+unfavorisierte Gesichter bis zur Zielanzahl auf, sofern vorhanden. Dabei haben
+bisher nicht vertretene Ordner Vorrang; Favoriten zählen bereits für ihren Ordner.
+Mehr Favoriten benötigen mehr Arbeitsspeicher und Rechenzeit pro neu erkanntem Gesicht.
+Die Aktion speichert sofort, ohne Seitenreload oder erneute Bildanalyse.
+Favoriten bleiben nach Neustart, Zuordnen und Zusammenführen erhalten.
+Ignorierte und private Gesichter werden weiterhin ausgeschlossen. Wiederhergestellte
+Gesichter behalten ihren Stern; bei erneuter Erkennung wird er nur auf eine eindeutig
+wiedergefundene Region übertragen. Gelöschte oder ersetzte Fotos verlieren ihre
+veralteten Gesichtsdaten einschließlich der Favoriten.
+
+Änderungen der Zielanzahl und das Update bestehender Referenzen werden vor der
+nächsten Analyse in kurzen, fortsetzbaren Schritten übernommen. Bestehende Gruppen
+werden dadurch nicht automatisch zusammengeführt. Die Android-Oberfläche erhält
+vorerst keine Sterne. Für spätere Clients stehen `GET` und `PUT` unter
+`/api/photos/labeling/v1/faces/{id}/favorite` bereit (`photos.edit`). Der PUT-Body
+enthält `person_id` und den gewünschten booleschen Wert `favorite`; Wiederholungen
+schalten den Zustand nicht erneut um. Eine inzwischen geänderte Gruppenzuordnung
+oder ein ignoriertes Gesicht führt zu `409`. Personendetails liefern `faces[].favorite`,
+die Sitzung meldet Unterstützung über `face_favorites: true`. Alte Server ohne dieses
+Feld unterstützen die Erweiterung nicht. Details und Fehlerantworten stehen in der
+[OpenAPI-Beschreibung](openapi.yaml).
 
 **Metadaten und Korrekturen:** Eindeutige XMP-Gesichtsregionen liefern Namen und
 Referenzen. Manuelle Zuordnungen haben Vorrang. XMP und automatische Gesichter werden
 getrennt gespeichert; Originale und Sidecars werden nicht verändert. Die Foto-DB
-migriert automatisch auf Schema 21. Ihre Sicherung muss die erzeugten Gesichtsdaten
-und manuellen Korrekturen einschließen. Ein Index-Neuaufbau erhält die Korrekturen
+migriert automatisch auf Schema 22. Ihre Sicherung muss die erzeugten Gesichtsdaten
+sowie manuelle Korrekturen und Favoriten einschließen. Ein Index-Neuaufbau erhält die Korrekturen
 unveränderter Bilder; Dateiaustausch und Löschung entfernen veraltete Analysen.
 Bei einem Modellwechsel werden manuelle Zuordnungen nur auf eindeutig wiedergefundene
 Regionen übertragen. Unsichere Treffer bleiben getrennt. Das Zusammenführen bestehender

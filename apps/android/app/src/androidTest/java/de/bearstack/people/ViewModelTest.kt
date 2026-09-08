@@ -76,14 +76,49 @@ class ViewModelTest {
             withContext(Dispatchers.Main){vm.ignore()};idle(vm)
             assertEquals(listOf(1L,2L),vm.state.value.undoIgnores)
             assertEquals(3L,vm.state.value.person!!.id)
+            withContext(Dispatchers.Main){vm.startNaming();vm.nameChanged("Ann")}
+            until {vm.state.value.undoIgnores.isEmpty()}
+            assertFalse(vm.state.value.busy);assertTrue(vm.state.value.naming)
+            assertEquals(0,api.commits);assertEquals("Ann",vm.state.value.name)
             api.actionDelay=6000
-            withContext(Dispatchers.Main){vm.startNaming();vm.nameChanged("Anna");vm.submitName()}
+            withContext(Dispatchers.Main){vm.nameChanged("Anna");vm.submitName()}
             until {api.commits>=1};api.actionDelay=0
             until {api.commits==3};idle(vm)
             until {vm.state.value.stats.any {it.action=="ignore" && it.groups==2L}}
             assertEquals(6L,vm.state.value.stats.first {it.action=="ignore"}.faces)
             assertEquals(1L,vm.state.value.stats.first {it.action=="name"}.faces)
             assertNull(vm.state.value.person)
+        }
+    }
+    @Test fun expiredIgnoreWaitsForDuplicateDialogCancellation() = runBlocking {
+        val api=FakeService().apply {people[9]=Person(9,"Anna",1,1,90,listOf(90))}
+        model(api) {vm ->
+            withContext(Dispatchers.Main){vm.ignore()};idle(vm)
+            withContext(Dispatchers.Main){vm.startNaming();vm.nameChanged("Anna");vm.submitName()};idle(vm)
+            assertEquals("Anna",vm.state.value.duplicates.single().name)
+            until {vm.state.value.undoIgnores.isEmpty()}
+            assertFalse(vm.state.value.busy);assertTrue(vm.state.value.naming)
+            assertEquals("Anna",vm.state.value.duplicates.single().name)
+            assertEquals(0,api.commits)
+            withContext(Dispatchers.Main){vm.closeNaming()}
+            until {api.commits==1};idle(vm)
+            assertEquals(2L,vm.state.value.person!!.id)
+            assertEquals(1L,api.receipts.values.single().source)
+            assertEquals("ignore",api.receipts.values.single().action)
+        }
+    }
+    @Test fun backgroundRestoresExpiredIgnoreWaitingForOpenDialog() = runBlocking {
+        val api=FakeService()
+        model(api) {vm ->
+            withContext(Dispatchers.Main){vm.ignore()};idle(vm)
+            withContext(Dispatchers.Main){vm.startNaming();vm.nameChanged("Entwurf")}
+            until {vm.state.value.undoIgnores.isEmpty()}
+            assertEquals(0,api.commits)
+            withContext(Dispatchers.Main){vm.background()};idle(vm)
+            withContext(Dispatchers.Main){vm.foreground();vm.closeNaming();vm.skip()};idle(vm)
+            assertEquals(1L,vm.state.value.person!!.id)
+            assertEquals(0,api.commits)
+            assertFalse(vm.state.value.unresolved)
         }
     }
     @Test fun lastToastUndoKeepsOlderIgnoreAndLostResponseDoesNotDoubleCount() = runBlocking {

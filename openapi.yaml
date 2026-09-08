@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.39.3
+  version: 0.40.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -32,6 +32,93 @@ tags:
     description: Tags, custom fields and virtual folders.
 
 paths:
+  /api/photos/labeling/v1/faces/{id}/favorite:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: integer, format: int64, minimum: 1}
+    get:
+      tags: [Photos]
+      operationId: getLabelingFaceFavorite
+      summary: Read a face's reference favorite status
+      description: >-
+        Available since BearStack 0.40.0. Requires photos.edit. Returns the current
+        person and favorite status of an active face. Private, ignored, removed
+        and stale source images are excluded. Cache-Control is private, no-store.
+      responses:
+        "200":
+          description: Current favorite state.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/FaceFavorite"}
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      tags: [Photos]
+      operationId: setLabelingFaceFavorite
+      summary: Set a face's reference favorite status
+      description: >-
+        Available since BearStack 0.40.0. Requires photos.edit. Supports named and
+        unnamed groups. Set the desired boolean explicitly; repeated identical
+        requests are idempotent. person_id must be the current group ID to protect
+        against stale assignments. A moved or ignored face returns 409 conflict;
+        removed faces return 404. Refresh the group after a conflict. Later explicit
+        assignments replace earlier ones; clients should serialize writes per face.
+        Favorite state and that person's reference selection are saved atomically.
+        All eligible favorites are compared even above the configured reference
+        target; remaining slots favor distinct gallery folders. Favorites survive
+        reassignment and merging, but ignored/private faces never participate in
+        matching. Clients can discover support using session.face_favorites and
+        read faces[].favorite on person detail pages. Cache-Control is private,
+        no-store. Browser clients must satisfy the same-origin policy.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [person_id, favorite]
+              properties:
+                person_id: {type: integer, format: int64, minimum: 1}
+                favorite: {type: boolean}
+            example: {person_id: 12, favorite: true}
+      responses:
+        "200":
+          description: Persisted favorite state.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/FaceFavorite"}
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Face was moved or ignored. Refresh the group before retrying.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, code]
+                properties:
+                  error: {type: string}
+                  code: {type: string, const: conflict}
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/photos/labeling/v1/session:
     get:
       tags: [Photos]
@@ -1178,6 +1265,52 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /photos/faces/{id}/favorite:
+    post:
+      tags: [Photos]
+      operationId: setPhotoFaceFavoriteForm
+      summary: Set a reference favorite from a person detail form
+      description: >-
+        Available since BearStack 0.40.0. Requires photos.edit and same-origin
+        browser requests. HTML fallback for the web favorite button. The expected
+        person and explicit desired state follow the JSON favorite API contract.
+        Success always redirects to the person detail page, preserving page.
+        Errors use JSON with error and code. API clients should prefer the PUT
+        endpoint under /api/photos/labeling/v1/faces/{id}/favorite.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [person_id, favorite]
+              properties:
+                person_id: {type: integer, format: int64, minimum: 1}
+                favorite: {type: string, enum: ['0', '1']}
+                page: {type: integer, minimum: 1, maximum: 1000000, default: 1}
+      responses:
+        '303':
+          description: Favorite saved; redirect to the person detail page.
+          headers:
+            Location:
+              schema: {type: string}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The face was moved to another group or ignored; refresh before retrying.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /photos/faces/edit:
     post:
       tags:
@@ -1327,9 +1460,10 @@ paths:
                   minimum: 1
                   maximum: 100
                   default: 30
-                  description: Maximum references per person. Omission preserves the
-                    existing value. Changes refresh stored references before the next
-                    analysis, without analyzing photos again.
+                  description: Target references per person. All eligible favorites are included,
+                    even above this target. Remaining slots favor distinct gallery folders.
+                    Omission preserves the existing value. Changes refresh stored references
+                    before the next analysis, without analyzing photos again.
                 interval_minutes:
                   type: integer
                   minimum: 1
@@ -1638,10 +1772,18 @@ components:
             format: binary
 
   schemas:
+    FaceFavorite:
+      type: object
+      required: [id, person_id, favorite]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        person_id: {type: integer, format: int64, minimum: 1}
+        favorite: {type: boolean}
     LabelingSession:
       type: object
       required: [protocol, instance, dataset, account, upper_id, can_manage]
       properties:
+        face_favorites: {type: boolean, const: true, description: "Favorite API available since 0.40.0. Older servers omit this field."}
         protocol: {type: integer, const: 1}
         instance: {type: string, description: Stable identity of this photo database.}
         dataset: {type: string, description: Changes when detected face data is cleared.}
@@ -1664,9 +1806,10 @@ components:
           description: Present on a detail page with faces. Empty pages can omit this field.
           items:
             type: object
-            required: [id, display_path, bounds]
+            required: [id, display_path, bounds, favorite]
             properties:
               id: {type: integer, format: int64, minimum: 1}
+              favorite: {type: boolean, description: "Reference favorite status since 0.40.0. Older servers omit this field."}
               display_path:
                 type: string
                 description: >-
@@ -2295,6 +2438,7 @@ components:
       - height
       - manual
       - ignored
+      - favorite
       properties:
         id:
           type: integer
@@ -2328,6 +2472,9 @@ components:
           type: boolean
         ignored:
           type: boolean
+        favorite:
+          type: boolean
+          description: Reference favorite since 0.40.0; ignored faces retain the flag but never participate in matching.
     PhotoPerson:
       type: object
       properties:
@@ -2431,6 +2578,7 @@ components:
               minimum: 1
               maximum: 100
               default: 30
+              description: Reference target; all eligible favorites are included even above this number.
             interval_minutes:
               type: integer
         status:

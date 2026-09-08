@@ -30,6 +30,35 @@
     }
     savePeoplePage(Number(pageNavigation.dataset.peoplePage));
   }
+  var favoriteStatus = document.querySelector("[data-face-favorite-status]");
+  document.querySelectorAll("button[data-face-favorite]").forEach(function (button) {
+    button.addEventListener("click", async function (event) {
+      event.preventDefault();
+      if (button.disabled) return;
+      var favorite = button.getAttribute("aria-pressed") !== "true";
+      button.disabled = true;
+      favoriteStatus.textContent = "";
+      try {
+        var response = await fetch("/api/photos/labeling/v1/faces/" + encodeURIComponent(button.dataset.faceFavorite) + "/favorite", {
+          method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ person_id: Number(button.dataset.personId), favorite: favorite })
+        });
+        var result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Favorisierung konnte nicht gespeichert werden.");
+        if (typeof result.favorite !== "boolean") throw new Error("Ungültige Antwort beim Speichern der Favorisierung.");
+        button.setAttribute("aria-pressed", String(result.favorite));
+        button.value = result.favorite ? "0" : "1";
+        button.title = result.favorite ? "Favorisierung aufheben" : "Als Vergleichsgesicht favorisieren";
+        button.setAttribute("aria-label", button.title);
+        favoriteStatus.textContent = result.favorite ? "Gesicht als Vergleichsbild favorisiert." : "Favorisierung aufgehoben.";
+      } catch (error) {
+        favoriteStatus.textContent = error.message || "Favorisierung konnte nicht gespeichert werden.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+
   var overview = document.querySelector("[data-people-overview]");
   var status = document.querySelector("[data-people-status]");
   var busy = false;

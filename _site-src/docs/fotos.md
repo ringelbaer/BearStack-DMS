@@ -255,20 +255,42 @@ Die Info-Symbole in den Einstellungen der Gesichtserkennung erklären Aktivierun
 **Personenrechte:** Seit BearStack 0.36.0 reicht „Fotos bearbeiten“ (`photos_editor` bzw. `photos.edit`) zum Benennen, Zuordnen, Zusammenführen, Ignorieren und Wiederherstellen von Gesichtern sowie für die Android-App. Einstellungen der Gesichtserkennung und das Löschen aller Gesichtsdaten benötigen weiterhin „Fotos verwalten“ (`photos.manage`).
 
 **Referenzen pro Person:** Unter **Einstellungen → Gesichtserkennung** lässt sich
-seit 0.34.0 das Limit auf 1–100 einstellen; der Standard ist **30**. BearStack wählt
-bis zu dieser Anzahl aus den bereits zugeordneten Gesichtern aus, bevorzugt manuelle
-Zuordnungen und danach die Erkennungssicherheit. Eine Verteilung über Aufnahmejahre
-ist damit noch nicht verbunden. Mehr Referenzen benötigen mehr Arbeitsspeicher für
-den Suchindex. Änderungen werden vor der nächsten Analyse in kurzen, fortsetzbaren
-Schritten übernommen; Fotos müssen dafür nicht erneut analysiert werden. Die
-Einstellung bleibt nach Neustart erhalten und kann auch bei pausierter Verarbeitung
-geändert werden. Bestehende Gruppen werden dadurch nicht automatisch zusammengeführt.
+die Zielanzahl auf 1–100 einstellen; der Standard ist **30**. Seit 0.40.0 werden
+Vergleichsbilder möglichst über verschiedene Galerieordner verteilt. Innerhalb
+eines Ordners haben manuelle Zuordnungen Vorrang, danach die Erkennungssicherheit.
+Die Auswahl ist bei unveränderten Daten stabil.
+
+**Favorisierte Gesichter:** In der Web-Detailansicht einer benannten oder unbenannten
+Person können Fotobearbeiter einzelne Gesichter mit einem Stern favorisieren.
+Alle aktiven Favoriten werden bei jedem Abgleich vollständig verglichen, auch wenn
+ihre Anzahl das eingestellte Limit übersteigt. Bei weniger Favoriten füllen
+unfavorisierte Gesichter bis zur Zielanzahl auf, sofern vorhanden. Dabei haben
+bisher nicht vertretene Ordner Vorrang; Favoriten zählen bereits für ihren Ordner.
+Mehr Favoriten benötigen mehr Arbeitsspeicher und Rechenzeit pro neu erkanntem Gesicht.
+Die Aktion speichert sofort, ohne Seitenreload oder erneute Bildanalyse.
+Favoriten bleiben nach Neustart, Zuordnen und Zusammenführen erhalten.
+Ignorierte und private Gesichter werden weiterhin ausgeschlossen. Wiederhergestellte
+Gesichter behalten ihren Stern; bei erneuter Erkennung wird er nur auf eine eindeutig
+wiedergefundene Region übertragen. Gelöschte oder ersetzte Fotos verlieren ihre
+veralteten Gesichtsdaten einschließlich der Favoriten.
+
+Änderungen der Zielanzahl und das Update bestehender Referenzen werden vor der
+nächsten Analyse in kurzen, fortsetzbaren Schritten übernommen. Bestehende Gruppen
+werden dadurch nicht automatisch zusammengeführt. Die Android-Oberfläche erhält
+vorerst keine Sterne. Für spätere Clients stehen `GET` und `PUT` unter
+`/api/photos/labeling/v1/faces/{id}/favorite` bereit (`photos.edit`). Der PUT-Body
+enthält `person_id` und den gewünschten booleschen Wert `favorite`; Wiederholungen
+schalten den Zustand nicht erneut um. Eine inzwischen geänderte Gruppenzuordnung
+oder ein ignoriertes Gesicht führt zu `409`. Personendetails liefern `faces[].favorite`,
+die Sitzung meldet Unterstützung über `face_favorites: true`. Alte Server ohne dieses
+Feld unterstützen die Erweiterung nicht. Details und Fehlerantworten stehen in der
+[OpenAPI-Beschreibung](https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml).
 
 **Metadaten und Korrekturen:** Eindeutige XMP-Gesichtsregionen liefern Namen und
 Referenzen. Manuelle Zuordnungen haben Vorrang. XMP und automatische Gesichter werden
 getrennt gespeichert; Originale und Sidecars werden nicht verändert. Die Foto-DB
-migriert automatisch auf Schema 21. Ihre Sicherung muss die erzeugten Gesichtsdaten
-und manuellen Korrekturen einschließen. Ein Index-Neuaufbau erhält die Korrekturen
+migriert automatisch auf Schema 22. Ihre Sicherung muss die erzeugten Gesichtsdaten
+sowie manuelle Korrekturen und Favoriten einschließen. Ein Index-Neuaufbau erhält die Korrekturen
 unveränderter Bilder; Dateiaustausch und Löschung entfernen veraltete Analysen.
 Bei einem Modellwechsel werden manuelle Zuordnungen nur auf eindeutig wiedergefundene
 Regionen übertragen. Unsichere Treffer bleiben getrennt. Das Zusammenführen bestehender

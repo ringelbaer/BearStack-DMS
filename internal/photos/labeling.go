@@ -18,10 +18,11 @@ var ErrLabelInvalid = errors.New("ungültige Benennungsaktion")
 var ErrLabelNameExists = errors.New("Name bereits vorhanden")
 
 type LabelSession struct {
-	Protocol int    `json:"protocol"`
-	Instance string `json:"instance"`
-	Dataset  string `json:"dataset"`
-	UpperID  int64  `json:"upper_id"`
+	FaceFavorites bool   `json:"face_favorites"`
+	Protocol      int    `json:"protocol"`
+	Instance      string `json:"instance"`
+	Dataset       string `json:"dataset"`
+	UpperID       int64  `json:"upper_id"`
 }
 type LabelPerson struct {
 	ID       int64       `json:"id"`
@@ -33,6 +34,7 @@ type LabelPerson struct {
 	Offset   int         `json:"offset"`
 }
 type LabelFace struct {
+	Favorite    bool            `json:"favorite"`
 	ID          int64           `json:"id"`
 	DisplayPath string          `json:"display_path"`
 	Bounds      LabelFaceBounds `json:"bounds"`
@@ -77,7 +79,7 @@ const labelFrom = ` FROM photo_people p JOIN photo_person_revisions r ON r.perso
 const labelExists = ` EXISTS(SELECT 1 FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0) `
 
 func (l *Library) LabelSession(ctx context.Context) (LabelSession, error) {
-	out := LabelSession{Protocol: 1}
+	out := LabelSession{Protocol: 1, FaceFavorites: true}
 	err := l.index.db.QueryRowContext(ctx, `SELECT instance,dataset,(SELECT coalesce(max(id),0) FROM photo_people) FROM photo_labeling_identity WHERE id=1`).Scan(&out.Instance, &out.Dataset, &out.UpperID)
 	return out, err
 }
@@ -127,14 +129,14 @@ func (l *Library) LabelPerson(ctx context.Context, id int64, offset int) (LabelP
 	}
 	p.Offset = offset
 	p.Faces = []LabelFace{}
-	rows, err := tx.QueryContext(ctx, `SELECT id,path,x,y,width,height FROM photo_faces WHERE person_id=? AND ignored=0 ORDER BY id LIMIT 4 OFFSET ?`, id, offset)
+	rows, err := tx.QueryContext(ctx, `SELECT id,path,x,y,width,height,favorite FROM photo_faces WHERE person_id=? AND ignored=0 ORDER BY id LIMIT 4 OFFSET ?`, id, offset)
 	if err != nil {
 		return p, err
 	}
 	for rows.Next() {
 		var f LabelFace
 		var source string
-		if err = rows.Scan(&f.ID, &source, &f.Bounds.X, &f.Bounds.Y, &f.Bounds.Width, &f.Bounds.Height); err != nil {
+		if err = rows.Scan(&f.ID, &source, &f.Bounds.X, &f.Bounds.Y, &f.Bounds.Width, &f.Bounds.Height, &f.Favorite); err != nil {
 			rows.Close()
 			return p, err
 		}

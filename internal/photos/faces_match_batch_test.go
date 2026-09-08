@@ -24,6 +24,15 @@ func (q *countedFaceMatchQuery) QueryContext(ctx context.Context, query string, 
 }
 
 func TestNearestPersonBatchesCandidatesAndHonorsCurrentVisibility(t *testing.T) {
+	for _, favorite := range []bool{false, true} {
+		name := "ordinary"
+		if favorite {
+			name = "favorites"
+		}
+		t.Run(name, func(t *testing.T) { testNearestPersonVisibility(t, favorite) })
+	}
+}
+func testNearestPersonVisibility(t *testing.T, favorite bool) {
 	for _, variant := range []string{"match", "excluded", "ignored", "deleted", "reassigned", "private", "private-name", "query-error", "canceled"} {
 		t.Run(variant, func(t *testing.T) {
 			ctx := context.Background()
@@ -36,6 +45,12 @@ func TestNearestPersonBatchesCandidatesAndHonorsCurrentVisibility(t *testing.T) 
 				t.Fatalf("faces %v %v", faces, err)
 			}
 			person := faces[0].PersonID
+			if favorite {
+				if _, err := l.index.db.Exec(`UPDATE photo_faces SET favorite=1; UPDATE photo_face_state SET revision=revision+1`); err != nil {
+					t.Fatal(err)
+				}
+				prepareReferenceGraph(t, l)
+			}
 			tx, err := l.index.db.BeginTx(ctx, nil)
 			if err != nil {
 				t.Fatal(err)

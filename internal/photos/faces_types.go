@@ -19,6 +19,7 @@ type RecognizedFace struct {
 	Height     float64 `json:"height"`
 	Manual     bool    `json:"manual"`
 	Ignored    bool    `json:"ignored"`
+	Favorite   bool    `json:"favorite"`
 }
 type Person struct {
 	ID     int64  `json:"id"`
@@ -65,6 +66,7 @@ type faceRuntime struct {
 	revision       int64
 	people         map[int64]int64
 	nodes          map[int64][]int64
+	favorites      map[int64][]float32
 	model          string
 }
 

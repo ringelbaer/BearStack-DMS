@@ -3429,6 +3429,13 @@ label span {
 }
 .person-photo-button > span { width: 100%; min-width: 0; }
 .person-photo-button img { width: min(160px, 100%); height: auto; aspect-ratio: 1; }
+/* Favorite controls remain separate from photo opening and bulk selection. */
+.person-face-card { position: relative; }
+.face-favorite-button { position: absolute; top: .5rem; right: .5rem; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; min-width: 0; padding: .35rem; border: 1px solid var(--border); border-radius: 50%; background: #111820; color: #fff; z-index: 1; }
+.face-favorite-button[aria-pressed="true"], .face-favorite-button.is-favorite { color: #ffcf5c; }
+.face-favorite-button[aria-pressed="true"] svg, .face-favorite-button.is-favorite svg { fill: currentColor; }
+.face-favorite-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.face-favorite-button:disabled { cursor: wait; opacity: .6; }
 .person-photo-button:hover { background: transparent; }
 .person-photo-button:hover > span { text-decoration: underline; }
 .person-photo-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }

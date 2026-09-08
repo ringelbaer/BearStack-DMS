@@ -25,3 +25,7 @@ BearStack uses semantic versioning from the root `VERSION` file. Any agent or ma
 ## Productionreadiness
 
 - Achte bei alle Änderungen und Funktionen auf eine sichere und Production-ready Umsetzung. Sichere durch ausführliche Tests ab. 
+
+## Doku und API yaml
+
+- Halte die Dokumentation / Website, die README und die API Dokumentation (openapi) stets aktuell.

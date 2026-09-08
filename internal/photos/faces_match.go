@@ -72,8 +72,9 @@ func (l *Library) ensureFaceGraph(ctx context.Context, model string) error {
 	rt.graph.EfSearch = max(20, limit+1)
 	rt.people = map[int64]int64{}
 	rt.nodes = map[int64][]int64{}
+	rt.favorites = map[int64][]float32{}
 	rt.model = model
-	rows, err := l.index.db.QueryContext(ctx, `SELECT f.id,f.person_id,f.embedding FROM photo_face_references r JOIN photo_faces f ON f.id=r.face_id JOIN media_index m ON m.path=f.path WHERE f.model=? AND f.ignored=0 AND m.admin_only=0 ORDER BY f.id`, model)
+	rows, err := l.index.db.QueryContext(ctx, `SELECT f.id,f.person_id,f.embedding,f.favorite FROM photo_face_references r JOIN photo_faces f ON f.id=r.face_id JOIN media_index m ON m.path=f.path WHERE f.model=? AND f.ignored=0 AND m.admin_only=0 ORDER BY f.id`, model)
 	if err != nil {
 		rt.graph = nil
 		return err
@@ -82,12 +83,17 @@ func (l *Library) ensureFaceGraph(ctx context.Context, model string) error {
 	for rows.Next() {
 		var id, p int64
 		var b []byte
-		if err = rows.Scan(&id, &p, &b); err != nil {
+		var favorite bool
+		if err = rows.Scan(&id, &p, &b, &favorite); err != nil {
 			rt.graph = nil
 			return err
 		}
 		if v := decodeVector(b); v != nil {
-			rt.graph.Add(hnsw.MakeNode(id, v))
+			if favorite {
+				rt.favorites[id] = v
+			} else {
+				rt.graph.Add(hnsw.MakeNode(id, v))
+			}
 			rt.people[id] = p
 			rt.nodes[p] = append(rt.nodes[p], id)
 		}
@@ -113,59 +119,66 @@ func (l *Library) nearestPerson(ctx context.Context, tx faceMatchQuery, v []floa
 	if len(rt.people) == 0 {
 		return 0, nil
 	}
+	// Favorites are compared exactly, even when they exceed the configured limit.
+	// Keep them outside HNSW so they cannot crowd out ordinary competitors.
 	neighbors := rt.graph.Search(v, max(25, rt.referenceLimit+1))
+	for id, vector := range rt.favorites {
+		if !excluded[rt.people[id]] {
+			neighbors = append(neighbors, hnsw.MakeNode(id, vector))
+		}
+	}
+	vectors := make(map[int64][]float32, len(neighbors))
 	args := make([]any, 0, len(neighbors))
 	for _, node := range neighbors {
 		if !excluded[rt.people[node.Key]] {
 			args = append(args, node.Key)
+			vectors[node.Key] = node.Value
 		}
-	}
-	if len(args) == 0 {
-		return 0, nil
-	}
-	// One bounded query replaces one query per graph neighbor. Read from the
-	// current transaction so removed/ignored/private references cannot match.
-	rows, err := tx.QueryContext(ctx, `SELECT f.id,f.person_id,f.path,p.name_source FROM photo_faces f
- JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path
- WHERE f.id IN (`+sqlutil.Placeholders(len(args))+`) AND f.ignored=0 AND m.admin_only=0`, args...)
-	if err != nil {
-		return 0, err
-	}
-	type candidate struct {
-		person           int64
-		path, nameSource string
-	}
-	candidates := make(map[int64]candidate, len(args))
-	for rows.Next() {
-		var id int64
-		var c candidate
-		if err := rows.Scan(&id, &c.person, &c.path, &c.nameSource); err != nil {
-			rows.Close()
-			return 0, err
-		}
-		candidates[id] = c
-	}
-	err = rows.Err()
-	rows.Close()
-	if err != nil {
-		return 0, err
 	}
 	visibility := newFaceDirectoryVisibility(l.root)
 	scores := map[int64]float64{}
-	for _, n := range neighbors {
-		if err := ctx.Err(); err != nil {
+	// Normally one query; unlimited favorites use bounded batches to stay below
+	// SQLite's parameter limit. All candidates see the same current transaction.
+	for start := 0; start < len(args); start += 512 {
+		batch := args[start:min(start+512, len(args))]
+		rows, err := tx.QueryContext(ctx, `SELECT f.id,f.person_id,f.path,p.name_source FROM photo_faces f
+ JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path
+ WHERE f.id IN (`+sqlutil.Placeholders(len(batch))+`) AND f.ignored=0 AND m.admin_only=0`, batch...)
+		if err != nil {
 			return 0, err
 		}
-		c, exists := candidates[n.Key]
-		if !exists || c.person != rt.people[n.Key] || visibility.private(parentPath(c.path)) {
-			continue
+		type candidate struct {
+			id, person       int64
+			path, nameSource string
 		}
-		if c.nameSource != "" && visibility.private(parentPath(c.nameSource)) {
-			continue
+		candidates := make([]candidate, 0, len(batch))
+		for rows.Next() {
+			var c candidate
+			if err := rows.Scan(&c.id, &c.person, &c.path, &c.nameSource); err != nil {
+				rows.Close()
+				return 0, err
+			}
+			candidates = append(candidates, c)
 		}
-		score := cosine(v, n.Value)
-		if old, ok := scores[c.person]; !ok || score > old {
-			scores[c.person] = score
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return 0, err
+		}
+		for _, c := range candidates {
+			if err := ctx.Err(); err != nil {
+				return 0, err
+			}
+			if c.person != rt.people[c.id] || visibility.private(parentPath(c.path)) {
+				continue
+			}
+			if c.nameSource != "" && visibility.private(parentPath(c.nameSource)) {
+				continue
+			}
+			score := cosine(v, vectors[c.id])
+			if old, ok := scores[c.person]; !ok || score > old {
+				scores[c.person] = score
+			}
 		}
 	}
 	best, second := -1.0, -1.0
@@ -261,14 +274,14 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 	if private != 0 || size != j.Size || mtime != j.ModTime || xmp != j.XMP {
 		return errors.New("Foto während Analyse geändert")
 	}
-	oldRows, err := tx.QueryContext(ctx, `SELECT f.id,f.person_id,f.x,f.y,f.width,f.height,(f.manual OR p.manual_name),f.ignored FROM photo_faces f JOIN photo_people p ON p.id=f.person_id WHERE f.path=?`, j.Path)
+	oldRows, err := tx.QueryContext(ctx, `SELECT f.id,f.person_id,f.x,f.y,f.width,f.height,(f.manual OR p.manual_name),f.ignored,f.favorite FROM photo_faces f JOIN photo_people p ON p.id=f.person_id WHERE f.path=?`, j.Path)
 	if err != nil {
 		return err
 	}
 	var old []RecognizedFace
 	for oldRows.Next() {
 		var f RecognizedFace
-		if err = oldRows.Scan(&f.ID, &f.PersonID, &f.X, &f.Y, &f.Width, &f.Height, &f.Manual, &f.Ignored); err != nil {
+		if err = oldRows.Scan(&f.ID, &f.PersonID, &f.X, &f.Y, &f.Width, &f.Height, &f.Manual, &f.Ignored, &f.Favorite); err != nil {
 			oldRows.Close()
 			return err
 		}
@@ -290,12 +303,12 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 	for _, d := range result.Faces {
 		box := Face{X: d.X, Y: d.Y, Width: d.Width, Height: d.Height}
 		var person int64
-		manual, ignored := false, false
+		manual, ignored, favorite := false, false, false
 		xmpConflict := false
 		// Carry overrides only on a one-to-one region match, never by detection order.
 		var matches []RecognizedFace
 		for _, f := range old {
-			if (f.Manual || f.Ignored) && overlap(box, Face{X: f.X, Y: f.Y, Width: f.Width, Height: f.Height}) >= 0.7 {
+			if (f.Manual || f.Ignored || f.Favorite) && overlap(box, Face{X: f.X, Y: f.Y, Width: f.Width, Height: f.Height}) >= 0.7 {
 				matches = append(matches, f)
 			}
 		}
@@ -308,7 +321,7 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 				}
 			}
 			if n == 1 {
-				person, manual, ignored = f.PersonID, f.Manual, f.Ignored
+				person, manual, ignored, favorite = f.PersonID, f.Manual, f.Ignored, f.Favorite
 			}
 		}
 		if person == 0 {
@@ -377,7 +390,7 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 		}
 		used[person] = true
 		affected[person] = true
-		_, err = tx.ExecContext(ctx, `INSERT INTO photo_faces(path,directory,person_id,x,y,width,height,confidence,embedding,model,manual,ignored) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`, j.Path, media.Directory, person, d.X, d.Y, d.Width, d.Height, d.Confidence, encodeVector(d.Embedding), j.Model, manual, ignored)
+		_, err = tx.ExecContext(ctx, `INSERT INTO photo_faces(path,directory,person_id,x,y,width,height,confidence,embedding,model,manual,ignored,favorite) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`, j.Path, media.Directory, person, d.X, d.Y, d.Width, d.Height, d.Confidence, encodeVector(d.Embedding), j.Model, manual, ignored, favorite)
 		if err != nil {
 			return err
 		}
@@ -405,36 +418,31 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 	return l.syncFaceGraphPeople(ctx, affected, committedRevision)
 }
 
-func refreshFaceReferencesTx(ctx context.Context, tx *sql.Tx, p int64) error {
-	if _, err := tx.ExecContext(ctx, `DELETE FROM photo_face_references WHERE person_id=?`, p); err != nil {
-		return err
-	}
-	_, err := tx.ExecContext(ctx, `INSERT OR REPLACE INTO photo_face_references(face_id,person_id) SELECT f.id,f.person_id FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.ignored=0 AND m.admin_only=0 AND f.model=(SELECT model FROM photo_face_state WHERE id=1) ORDER BY f.manual DESC,f.confidence DESC,f.id LIMIT (SELECT reference_limit FROM photo_face_reference_settings WHERE id=1)`, p)
-	return err
-}
-
 func (l *Library) syncFaceGraphPeople(ctx context.Context, people map[int64]bool, committedRevision int64) error {
 	rt := &l.faceRuntime
 	if rt.graph == nil {
 		return nil
 	}
 	for p := range people {
-		rows, err := l.index.db.QueryContext(ctx, `SELECT f.id,f.embedding FROM photo_face_references r JOIN photo_faces f ON f.id=r.face_id WHERE r.person_id=? AND f.model=? AND f.ignored=0`, p, rt.model)
+		rows, err := l.index.db.QueryContext(ctx, `SELECT f.id,f.embedding,f.favorite FROM photo_face_references r JOIN photo_faces f ON f.id=r.face_id WHERE r.person_id=? AND f.model=? AND f.ignored=0`, p, rt.model)
 		if err != nil {
 			rt.graph = nil
 			return err
 		}
 		next := map[int64][]float32{}
+		favorites := map[int64]bool{}
 		for rows.Next() {
 			var id int64
 			var b []byte
-			if err = rows.Scan(&id, &b); err != nil {
+			var favorite bool
+			if err = rows.Scan(&id, &b, &favorite); err != nil {
 				rows.Close()
 				rt.graph = nil
 				return err
 			}
 			if v := decodeVector(b); v != nil {
 				next[id] = v
+				favorites[id] = favorite
 			}
 		}
 		err = rows.Err()
@@ -444,20 +452,25 @@ func (l *Library) syncFaceGraphPeople(ctx context.Context, people map[int64]bool
 			return err
 		}
 		for _, id := range rt.nodes[p] {
-			if _, ok := next[id]; !ok {
-				rt.graph.Delete(id)
+			if _, ok := next[id]; !ok || (rt.favorites[id] != nil) != favorites[id] {
+				if rt.favorites[id] == nil {
+					rt.graph.Delete(id)
+				}
+				delete(rt.favorites, id)
 				delete(rt.people, id)
 			}
 		}
 		// hnsw v0.6.1 leaves empty layers after deleting the final node.
-		if len(rt.people) == 0 {
+		if rt.graph.Len() == 0 {
 			rt.graph = hnsw.NewGraph[int64]()
 			rt.graph.Distance = hnsw.CosineDistance
 			rt.graph.EfSearch = max(20, rt.referenceLimit+1)
 		}
 		rt.nodes[p] = nil
 		for id, v := range next {
-			if _, ok := rt.people[id]; !ok {
+			if favorites[id] {
+				rt.favorites[id] = v
+			} else if _, ok := rt.people[id]; !ok {
 				rt.graph.Add(hnsw.MakeNode(id, v))
 			}
 			rt.people[id] = p
