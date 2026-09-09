@@ -6,6 +6,10 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ### BearStack 0.50.0 – in Entwicklung
 
+- Gesicht einrahmen: 420-Pixel-Begrenzung der allgemeinen Dialogregel aufgehoben. Nahezu fenstergroße Zeichenansicht am Desktop mit seitlichen Eingaben, mobil Vollbild mit großer Zeichenfläche und festen Speicherbuttons. Beim erneuten Öffnen startet die Ansicht wieder oben. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.
+
+- Ähnliche Personengruppen: Aktionen sperren nur den betroffenen Vorschlag. Andere Karten bleiben während Speichern und Nachladen bedienbar. Parallele Entscheidungen teilen sich eine Aktualisierung; überholte Listenstände werden verworfen. Unbestätigte Aktionen bleiben pro Karte bis zur erfolgreichen Aktualisierung gesperrt. PATCH-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.
+
 - Foto-Info: alle Gesichtsfunktionen in einer kompakten Zeile mit Gesichtsicon, Lupe, Auswahlrahmen und überarbeitetem Refresh-Pfeil. Einheitliche 44-Pixel-Bedienflächen, Tooltips und zugängliche Namen; der zusätzliche Zähl- und Bedienhinweis unter der Symbolleiste entfällt. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.
 
 - Gesichtserkennung findet auch große Porträtgesichter: zusätzlicher 320-Pixel-Suchlauf mit Rückrechnung aller Rahmen und Landmarken, stabiler Bevorzugung vorhandener Treffer und unveränderter Erkennungsschwelle. Merkmalsextraktion weiterhin auf der größeren Vorlage; Modell und Vektoren kompatibel. Reproduziert mit einem zuvor übersehenen Porträt und abgesichert durch öffentliche Modelltests für große und gemischte Gesichtsgrößen. Gesichtsdienst neu bauen/starten und betroffene Fotos erneut analysieren. PATCH-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION unverändert.

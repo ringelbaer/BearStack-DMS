@@ -596,7 +596,10 @@ Update muss der Gesichtsdienst neu gebaut bzw. gestartet und das betroffene Foto
 über **Gesichter erkennen und zuordnen** erneut verarbeitet werden.
 
 **Fehlendes Gesicht manuell einrahmen:** In der Foto-Info öffnet **Gesicht
-einrahmen** das ausgerichtete Foto. Mit Maus oder Finger einen Rahmen ziehen,
+einrahmen** das ausgerichtete Foto in einem nahezu fenstergroßen Dialog. Am Desktop
+stehen die Eingaben neben der großen Zeichenfläche; mobil nutzt der Dialog den
+ganzen Bildschirm mit scrollbarem Inhalt und stets erreichbaren Speicherbuttons.
+Mit Maus oder Finger einen Rahmen ziehen,
 einen neuen Namen eingeben oder eine vorhandene Person auswählen und **Gesicht
 speichern** wählen. **Rahmen mittig setzen** ermöglicht die Tastaturbedienung:
 Pfeiltasten verschieben den Rahmen, Umschalt + Pfeiltasten ändern seine Größe.
@@ -792,8 +795,12 @@ die angezeigten Gruppenrevisionen; zwischenzeitliche Änderungen verlangen eine
 neue Prüfung. **Getrennt lassen** bleibt als Entscheidung gespeichert und verhindert
 auch künftige automatische Zuordnungen zwischen diesen Gruppen. Beide Aktionen
 aktualisieren mit JavaScript die Vorschläge ohne Seitenneuladen; unveränderte
-Karten bleiben erhalten. Fehler werden direkt angezeigt, veraltete Vorschläge
-müssen erneut geprüft werden. Ohne JavaScript bleiben die normalen Formulare
+Karten bleiben erhalten. Während einer Entscheidung sind nur die Buttons des
+betroffenen Vorschlags gesperrt; andere Gruppenpaare lassen sich weiter bearbeiten.
+Parallele Entscheidungen werden vor dem Nachladen gesammelt, überholte Antworten
+verworfen. Fehler werden direkt angezeigt. Bei unbestätigten Entscheidungen bleibt
+nur der betroffene Vorschlag bis zur erfolgreichen Aktualisierung gesperrt;
+veraltete Vorschläge müssen erneut geprüft werden. Ohne JavaScript bleiben die normalen Formulare
 nutzbar. Aufrufe der Seite
 lösen keine neue Vektorsuche aus. Bearbeiten benötigt `photos.edit`, Einstellungen
 und Steuerung benötigen `photos.manage`.

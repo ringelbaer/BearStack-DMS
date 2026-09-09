@@ -132,6 +132,7 @@
           dialog.querySelector("[data-face-drawing-path]").textContent = displayPath || path;
           status.textContent = "Foto wird geladen …";
           draw(); sync(); dialog.showModal();
+          dialog.querySelector(".app-dialog-body").scrollTop = 0;
           controller = new AbortController();
           try {
             var response = await fetch("/photos/faces/drawing-image?path=" + encodeURIComponent(path), { credentials: "same-origin", redirect: "error", signal: controller.signal });

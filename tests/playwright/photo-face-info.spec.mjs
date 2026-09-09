@@ -53,6 +53,18 @@ test("draw and name missing faces with mouse, touch and keyboard without inferen
   await draw.click();
   await expect(drawing.locator("[data-face-drawing-status]")).toHaveText("Ziehe einen Rahmen um das Gesicht.");
   await expect(drawing.getByRole("button", { name: "Gesicht speichern" })).toBeDisabled();
+  for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    const dialogBox = await drawing.boundingBox();
+    const imageBox = await drawing.locator("[data-face-drawing-stage]").boundingBox();
+    const footerBox = await drawing.locator("footer").boundingBox();
+    expect(dialogBox.width).toBeGreaterThanOrEqual(viewport.width - 32);
+    expect(dialogBox.height).toBeGreaterThanOrEqual(viewport.height - 32);
+    expect(imageBox.width).toBeGreaterThan(viewport.width * .65);
+    expect(imageBox.height).toBeGreaterThan(viewport.height * .6);
+    expect(footerBox.y + footerBox.height).toBeLessThanOrEqual(viewport.height);
+    await page.screenshot({ path: `/tmp/bearstack-face-drawing-large-${viewport.width}.png`, fullPage: true });
+  }
   // Cancelling a draft must not leave an unnamed group behind.
   await drawing.getByRole("button", { name: "Rahmen mittig setzen" }).click();
   await drawing.locator("[data-face-drawing-box]").press("ArrowLeft");

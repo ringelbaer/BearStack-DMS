@@ -233,3 +233,102 @@ test("stored face reconciliation works offline with responsive merge review and 
     await context.close();
   }
 });
+
+function mergeReviewHTML(ids) {
+  return `<!doctype html><meta charset="utf-8"><p data-merge-status hidden></p><button data-merge-refresh hidden>Vorschläge aktualisieren</button>
+    <div data-merge-suggestions>${[...ids].map(id => `<section data-merge-id="${id}">
+      <form action="/photos/people/merge-suggestions/${id}/accept" method="post">
+        <input name="source_revision" value="1" type="hidden"><input name="target_revision" value="1" type="hidden">
+        <button>Zusammenführen</button><button formaction="/photos/people/merge-suggestions/${id}/reject">Getrennt lassen</button>
+      </form></section>`).join("")}</div><p data-merge-hint></p>
+    <script src="/static/app-face-merges.js" defer></script>`;
+}
+
+test("merge cards remain independent and ignore refreshes overtaken by decisions", async ({ browser }) => {
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage();
+    const errors = []; page.on("pageerror", error => errors.push(error.message));
+    const remaining = new Set(["1", "2", "3"]), writes = [];
+    let reads = 0, heldRefresh, heldHTML;
+    await page.route("**/photos/people/merge-suggestions", async route => {
+      if (route.request().isNavigationRequest()) return route.fulfill({ contentType: "text/html", body: mergeReviewHTML(remaining) });
+      reads++;
+      if (reads === 1) { heldRefresh = route; heldHTML = mergeReviewHTML(remaining); return; }
+      await route.fulfill({ contentType: "text/html", body: mergeReviewHTML(remaining) });
+    });
+    await page.route("**/photos/people/merge-suggestions/*/*", route => { writes.push(route); });
+    await page.goto(baseURL + "/photos/people/merge-suggestions");
+    const card = id => page.locator(`[data-merge-id="${id}"]`);
+    const untouched = await card("3").elementHandle();
+    await card("1").getByRole("button", { name: "Zusammenführen" }).click();
+    await expect.poll(() => writes.length).toBe(1);
+    await expect(card("1").getByRole("button", { name: "Getrennt lassen" })).toBeDisabled();
+    await expect(card("2").getByRole("button", { name: "Getrennt lassen" })).toBeEnabled();
+    // Even a second programmatic submit cannot duplicate this card's request.
+    await card("1").locator("form").evaluate(form => form.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true, submitter: form.querySelector("button") })));
+    await card("2").getByRole("button", { name: "Getrennt lassen" }).click();
+    await expect.poll(() => writes.length).toBe(2);
+    expect(writes[1].request().url()).toContain("/2/reject");
+    await expect(card("3").getByRole("button", { name: "Zusammenführen" })).toBeEnabled();
+    remaining.delete("2");
+    await writes[1].fulfill({ json: { ok: true } });
+    await expect(card("2")).toHaveCount(0);
+    await expect(card("1")).toHaveAttribute("aria-busy", "true");
+    expect(reads).toBe(0); // One refresh for the batch, after both writes settle.
+    expect(await untouched.evaluate(node => node.isConnected)).toBe(true);
+    remaining.delete("1");
+    await writes[0].fulfill({ json: { ok: true } });
+    await expect.poll(() => reads).toBe(1);
+    await card("3").getByRole("button", { name: "Zusammenführen" }).click();
+    await expect.poll(() => writes.length).toBe(3);
+    remaining.delete("3");
+    await writes[2].fulfill({ json: { ok: true } });
+    await expect(card("3")).toHaveCount(0);
+    // This snapshot still contains card 3, which was just successfully handled.
+    await heldRefresh.fulfill({ contentType: "text/html", body: heldHTML });
+    await expect.poll(() => reads).toBe(2);
+    await expect(page.locator("[data-merge-suggestions]")).toHaveAttribute("aria-busy", "false");
+    await expect(page.locator("[data-merge-id]")).toHaveCount(0);
+    expect(errors).toEqual([]);
+  } finally { await context.close(); }
+});
+
+test("failed merge requests lock only their card until a successful refresh", async ({ browser }) => {
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage();
+    const remaining = new Set(["1", "2"]);
+    let failRefresh = true;
+    await page.route("**/photos/people/merge-suggestions", route => {
+      if (!route.request().isNavigationRequest() && failRefresh) return route.fulfill({ status: 503, body: "Unavailable" });
+      return route.fulfill({ contentType: "text/html", body: mergeReviewHTML(remaining) });
+    });
+    await page.route("**/photos/people/merge-suggestions/*/*", route => {
+      if (route.request().url().includes("/1/")) return route.abort();
+      remaining.delete("2");
+      return route.fulfill({ status: 409, json: { error: "Changed" } });
+    });
+    await page.goto(baseURL + "/photos/people/merge-suggestions");
+    const first = page.locator('[data-merge-id="1"] button').first();
+    const second = page.locator('[data-merge-id="2"] button').first();
+    await first.click();
+    await expect(page.locator("[data-merge-status]")).toContainText("konnte nicht bestätigt werden");
+    await expect(first).toBeDisabled();
+    await expect(second).toBeEnabled();
+    const refresh = page.getByRole("button", { name: "Vorschläge aktualisieren" });
+    await refresh.click();
+    await expect(page.locator("[data-merge-status]")).toContainText("konnten nicht aktualisiert werden");
+    await expect(refresh).toBeEnabled();
+    await expect(first).toBeDisabled();
+    await expect(second).toBeEnabled();
+    failRefresh = false;
+    await refresh.click();
+    await expect(refresh).toBeHidden();
+    await expect(first).toBeEnabled();
+    await second.click();
+    await expect(page.locator("[data-merge-status]")).toContainText("Personengruppen haben sich geändert");
+    await expect(page.locator('[data-merge-id="2"]')).toHaveCount(0);
+    await expect(first).toBeEnabled();
+  } finally { await context.close(); }
+});
