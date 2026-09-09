@@ -15,24 +15,25 @@ import (
 )
 
 type PhotoListingView struct {
-	Path        string
-	ParentPath  string
-	Breadcrumbs []photos.Crumb
-	Folders     []PhotoFolderView
-	Media       []PhotoMediaView
-	Blogs       []photos.BlogPost
-	GPXTracks   []photos.GPXTrack
-	RoutePoints []photos.RoutePoint
-	Query       string
-	MediaType   string
-	GPSOnly     bool
-	Sort        string
-	Order       string
-	Page        int
-	PageSize    int
-	Total       int
-	HasPrev     bool
-	HasNext     bool
+	Path             string
+	ParentPath       string
+	Breadcrumbs      []photos.Crumb
+	Folders          []PhotoFolderView
+	Media            []PhotoMediaView
+	Blogs            []photos.BlogPost
+	GPXTracks        []photos.GPXTrack
+	RoutePoints      []photos.RoutePoint
+	RouteTotalPoints int
+	Query            string
+	MediaType        string
+	GPSOnly          bool
+	Sort             string
+	Order            string
+	Page             int
+	PageSize         int
+	Total            int
+	HasPrev          bool
+	HasNext          bool
 }
 
 type PhotoFolderView struct {
@@ -61,22 +62,23 @@ type PhotoMediaGroup struct {
 func newPhotoListingView(ctx context.Context, library *photos.Library, listing photos.Listing, settings PhotoSettings) PhotoListingView {
 	settings = normalizePhotoPresentationSettings(settings)
 	view := PhotoListingView{
-		Path:        listing.Path,
-		ParentPath:  listing.ParentPath,
-		Breadcrumbs: listing.Breadcrumbs,
-		Blogs:       listing.Blogs,
-		GPXTracks:   listing.GPXTracks,
-		RoutePoints: listing.RoutePoints,
-		Query:       listing.Query,
-		MediaType:   listing.MediaType,
-		GPSOnly:     listing.GPSOnly,
-		Sort:        listing.Sort,
-		Order:       listing.Order,
-		Page:        listing.Page,
-		PageSize:    listing.PageSize,
-		Total:       listing.Total,
-		HasPrev:     listing.HasPrev,
-		HasNext:     listing.HasNext,
+		Path:             listing.Path,
+		ParentPath:       listing.ParentPath,
+		Breadcrumbs:      listing.Breadcrumbs,
+		Blogs:            listing.Blogs,
+		GPXTracks:        listing.GPXTracks,
+		RoutePoints:      listing.RoutePoints,
+		RouteTotalPoints: listing.RouteTotalPoints,
+		Query:            listing.Query,
+		MediaType:        listing.MediaType,
+		GPSOnly:          listing.GPSOnly,
+		Sort:             listing.Sort,
+		Order:            listing.Order,
+		Page:             listing.Page,
+		PageSize:         listing.PageSize,
+		Total:            listing.Total,
+		HasPrev:          listing.HasPrev,
+		HasNext:          listing.HasNext,
 	}
 
 	thumbnailGroups := map[int]*photoThumbnailReadyGroup{}

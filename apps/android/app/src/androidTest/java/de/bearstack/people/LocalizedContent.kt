@@ -12,11 +12,13 @@ import java.util.Locale
 
 // Legacy interaction assertions intentionally verify the German UI. Scope its
 // locale to this composition, independent of the device and other test cases.
-fun ComposeContentTestRule.setGermanContent(content: @Composable () -> Unit) = setContent {
+fun ComposeContentTestRule.setGermanContent(content: @Composable () -> Unit) = setLocalizedContent(Locale.GERMAN,content)
+
+fun ComposeContentTestRule.setLocalizedContent(locale: Locale,content: @Composable () -> Unit) = setContent {
     val base = LocalContext.current
     val configuration = LocalConfiguration.current
-    val context = remember(base, configuration) {
-        base.createConfigurationContext(Configuration(configuration).apply { setLocale(Locale.GERMAN) })
+    val context = remember(base, configuration, locale) {
+        base.createConfigurationContext(Configuration(configuration).apply { setLocale(locale) })
     }
     CompositionLocalProvider(
         LocalContext provides context,

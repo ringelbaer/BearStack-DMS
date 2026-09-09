@@ -14,6 +14,69 @@ import (
 	"bearstack/internal/photos"
 )
 
+func TestPhotoCatalogFolderSearchContinuesBeyondFifty(t *testing.T) {
+	s := faceTestServer(t)
+	root := s.photos.Root()
+	image, err := os.ReadFile(filepath.Join(root, "one.jpg"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 61; i++ {
+		dir := filepath.Join(root, fmt.Sprintf("album-%03d", i))
+		if err = os.Mkdir(dir, 0750); err != nil {
+			t.Fatal(err)
+		}
+		for _, name := range []string{"one.jpg", "two.jpg"} {
+			if err = os.WriteFile(filepath.Join(dir, name), image, 0600); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if i == 60 {
+			if err = os.WriteFile(filepath.Join(dir, ".adminonly"), nil, 0600); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if _, err = s.photos.RebuildIndex(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	for _, query := range []string{"album", "al", "album OR missing"} {
+		for _, sort := range []string{"ascending_name", "descending_name"} {
+			seen := map[string]bool{}
+			for page := 1; page <= 4; page++ {
+				w := labelRequest(s, "GET", fmt.Sprintf("/api/photos/v1/browse?section=folders&q=%s&sort=%s&page=%d", url.QueryEscape(query), sort, page), "reader", "")
+				var out photoCatalogPage
+				if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &out) != nil {
+					t.Fatalf("search: %d %s", w.Code, w.Body.String())
+				}
+				want := 24
+				if page == 3 {
+					want = 12
+				}
+				if page == 4 {
+					want = 0
+				}
+				if out.FolderTotal != 60 || len(out.Folders) != want || out.FolderHasNext != (page < 3) {
+					t.Fatalf("%q %s page %d: %d/%d next=%v", query, sort, page, len(out.Folders), out.FolderTotal, out.FolderHasNext)
+				}
+				for j, folder := range out.Folders {
+					index := (page-1)*24 + j
+					if sort == "descending_name" {
+						index = 59 - index
+					}
+					if folder.Path != fmt.Sprintf("album-%03d", index) || seen[folder.Path] || len(folder.Previews) != 2 {
+						t.Fatalf("lost/duplicate/unsorted folder: %+v", folder)
+					}
+					seen[folder.Path] = true
+				}
+			}
+			if len(seen) != 60 {
+				t.Fatalf("unreachable folders: %d", len(seen))
+			}
+		}
+	}
+}
+
 func TestPhotoCatalogReaderAndValidation(t *testing.T) {
 	s := faceTestServer(t)
 	for _, user := range []string{"reader", "editor", "manager"} {

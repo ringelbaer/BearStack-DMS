@@ -16,7 +16,9 @@ data class PhotoSession(val scope: String, val canManagePeople: Boolean, val thu
     val slideshowSeconds: Int, val frameSeconds: Int)
 data class Photo(val path: String, val name: String, val type: String, val mime: String, val version: String,
     val modified: String, val captured: String?, val bytes: Long, val width: Int, val height: Int,
-    val camera: String = "", val lens: String = "", val latitude: Double? = null, val longitude: Double? = null) {
+    val camera: String = "", val lens: String = "", val latitude: Double? = null, val longitude: Double? = null,
+    val rating: Double? = null, val tags: List<String> = emptyList(), val keywords: List<String> = emptyList(),
+    val people: List<String> = emptyList()) {
     val date: String get() = captured ?: modified
 }
 data class PhotoFolder(val path: String, val name: String, val date: String?, val count: Int,
@@ -33,6 +35,14 @@ data class PhotoMapMarker(val latitude: Double, val longitude: Double, val count
 data class PhotoMapData(val total: Int, val bounds: PhotoMapBounds?, val markers: List<PhotoMapMarker>)
 data class PhotoMapPage(val total: Int,val page: Int,val hasNext: Boolean,val media: List<Photo>)
 
+data class PhotoTrackFile(val path: String,val name: String,val modified: String,val bytes: Long)
+data class PhotoTrackPage(val tracks: List<PhotoTrackFile>,val cursor: String,val previousCursor: String,
+    val hasNext: Boolean,val hasPrevious: Boolean,val ready: Boolean)
+data class PhotoMapPoint(val latitude: Double,val longitude: Double)
+data class PhotoTrackGeometry(val path: String,val name: String,val bounds: PhotoMapBounds?,
+    val segments: List<List<PhotoMapPoint>>,val totalPoints: Int,val simplified: Boolean,val omittedSegments: Int)
+data class PhotoRouteData(val geometry: PhotoTrackGeometry,val totalMedia: Int,val radiusMeters: Int)
+
 interface PhotosService {
     suspend fun session(): PhotoSession
     suspend fun browse(query: PhotoQuery, page: Int = 1, section: String = ""): PhotoPage
@@ -42,6 +52,12 @@ interface PhotosService {
         throw UnsupportedOperationException("Map unavailable")
     suspend fun mapMedia(query: PhotoQuery,bounds: PhotoMapBounds,page: Int): PhotoMapPage =
         throw UnsupportedOperationException("Map media unavailable")
+    suspend fun tracks(path: String,cursor: String = "",before: Boolean = false): PhotoTrackPage =
+        throw UnsupportedOperationException("Tracks unavailable")
+    suspend fun track(path: String,bounds: PhotoMapBounds? = null,points: Int = 8192): PhotoTrackGeometry =
+        throw UnsupportedOperationException("Track geometry unavailable")
+    suspend fun route(query: PhotoQuery,bounds: PhotoMapBounds? = null,points: Int = 4096): PhotoRouteData =
+        throw UnsupportedOperationException("Photo route unavailable")
     fun thumbnail(photo: Photo, size: Int): String
     fun original(photo: Photo): String
     suspend fun download(photo: Photo, destination: () -> OutputStream, progress: (Long,Long) -> Unit): Long =
@@ -97,6 +113,47 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
         val o=json("map/media",mapParams(query,bounds)+("page" to "$page"))
         return PhotoMapPage(o.getInt("total"),o.getInt("page"),o.getBoolean("has_next"),o.getJSONArray("media").objects(::photo))
     }
+    override suspend fun tracks(path: String,cursor: String,before: Boolean): PhotoTrackPage {
+        val o=json("map/tracks",mapOf("path" to path,"cursor" to cursor,"before" to if(before) "1" else "0"))
+        val files=o.getJSONArray("tracks")
+        requireMessage(files.length()<=32,R.string.error_response_invalid)
+        return PhotoTrackPage(files.objects {
+            val file=PhotoTrackFile(it.getString("path"),it.getString("name"),it.getString("modified"),it.getLong("bytes"))
+            requireMessage(file.path.length<=4096 && file.name.length<=1024 && file.modified.length<=128 && file.bytes>=0,R.string.error_response_invalid)
+            file
+        },
+            o.getString("cursor"),o.getString("previous_cursor"),o.getBoolean("has_next"),o.getBoolean("has_previous"),o.getBoolean("ready"))
+    }
+    override suspend fun track(path: String,bounds: PhotoMapBounds?,points: Int): PhotoTrackGeometry {
+        require(points in 32..8192)
+        val o=json("map/track",mapParams(PhotoQuery(path=path),bounds)+("points" to "$points"))
+        return trackGeometry(o,points)
+    }
+    override suspend fun route(query: PhotoQuery,bounds: PhotoMapBounds?,points: Int): PhotoRouteData {
+        require(points in 32..8192)
+        val o=json("map/route",mapParams(query,bounds)+("points" to "$points"))
+        val total=o.getInt("total_media");val radius=o.getInt("radius_meters")
+        requireMessage(total>=0 && radius in 500..10000,R.string.error_response_invalid)
+        return PhotoRouteData(trackGeometry(o,points),total,radius)
+    }
+    private fun trackGeometry(o: JSONObject,points: Int): PhotoTrackGeometry {
+        val lines=o.getJSONArray("segments")
+        var count=0
+        requireMessage(lines.length()<=points,R.string.error_response_invalid)
+        val segments=List(lines.length()) {i ->
+            val line=lines.getJSONArray(i)
+            count+=line.length()
+            requireMessage(count<=points,R.string.error_response_invalid)
+            List(line.length()) {j ->
+                val point=line.getJSONArray(j)
+                val lat=point.getDouble(0);val lon=point.getDouble(1)
+                requireMessage(point.length()==2 && lat.isFinite() && lon.isFinite() && lat in -90.0..90.0 && lon in -180.0..180.0,R.string.error_response_invalid)
+                PhotoMapPoint(lat,lon)
+            }
+        }
+        return PhotoTrackGeometry(o.getString("path"),o.getString("name"),o.optJSONObject("bounds")?.let(::mapBounds),segments,
+            o.getInt("total_points"),o.getBoolean("simplified"),o.getInt("omitted_segments"))
+    }
     private fun mapBounds(o: JSONObject)=PhotoMapBounds(o.getDouble("south"),o.getDouble("west"),o.getDouble("north"),o.getDouble("east"))
     private fun mapParams(query: PhotoQuery,bounds: PhotoMapBounds?)=mutableMapOf("path" to query.path,"q" to query.query,"type" to query.type).apply {
         bounds?.let { putAll(mapOf("south" to "${it.south}","west" to "${it.west}","north" to "${it.north}","east" to "${it.east}")) }
@@ -139,9 +196,15 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
     }
     private fun photo(o: JSONObject) = Photo(o.getString("path"),o.getString("name"),o.getString("type"),o.getString("mime"),
         o.getString("version"),o.getString("modified"),o.optionalString("captured"),o.getLong("bytes"),o.getInt("width"),o.getInt("height"),
-        o.optString("camera"),o.optString("lens"),o.optionalDouble("latitude"),o.optionalDouble("longitude"))
+        o.optString("camera"),o.optString("lens"),o.optionalDouble("latitude"),o.optionalDouble("longitude"),
+        o.optionalDouble("rating"),o.stringList("tags"),o.stringList("keywords"),
+        ((o.optJSONArray("faces")?.objects {it.optString("Name")} ?: emptyList()) +
+            (o.optJSONArray("automatic_faces")?.objects {it.optString("name")} ?: emptyList())).distinct())
     private fun post(o: JSONObject) = PhotoBlog(o.getString("path"),o.getString("name"),o.optionalString("date"),o.getString("modified"),o.optString("text"),o.optString("html"))
 }
 private fun JSONObject.optionalString(key: String): String? = if(isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
 private fun JSONObject.optionalDouble(key: String): Double? = if(isNull(key)) null else optDouble(key).takeIf { it.isFinite() }
+private fun JSONObject.stringList(key: String): List<String> = optJSONArray(key)?.let {array ->
+    List(array.length()) {array.getString(it)}.filter(String::isNotBlank).distinct()
+} ?: emptyList()
 private fun <T> JSONArray.objects(convert: (JSONObject) -> T): List<T> = List(length()) { convert(getJSONObject(it)) }

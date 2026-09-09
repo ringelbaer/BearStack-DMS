@@ -134,6 +134,179 @@ paths:
           description: Photo index not ready (map_index_not_ready). Retry-After is 10 seconds.
         '500':
           description: Internal error.
+  /api/photos/v1/map/tracks:
+    get:
+      tags: [Photos]
+      operationId: listPhotoMapTracks
+      summary: Read a bounded inventory of GPX tracks
+      description: >-
+        Requires photos.read. Returns file metadata without parsing GPX. Includes the folder's
+        descendants; admin-only files are excluded, including newly private folders not yet rescanned.
+        Numeric cursors advance over at most 32 candidate files and do not expose hidden paths.
+        A page may be empty with has_next or has_previous true. Use cursor to continue forwards or
+        previous_cursor with before=1 to continue backwards. File IDs survive metadata updates.
+        ready=false means a normal index scan still needs to backfill GPX inventory; existing photo
+        map coverage remains available. Inventory queries are independent of photo search terms.
+      parameters:
+      - name: path
+        in: query
+        schema: {type: string, maxLength: 4096, default: ''}
+        description: Library-relative folder. Empty selects the full library.
+      - name: cursor
+        in: query
+        schema: {type: string, pattern: '^[0-9]*$', default: ''}
+      - name: before
+        in: query
+        schema: {type: integer, enum: [0, 1], default: 0}
+      responses:
+        '200':
+          description: Bounded metadata inventory. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhotoTrackInventory'}
+        '400':
+          description: Invalid path or cursor (invalid_cursor).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Missing photos.read or admin-only folder.
+        '404':
+          description: Folder not found.
+        '503':
+          description: Index unavailable (map_index_not_ready). Retry-After is 10 seconds.
+        '500':
+          description: Internal error.
+  /api/photos/v1/map/route:
+    get:
+      tags: [Photos]
+      operationId: readPhotoMapRoute
+      summary: Read the chronological photo route for a folder or search
+      description: >-
+        Requires photos.read. Uses the complete indexed GPS selection with the same folder,
+        search and visibility predicates as the map. Subfolders are included; q searches the
+        whole library. Admin-only content is excluded. Points are ordered by capture time
+        (file modification time if absent), normalizing offsets and full fractional precision.
+        The shared browser algorithm groups nearby consecutive places using the configured
+        map track resolution and successive time windows, before clipping to the viewport.
+        Current folder privacy rules are checked in bounded batches for maps, map media and
+        photo routes, including newly private subfolders before the next regular index scan.
+        No originals are read. Without full-text search, input streams in index order; full-text
+        matches are read once and sorted with file-backed temporary storage. Aggregation and
+        geometry storage are bounded; large SQL-supported selections are not truncated. Complex
+        postfilters retain the explicit search_too_broad error rather than returning a partial route.
+        The entire route determines bounds, total_media and total_points. Segments contain only
+        viewport geometry, with at most points coordinates across all segments. Reduction and
+        omitted viewport segments are reported. Supply all four bounds or omit all for the world.
+        GPX and photo routes share at most two geometry jobs per library.
+        Complete grouped routes without q are cached server-side as versioned JSON in the
+        configured cache directory, shared with the browser map independently of its media page. Cache scope includes library, recursive folder, radius,
+        media type and visibility. A transactional index revision invalidates GPS, timestamps,
+        folder, type and access changes, including descendants. Identical builds are shared;
+        completed files replace older revisions atomically. Format and algorithm are versioned
+        independently. Viewport and point limit apply only on retrieval. Search results are not
+        persisted. The cache retains at most 256 files and 512 MiB; larger routes or unavailable
+        cache storage use complete uncached computation. HTTP responses remain private, no-store.
+      parameters:
+      - name: path
+        in: query
+        schema: {type: string, maxLength: 4096, default: ""}
+      - name: q
+        in: query
+        schema: {type: string, maxLength: 800}
+      - name: type
+        in: query
+        schema: {type: string, enum: [image, video, audio]}
+      - name: points
+        in: query
+        schema: {type: integer, minimum: 32, maximum: 8192, default: 2048}
+      - name: south
+        in: query
+        schema: {type: number, format: double, minimum: -90, maximum: 90}
+      - name: north
+        in: query
+        schema: {type: number, format: double, minimum: -90, maximum: 90}
+      - name: west
+        in: query
+        schema: {type: number, format: double, minimum: -180, maximum: 180}
+      - name: east
+        in: query
+        schema: {type: number, format: double, minimum: -180, maximum: 180}
+        description: West greater than east crosses the antimeridian.
+      responses:
+        '200':
+          description: Viewport geometry and full-route bounds. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhotoRouteGeometry'}
+        '400':
+          description: Invalid path, query, media type, viewport (invalid_bounds) or point budget (invalid_points).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Missing photos.read or admin-only path.
+        '404':
+          description: Folder not found.
+        '422':
+          description: Complex search exceeds its candidate limit (search_too_broad).
+        '503':
+          description: Index unavailable (map_index_not_ready). Retry-After is 10 seconds.
+        '500':
+          description: Internal error.
+  /api/photos/v1/map/track:
+    get:
+      tags: [Photos]
+      operationId: readPhotoMapTrack
+      summary: Read bounded GPX geometry for a map viewport
+      description: >-
+        Requires photos.read. Reads a regular, library-relative GPX file through the shared parser
+        and cache. Symlinks and admin-only paths are rejected. The file limit is 16 MiB and 100,000
+        recorded track/route points; invalid positions split segments. Consecutive points within
+        5 metres are reduced within each segment. GPX is parsed lazily with a 32 MiB cache.
+        Geometry preserves segment gaps and antimeridian crossings. Supply all four bounds or
+        omit all for the world. Returned bounds describe the entire file, while segments contain
+        only clipped, simplified geometry for the viewport. At most points coordinates are returned
+        across all segments. If endpoints alone exceed the budget, complete segments are sampled
+        across the track and omitted_segments reports the number left out. Zooming and requesting
+        a smaller viewport can recover additional detail. At most two geometry jobs run per library.
+      parameters:
+      - name: path
+        in: query
+        required: true
+        schema: {type: string, minLength: 1, maxLength: 4096}
+      - name: points
+        in: query
+        schema: {type: integer, minimum: 32, maximum: 8192, default: 2048}
+      - name: south
+        in: query
+        schema: {type: number, format: double, minimum: -90, maximum: 90}
+      - name: north
+        in: query
+        schema: {type: number, format: double, minimum: -90, maximum: 90}
+      - name: west
+        in: query
+        schema: {type: number, format: double, minimum: -180, maximum: 180}
+      - name: east
+        in: query
+        schema: {type: number, format: double, minimum: -180, maximum: 180}
+        description: West greater than east crosses the antimeridian.
+      responses:
+        '200':
+          description: Viewport geometry and full-track bounds. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhotoTrackGeometry'}
+        '400':
+          description: Invalid path, viewport (invalid_bounds) or point budget (invalid_points).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Missing photos.read or admin-only path.
+        '404':
+          description: GPX file not found.
+        '422':
+          description: Invalid GPX (invalid_gpx) or file/point limit exceeded (gpx_too_large).
+        '500':
+          description: Internal error.
   /api/photos/v1/map/media:
     get:
       tags:
@@ -230,7 +403,7 @@ paths:
       - Photos
       operationId: browsePhotoCatalog
       summary: Read a bounded native gallery page
-      description: Requires photos.read. Pages contain at most 96 media, 24 folders with two previews each, and 20 blog summaries. Folder previews are fetched only after slicing the folder page. Blog bodies load on demand. Native listings exclude admin-only content. Existing sorting, search, index and visibility rules are shared with the browser. Page numbers refer to the live library; clients should deduplicate paths if indexing occurs during browsing.
+      description: Requires photos.read. Pages contain at most 96 media, 24 folders with two previews each, and 20 blog summaries. Folder search totals and sorting include all matching visible folders; results are not truncated to 50. Folder previews are fetched only after slicing the folder page. Blog bodies load on demand. Native listings exclude admin-only content. Existing sorting, search, index and visibility rules are shared with the browser. Page numbers refer to the live library; clients should deduplicate paths if indexing occurs during browsing.
       responses:
         '200':
           description: Successful response. Cache-Control is private, no-store.
@@ -2953,6 +3126,73 @@ components:
             frame_seconds:
               type: integer
               minimum: 0
+    PhotoTrackInventory:
+      type: object
+      required: [tracks, cursor, previous_cursor, has_next, has_previous, ready]
+      properties:
+        tracks:
+          type: array
+          maxItems: 32
+          items:
+            type: object
+            required: [path, name, modified, bytes]
+            properties:
+              path: {type: string}
+              name: {type: string}
+              modified: {type: string, format: date-time}
+              bytes: {type: integer, format: int64, minimum: 0}
+        cursor: {type: string}
+        previous_cursor: {type: string}
+        has_next: {type: boolean}
+        has_previous: {type: boolean}
+        ready: {type: boolean}
+    PhotoTrackGeometry:
+      allOf:
+      - $ref: '#/components/schemas/PhotoMapGeometry'
+      - type: object
+        properties:
+          total_points:
+            type: integer
+            maximum: 100000
+            description: Parsed GPX point count after reducing nearby points, before viewport clipping.
+    PhotoRouteGeometry:
+      allOf:
+      - $ref: '#/components/schemas/PhotoMapGeometry'
+      - type: object
+        required: [total_media, radius_meters]
+        properties:
+          total_media: {type: integer, minimum: 0, description: Number of GPS media contributing to the complete chronological route.}
+          radius_meters: {type: integer, enum: [500, 1000, 1500, 2000, 3000, 5000, 7500, 10000]}
+          total_points:
+            type: integer
+            description: Complete grouped place count before clipping and simplification, without a collection-size cap.
+    PhotoMapGeometry:
+      type: object
+      required: [path, name, segments, total_points, simplified, omitted_segments]
+      properties:
+        path: {type: string}
+        name: {type: string}
+        bounds: {$ref: '#/components/schemas/PhotoMapBounds'}
+        segments:
+          type: array
+          maxItems: 8192
+          items:
+            type: array
+            maxItems: 8192
+            items:
+              type: array
+              minItems: 2
+              maxItems: 2
+              prefixItems:
+              - {type: number, format: double, minimum: -90, maximum: 90}
+              - {type: number, format: double, minimum: -180, maximum: 180}
+          description: Independent segments of [latitude,longitude] pairs; never connect different segments.
+        total_points:
+          type: integer
+          minimum: 0
+          description: Complete point or place count before viewport clipping and simplification.
+        simplified: {type: boolean}
+        omitted_segments: {type: integer, minimum: 0}
     PhotoMap:
       type: object
       required: [total, markers]

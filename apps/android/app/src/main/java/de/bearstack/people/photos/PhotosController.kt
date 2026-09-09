@@ -144,7 +144,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     fun startFrame() {
         if(state.value.loading || state.value.frame) return
         frameReturn=state.value.copy(loadingSections=emptySet(),selected=null) to gridPosition
-        open(state.value.query.copy(recursive=true,type="image"),frame=true)
+        open(state.value.query.copy(recursive=true),frame=true)
     }
     fun closeViewer() {
         val saved=frameReturn

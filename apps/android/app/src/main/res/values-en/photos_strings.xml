@@ -16,7 +16,6 @@
     <string name="photos_menu">More options</string>
     <string name="photos_back">Back</string>
     <string name="photos_retry">Try again</string>
-    <string name="photos_more">Load more</string>
     <string name="photos_empty">No photos here yet.</string>
     <string name="photos_no_results">No matching content found.</string>
     <plurals name="photos_count">
@@ -50,7 +49,7 @@
     <string name="photos_repeat">Repeat at the end</string>
     <string name="photos_frame_fill">Fill screen (crop photos)</string>
     <string name="photos_frame_captions">Show name and date</string>
-    <string name="photos_playback_help">Playback waits for the photo to load and pauses while viewing information, settings or another app. Tap the frame to show controls.</string>
+    <string name="photos_playback_help">Playback waits for photos to load and for video or audio to finish. Information, settings and switching to another app pause playback. Tap the frame to show controls.</string>
     <string name="photos_save">Save</string>
     <string name="photos_play">Start slideshow</string>
     <string name="photos_pause">Pause slideshow</string>
@@ -76,10 +75,31 @@
         <item quantity="one">1 item at this location</item>
         <item quantity="other">%1$d items at this location</item>
     </plurals>
-    <string name="photos_map_page">Page %1$d</string>
     <string name="photos_map_marker_one">1 item at this location</string>
-    <string name="photos_map_previous_page">Previous page</string>
-    <string name="photos_map_next_page">Next page</string>
     <string name="photos_text_empty">This post contains no text.</string>
-    <string name="photos_load_previous">Load previous</string>
+    <string name="photos_map_layers">Layers</string>
+    <string name="photos_tracks_title">GPX tracks</string>
+    <string name="photos_tracks_help">Choose recorded paths from this folder and its subfolders. When searching photos, tracks from the whole library are available. You can show several tracks together; their colours help you compare them.</string>
+    <string name="photos_tracks_clear">Hide all GPX tracks</string>
+    <string name="photos_tracks_limit">You can display up to 256 tracks at once.</string>
+    <string name="photos_tracks_index_pending">The track list is being prepared. Try loading it again later.</string>
+    <string name="photos_tracks_empty">No GPX tracks in this area.</string>
+    <string name="photos_tracks_list_error">The track list could not be loaded.</string>
+    <string name="photos_track_error">This track could not be read.</string>
+    <string name="photos_track_too_large">This track exceeds the file limit (16 MiB or 100,000 points).</string>
+    <string name="photos_tracks_simplified">Tracks are simplified. Zoom into the map for more detail.</string>
+    <string name="photos_capture_time">Capture time</string>
+    <string name="photos_modified_time">Modified · no capture time stored</string>
+    <string name="photos_rating">Rating</string>
+    <string name="photos_rating_rejected">Rejected</string>
+    <string name="photos_rating_none">Unrated</string>
+    <string name="photos_rating_stars">%1$s / 5 stars</string>
+    <string name="photos_info_people">People</string>
+    <string name="photos_person_unnamed">Unnamed</string>
+    <string name="photos_tags">Tags</string>
+    <string name="photos_keywords">Keywords</string>
+    <string name="photos_route_title">Photo route</string>
+    <string name="photos_route_help">Connects the GPS locations of your photos in chronological order. The photo route uses a dashed line.</string>
+    <string name="photos_route_error">The photo route could not be loaded.</string>
+    <string name="photos_route_summary">%1$d items · places grouped within %2$d m</string>
 </resources>

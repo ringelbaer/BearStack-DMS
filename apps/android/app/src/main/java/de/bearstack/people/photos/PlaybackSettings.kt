@@ -2,11 +2,15 @@ package de.bearstack.people.photos
 
 import android.content.Context
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import de.bearstack.people.R
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +39,7 @@ class PlaybackPreferences(context: Context) {
     var interval by remember {mutableIntStateOf(seconds)}
     var menu by remember {mutableStateOf(false)}
     AlertDialog(onDismissRequest=onDismiss,title={Text(stringResource(if(frame) R.string.photos_frame_settings else R.string.photos_slideshow_settings))},
-        text={Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.photos_interval))
             Box {
                 OutlinedButton(onClick={menu=true}) {Text(stringResource(R.string.photos_seconds,interval))}
@@ -55,5 +59,7 @@ class PlaybackPreferences(context: Context) {
         dismissButton={TextButton(onClick=onDismiss) {Text(stringResource(R.string.photos_cancel))}})
 }
 @Composable private fun PlaybackSwitch(label: String, checked: Boolean, onChange: (Boolean)->Unit) {
-    Row(verticalAlignment=Alignment.CenterVertically) {Text(label,Modifier.weight(1f));Switch(checked,onChange)}
+    Row(Modifier.fillMaxWidth().toggleable(value=checked,role=Role.Switch,onValueChange=onChange),verticalAlignment=Alignment.CenterVertically) {
+        Text(label,Modifier.weight(1f));Switch(checked,onCheckedChange=null)
+    }
 }

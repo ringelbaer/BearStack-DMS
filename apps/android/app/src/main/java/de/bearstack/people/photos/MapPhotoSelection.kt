@@ -1,8 +1,6 @@
 package de.bearstack.people.photos
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -15,7 +13,6 @@ import androidx.compose.ui.window.DialogProperties
 import coil.ImageLoader
 import de.bearstack.people.R
 import de.bearstack.people.data.remote.*
-import kotlinx.coroutines.CancellationException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,42 +21,38 @@ internal fun MapPhotoSelection(controller: PhotosController,images: ImageLoader,
     // Expand a degenerate point by less than a millimetre to obtain valid query
     // bounds; the same small padding keeps floating point edge points included.
     val bounds=remember(extent) {expandMapBounds(extent)}
-    var page by remember {mutableIntStateOf(1)}
-    var result by remember {mutableStateOf<PhotoMapPage?>(null)}
-    var loading by remember {mutableStateOf(false)}
-    var failed by remember {mutableStateOf(false)}
-    var retry by remember {mutableIntStateOf(0)}
-    var selected by remember {mutableStateOf<String?>(null)}
-    LaunchedEffect(page,retry) {
-        loading=true;failed=false
-        try {result=controller.service.mapMedia(query,bounds,page)}
-        catch(e: CancellationException) {throw e}
-        catch(_: Exception) {failed=true}
-        finally {loading=false}
+    val scope=rememberCoroutineScope()
+    val context=androidx.compose.ui.platform.LocalContext.current
+    val selection=remember(controller,query,bounds) {
+        val source=controller.service
+        val selectedQuery=query
+        val service=object : PhotosService by source {
+            override suspend fun browse(query: PhotoQuery,page: Int,section: String): PhotoPage {
+                val result=source.mapMedia(selectedQuery,bounds,page)
+                return PhotoPage(selectedQuery.path,"",result.page,result.total,result.hasNext,0,false,false,
+                    result.media,emptyList(),emptyList())
+            }
+        }
+        PhotosController(scope,service,controller.session,context)
     }
+    DisposableEffect(selection) {onDispose {selection.close()}}
+    val state by selection.state.collectAsState()
+    val count=if(state.loading || state.error!=null) marker.count else state.total
     Dialog(onDismissRequest=onClose,properties=DialogProperties(usePlatformDefaultWidth=false)) {
         Surface(Modifier.fillMaxSize()) {
             Column(Modifier.safeDrawingPadding()) {
-                TopAppBar(title={Text(pluralStringResource(R.plurals.photos_map_selection,result?.total ?: marker.count,result?.total ?: marker.count))},navigationIcon={
+                TopAppBar(title={Text(pluralStringResource(R.plurals.photos_map_selection,count,count))},navigationIcon={
                     IconButton(onClick=onClose) {Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_back))}
                 })
-                if(loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-                if(failed) TextButton(onClick={retry++}) {Text(stringResource(R.string.photos_map_error)+" "+stringResource(R.string.photos_retry))}
-                key(result?.page) {
-                    LazyVerticalGrid(GridCells.Fixed(3),Modifier.weight(1f),horizontalArrangement=Arrangement.spacedBy(2.dp),verticalArrangement=Arrangement.spacedBy(2.dp)) {
-                        items(result?.media.orEmpty(),key={it.path}) {photo ->
-                            PhotoThumbnail(photo,controller,images,controller.session.thumbnailSize,
-                                Modifier.aspectRatio(1f).clickable(enabled=!loading) {selected=photo.path})
-                        }
-                    }
+                Box(Modifier.fillMaxWidth().height(3.dp)) {
+                    if(state.loading || state.loadingSections.isNotEmpty()) LinearProgressIndicator(Modifier.fillMaxSize())
                 }
-                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
-                    TextButton(onClick={page=(result?.page ?: page)-1},enabled=!loading && (result?.page ?: page)>1) {Text(stringResource(R.string.photos_map_previous_page))}
-                    Text(stringResource(R.string.photos_map_page,result?.page ?: page),Modifier.padding(16.dp))
-                    TextButton(onClick={page=(result?.page ?: page)+1},enabled=!loading && result?.hasNext==true) {Text(stringResource(R.string.photos_map_next_page))}
+                if(state.error!=null) TextButton(onClick={selection.open(state.query)}) {
+                    Text(stringResource(R.string.photos_map_error)+" "+stringResource(R.string.photos_retry))
                 }
+                PhotoGallery(selection,images,state,Modifier.fillMaxWidth().weight(1f))
             }
         }
-        selected?.let {path ->PhotoViewer(controller,images,result?.media.orEmpty(),path,onClose={selected=null},standalone=true)}
+        state.selected?.let {path ->PhotoViewer(selection,images,state.media,path)}
     }
 }

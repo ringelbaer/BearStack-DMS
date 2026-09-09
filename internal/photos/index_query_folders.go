@@ -211,9 +211,9 @@ func (l *Library) indexSearchFolders(ctx context.Context, rel, query string, inc
 		sql += ` WHERE ` + strings.Join(where, " AND ")
 	}
 	sql += ` ORDER BY fi.name COLLATE NOCASE`
-	if !plan.PostFilter {
-		sql += ` LIMIT 50`
-	}
+	// Keep all matches for the shared visibility, sort and pagination pass.
+	// Limiting candidates here hides later pages and can omit the best matches
+	// for descending/date order before that order has even been applied.
 	rows, err := l.index.db.QueryContext(ctx, sql, args...)
 	if err != nil {
 		return nil, err
@@ -246,18 +246,6 @@ func (l *Library) indexSearchFolders(ctx context.Context, rel, query string, inc
 		folders, err = l.filterEmptyAdminOnlyIndexedContainerFolders(ctx, folders)
 		if err != nil {
 			return nil, err
-		}
-	}
-	if plan.PostFilter {
-		filtered := folders[:0]
-		for _, folder := range folders {
-			if matchesFolderQuery(folder, query) {
-				filtered = append(filtered, folder)
-			}
-		}
-		folders = filtered
-		if len(folders) > 50 {
-			folders = folders[:50]
 		}
 	}
 	return folders, nil

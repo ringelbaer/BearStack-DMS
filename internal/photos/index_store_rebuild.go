@@ -32,7 +32,7 @@ func (s *photoIndexStore) loadIndexRunCache(ctx context.Context) (indexRunCache,
 		folderStates:       states,
 		folderChildren:     children,
 		stats:              stats,
-		hasIndexedContent:  stats.Media > 0 || stats.Folders > 0 || stats.Blogs > 0,
+		hasIndexedContent:  hasRootScan || stats.Media > 0 || stats.Folders > 0 || stats.Blogs > 0,
 	}, nil
 }
 
@@ -41,7 +41,7 @@ func (s *photoIndexStore) loadRootFolderScan(ctx context.Context) (int64, int64,
 		return 0, 0, false, nil
 	}
 	var scanSignature, quickSignature int64
-	err := s.db.QueryRowContext(ctx, `SELECT mod_time_unix_nano, quick_signature_unix_nano FROM photo_folder_scan WHERE path = ''`).Scan(&scanSignature, &quickSignature)
+	err := s.db.QueryRowContext(ctx, `SELECT mod_time_unix_nano, CASE WHEN gpx_scanned=1 THEN quick_signature_unix_nano ELSE -1 END FROM photo_folder_scan WHERE path = ''`).Scan(&scanSignature, &quickSignature)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, 0, false, nil
 	}
@@ -59,7 +59,7 @@ func (s *photoIndexStore) loadIndexedFolderRunCache(ctx context.Context, folderC
 		return nil, nil, nil
 	}
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT fi.parent, fi.path, fi.dir_count, fi.admin_only, COALESCE(pfs.mod_time_unix_nano, -1), COALESCE(pfs.quick_signature_unix_nano, 0)
+		SELECT fi.parent, fi.path, fi.dir_count, fi.admin_only, COALESCE(pfs.mod_time_unix_nano, -1), COALESCE(CASE WHEN pfs.gpx_scanned=1 THEN pfs.quick_signature_unix_nano ELSE -1 END, 0)
 		FROM folder_index fi
 		LEFT JOIN photo_folder_scan pfs ON pfs.path = fi.path
 		ORDER BY fi.parent, fi.name COLLATE NOCASE`)
@@ -237,16 +237,18 @@ func (s *photoIndexStore) saveFolderScan(ctx context.Context, rel string, scanSi
 		return nil
 	}
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO photo_folder_scan(path, mod_time_unix_nano, quick_signature_unix_nano, order_mode, scanned_at)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO photo_folder_scan(path, mod_time_unix_nano, quick_signature_unix_nano, order_mode, scanned_at, gpx_scanned)
+		VALUES (?, ?, ?, ?, ?, 1)
 		ON CONFLICT(path) DO UPDATE SET
 			mod_time_unix_nano = excluded.mod_time_unix_nano,
 			quick_signature_unix_nano = excluded.quick_signature_unix_nano,
 			order_mode = excluded.order_mode,
-			scanned_at = excluded.scanned_at
+			scanned_at = excluded.scanned_at,
+			gpx_scanned = 1
 		WHERE photo_folder_scan.mod_time_unix_nano <> excluded.mod_time_unix_nano
 			OR photo_folder_scan.quick_signature_unix_nano <> excluded.quick_signature_unix_nano
-			OR photo_folder_scan.order_mode <> excluded.order_mode`,
+			OR photo_folder_scan.order_mode <> excluded.order_mode
+			OR photo_folder_scan.gpx_scanned <> 1`,
 		rel,
 		scanSignature,
 		quickSignature,
@@ -433,6 +435,7 @@ func (s *photoIndexStore) deleteFolderIndexSubtree(ctx context.Context, rel stri
 		{`DELETE FROM blog_search WHERE path IN (SELECT path FROM blog_index WHERE directory = ? OR (directory >= ? AND directory < ?))`, blogArgs},
 		{`DELETE FROM blog_tag_index WHERE blog_path IN (SELECT path FROM blog_index WHERE directory = ? OR (directory >= ? AND directory < ?))`, blogArgs},
 		{`DELETE FROM blog_index WHERE directory = ? OR (directory >= ? AND directory < ?)`, blogArgs},
+		{`DELETE FROM gpx_index WHERE directory = ? OR (directory >= ? AND directory < ?)`, blogArgs},
 		{`DELETE FROM folder_search WHERE path = ? OR (path >= ? AND path < ?)`, folderArgs},
 		{`DELETE FROM folder_tag_index WHERE folder_path = ? OR (folder_path >= ? AND folder_path < ?)`, folderArgs},
 		{`DELETE FROM folder_preview_index WHERE folder_path = ? OR (folder_path >= ? AND folder_path < ?)`, folderArgs},

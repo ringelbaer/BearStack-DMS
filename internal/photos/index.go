@@ -225,6 +225,7 @@ func (l *Library) indexDirectoryEntries(ctx context.Context, item indexQueueItem
 	var seenBlogs map[string]struct{}
 	var mediaToSave []Media
 	var blogsToSave []BlogPost
+	var gpxToSave []GPXFile
 	var mediaCache map[string]cachedMediaRow
 	mediaCacheLoaded := false
 	var blogCache map[string]cachedBlogRow
@@ -310,6 +311,17 @@ func (l *Library) indexDirectoryEntries(ctx context.Context, item indexQueueItem
 			continue
 		}
 		switch kind {
+		case mediaKindGPX:
+			childInfo, err := directoryEntryInfo(entry, entryInfoCache)
+			if err != nil {
+				return indexDirectoryStepResult{}, fmt.Errorf("stat %s: %w", childRel, err)
+			}
+			if childInfo.IsDir() || !childInfo.Mode().IsRegular() {
+				continue
+			}
+			signatureBuilder.addFile(name, childInfo)
+			fileCount++
+			gpxToSave = append(gpxToSave, GPXFile{Path: childRel, Name: name, Bytes: childInfo.Size(), Modified: childInfo.ModTime(), adminOnly: adminOnly})
 		case MediaTypeBlog:
 			childInfo, err := directoryEntryInfo(entry, entryInfoCache)
 			if err != nil {
@@ -349,7 +361,7 @@ func (l *Library) indexDirectoryEntries(ctx context.Context, item indexQueueItem
 	// ReadDir may be a transient mount/I/O failure; retry it on the next scan.
 	scanSignature = signatureBuilder.fullSignature()
 
-	if rel == "" && runCache.hasIndexedContent && len(children) == 0 && mediaCount == 0 && blogCount == 0 {
+	if rel == "" && runCache.hasIndexedContent && len(children) == 0 && mediaCount == 0 && blogCount == 0 && len(gpxToSave) == 0 {
 		return indexDirectoryStepResult{RootEmptySkipped: true, Skipped: true, Files: fileCount}, nil
 	}
 	dbWrites := len(mediaToSave) + len(blogsToSave) + 1
@@ -358,6 +370,12 @@ func (l *Library) indexDirectoryEntries(ctx context.Context, item indexQueueItem
 	}
 	if err := l.saveBlogBatch(ctx, blogsToSave); err != nil {
 		return indexDirectoryStepResult{}, err
+	}
+	if trackExisting || len(gpxToSave) > 0 {
+		if err := l.index.replaceGPXDirectory(ctx, rel, gpxToSave); err != nil {
+			return indexDirectoryStepResult{}, err
+		}
+		dbWrites += len(gpxToSave)
 	}
 	if err := l.saveScannedFolder(ctx, rel, info.ModTime(), mediaCount, blogCount, dirCount, adminOnly, orderMode); err != nil {
 		return indexDirectoryStepResult{}, err
@@ -464,7 +482,7 @@ func scanSignatureIncludesFile(name string) bool {
 	}
 	kind, ok := supportedKind(name)
 	if ok {
-		return isMediaKind(kind) || kind == MediaTypeBlog
+		return isMediaKind(kind) || kind == MediaTypeBlog || kind == mediaKindGPX
 	}
 	return strings.EqualFold(filepath.Ext(name), ".xmp")
 }

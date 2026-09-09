@@ -101,7 +101,7 @@ class PhotosControllerTest {
         controller.startFrame();runCurrent()
         assertTrue(controller.state.value.frame)
         assertTrue(fake.requests.last().first.recursive)
-        assertEquals("image",fake.requests.last().first.type)
+        assertEquals("",fake.requests.last().first.type)
         assertNotNull(controller.state.value.selected)
         controller.closeViewer()
         assertFalse(controller.state.value.frame)

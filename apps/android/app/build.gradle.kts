@@ -9,6 +9,8 @@ android {
     namespace = "de.bearstack.people"
     compileSdk = 36
     sourceSets["androidTest"].assets.srcDir("schemas")
+    // Reuse the repository's photo fixture for visual checks, only in test APKs.
+    sourceSets["androidTest"].assets.srcDir(rootProject.file("../../_site-src/docs/assets/images"))
     defaultConfig {
         applicationId = "de.bearstack.people"
         minSdk = 26

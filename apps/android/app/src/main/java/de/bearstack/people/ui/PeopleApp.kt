@@ -48,8 +48,7 @@ fun PeopleApp(vm: PeopleViewModel) {
     val text=uiStrings()
     val state by vm.state.collectAsStateWithLifecycle()
     BackHandler(state.connected && !state.showGallery && vm.photos!=null) { vm.openGallery() }
-    val dark = isSystemInDarkTheme()
-    MaterialTheme(colorScheme=if(dark) darkColorScheme(primary=Color(0xff75d2e8)) else lightColorScheme(primary=Color(0xff146e83))) {
+    BearStackTheme {
         Surface(Modifier.fillMaxSize()) {
             if (!state.connected) ConnectionScreen(state,vm)
             else if(state.showGallery && vm.photos!=null && vm.images!=null)

@@ -25,12 +25,14 @@ import de.bearstack.people.data.remote.PhotosApi
 // origin-restricted HTTP client as photos; no separate player credentials.
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable internal fun PhotoMediaPlayer(photo: Photo, controller: PhotosController, autoPlay: Boolean,
-    foreground: Boolean, onEnded: () -> Unit, onPlaying: (Boolean) -> Unit) {
+    foreground: Boolean, onEnded: () -> Unit, onPlaying: (Boolean) -> Unit, replay: Int = 0,
+    onControlsShown: () -> Unit = {}) {
     val context=LocalContext.current
     val client=(controller.service as? PhotosApi)?.streamingClient
     if(client==null) {Text(stringResource(R.string.photos_media_error));return}
     val ended by rememberUpdatedState(onEnded)
     val playing by rememberUpdatedState(onPlaying)
+    val controlsShown by rememberUpdatedState(onControlsShown)
     var error by remember(photo.path) {mutableStateOf(false)}
     val player=remember(photo.path,photo.version,client) {
         ExoPlayer.Builder(context).setLoadControl(DefaultLoadControl.Builder()
@@ -47,14 +49,20 @@ import de.bearstack.people.data.remote.PhotosApi
                 prepare()
             }
     }
-    LaunchedEffect(autoPlay,foreground) {
+    LaunchedEffect(player,autoPlay,foreground,replay) {
         if(!foreground) player.pause()
         else if(autoPlay) {if(player.playbackState==Player.STATE_ENDED) player.seekTo(0);player.play()}
         else player.pause()
     }
     DisposableEffect(player) {onDispose {player.release();playing(false)}}
     Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) {
-        AndroidView(factory={PlayerView(it).apply {this.player=player;setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)}},
+        AndroidView(factory={PlayerView(it).apply {
+            this.player=player
+            setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+            setControllerVisibilityListener(PlayerView.ControllerVisibilityListener {visibility ->
+                if(visibility==android.view.View.VISIBLE) controlsShown()
+            })
+        }},
             modifier=Modifier.fillMaxSize(),onRelease={it.player=null})
         if(error) Surface {
             Column(horizontalAlignment=Alignment.CenterHorizontally) {

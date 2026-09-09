@@ -8,6 +8,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
@@ -23,7 +24,7 @@ import java.util.Locale
 
 class PhotosScreenTest {
     @get:Rule val compose=createComposeRule()
-    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, test: (PhotosController,PhotosService)->Unit) {
+    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, test: (PhotosController,PhotosService)->Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext
         val context=app.createConfigurationContext(Configuration(app.resources.configuration).apply {setLocale(locale)})
         val file=File(app.cacheDir,"gallery-test.jpg")
@@ -34,6 +35,7 @@ class PhotosScreenTest {
         val photos=listOf("first.jpg","second.jpg").map {Photo(it,it,"image","image/jpeg","1","2026-09-09T10:00:00Z",null,1024,400,300)}
         val api=object:PhotosService {
             var blogAttempts=0
+            var infoAttempts=0
             override suspend fun session()=PhotoSession("gallery-test",false,240,240,1280,2048,5,8)
             override suspend fun browse(query: PhotoQuery,page: Int,section: String): PhotoPage {
                 val folders=if(!query.recursive && query.path.isEmpty()) listOf(PhotoFolder("Holiday","Holiday",null,2,false,0,photos)) else emptyList()
@@ -41,7 +43,11 @@ class PhotosScreenTest {
                 return PhotoPage(query.path,"",1,2,false,folders.size,false,false,
                     if(query.query.isNotEmpty()) photos.filter {it.name.contains(query.query)} else if(folders.isEmpty()) photos else emptyList(),folders,blogs)
             }
-            override suspend fun info(path: String)=photos.first {it.path==path}.copy(camera="Test Camera")
+            override suspend fun info(path: String): Photo {
+                if(retryInfo && infoAttempts++==0) throw ApiFailure(404,"not_found",de.bearstack.people.text.UiText(R.string.error_missing))
+                return photos.first {it.path==path}.copy(camera="Test Camera",captured="2024-01-02T00:15:30+14:00",
+                    rating=4.5,people=listOf("Alex","Sam"),tags=listOf("Holiday"),keywords=listOf("Sea","Sun"))
+            }
             override suspend fun blog(path: String): PhotoBlog {
                 if(retryEmptyBlog) {
                     if(blogAttempts++==0) throw ApiFailure(404,"not_found",de.bearstack.people.text.UiText(R.string.error_missing))
@@ -49,7 +55,7 @@ class PhotosScreenTest {
                 }
                 return PhotoBlog(path,"story.md",null,"2026-09-09T10:00:00Z","Story","<h2>Story</h2><p>Travel notes.</p>")
             }
-            override suspend fun mapMedia(query: PhotoQuery,bounds: PhotoMapBounds,page: Int)=PhotoMapPage(2,page,page==1,listOf(photos[page-1]))
+            override suspend fun mapMedia(query: PhotoQuery,bounds: PhotoMapBounds,page: Int)=PhotoMapPage(2,page,false,photos)
             override fun thumbnail(photo: Photo,size: Int)=file.toURI().toString()
             override fun original(photo: Photo)=file.toURI().toString()
         }
@@ -66,6 +72,24 @@ class PhotosScreenTest {
             test(controller,api)
         } finally {compose.runOnUiThread {controller.close();owner.cancel();images.shutdown()};file.delete()}
     }
+    @Test fun photoInfoRetriesAndShowsSourceTimeAndMetadataInEnglish()=infoRetry(Locale.ENGLISH)
+    @Test fun photoInfoRetriesAndShowsSourceTimeAndMetadataInGerman()=infoRetry(Locale.GERMAN)
+    private fun infoRetry(locale: Locale)=screen(locale,retryInfo=true) {_,_ ->
+        val german=locale==Locale.GERMAN
+        compose.onNodeWithContentDescription("first.jpg").performClick()
+        compose.onNodeWithContentDescription(if(german) "Informationen" else "Information").performClick()
+        compose.onNodeWithText(if(german) "Erneut versuchen" else "Try again").performClick()
+        compose.waitUntil(10_000) {compose.onAllNodesWithText("Test Camera").fetchSemanticsNodes().isNotEmpty()}
+        compose.onNodeWithText(if(german) "Aufnahmezeit" else "Capture time").assertIsDisplayed()
+        compose.onNodeWithText("UTC+14:00",substring=true).assertIsDisplayed()
+        compose.onNodeWithText(if(german) "1,02" else "1.02",substring=true).assertIsDisplayed()
+        val bitmap=compose.onNode(hasScrollAction() and hasAnyDescendant(hasText("UTC+14:00",substring=true))).captureToImage().asAndroidBitmap()
+        File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir,"photo-info-${locale.language}.png")
+            .outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
+        compose.onNodeWithText(if(german) "4,5 / 5 Sterne" else "4.5 / 5 stars").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Alex · Sam").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Sea · Sun").performScrollTo().assertIsDisplayed()
+    }
     @Test fun textFailureOffersRetryInsideTheDialogAndEmptyTextFinishesLoading()=screen(Locale.ENGLISH,retryEmptyBlog=true) {controller,_ ->
         compose.onNodeWithText("Folders").performClick()
         compose.onNodeWithText("Holiday").performClick()
@@ -77,19 +101,19 @@ class PhotosScreenTest {
         compose.onNodeWithText("This post contains no text.").assertIsDisplayed()
         assertNull(controller.state.value.error)
     }
-    @Test fun denseMapLocationsReplacePagesAndOpenTheSharedViewer()=screen(Locale.ENGLISH,showMapSelection=true) {_,_ ->
-        compose.waitUntil(10_000) {compose.onAllNodesWithContentDescription("first.jpg").fetchSemanticsNodes().isNotEmpty()}
-        compose.onNodeWithText("Next page").performClick()
+    @Test fun mapSelectionKeepsPhotosInOneGridAndOpensTheSharedViewer()=screen(Locale.ENGLISH,showMapSelection=true) {_,_ ->
         compose.waitUntil(10_000) {compose.onAllNodesWithContentDescription("second.jpg").fetchSemanticsNodes().isNotEmpty()}
-        compose.onNodeWithContentDescription("first.jpg").assertDoesNotExist()
-        compose.onNodeWithText("Page 2").assertIsDisplayed()
-        compose.onNodeWithText("Next page").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("first.jpg").assertIsDisplayed()
+        compose.onNodeWithContentDescription("second.jpg").assertIsDisplayed()
+        compose.onNodeWithText("Next page").assertDoesNotExist()
+        compose.onNodeWithText("Previous page").assertDoesNotExist()
         compose.onNodeWithContentDescription("second.jpg").performClick()
-        compose.onNodeWithText("1 of 1").assertIsDisplayed()
+        compose.onNodeWithText("2 of 2").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Previous photo").performClick()
+        compose.onNodeWithText("1 of 2").assertIsDisplayed()
         compose.onNodeWithContentDescription("Close").performClick()
-        compose.onNodeWithText("Previous page").performClick()
-        compose.waitUntil(10_000) {compose.onAllNodesWithContentDescription("first.jpg").fetchSemanticsNodes().isNotEmpty()}
-        compose.onNodeWithContentDescription("second.jpg").assertDoesNotExist()
+        compose.onNodeWithContentDescription("first.jpg").assertIsDisplayed()
+        compose.onNodeWithContentDescription("second.jpg").assertIsDisplayed()
     }
     @Test fun englishGalleryOpensViewerAndInfoAndHidesPeopleEditingForReaders() = screen(Locale.ENGLISH) {_,_ ->
         compose.onNodeWithText("BearStack Photos").assertIsDisplayed()

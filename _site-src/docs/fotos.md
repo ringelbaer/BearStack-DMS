@@ -12,6 +12,10 @@ Vollbild/Zoom, Foto-Informationen sowie Markdown- und Textbeiträge. Die App nut
 denselben Fotoindex und dieselben Zugriffsregeln. Die gesamte App-Oberfläche, Hilfen und Fehlermeldungen sind deutsch/englisch. Details zum laufenden Ausbau
 stehen in der [Android-Anleitung](android.md).
 
+Die nativen Foto-Informationen zeigen Aufnahmezeit samt Zeitzone, Bewertung,
+Personen und Schlagwörter. Der Fotoframe spielt auch Videos und Audio bis zum Ende;
+eine aktivierte Wiederholung funktioniert auch bei nur einer Mediendatei.
+
 Die native Galerie hält höchstens drei Metadatenseiten je Bereich. Beim Zurückscrollen lädt sie ältere Seiten erneut; Vollbild und Diashow behalten die Fotoreihenfolge, und Ladefehler sind direkt im betroffenen Bereich wiederholbar.
 
 Das Fotomodul ist optional und nutzt einen directory-first Ansatz: BearStack importiert Fotos nicht in die Dokumentenablage, sondern rendert ein vorhandenes, read-only Fotoverzeichnis als Galerie. Die Mediendateien bleiben unverändert; BearStack legt Index, Tags, Vorschaubilder und Einstellungen getrennt davon ab.
@@ -30,9 +34,43 @@ BEARSTACK_PHOTOS_DATA_DIR=/var/lib/bearstack/photos
 
 Nach dem Neustart erscheint `Fotos` in der Hauptnavigation.
 
-Die native Android-Karte unter **Weitere Optionen → Karte** berücksichtigt Ordner samt Unterordnern oder die aktuelle Suche. `/api/photos/v1/map` bündelt alle passenden indexierten GPS-Aufnahmen je Ausschnitt in maximal 289 Marker. Die App bietet außerdem eine Karte in den Foto-Informationen; GPX- und fotobasierte Routen folgen im weiteren Ausbau.
+Die native Android-Karte unter **Weitere Optionen → Karte** berücksichtigt Ordner samt Unterordnern oder die aktuelle Suche. `/api/photos/v1/map` bündelt alle passenden indexierten GPS-Aufnahmen je Ausschnitt in maximal 289 Marker. Die App bietet außerdem eine Karte in den Foto-Informationen; Über **Ebenen → GPX-Tracks** lassen sich mehrere Tracks des Ordners samt Unterordnern einblenden, auch ohne GPS-Fotos. Die App lädt begrenzte Geometrie für den sichtbaren Ausschnitt, erhält getrennte Abschnitte und berücksichtigt die Datumsgrenze. **Ebenen → Fotoroute** ergänzt eine gestrichelte Verbindung der Fotoorte mit denselben Zeit- und Entfernungsregeln wie im Browser. Suche und Typfilter gelten weiterhin.
+
+Die gemeinsame Gruppierung von Fotorouten verarbeitet die chronologisch geordneten Fotoorte mit konstantem Zwischenspeicher. Die bestehenden Zeitfenster und die konfigurierte Entfernung gelten auch für nahe Orte beiderseits der Datumsgrenze; ungültige Koordinaten werden ausgelassen. Der neue lesende Endpunkt `/api/photos/v1/map/route` liefert begrenzte Geometrie und die vollständigen Gesamtzahlen. Kartenmarker, Fotoauswahl und Route prüfen GPS-Ordner in Paketen von höchstens 256 Einträgen gegen aktuelle private Markierungen; ein Rescan ist dafür nicht erforderlich.
+
+Der GPX-Dateiindex wird ab Schema 26 automatisch beim regulären Foto-Indexlauf ergänzt, ohne Tracks zu parsen oder den vorhandenen Fotoindex zurückzusetzen. Die API `/api/photos/v1/map/tracks` liefert maximal 32 Dateimetadaten pro Cursor-Abfrage; `/api/photos/v1/map/track` verwendet den gemeinsamen GPX-Parser und liefert pro Ausschnitt höchstens 8.192 Koordinaten. Neu privat markierte Ordner und symbolische Links bleiben geschützt. Die App hält höchstens 96 Trackeinträge, bis zu 256 ausgewählte Namen und insgesamt 8.192 angezeigte GPX-Koordinaten sowie optional 4.096 Fotorouten-Koordinaten; überholte Anfragen werden abgebrochen.
+
+
+### Serverseitiger Fotorouten-Cache
+
+Browserkarte und native Karten-API verwenden denselben serverseitigen Cache der
+vollständigen gruppierten Fotoroute als JSON unter `<Cache-Verzeichnis>/photo-routes/v1/`. Erst beim
+Abruf werden Kartenausschnitt und Punktlimit angewendet. Ordner, Radius, Medientyp
+und Sichtbarkeit erhalten getrennte Cache-Schlüssel; beliebige Suchabfragen bleiben
+zunächst ohne dauerhafte Cache-Datei. Eine transaktionale Indexrevision invalidiert
+auch Änderungen an GPS, Aufnahmezeit und Sichtbarkeit in Unterordnern. Gleiche
+Berechnungen werden zusammengefasst und Cache-Dateien atomar ersetzt. Format und
+Algorithmus haben eigene Versionen. Die [Android-Anleitung](android.md#karten)
+beschreibt Speichergrenzen, Fehlerbehandlung und Zugriffsprüfung.
+
+Die Browserroute umfasst die gesamte indexierte Auswahl, unabhängig von der
+angezeigten Medienseite. Für eine begrenzte HTML-Ausgabe werden höchstens 8.192
+gruppierte Orte dargestellt; längere Routen werden über ihre gesamte Länge
+vereinfacht und mit angezeigter/vollständiger Punktzahl gekennzeichnet. Anfang,
+Ende sowie die ursprünglichen Zeiten und Fotoanzahlen der verbleibenden Orte
+bleiben erhalten. Die JSON-Datei enthält weiterhin alle gruppierten Orte.
+Vor dem ersten vollständigen Indexlauf bleibt die bestehende direkte Berechnung
+aus dem Dateisystem verfügbar.
+
 
 ## Galerie und Suche
+
+Die Ordnersuche berücksichtigt alle passenden sichtbaren Ordner statt nur der
+ersten 50. Gesamtzahl und Sortierung gelten für die vollständige Trefferliste;
+die Android-App lädt sie in Paketen von höchstens 24 Ordnern mit je zwei
+Vorschauen weiter. Auch kurze Suchbegriffe und ODER-Suchen behalten alle Treffer.
+
+Die native Android-Galerie lässt sich endlos durchscrollen. Fotos, Ordner, Texte und die Fotoauswahl auf der Karte laden automatisch nach, ohne Seitenwechsel oder Ladebuttons. Die Scrollposition bleibt beim Nachladen und bei der Rückkehr aus dem Vollbild erhalten.
 
 Auf kleinen Bildschirmen steht die Foto-Info unter dem Foto über die volle Breite. Das Panel ist separat scrollbar; sein Schließen-Knopf bleibt sichtbar.
 

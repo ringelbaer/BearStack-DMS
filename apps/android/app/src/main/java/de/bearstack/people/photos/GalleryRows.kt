@@ -9,15 +9,14 @@ internal sealed interface GalleryRow {
     data class Media(val value: Photo) : GalleryRow { override val key="photo:${value.path}" }
     data class Date(val value: Photo) : GalleryRow { override val key="date:${value.path}" }
     data object Texts : GalleryRow { override val key="texts" }
-    data class Boundary(val section: String,val previous: Boolean) : GalleryRow {
-        override val key="${if(previous) "previous" else "more"}-$section"
+    data class Failure(val section: String,val previous: Boolean) : GalleryRow {
+        override val key="error-$section"
     }
 }
 
 internal fun galleryRows(state: PhotosState): List<GalleryRow> = buildList {
     fun boundary(section: String,previous: Boolean) {
-        val pages=state.section(section)
-        if(if(previous) pages.hasPrevious else pages.hasNext) add(GalleryRow.Boundary(section,previous))
+        if(state.pageErrors[section]?.previous==previous) add(GalleryRow.Failure(section,previous))
     }
     boundary("folders",true)
     state.folders.forEach {add(GalleryRow.Folder(it))}
@@ -32,4 +31,24 @@ internal fun galleryRows(state: PhotosState): List<GalleryRow> = buildList {
         add(GalleryRow.Media(photo))
     }
     boundary("media",false)
+}
+
+internal data class GalleryPrefetch(val section: String,val previous: Boolean)
+
+internal fun galleryPrefetch(state: PhotosState,visibleKeys: Set<String>): GalleryPrefetch? {
+    if(state.loading || state.selected!=null || state.frame || state.scrollToKey!=null) return null
+    for((section,prefix) in listOf("folders" to "folder:","blogs" to "blog:","media" to "photo:")) {
+        if(section in state.loadingSections) continue
+        val window=state.section(section)
+        val keys=window.keys
+        val indices=keys.indices.filter {prefix+keys[it] in visibleKeys}
+        if(indices.isEmpty()) continue
+        val ahead=when(section) {"media" -> 18; "folders" -> 6; else -> 6}
+        val protected=indices.mapTo(HashSet()) {keys[it]}
+        if(window.hasPrevious && indices.first()<ahead && state.pageErrors[section]?.previous!=true && window.canExtend(true,protected))
+            return GalleryPrefetch(section,true)
+        if(window.hasNext && indices.last()>=keys.size-ahead && state.pageErrors[section]?.previous!=false && window.canExtend(false,protected))
+            return GalleryPrefetch(section,false)
+    }
+    return null
 }

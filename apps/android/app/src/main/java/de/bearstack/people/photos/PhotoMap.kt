@@ -33,6 +33,7 @@ import coil.request.ImageRequest
 import de.bearstack.people.R
 import de.bearstack.people.data.remote.PhotoMapBounds
 import de.bearstack.people.data.remote.PhotoMapMarker
+import de.bearstack.people.data.remote.PhotoTrackGeometry
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -46,7 +47,7 @@ private val cameraSaver=listSaver<MapCamera,Double>(save={listOf(it.x,it.y,it.zo
 @Composable
 internal fun PhotoMap(bounds: PhotoMapBounds, markers: List<PhotoMapMarker>, modifier: Modifier = Modifier,
     onMarker: (PhotoMapMarker) -> Unit = {}, onViewport: suspend (PhotoMapBounds) -> Unit = {},
-    tileImages: coil.ImageLoader? = null) {
+    tileImages: coil.ImageLoader? = null, tracks: List<PhotoTrackGeometry> = emptyList(), focus: MapFocus? = null) {
     val context=LocalContext.current
     val density=LocalDensity.current.density.toDouble()
     val tilePixels=256*density
@@ -63,6 +64,12 @@ internal fun PhotoMap(bounds: PhotoMapBounds, markers: List<PhotoMapMarker>, mod
     LaunchedEffect(size,bounds) {
         if(!positioned && size.width>0 && size.height>0) {
             camera=fitMap(bounds,size.width.toDouble(),size.height.toDouble(),tilePixels)
+            positioned=true
+        }
+    }
+    LaunchedEffect(focus,size) {
+        if(focus!=null && size.width>0 && size.height>0) {
+            camera=fitMap(focus.bounds,size.width.toDouble(),size.height.toDouble(),tilePixels)
             positioned=true
         }
     }
@@ -100,6 +107,7 @@ internal fun PhotoMap(bounds: PhotoMapBounds, markers: List<PhotoMapMarker>, mod
                         .requiredSize((tile.size/density).dp))
             }
         }
+        if(positioned) MapTrackLines(tracks,camera,tilePixels)
         val world=tilePixels*2.0.pow(camera.zoom)
         markers.forEach { marker ->
             val point=mapProject(marker.latitude,marker.longitude)

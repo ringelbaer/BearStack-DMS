@@ -9,6 +9,63 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PhotosApiTest {
+    @Test fun photoRouteKeepsSearchPrefixAndFullCountsWithBoundedGeometry()=runBlocking {
+        var request:Request?=null
+        val client=OkHttpClient.Builder().addInterceptor {chain ->
+            request=chain.request()
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body("""{"path":"trip","name":"","total_media":200000,"radius_meters":500,"total_points":150000,
+                    "segments":[[[1,2],[3,4]]],"simplified":true,"omitted_segments":0}""".toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        try {
+            val route=PhotosApi(client,"https://example.test/proxy/").route(PhotoQuery(path="trip",query="tag:sea",type="image"),null,4096)
+            assertEquals(200000,route.totalMedia);assertEquals(150000,route.geometry.totalPoints)
+            assertTrue(route.geometry.simplified);assertEquals(2,route.geometry.segments.single().size)
+            assertEquals("/proxy/api/photos/v1/map/route",request!!.url.encodedPath)
+            assertEquals("tag:sea",request!!.url.queryParameter("q"));assertEquals("image",request!!.url.queryParameter("type"))
+            assertEquals("4096",request!!.url.queryParameter("points"))
+        } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+    }
+    @Test fun infoKeepsSourceTimeRatingAndNamesFromBothMetadataFormats() = runBlocking {
+        val client=OkHttpClient.Builder().addInterceptor {chain ->
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body("""{"media":{"path":"trip/a.jpg","name":"a.jpg","type":"image","mime":"image/jpeg","version":"1",
+                    "modified":"2026-09-09T10:00:00Z","captured":"2024-01-02T00:15:30+14:00","bytes":1024,"width":400,"height":300,
+                    "rating":4.5,"tags":["Trip","Trip"],"keywords":["Sea"," ","Sun"],
+                    "faces":[{"Name":"Alex"}],"automatic_faces":[{"name":"Alex"},{"name":"Sam"},{"name":""}]}}"""
+                    .toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        try {
+            val photo=PhotosApi(client,"https://example.test/").info("trip/a.jpg")
+            assertEquals("2024-01-02T00:15:30+14:00",photo.date)
+            assertEquals(4.5,photo.rating!!,0.0)
+            assertEquals(listOf("Trip"),photo.tags)
+            assertEquals(listOf("Sea","Sun"),photo.keywords)
+            assertEquals(listOf("Alex","Sam",""),photo.people)
+        } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+    }
+    @Test fun trackRequestsKeepPrefixCursorAndSegmentGaps() = runBlocking {
+        val requests=mutableListOf<Request>()
+        val client=OkHttpClient.Builder().addInterceptor {chain ->
+            val request=chain.request();requests+=request
+            val body=if(request.url.encodedPath.endsWith("/tracks"))
+                """{"tracks":[{"path":"trip & sea/route.gpx","name":"route.gpx","modified":"2026-09-09T00:00:00Z","bytes":42}],"cursor":"64","previous_cursor":"33","has_next":true,"has_previous":true,"ready":true}"""
+            else """{"path":"trip & sea/route.gpx","name":"route.gpx","segments":[[[1,179],[2,-179]],[[3,5]]],"total_points":3,"simplified":false,"omitted_segments":0}"""
+            Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(200).message("OK").body(body.toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        try {
+            val api=PhotosApi(client,"https://example.test/proxy/")
+            val files=api.tracks("trip & sea","65",true)
+            assertEquals(1,files.tracks.size);assertEquals("33",files.previousCursor)
+            assertEquals("/proxy/api/photos/v1/map/tracks",requests[0].url.encodedPath)
+            assertEquals("65",requests[0].url.queryParameter("cursor"));assertEquals("1",requests[0].url.queryParameter("before"))
+            val track=api.track(files.tracks.single().path,PhotoMapBounds(-10.0,170.0,10.0,-170.0),32)
+            assertEquals(listOf(2,1),track.segments.map {it.size})
+            assertEquals("/proxy/api/photos/v1/map/track",requests[1].url.encodedPath)
+            assertEquals("trip & sea/route.gpx",requests[1].url.queryParameter("path"))
+            assertEquals("32",requests[1].url.queryParameter("points"));assertEquals("-170.0",requests[1].url.queryParameter("east"))
+        } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+    }
     @Test fun mapKeepsProxyPrefixAndEncodesViewportAndSearch() = runBlocking {
         var request: Request?=null
         val client=OkHttpClient.Builder().addInterceptor {chain ->

@@ -16,7 +16,6 @@
     <string name="photos_menu">Weitere Optionen</string>
     <string name="photos_back">Zurück</string>
     <string name="photos_retry">Erneut versuchen</string>
-    <string name="photos_more">Mehr laden</string>
     <string name="photos_empty">Hier sind noch keine Fotos.</string>
     <string name="photos_no_results">Keine passenden Inhalte gefunden.</string>
     <plurals name="photos_count">
@@ -50,7 +49,7 @@
     <string name="photos_repeat">Am Ende wiederholen</string>
     <string name="photos_frame_fill">Bildschirm füllen (mit Beschnitt)</string>
     <string name="photos_frame_captions">Name und Datum anzeigen</string>
-    <string name="photos_playback_help">Die Wiedergabe wartet, bis das Foto geladen ist, und pausiert in Informationen, Einstellungen und im Hintergrund. Im Frame blendet Antippen die Steuerung ein.</string>
+    <string name="photos_playback_help">Die Wiedergabe wartet, bis das Foto geladen oder das Video bzw. Audio zu Ende ist. Informationen, Einstellungen und der Wechsel in eine andere App pausieren sie. Im Frame blendet Antippen die Steuerung ein.</string>
     <string name="photos_save">Speichern</string>
     <string name="photos_play">Diashow starten</string>
     <string name="photos_pause">Diashow pausieren</string>
@@ -76,10 +75,31 @@
         <item quantity="one">1 Aufnahme an diesem Ort</item>
         <item quantity="other">%1$d Aufnahmen an diesem Ort</item>
     </plurals>
-    <string name="photos_map_page">Seite %1$d</string>
     <string name="photos_map_marker_one">1 Aufnahme an diesem Ort</string>
-    <string name="photos_map_previous_page">Vorherige Seite</string>
-    <string name="photos_map_next_page">Nächste Seite</string>
     <string name="photos_text_empty">Dieser Beitrag enthält keinen Text.</string>
-    <string name="photos_load_previous">Vorherige laden</string>
+    <string name="photos_map_layers">Ebenen</string>
+    <string name="photos_tracks_title">GPX-Tracks</string>
+    <string name="photos_tracks_help">Wähle aufgezeichnete Wege aus diesem Ordner und seinen Unterordnern. Bei einer Fotosuche stehen die Tracks der gesamten Sammlung zur Auswahl. Mehrere Tracks können gleichzeitig angezeigt werden; ihre Farben helfen beim Vergleichen.</string>
+    <string name="photos_tracks_clear">Alle GPX-Tracks ausblenden</string>
+    <string name="photos_tracks_limit">Du kannst bis zu 256 Tracks gleichzeitig anzeigen.</string>
+    <string name="photos_tracks_index_pending">Die Trackliste wird vorbereitet. Lade sie später erneut.</string>
+    <string name="photos_tracks_empty">Keine GPX-Tracks in diesem Bereich.</string>
+    <string name="photos_tracks_list_error">Die Trackliste konnte nicht geladen werden.</string>
+    <string name="photos_track_error">Dieser Track konnte nicht gelesen werden.</string>
+    <string name="photos_track_too_large">Dieser Track überschreitet das Dateilimit (16 MiB oder 100.000 Punkte).</string>
+    <string name="photos_tracks_simplified">Tracks werden vereinfacht dargestellt. Vergrößere den Kartenausschnitt für mehr Details.</string>
+    <string name="photos_capture_time">Aufnahmezeit</string>
+    <string name="photos_modified_time">Änderungszeit · keine Aufnahmezeit gespeichert</string>
+    <string name="photos_rating">Bewertung</string>
+    <string name="photos_rating_rejected">Abgelehnt</string>
+    <string name="photos_rating_none">Unbewertet</string>
+    <string name="photos_rating_stars">%1$s / 5 Sterne</string>
+    <string name="photos_info_people">Personen</string>
+    <string name="photos_person_unnamed">Unbenannt</string>
+    <string name="photos_tags">Tags</string>
+    <string name="photos_keywords">Schlagwörter</string>
+    <string name="photos_route_title">Fotoroute</string>
+    <string name="photos_route_help">Verbindet die GPS-Orte deiner Fotos in zeitlicher Reihenfolge. Die Fotoroute ist gestrichelt.</string>
+    <string name="photos_route_error">Die Fotoroute konnte nicht geladen werden.</string>
+    <string name="photos_route_summary">%1$d Medien · Ortsgruppen innerhalb von %2$d m</string>
 </resources>

@@ -1,7 +1,6 @@
 package de.bearstack.people.photos
 
 import de.bearstack.people.text.*
-import android.text.format.Formatter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.rememberTransformableState
@@ -9,8 +8,6 @@ import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,9 +32,6 @@ import coil.ImageLoader
 import coil.compose.AsyncImage
 import de.bearstack.people.R
 import de.bearstack.people.data.remote.Photo
-import de.bearstack.people.data.remote.PhotoMapBounds
-import de.bearstack.people.data.remote.PhotoMapMarker
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import androidx.lifecycle.Lifecycle
@@ -61,7 +55,6 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
     val initial=remember(controller) { photos.indexOfFirst { it.path==path }.coerceAtLeast(0) }
     val pager=rememberPagerState(initialPage=initial,pageCount={photos.size})
     val scope=rememberCoroutineScope()
-    val context=LocalContext.current
     val locale=LocalConfiguration.current.locales[0]
     var infoOpen by remember { mutableStateOf(false) }
     var settingsOpen by remember {mutableStateOf(false)}
@@ -69,7 +62,6 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
     var controls by remember(frame) {mutableStateOf(!frame)}
     var zoomed by remember { mutableStateOf(false) }
     var readyPath by remember {mutableStateOf<String?>(null)}
-    var endedPath by remember {mutableStateOf<String?>(null)}
     var mediaPlayingPath by remember {mutableStateOf<String?>(null)}
     var localSettings by remember {mutableStateOf(PlaybackSettings())}
     val settings=controller.playback?.state?.collectAsStateWithLifecycle()?.value ?: localSettings
@@ -80,6 +72,8 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
     }}
     val current=photos.firstOrNull {it.path==visibleKey} ?: photos[pager.currentPage.coerceAtMost(photos.lastIndex)]
     val currentIndex=photos.indexOfFirst {it.path==current.path}
+    var mediaEnded by remember(current.path) {mutableStateOf(false)}
+    var playbackCycle by remember {mutableIntStateOf(0)}
     var pendingPath by remember {mutableStateOf<String?>(null)}
     var moving by remember {mutableStateOf(false)}
     suspend fun move(direction: Int, repeat: Boolean = false) {
@@ -87,7 +81,8 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
         moving=true
         try {
             val next=if(standalone) photos.getOrNull(currentIndex+direction) else controller.neighbour(current.path,direction,repeat)
-            if(next!=null) pendingPath=next.path
+            if(next?.path==current.path) {mediaEnded=false;playbackCycle++}
+            else if(next!=null) pendingPath=next.path
             else {playing=false;controls=true}
         } finally {moving=false}
     }
@@ -114,19 +109,19 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
     LaunchedEffect(adjacent?.path,adjacent?.version,foreground) {
         if(foreground) controller.prefetch(adjacent,images)
     }
-    LaunchedEffect(playing,current.path,seconds,foreground,infoOpen,settingsOpen,zoomed,readyPath,endedPath,pager.isScrollInProgress) {
+    LaunchedEffect(playing,current.path,seconds,foreground,infoOpen,settingsOpen,zoomed,readyPath,mediaEnded,playbackCycle,pager.isScrollInProgress) {
         if(!playing || !foreground || infoOpen || settingsOpen || zoomed || standalone || pager.isScrollInProgress) return@LaunchedEffect
         if(current.type=="image") {
             if(readyPath!=current.path) return@LaunchedEffect
             delay(seconds*1000L)
-        } else if(endedPath!=current.path) return@LaunchedEffect
+        } else if(!mediaEnded) return@LaunchedEffect
         move(1,settings.repeat)
     }
     LaunchedEffect(controls,frame,playing,infoOpen,settingsOpen) {
         if(frame && controls && playing && !infoOpen && !settingsOpen) {delay(5000);controls=false}
     }
     Dialog(onDismissRequest=onClose,properties=DialogProperties(usePlatformDefaultWidth=false,decorFitsSystemWindows=false)) {
-        MaterialTheme(colorScheme=darkColorScheme(primary=Color(0xff75d2e8))) {
+        de.bearstack.people.ui.BearStackTheme(dark=true) {
             PlaybackWindow(frame,foreground && (playing || mediaPlayingPath==current.path))
             Surface(Modifier.fillMaxSize(),color=Color.Black) {
                 Box(Modifier.fillMaxSize().then(if(frame) Modifier.clickable {controls=!controls} else Modifier.safeDrawingPadding())) {
@@ -139,8 +134,8 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                             }
                         else if(index==pager.currentPage) {
                             LaunchedEffect(photo.path) {zoomed=false}
-                            PhotoMediaPlayer(photo,controller,autoPlay=playing && !infoOpen && !settingsOpen,foreground=foreground,
-                                onEnded={endedPath=photo.path},onPlaying={
+                            PhotoMediaPlayer(photo,controller,autoPlay=playing,foreground=foreground && !infoOpen && !settingsOpen && !pager.isScrollInProgress,
+                                replay=playbackCycle,onControlsShown={controls=true},onEnded={mediaEnded=true},onPlaying={
                                     if(it) mediaPlayingPath=photo.path else if(mediaPlayingPath==photo.path) mediaPlayingPath=null
                                 })
                         } else PhotoThumbnail(photo,controller,images,controller.session.thumbnailSize,Modifier.fillMaxSize())
@@ -171,7 +166,7 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                             IconButton(onClick={scope.launch {move(-1)}},enabled=!moving && pendingPath==null && !pager.isScrollInProgress && (currentIndex>0 || (!standalone && catalog.mediaPages.hasPrevious))) {
                                 Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_previous))
                             }
-                            if(!standalone) IconButton(onClick={endedPath=null;playing=!playing}) {
+                            if(!standalone) IconButton(onClick={mediaEnded=false;playing=!playing}) {
                                 Icon(painterResource(if(playing) R.drawable.ic_pause else R.drawable.ic_play),stringResource(if(playing) R.string.photos_pause else R.string.photos_play))
                             }
                             Text(stringResource(R.string.photos_of,if(standalone) currentIndex+1 else catalog.mediaPages.position(current.path),if(standalone) photos.size else catalog.total),style=MaterialTheme.typography.labelSmall)
@@ -190,41 +185,7 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                 }
                 if(settingsOpen) PlaybackSettingsDialog(settings,seconds,frame,
                     onSave={localSettings=it;controller.playback?.save(it)},onDismiss={settingsOpen=false})
-                if(infoOpen) {
-                    var detail by remember(current.path) { mutableStateOf<Photo?>(null) }
-                    var error by remember(current.path) { mutableStateOf<UiText?>(null) }
-                    LaunchedEffect(current.path) {
-                        try { detail=controller.service.info(current.path) }
-                        catch(e: CancellationException) {throw e}
-                        catch(e: Exception) {error=failureText(e)}
-                    }
-                    ModalBottomSheet(onDismissRequest={infoOpen=false},sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true)) {
-                        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=24.dp).padding(bottom=32.dp),verticalArrangement=Arrangement.spacedBy(20.dp)) {
-                            Text(photoDateLabel(current.date,locale),style=MaterialTheme.typography.headlineSmall)
-                            if(detail==null && error==null) LinearProgressIndicator(Modifier.fillMaxWidth())
-                            error?.let {Text(text(it),color=MaterialTheme.colorScheme.error)}
-                            val item=detail ?: current
-                            Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                                Text(stringResource(R.string.photos_file),style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.primary)
-                                Text(item.name,style=MaterialTheme.typography.titleMedium)
-                                Text(stringResource(R.string.photos_details,item.width,item.height,Formatter.formatFileSize(context,item.bytes)))
-                                Text(item.path,style=MaterialTheme.typography.bodySmall)
-                            }
-                            if(item.camera.isNotBlank() || item.lens.isNotBlank()) Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                                Text(stringResource(R.string.photos_camera),style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.primary)
-                                Text(listOf(item.camera,item.lens).filter(String::isNotBlank).joinToString("\n"))
-                            }
-                            if(item.latitude!=null && item.longitude!=null) Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                                Text(stringResource(R.string.photos_location),style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.primary)
-                                Text(String.format(locale,"%.5f, %.5f",item.latitude,item.longitude))
-                                key(item.path) {
-                                    PhotoMap(PhotoMapBounds(item.latitude,item.longitude,item.latitude,item.longitude),
-                                        listOf(PhotoMapMarker(item.latitude,item.longitude,1)),Modifier.fillMaxWidth().height(240.dp))
-                                }
-                            }
-                        }
-                    }
-                }
+                if(infoOpen) PhotoInfoSheet(current,controller.service) {infoOpen=false}
             }
         }
     }

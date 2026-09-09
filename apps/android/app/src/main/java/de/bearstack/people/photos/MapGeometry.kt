@@ -62,3 +62,28 @@ internal fun visibleMapTiles(camera: MapCamera,width: Double,height: Double,tile
         }
     }
 }
+
+// Union geographic intervals by excluding the largest uncovered longitude gap.
+// Using only corner points would incorrectly shrink a track spanning >180 degrees.
+internal fun unionMapBounds(bounds: List<PhotoMapBounds>): PhotoMapBounds? {
+    if(bounds.isEmpty()) return null
+    val south=bounds.minOf {it.south};val north=bounds.maxOf {it.north}
+    if(bounds.any {it.east-it.west>=359.999999}) return PhotoMapBounds(south,-180.0,north,180.0)
+    val intervals=bounds.flatMap {
+        if(it.west<=it.east) listOf((it.west+180) to (it.east+180))
+        else listOf((it.west+180) to 360.0,0.0 to (it.east+180))
+    }.sortedBy {it.first}
+    val merged=mutableListOf<Pair<Double,Double>>()
+    for(interval in intervals) {
+        val last=merged.lastOrNull()
+        if(last!=null && interval.first<=last.second) merged[merged.lastIndex]=last.first to max(last.second,interval.second)
+        else merged+=interval
+    }
+    var gap=-1.0;var west=-180.0;var east=180.0
+    for(i in merged.indices) {
+        val next=merged[(i+1)%merged.size].first+(if(i==merged.lastIndex)360 else 0)
+        val width=next-merged[i].second
+        if(width>gap) {gap=width;west=wrapMapX(next/360)*360-180;east=merged[i].second-180}
+    }
+    return if(gap<=1e-9) PhotoMapBounds(south,-180.0,north,180.0) else PhotoMapBounds(south,west,north,east)
+}

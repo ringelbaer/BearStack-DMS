@@ -29,28 +29,30 @@ func NormalizeFolderPreviewCount(value int) int {
 }
 
 type Library struct {
-	faceVisibility faceVisibilityState
-	faceProgress   faceProgressState
-	faceImageGate  chan struct{}
-	faceImages     faceImageCache
-	faceRuntime    faceRuntime
-	faceThumbnails faceThumbnailCache
-	root           string
-	cacheDir       string
-	dbPath         string
-	index          *photoIndexStore
-	pageSize       int
-	thumbnail      thumbnailRuntime
-	gpxMu          sync.Mutex
-	gpxCache       map[string]cachedGPXTrack
-	gpxLRU         list.List
-	gpxCacheBytes  int64
-	gpxParseGate   chan struct{}
-	statsMu        sync.Mutex
-	statsCache     thumbnailCacheStatsEntry
-	statsFlight    *thumbnailCacheStatsFlight
-	telemetryMu    sync.RWMutex
-	telemetry      IndexTelemetry
+	photoRoutes     photoRouteCacheState
+	faceVisibility  faceVisibilityState
+	faceProgress    faceProgressState
+	faceImageGate   chan struct{}
+	faceImages      faceImageCache
+	faceRuntime     faceRuntime
+	faceThumbnails  faceThumbnailCache
+	root            string
+	cacheDir        string
+	dbPath          string
+	index           *photoIndexStore
+	pageSize        int
+	thumbnail       thumbnailRuntime
+	gpxMu           sync.Mutex
+	gpxCache        map[string]cachedGPXTrack
+	gpxLRU          list.List
+	gpxCacheBytes   int64
+	gpxParseGate    chan struct{}
+	gpxGeometryGate chan struct{}
+	statsMu         sync.Mutex
+	statsCache      thumbnailCacheStatsEntry
+	statsFlight     *thumbnailCacheStatsFlight
+	telemetryMu     sync.RWMutex
+	telemetry       IndexTelemetry
 }
 
 type IndexStats struct {
@@ -103,28 +105,29 @@ type ListOptions struct {
 }
 
 type Listing struct {
-	Path          string
-	ParentPath    string
-	Breadcrumbs   []Crumb
-	Folders       []Folder
-	Media         []Media
-	Blogs         []BlogPost
-	GPXTracks     []GPXTrack
-	gpxPointCount int
-	RoutePoints   []RoutePoint
-	Query         string
-	MediaType     string
-	GPSOnly       bool
-	Sort          string
-	Order         string
-	Page          int
-	PageSize      int
-	Total         int
-	HasPrev       bool
-	HasNext       bool
-	FolderTotal   int
-	FolderHasNext bool
-	BlogHasNext   bool
+	Path             string
+	ParentPath       string
+	Breadcrumbs      []Crumb
+	Folders          []Folder
+	Media            []Media
+	Blogs            []BlogPost
+	GPXTracks        []GPXTrack
+	gpxPointCount    int
+	RoutePoints      []RoutePoint
+	RouteTotalPoints int
+	Query            string
+	MediaType        string
+	GPSOnly          bool
+	Sort             string
+	Order            string
+	Page             int
+	PageSize         int
+	Total            int
+	HasPrev          bool
+	HasNext          bool
+	FolderTotal      int
+	FolderHasNext    bool
+	BlogHasNext      bool
 }
 
 type Tag struct {
@@ -206,6 +209,8 @@ type GPXTrack struct {
 	Label  string
 	Color  string
 	Points []GPXPoint
+	// Segments share Points backing storage; gaps are never joined by map clients.
+	Segments [][]GPXPoint
 }
 
 type GPXPoint struct {

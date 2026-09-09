@@ -243,6 +243,11 @@ func (l *Library) mapQuery(ctx context.Context, opts ListOptions, viewport MapBo
 	if !state.Covered {
 		return indexMediaOptions{}, ErrMapIndexUnavailable
 	}
+	if !opts.IncludeAdminOnly {
+		if err := l.refreshMapVisibility(ctx, rel); err != nil {
+			return indexMediaOptions{}, err
+		}
+	}
 	if queryHasPerson(opts.Query) {
 		if err := l.refreshPeopleVisibility(ctx, ""); err != nil {
 			return indexMediaOptions{}, err

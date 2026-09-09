@@ -26,7 +26,7 @@ var (
 const (
 	indexSchemaSetupTimeout = 30 * time.Second
 	photoSchemaComponent    = "photos"
-	photoSchemaVersion      = 25
+	photoSchemaVersion      = 26
 )
 
 type photoSchemaMigration struct {
@@ -64,6 +64,7 @@ var photoSchemaMigrations = []photoSchemaMigration{
 	{Version: 23, Name: "group photo candidate index"},
 	{Version: 24, Name: "named people cursor index"},
 	{Version: 25, Name: "face quality and resumable reconciliation"},
+	{Version: 26, Name: "indexed GPX inventory", Table: "photo_folder_scan", Column: "gpx_scanned", SQL: `ALTER TABLE photo_folder_scan ADD COLUMN gpx_scanned INTEGER NOT NULL DEFAULT 0`},
 }
 
 func openIndexDB(path string) (*sql.DB, string, error) {
@@ -154,6 +155,10 @@ func openIndexDB(path string) (*sql.DB, string, error) {
 		_ = db.Close()
 		return nil, "", err
 	}
+	if err := setupGPXIndex(ctx, db); err != nil {
+		_ = db.Close()
+		return nil, "", err
+	}
 	if _, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS blog_index (
 		path TEXT PRIMARY KEY,
 		name TEXT NOT NULL,
@@ -240,6 +245,7 @@ func openIndexDB(path string) (*sql.DB, string, error) {
 		return nil, "", err
 	}
 	statements := []string{
+		`CREATE INDEX IF NOT EXISTS idx_gpx_pending_scan ON photo_folder_scan(path) WHERE gpx_scanned=0`,
 		`CREATE INDEX IF NOT EXISTS idx_media_index_directory_date ON media_index(directory, captured_at DESC, path)`,
 		`CREATE INDEX IF NOT EXISTS idx_media_index_directory_name ON media_index(directory, name COLLATE NOCASE, path)`,
 		`CREATE INDEX IF NOT EXISTS idx_media_index_directory_type_date ON media_index(directory, type, captured_at DESC, path)`,
@@ -276,6 +282,14 @@ func openIndexDB(path string) (*sql.DB, string, error) {
 			_ = db.Close()
 			return nil, "", err
 		}
+	}
+	if err := ensurePhotoMapIndexes(ctx, db); err != nil {
+		_ = db.Close()
+		return nil, "", err
+	}
+	if err := setupPhotoRouteRevision(ctx, db); err != nil {
+		_ = db.Close()
+		return nil, "", err
 	}
 	if err := sqlutil.RecordSchemaVersion(ctx, db, photoSchemaComponent, photoSchemaVersion); err != nil {
 		_ = db.Close()
@@ -402,6 +416,14 @@ func registerSQLiteFunctions() error {
 				return nil, nil
 			}
 			return stableHashKey(value), nil
+		})
+		if registerSQLiteFunctionsErr != nil {
+			return
+		}
+		registerSQLiteFunctionsErr = sqlite.RegisterDeterministicScalarFunction("bearstack_route_time", 2, func(_ *sqlite.FunctionContext, args []driver.Value) (driver.Value, error) {
+			captured, _ := args[0].(string)
+			modified, _ := args[1].(int64)
+			return routeTimeKey(captured, modified), nil
 		})
 	})
 	return registerSQLiteFunctionsErr

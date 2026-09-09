@@ -10,6 +10,7 @@ import coil.ImageLoader
 import de.bearstack.people.data.remote.*
 import de.bearstack.people.photos.PhotosController
 import de.bearstack.people.photos.PhotosScreen
+import de.bearstack.people.photos.MapPhotoSelection
 import kotlinx.coroutines.*
 import org.junit.Assert.*
 import org.junit.Rule
@@ -26,6 +27,7 @@ class GalleryPagingTest {
         var failPage=0
         var pageGate: CompletableDeferred<Unit>? = null
         val requests=mutableListOf<Pair<String,Int>>()
+        val mapPages=mutableListOf<Int>()
         override suspend fun session()=session
         override suspend fun browse(query: PhotoQuery,page: Int,section: String): PhotoPage {
             requests+=section to page
@@ -40,12 +42,17 @@ class GalleryPagingTest {
                 if(folders) List(24) {PhotoFolder("folder-${(page-1)*24+it}","Folder ${(page-1)*24+it}",null,2,false,0,listOf(photo(0),photo(1)))} else emptyList(),
                 if(blogs) List(20) {PhotoBlog("post-${(page-1)*20+it}","Post ${(page-1)*20+it}",null,"2026-09-09T10:00:00Z")} else emptyList())
         }
+        override suspend fun mapMedia(query: PhotoQuery,bounds: PhotoMapBounds,page: Int): PhotoMapPage {
+            val result=browse(query.copy(recursive=true),page,"media")
+            mapPages+=page
+            return PhotoMapPage(result.total,page,result.hasNext,result.media)
+        }
         override suspend fun info(path: String)=photo(path.removePrefix("image-").toInt())
         override suspend fun blog(path: String)=PhotoBlog(path,path,null,"2026-09-09T10:00:00Z",text="Text",html="<p>Text</p>")
         override fun thumbnail(photo: Photo,size: Int)=image.toURI().toString()
         override fun original(photo: Photo)=image.toURI().toString()
     }
-    private fun screen(test: (PhotosController,Service)->Unit) {
+    private fun screen(mapSelection: Boolean=false,test: (PhotosController,Service)->Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext
         val image=File(app.cacheDir,"paging-test.jpg")
         Bitmap.createBitmap(80,80,Bitmap.Config.ARGB_8888).apply {
@@ -61,7 +68,8 @@ class GalleryPagingTest {
         compose.runOnUiThread {controller=PhotosController(owner,api,session)}
         try {
             compose.setGermanContent {MaterialTheme {
-                if(gallery) PhotosScreen(controller,images,true,{gallery=false},{})
+                if(mapSelection) MapPhotoSelection(controller,images,PhotoQuery(),PhotoMapMarker(52.0,13.0,480)) {}
+                else if(gallery) PhotosScreen(controller,images,true,{gallery=false},{})
                 else TextButton(onClick={gallery=true}) {Text("Zur Galerie")}
             }}
             compose.waitUntil(10_000) {!controller.state.value.loading}
@@ -73,6 +81,52 @@ class GalleryPagingTest {
         } finally {compose.runOnUiThread {controller.close();owner.cancel();images.shutdown()};image.delete()}
     }
     private fun scroll(key: String)=compose.onNodeWithTag("photo-gallery").performScrollToKey(key)
+
+    @Test fun repeatedSwipeGesturesContinueThroughSeveralBatchesWithoutButtons()=screen {controller,api ->
+        repeat(20) {
+            compose.onNodeWithTag("photo-gallery").performTouchInput {swipeUp(durationMillis=160)}
+        }
+        compose.waitUntil(10_000) {controller.state.value.mediaPages.lastPage>=3}
+        assertTrue(controller.state.value.media.size<=288)
+        assertTrue(api.requests.count {it.first=="media"}<=4)
+        compose.onNodeWithText("Mehr laden").assertDoesNotExist()
+        compose.onNodeWithText("Vorherige laden").assertDoesNotExist()
+    }
+
+    @Test fun mapPhotoSelectionUsesTheSameInfiniteGalleryAndViewer()=screen(mapSelection=true) {_,api ->
+        compose.waitUntil(10_000) {1 in api.mapPages}
+        compose.onNodeWithText("Nächste Seite").assertDoesNotExist()
+        compose.onNodeWithText("Vorherige Seite").assertDoesNotExist()
+        for(page in 1..4) {
+            scroll("photo:image-${page*96-18}")
+            compose.waitUntil(10_000) {page+1 in api.mapPages}
+        }
+        scroll("photo:image-420")
+        compose.onNodeWithContentDescription("image-420").performClick()
+        compose.onNodeWithText("421 von 480").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Nächstes Foto").performClick()
+        compose.onNodeWithText("422 von 480").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Schließen").performClick()
+        compose.onNodeWithContentDescription("image-421").assertIsDisplayed()
+        scroll("photo:image-192")
+        compose.waitUntil(10_000) {api.mapPages.last()==2}
+        compose.onNodeWithContentDescription("image-192").assertIsDisplayed()
+    }
+
+    @Test fun prefetchBeginsBeforeTheLastRowsWithoutPageControls()=screen {controller,api ->
+        api.pageGate=CompletableDeferred()
+        scroll("photo:image-78")
+        compose.waitUntil(10_000) {"media" in controller.state.value.loadingSections}
+        compose.onNodeWithContentDescription("image-78").assertIsDisplayed()
+        compose.onNodeWithText("Mehr laden").assertDoesNotExist()
+        compose.onNodeWithText("Vorherige laden").assertDoesNotExist()
+        val before=compose.onNodeWithContentDescription("image-78").fetchSemanticsNode().boundsInRoot.top
+        api.pageGate!!.complete(Unit)
+        compose.waitUntil(10_000) {controller.state.value.mediaPages.lastPage==2}
+        assertEquals(before,compose.onNodeWithContentDescription("image-78").fetchSemanticsNode().boundsInRoot.top,1f)
+        scroll("photo:image-99")
+        compose.onNodeWithContentDescription("image-99").assertIsDisplayed()
+    }
 
     @Test fun scrollingDuringASlowRequestNeverRewindsOrEvictsTheNewViewport()=screen {controller,api ->
         for(page in 2..3) {
@@ -93,9 +147,10 @@ class GalleryPagingTest {
         scroll("photo:image-96")
         val earlier=compose.onNodeWithContentDescription("image-96").fetchSemanticsNode().boundsInRoot.top
         api.pageGate!!.complete(Unit)
-        compose.waitUntil(10_000) {controller.state.value.loadingSections.isEmpty()}
-        assertEquals(2,controller.state.value.mediaPages.firstPage)
-        assertEquals(4,controller.state.value.mediaPages.lastPage)
+        // The stale forward response is discarded, then the reversed viewport
+        // automatically prefetches earlier photos without a loading button.
+        compose.waitUntil(10_000) {controller.state.value.mediaPages.firstPage==1}
+        assertEquals(3,controller.state.value.mediaPages.lastPage)
         assertEquals(earlier,compose.onNodeWithContentDescription("image-96").fetchSemanticsNode().boundsInRoot.top,1f)
     }
 
@@ -113,7 +168,7 @@ class GalleryPagingTest {
         val after=compose.onNodeWithContentDescription("image-287").fetchSemanticsNode().boundsInRoot.top
         assertEquals(before,after,1f)
         api.pageGate=CompletableDeferred()
-        scroll("previous-media")
+        scroll("photo:image-${(controller.state.value.mediaPages.firstPage-1)*96}")
         compose.waitUntil(10_000) {"media" in controller.state.value.loadingSections}
         val earlierBefore=compose.onNodeWithContentDescription("image-96").fetchSemanticsNode().boundsInRoot.top
         api.pageGate!!.complete(Unit)
@@ -158,12 +213,12 @@ class GalleryPagingTest {
         compose.onNodeWithText("384 von 480").assertIsDisplayed()
         compose.onNodeWithContentDescription("Schließen").performClick()
         compose.onNodeWithContentDescription("image-383").assertIsDisplayed()
-        scroll("previous-media")
+        scroll("photo:image-${(controller.state.value.mediaPages.firstPage-1)*96}")
         compose.waitUntil(10_000) {controller.state.value.mediaPages.firstPage==2}
         compose.onNodeWithContentDescription("image-192").assertIsDisplayed()
         compose.waitForIdle()
         assertEquals(2,controller.state.value.mediaPages.firstPage)
-        scroll("previous-media")
+        scroll("photo:image-${(controller.state.value.mediaPages.firstPage-1)*96}")
         compose.waitUntil(10_000) {controller.state.value.mediaPages.firstPage==1}
         compose.onNodeWithContentDescription("image-96").assertIsDisplayed()
         assertEquals(288,controller.state.value.media.size)
@@ -198,7 +253,7 @@ class GalleryPagingTest {
             compose.onNodeWithText("Folder ${page*24-1}").assertIsDisplayed()
             assertTrue(controller.state.value.folders.size<=72)
         }
-        scroll("previous-folders")
+        scroll("folder:folder-${(controller.state.value.folderPages.firstPage-1)*24}")
         compose.waitUntil(10_000) {controller.state.value.folderPages.firstPage==2}
         compose.onNodeWithText("Folder 48").assertIsDisplayed()
         compose.runOnUiThread {controller.open(PhotoQuery(path="Texts"))}
@@ -209,7 +264,7 @@ class GalleryPagingTest {
             compose.onNodeWithText("Post ${page*20-1}").assertIsDisplayed()
             assertTrue(controller.state.value.blogs.size<=60)
         }
-        scroll("previous-blogs")
+        scroll("blog:post-${(controller.state.value.blogPages.firstPage-1)*20}")
         compose.waitUntil(10_000) {controller.state.value.blogPages.firstPage==2}
         compose.onNodeWithText("Post 40").assertIsDisplayed()
     }

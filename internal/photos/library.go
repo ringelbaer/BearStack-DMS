@@ -268,30 +268,24 @@ func (l *Library) finishListing(ctx context.Context, opts ListOptions, listing *
 		listing.GPXTracks = nil
 		listing.RoutePoints = nil
 	}
-	if source.mediaPaged {
-		if opts.IncludeMapData {
-			finishMap := StartListTraceStep(ctx, "photos.library.route_points", ListTraceInt("media", len(listing.Media)), ListTraceInt("tracks", len(listing.GPXTracks)))
-			sort.SliceStable(listing.GPXTracks, func(i, j int) bool {
-				return strings.ToLower(listing.GPXTracks[i].Path) < strings.ToLower(listing.GPXTracks[j].Path)
-			})
-			decorateGPXTracks(listing.GPXTracks)
-			listing.RoutePoints = routePointsFromMedia(listing.Media, opts.RouteClusterRadiusMeters)
-			finishMap(ListTraceInt("route_points", len(listing.RoutePoints)))
-		}
-		listing.HasPrev = opts.Page > 1
-		listing.HasNext = opts.Page*opts.PageSize < listing.Total
-		return nil
-	}
-	listing.Total = len(listing.Media)
 	if opts.IncludeMapData {
 		finishMap := StartListTraceStep(ctx, "photos.library.route_points", ListTraceInt("media", len(listing.Media)), ListTraceInt("tracks", len(listing.GPXTracks)))
-		listing.RoutePoints = routePointsFromMedia(listing.Media, opts.RouteClusterRadiusMeters)
+		if err := l.populateListingRoute(ctx, opts, listing); err != nil {
+			finishMap(ListTraceString("error", err.Error()))
+			return err
+		}
 		sort.SliceStable(listing.GPXTracks, func(i, j int) bool {
 			return strings.ToLower(listing.GPXTracks[i].Path) < strings.ToLower(listing.GPXTracks[j].Path)
 		})
 		decorateGPXTracks(listing.GPXTracks)
 		finishMap(ListTraceInt("route_points", len(listing.RoutePoints)))
 	}
+	if source.mediaPaged {
+		listing.HasPrev = opts.Page > 1
+		listing.HasNext = opts.Page*opts.PageSize < listing.Total
+		return nil
+	}
+	listing.Total = len(listing.Media)
 	finishPaginate := StartListTraceStep(ctx, "photos.library.paginate_media", ListTraceInt("total", len(listing.Media)), ListTraceInt("page", opts.Page), ListTraceInt("page_size", opts.PageSize))
 	paginateListingMedia(listing, opts)
 	finishPaginate(ListTraceInt("page_count", len(listing.Media)))

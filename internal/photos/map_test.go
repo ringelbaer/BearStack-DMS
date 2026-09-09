@@ -16,6 +16,9 @@ func TestPhotoMapAggregatesWholeLargeIndex(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer l.Close()
+	if err := os.Mkdir(filepath.Join(l.Root(), "trip"), 0750); err != nil {
+		t.Fatal(err)
+	}
 	ctx := context.Background()
 	if _, err := l.RebuildIndex(ctx); err != nil {
 		t.Fatal(err)

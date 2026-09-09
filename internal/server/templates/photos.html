@@ -215,7 +215,7 @@
         <input type="checkbox" data-photo-layer-toggle data-photo-map-layer="photo-route" checked>
         <span class="photo-map-layer-swatch photo-map-layer-route" aria-hidden="true"></span>
         <span>Fotobasierter Track</span>
-        <span class="photo-map-layer-count">{{len .Photos.RoutePoints}}</span>
+        <span class="photo-map-layer-count">{{len .Photos.RoutePoints}}{{if gt .Photos.RouteTotalPoints (len .Photos.RoutePoints)}} / {{.Photos.RouteTotalPoints}} · vereinfacht{{end}}</span>
       </label>
       {{end}}
       {{range $i, $track := .Photos.GPXTracks}}

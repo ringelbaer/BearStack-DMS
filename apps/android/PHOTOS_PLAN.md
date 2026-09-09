@@ -1,222 +1,145 @@
 # BearStack Fotos – Umsetzung und Abnahme
 
-Dieses Dokument hält den vollständigen Ausbauauftrag fest. Ein abgehakter
-Teilbereich ersetzt nicht die Abnahme der gesamten App.
+Stand: 9. September 2026. BearStack **0.50.0**, Android **0.10.0 (22)**,
+zusammengehöriges unveröffentlichtes MINOR-Feature. App-ID und bestehende Konten,
+Personengruppen, Warteschlangen und gespeicherte Aktionsquittungen bleiben erhalten.
 
-## Architektur
+## Funktionsabnahme
 
-- Die bestehende App-ID `de.bearstack.people` bleibt für Updates erhalten.
-- Galerie als Einstieg; sämtliche Personenfunktionen bleiben erreichbar.
-- Gemeinsame HTTPS-Verbindung, Zertifikatsprüfung und Bild-Cache je Konto.
-- Nur lesende Galerie unter `/api/photos/v1/`; Personenaktionen bleiben unter
-  `/api/photos/labeling/v1/`. Beide verwenden die bestehenden Foto-Dienste.
-- Begrenzte Seiten und Bildgrößen; Vorschauen nur für die angeforderte Seite.
-  Abgebrochene Ansichten dürfen keine veralteten Antworten übernehmen.
-- Native Compose-Ansichten einschließlich Text, Karten und Medienbetrachter.
+- [x] Lesende Galerie-API, Rechte-/Pfadprüfung und OpenAPI-Vertrag
+- [x] Galerie als Einstieg, Ordnernavigation, zwei Vorschauen und Beschriftung
+- [x] Datumsgruppen, Suche und endloses Nachladen in beide Richtungen
+- [x] Vollbild, Wischen, Zoom, Foto-Infos und gestreamter Original-Download
+- [x] Einstellbare Diashow und Fotoframe einschließlich Video/Audio und Lebenszyklus
+- [x] Native Blog-, Markdown- und Textansicht mit gemeinsamer sicherer Aufbereitung
+- [x] Karten pro Foto und Ordner/Suche, GPX-Ebenen und Fotoroute
+- [x] Serverseitiger JSON-Cache vollständiger gruppierter Fotorouten
+- [x] Bestehende Personenfunktionen einschließlich ähnlicher Gruppen und Vergrößerung
+- [x] Deutsch/Englisch, Hilfen, strukturierte Fehler und zugängliche Aktionen
+- [x] Gemeinsamer Hell-/Dunkelmodus und abgerundete Galerienavigation
+- [x] Runder Android-Icon-Beschnitt vollständig sichtbar
+- [x] Begrenzte Metadaten-/Bildspeicher, Vorladen und Konto-/Cache-Isolation
+- [x] Skalierungsprüfung mit 300.000 Fotos, 5.000 Ordnern und tiefen Medienabfragen
+- [x] Hochformat, Querformat und doppelte Schriftgröße mit echten Bilddateien geprüft
+- [x] Abschließender vollständiger Geräte-/HTTPS-Lauf nach der Gestaltung
+- [x] Abschließende Website-/Dokumentationsprüfung
 
-## Offene Umsetzung und Nachweise
+## Architektur und Grenzen
 
-- [ ] Lesende Galerie-API, Rechte- und Pfadtests, dokumentiertes OpenAPI-Schema
-- [ ] Galerie als Startansicht, Ordnernavigation, zwei Vorschauen und Beschriftung
-- [ ] Fotogrid mit lokalisierten Datumsgruppen, Suche und zuverlässigem Nachladen
-- [ ] Vollbild mit Wischen und Zoom, Foto-Infos und gestreamtem Download
-- [ ] Einstellbare Diashow und Fotoframe mit korrektem Lebenszyklus
-- [ ] Blog-, Markdown- und Textansicht mit gemeinsamer sicherer Inhaltsaufbereitung
-- [ ] Karten in Foto-Infos und je Ordner, Attribution und begrenzter Tile-Cache
-- [ ] Bestehende Personenfunktionen inklusive Zuordnen, Ignorieren, Favoriten,
-      Statistik, Wiederaufnahme und ähnlichen Gruppen unverändert verfügbar
-- [ ] Deutsch und Englisch für gesamte App, Hilfe, Fehler und Barrierefreiheit
-- [ ] Hell-/Dunkelmodus, konsistente Navigation und Google-Fotos-inspirierte Gestaltung
-- [ ] Adaptive Icons vollständig im runden Beschnitt sichtbar
-- [ ] Begrenzter Speicher, intelligente Vorschauplanung, Konto- und Cache-Isolation
-- [ ] JVM-, Server-, Geräte- und HTTPS-Integrationstests, Build und Lint
-- [ ] Visuelle Abnahme an Smartphone und Querformat; große Sammlung und Lesekonto
-- [ ] VERSION, App-Version, README, CHANGELOG, Website und OpenAPI aktuell
+Die App nutzt `/api/photos/v1/` für die lesende Galerie und weiterhin
+`/api/photos/labeling/v1/` für Personenaktionen. Gemeinsame Dienste, HTTPS-Prüfung,
+Bildlader, kontoabhängige Cache-Schlüssel und der native Vollbildbetrachter werden
+wiederverwendet. Lesekonten erreichen keine Personenbearbeitung. Alte Server behalten
+den bisherigen Personenbereich als Einstieg.
 
-## Bekannte Optimierungspunkte
+**Endlos scrollen:** Fotos, Ordner, Texte und Karten-Fotoauswahl verwenden dasselbe
+fortlaufende Raster ohne Seitenschalter oder Ladebuttons. Vorladen beginnt mehrere
+Reihen vor dem sichtbaren Ende. Intern bleiben höchstens drei Datenpakete pro Bereich:
+288 Medien, 72 Ordner, 60 Textzusammenfassungen. Sichtbare Anker und Wischimpulse
+bleiben erhalten; veraltete Antworten dürfen keine sichtbaren Einträge entfernen.
+Auch die Ordnersuche liefert über 50 Treffer hinaus die vollständige sichtbare
+Trefferliste mit korrekter Gesamtzahl und Sortierung.
+Vollbild und Fotoframe laden Nachbarn bedarfsgerecht; die Rückkehr erhält die Position.
 
-Die Browser-Library sortiert Ordnermetadaten vollständig und nutzt für Medien
-LIMIT/OFFSET. Native Seiten müssen vor der Vorschauabfrage begrenzt werden.
-Tiefe Medienseiten, große Ordnerlisten und Such-Postfilter sind vor Abschluss
-mit realistischen Datenmengen zu prüfen und gegebenenfalls weiter zu optimieren.
+**Informationen und Wiedergabe:** Datum, Sekunden und gespeicherter UTC-Offset,
+Datei/Pfad, Abmessungen/Größe, Kamera/Objektiv, GPS, Bewertung, Personen und Tags.
+Ohne Aufnahmezeit wird die Änderungszeit gekennzeichnet. Informationen, Einstellungen
+und Hintergrundwechsel pausieren auch manuell gestartete Medien. Einzelvideo-
+Wiederholung, Abschalten der Wiederholung und Rückkehr zur Galerie sind mit echtem
+Decoder über den isolierten HTTPS-Testserver geprüft.
 
-## Zwischenstand 2026-09-09
+**Karten:** Öffentlicher OSM-Client ohne BearStack-Zugangsdaten oder Cookies,
+sichtbare Attribution, nur sichtbare Kacheln, 64-MiB-HTTP-Cache und Beachtung der
+Cache-Header. Kartenmarker fassen den vollständigen indexierten GPS-Bestand in
+höchstens 289 Marker zusammen. Neu private GPS-Ordner werden vor jedem Abruf in
+Paketen von 256 Verzeichnissen geprüft, auch vor dem nächsten regulären Scan.
+GPX und Fotorouten teilen serverseitig zwei Geometrie-Arbeitsplätze. GPX: maximal
+16 MiB/100.000 Quellpunkte pro Datei, 32-MiB-Parsercache; in der App insgesamt 8.192
+GPX-Koordinaten und zusätzlich 4.096 Fotorouten-Koordinaten. Abschnitte und Datumsgrenzen
+bleiben erhalten. Der GPX-Inventarindex wird bei Schema 26 kompatibel ergänzt.
 
-Implementiert: lesende API und Bibliotheksseiten, nativer Galerieeinstieg,
-Lesekonten/Alte-Server-Fallback, Ordner, Suche, Datumsgruppen, Texte, Vollbild/Zoom,
-Foto-Infos, Download, Diashow, Fotoframe und nativer Video-/Audio-Player.
-Die Checkboxen oben verlangen auch die vollständige Abnahme und bleiben bis dahin offen.
+**Fotorouten-Cache:** Die gesamte Gruppierung geschieht auf dem Server. JSON-Dateien
+unter `<Cache-Verzeichnis>/photo-routes/v1/` enthalten alle gruppierten Orte mit
+Koordinaten, Anfangs-/Endzeit und Fotoanzahl. Erst beim Abruf greifen Ausschnitt und
+Punktlimit. Schlüssel unterscheiden Bibliothek, rekursiven Ordner, Radius, Typ und
+Sichtbarkeit; Suchabfragen werden nicht dauerhaft gespeichert. Format und Algorithmus
+haben eigene Versionen. Eine globale transaktionale Indexrevision invalidiert auch
+Änderungen in Unterordnern, unabhängig von Ordnerzeiten. GPS, Aufnahme-/Änderungszeit,
+Ordnerzuordnung, Typ, Sichtbarkeit, Einfügen und Löschen werden berücksichtigt.
+Unveränderte Updates, Tags und Bewertungen invalidieren die Route nicht.
+Browser und native API nutzen denselben Cache-Abruf. Die Browserroute ist unabhängig
+von der Medienseite vollständig; nur die Ausgabe wird bei mehr als 8.192 gruppierten
+Orten über die gesamte Route vereinfacht und mit der Gesamtpunktzahl gekennzeichnet.
+Der gemeinsame Karten-/GPX-Reducer bewahrt Zeiten und Fotoanzahlen der verbleibenden
+Orte. Der Arbeitsbereich bleibt auf höchstens 16.385 Punkte begrenzt. Vor dem ersten
+Indexlauf bleibt die bisherige direkte Dateisystem-Berechnung verfügbar.
 
-Nachweise bisher:
+Parallele gleiche Berechnungen werden zusammengefasst. Abbruch des letzten wartenden
+Abrufs beendet die Berechnung; beim Schließen der Bibliothek werden die Jobs beendet.
+Vollständige Dateien ersetzen alte Revisionen atomar mit Modus 0600. Während der
+Berechnung geänderte Revisionen werden verworfen. Defekte Dateien werden erneuert;
+bei Schreibfehlern oder einer Route über dem Cachebudget bleibt die vollständige
+ungecachte Berechnung verfügbar. Maximal 256 JSON-Dateien/512 MiB; Revisionen erzeugen
+keine zusätzlichen Dateinamen. Schreiben und Lesen streamen die Route ohne eine
+vollständige Punktliste im Arbeitsspeicher. Auch beschädigte JSON-Werte sind beim
+Lesen begrenzt. HTTP-Antworten bleiben `private, no-store`.
 
-- Vollständiges `go test ./...` erfolgreich nach API-, Text- und Seitentests.
-- Android-Build, Lint und 25 JVM-Tests erfolgreich, darunter Streaming, Abbruch,
-  Anfragewechsel und Wiederherstellung nach dem Frame.
-- Erster kompletter Emulatorlauf: bestehende Personenabläufe und reale HTTPS-API
-  geprüft; ein neuer UI-Test hatte einen mehrdeutigen Dateinamen-Selektor, korrigiert.
-- Galerie-/Diashow-UI anschließend erfolgreich. Klassenlisten im Gradle-Filter
-  führten tatsächlich nur die erste Klasse aus: Einzelberichte prüfen, nicht die
-  beabsichtigte Filterliste als Abdeckung werten.
-- Vollständiger Gerätelauf mit 66 Tests: 65 erfolgreich, ein echter Fehler in der
-  Download-Abbruchanzeige gefunden und korrigiert. Der gezielte Dateiablage-Test
-  (Erfolg, Fehler, Abbruch) besteht danach; Build, Lint und 25 JVM-Tests ebenfalls.
-- Vollbild/Frame laden inzwischen höchstens die nächste Aufnahme über die
-  vorhandene WLAN-Logik vor. Anzeige und Vorladen verwenden denselben auf
-  2048 Pixel begrenzten Request und den bestehenden Drei-Minuten-Speichercache.
+## Nachweise
 
-Noch wichtig für die Fertigstellung:
+- Nach beiden Korrekturen erneut erfolgreich: vollständiges `go test ./...`,
+  gezielte Race-Tests für Cache, Browserroute und Ordnersuche sowie vier
+  Playwright-Prüfungen für Desktop-/Mobilfilter und die Browserkarte.
 
-- Native Karten pro Foto/Ordner mit Attribution sind implementiert. GPX- und
-  fotobasierte Routen sowie die visuelle Abnahme mit echten Kartenbildern fehlen noch.
-- Galerie, Personenansichten, Hilfen, Fehler und zugängliche Aktionen sind auf
-  Deutsch/Englisch lokalisiert. Die visuelle Gesamtprüfung bleibt offen.
-- Die App hält jetzt höchstens drei Metadatenseiten je Bereich und lädt in beide
-  Richtungen nach. Tiefe serverseitige Seiten/Ordner sowie Account-/Cache-Verhalten
-  müssen weiter mit großen Sammlungen geprüft und gegebenenfalls optimiert werden.
-- Fotoframe filtert aktuell auf Bilder; Browser-Medienverhalten bei Videos abgleichen.
-- Navigation/Scrollposition beim Wechsel zwischen Galerie und Personen, Querformat,
-  große Schrift, Bildfehler und visuelle Gestaltung prüfen und vervollständigen.
-- Icon-Skalierung ist implementiert; tatsächlichen runden Launcher-Beschnitt visuell prüfen.
-- Website nach weiteren Dokumentationsänderungen neu generieren.
+- Nachprüfung der beiden Einschränkungen: API-Test mit 60 öffentlichen und einem
+  privaten Ordner, drei Suchformen und beiden Namenssortierungen; alle 60 Treffer
+  über vier Abrufe erreichbar. Browser und native Route funktionieren nach Entzug
+  des GPS-Quellindexes weiterhin mit derselben Cache-Datei, auch im HTTP-Test.
+  Eine Browserroute mit 20.000 getrennten Orten bleibt vollständig im Cache;
+  Anzeige und Arbeitsbereich sind begrenzt, Anfang/Ende und Metadaten bleiben erhalten.
+- Breite Ordnersuche mit 10.000 indexierten Ordnern, drei Wiederholungen: erste
+  Seite ca. 57 ms, Seite 417 ca. 76 ms, jeweils ca. 22 MB Gesamtallokationen.
+  Vollständige Metadatensortierung bleibt serverseitig bestehen; nur Vorschauen
+  und API-Antwort sind auf das angefragte Paket begrenzt.
 
-Technische Referenzen für die weitere Umsetzung:
-[Storage Access Framework](https://developer.android.com/training/data-storage/shared/documents-files),
-[Media3 1.11.0](https://developer.android.com/jetpack/androidx/releases/media3),
-[OSM-Tile-Regeln](https://operations.osmfoundation.org/policies/tiles/).
-Maps benötigen einen eigenen Client ohne BearStack-Zugangsdaten, sichtbare
-Attribution, identifizierbaren User-Agent, begrenzten HTTP-Cache mit Beachtung der
-Cache-Header und dürfen nur sichtbare Tiles anfragen (kein Karten-Prefetch).
+- Alle Go-Pakete nach dem Routencache erfolgreich: `go test ./...`.
+- Cache-/Revisionsregressionen zusätzlich mit `go test -race` erfolgreich.
+  Geprüft: vollständige Speicherung trotz kleinem Antwortlimit, verschiedene
+  Ausschnitte, Neustart, Versionen, Rechte, private Unterordner, Metadatenänderungen
+  ohne Ordnerzeitänderung, Transaktionsrollback, defekte Dateien, Schreibfehler,
+  parallele Abrufe, Abbruch, Änderung während der Berechnung und Cacheverdrängung.
+- Ein Cache-Test entfernt nach dem ersten Abruf den GPS-Abfrageindex. Weitere
+  Abrufe funktionieren aus derselben JSON-Datei; die Quellabfrage läuft nicht erneut.
+- Lokaler Benchmark, 100.000 Fotoorte mit wiederkehrenden Aufenthaltsorten,
+  drei Wiederholungen: Cache ca. 10,7 ms, Neuberechnung ca. 129 ms. Gesamtallokationen
+  ca. 91 kB gegenüber 9,2 MB; diese Werte sind keine universelle Laufzeitgarantie.
+- Galerie-Benchmark mit 300.000 Fotos und 5.000 Ordnern: tiefe Medienabfrage bei
+  Position 287.904 ca. 68 ms, 24 Ordner mit je zwei Vorschauen ca. 35 ms.
+  Komplexe zu breite Suchausdrücke liefern den dokumentierten Fehler. Ordner werden
+  serverseitig weiterhin vollständig sortiert; nur die ausgewählten Vorschauen
+  werden abgefragt. Dies ist für die gemessene Sammlung geprüft, kein harter
+  konstanter Speicheranspruch für beliebig große serverseitige Ordnerlisten.
+- Abschließend **53 JVM-Tests und 92 Geräte-/HTTPS-Tests erfolgreich**, jeweils
+  keine Fehler oder übersprungenen Tests. Enthalten sind vier Layouttests:
+  Deutsch/hell/Hochformat, Englisch/dunkel/Querformat, doppelte Schrift und die
+  Prüfung aller gezeichneten Icon-Pixel gegen die runde Maske.
+- Android-Build und Lint erfolgreich. Website neu erzeugt, OpenAPI-YAML geprüft,
+  `git diff --check` ohne Befund. README, Changelog und Anleitungen sind aktuell.
+- Screenshots von Raster, Ordnern, Informationsblatt, großer Schrift, Querformat
+  und rundem Icon wurden angesehen. Bilddateien stammen aus dem vorhandenen
+  Website-Fixture. Die Live-Kartenprüfung ist von den deterministischen
+  Regressionen getrennt: beide Sprachtests bestehen mit echten OSM-Kacheln und
+  ihre Screenshots wurden geprüft. Da der isolierte Emulator keinen direkten
+  Internetzugang hat, verwendete dieser manuelle Lauf einen temporären lokalen
+  CONNECT-Tunnel ausschließlich zu OSM. HTTPS-Hostname und Zertifikat blieben
+  geprüft; Tunnel und Portweiterleitung sind anschließend entfernt.
 
-## Karten – weiterer Zwischenstand 2026-09-09
+## Reproduzierbare Prüfungen
 
-- `/api/photos/v1/map` nutzt die gemeinsamen Index-, Such- und Sichtbarkeitsregeln.
-  Alle indexierten GPS-Aufnahmen im Ausschnitt werden in maximal 289 Markern
-  zusammengefasst. Keine Begrenzung auf die ersten 10.000 Medien. Die Datumsgrenze
-  funktioniert beim Verschieben und bei der automatischen Erstansicht.
-- `/api/photos/v1/map/media` liefert höchstens 96 Aufnahmen pro Seite mit denselben
-  Filtern. Identische Orte und Gruppen bei maximalem Zoom öffnen diese Auswahl;
-  ein Seitenwechsel ersetzt den Inhalt. Der bestehende Viewer wird wiederverwendet.
-- Wiederverwendbare native Karte in Foto-Infos und Ordner-/Suchansicht: Verschieben,
-  Zoom, Zurücksetzen, Marker, Fehler-/Wiederholen-Anzeige, zugängliche Aktionen und
-  dauerhaft sichtbare OpenStreetMap-Attribution.
-- Eigener öffentlicher Kartenclient: feste HTTPS-Zielprüfung, keine BearStack-
-  Zugangsdaten/Cookies, keine Weiterleitungen, identifizierbarer User-Agent,
-  64-MiB-HTTP-Cache, ETag/Cache-Control/Expires, sieben Tage Ersatzfrist bei fehlenden
-  Cache-Headern. Nur sichtbare Tiles; Decodierung 256 px, keine Karten-Vorladejobs.
-- Go-Kartentests mit 20.000 indexierten Medien, Seiten, privaten Positionen,
-  Such-/Typfiltern, ungültigen Grenzen und Abbruch bestehen. HTTP-Cache-Tests prüfen
-  echte lokale Requests einschließlich ETag, no-store und Header-Isolation.
-- Karten-UI auf dem Emulator in Deutsch und Englisch geprüft: Einzelmarker, Zoom,
-  dichte Gruppen und Attribution. Layout-Screenshot mit lokalen Test-Tiles gesehen;
-  dies belegt noch keine vollständige visuelle Abnahme mit echten Straßenkarten.
-- Lint-Absturz bei gleichzeitiger KAPT-Stub-Erzeugung und Testanalyse nachvollzogen:
-  zuerst APKs/Testartefakte bauen, danach Lint separat; separater Lauf erfolgreich.
-  Noch keine Änderung an Gradle-Plugins oder Abschaltung von Prüfungen.
-
-Aktuelle Nachweise:
-
-- Vollständige Go-Suite nach der gemeinsamen räumlichen Abfrage und Korrektur der
-  Erstansicht an der Datumsgrenze erfolgreich (`go test ./...`).
-- Vollständige Geräte-/HTTPS-Suite: **69 Tests, 0 Fehler, 0 übersprungen**.
-  Enthalten sind die bisherigen Personenfunktionen, Download-Abbruch, neue Karten
-  in Deutsch/Englisch und das Ersetzen dichter Ortsauswahl-Seiten samt Viewer.
-- Der vorherige Download-Abbruchfehler ist damit auch in einem kompletten Lauf
-  nachgeprüft. Die Android-Prüfung wurde mit isoliertem Go-HTTPS-Testserver ausgeführt.
-- Abschließender Android-Build, **35 JVM-Tests** und Lint nach der Anpassung
-  des Karten-Antwortlimits erfolgreich. Website neu erzeugt; `git diff --check`
-  ohne Befund.
-
-Der Gesamtauftrag bleibt offen. Als nächstes folgen gemeinsame GPX-/Fotorouten,
-serverseitige Seitenskalierung und die visuelle Gesamtprüfung.
-
-## Lokalisierung – weiterer Zwischenstand 2026-09-09
-
-- Galerie und Personenverwaltung einschließlich Hilfe, Statistik, ähnlicher Gruppen,
-  Originalvorschau und TalkBack-Aktionen nutzen deutsche und englische Ressourcen.
-  Einzahl/Mehrzahl und Zertifikatsdatum sind lokalisiert. Ordner- und Dateinamen
-  bleiben unverändert; nur die feste Foto-Wurzelbeschriftung wird übersetzt.
-- Ab Android 13 sind Deutsch/Englisch in den Spracheinstellungen der App verfügbar;
-  ältere Geräte folgen der Systemsprache. Vorhandene Fehlermeldungen wechseln die
-  Sprache mit, ohne die aktive Gruppe oder gespeicherte Aktionen zurückzusetzen.
-- Gemeinsame strukturierte Fehlertexte ersetzen ungefilterte Ausnahmemeldungen.
-  Serveradressen, Zugangsdaten und Tokens werden nicht als Fehlertext angezeigt.
-- Textbeiträge zeigen Fehler mit einer Wiederholen-Aktion direkt im Dialog. Leere
-  Beiträge beenden den Ladezustand; verspätete Antworten öffnen geschlossene
-  Dialoge nicht erneut.
-- Bestehende deutsche UI-Tests verwenden einen auf die jeweilige Composition
-  begrenzten Sprachkontext. Dadurch hängen sie nicht von der Emulator-Sprache ab
-  und verändern die Sprache anderer Testfälle nicht.
-
-Abschließende Nachweise für diesen Zwischenstand:
-
-- Android-Build, **36 JVM-Tests** und separat ausgeführtes Lint erfolgreich.
-- Vollständige Geräte-/HTTPS-Suite: **74 Tests, 0 Fehler, 0 übersprungen**.
-  Enthalten sind alle bisherigen Personenabläufe sowie Sprachwechsel, englische
-  Gruppenentscheidungen mit Originalvorschau und Textfehler-/Leerzustände.
-- Go-Gesamtsuite nach der letzten Serveränderung erfolgreich. Website erzeugt;
-  OpenAPI-YAML lesbar und `git diff --check` ohne Befund.
-- Der Commit hält den implementierten Zwischenstand fest. Die oben genannten
-  offenen Ausbaupunkte und die visuelle Gesamtprüfung bleiben bestehen.
-
-## Begrenzte Galerie-Metadaten – Zwischenstand 2026-09-09
-
-- Gemeinsames Seitenfenster für Medien, Ordner und Texte: maximal drei API-Seiten
-  bzw. 288 Medien, 72 Ordner und 60 Textzusammenfassungen je Ansicht. Der Frame
-  bewahrt zusätzlich die vorherige Galerie mit denselben Grenzen für die Rückkehr.
-- Seiten können an beiden Rändern nachgeladen werden. Ein sichtbarer Inhaltsanker
-  erhält seine Pixelposition beim Einfügen und Entfernen von Seiten, auch wenn die
-  Ladezeile selbst am Rand steht. Verdeckte Galerien laden nicht automatisch nach.
-- Vollbild verwendet stabile Fotopfade; Nachbarn und Wiederholungsanfang werden nach
-  dem Laden erneut aufgelöst. Die Positionsanzeige zählt die gesamte Sammlung.
-  Nach dem Schließen zeigt die Galerie das zuletzt betrachtete Foto.
-- Fehler bleiben beim betroffenen Bereich, Wiederholen lädt dieselbe Seite. Eine
-  andere Ansicht oder ein Kontowechsel kann keine verspäteten Seitendaten übernehmen.
-  Der Wechsel zur Personenverwaltung und zurück erhält die Galerieposition.
-- JVM-Tests mit 250 Medien-/Ordner-/Textseiten in beide Richtungen, einem virtuellen
-  Millionenbestand, Ladefehlern, Wiederholung, Seitenauslagerung und verspäteten
-  Antworten bestehen. Die Gerätetests prüfen zusätzlich sichtbare Anker und Dialoge.
-- Bei der Geräteprüfung behoben: eine direkte Pager-Layoutbeobachtung verursachte
-  fortlaufende Neuberechnungen. Die Beobachtung meldet jetzt nur Änderungen der
-  sichtbaren Foto-ID. Test-Sprachkontexte gelten ausdrücklich auch für die Ressourcen
-  von Dialogen und Menüs, unabhängig von der Emulator-Sprache.
-- Performance-/Bedienkorrektur innerhalb des unveröffentlichten Gesamtfeatures:
-  BearStack bleibt 0.50.0, Android 0.10.0 (22). Keine Änderung am API-Vertrag;
-  README, Android-Anleitung, Fotodokumentation und Website werden mitgeführt.
-
-Zusätzlicher Schutz bei langsamen Anfragen: Die aktuelle sichtbare Auswahl wird
-vor dem Entfernen älterer Seiten erneut geprüft. Würde eine inzwischen überholte
-Antwort sichtbare Einträge entfernen, wird diese Antwort verworfen. Scrollt der
-Benutzer während des Ladens weiter, wird sein neuer Inhaltsanker verwendet.
-Ein verspäteter Klick auf ein bereits entferntes Foto öffnet kein anderes Foto.
-Sechs gezielte Galerie-Gerätetests bestehen, einschließlich pixelgenauer Ankerprüfung,
-Richtungswechsel während einer blockierten Anfrage, Seitenauslagerung im Vollbild,
-Fehler/Wiederholen, Wiederaufnahme sowie Ordner- und Textseiten.
-
-Abschließende Nachweise für diesen Schritt:
-
-- **40 JVM-Tests: 0 Fehler, 0 übersprungen.**
-- **80 Geräte-/HTTPS-Tests: 0 Fehler, 0 übersprungen**, vollständig mit dem isolierten
-  Go-Testserver ausgeführt. Ein zunächst mehrdeutiger „Zurück“-Selektor wurde auf
-  den Textdialog eingegrenzt; der Test prüft auch den weiterhin geöffneten Ordner.
-- Build und Lint erfolgreich; Website neu erzeugt und `git diff --check` sauber.
-  Server und HTTP-Schemas wurden in diesem Schritt nicht verändert.
-
-Geprüfte Anschlusspunkte für die weitere Arbeit:
-
-- GPX-Verarbeitung in `internal/photos/library_gpx.go` ist bereits geteilt und
-  begrenzt (16 MiB/100.000 Punkte pro Track, 32 MiB Cache, eigener Parser-Zugang).
-  `internal/photos/route.go` liefert die gemeinsame Fotorouten-Aggregation mit
-  der konfigurierten Entfernung. Die native Erweiterung muss diese Regeln nutzen
-  und große Routen vor der Übertragung und Darstellung sinnvoll begrenzen.
-- Der Browser-Fotoframe (`internal/server/static/app-photos-frame.js`) unterstützt
-  Videos. Der native Frame filtert bisher auf Bilder; Medienwechsel und Wiederholung
-  müssen einschließlich einzelner Videos vervollständigt und geprüft werden.
-- Beide Bildreferenzen erneut angesehen: kompakter Dreispaltenraster, schwebende
-  Navigation und Foto-Informationen als Blatt über dem Bild sind die visuelle
-  Orientierung. Der aktuelle native Aufbau benötigt weiterhin die visuelle Abnahme.
-- In Foto-Informationen werden aktuell Datum, Datei, Größe, Kamera/Objektiv und GPS
-  dargestellt. Vollständige Uhrzeit und weitere vom Browser bzw. der API angebotene
-  Metadaten sind gegen die tatsächliche Browseransicht zu prüfen und zu ergänzen.
-
-Der Gesamtauftrag bleibt aktiv; dieser Schritt schließt die übrigen offenen
-Funktionen, serverseitigen Skalierungsprüfungen und visuellen Nachweise nicht ab.
+- `go test ./...`
+- `go test -race ./internal/photos -run 'Test(PhotoRouteCache|PhotoRouteRevision|BrowserPhotoRoute)'`
+- `go test ./internal/photos -run '^$' -bench '^BenchmarkNativeGallery$' -benchtime=1x`
+- `go test ./internal/photos -run '^$' -bench '^BenchmarkPhotoRouteCache$' -benchtime=3x`
+- `apps/android/gradlew -p apps/android :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest`
+- `scripts/test-android-integration.sh --console=plain`
+- Lint separat nach der Erzeugung der APK-/Testartefakte: `:app:lintDebug`
+- Website: `zensical build -f zensical.toml --clean`; anschließend `git diff --check`

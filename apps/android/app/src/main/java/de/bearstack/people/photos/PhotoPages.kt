@@ -11,10 +11,14 @@ class PhotoPages<T> private constructor(
 ) {
     private data class Page<T>(val number: Int, val items: List<T>, val hasNext: Boolean)
     val items: List<T> = pages.flatMap { it.items }.distinctBy(key)
+    val keys: List<String> = items.map(key)
     val firstPage: Int = pages.firstOrNull()?.number ?: 1
     val lastPage: Int = pages.lastOrNull()?.number ?: 1
     val hasPrevious: Boolean = firstPage > 1
     val hasNext: Boolean = pages.lastOrNull()?.hasNext == true
+
+    fun canExtend(previous: Boolean, protectedKeys: Set<String>): Boolean = pages.size<MAX_PAGES ||
+        (if(previous) pages.last() else pages.first()).items.none {key(it) in protectedKeys}
 
     fun add(number: Int, items: List<T>, hasNext: Boolean, reset: Boolean = false, protectedKeys: Set<String> = emptySet()): PhotoPages<T> {
         require(number > 0 && items.size <= pageSize)

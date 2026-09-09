@@ -100,6 +100,7 @@ func (l *Library) Close() error {
 	}
 	l.faceThumbnails.close()
 	l.faceImages.close()
+	l.photoRoutes.close()
 	return l.index.close()
 }
 

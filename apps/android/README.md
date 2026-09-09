@@ -12,10 +12,22 @@ bekannte Verzeichnisstruktur; jede Kachel enthält zwei Vorschauen und die Medie
 **Suchen** nutzt die Browsersyntax, zum Beispiel `person:Anna` oder `tag:Urlaub`.
 Die Suche wird mit der Suchen-Taste der Tastatur gestartet.
 
+Die Ordnersuche hat keine Gesamtgrenze von 50 Treffern. Auch größere Ergebnisse
+werden vollständig und sortiert in Paketen von höchstens 24 Ordnern nachgeladen;
+Vorschaubilder werden erst für das jeweils angefragte Paket ermittelt.
+
+Die Galerie ist ein fortlaufendes Raster: Einfach weiterscrollen. Weitere Fotos,
+Ordner und Texte laden bereits vor dem sichtbaren Ende automatisch nach. Auch
+beim Zurückscrollen bleiben alle Inhalte erreichbar. Es gibt keine Seitenwechsel
+oder „Mehr laden“-Schaltflächen; bei einem Ladefehler erscheint **Erneut versuchen**.
+
 Ein Foto öffnet den Vollbildbetrachter. Wische zum nächsten Foto oder nutze die
 Vor-/Zurück-Schaltflächen. Mit zwei Fingern oder **Vergrößern** lässt sich das Bild
 vergrößern. **Informationen** lädt Dateiname, Pfad, Auflösung, Dateigröße sowie
-vorhandene Kamera- und GPS-Daten. Markdown- und Textbeiträge stehen im jeweiligen
+vorhandene Kamera- und GPS-Daten, Bewertung, Personen, Tags und Schlagwörter.
+Die Aufnahmezeit erscheint mit Sekunden und gespeicherter Zeitzone; ohne
+Aufnahmezeit wird die Änderungszeit ausdrücklich gekennzeichnet. Ladefehler
+lassen sich direkt im Informationsblatt über **Erneut versuchen** wiederholen. Markdown- und Textbeiträge stehen im jeweiligen
 Ordner unter **Geschichten & Notizen** und werden erst beim Öffnen vollständig geladen.
 Ladefehler erscheinen mit **Erneut versuchen** direkt in der Textansicht; leere
 Beiträge werden als leer angezeigt und beenden den Ladezustand.
@@ -31,7 +43,10 @@ neu übersetzt, ohne die aktuelle Gruppe oder eine offene Aktion zu verlieren.
 
 Fehlermeldungen verwenden feste Meldungsschlüssel statt ungefilterter technischer
 Ausnahmetexte. Kamera-, Datei- und Personenbezeichnungen bleiben die Originaldaten.
-Die abschließende visuelle Abnahme ist Teil des laufenden Ausbaus.
+Die kompakte, abgerundete Navigation verbindet Fotos, Ordner und Suche. Das Raster
+zeigt auf breiten Displays sechs statt drei Fotos pro Reihe. Bei großer Schrift
+erhalten Ordner im Hochformat die gesamte Breite für ihre Beschriftung. Das
+adaptive App-Symbol bleibt auch beim runden Android-Beschnitt vollständig sichtbar.
 
 ### Karten
 
@@ -40,9 +55,75 @@ inklusive Unterordnern oder der aktuellen Suche. Verschieben und Zwei-Finger-Zoo
 ändern den Ausschnitt; Plus/Minus und **Alle Orte anzeigen** sind ebenfalls verfügbar.
 Zahlen bündeln benachbarte Aufnahmen. Antippen vergrößert die Umgebung; ein einzelner
 Punkt öffnet die Aufnahme. Mehrere Aufnahmen am exakt gleichen Ort oder bei
-maximalem Zoom öffnen eine Fotoauswahl mit höchstens 96 Einträgen pro Seite.
-Die Seitenschalter ersetzen den Inhalt und halten den Speicherbedarf begrenzt.
+maximalem Zoom öffnen eine ebenfalls endlos scrollbare Fotoauswahl.
+Das Raster lädt automatisch nach und öffnet Fotos im gemeinsamen Vollbildbetrachter.
 In **Informationen** erscheint eine Karte zum Foto.
+
+**Ebenen → Fotoroute** verbindet die GPS-Orte der Fotos in zeitlicher Reihenfolge
+als gestrichelte Linie. Die aktive Suche und Typauswahl bleiben erhalten. Die
+serverseitige Foto-Track-Auflösung bestimmt die Gruppierung naher Orte. Die App
+lädt diese Ebene erst beim Einschalten und hält höchstens 4.096 Routenkoordinaten.
+Beim Zoomen wird die Geometrie für den Ausschnitt erneut geladen. Die Gruppierung
+verwendet immer den vollständigen passenden Bestand, bevor die Route zugeschnitten
+wird. Lange Routen können vereinfacht sein; Fehler sind direkt wiederholbar.
+
+**Ebenen → GPX-Tracks** öffnet die Trackauswahl für den Ordner samt Unterordnern.
+Bei einer Fotosuche stehen die Tracks der gesamten Sammlung zur Auswahl. Die Liste
+lädt beim Scrollen automatisch in beide Richtungen nach. Du kannst mehrere Tracks
+zugleich anzeigen; farbige Markierungen und die ausgewählten Namen helfen beim
+Vergleichen. Ein ausgewählter Track wird auf der Karte fokussiert. Das funktioniert
+auch ohne GPS-Fotos. Erneutes Antippen oder **Alle GPX-Tracks ausblenden** entfernt die
+Auswahl. Unlesbare Dateien werden in der Trackauswahl gemeldet und lassen sich erneut laden.
+
+Getrennte GPX-Abschnitte bleiben getrennt, auch an der Datumsgrenze. Lange Tracks
+werden für den sichtbaren Ausschnitt vereinfacht; beim Vergrößern lädt die App mehr
+Details. Bis zu 256 Tracks teilen sich ein Gesamtlimit von 8.192 dargestellten
+Punkten. Zwei GPX-Geometrie-Anfragen laufen gleichzeitig; beim Verschieben, Verlassen
+der Karte oder Ändern der Auswahl werden überholte Anfragen abgebrochen. Die
+Trackliste hält höchstens 96 Dateieinträge zusätzlich zu den ausgewählten Namen.
+
+Die lesenden Endpunkte `/api/photos/v1/map/tracks` und `/api/photos/v1/map/track`
+verwenden denselben GPX-Parser und den auf 32 MiB begrenzten Cache wie der Browser.
+GPX-Dateien dürfen höchstens 16 MiB und 100.000 Track-/Routenpunkte enthalten.
+Symbolische Links und als privat markierte Ordner werden ausgeschlossen. Schema 26
+legt einen Dateimetadatenindex an; vorhandene Installationen ergänzen ihn beim
+nächsten normalen Indexlauf. Bis dahin weist die App auf die noch unvollständige
+Trackliste hin. Vorhandene Fotokarten bleiben währenddessen verfügbar.
+Der lesende Endpunkt `/api/photos/v1/map/route` verwendet dieselbe Gruppierung wie
+der Browser und einen chronologischen Index mit normalisierten Zeitzonen. Die
+Serverantwort enthält Gesamtzahlen und höchstens 8.192 Koordinaten; die App fordert
+4.096 an. GPX und Fotorouten teilen sich serverseitig zwei Geometrie-Arbeitsplätze.
+Große Volltextsuchen können ihre Sortierung in temporäre Dateien auslagern.
+Komplexe Suchausdrücke melden ein zu breites Ergebnis ausdrücklich.
+
+Die vollständig gruppierte Route wird **auf dem Server** berechnet und als JSON
+unter `<Cache-Verzeichnis>/photo-routes/v1/` von Browserkarte und App gemeinsam
+wiederverwendet. Die App lädt nur
+zugeschnittene und vereinfachte Geometrie. Ordner samt Unterordnern, Medientyp,
+Gruppierungsradius und Sichtbarkeit bestimmen den Cache-Schlüssel. Suchabfragen
+werden berechnet, aber zunächst nicht dauerhaft gespeichert.
+
+Eine transaktionale Indexrevision erfasst Einfügen, Löschen sowie Änderungen an
+GPS, Aufnahme-/Änderungszeit, Ordnerzuordnung, Medientyp und Sichtbarkeit. Änderungen
+in Unterordnern invalidieren dadurch auch übergeordnete Routen. Ordnerzeitstempel
+sind keine Grundlage der Invalidierung. Vor jedem Abruf bleiben die aktuellen
+Zugriffsprüfungen aktiv; während der Berechnung geänderte Revisionen werden verworfen.
+
+Gleichzeitige Cache-Abrufe derselben Route teilen die nötige Neuberechnung. Erst wenn niemand mehr
+wartet, wird sie abgebrochen. Die vollständige JSON-Datei ersetzt die alte atomar;
+Format und Gruppierungsalgorithmus haben getrennte Versionsnummern. Unterschiedliche
+Zoomstufen und Punktlimits verwenden dieselbe Datei. Beschädigte Dateien werden
+neu erzeugt; bei nicht beschreibbarem Cache bleibt die direkte Berechnung möglich.
+Der Routencache hält höchstens 256 JSON-Dateien mit insgesamt 512 MiB. Für atomare
+Neuberechnungen kommen vorübergehend temporäre Dateien hinzu. Größere Routen
+bleiben vollständig berechenbar, werden aber nicht dauerhaft gespeichert. Dateien
+sind nur für den Serverbenutzer lesbar; HTTP-Antworten bleiben `private, no-store`.
+
+Kartenmarker, Fotoauswahl und Fotoroute prüfen die aktuellen Zugriffsregeln der
+betroffenen GPS-Ordner. Neu private Unterordner bleiben auch vor dem nächsten
+Indexlauf verborgen. Die Prüfung liest keine Originalbilder und arbeitet mit
+höchstens 256 Ordnern samt gemeinsam geprüften Vorfahren pro Paket.
+
 
 Die Karten-API bündelt alle passenden indexierten Aufnahmen in höchstens 289
 Markern pro Ausschnitt. Sie lädt keine vollständigen Fotolisten in den App-Speicher.
@@ -50,7 +131,7 @@ Ist der Fotoindex noch nicht bereit, bietet die Ansicht erneutes Laden an.
 OpenStreetMap liefert nur die gerade sichtbaren Kartenbilder. Ein eigener Client
 ohne BearStack-Zugangsdaten nutzt einen auf 64 MiB begrenzten HTTP-Cache und beachtet
 Cache-Header sowie bedingte Anfragen. Die Quellenangabe bleibt auf der Karte sichtbar.
-GPX- und fotobasierte Routen werden im weiteren Ausbau ergänzt.
+
 
 ### Original speichern
 
@@ -67,22 +148,26 @@ Anzeigedauern von 3 bis 300 Sekunden und eine Wiederholung am Ende. Die Zeit lä
 erst nach dem Laden des Fotos; Informationen, Einstellungen, Zoom und der Wechsel
 in eine andere App pausieren die automatische Wiedergabe.
 
-**Weitere Optionen → Fotoframe starten** spielt die Fotos des aktuellen Ordners
-mit Unterordnern ab. Im Frame blendet Antippen die Steuerung ein; Name/Datum und
+**Weitere Optionen → Fotoframe starten** spielt die Medien des aktuellen Ordners
+mit Unterordnern ab und berücksichtigt die aktive Suche bzw. Typauswahl. Im Frame blendet Antippen die Steuerung ein; Name/Datum und
 Bildschirmfüllung mit Beschnitt sind einstellbar. Zurück stellt die vorherige
 Galerie wieder her. Während der Wiedergabe bleibt der Bildschirm aktiv.
-Videos und Audio im normalen Vollbild verwenden den nativen Media3-Player und
-dieselbe HTTPS-Verbindung; nur die sichtbare Seite hält einen Decoder bereit.
+Videos und Audio verwenden im Vollbild und im Frame den nativen Media3-Player
+und dieselbe HTTPS-Verbindung; nur die sichtbare Seite hält einen Decoder bereit.
+Die automatische Wiedergabe wartet bis zum Medienende. Auch eine einzelne Datei
+wird bei aktivierter Wiederholung erneut abgespielt; ohne Wiederholung stoppt
+die Wiedergabe am Ende. Informationen und Einstellungen pausieren auch manuell
+gestartete Medien. Die Einstellungen bleiben bei großer Schrift scrollbar.
 
 Die API `/api/photos/v1/` verwendet dieselben Foto-Dienste, Suchregeln und
 Zugriffskontrollen wie der Browser. Seiten enthalten bis zu 96 Medien, 24 Ordner
 mit jeweils zwei Vorschauen und 20 Textzusammenfassungen. Fotos und Texte werden
 bei Bedarf geladen; ein Ansichts- oder Kontowechsel bricht veraltete Anfragen ab.
-Eine Galerieansicht hält pro Bereich höchstens drei Seiten im Speicher: 288 Medien,
+Die Übertragung erfolgt intern in begrenzten Datenpaketen, ohne sichtbare Seitengrenzen.
+Eine Galerieansicht hält pro Bereich höchstens 288 Medien,
 72 Ordner mit bis zu zwei Vorschauen und 60 Textzusammenfassungen. Für die Rückkehr
 aus dem Fotoframe bleibt zusätzlich die vorherige Galerie mit denselben Grenzen
-erhalten. Ältere Seiten
-werden beim Zurückscrollen erneut geladen. Das sichtbare Element behält seine
+erhalten. Entfernte Metadaten werden beim Zurückscrollen automatisch erneut geladen. Das sichtbare Element behält seine
 Position; Vollbild und Diashow wechseln auch über Seitengrenzen zum richtigen Foto.
 Ladefehler lassen sich am betroffenen Bereich wiederholen. Nach dem Schließen des
 Vollbilds zeigt das Raster das zuletzt betrachtete Foto; der Wechsel zur

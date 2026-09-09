@@ -6,7 +6,6 @@ import android.widget.TextView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -19,7 +18,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -81,17 +79,21 @@ fun PhotosScreen(controller: PhotosController, images: ImageLoader, canManage: B
             }
         }
     },bottomBar={
-        NavigationBar {
-            listOf(R.string.photos_title to R.drawable.ic_photos,R.string.photos_folders to R.drawable.ic_folder,R.string.photos_search to R.drawable.ic_search)
-                .forEachIndexed { index,(label,icon) ->
-                    NavigationBarItem(selected=tab==index,onClick={
-                        if(tab!=index) { controller.open(PhotoQuery(query=if(index==2) search.trim() else "",recursive=index!=1),tab=index) }
-                    },icon={Icon(painterResource(icon),null)},label={Text(stringResource(label))})
-                }
+        Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal=20.dp,vertical=8.dp),contentAlignment=Alignment.Center) {
+            Surface(shape=RoundedCornerShape(32.dp),shadowElevation=3.dp,modifier=Modifier.widthIn(max=440.dp)) {
+            NavigationBar(windowInsets=WindowInsets(0,0,0,0),containerColor=MaterialTheme.colorScheme.surfaceContainer) {
+                listOf(R.string.photos_title to R.drawable.ic_photos,R.string.photos_folders to R.drawable.ic_folder,R.string.photos_search to R.drawable.ic_search)
+                    .forEachIndexed { index,(label,icon) ->
+                        NavigationBarItem(selected=tab==index,onClick={
+                            if(tab!=index) { controller.open(PhotoQuery(query=if(index==2) search.trim() else "",recursive=index!=1),tab=index) }
+                        },icon={Icon(painterResource(icon),null)},label={Text(stringResource(label))})
+                    }
+            }
+            }
         }
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            Box(Modifier.fillMaxWidth().height(3.dp)) { if(state.loading) LinearProgressIndicator(Modifier.fillMaxSize()) }
+            Box(Modifier.fillMaxWidth().height(3.dp)) { if(state.loading || state.loadingSections.isNotEmpty()) LinearProgressIndicator(Modifier.fillMaxSize()) }
             state.error?.let { error ->
                 Surface(color=MaterialTheme.colorScheme.errorContainer) {
                     Row(Modifier.fillMaxWidth().padding(12.dp),verticalAlignment=Alignment.CenterVertically) {
@@ -100,93 +102,7 @@ fun PhotosScreen(controller: PhotosController, images: ImageLoader, canManage: B
                     }
                 }
             }
-            key(state.query,state.frame) {
-                val rows=remember(state.mediaPages,state.folderPages,state.blogPages) {galleryRows(state)}
-                val latestCatalog by rememberUpdatedState(state)
-                var pageAnchor by remember {mutableStateOf<GalleryPageAnchor?>(null)}
-                val saved=remember {controller.gridPosition}
-                val grid = rememberLazyGridState(
-                    initialFirstVisibleItemIndex=rows.indexOfFirst {it.key==saved?.key}.coerceAtLeast(0),
-                    initialFirstVisibleItemScrollOffset=saved?.offset ?: 0)
-                fun load(section: String,previous: Boolean) {
-                    if(section in state.loadingSections) return
-                    val anchor=grid.layoutInfo.visibleItemsInfo.firstOrNull {
-                        val key=it.key.toString()
-                        key.startsWith("photo:") || key.startsWith("folder:") || key.startsWith("blog:")
-                    }
-                    if(anchor!=null) pageAnchor=GalleryPageAnchor(section,state.section(section),GalleryPosition(anchor.key.toString(),-anchor.offset.y))
-                    if(previous) controller.previous(section) else controller.more(section)
-                }
-                LaunchedEffect(rows,state.loadingSections,pageAnchor) {
-                    val anchor=pageAnchor ?: return@LaunchedEffect
-                    if(state.section(anchor.section)!==anchor.pages) {
-                        val index=rows.indexOfFirst {it.key==anchor.position.key}
-                        if(index>=0) grid.scrollToItem(index,anchor.position.offset)
-                        pageAnchor=null
-                    } else if(anchor.section !in state.loadingSections) pageAnchor=null
-                }
-                LaunchedEffect(grid,state.selected,state.frame) {
-                    if(state.selected==null && !state.frame) snapshotFlow {
-                        val visible=grid.layoutInfo.visibleItemsInfo
-                        val content=visible.firstOrNull {
-                            val key=it.key.toString()
-                            key.startsWith("photo:") || key.startsWith("folder:") || key.startsWith("blog:")
-                        }
-                        GalleryViewport(
-                            visible.firstOrNull()?.let {GalleryPosition(it.key.toString(),grid.firstVisibleItemScrollOffset)},
-                            visible.mapTo(HashSet()) {it.key.toString()},
-                            content?.let {GalleryPosition(it.key.toString(),-it.offset.y)},grid.isScrollInProgress)
-                    }.collect {viewport ->
-                        viewport.position?.let {controller.gridPosition=it}
-                        controller.galleryVisible(viewport.keys)
-                        pageAnchor?.let {anchor ->
-                            if(viewport.scrolling || (viewport.content!=null && viewport.content.key!=anchor.position.key)) anchor.userScrolled=true
-                            if(anchor.userScrolled && latestCatalog.section(anchor.section)===anchor.pages) {
-                                viewport.content?.let {anchor.position=it}
-                            }
-                        }
-                    }
-                }
-                LaunchedEffect(state.scrollToKey,rows) {
-                    val target=state.scrollToKey ?: return@LaunchedEffect
-                    val index=rows.indexOfFirst {it.key==target}
-                    if(index>=0) {grid.scrollToItem(index);controller.scrollConsumed()}
-                }
-                LazyVerticalGrid(columns=GridCells.Fixed(6),state=grid,modifier=Modifier.fillMaxSize().testTag("photo-gallery"),
-                    horizontalArrangement=Arrangement.spacedBy(2.dp),verticalArrangement=Arrangement.spacedBy(2.dp),contentPadding=PaddingValues(bottom=16.dp)) {
-                    items(rows,key={it.key},span={GridItemSpan(when(it) {
-                        is GalleryRow.Folder -> 3; is GalleryRow.Media -> 2; else -> maxLineSpan
-                    })},contentType={when(it) {
-                        is GalleryRow.Folder -> "folder"; is GalleryRow.Media -> "photo"; is GalleryRow.Blog -> "blog"
-                        is GalleryRow.Boundary -> "boundary"; else -> "heading"
-                    }}) {row ->
-                        when(row) {
-                            is GalleryRow.Folder -> FolderTile(row.value,controller,images) {
-                                controller.open(PhotoQuery(path=row.value.path),tab=1)
-                            }
-                            is GalleryRow.Blog -> ListItem(headlineContent={Text(row.value.name)},
-                                supportingContent={Text(photoDateLabel(row.value.date ?: row.value.modified,locale))},
-                                modifier=Modifier.clickable {controller.openBlog(row.value)})
-                            is GalleryRow.Media -> PhotoThumbnail(row.value,controller,images,controller.session.thumbnailSize,
-                                Modifier.fillMaxWidth().aspectRatio(1f).clickable {controller.select(row.value.path)})
-                            is GalleryRow.Date -> SectionTitle(photoDateLabel(row.value.date,locale))
-                            GalleryRow.Texts -> SectionTitle(stringResource(R.string.photos_texts))
-                            is GalleryRow.Boundary -> {
-                                val visible by remember(grid,row.key) {derivedStateOf {grid.layoutInfo.visibleItemsInfo.any {it.key==row.key}}}
-                                LoadSection(row.section,row.previous,visible && pageAnchor==null,state) {load(row.section,row.previous)}
-                            }
-                        }
-                    }
-                    if(!state.loading && state.media.isEmpty() && state.folders.isEmpty() && state.blogs.isEmpty() && state.error==null) {
-                        item(span={GridItemSpan(maxLineSpan)}) {
-                            Column(Modifier.fillMaxWidth().padding(40.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(16.dp)) {
-                                Icon(painterResource(R.drawable.ic_photos),null,Modifier.size(48.dp),tint=MaterialTheme.colorScheme.outline)
-                                Text(stringResource(if(state.query.query.isBlank()) R.string.photos_empty else R.string.photos_no_results))
-                            }
-                        }
-                    }
-                }
-            }
+            PhotoGallery(controller,images,state)
         }
     }
     state.selected?.let { path -> PhotoViewer(controller,images,state.media,path) }
@@ -228,31 +144,10 @@ fun PhotosScreen(controller: PhotosController, images: ImageLoader, canManage: B
     }
 }
 
-@Composable
-private fun LoadSection(section: String, previous: Boolean, visible: Boolean, state: PhotosState, load: () -> Unit) {
-    val text=uiStrings()
-    val pages=state.section(section)
-    val boundary=if(previous) pages.firstPage else pages.lastPage
-    val failure=state.pageErrors[section]?.takeIf {it.previous==previous}
-    LaunchedEffect(section,boundary,previous,visible,state.selected,state.frame) {
-        if(visible && failure==null && state.selected==null && !state.frame) load()
-    }
-    Column(Modifier.fillMaxWidth().padding(12.dp),horizontalAlignment=Alignment.CenterHorizontally) {
-        failure?.let {Text(text(it.message),color=MaterialTheme.colorScheme.error)}
-        Box(Modifier.heightIn(min=48.dp),contentAlignment=Alignment.Center) {
-            if(section in state.loadingSections) CircularProgressIndicator(Modifier.size(24.dp))
-            else TextButton(onClick=load) {Text(stringResource(when {
-                failure!=null -> R.string.photos_retry
-                previous -> R.string.photos_load_previous
-                else -> R.string.photos_more
-            }))}
-        }
-    }
-}
-@Composable private fun SectionTitle(title: String) {
+@Composable internal fun SectionTitle(title: String) {
     Text(title,Modifier.padding(horizontal=16.dp,vertical=14.dp),style=MaterialTheme.typography.titleMedium)
 }
-@Composable private fun FolderTile(folder: PhotoFolder, controller: PhotosController, images: ImageLoader, onClick: () -> Unit) {
+@Composable internal fun FolderTile(folder: PhotoFolder, controller: PhotosController, images: ImageLoader, onClick: () -> Unit) {
     Column(Modifier.padding(6.dp).clip(RoundedCornerShape(20.dp)).clickable(onClick=onClick)
         .background(MaterialTheme.colorScheme.surfaceContainerLow)) {
         Row(Modifier.fillMaxWidth().height(104.dp),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
@@ -280,8 +175,3 @@ private fun LoadSection(section: String, previous: Boolean, visible: Boolean, st
 internal fun photoDateLabel(date: String, locale: Locale): String = runCatching {
     OffsetDateTime.parse(date).toLocalDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale))
 }.getOrDefault(date.take(10))
-
-private class GalleryPageAnchor(val section: String,val pages: PhotoPages<*>,var position: GalleryPosition) {
-    var userScrolled=false
-}
-private data class GalleryViewport(val position: GalleryPosition?,val keys: Set<String>,val content: GalleryPosition?,val scrolling: Boolean)

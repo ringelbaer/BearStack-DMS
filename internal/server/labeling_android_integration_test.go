@@ -61,9 +61,13 @@ func TestAndroidLabelingFixture(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(galleryServer.photos.Root(), "story.md"), []byte("# Gallery story\nA read-only gallery."), 0600); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(galleryServer.photos.Root(), "route & sea.gpx"), []byte(`<gpx><trk><trkseg><trkpt lat="1" lon="179"/><trkpt lat="1.1" lon="-179"/></trkseg><trkseg><trkpt lat="2" lon="10"/></trkseg></trk></gpx>`), 0600); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := galleryServer.photos.RebuildIndex(ctx); err != nil {
 		t.Fatal(err)
 	}
+	seedPhotoRoutePosition(t, galleryServer)
 	mux.Handle("/gallery/", http.StripPrefix("/gallery", galleryServer.Handler()))
 	for _, action := range []string{"accept", "reject"} {
 		mergeServer, _ := mergeSuggestionServer(t)

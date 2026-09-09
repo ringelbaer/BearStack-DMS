@@ -96,12 +96,12 @@ func (l *Library) gpxFromResolvedPath(ctx context.Context, rel, abs string, info
 		}
 	}
 
-	points, err := decodeGPX(ctx, file, gpxMaxBytes, gpxMaxPoints)
+	points, segments, err := decodeGPXSegments(ctx, file, gpxMaxBytes, gpxMaxPoints)
 	if err != nil {
 		return GPXTrack{}, err
 	}
 	name := filepath.Base(filepath.FromSlash(rel))
-	track := GPXTrack{Name: name, Path: rel, Label: gpxTrackLabel(name), Points: points}
+	track := GPXTrack{Name: name, Path: rel, Label: gpxTrackLabel(name), Points: points, Segments: segments}
 	l.gpxStoreCache(rel, info, track)
 	return track, nil
 }
@@ -119,31 +119,56 @@ func (r gpxContextReader) Read(p []byte) (int, error) {
 }
 
 func decodeGPX(ctx context.Context, input io.Reader, maxBytes int64, maxPoints int) ([]GPXPoint, error) {
+	points, _, err := decodeGPXSegments(ctx, input, maxBytes, maxPoints)
+	return points, err
+}
+
+func decodeGPXSegments(ctx context.Context, input io.Reader, maxBytes int64, maxPoints int) ([]GPXPoint, [][]GPXPoint, error) {
 	limited := &io.LimitedReader{R: input, N: maxBytes + 1}
 	decoder := xml.NewDecoder(gpxContextReader{ctx, limited})
 	var points []GPXPoint
+	var starts []int
 	count := 0
+	newSegment := true
 	for {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		token, err := decoder.Token()
 		if limited.N == 0 {
-			return nil, errGPXLimit
+			return nil, nil, errGPXLimit
 		}
 		if errors.Is(err, io.EOF) {
-			return points, nil
+			segments := make([][]GPXPoint, 0, len(starts))
+			for i, start := range starts {
+				end := len(points)
+				if i+1 < len(starts) {
+					end = starts[i+1]
+				}
+				segments = append(segments, points[start:end:end])
+			}
+			return points, segments, nil
 		}
 		if err != nil {
-			return nil, err
+			return nil, nil, err
+		}
+		if end, ok := token.(xml.EndElement); ok && (end.Name.Local == "trkseg" || end.Name.Local == "rte" || end.Name.Local == "trk") {
+			newSegment = true
 		}
 		start, ok := token.(xml.StartElement)
-		if !ok || (start.Name.Local != "trkpt" && start.Name.Local != "rtept") {
+		if !ok {
+			continue
+		}
+		if start.Name.Local == "trkseg" || start.Name.Local == "rte" || start.Name.Local == "trk" {
+			newSegment = true
+			continue
+		}
+		if start.Name.Local != "trkpt" && start.Name.Local != "rtept" {
 			continue
 		}
 		count++
 		if count > maxPoints {
-			return nil, errGPXLimit
+			return nil, nil, errGPXLimit
 		}
 		var point GPXPoint
 		var hasLat, hasLon bool
@@ -156,7 +181,16 @@ func decodeGPX(ctx context.Context, input io.Reader, maxBytes int64, maxPoints i
 			}
 		}
 		if hasLat && hasLon && validGPXPoint(point) {
-			points = appendGPXPoint(points, point)
+			if newSegment {
+				starts = append(starts, len(points))
+				points = append(points, point)
+				newSegment = false
+			} else {
+				points = appendGPXPoint(points, point)
+			}
+		} else {
+			// An invalid recorded position is a gap, not a bridge between tracks.
+			newSegment = true
 		}
 	}
 }
@@ -188,7 +222,7 @@ func (l *Library) gpxStoreCacheBudget(rel string, info os.FileInfo, track GPXTra
 		return
 	}
 	// Include backing-array capacity, strings and conservative per-entry overhead.
-	cost := int64(cap(track.Points))*16 + int64(len(rel)+len(track.Name)+len(track.Path)+len(track.Label)+len(track.Color)) + 256
+	cost := int64(cap(track.Points))*16 + int64(cap(track.Segments))*24 + int64(len(rel)+len(track.Name)+len(track.Path)+len(track.Label)+len(track.Color)) + 256
 	l.gpxMu.Lock()
 	defer l.gpxMu.Unlock()
 	l.removeGPXCacheEntry(rel)
