@@ -1,6 +1,6 @@
 # BearStack Personen für Android
 
-Native, deutschsprachige App für Android 8.0 oder neuer. App-Version **0.8.2**; erforderlich sind **BearStack 0.35.0**, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit `photos.edit` (Rolle „Fotos bearbeiten“/`photos_editor`, `photos_manager` oder Administrator; Freigabe für Fotobearbeiter ab BearStack 0.36.0). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.
+Native, deutschsprachige App für Android 8.0 oder neuer. App-Version **0.8.3**; erforderlich sind **BearStack 0.35.0**, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit `photos.edit` (Rolle „Fotos bearbeiten“/`photos_editor`, `photos_manager` oder Administrator; Freigabe für Fotobearbeiter ab BearStack 0.36.0). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.
 
 ## Bauen und installieren
 
@@ -43,13 +43,15 @@ Umbenennen, Entfernen und Favorisieren werden erst nach Serverbestätigung angez
 
 Die Liste verwendet ein Lazy-Layout; Portraits werden nur für sichtbare Einträge geladen. Personen-Metadaten und Sichtbarkeitsprüfungen erfolgen serverseitig in kleinen Paketen ohne Gesamtzählung. Das Raster stellt nur sichtbare Kacheln bereit. BearStack 0.45.0 liefert pro Anfrage bis zu 40 Gesichter über einen indexierten Gesichts-ID-Cursor; tiefes Scrollen benötigt keinen zunehmend großen Offset. Alte Server liefern weiterhin vier Gesichter je Anfrage, die App fügt sie ebenfalls fortlaufend an. Vor dem Anfügen werden Revision und Gesichtsanzahl geprüft; bei zwischenzeitlichen Änderungen wird neu geladen und eine Meldung angezeigt. Bestätigte Favoriten-, Namens- und Zuordnungsänderungen aktualisieren den geladenen Bestand anhand der atomaren Aktionsquittung, sodass Bilder und Scrollposition erhalten bleiben. Während eines Dialogs oder einer Originalvorschau wird nicht automatisch nachgeladen; Ladefehler lösen keine Endlosschleife aus. Ab App 0.8.0 werden Originale der angezeigten Portraits bei WLAN nacheinander vorgeladen; über Mobilfunk werden sie erst beim Öffnen der Vorschau geladen. Der vorhandene begrenzte Bildcache wird weiterverwendet. Änderungen aktualisieren den Gesichtssuchindex nur für betroffene Personen, sofern der Index aktuell ist.
 
+Ab App **0.8.3** erscheinen **…**, **?** und **Stift** in der unteren Benennen-Aktionsleiste als gleich große, vertikal mittig ausgerichtete Symbole. Der Stift hat keinen sichtbaren Schaltflächenhintergrund mehr; die unsichtbaren Touchflächen bleiben jeweils 48 dp groß. In „Personen benennen“ beginnt der Inhalt direkt mit dem Gesichtsraster; „Unbenannte Person“ und die Bildanzahlzeile entfallen.
+
 Ab App **0.8.2** hat der Favoritenstern im Personenbereich dieselbe Schriftgröße wie „×“ und keinen sichtbaren Schaltflächenhintergrund; die unsichtbare Touchfläche bleibt 48 dp groß.
 
 Ab App **0.8.1** bleibt unten eine schlanke Aktionsleiste stehen: links **…** für Ignorieren, Überspringen und dessen Rücknahme, mittig **?** für die scrollbar angezeigte Bedienhilfe, rechts der **Stift** zum Benennen. Die Leiste reserviert Platz unter dem Inhalt und berücksichtigt die Systemnavigation. Das obere Menü enthält die App-Navigation.
 
 ## Zuordnungsmodus
 
-- Ab App-Version 0.5.2 bleibt der Platz für den Ladebalken dauerhaft reserviert. Überschrift, Gesichtsraster und Navigation behalten beim Ein- und Ausblenden ihre Position, auch in gescrollten Ansichten mit großer Schrift.
+- Ab App-Version 0.5.2 bleibt der Platz für den Ladebalken dauerhaft reserviert. Gesichtsraster und Navigation behalten beim Ein- und Ausblenden ihre Position, auch in gescrollten Ansichten mit großer Schrift.
 - Unter jedem Gesichtsausschnitt und in der Originalfoto-Vorschau steht der vollständige Galeriepfad mit allen Ordnerebenen und Dateiname. Die Aufbereitung entspricht der Galerie, etwa `Fotos / 11.05.2026 · Urlaub / IMG_1234.jpg`. Lange Pfade werden umgebrochen statt abgeschnitten. Die Pfade kommen vom Server; diese Anzeige benötigt BearStack 0.34.0.
 - Das Grid zeigt bis zu vier **Gesichtsausschnitte**, keine ganzen Fotos. Bei größeren Gruppen blättern „Zurück“ und „Weiter“ durch Viererseiten. Benennen, Zuordnen und Ignorieren betreffen immer die gesamte Gruppe.
 - Wischen funktioniert auf Bildern, Zwischenräumen und dem freien Hintergrund der Bearbeitungsansicht. Links überspringt die Gruppe; rechts holt die zuletzt übersprungene Gruppe zurück; oben ignoriert sie mit Rücknahmefrist. Bei überlangem Inhalt scrollt Hochwischen zunächst zum Ende; ein weiterer Wischer nach oben ignoriert die Gruppe. Menü, Statistik, Namensdialog und Originalfoto-Vorschau lösen keine Wischaktionen aus.
@@ -112,7 +114,7 @@ make test-android-integration
 make test-go
 ```
 
-Compose-Regressionstests prüfen beim Vor- und Zurückblättern, dass Überschrift, Gesichtsraster und Navigation vor, während und nach dem Laden an derselben Position bleiben, auch bei doppelter Schriftgröße und gescrolltem Inhalt. Während des Ladens bleiben die Blätteraktionen gesperrt. Weitere Regressionen prüfen ablaufende Rücknahmen bei geöffnetem Namens- und Duplikatdialog, das anschließende Speichern jeder ursprünglichen Gruppe sowie die Wiederherstellung beim Hintergrundwechsel. Ein UI-Test ab Android 11 prüft außerdem Dialogidentität, Eingabefokus, sichtbare Bildschirmtastatur und weiteren Textinput beim Ändern und Ausblenden der Rückgängig-Meldung.
+Compose-Regressionstests prüfen beim Vor- und Zurückblättern, dass Gesichtsraster und Navigation vor, während und nach dem Laden an derselben Position bleiben, auch bei doppelter Schriftgröße und gescrolltem Inhalt. Während des Ladens bleiben die Blätteraktionen gesperrt. Weitere Regressionen prüfen ablaufende Rücknahmen bei geöffnetem Namens- und Duplikatdialog, das anschließende Speichern jeder ursprünglichen Gruppe sowie die Wiederherstellung beim Hintergrundwechsel. Ein UI-Test ab Android 11 prüft außerdem Dialogidentität, Eingabefokus, sichtbare Bildschirmtastatur und weiteren Textinput beim Ändern und Ausblenden der Rückgängig-Meldung.
 
 Cachetests prüfen tatsächliche HTTPS-Anfragezahlen und die Wiederverwendung desselben dekodierten Bitmaps für unterschiedliche Gesichter, den festen Drei-Minuten-Ablauf, Fehlerantworten, Cacheleeren, Speicherbegrenzung und alte Server ohne Bildkennung.
 

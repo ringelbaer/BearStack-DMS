@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.48.1
+
+- Im Benenn-Modal nutzt die Vorschlagsliste die freie Höhe neben der Fotovorschau. Längere Listen scrollen innerhalb dieses Bereichs; die reservierte Fläche hält die Dialogaktionen beim Ein- und Ausblenden stabil.
+
+- Android-App **0.8.3** (versionCode 20): In der unteren Benennen-Aktionsleiste entfällt der sichtbare Schaltflächenhintergrund am Stift. **…**, **?** und **Stift** erscheinen als gleich große, vertikal mittig ausgerichtete Symbole. Die unsichtbaren 48-dp-Touchflächen und bestehenden Aktionen bleiben erhalten. In „Personen benennen“ entfallen „Unbenannte Person“ und die Bildanzahlzeile über dem Gesichtsraster.
+- PATCH für die kleine UI-Korrektur ohne API- oder Datenänderung. README, Android-Anleitung, Website und Versionsmetadaten aktualisiert.
+
 ### BearStack 0.48.0
 
 - Android-App **0.8.2** (versionCode 19): Favoritenstern im Personenbereich so klein wie „×“, ohne sichtbaren Schaltflächenhintergrund und mit weiterhin 48 dp Touchfläche. UI-PATCH im vorgesehenen Release 0.48.0; API unverändert.

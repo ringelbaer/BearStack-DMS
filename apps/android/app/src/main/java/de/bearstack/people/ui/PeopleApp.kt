@@ -22,6 +22,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.platform.ViewConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
@@ -34,6 +35,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.ImageLoader
 import coil.compose.AsyncImage
+import de.bearstack.people.R
 import de.bearstack.people.statistics.StatisticsPanel
 import de.bearstack.people.data.remote.Person
 import de.bearstack.people.people.*
@@ -114,7 +116,7 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                     Box {
                         IconButton(onClick={actions=true},enabled=enabled && !state.naming,
                             modifier=Modifier.semantics {contentDescription="Gruppenaktionen"}) {
-                            Text("…",style=MaterialTheme.typography.headlineSmall)
+                            Icon(painterResource(R.drawable.ic_more_horiz),contentDescription=null,modifier=Modifier.size(24.dp))
                         }
                         DropdownMenu(actions,{actions=false}) {
                             DropdownMenuItem(text={Text("Gruppe ignorieren")},onClick={actions=false;vm.ignore()},enabled=enabled && state.person!=null)
@@ -124,11 +126,11 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                     }
                     IconButton(onClick={help=true},enabled=held==null && !state.naming,
                         modifier=Modifier.semantics {contentDescription="Hilfe zum Benennen"}) {
-                        Text("?",style=MaterialTheme.typography.titleLarge)
+                        Icon(painterResource(R.drawable.ic_question_mark),contentDescription=null,modifier=Modifier.size(24.dp))
                     }
-                    FilledTonalIconButton(onClick=vm::startNaming,enabled=enabled && !state.naming && state.person!=null,
+                    IconButton(onClick=vm::startNaming,enabled=enabled && !state.naming && state.person!=null,
                         modifier=Modifier.semantics {contentDescription="Person benennen"}) {
-                        Text("✎",style=MaterialTheme.typography.headlineSmall)
+                        Icon(painterResource(R.drawable.ic_edit),contentDescription=null,modifier=Modifier.size(24.dp))
                     }
                 }
             }
@@ -151,8 +153,6 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                 }
                 if(statistics) StatisticsPanel(state.stats)
                 else state.person?.let { person ->
-                    Text("Unbenannte Person",style=MaterialTheme.typography.headlineSmall)
-                    Text("${person.offset+1}–${minOf(person.offset+4L,person.count)} von ${person.count} Gesichtern")
                     FaceGrid(person,enabled,vm.images,vm::image,onDetach=vm::detach,
                         onHold={ held=it;heldDismissed=false;zoom=0f },
                         onZoom={held=it;heldDismissed=false;zoom=0f;accessibleZoom=true},onZoomDrag=zoomDrag,onPrefetch=vm::prefetchOriginals)

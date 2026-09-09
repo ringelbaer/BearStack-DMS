@@ -23,7 +23,7 @@ import org.junit.Test
 class LoadingLayoutTest {
     @get:Rule val compose=createComposeRule()
 
-    @Test fun loadingKeepsHeadingFacesAndNavigationInPlace() = checkLoadingLayout(1f,false)
+    @Test fun loadingKeepsFacesAndNavigationInPlace() = checkLoadingLayout(1f,false)
 
     @Test fun loadingKeepsScrolledContentInPlaceWithLargeFont() = checkLoadingLayout(2f,true)
 
@@ -109,7 +109,7 @@ class LoadingLayoutTest {
             compose.waitUntil(10_000){!vm.state.value.busy && vm.state.value.person!=null}
             if(scrollToNavigation) compose.onNodeWithText("Weiter").performScrollTo()
             val progress=compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo))
-            val content=listOf(compose.onNodeWithText("Unbenannte Person"),compose.onNodeWithTag("face-grid"),
+            val content=listOf(compose.onNodeWithTag("face-grid"),
                 compose.onNodeWithText("Zurück"),compose.onNodeWithText("Weiter"))
             val bounds=content.map { it.getUnclippedBoundsInRoot() }
             progress.assertDoesNotExist()

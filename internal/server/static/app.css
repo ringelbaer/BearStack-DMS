@@ -3616,7 +3616,8 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 .person-edit-dialog { max-height: calc(100dvh - 32px); overflow-y: auto; }
 .app-dialog.person-edit-dialog { width: min(1000px,calc(100vw - 32px)); max-width: calc(100vw - 32px); }
 .person-dialog-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 1.25rem; }
-.person-dialog-fields { min-width: 0; }
+.person-dialog-fields { display: flex; flex-direction: column; min-width: 0; }
+.person-dialog-fields > .person-picker-field { display: flex; flex-direction: column; flex: 1; }
 .person-dialog-preview { position: relative; margin: 0; height: 400px; overflow: hidden; border-radius: .5rem; background: #111820; }
 .person-dialog-preview img { width: 100%; height: 100%; display: block; object-fit: contain; transform-origin: 0 0; }
 .person-dialog-preview p { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem; color: #fff; }
@@ -3629,8 +3630,8 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
   .person-edit-dialog footer button { min-width: 0; padding-inline: 8px; }
 }
 /* Keep dialog actions stationary when the input loses focus before a click. */
-.person-dialog-suggestions { height: 180px; }
-.person-edit-dialog .person-picker-popup { position: static; max-height: 180px; }
+.person-dialog-suggestions { position: relative; flex: 1; min-height: 180px; }
+.person-edit-dialog .person-picker-popup { position: absolute; inset: 0; max-height: 100%; }
 .person-edit-dialog [data-person-dialog-status]:empty { display: none; }
 
 /* Group photos keep the original and its face controls visible together. */
