@@ -655,6 +655,17 @@
   </a>
   
 </li>
+
+        <li class="md-nav__item">
+  <a href="#testmatrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Testmatrix
+      </span>
+    </span>
+  </a>
+
+</li>
       
         <li class="md-nav__item">
   <a href="#dependency-prufung" class="md-nav__link">
@@ -780,6 +791,17 @@
   </a>
   
 </li>
+
+        <li class="md-nav__item">
+  <a href="#testmatrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Testmatrix
+      </span>
+    </span>
+  </a>
+
+</li>
       
         <li class="md-nav__item">
   <a href="#dependency-prufung" class="md-nav__link">
@@ -875,6 +897,80 @@
 </span></code></pre></div>
 <p>Die Go-Tests decken Repository-Migrationen, Suche, Tags, benutzerdefinierte Felder, Suchfavoriten, Uploads, Auth, Berechtigungen, Audit-Logs, Dokumentverarbeitung, Fotoindex, Thumbnails, Worker und viele HTTP-Handler ab. JavaScript wird per <code>node --check</code> geprüft. Playwright-Smokes starten BearStack mit temporärer Konfiguration und prüfen zentrale Browser-Flows wie Dokumenten-Upload und Foto-Galerie.</p>
 <p>Reine Testhelfer bleiben in <code>_test.go</code>-Dateien. Ab 0.41.2 liegen auch die Helfer zum Vorbelegen der Einstellungs-Caches in <code>internal/server/test_helpers_test.go</code>. Mailimport-Tests rufen die gemeinsamen Anhangsfunktionen direkt auf; die ausschließlich in Tests genutzten PDF-Weiterleitungen sind entfernt. Absenderfilter, Größenlimit, Decodierung und sichere Dateinamen bleiben durch dieselben Prüfungen abgedeckt.</p>
+<h2 id="testmatrix">Testmatrix<a class="headerlink" href="#testmatrix" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Bereich</th>
+<th>Befehl</th>
+<th>Voraussetzung / Umfang</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend und Browser-DOM</td>
+<td><code>make test</code></td>
+<td>Go und Node; einschließlich fester Parserkorpora</td>
+</tr>
+<tr>
+<td>Browser-Integration</td>
+<td><code>make test-playwright</code></td>
+<td>Node, Playwright und Browser; temporärer Go-Server</td>
+</tr>
+<tr>
+<td>Parser-Korpora</td>
+<td><code>make test-parsers</code></td>
+<td>EXIF-IFDs, GPX-Abschnitte und XMP einschließlich defekter Eingaben</td>
+</tr>
+<tr>
+<td>Parser-Fuzzing</td>
+<td><code>make fuzz-parsers FUZZTIME=30s</code></td>
+<td>Zeitbudget je Parser, begrenzte Eingaben; gefundene Fehler als feste Regression übernehmen</td>
+</tr>
+<tr>
+<td>Faces-Dienst</td>
+<td><code>make test-faces PYTHON=/pfad/venv/bin/python</code></td>
+<td>Hashgesicherte <code>services/faces/requirements.txt</code>; echte Modelle optional über <code>BEARSTACK_TEST_FACE_MODELS_DIR</code></td>
+</tr>
+<tr>
+<td>Android Debug</td>
+<td><code>make test-android</code></td>
+<td>JDK 17 und Android-SDK; JVM-Tests, Lint, APK</td>
+</tr>
+<tr>
+<td>Android Release</td>
+<td><code>make test-android-release</code></td>
+<td>JVM-Tests, Release-Lint und minimierte R8-APK</td>
+</tr>
+<tr>
+<td>Android Debug / Go</td>
+<td><code>make test-android-integration</code></td>
+<td>Testemulator, <code>adb</code>, Python 3; vollständige Instrumentierung gegen temporären HTTPS-Server, Prüfung auf leere Ergebnisse</td>
+</tr>
+<tr>
+<td>Android Release / Go</td>
+<td><code>make test-android-release-integration</code></td>
+<td>Dedizierter Testemulator, <code>adb</code>, Python 3; externer UI-Smoke der R8-App für Login, Galerie, Fotoinfo, Wiederherstellung und Kontowechsel</td>
+</tr>
+</tbody>
+</table>
+<p>Android- und Python-Prüfungen bleiben eigene Jobs und machen normale Go-Builds nicht
+von diesen Laufzeitumgebungen abhängig. Der Release-Smoke verwendet die Property
+<code>bearstack.releaseSmoke=true</code>; ohne Produktions-Keystore nutzt nur diese Testvariante
+den lokalen Debug-Schlüssel. Die Testwerkzeuge laufen über adb/UIAutomator außerhalb
+des App-Prozesses, sodass die App mit den normalen R8-Regeln optimiert wird. Der Smoke
+setzt die App-Daten im dedizierten Testemulator zurück und schreibt ein JUnit-XML-Ergebnis;
+physische Geräte werden abgewiesen. Der Debug-Gerätelauf lehnt fehlende, leere,
+fehlgeschlagene und ausschließlich übersprungene Testergebnisse zusätzlich ab.</p>
+<p>Neue Kartenregressionen prüfen die erste Browserantwort nach einer vererbten Ordnersperre,
+den abbrechbaren und wiederaufnehmbaren Aufbau optionaler Indizes auf einer gefüllten
+Datenbank, die Nutzung des GPX-Inventars sowie Revisionen für Verschieben, Löschen,
+Rechte-, Zeit- und GPS-Änderungen. Unbeteiligte Ordner, Typen und Sichtbarkeiten müssen
+weiter aus dem warmen Cache bedient werden. Der Benchmark
+<code>go test ./internal/photos -run '^$' -bench '^BenchmarkPopulatedPhotoMapIndexUpgrade$' -benchtime=1x -benchmem</code>
+misst den Indexaufbau mit 100.000 vorhandenen GPS-Medien. <code>AppSessionTest</code> prüft
+Lesekonten und Kontowechsel ohne Personendatenbank samt getrennten Bildcaches und
+vollständigem Schließen alter HTTP-Ressourcen.</p>
 <p>Die Go-Anweisungsabdeckung lässt sich reproduzierbar messen:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./...<span class="w"> </span>-coverprofile<span class="o">=</span>/tmp/bearstack-coverage.out
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>go<span class="w"> </span>tool<span class="w"> </span>cover<span class="w"> </span>-func<span class="o">=</span>/tmp/bearstack-coverage.out

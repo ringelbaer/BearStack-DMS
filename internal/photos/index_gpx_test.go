@@ -183,3 +183,41 @@ func TestGPXInventoryCursorsRoundTripWithoutOffsetPaging(t *testing.T) {
 		}
 	}
 }
+
+func TestBrowserGPXUsesInventoryAndPreservesPendingFallback(t *testing.T) {
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "child"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	write := func(path string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(root, path), []byte(`<gpx><trkseg><trkpt lat="1" lon="2"/><trkpt lat="2" lon="3"/></trkseg></gpx>`), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("first.gpx")
+	write("child/nested.gpx")
+	l := newTestLibrary(t, root)
+	defer l.Close()
+	if _, err := l.RebuildIndex(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	write("unindexed.gpx") // Would be returned if a ready request still walked the filesystem.
+	list := func(recursive bool, want int) {
+		t.Helper()
+		result, err := l.List(context.Background(), ListOptions{IncludeMapData: true, Recursive: recursive})
+		if err != nil || len(result.GPXTracks) != want {
+			t.Fatalf("tracks=%d want=%d: %v", len(result.GPXTracks), want, err)
+		}
+	}
+	list(false, 1)
+	list(true, 2)
+	if err := os.WriteFile(filepath.Join(root, "child", AdminOnlyMarkerName), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	list(true, 1)
+	if _, err := l.index.db.Exec(`UPDATE photo_folder_scan SET gpx_scanned=0`); err != nil {
+		t.Fatal(err)
+	}
+	list(true, 2)
+}

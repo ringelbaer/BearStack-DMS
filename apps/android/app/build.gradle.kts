@@ -5,6 +5,7 @@ plugins {
     id("org.jetbrains.kotlin.kapt")
 }
 val signingPath = providers.environmentVariable("BEARSTACK_ANDROID_KEYSTORE").orNull
+val releaseSmoke = providers.gradleProperty("bearstack.releaseSmoke").orNull == "true"
 android {
     namespace = "de.bearstack.people"
     compileSdk = 36
@@ -31,6 +32,9 @@ android {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (signingPath != null) signingConfig = signingConfigs.getByName("privateRelease")
+            // Only the explicit release smoke build uses the local test key.
+            // Normal release packaging retains the production signing policy.
+            else if (releaseSmoke) signingConfig = signingConfigs.getByName("debug")
         }
     }
     buildFeatures { compose = true; buildConfig = true }

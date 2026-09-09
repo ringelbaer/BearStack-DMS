@@ -1,13 +1,12 @@
 package de.bearstack.people.people
 
+import de.bearstack.people.media.*
 import de.bearstack.people.text.*
 import de.bearstack.people.R
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
-import coil.memory.MemoryCache
-import coil.request.CachePolicy
 import coil.request.ImageRequest
 import de.bearstack.people.connection.*
 import de.bearstack.people.data.local.*
@@ -19,7 +18,6 @@ import de.bearstack.people.BuildConfig
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.json.JSONObject
-import okhttp3.OkHttpClient
 
 data class PeopleState(
     val connected: Boolean = false, val busy: Boolean = false, val person: Person? = null,
@@ -34,22 +32,23 @@ data class PeopleState(
     val mergeReview: Boolean = false, val mergeSuggestion: MergeSuggestion? = null,
     val showGallery: Boolean = false, val canManagePeople: Boolean = false,
 )
-class PeopleViewModel private constructor(application: Application, private val db: LabelingDatabase,
+class PeopleViewModel private constructor(application: Application, private val database: Lazy<LabelingDatabase>,
     initialRepository: PeopleRepository?) : AndroidViewModel(application) {
-    constructor(application: Application) : this(application, LabelingDatabase.open(application), null)
-    internal constructor(application: Application, database: LabelingDatabase) : this(application,database,null)
+    // A gallery-only session must not open the people queue's database.
+    private val db by database
+    constructor(application: Application) : this(application, lazy { LabelingDatabase.open(application) }, null)
+    internal constructor(application: Application, database: LabelingDatabase) : this(application,lazyOf(database),null)
+    internal constructor(application: Application, database: Lazy<LabelingDatabase>) : this(application,database,null)
     internal constructor(application: Application, database: LabelingDatabase, service: LabelingService, session: Session) :
-        this(application, database, PeopleRepository(database, service, session))
+        this(application, lazyOf(database), PeopleRepository(database, service, session))
     private val originalPreloader = WifiOriginalPreloader(application, viewModelScope)
-    private val store = ProfileStore(application)
+    private val session = AppSession(application, viewModelScope) { detachPeople() }
     private val mutable = MutableStateFlow(PeopleState())
     val state = mutable.asStateFlow()
     private var repository: PeopleRepository? = null
-    private var api: LabelingApi? = null
-    private var connectionClient: OkHttpClient? = null
-    var photos: de.bearstack.people.photos.PhotosController? = null; private set
-    var images: ImageLoader? = null; private set
-    private var profileToConfirm: Profile? = null
+    private val api get() = session.active?.people
+    val photos get() = session.active?.photos
+    val images: ImageLoader? get() = session.active?.images
     private val ignoreJobs = mutableMapOf<Long,Job>()
     private val undoRequests = mutableSetOf<Long>()
     private var inBackground = false
@@ -59,7 +58,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     private val preloads = mutableListOf<coil.request.Disposable>()
 
     init { task {
-        if (initialRepository == null) store.read()?.let { open(it, false) }
+        if (initialRepository == null) { if (session.restore()) attachPeople() }
         else {
             repository=initialRepository
             update { it.copy(connected=true) }
@@ -106,49 +105,19 @@ class PeopleViewModel private constructor(application: Application, private val 
         return failureText(e,pending)
     }
     fun connect(url: String, username: String, password: String) = task {
-        val profile = Profile(Connections.address(url).toString(),username.trim(),password)
-        val certificate = Connections.inspect(profile.url)
-        if (certificate != null) {
-            profileToConfirm = profile
-            update { it.copy(certificate=certificate) }
-        } else open(profile, true)
+        if (session.connect(url, username, password)) attachPeople()
+        update { it.copy(certificate=session.certificate) }
     }
     fun confirmCertificate() = task {
-        val profile = profileToConfirm ?: return@task
-        val certificate = state.value.certificate ?: return@task
-        open(profile.copy(certificate=certificate.encoded),true)
-        profileToConfirm = null
-        update { it.copy(certificate=null) }
+        if (session.confirmCertificate()) attachPeople()
+        update { it.copy(certificate=session.certificate) }
     }
-    fun cancelCertificate() { profileToConfirm=null; update { it.copy(certificate=null) } }
-    private suspend fun open(profile: Profile, save: Boolean) {
-        val client = Connections.client(profile)
-        val remote = LabelingApi(client, profile.url)
-        val galleryApi = PhotosApi(client,profile.url)
-        var gallerySession: PhotoSession? = null
-        val session = try {
-            gallerySession = try { galleryApi.session() } catch(e: ApiFailure) {
-                if(e.status != 404) throw e
-                null // Keep person management available on older servers.
-            }
-            if(gallerySession?.canManagePeople != false) remote.session() else null
-        } catch (e: Exception) {
-            // Cleanup must not replace a useful 401/403 error with a socket-close error.
-            runCatching { Connections.close(client) }
-            if(e is java.io.IOException && e !is ApiFailure) throw ConnectionAttemptException(ConnectionStage.SIGN_IN,e)
-            throw e
-        }
-        if (save) store.write(profile)
-        clearConnection()
-        api = remote
-        connectionClient = client
-        images = ImageLoader.Builder(getApplication()).okHttpClient(client).diskCachePolicy(CachePolicy.DISABLED)
-            .memoryCache { OriginalMemoryCache(MemoryCache.Builder(getApplication()).maxSizeBytes(16 * 1024 * 1024)
-                .weakReferencesEnabled(false).build()) }.build()
-        repository = session?.let { PeopleRepository(db,remote,it) }
-        gallerySession?.let { photos = de.bearstack.people.photos.PhotosController(viewModelScope,galleryApi,it,getApplication()) }
-        update { it.copy(connected=true,certificate=null,showGallery=photos!=null,canManagePeople=session!=null) }
-        if(session == null) return
+    fun cancelCertificate() { session.cancelCertificate(); update { it.copy(certificate=null) } }
+    private suspend fun attachPeople() {
+        val active = session.active ?: return
+        repository = active.peopleSession?.let { PeopleRepository(db, active.people, it) }
+        update { it.copy(connected=true,certificate=null,showGallery=photos!=null,canManagePeople=repository!=null) }
+        if (repository == null) return
         collectStatistics()
         val pending = repository!!.pending()
         if (pending != null) {
@@ -508,30 +477,21 @@ class PeopleViewModel private constructor(application: Application, private val 
     fun newPass(skipped: Boolean) { if(editable()) task { repository!!.newPass(skipped); loadNext() } }
     fun openGallery() { if(!state.value.busy && photos!=null) update { it.copy(showGallery=true) } }
     fun openPeople() { if(!state.value.busy && repository!=null) update { it.copy(showGallery=false) } }
-    fun switchConnection() { if(!state.value.busy) task { repository?.restoreIgnores(); clearConnection(); store.clear() } }
-    private fun detachConnection(): Pair<ImageLoader?,OkHttpClient?> {
+    fun switchConnection() { if(!state.value.busy) task { repository?.restoreIgnores(); session.disconnect(forget=true) } }
+    private fun detachPeople() {
         ignoreJobs.values.forEach {it.cancel()};ignoreJobs.clear()
         undoRequests.clear()
         search?.cancel(); directorySearch?.cancel(); searchPreload?.cancel(); statsJob?.cancel()
         preloads.forEach { it.dispose() }; preloads.clear()
-        photos?.close(); photos=null
-        val resources=images to connectionClient
-        images=null;api=null;repository=null;connectionClient=null
+        repository=null
         update { PeopleState(busy=it.busy) }
-        return resources
     }
-    private suspend fun closeConnection(resources: Pair<ImageLoader?,OkHttpClient?>) = withContext(NonCancellable + Dispatchers.IO) {
-        try { resources.first?.memoryCache?.clear(); resources.first?.shutdown() }
-        finally { resources.second?.let {Connections.close(it)} }
-    }
-    private suspend fun clearConnection() {
-        closeConnection(detachConnection())
-    }
+    private suspend fun clearConnection() = session.disconnect()
     override fun onCleared() {
-        val resources=detachConnection()
+        val resources=session.detach()
         // viewModelScope is already cancelled here; resource cleanup must finish independently.
         CoroutineScope(Dispatchers.IO).launch {
-            try { closeConnection(resources) } finally { db.close() }
+            try { resources?.close() } finally { if (database.isInitialized()) database.value.close() }
         }
         super.onCleared()
     }

@@ -73,9 +73,18 @@ func TestBrowserPhotoRouteInvalidatesAndSeparatesVisibilityAndSearch(t *testing.
 	}
 	opts.Path = ""
 	public, err := l.List(ctx, opts)
-	if err != nil || len(public.RoutePoints) != 0 {
-		t.Fatalf("private route exposed: %+v %v", public.RoutePoints, err)
+	if err != nil || len(public.RoutePoints) != 0 || len(public.Media) != 0 || public.Total != 0 {
+		t.Fatalf("private route/markers exposed: %+v %v", public, err)
 	}
+	if _, err := l.index.db.Exec(`UPDATE media_index SET admin_only=0`); err != nil {
+		t.Fatal(err)
+	}
+	opts.Query = "gps:true"
+	public, err = l.List(ctx, opts)
+	if err != nil || len(public.Media) != 0 || len(public.RoutePoints) != 0 {
+		t.Fatalf("private search map exposed: %+v %v", public, err)
+	}
+	opts.Query = ""
 	opts.IncludeAdminOnly = true
 	admin, err := l.List(ctx, opts)
 	if err != nil || len(admin.RoutePoints) != 1 || admin.RoutePoints[0].Count != 100 {

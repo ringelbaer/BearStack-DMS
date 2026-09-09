@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +12,57 @@ import (
 
 	"bearstack/internal/photos"
 )
+
+func TestBrowserMapFirstResponseAfterProtectingNestedFolderHidesMarkers(t *testing.T) {
+	s := faceTestServer(t)
+	root := s.photos.Root()
+	image, err := os.ReadFile(filepath.Join(root, "one.jpg"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(root, "2026", "trip", "private-parent", "nested")
+	if err = os.MkdirAll(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(filepath.Join(dir, "secret-location.jpg"), image, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.photos.RebuildIndex(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	db, err := sql.Open("sqlite", s.photos.DBPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if _, err = db.Exec(`UPDATE media_index SET latitude=51.123456,longitude=12.654321 WHERE name='secret-location.jpg'`); err != nil {
+		t.Fatal(err)
+	}
+	// Warm route and marker metadata while public, then protect only the parent.
+	w := labelRequest(s, "GET", "/photos?path=2026/trip&view=map", "reader", "")
+	if w.Code != 200 || !strings.Contains(w.Body.String(), "secret-location.jpg") {
+		t.Fatal("public marker fixture missing")
+	}
+	if err = os.WriteFile(filepath.Join(root, "2026", "trip", "private-parent", photos.AdminOnlyMarkerName), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, query := range []string{"", "&type=image"} {
+		// Each request models stale metadata before its first permission refresh.
+		if _, err = db.Exec(`UPDATE media_index SET admin_only=0`); err != nil {
+			t.Fatal(err)
+		}
+		w = labelRequest(s, "GET", "/photos?path=2026/trip&view=map"+query, "reader", "")
+		if w.Code != 200 {
+			t.Fatalf("browser status: %d", w.Code)
+		}
+		for _, secret := range []string{"secret-location.jpg", "private-parent/nested", fmt.Sprint(51.123456), fmt.Sprint(12.654321)} {
+			if strings.Contains(w.Body.String(), secret) {
+				i := strings.Index(w.Body.String(), secret)
+				t.Errorf("first browser response (%s) exposed %q: %s", query, secret, w.Body.String()[max(0, i-160):min(w.Body.Len(), i+200)])
+			}
+		}
+	}
+}
 
 func TestBrowserPhotoRouteHTTPUsesSharedCache(t *testing.T) {
 	s := faceTestServer(t)

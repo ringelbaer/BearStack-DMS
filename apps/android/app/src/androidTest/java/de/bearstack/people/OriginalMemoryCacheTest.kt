@@ -1,5 +1,6 @@
 package de.bearstack.people
 
+import de.bearstack.people.media.*
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import androidx.test.platform.app.InstrumentationRegistry
@@ -9,7 +10,6 @@ import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import coil.request.ErrorResult
 import coil.request.SuccessResult
-import de.bearstack.people.people.*
 import de.bearstack.people.ui.originalPhotoRequest
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow

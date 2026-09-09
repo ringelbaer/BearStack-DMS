@@ -1122,7 +1122,10 @@ Gruppierungsradius und Sichtbarkeit bestimmen den Cache-Schlüssel. Suchabfragen
 werden berechnet, aber zunächst nicht dauerhaft gespeichert.</p>
 <p>Eine transaktionale Indexrevision erfasst Einfügen, Löschen sowie Änderungen an
 GPS, Aufnahme-/Änderungszeit, Ordnerzuordnung, Medientyp und Sichtbarkeit. Änderungen
-in Unterordnern invalidieren dadurch auch übergeordnete Routen. Ordnerzeitstempel
+in Unterordnern invalidieren dadurch auch übergeordnete Routen. Foto-Schema 27 trennt
+diese Revisionen nach Ordner, Medientyp und Sichtbarkeit: unbeteiligte Routen bleiben
+warm; Verschieben und Löschen invalidieren weiterhin alle betroffenen Auswahlen.
+Ordnerzeitstempel
 sind keine Grundlage der Invalidierung. Vor jedem Abruf bleiben die aktuellen
 Zugriffsprüfungen aktiv; während der Berechnung geänderte Revisionen werden verworfen.</p>
 <p>Gleichzeitige Cache-Abrufe derselben Route teilen die nötige Neuberechnung. Erst wenn niemand mehr
@@ -1253,25 +1256,49 @@ adaptiven Icon liegt jetzt innerhalb des runden Beschnitts.</p>
 <h2 id="api-und-datenmigration">API und Datenmigration<a class="headerlink" href="#api-und-datenmigration" title="Permanent link">&para;</a></h2>
 <p>Der gemeinsame Vertrag steht in <a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml"><code>openapi.yaml</code></a>, unter <code>/api/photos/labeling/v1</code>. Anfragen verwenden HTTP Basic über HTTPS und JSON. Die Sitzung meldet <code>named_people</code> ab BearStack 0.43.0. <code>GET /people?after=…&amp;upper=…</code> liefert benannte Personen; die Aktionen <code>rename</code>, <code>unassign</code> und <code>favorite</code> erweitern den bestehenden Aktionsendpunkt ohne Protokollwechsel. Ab BearStack 0.49.0 meldet die Sitzung <code>merge_suggestions</code>; <code>GET /merge-suggestions/next</code> liefert ein Paar oder <code>suggestion: null</code>. <code>accept_merge</code> und <code>reject_merge</code> am Aktionsendpunkt benötigen zusätzlich <code>suggestion_id</code>, <code>target_id</code> und <code>target_revision</code>. Operationen tragen eine zufällige ID, Datenbestandskennung, Quellrevision und bei Zuordnung oder Gruppenentscheidung eine Zielrevision. Die Antwort enthält tatsächliche Gesichtszahlen und betroffene Gruppen-IDs.</p>
 <p>Die Labeling-Tabellen bestehen seit Foto-Schema 19. BearStack 0.43.0 migriert kompatibel auf Schema 24 und ergänzt einen partiellen Index für benannte Personen; Namen, Gesichter, Revisionen und Quittungen bleiben erhalten. Das Room-Schema der App bleibt unverändert. Datenbanktrigger erhöhen Revisionen auch bei Web- und Hintergrundänderungen. Mutation und Quittung werden in derselben SQLite-Transaktion gespeichert. Quittungen sind kontogebunden und bleiben bis zum Löschen der Gesichtserkennungsdaten erhalten. Dieser Reset erzeugt eine neue Datenbestandskennung. Die Foto-Datenbank einschließlich dieser Tabellen gemeinsam sichern und wiederherstellen. Bestehende Web-Endpunkte bleiben erhalten; ausgeschlossene geschützte Fotos werden auch über diese API nicht angeboten.</p>
+<p>Die Anwendungssitzung liegt in <code>connection/AppSession.kt</code>: Anmeldung, gespeichertes Profil,
+Zertifikatsbestätigung, HTTP-Client, Bildcache und Galerie werden dort gemeinsam verwaltet.
+<code>PeopleViewModel</code> verwaltet die Personenwarteschlange und ihre Aktionen. Die Personendatenbank
+wird erst für eine Sitzung mit Personenrechten geöffnet; reine Lesekonten benötigen sie nicht. Gemeinsame
+Originalbild-Caches und WLAN-Vorlader liegen im Paket <code>media</code>. Kontowechsel stoppt
+zuerst die alten Feature-Aufgaben und schließt anschließend deren Sitzungsressourcen;
+eine fehlgeschlagene Anmeldung ersetzt keine bestehende Verbindung.</p>
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
 <p>Die leere Übergangsabhängigkeit <code>androidx.room:room-ktx</code> wird nicht mehr separat eingebunden. Ihre APIs liegen im bereits verwendeten <code>room-runtime:2.8.4</code>; Room-Compiler, Coroutines und Datenbankschema bleiben unverändert. Vor einem Upgrade auf AGP 10 müssen die Legacy-DSL-/Kotlin-Optionen in <code>gradle.properties</code> und die kapt-Anbindung migriert werden. Siehe <a href="https://developer.android.com/jetpack/androidx/releases/room">Room-Releases</a> und <a href="https://developer.android.com/build/releases/gradle-plugin-roadmap">AGP-Migrationsplan</a>.</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># JVM-Tests, Lint und Debug-APK</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>make<span class="w"> </span>test-android
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Mit gestartetem Emulator: Gesten, Room, Keystore</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>apps/android/gradlew<span class="w"> </span>-p<span class="w"> </span>apps/android<span class="w"> </span>:app:connectedDebugAndroidTest
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># JVM-Tests, Lint und minimierte Release-APK (R8)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>make<span class="w"> </span>test-android-release
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Mit genau einem gestarteten Emulator und adb im PATH:</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># isolierter echter Go-HTTPS-Server, Zertifikat, Aktionen, parallele Webänderung</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>make<span class="w"> </span>test-android-integration
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="c1"># Server inkl. Revisionen, Rechte, geschützte Fotos, Rollback, &gt;500 Gesichter</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>make<span class="w"> </span>test-go
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Release-UI-Smoke gegen die minimierte App und den temporären Go-Server</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>make<span class="w"> </span>test-android-release-integration
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c1"># Mit gestartetem Emulator: Gesten, Room, Keystore</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>apps/android/gradlew<span class="w"> </span>-p<span class="w"> </span>apps/android<span class="w"> </span>:app:connectedDebugAndroidTest
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># Mit genau einem gestarteten Emulator und adb im PATH:</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="c1"># isolierter echter Go-HTTPS-Server, Zertifikat, Aktionen, parallele Webänderung</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>make<span class="w"> </span>test-android-integration
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="c1"># Server inkl. Revisionen, Rechte, geschützte Fotos, Rollback, &gt;500 Gesichter</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>make<span class="w"> </span>test-go
 </span></code></pre></div>
 <p>Compose-Regressionstests prüfen beim Vor- und Zurückblättern, dass Gesichtsraster und Navigation vor, während und nach dem Laden an derselben Position bleiben, auch bei doppelter Schriftgröße und gescrolltem Inhalt. Während des Ladens bleiben die Blätteraktionen gesperrt. Weitere Regressionen prüfen ablaufende Rücknahmen bei geöffnetem Namens- und Duplikatdialog, das anschließende Speichern jeder ursprünglichen Gruppe sowie die Wiederherstellung beim Hintergrundwechsel. Ein UI-Test ab Android 11 prüft außerdem Dialogidentität, Eingabefokus, sichtbare Bildschirmtastatur und weiteren Textinput beim Ändern und Ausblenden der Rückgängig-Meldung.</p>
 <p>Cachetests prüfen tatsächliche HTTPS-Anfragezahlen und die Wiederverwendung desselben dekodierten Bitmaps für unterschiedliche Gesichter, den festen Drei-Minuten-Ablauf, Fehlerantworten, Cacheleeren, Speicherbegrenzung und alte Server ohne Bildkennung.</p>
 <p>Zusätzliche Regressionen prüfen die vollständige Personenliste über mehrere Seiten, Umbenennen, Favoritenwechsel, Entfernen des letzten Gesichts, große Schrift, Halten/Wischen/Abbruch und TalkBack-Vorschau. Repository- und ViewModel-Tests sichern verlorene Antworten, Konflikte und den Erhalt der Zuordnungswarteschlange ab. Der echte HTTPS-Integrationstest führt die neuen Verwaltungsaktionen gegen den Go-Server aus. Ab 0.7.0 prüfen zusätzliche Tests Textsuche jenseits der ersten Seite, verspätete Suchantworten, Bestätigen/Abbrechen, fortlaufendes Nachladen über 80 Gesichter, Scrollposition nach Favorisieren und Revisionskonflikte beim Anfügen.</p>
 <p>Ab App 0.9.0 prüfen Regressionen einzelne Gruppenentscheidungen, sichtbare Buttons bei doppelter Schriftgröße, beide Portrait-Vorschauen, doppelte Klicks, Konflikte, verlorene Antworten und Fehler beim Nachladen. Repository-Neustarts erhalten offene Entscheidungen und die Benennen-Bildseite. Die HTTPS-Integration prüft beide Entscheidungen samt Originalen, Vorschaubildern und Quittungswiederholung gegen isolierte Go-Instanzen hinter URL-Präfixen. Servertests prüfen zusätzlich Sichtbarkeit, Rollback, Vergleichsgesichter jenseits der ersten Bildseite und gleichzeitiges Annehmen/Ablehnen.</p>
+<p>Der Release-Smoke benötigt Python 3, adb und einen dedizierten Testemulator. Er prüft
+Anmeldung, Galerie, Fotoinformationen, Profilwiederherstellung und Kontowechsel über
+die normale Oberfläche. Die Testwerkzeuge laufen außerhalb des App-Prozesses;
+R8 benötigt dafür keine Keep-Regeln oder zusätzlichen Testbibliotheken in der App.
+Der Lauf setzt die App-Daten im Testemulator vor und nach der Prüfung zurück und
+schreibt <code>app/build/reports/release-smoke.xml</code>. Physische Geräte werden abgewiesen.</p>
+<p>Nur <code>-Pbearstack.releaseSmoke=true</code> erlaubt ohne privaten Keystore eine Signierung
+mit dem lokalen Debug-Schlüssel. Normale Release-Builds behalten die konfigurierte
+Produktionssignierung. Die vollständigen Compose-/Repository-Gerätetests laufen
+über das Debug-Ziel; fehlende oder ausschließlich übersprungene Tests sowie
+Fehler werden zusätzlich anhand der XML-Ergebnisse zurückgewiesen.</p>
 <p>Der Integrationstest öffnet ausschließlich <code>127.0.0.1:18787</code>, nutzt temporäre Daten und führt <code>adb reverse</code> aus. Er greift auf keine installierte BearStack-Instanz zu. Ohne Testadresse wird dieser zusätzliche instrumentierte Test übersprungen.</p>
 <p>Vor einer privaten Verteilung zusätzlich die komplette Bedienung auf dem eigenen Gerät mit TalkBack prüfen, besonders Namensdialog/Tastatur und die Originalfoto-Vorschau. Ein Gerätewechsel, Energiesparmodus und herstellerspezifische Prozessbeendigung lassen sich nicht vollständig durch einen Emulator ersetzen.</p>
 <h2 id="privaten-release-signieren">Privaten Release signieren<a class="headerlink" href="#privaten-release-signieren" title="Permanent link">&para;</a></h2>

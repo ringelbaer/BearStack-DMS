@@ -41,6 +41,10 @@ Die gemeinsame Gruppierung von Fotorouten verarbeitet die chronologisch geordnet
 Der GPX-Dateiindex wird ab Schema 26 automatisch beim regulären Foto-Indexlauf ergänzt, ohne Tracks zu parsen oder den vorhandenen Fotoindex zurückzusetzen. Die API `/api/photos/v1/map/tracks` liefert maximal 32 Dateimetadaten pro Cursor-Abfrage; `/api/photos/v1/map/track` verwendet den gemeinsamen GPX-Parser und liefert pro Ausschnitt höchstens 8.192 Koordinaten. Neu privat markierte Ordner und symbolische Links bleiben geschützt. Die App hält höchstens 96 Trackeinträge, bis zu 256 ausgewählte Namen und insgesamt 8.192 angezeigte GPX-Koordinaten sowie optional 4.096 Fotorouten-Koordinaten; überholte Anfragen werden abgebrochen.
 
 
+Die Browserkarte prüft aktuelle Schutzmarkierungen bereits vor dem Lesen ihrer Medienliste. So bleiben auch Namen, Pfade und Koordinaten einzelner Marker in der ersten Antwort nach einer Ordnersperre verborgen. Für GPX verwendet sie denselben Dateiindex wie die native API und lädt Kandidaten in Paketen von höchstens 32 Einträgen. Nur diese Tracks werden bei Bedarf geöffnet; die bisherigen Byte-, Punkt- und Antwortlimits gelten weiter. Solange der GPX-Backfill noch läuft, bleibt der bestehende Dateisystemlauf erhalten.
+
+Große optionale Kartenindizes werden bei vorhandenen Fotobeständen nach dem Start im Hintergrund aufgebaut. Die 30-Sekunden-Frist für das Basisschema begrenzt diesen Aufbau nicht; SQLite lagert Sortierdaten in temporäre Dateien aus. Galerie-Lesezugriffe bleiben verfügbar, Kartenanfragen warten mit ihrem Anfragekontext. Beim Herunterfahren wird der Aufbau abgebrochen und beim nächsten Start sicher fortgesetzt. Ein Aufbaufehler wird bei Kartenanfragen als nicht verfügbar gemeldet und beim nächsten Start erneut versucht.
+
 ### Serverseitiger Fotorouten-Cache
 
 Browserkarte und native Karten-API verwenden denselben serverseitigen Cache der
@@ -48,7 +52,12 @@ vollständigen gruppierten Fotoroute als JSON unter `<Cache-Verzeichnis>/photo-r
 Abruf werden Kartenausschnitt und Punktlimit angewendet. Ordner, Radius, Medientyp
 und Sichtbarkeit erhalten getrennte Cache-Schlüssel; beliebige Suchabfragen bleiben
 zunächst ohne dauerhafte Cache-Datei. Eine transaktionale Indexrevision invalidiert
-auch Änderungen an GPS, Aufnahmezeit und Sichtbarkeit in Unterordnern. Gleiche
+auch Änderungen an GPS, Aufnahmezeit und Sichtbarkeit in Unterordnern. Ab Foto-Schema 27
+werden Revisionen nach Ordner, Medientyp und Sichtbarkeit getrennt geführt. Betroffene
+Vorfahren sowie beide Seiten einer Verschiebung werden invalidiert; Änderungen in
+anderen Teilbäumen, an anderen Medientypen oder ausschließlich privaten Fotos lassen
+unbeteiligte Routen weiter im Cache. Löschrevisionen bleiben erhalten, auch wenn der
+Ordner danach leer ist. Die bisherige globale Revisionskennung wird einmalig ersetzt. Gleiche
 Berechnungen werden zusammengefasst und Cache-Dateien atomar ersetzt. Format und
 Algorithmus haben eigene Versionen. Die [Android-Anleitung](android.md#karten)
 beschreibt Speichergrenzen, Fehlerbehandlung und Zugriffsprüfung.

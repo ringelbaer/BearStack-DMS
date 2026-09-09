@@ -26,7 +26,7 @@ var (
 const (
 	indexSchemaSetupTimeout = 30 * time.Second
 	photoSchemaComponent    = "photos"
-	photoSchemaVersion      = 26
+	photoSchemaVersion      = 27
 )
 
 type photoSchemaMigration struct {
@@ -65,6 +65,7 @@ var photoSchemaMigrations = []photoSchemaMigration{
 	{Version: 24, Name: "named people cursor index"},
 	{Version: 25, Name: "face quality and resumable reconciliation"},
 	{Version: 26, Name: "indexed GPX inventory", Table: "photo_folder_scan", Column: "gpx_scanned", SQL: `ALTER TABLE photo_folder_scan ADD COLUMN gpx_scanned INTEGER NOT NULL DEFAULT 0`},
+	{Version: 27, Name: "scoped photo route revisions"},
 }
 
 func openIndexDB(path string) (*sql.DB, string, error) {
@@ -283,9 +284,18 @@ func openIndexDB(path string) (*sql.DB, string, error) {
 			return nil, "", err
 		}
 	}
-	if err := ensurePhotoMapIndexes(ctx, db); err != nil {
+	// Empty indexes are cheap to prepare. Existing libraries build these
+	// optional, potentially large indexes after startup, outside this deadline.
+	var populated bool
+	if err := db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM media_index LIMIT 1)`).Scan(&populated); err != nil {
 		_ = db.Close()
 		return nil, "", err
+	}
+	if !populated {
+		if err := ensurePhotoMapIndexes(ctx, db); err != nil {
+			_ = db.Close()
+			return nil, "", err
+		}
 	}
 	if err := setupPhotoRouteRevision(ctx, db); err != nil {
 		_ = db.Close()
@@ -307,6 +317,10 @@ func runPhotoSchemaMigrations(ctx context.Context, db *sql.DB) error {
 		current = 1
 	}
 	for _, migration := range photoSchemaMigrations {
+		if migration.Version == 27 {
+			// Installed transactionally below, after the base schema is ready.
+			continue
+		}
 		if current >= migration.Version {
 			continue
 		}

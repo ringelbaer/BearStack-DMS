@@ -146,7 +146,9 @@ paths:
         A page may be empty with has_next or has_previous true. Use cursor to continue forwards or
         previous_cursor with before=1 to continue backwards. File IDs survive metadata updates.
         ready=false means a normal index scan still needs to backfill GPX inventory; existing photo
-        map coverage remains available. Inventory queries are independent of photo search terms.
+        map coverage remains available. The browser reuses this inventory and lazily parses tracks;
+        it retains its filesystem fallback until inventory backfill is complete.
+        Inventory queries are independent of photo search terms.
       parameters:
       - name: path
         in: query
@@ -190,7 +192,10 @@ paths:
         map track resolution and successive time windows, before clipping to the viewport.
         Current folder privacy rules are checked in bounded batches for maps, map media and
         photo routes, including newly private subfolders before the next regular index scan.
-        No originals are read. Without full-text search, input streams in index order; full-text
+        No originals are read. Optional map indexes on populated databases build after startup,
+        outside the base-schema timeout, with file-backed sorting. Map requests wait cancellably
+        for completion; regular gallery reads remain available. Interrupted builds retry on restart.
+        Without full-text search, input streams in index order; full-text
         matches are read once and sorted with file-backed temporary storage. Aggregation and
         geometry storage are bounded; large SQL-supported selections are not truncated. Complex
         postfilters retain the explicit search_too_broad error rather than returning a partial route.
@@ -201,7 +206,10 @@ paths:
         Complete grouped routes without q are cached server-side as versioned JSON in the
         configured cache directory, shared with the browser map independently of its media page. Cache scope includes library, recursive folder, radius,
         media type and visibility. A transactional index revision invalidates GPS, timestamps,
-        folder, type and access changes, including descendants. Identical builds are shared;
+        folder, type and access changes, including descendants. Schema 27 scopes revisions by
+        directory, media type and visibility; unrelated subtrees and selections retain their caches.
+        Moves invalidate both source and destination, and deletion revisions survive empty folders.
+        Existing global revision tokens are replaced once. Identical builds are shared;
         completed files replace older revisions atomically. Format and algorithm are versioned
         independently. Viewport and point limit apply only on retrieval. Search results are not
         persisted. The cache retains at most 256 files and 512 MiB; larger routes or unavailable

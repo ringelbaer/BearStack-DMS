@@ -216,7 +216,7 @@ func (l *Library) photoRouteSource(ctx context.Context, query indexMediaOptions,
 // their accumulated output and retry when the revision changes or a file is
 // repaired; partial geometry must never escape a failed attempt.
 func (l *Library) consumePhotoRoute(ctx context.Context, query indexMediaOptions, radius int, emit func(routeCluster) error) error {
-	revision, err := l.photoRouteRevision(ctx)
+	revision, err := l.scopedPhotoRouteRevision(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func (l *Library) consumePhotoRoute(ctx context.Context, query indexMediaOptions
 	if err != nil {
 		return err
 	}
-	current, err := l.photoRouteRevision(ctx)
+	current, err := l.scopedPhotoRouteRevision(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -409,7 +409,7 @@ func (l *Library) buildPhotoRouteCache(ctx context.Context, name string, header 
 	if err = file.Close(); err != nil {
 		return unavailable(err)
 	}
-	current, err := l.photoRouteRevision(ctx)
+	current, err := l.scopedPhotoRouteRevision(ctx, query)
 	if err != nil {
 		return err
 	}

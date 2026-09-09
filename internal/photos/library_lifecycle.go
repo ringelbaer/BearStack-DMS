@@ -69,6 +69,9 @@ func New(root, cacheDir, dbPath string, pageSize int) (*Library, error) {
 		_ = library.Close()
 		return nil, err
 	}
+	if index != nil {
+		index.startMapIndexes()
+	}
 	library.faceThumbnails.start()
 	return library, nil
 }

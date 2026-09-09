@@ -4,7 +4,7 @@ import android.net.ConnectivityManager
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assume.assumeTrue
 
-import de.bearstack.people.people.WifiOriginalPreloader
+import de.bearstack.people.media.WifiOriginalPreloader
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.*

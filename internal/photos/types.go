@@ -102,6 +102,9 @@ type ListOptions struct {
 	SkipFolders    bool
 	SkipBlogs      bool
 	SkipMedia      bool
+	// Internal request-local marker: List refreshed permissions before reading
+	// browser media, so route construction can reuse that same check.
+	mapVisibilityChecked bool
 }
 
 type Listing struct {

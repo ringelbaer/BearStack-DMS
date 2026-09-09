@@ -1,4 +1,4 @@
-package de.bearstack.people.people
+package de.bearstack.people.media
 
 import android.content.Context
 import android.net.ConnectivityManager

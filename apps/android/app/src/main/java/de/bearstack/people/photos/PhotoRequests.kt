@@ -7,7 +7,7 @@ import coil.size.Scale
 import de.bearstack.people.data.remote.Photo
 import de.bearstack.people.data.remote.PhotoSession
 import de.bearstack.people.data.remote.PhotosService
-import de.bearstack.people.people.ORIGINAL_CACHE_PREFIX
+import de.bearstack.people.media.ORIGINAL_CACHE_PREFIX
 
 internal fun photoPreviewRequest(context: Context, photo: Photo, service: PhotosService, session: PhotoSession): ImageRequest {
     val url=service.thumbnail(photo,session.largePreviewSize)

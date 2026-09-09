@@ -30,7 +30,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Scale
 import de.bearstack.people.data.remote.FaceBounds
-import de.bearstack.people.people.ORIGINAL_CACHE_PREFIX
+import de.bearstack.people.media.ORIGINAL_CACHE_PREFIX
 import android.content.Context
 import coil.request.CachePolicy
 

@@ -53,6 +53,39 @@ Die Go-Tests decken Repository-Migrationen, Suche, Tags, benutzerdefinierte Feld
 
 Reine Testhelfer bleiben in `_test.go`-Dateien. Ab 0.41.2 liegen auch die Helfer zum Vorbelegen der Einstellungs-Caches in `internal/server/test_helpers_test.go`. Mailimport-Tests rufen die gemeinsamen Anhangsfunktionen direkt auf; die ausschließlich in Tests genutzten PDF-Weiterleitungen sind entfernt. Absenderfilter, Größenlimit, Decodierung und sichere Dateinamen bleiben durch dieselben Prüfungen abgedeckt.
 
+## Testmatrix
+
+| Bereich | Befehl | Voraussetzung / Umfang |
+| --- | --- | --- |
+| Backend und Browser-DOM | `make test` | Go und Node; einschließlich fester Parserkorpora |
+| Browser-Integration | `make test-playwright` | Node, Playwright und Browser; temporärer Go-Server |
+| Parser-Korpora | `make test-parsers` | EXIF-IFDs, GPX-Abschnitte und XMP einschließlich defekter Eingaben |
+| Parser-Fuzzing | `make fuzz-parsers FUZZTIME=30s` | Zeitbudget je Parser, begrenzte Eingaben; gefundene Fehler als feste Regression übernehmen |
+| Faces-Dienst | `make test-faces PYTHON=/pfad/venv/bin/python` | Hashgesicherte `services/faces/requirements.txt`; echte Modelle optional über `BEARSTACK_TEST_FACE_MODELS_DIR` |
+| Android Debug | `make test-android` | JDK 17 und Android-SDK; JVM-Tests, Lint, APK |
+| Android Release | `make test-android-release` | JVM-Tests, Release-Lint und minimierte R8-APK |
+| Android Debug / Go | `make test-android-integration` | Testemulator, `adb`, Python 3; vollständige Instrumentierung gegen temporären HTTPS-Server, Prüfung auf leere Ergebnisse |
+| Android Release / Go | `make test-android-release-integration` | Dedizierter Testemulator, `adb`, Python 3; externer UI-Smoke der R8-App für Login, Galerie, Fotoinfo, Wiederherstellung und Kontowechsel |
+
+Android- und Python-Prüfungen bleiben eigene Jobs und machen normale Go-Builds nicht
+von diesen Laufzeitumgebungen abhängig. Der Release-Smoke verwendet die Property
+`bearstack.releaseSmoke=true`; ohne Produktions-Keystore nutzt nur diese Testvariante
+den lokalen Debug-Schlüssel. Die Testwerkzeuge laufen über adb/UIAutomator außerhalb
+des App-Prozesses, sodass die App mit den normalen R8-Regeln optimiert wird. Der Smoke
+setzt die App-Daten im dedizierten Testemulator zurück und schreibt ein JUnit-XML-Ergebnis;
+physische Geräte werden abgewiesen. Der Debug-Gerätelauf lehnt fehlende, leere,
+fehlgeschlagene und ausschließlich übersprungene Testergebnisse zusätzlich ab.
+
+Neue Kartenregressionen prüfen die erste Browserantwort nach einer vererbten Ordnersperre,
+den abbrechbaren und wiederaufnehmbaren Aufbau optionaler Indizes auf einer gefüllten
+Datenbank, die Nutzung des GPX-Inventars sowie Revisionen für Verschieben, Löschen,
+Rechte-, Zeit- und GPS-Änderungen. Unbeteiligte Ordner, Typen und Sichtbarkeiten müssen
+weiter aus dem warmen Cache bedient werden. Der Benchmark
+`go test ./internal/photos -run '^$' -bench '^BenchmarkPopulatedPhotoMapIndexUpgrade$' -benchtime=1x -benchmem`
+misst den Indexaufbau mit 100.000 vorhandenen GPS-Medien. `AppSessionTest` prüft
+Lesekonten und Kontowechsel ohne Personendatenbank samt getrennten Bildcaches und
+vollständigem Schließen alter HTTP-Ressourcen.
+
 Die Go-Anweisungsabdeckung lässt sich reproduzierbar messen:
 
 ```sh

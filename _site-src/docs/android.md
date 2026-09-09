@@ -105,7 +105,10 @@ werden berechnet, aber zunächst nicht dauerhaft gespeichert.
 
 Eine transaktionale Indexrevision erfasst Einfügen, Löschen sowie Änderungen an
 GPS, Aufnahme-/Änderungszeit, Ordnerzuordnung, Medientyp und Sichtbarkeit. Änderungen
-in Unterordnern invalidieren dadurch auch übergeordnete Routen. Ordnerzeitstempel
+in Unterordnern invalidieren dadurch auch übergeordnete Routen. Foto-Schema 27 trennt
+diese Revisionen nach Ordner, Medientyp und Sichtbarkeit: unbeteiligte Routen bleiben
+warm; Verschieben und Löschen invalidieren weiterhin alle betroffenen Auswahlen.
+Ordnerzeitstempel
 sind keine Grundlage der Invalidierung. Vor jedem Abruf bleiben die aktuellen
 Zugriffsprüfungen aktiv; während der Berechnung geänderte Revisionen werden verworfen.
 
@@ -287,6 +290,14 @@ Der gemeinsame Vertrag steht in [`openapi.yaml`](https://github.com/ringelbaer/B
 
 Die Labeling-Tabellen bestehen seit Foto-Schema 19. BearStack 0.43.0 migriert kompatibel auf Schema 24 und ergänzt einen partiellen Index für benannte Personen; Namen, Gesichter, Revisionen und Quittungen bleiben erhalten. Das Room-Schema der App bleibt unverändert. Datenbanktrigger erhöhen Revisionen auch bei Web- und Hintergrundänderungen. Mutation und Quittung werden in derselben SQLite-Transaktion gespeichert. Quittungen sind kontogebunden und bleiben bis zum Löschen der Gesichtserkennungsdaten erhalten. Dieser Reset erzeugt eine neue Datenbestandskennung. Die Foto-Datenbank einschließlich dieser Tabellen gemeinsam sichern und wiederherstellen. Bestehende Web-Endpunkte bleiben erhalten; ausgeschlossene geschützte Fotos werden auch über diese API nicht angeboten.
 
+Die Anwendungssitzung liegt in `connection/AppSession.kt`: Anmeldung, gespeichertes Profil,
+Zertifikatsbestätigung, HTTP-Client, Bildcache und Galerie werden dort gemeinsam verwaltet.
+`PeopleViewModel` verwaltet die Personenwarteschlange und ihre Aktionen. Die Personendatenbank
+wird erst für eine Sitzung mit Personenrechten geöffnet; reine Lesekonten benötigen sie nicht. Gemeinsame
+Originalbild-Caches und WLAN-Vorlader liegen im Paket `media`. Kontowechsel stoppt
+zuerst die alten Feature-Aufgaben und schließt anschließend deren Sitzungsressourcen;
+eine fehlgeschlagene Anmeldung ersetzt keine bestehende Verbindung.
+
 ## Tests
 
 Die leere Übergangsabhängigkeit `androidx.room:room-ktx` wird nicht mehr separat eingebunden. Ihre APIs liegen im bereits verwendeten `room-runtime:2.8.4`; Room-Compiler, Coroutines und Datenbankschema bleiben unverändert. Vor einem Upgrade auf AGP 10 müssen die Legacy-DSL-/Kotlin-Optionen in `gradle.properties` und die kapt-Anbindung migriert werden. Siehe [Room-Releases](https://developer.android.com/jetpack/androidx/releases/room) und [AGP-Migrationsplan](https://developer.android.com/build/releases/gradle-plugin-roadmap).
@@ -294,6 +305,12 @@ Die leere Übergangsabhängigkeit `androidx.room:room-ktx` wird nicht mehr separ
 ```sh
 # JVM-Tests, Lint und Debug-APK
 make test-android
+
+# JVM-Tests, Lint und minimierte Release-APK (R8)
+make test-android-release
+
+# Release-UI-Smoke gegen die minimierte App und den temporären Go-Server
+make test-android-release-integration
 
 # Mit gestartetem Emulator: Gesten, Room, Keystore
 apps/android/gradlew -p apps/android :app:connectedDebugAndroidTest
@@ -313,6 +330,19 @@ Cachetests prüfen tatsächliche HTTPS-Anfragezahlen und die Wiederverwendung de
 Zusätzliche Regressionen prüfen die vollständige Personenliste über mehrere Seiten, Umbenennen, Favoritenwechsel, Entfernen des letzten Gesichts, große Schrift, Halten/Wischen/Abbruch und TalkBack-Vorschau. Repository- und ViewModel-Tests sichern verlorene Antworten, Konflikte und den Erhalt der Zuordnungswarteschlange ab. Der echte HTTPS-Integrationstest führt die neuen Verwaltungsaktionen gegen den Go-Server aus. Ab 0.7.0 prüfen zusätzliche Tests Textsuche jenseits der ersten Seite, verspätete Suchantworten, Bestätigen/Abbrechen, fortlaufendes Nachladen über 80 Gesichter, Scrollposition nach Favorisieren und Revisionskonflikte beim Anfügen.
 
 Ab App 0.9.0 prüfen Regressionen einzelne Gruppenentscheidungen, sichtbare Buttons bei doppelter Schriftgröße, beide Portrait-Vorschauen, doppelte Klicks, Konflikte, verlorene Antworten und Fehler beim Nachladen. Repository-Neustarts erhalten offene Entscheidungen und die Benennen-Bildseite. Die HTTPS-Integration prüft beide Entscheidungen samt Originalen, Vorschaubildern und Quittungswiederholung gegen isolierte Go-Instanzen hinter URL-Präfixen. Servertests prüfen zusätzlich Sichtbarkeit, Rollback, Vergleichsgesichter jenseits der ersten Bildseite und gleichzeitiges Annehmen/Ablehnen.
+
+Der Release-Smoke benötigt Python 3, adb und einen dedizierten Testemulator. Er prüft
+Anmeldung, Galerie, Fotoinformationen, Profilwiederherstellung und Kontowechsel über
+die normale Oberfläche. Die Testwerkzeuge laufen außerhalb des App-Prozesses;
+R8 benötigt dafür keine Keep-Regeln oder zusätzlichen Testbibliotheken in der App.
+Der Lauf setzt die App-Daten im Testemulator vor und nach der Prüfung zurück und
+schreibt `app/build/reports/release-smoke.xml`. Physische Geräte werden abgewiesen.
+
+Nur `-Pbearstack.releaseSmoke=true` erlaubt ohne privaten Keystore eine Signierung
+mit dem lokalen Debug-Schlüssel. Normale Release-Builds behalten die konfigurierte
+Produktionssignierung. Die vollständigen Compose-/Repository-Gerätetests laufen
+über das Debug-Ziel; fehlende oder ausschließlich übersprungene Tests sowie
+Fehler werden zusätzlich anhand der XML-Ergebnisse zurückgewiesen.
 
 Der Integrationstest öffnet ausschließlich `127.0.0.1:18787`, nutzt temporäre Daten und führt `adb reverse` aus. Er greift auf keine installierte BearStack-Instanz zu. Ohne Testadresse wird dieser zusätzliche instrumentierte Test übersprungen.
 

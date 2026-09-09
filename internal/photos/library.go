@@ -63,6 +63,25 @@ func (l *Library) List(ctx context.Context, opts ListOptions) (Listing, error) {
 	)
 
 	listing := newListing(rel, opts)
+	// Map markers must use the same fresh permissions as the grouped route.
+	// Refresh before reading media: filtering only the route leaves stale marker
+	// names, paths and coordinates in the browser response.
+	if opts.IncludeMapData && !opts.IncludeAdminOnly && !opts.FullFilesystem && l.index.available() {
+		private, err := l.FolderAdminOnly(rel)
+		if err != nil {
+			return Listing{}, err
+		}
+		if private {
+			return Listing{}, errAdminOnly
+		}
+		if err := l.index.waitMapIndexes(ctx); err != nil {
+			return Listing{}, err
+		}
+		if err := l.refreshMapVisibility(ctx, rel); err != nil {
+			return Listing{}, err
+		}
+		opts.mapVisibilityChecked = true
+	}
 	if !opts.FullFilesystem {
 		finishIndex := StartListTraceStep(ctx, "photos.library.index_listing", ListTraceString("path", rel))
 		indexed, err := l.listFromIndex(ctx, rel, opts, &listing)
@@ -339,12 +358,36 @@ func (l *Library) populateIndexedGPXTracks(ctx context.Context, abs string, opts
 	if !opts.IncludeMapData {
 		return nil
 	}
-	tracks, err := l.collectGPXTracks(ctx, abs, opts.Recursive, opts.IncludeAdminOnly)
-	if err != nil {
-		return err
+	cursor := ""
+	for {
+		page, err := l.gpxFiles(ctx, listing.Path, cursor, opts.IncludeAdminOnly, false, opts.Recursive)
+		if err != nil {
+			return err
+		}
+		if !page.Ready {
+			// Existing installations retain tracks while the ordinary scanner
+			// backfills the optional inventory. Once ready, never walk photos.
+			tracks, err := l.collectGPXTracks(ctx, abs, opts.Recursive, opts.IncludeAdminOnly)
+			listing.GPXTracks = tracks
+			return err
+		}
+		for _, file := range page.Files {
+			track, err := l.gpxFromPathInfo(ctx, file.Path, nil)
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			if err == nil {
+				listing.addGPXTrack(track)
+			}
+			if len(listing.GPXTracks) >= gpxListingMaxTracks || listing.gpxPointCount >= gpxListingMaxPoints {
+				return nil
+			}
+		}
+		if !page.HasNext {
+			return nil
+		}
+		cursor = page.Cursor
 	}
-	listing.GPXTracks = append(listing.GPXTracks, tracks...)
-	return nil
 }
 
 func (l *Library) collectGPXTracks(ctx context.Context, abs string, recursive, includeAdminOnly bool) ([]GPXTrack, error) {

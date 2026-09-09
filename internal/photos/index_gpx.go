@@ -73,14 +73,14 @@ func (s *photoIndexStore) replaceGPXDirectory(ctx context.Context, directory str
 // GPXFiles uses an ID cursor, so deep pages do not scan or sort photo metadata.
 // A second, current marker check prevents newly private folders leaking names.
 func (l *Library) GPXFiles(ctx context.Context, path, cursor string, includeAdminOnly bool) (GPXFilePage, error) {
-	return l.gpxFiles(ctx, path, cursor, includeAdminOnly, false)
+	return l.gpxFiles(ctx, path, cursor, includeAdminOnly, false, true)
 }
 
 func (l *Library) GPXFilesBefore(ctx context.Context, path, cursor string, includeAdminOnly bool) (GPXFilePage, error) {
-	return l.gpxFiles(ctx, path, cursor, includeAdminOnly, true)
+	return l.gpxFiles(ctx, path, cursor, includeAdminOnly, true, true)
 }
 
-func (l *Library) gpxFiles(ctx context.Context, path, cursor string, includeAdminOnly, before bool) (GPXFilePage, error) {
+func (l *Library) gpxFiles(ctx context.Context, path, cursor string, includeAdminOnly, before, recursive bool) (GPXFilePage, error) {
 	result := GPXFilePage{Files: []GPXFile{}}
 	rel, err := CleanPath(path)
 	if err != nil {
@@ -116,7 +116,12 @@ func (l *Library) gpxFiles(ctx context.Context, path, cursor string, includeAdmi
 	args := []any{after}
 	scanWhere := "1=1"
 	var scanArgs []any
-	if rel != "" {
+	if !recursive {
+		where += " AND directory=?"
+		args = append(args, rel)
+		scanWhere = "path=?"
+		scanArgs = []any{rel}
+	} else if rel != "" {
 		start, end := prefixRange(rel + "/")
 		where += " AND path>=? AND path<?"
 		args = append(args, start, end)

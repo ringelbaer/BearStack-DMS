@@ -86,7 +86,9 @@ object Connections {
         val client = builder(trust(offer = { cert = it })).build()
         try {
             // This request is deliberately unauthenticated, including on a newly observed certificate.
-            client.newCall(Request.Builder().url(base.resolve("api/photos/labeling/v1/session")!!).build()).execute().use { }
+            // Inspect the shared photo endpoint; a 404 on an older server still
+            // supplies the TLS certificate and leaves legacy negotiation intact.
+            client.newCall(Request.Builder().url(base.resolve("api/photos/v1/session")!!).build()).execute().use { }
             cert?.let {
                 CertificateOffer(Base64.encodeToString(it.encoded, Base64.NO_WRAP),
                     MessageDigest.getInstance("SHA-256").digest(it.encoded).joinToString(":") { b -> "%02X".format(b) },

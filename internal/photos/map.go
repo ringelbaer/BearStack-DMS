@@ -236,6 +236,9 @@ func (l *Library) mapQuery(ctx context.Context, opts ListOptions, viewport MapBo
 	if !l.index.available() {
 		return indexMediaOptions{}, ErrMapIndexUnavailable
 	}
+	if err := l.index.waitMapIndexes(ctx); err != nil {
+		return indexMediaOptions{}, err
+	}
 	state, err := l.indexedListingPathState(ctx, rel, opts.IncludeAdminOnly, false)
 	if err != nil {
 		return indexMediaOptions{}, err
@@ -243,7 +246,7 @@ func (l *Library) mapQuery(ctx context.Context, opts ListOptions, viewport MapBo
 	if !state.Covered {
 		return indexMediaOptions{}, ErrMapIndexUnavailable
 	}
-	if !opts.IncludeAdminOnly {
+	if !opts.IncludeAdminOnly && !opts.mapVisibilityChecked {
 		if err := l.refreshMapVisibility(ctx, rel); err != nil {
 			return indexMediaOptions{}, err
 		}

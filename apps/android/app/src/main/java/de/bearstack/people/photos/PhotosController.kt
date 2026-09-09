@@ -2,7 +2,7 @@ package de.bearstack.people.photos
 
 import de.bearstack.people.text.*
 import de.bearstack.people.data.remote.*
-import de.bearstack.people.people.WifiOriginalPreloader
+import de.bearstack.people.media.WifiOriginalPreloader
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 

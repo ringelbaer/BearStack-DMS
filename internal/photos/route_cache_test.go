@@ -14,6 +14,12 @@ import (
 	"time"
 )
 
+func (l *Library) photoRouteRevision(ctx context.Context) (photoRouteRevision, error) {
+	var revision photoRouteRevision
+	err := l.index.db.QueryRowContext(ctx, `SELECT instance,revision FROM photo_route_revision WHERE id=1`).Scan(&revision.Instance, &revision.Number)
+	return revision, err
+}
+
 func seedCachedPhotoRoute(t testing.TB, l *Library, count int) {
 	t.Helper()
 	_, err := l.index.db.Exec(`WITH RECURSIVE seq(n) AS (VALUES(0) UNION ALL SELECT n+1 FROM seq WHERE n<?)
@@ -229,7 +235,7 @@ func TestPhotoRouteCacheSeparatesParametersSkipsSearchAndRepairsCorruption(t *te
 	if err != nil {
 		t.Fatal(err)
 	}
-	revision, _ := l.photoRouteRevision(ctx)
+	revision, _ := l.scopedPhotoRouteRevision(ctx, query)
 	name, _ := l.photoRouteCacheKey(query, 1000, revision)
 	bytes, err := os.ReadFile(name)
 	if err != nil {
@@ -395,7 +401,7 @@ func TestPhotoRouteCacheDoesNotPublishStaleRevision(t *testing.T) {
 	if e := json.Unmarshal(bytes, &stored); e != nil {
 		t.Fatal(e)
 	}
-	current, _ := l.photoRouteRevision(ctx)
+	current, _ := l.scopedPhotoRouteRevision(ctx, indexMediaOptions{})
 	if stored.Header.Revision != current {
 		t.Fatal("published stale revision")
 	}
@@ -447,7 +453,7 @@ func TestPhotoRouteCacheCancellationAtEndDoesNotInvalidateValidFile(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	revision, err := l.photoRouteRevision(ctx)
+	revision, err := l.scopedPhotoRouteRevision(ctx, query)
 	if err != nil {
 		t.Fatal(err)
 	}
