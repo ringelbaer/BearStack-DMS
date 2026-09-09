@@ -17,6 +17,7 @@ import numpy as np
 MODEL = "yunet-2023mar-sface-2021dec-v1"
 MAX_BYTES = 8 * 1024 * 1024
 MAX_FACES = 256
+LARGE_FACE_EDGE = 320
 MIN_REFERENCE_PIXELS = 48
 MIN_REFERENCE_SHARPNESS = 20
 
@@ -41,7 +42,58 @@ class Engine:
                 raise RuntimeError("Model checksum mismatch")
         cv2.setNumThreads(1)
         self.detector = cv2.FaceDetectorYN.create(str(directory / "face_detection_yunet_2023mar.onnx"), "", (320, 320), 0.9, 0.3, 5000)
+        # Keep separate input buffers: alternating sizes on one detector forces
+        # expensive network reshaping on every image despite the small overview.
+        self.overview_detector = cv2.FaceDetectorYN.create(str(directory / "face_detection_yunet_2023mar.onnx"), "", (320, 320), 0.9, 0.3, 5000)
         self.recognizer = cv2.FaceRecognizerSF.create(str(directory / "face_recognition_sface_2021dec.onnx"), "")
+
+    def detect_faces(self, image):
+        height, width = image.shape[:2]
+        self.detector.setInputSize((width, height))
+        _, detected = self.detector.detect(image)
+        faces = [] if detected is None else list(detected)
+        if len(faces) > MAX_FACES:
+            raise ValueError("Too many faces")
+        if max(width, height) <= LARGE_FACE_EDGE:
+            return faces
+
+        # YuNet's training favors roughly 10–300 px faces. Keep the native pass
+        # for small faces and add one cheap overview pass for large portraits,
+        # even when the native pass already found other people in the image.
+        scale = LARGE_FACE_EDGE / max(width, height)
+        small_width, small_height = max(1, round(width * scale)), max(1, round(height * scale))
+        small = cv2.resize(image, (small_width, small_height), interpolation=cv2.INTER_AREA)
+        # Very wide/tall images still need a valid network input in both axes.
+        small = cv2.copyMakeBorder(small, 0, max(0, 32-small_height), 0,
+                                   max(0, 32-small_width), cv2.BORDER_CONSTANT)
+        self.overview_detector.setInputSize((small.shape[1], small.shape[0]))
+        _, overview = self.overview_detector.detect(small)
+        if overview is None:
+            return faces
+        if len(overview) > MAX_FACES:
+            raise ValueError("Too many faces")
+        overview = overview.copy()
+        # Scale the box AND all five landmarks back to the original input.
+        # Separate ratios account for rounding on the shorter image edge.
+        overview[:, 0:14:2] *= width / small_width
+        overview[:, 1:14:2] *= height / small_height
+        for face in overview:
+            duplicate = False
+            for existing in faces:
+                left, top = np.maximum(face[:2], existing[:2])
+                right, bottom = np.minimum(face[:2] + face[2:4], existing[:2] + existing[2:4])
+                intersection = max(0.0, right-left) * max(0.0, bottom-top)
+                union = face[2] * face[3] + existing[2] * existing[3] - intersection
+                if union > 0 and intersection / union > .3:
+                    duplicate = True
+                    break
+            # Preserve native boxes/landmarks so existing detections, overrides
+            # and their original-resolution recognition quality remain stable.
+            if not duplicate:
+                faces.append(face)
+                if len(faces) > MAX_FACES:
+                    raise ValueError("Too many faces")
+        return faces
 
     def analyze(self, body):
         if not body or len(body) > MAX_BYTES:
@@ -52,10 +104,9 @@ class Engine:
         height, width = image.shape[:2]
         if max(height, width) > 1600:
             raise ValueError("Image exceeds 1600 pixels")
-        self.detector.setInputSize((width, height))
-        _, detections = self.detector.detect(image)
+        detections = self.detect_faces(image)
         result = []
-        if detections is not None:
+        if detections:
             if len(detections) > MAX_FACES:
                 raise ValueError("Too many faces")
             for face in detections:

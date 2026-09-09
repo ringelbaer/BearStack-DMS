@@ -374,6 +374,17 @@ globalen Erkennungslauf und begrenzt Warten und Analyse zusammen auf zwei Minute
 `GET /photos/faces?path=…` liefert die vorhandenen Gesichter mit denselben Rechten;
 ein noch nicht analysiertes Foto liefert eine leere Gesichtsliste.
 
+**Große Gesichter in Porträts:** YuNet kann sehr große Gesichter in der
+1600-Pixel-Vorlage übersehen. Der Gesichtsdienst ergänzt deshalb einen zweiten
+Suchlauf mit höchstens 320 Pixeln Kantenlänge, auch wenn die erste Suche bereits
+andere Personen gefunden hat. Bereits gefundene Regionen bleiben erhalten;
+überlappende zusätzliche Treffer werden zusammengefasst. Rahmen und Augen-/Nasen-/
+Mundpunkte werden auf die größere Vorlage zurückgerechnet. Zuordnung und
+Qualitätsbewertung verwenden deren Bilddetails, nicht die verkleinerte Übersicht.
+Modell, Vergleichsvektoren und Erkennungsschwelle bleiben kompatibel. Nach einem
+Update muss der Gesichtsdienst neu gebaut bzw. gestartet und das betroffene Foto
+über **Gesichter erkennen und zuordnen** erneut verarbeitet werden.
+
 **Fehlendes Gesicht manuell einrahmen:** In der Foto-Info öffnet **Gesicht
 einrahmen** das ausgerichtete Foto. Mit Maus oder Finger einen Rahmen ziehen,
 einen neuen Namen eingeben oder eine vorhandene Person auswählen und **Gesicht

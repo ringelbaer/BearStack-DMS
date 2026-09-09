@@ -7,7 +7,7 @@ import threading
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from server import Engine, MODEL, Server, MAX_BYTES, recognition_quality
+from server import Engine, MODEL, Server, MAX_BYTES, MAX_FACES, recognition_quality
 import cv2
 import numpy as np
 
@@ -71,6 +71,52 @@ class QualityTests(unittest.TestCase):
         image = np.zeros((112, 112, 3), dtype=np.uint8)
         image[10:-10, 10:-10] = 128
         self.assertFalse(recognition_quality(image, 100)["reference_eligible"])
+
+
+class DetectionScaleTests(unittest.TestCase):
+    def engine(self, native, overview):
+        class Detector:
+            def __init__(self):
+                self.sizes = []
+            def setInputSize(self, size):
+                self.size = size
+            def detect(self, image):
+                self.sizes.append(self.size)
+                return None, native if len(self.sizes) == 1 else overview
+        engine = Engine.__new__(Engine)
+        engine.detector = Detector()
+        engine.overview_detector = engine.detector
+        return engine
+
+    def test_overview_maps_all_landmarks_and_keeps_native_detections(self):
+        native = np.array([[100, 100, 30, 40, 110, 110, 120, 110, 115, 120, 110, 130, 120, 130, .95]], dtype=np.float32)
+        duplicate = native.copy()
+        duplicate[:, 0:14:2] *= 320 / 1600
+        duplicate[:, 1:14:2] *= 213 / 1066
+        large = np.array([[150, 50, 90, 110, 175, 80, 205, 80, 190, 100, 180, 130, 200, 130, .93]], dtype=np.float32)
+        engine = self.engine(native, np.concatenate([duplicate, large]))
+        faces = engine.detect_faces(np.zeros((1066, 1600, 3), dtype=np.uint8))
+        self.assertEqual(engine.detector.sizes, [(1600, 1066), (320, 213)])
+        self.assertEqual(len(faces), 2)
+        np.testing.assert_array_equal(faces[0], native[0])
+        expected = large[0].copy()
+        expected[0:14:2] *= 5
+        expected[1:14:2] *= 1066 / 213
+        np.testing.assert_allclose(faces[1], expected)
+        np.testing.assert_array_equal(large[0, :4], [150, 50, 90, 110])
+
+    def test_no_redundant_pass_for_small_inputs(self):
+        engine = self.engine(None, None)
+        self.assertEqual(engine.detect_faces(np.zeros((213, 320, 3), dtype=np.uint8)), [])
+        self.assertEqual(engine.detector.sizes, [(320, 213)])
+
+    def test_narrow_overview_is_padded_and_limits_are_preserved(self):
+        engine = self.engine(None, None)
+        self.assertEqual(engine.detect_faces(np.zeros((80, 1600, 3), dtype=np.uint8)), [])
+        self.assertEqual(engine.detector.sizes, [(1600, 80), (320, 32)])
+        for native, overview in [(np.zeros((MAX_FACES+1, 15)), None), (None, np.zeros((MAX_FACES+1, 15)))]:
+            with self.assertRaisesRegex(ValueError, "Too many faces"):
+                self.engine(native, overview).detect_faces(np.zeros((512, 512, 3), dtype=np.uint8))
 
 
 @unittest.skipUnless(os.environ.get("BEARSTACK_TEST_FACE_MODELS_DIR"), "Set BEARSTACK_TEST_FACE_MODELS_DIR for real-model tests")
@@ -140,6 +186,27 @@ class ModelTests(unittest.TestCase):
         baseline, rotated = self.analyze(self.image), self.analyze(tilted)
         self.assertEqual(len(rotated), 1)
         self.assertGreater(float(np.array(baseline[0]["embedding"]) @ np.array(rotated[0]["embedding"])), 0.55)
+
+    def test_large_portrait_and_mixed_face_sizes(self):
+        # Derived in memory from the public fixture; no private photos in tests.
+        portrait = cv2.resize(self.image[30:210, 140:320], (1024, 1024), interpolation=cv2.INTER_CUBIC)
+        self.engine.detector.setInputSize((1024, 1024))
+        _, native = self.engine.detector.detect(portrait)
+        self.assertTrue(native is None or len(native) == 0)
+        faces = self.analyze(portrait)
+        self.assertEqual(len(faces), 1)
+        self.assertGreater(faces[0]["quality"]["face_pixels"], 300)
+        self.assertTrue(faces[0]["quality"]["reference_eligible"])
+        baseline = np.array(self.analyze(self.image)[0]["embedding"])
+        self.assertGreater(float(baseline @ np.array(faces[0]["embedding"])), .55)
+        mixed = np.zeros((1024, 1536, 3), dtype=np.uint8)
+        mixed[:, :1024] = portrait
+        mixed[256:768, 1024:] = self.image
+        faces = self.analyze(mixed)
+        self.assertEqual(len(faces), 2)
+        pixels = sorted(face["quality"]["face_pixels"] for face in faces)
+        self.assertLess(pixels[0], 150)
+        self.assertGreater(pixels[1], 300)
 
     def test_checksum_failure(self):
         import tempfile

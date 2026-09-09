@@ -26,7 +26,12 @@ paths:
   /v1/analyze:
     post:
       description: Upright JPEG; max 8 MiB, 1600 px edge, 256 faces. No file paths
-        or URLs.
+        or URLs. Images larger than 320 pixels also receive a bounded 320-pixel
+        overview detection pass to recover large portraits. Native detections take
+        precedence over overlapping overview detections (IoU greater than 0.3).
+        Boxes and all landmarks are mapped back before alignment and embedding
+        extraction from the supplied full-resolution image. Confidence threshold
+        remains 0.9; model ID and embedding space are unchanged.
       requestBody:
         required: true
         content:

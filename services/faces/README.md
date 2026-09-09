@@ -6,6 +6,18 @@ upright JPEG bytes and returns bounded face boxes and normalized 128-dimensional
 vectors. No filesystem paths or external image URLs are accepted. Python release artifacts
 are pinned with pip-enforced SHA-256 hashes in `requirements.txt`.
 
+Detection runs at the supplied resolution and, for inputs larger than 320 pixels,
+also on a 320-pixel overview. YuNet's documented training scale is approximately
+10–300 face pixels, so the overview recovers large portraits while the first pass
+retains small faces. It runs even when other faces were already found. Overlapping
+candidates (IoU > 0.3) are suppressed in favor of the original pass. All five
+landmarks and boxes are mapped back using the actual width/height scale factors;
+SFace alignment, embeddings and quality use the original supplied image. The
+extra pass processes at most 320 × 320 pixels. Confidence stays at 0.9; model ID,
+weights and embedding compatibility are unchanged. Rebuild/restart this service
+and request analysis again for photos previously processed without detections.
+With Compose: `docker compose --profile faces up -d --build faces`.
+
 Responses include additive `quality` metadata: the shorter detected face side in
 input pixels, central aligned-crop Laplacian sharpness, and `reference_eligible`.
 The current engineering floors are 48 face pixels and sharpness 20. Weak faces

@@ -2260,7 +2260,10 @@ paths:
       description: >-
         Requires photos.edit and a configured local inference service. Processes only
         the requested image using the same orientation, refinement and conservative
-        grouping as the background worker. Preserves one-to-one matched manual
+        grouping as the background worker. Updated inference services additionally
+        use a small overview detection pass for large portrait faces, retaining
+        full-resolution alignment and the existing embedding space.
+        Preserves one-to-one matched manual
         corrections, ignored faces and favorites. Does not enable background processing
         or scan the full gallery. The request waits for the shared per-image analysis
         slot and is bounded to two minutes including waiting. Client cancellation
