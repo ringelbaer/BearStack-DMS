@@ -57,6 +57,14 @@ func TestAndroidLabelingFixture(t *testing.T) {
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/", s.Handler())
+	galleryServer := faceTestServer(t)
+	if err := os.WriteFile(filepath.Join(galleryServer.photos.Root(), "story.md"), []byte("# Gallery story\nA read-only gallery."), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := galleryServer.photos.RebuildIndex(ctx); err != nil {
+		t.Fatal(err)
+	}
+	mux.Handle("/gallery/", http.StripPrefix("/gallery", galleryServer.Handler()))
 	for _, action := range []string{"accept", "reject"} {
 		mergeServer, _ := mergeSuggestionServer(t)
 		prefix := "/merges-" + action

@@ -2,6 +2,15 @@
 package server
 
 var photoRouteSpecs = []routeSpec{
+	{pattern: "GET /api/photos/v1/session", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoCatalogSession},
+	{pattern: "GET /api/photos/v1/browse", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoCatalog},
+	{pattern: "GET /api/photos/v1/map", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoCatalogMap},
+	{pattern: "GET /api/photos/v1/map/media", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoMapMedia},
+	{pattern: "GET /api/photos/v1/media/info", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoCatalogInfo},
+	{pattern: "GET /api/photos/v1/media", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoMedia},
+	{pattern: "GET /api/photos/v1/thumbnail", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoThumbnail},
+	{pattern: "POST /api/photos/v1/thumbnail/status", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoThumbnailStatus},
+	{pattern: "GET /api/photos/v1/blog", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoCatalogBlog},
 	{pattern: "GET /photos/people/merge-suggestions", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceMergeSuggestions},
 	{pattern: "POST /photos/people/merge-suggestions/{id}/{action}", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceMergeSuggestionAction},
 	{pattern: "GET /photos/people/groups", capabilities: authCapPhotosEdit, handler: (*Server).handleGroupPhotos},

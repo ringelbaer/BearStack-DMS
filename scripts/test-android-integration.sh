@@ -22,4 +22,4 @@ done
 if ! rg -q 'HTTPS fixture ready' "$fixture_dir/server.log"; then cat "$fixture_dir/server.log"; exit 1; fi
 adb reverse tcp:18787 tcp:18787
 "$repo_dir/apps/android/gradlew" -p "$repo_dir/apps/android" :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.labelingUrl=https://127.0.0.1:18787/
+  -Pandroid.testInstrumentationRunnerArguments.labelingUrl=https://127.0.0.1:18787/ "$@"

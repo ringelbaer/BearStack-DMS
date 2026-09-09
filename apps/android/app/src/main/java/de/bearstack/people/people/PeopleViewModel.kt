@@ -1,5 +1,7 @@
 package de.bearstack.people.people
 
+import de.bearstack.people.text.*
+import de.bearstack.people.R
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,7 +23,7 @@ import okhttp3.OkHttpClient
 
 data class PeopleState(
     val connected: Boolean = false, val busy: Boolean = false, val person: Person? = null,
-    val error: String? = null, val certificate: CertificateOffer? = null,
+    val error: UiText? = null, val certificate: CertificateOffer? = null,
     val naming: Boolean = false, val name: String = "", val suggestions: List<Person> = emptyList(),
     val duplicates: List<Person> = emptyList(), val undoIgnores: List<Long> = emptyList(), val unresolved: Boolean = false,
     val stats: List<Statistics> = emptyList(), val skipped: Int = 0, val canGoBack: Boolean = false,
@@ -30,6 +32,7 @@ data class PeopleState(
     val selectedPerson: Person? = null, val namedQuery: String = "", val loadedNamedQuery: String = "",
     val namedSearch: Boolean = false, val removeFace: Long? = null, val removeRevision: Long = 0,
     val mergeReview: Boolean = false, val mergeSuggestion: MergeSuggestion? = null,
+    val showGallery: Boolean = false, val canManagePeople: Boolean = false,
 )
 class PeopleViewModel private constructor(application: Application, private val db: LabelingDatabase,
     initialRepository: PeopleRepository?) : AndroidViewModel(application) {
@@ -43,6 +46,8 @@ class PeopleViewModel private constructor(application: Application, private val 
     val state = mutable.asStateFlow()
     private var repository: PeopleRepository? = null
     private var api: LabelingApi? = null
+    private var connectionClient: OkHttpClient? = null
+    var photos: de.bearstack.people.photos.PhotosController? = null; private set
     var images: ImageLoader? = null; private set
     private var profileToConfirm: Profile? = null
     private val ignoreJobs = mutableMapOf<Long,Job>()
@@ -83,7 +88,7 @@ class PeopleViewModel private constructor(application: Application, private val 
                         runCatching {
                             val repo = repository ?: return@runCatching
                             if (repo.api.session().scope != repo.scope) {
-                                clearConnection(); update { it.copy(error="Der Datenbestand wurde geändert. Bitte neu verbinden.") }
+                                clearConnection(); update { it.copy(error=UiText(R.string.error_scope_changed)) }
                             } else if(state.value.mergeReview) loadMergeSuggestion()
                             else if(state.value.directory) refreshSelectedPerson() else loadNext()
                         }
@@ -94,12 +99,11 @@ class PeopleViewModel private constructor(application: Application, private val 
             } finally { update { it.copy(busy=false) } }
         }
     }
-    private fun message(e: Exception, pending: Boolean = false): String {
+    private fun message(e: Exception, pending: Boolean = false): UiText {
         connectionDiagnostic(e,pending)?.let { diagnostic ->
             if (BuildConfig.DEBUG) Log.w("BearStackConnection", "stage=${diagnostic.stage} code=${diagnostic.code}")
-            return diagnostic.text
         }
-        return if(e is ApiFailure) e.message.orEmpty() else e.message ?: "Die Aktion konnte nicht abgeschlossen werden."
+        return failureText(e,pending)
     }
     fun connect(url: String, username: String, password: String) = task {
         val profile = Profile(Connections.address(url).toString(),username.trim(),password)
@@ -120,7 +124,15 @@ class PeopleViewModel private constructor(application: Application, private val 
     private suspend fun open(profile: Profile, save: Boolean) {
         val client = Connections.client(profile)
         val remote = LabelingApi(client, profile.url)
-        val session = try { remote.session() } catch (e: Exception) {
+        val galleryApi = PhotosApi(client,profile.url)
+        var gallerySession: PhotoSession? = null
+        val session = try {
+            gallerySession = try { galleryApi.session() } catch(e: ApiFailure) {
+                if(e.status != 404) throw e
+                null // Keep person management available on older servers.
+            }
+            if(gallerySession?.canManagePeople != false) remote.session() else null
+        } catch (e: Exception) {
             // Cleanup must not replace a useful 401/403 error with a socket-close error.
             runCatching { Connections.close(client) }
             if(e is java.io.IOException && e !is ApiFailure) throw ConnectionAttemptException(ConnectionStage.SIGN_IN,e)
@@ -129,11 +141,14 @@ class PeopleViewModel private constructor(application: Application, private val 
         if (save) store.write(profile)
         clearConnection()
         api = remote
+        connectionClient = client
         images = ImageLoader.Builder(getApplication()).okHttpClient(client).diskCachePolicy(CachePolicy.DISABLED)
             .memoryCache { OriginalMemoryCache(MemoryCache.Builder(getApplication()).maxSizeBytes(16 * 1024 * 1024)
                 .weakReferencesEnabled(false).build()) }.build()
-        repository = PeopleRepository(db,remote,session)
-        update { it.copy(connected=true,certificate=null) }
+        repository = session?.let { PeopleRepository(db,remote,it) }
+        gallerySession?.let { photos = de.bearstack.people.photos.PhotosController(viewModelScope,galleryApi,it,getApplication()) }
+        update { it.copy(connected=true,certificate=null,showGallery=photos!=null,canManagePeople=session!=null) }
+        if(session == null) return
         collectStatistics()
         val pending = repository!!.pending()
         if (pending != null) {
@@ -214,8 +229,8 @@ class PeopleViewModel private constructor(application: Application, private val 
         update { it.copy(mergeSuggestion=null) }
         val repo=repository ?: return
         val session=repo.api.session()
-        require(session.scope==repo.scope) { "Der Datenbestand wurde geändert. Bitte neu verbinden." }
-        if(!session.mergeSuggestions) throw ApiFailure(404,"not_found","Ähnliche Gruppen benötigen BearStack 0.49.0.")
+        requireMessage(session.scope==repo.scope,R.string.error_scope_changed)
+        if(!session.mergeSuggestions) throw ApiFailure(404,"not_found",UiText(R.string.error_merge_version))
         val suggestion=repo.api.nextMergeSuggestion()
         update { it.copy(mergeSuggestion=suggestion) }
     }
@@ -236,7 +251,7 @@ class PeopleViewModel private constructor(application: Application, private val 
         val offset = (old.offset + delta * 4).coerceAtLeast(0)
         val p = repository!!.page(offset)
         update { it.copy(person=p) }; preload(p)
-        if (p.revision != old.revision || p.name.isNotEmpty()) { loadNext(); update { it.copy(error="Die Gruppe wurde geändert. Bitte erneut prüfen.") } }
+        if (p.revision != old.revision || p.name.isNotEmpty()) { loadNext(); update { it.copy(error=UiText(R.string.error_group_changed)) } }
     } }
     fun startNaming() { if(editable()) update { it.copy(naming=true,name=if(it.directory) it.selectedPerson?.name.orEmpty() else "",suggestions=emptyList(),duplicates=emptyList()) } }
     fun closeNaming() { if(editable()) { search?.cancel(); update { it.copy(naming=false,duplicates=emptyList()) } } }
@@ -288,10 +303,10 @@ class PeopleViewModel private constructor(application: Application, private val 
         try {
             val upper=if(reset) {
                 val fresh=repo.api.session()
-                require(fresh.scope==repo.scope) { "Der Datenbestand wurde geändert. Bitte neu verbinden." }
-                require(fresh.namedPeople) { "Der Personenbereich benötigt BearStack 0.43.0 oder neuer." }
+                requireMessage(fresh.scope==repo.scope,R.string.error_scope_changed)
+                requireMessage(fresh.namedPeople,R.string.error_people_version)
                 update {it.copy(namedSearch=fresh.namedSearch)}
-                require(query.isBlank() || fresh.namedSearch) {"Die Textsuche benötigt BearStack 0.45.0 oder neuer."}
+                requireMessage(query.isBlank() || fresh.namedSearch,R.string.error_search_version)
                 fresh.upper
             } else state.value.namedUpper
             val page=repo.api.searchPeople(if(reset) 0 else state.value.namedCursor,upper,query.trim())
@@ -327,10 +342,10 @@ class PeopleViewModel private constructor(application: Application, private val 
             val page=repository!!.api.personFaces(old.id,old.faces.size,old.faces.lastOrNull() ?: 0)
             if(page.revision!=old.revision || page.name!=old.name || page.count!=old.count) {
                 refreshSelectedPerson()
-                update {it.copy(error="Die Person wurde geändert. Bitte erneut prüfen.")}
+                update {it.copy(error=UiText(R.string.error_person_changed))}
             } else {
                 val faces=(old.faces+page.faces).distinct()
-                require(faces.size>old.faces.size) {"Keine weiteren Bilder geladen. Bitte erneut versuchen."}
+                requireMessage(faces.size>old.faces.size,R.string.error_no_more_photos)
                 update {it.copy(selectedPerson=old.copy(faces=faces,facePaths=old.facePaths+page.facePaths,
                     faceBounds=old.faceBounds+page.faceBounds,originalKeys=old.originalKeys+page.originalKeys,
                     favorites=old.favorites+page.favorites))}
@@ -357,7 +372,7 @@ class PeopleViewModel private constructor(application: Application, private val 
         if(!editable()) return
         update {it.copy(removeFace=null)}
         if(current.selectedPerson?.revision==current.removeRevision) unassign(face)
-        else update {it.copy(error="Die Person wurde geändert. Bitte erneut prüfen.")}
+        else update {it.copy(error=UiText(R.string.error_person_changed))}
     }
     fun unassign(face: Long) { if(editable()) task { manage("unassign",face=face) } }
     fun favorite(face: Long) { if(editable()) task {
@@ -435,7 +450,7 @@ class PeopleViewModel private constructor(application: Application, private val 
                     catch(e: ApiFailure) {
                         if(e.status!=400 && e.status!=404 && e.status!=409) throw e
                         repo.restoreIgnores(setOf(person.id))
-                        update {it.copy(error="Ignorieren wurde nicht gespeichert. Die Gruppe wurde zur erneuten Prüfung vorgemerkt.")}
+                        update {it.copy(error=UiText(R.string.error_ignore_unsaved))}
                     }
                 }
             }
@@ -474,7 +489,7 @@ class PeopleViewModel private constructor(application: Application, private val 
         val queue=repo.state()
         update { it.copy(person=person ?: it.person,skipped=queue.skipped.ids().size,
             canGoBack=queue.skipHistory.isNotEmpty(),
-            error=if(person==null) "Die übersprungenen Gruppen wurden inzwischen bearbeitet oder sind nicht mehr verfügbar." else null) }
+            error=if(person==null) UiText(R.string.error_skipped_unavailable) else null) }
         if(person!=null) preload(person)
     } }
     fun retry() = task {
@@ -491,14 +506,17 @@ class PeopleViewModel private constructor(application: Application, private val 
         } else loadNext()
     }
     fun newPass(skipped: Boolean) { if(editable()) task { repository!!.newPass(skipped); loadNext() } }
+    fun openGallery() { if(!state.value.busy && photos!=null) update { it.copy(showGallery=true) } }
+    fun openPeople() { if(!state.value.busy && repository!=null) update { it.copy(showGallery=false) } }
     fun switchConnection() { if(!state.value.busy) task { repository?.restoreIgnores(); clearConnection(); store.clear() } }
     private fun detachConnection(): Pair<ImageLoader?,OkHttpClient?> {
         ignoreJobs.values.forEach {it.cancel()};ignoreJobs.clear()
         undoRequests.clear()
         search?.cancel(); directorySearch?.cancel(); searchPreload?.cancel(); statsJob?.cancel()
         preloads.forEach { it.dispose() }; preloads.clear()
-        val resources=images to api?.client
-        images=null;api=null;repository=null
+        photos?.close(); photos=null
+        val resources=images to connectionClient
+        images=null;api=null;repository=null;connectionClient=null
         update { PeopleState(busy=it.busy) }
         return resources
     }

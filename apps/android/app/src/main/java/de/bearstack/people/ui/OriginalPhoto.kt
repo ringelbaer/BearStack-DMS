@@ -1,5 +1,7 @@
 package de.bearstack.people.ui
 
+import de.bearstack.people.text.uiStrings
+import de.bearstack.people.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -44,6 +46,7 @@ internal fun originalPhotoRequest(context: Context, model: Any?, cacheKey: Strin
 internal fun OriginalPhoto(model: Any?, images: ImageLoader, bounds: FaceBounds?, zoom: Float,
     onZoom: (Float) -> Unit, onDrag: (Float) -> Unit, modifier: Modifier = Modifier,
     onNewTouch: (() -> Unit)? = null, cacheKey: String? = null) {
+    val text=uiStrings()
     var imageSize by remember(model) { mutableStateOf(Size.Zero) }
     var viewport by remember { mutableStateOf(Size.Zero) }
     var loading by remember(model) { mutableStateOf(true) }
@@ -56,10 +59,10 @@ internal fun OriginalPhoto(model: Any?, images: ImageLoader, bounds: FaceBounds?
     val newTouch by rememberUpdatedState(onNewTouch)
     Box(modifier.clipToBounds().testTag("original-photo").onSizeChanged { viewport=Size(it.width.toFloat(),it.height.toFloat()) }
         .semantics {
-            stateDescription="Vergrößerung ${(transform.scale*100).toInt()} Prozent"
+            stateDescription=text(R.string.people_zoom_percent,(transform.scale*100).toInt())
             if(bounds!=null && !loading && !failed) customActions=listOf(
-                CustomAccessibilityAction("Zum Gesicht vergrößern") { onZoom(1f);true },
-                CustomAccessibilityAction("Ganzes Foto anzeigen") { onZoom(0f);true })
+                CustomAccessibilityAction(text(R.string.people_zoom_face)) { onZoom(1f);true },
+                CustomAccessibilityAction(text(R.string.people_show_whole)) { onZoom(0f);true })
         }
         .pointerInput(model) {
             awaitEachGesture {
@@ -71,7 +74,7 @@ internal fun OriginalPhoto(model: Any?, images: ImageLoader, bounds: FaceBounds?
         }
         .pointerInput(model) { detectVerticalDragGestures { change, dy -> change.consume();drag(dy) } },
         contentAlignment=Alignment.Center) {
-        AsyncImage(request,"Originalfoto",imageLoader=images,
+        AsyncImage(request,text(R.string.people_original),imageLoader=images,
             modifier=Modifier.fillMaxSize().graphicsLayer {
                 scaleX=transform.scale;scaleY=transform.scale
                 translationX=transform.translation.x;translationY=transform.translation.y
@@ -90,7 +93,7 @@ internal fun OriginalPhoto(model: Any?, images: ImageLoader, bounds: FaceBounds?
             }
         }
         if(loading) CircularProgressIndicator()
-        if(failed) Text("Originalfoto konnte nicht geladen werden. Vorschau schließen oder loslassen und erneut halten.",
+        if(failed) Text(text(R.string.people_original_error),
             color=Color.White,modifier=Modifier.padding(24.dp))
     }
 }

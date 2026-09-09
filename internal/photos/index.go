@@ -546,7 +546,7 @@ func (l *Library) directoryBlogCache(ctx context.Context, rel string) (map[strin
 }
 
 func (l *Library) blogFromPathInfo(rel, abs string, info os.FileInfo, cache map[string]cachedBlogRow, adminOnly bool) (BlogPost, bool, error) {
-	if info.IsDir() {
+	if !info.Mode().IsRegular() {
 		return BlogPost{}, false, os.ErrNotExist
 	}
 	if row, ok := cache[rel]; ok && row.ModTimeUnixNano == info.ModTime().UnixNano() && (row.AdminOnly != 0) == adminOnly {
@@ -566,10 +566,9 @@ func (l *Library) blogFromPathInfo(rel, abs string, info os.FileInfo, cache map[
 		Path:      rel,
 		AdminOnly: adminOnly,
 		Date:      markdownDate(raw),
-		Text:      markdownText(raw),
-		HTML:      renderMarkdown(raw),
 		ModTime:   info.ModTime(),
 	}
+	post.Text, post.HTML = blogContent(rel, raw)
 	if row, ok := cache[rel]; ok {
 		post.Tags = tagsFromJSON(row.Tags)
 	} else if tags, ok := l.blogTags(rel); ok {
@@ -585,9 +584,9 @@ func blogFromCachedRow(row cachedBlogRow, modTime time.Time) BlogPost {
 		Tags:      tagsFromJSON(row.Tags),
 		AdminOnly: row.AdminOnly != 0,
 		Text:      row.Text,
-		HTML:      renderMarkdown([]byte(row.Text)),
 		ModTime:   modTime,
 	}
+	_, post.HTML = blogContent(row.Name, []byte(row.Text))
 	if row.Date != "" {
 		if parsed, err := time.Parse("2006-01-02", row.Date); err == nil {
 			post.Date = &parsed

@@ -26,6 +26,10 @@ type photoListingRequest struct {
 	Frame            bool
 	CanEdit          bool
 	MapRequested     bool
+	// Bounded native pages override presentation defaults, not access policy.
+	PageSize       int
+	FolderPreviews int
+	OmitPeople     bool
 }
 
 func (s *Server) photoService() photoApplicationService {
@@ -61,6 +65,12 @@ func (svc photoApplicationService) Listing(ctx context.Context, request photoLis
 	opts.IncludeAdminOnly = request.IncludeAdminOnly
 	opts.PageSize = settings.PageSize
 	opts.FolderPreviewSize = settings.FolderPreviewCount
+	if request.PageSize > 0 {
+		opts.PageSize = request.PageSize
+	}
+	if request.FolderPreviews > 0 {
+		opts.FolderPreviewSize = request.FolderPreviews
+	}
 	opts.RouteClusterRadiusMeters = settings.MapTrackResolutionMeters
 	mapRequested := request.MapRequested && photoMapAvailable(opts.Path)
 	opts.IncludeMapData = mapRequested
@@ -104,8 +114,10 @@ func (svc photoApplicationService) Listing(ctx context.Context, request photoLis
 		photos.ListTraceInt("media", len(listing.Media)),
 		photos.ListTraceInt("total", listing.Total),
 	)
-	if err := svc.library.AddAutomaticFaces(ctx, listing.Media); err != nil {
-		return photos.Listing{}, PhotoSettings{}, err
+	if !request.OmitPeople {
+		if err := svc.library.AddAutomaticFaces(ctx, listing.Media); err != nil {
+			return photos.Listing{}, PhotoSettings{}, err
+		}
 	}
 	return listing, settings, nil
 }

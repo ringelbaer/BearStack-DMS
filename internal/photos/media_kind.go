@@ -16,7 +16,7 @@ func supportedKind(name string) (string, bool) {
 		return MediaTypeVideo, true
 	case ".mp3":
 		return MediaTypeAudio, true
-	case ".md":
+	case ".md", ".txt":
 		return MediaTypeBlog, true
 	case ".gpx":
 		return mediaKindGPX, true

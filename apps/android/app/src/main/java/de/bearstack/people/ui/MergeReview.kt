@@ -1,5 +1,7 @@
 package de.bearstack.people.ui
 
+import de.bearstack.people.text.uiStrings
+import de.bearstack.people.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -24,6 +26,7 @@ import de.bearstack.people.people.PeopleViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
+    val text=uiStrings()
     val suggestion=state.mergeSuggestion
     var held by remember { mutableStateOf<Long?>(null) }
     var heldDismissed by remember { mutableStateOf(false) }
@@ -44,16 +47,16 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
         else if(help) help=false else vm.closeMergeReview()
     }
     Box(Modifier.fillMaxSize()) {
-        Scaffold(topBar={TopAppBar(title={Text("Ähnliche Gruppen",maxLines=1,overflow=TextOverflow.Ellipsis)},
-            navigationIcon={TextButton(onClick=vm::closeMergeReview,enabled=enabled) {Text("Zurück")}},
-            actions={TextButton(onClick={help=true},enabled=held==null) {Text("Hilfe")}})
+        Scaffold(topBar={TopAppBar(title={Text(text(R.string.people_similar_groups),maxLines=1,overflow=TextOverflow.Ellipsis)},
+            navigationIcon={TextButton(onClick=vm::closeMergeReview,enabled=enabled) {Text(text(R.string.photos_back))}},
+            actions={TextButton(onClick={help=true},enabled=held==null) {Text(text(R.string.common_help))}})
         },bottomBar={
             Surface(color=MaterialTheme.colorScheme.surfaceContainer,tonalElevation=2.dp) {
                 Column(Modifier.fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal+WindowInsetsSides.Bottom))
                     .padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                    Button(onClick={vm.decideMerge(true)},enabled=enabled && suggestion!=null,modifier=Modifier.fillMaxWidth()) {Text("Zusammenführen")}
-                    OutlinedButton(onClick={vm.decideMerge(false)},enabled=enabled && suggestion!=null,modifier=Modifier.fillMaxWidth()) {Text("Getrennt lassen")}
+                    Button(onClick={vm.decideMerge(true)},enabled=enabled && suggestion!=null,modifier=Modifier.fillMaxWidth()) {Text(text(R.string.people_merge))}
+                    OutlinedButton(onClick={vm.decideMerge(false)},enabled=enabled && suggestion!=null,modifier=Modifier.fillMaxWidth()) {Text(text(R.string.people_keep_separate))}
                 }
             }
         }) {padding ->
@@ -61,21 +64,21 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                 Box(Modifier.fillMaxWidth().height(4.dp)) {if(state.busy) LinearProgressIndicator(Modifier.fillMaxSize())}
                 state.error?.let {error ->
                     Column(Modifier.fillMaxWidth().padding(12.dp)) {
-                        Text(error,color=MaterialTheme.colorScheme.error,modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite})
+                        Text(text(error),color=MaterialTheme.colorScheme.error,modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite})
                         Row {
-                            TextButton(onClick=vm::retry,enabled=!state.busy && held==null) {Text(if(state.unresolved) "Offene Aktion prüfen" else "Erneut versuchen")}
-                            TextButton(onClick=vm::switchConnection,enabled=!state.busy && held==null) {Text("Verbindung")}
+                            TextButton(onClick=vm::retry,enabled=!state.busy && held==null) {Text(if(state.unresolved) text(R.string.people_check_pending) else text(R.string.photos_retry))}
+                            TextButton(onClick=vm::switchConnection,enabled=!state.busy && held==null) {Text(text(R.string.connection_title))}
                         }
                     }
                 }
                 if(suggestion!=null) {
-                    Text("Dieselbe Person?",style=MaterialTheme.typography.titleLarge,modifier=Modifier.padding(horizontal=16.dp,vertical=8.dp))
+                    Text(text(R.string.people_same_person),style=MaterialTheme.typography.titleLarge,modifier=Modifier.padding(horizontal=16.dp,vertical=8.dp))
                     Row(Modifier.weight(1f).fillMaxWidth().padding(horizontal=12.dp,vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                         listOf(suggestion.source,suggestion.target).forEachIndexed {index,person ->
                             Column(Modifier.weight(1f).fillMaxHeight(),horizontalAlignment=Alignment.CenterHorizontally) {
-                                Text(if(index==0) "Erste Gruppe" else "Zweite Gruppe",style=MaterialTheme.typography.labelMedium)
-                                Text(person.name.ifBlank {"Unbenannt"},maxLines=2,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.titleMedium)
-                                Text("${person.count} Gesichter",style=MaterialTheme.typography.bodySmall)
+                                Text(if(index==0) text(R.string.people_first_group) else text(R.string.people_second_group),style=MaterialTheme.typography.labelMedium)
+                                Text(person.name.ifBlank {text(R.string.people_unnamed)},maxLines=2,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.titleMedium)
+                                Text(text.faces(person.count),style=MaterialTheme.typography.bodySmall)
                                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(),contentAlignment=Alignment.Center) {
                                     Box(Modifier.size(minOf(maxWidth,maxHeight))) {
                                         FaceGrid(person,enabled,vm.images,vm::image,onDetach={},
@@ -89,9 +92,9 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                     }
                 } else if(!state.busy && state.error==null) {
                     Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-                        Text("Aktuell keine ähnlichen Gruppen.",Modifier.semantics {liveRegion=LiveRegionMode.Polite},style=MaterialTheme.typography.titleLarge)
-                        Text("Neue Vorschläge entstehen beim Hintergrundabgleich.")
-                        TextButton(onClick=vm::retry,enabled=enabled) {Text("Aktualisieren")}
+                        Text(text(R.string.people_no_similar),Modifier.semantics {liveRegion=LiveRegionMode.Polite},style=MaterialTheme.typography.titleLarge)
+                        Text(text(R.string.people_suggestions_help))
+                        TextButton(onClick=vm::retry,enabled=enabled) {Text(text(R.string.common_refresh))}
                     }
                 }
             }
@@ -106,17 +109,17 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                         onNewTouch=if(accessible) null else {{heldDismissed=true}})
                 }
                 person?.facePaths?.get(face)?.takeIf {it.isNotEmpty()}?.let {
-                    Text(it,color=Color.White,style=MaterialTheme.typography.bodySmall,
+                    Text(text.photoPath(it),color=Color.White,style=MaterialTheme.typography.bodySmall,
                         modifier=Modifier.fillMaxWidth().heightIn(max=96.dp).verticalScroll(rememberScrollState()).testTag("original-photo-path"))
                 }
-                if(accessible) Button(onClick={held=null;accessible=false}) {Text("Vorschau schließen")}
+                if(accessible) Button(onClick={held=null;accessible=false}) {Text(text(R.string.people_close_preview))}
             }
         }
     }
-    if(help) AlertDialog(onDismissRequest={help=false},title={Text("Ähnliche Gruppen prüfen")},
+    if(help) AlertDialog(onDismissRequest={help=false},title={Text(text(R.string.people_merge_help_title))},
         text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            Text("Prüfe, ob beide Gruppen dieselbe Person zeigen. Zusammenführen ordnet alle Gesichter der ersten Gruppe der zweiten zu. Getrennt lassen speichert die Trennung und verhindert künftige automatische Zuordnungen zwischen diesen Gruppen.")
-            Text("Nach jeder gespeicherten Entscheidung erscheint das nächste Gruppenpaar.")
-            Text("Portrait 250 ms halten: Originalfoto anzeigen. Dabei nach unten wischen zum Gesicht vergrößern, nach oben zum Verkleinern. Loslassen schließt die Vorschau.")
-        }},confirmButton={TextButton(onClick={help=false}) {Text("Schließen")}})
+            Text(text(R.string.people_merge_help))
+            Text(text(R.string.people_merge_next_help))
+            Text(text(R.string.people_merge_preview_help))
+        }},confirmButton={TextButton(onClick={help=false}) {Text(text(R.string.photos_close))}})
 }

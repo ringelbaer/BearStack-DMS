@@ -31,7 +31,7 @@ class PeopleDirectoryTest {
         lateinit var vm: PeopleViewModel
         compose.runOnUiThread { vm=PeopleViewModel(app,db,service,service.session);store.put("test",vm) }
         try {
-            compose.setContent {
+            compose.setGermanContent {
                 val density=LocalDensity.current
                 CompositionLocalProvider(LocalDensity provides Density(density.density,scale)) {PeopleApp(vm)}
             }

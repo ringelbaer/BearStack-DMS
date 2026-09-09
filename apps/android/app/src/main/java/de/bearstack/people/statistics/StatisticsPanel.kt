@@ -1,5 +1,7 @@
 package de.bearstack.people.statistics
 
+import de.bearstack.people.text.uiStrings
+import de.bearstack.people.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -9,13 +11,14 @@ import de.bearstack.people.data.local.Statistics
 
 @Composable
 fun StatisticsPanel(statistics: List<Statistics>) {
-    Text("Nur bestätigte Aktionen zählen. Die Zahlen werden lokal für dieses Konto und diesen Datenbestand gespeichert.")
-    listOf("name" to "Benannt", "assign" to "Zugeordnet", "ignore" to "Ignoriert", "skip" to "Übersprungen").forEach { (action,label) ->
+    val text=uiStrings()
+    Text(text(R.string.statistics_help))
+    listOf("name" to text(R.string.statistics_named), "assign" to text(R.string.statistics_assigned), "ignore" to text(R.string.statistics_ignored), "skip" to text(R.string.statistics_skipped)).forEach { (action,label) ->
         val stats = statistics.firstOrNull { it.action==action }
         Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             Text(label,style=MaterialTheme.typography.titleMedium)
-            Text("Heute: ${stats?.todayFaces ?: 0} Gesichter · ${stats?.todayGroups ?: 0} Gruppen")
-            Text("Insgesamt: ${stats?.faces ?: 0} Gesichter · ${stats?.groups ?: 0} Gruppen")
+            Text(text(R.string.statistics_today,text.faces(stats?.todayFaces ?: 0),text.groups(stats?.todayGroups ?: 0)))
+            Text(text(R.string.statistics_total,text.faces(stats?.faces ?: 0),text.groups(stats?.groups ?: 0)))
         } }
     }
 }

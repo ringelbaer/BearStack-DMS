@@ -18,9 +18,8 @@ class ConnectionErrorsTest {
         for((error,code) in cases) {
             val diagnostic=connectionDiagnostic(ConnectionAttemptException(ConnectionStage.CERTIFICATE_CHECK,error))!!
             assertEquals(code,diagnostic.code)
-            assertTrue(diagnostic.text.contains("Zugangsdaten wurden noch nicht gesendet"))
-            assertFalse(diagnostic.text.contains("offene Aktion"))
-            assertFalse(diagnostic.text.contains("secret"))
+            assertEquals(R.string.error_diagnostic_credentials,diagnostic.text.resource)
+            assertFalse(diagnostic.text.toString().contains("secret"))
         }
     }
     @Test fun unwrapsCertificateCauseAndPreservesApiStatusHandling() {
@@ -31,8 +30,8 @@ class ConnectionErrorsTest {
     @Test fun onlyActuallyPendingActionsMentionReconciliationAndNoRawMessagesLeak() {
         val e=IOException("https://username:password@private.example/?token=secret")
         val diagnostic=connectionDiagnostic(e,true)!!
-        assertTrue(diagnostic.text.contains("offene Aktion"))
-        assertFalse(diagnostic.text.contains("password"));assertFalse(diagnostic.text.contains("private.example"))
-        assertFalse(diagnostic.text.contains("secret"))
+        assertEquals(R.string.error_diagnostic_pending,diagnostic.text.resource)
+        assertFalse(diagnostic.text.toString().contains("password"));assertFalse(diagnostic.text.toString().contains("private.example"))
+        assertFalse(diagnostic.text.toString().contains("secret"))
     }
 }

@@ -93,6 +93,13 @@ type ListOptions struct {
 	FullFilesystem           bool
 	RouteClusterRadiusMeters int
 	FolderPreviewSize        int
+	// Optional native pagination. Zero sizes preserve the browser listing.
+	FolderPageSize int
+	BlogPageSize   int
+	BlogSummaries  bool
+	SkipFolders    bool
+	SkipBlogs      bool
+	SkipMedia      bool
 }
 
 type Listing struct {
@@ -115,6 +122,9 @@ type Listing struct {
 	Total         int
 	HasPrev       bool
 	HasNext       bool
+	FolderTotal   int
+	FolderHasNext bool
+	BlogHasNext   bool
 }
 
 type Tag struct {

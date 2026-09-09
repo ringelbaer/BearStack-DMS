@@ -4,6 +4,19 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.50.0 – in Entwicklung
+
+- Gesamte Android-Oberfläche auf Deutsch/Englisch: Personenverwaltung, Benennen, ähnliche Gruppen, Originalvorschau, Statistik, Hilfen und TalkBack-Aktionen. Spracheinstellungen ab Android 13 deklariert; Einzahl/Mehrzahl und Zertifikatsdatum lokalisiert. Sprachwechsel übersetzen auch vorhandene Fehler, ohne die Warteschlange zurückzusetzen.
+- Gemeinsame strukturierte Fehlermeldungen für Personen- und Galerieabläufe vermeiden die Anzeige ungefilterter Ausnahmen. Ladefehler von Textbeiträgen sind direkt im Dialog wiederholbar; leere Beiträge bleiben nicht im Ladezustand hängen.
+
+- Native Karten in Foto-Informationen und pro Ordner/Suche mit Zoom, Verschieben, GPS-Markern und sichtbarer OpenStreetMap-Quellenangabe. Die neue lesende Route `/api/photos/v1/map` bündelt vollständige indexierte GPS-Bestände in maximal 289 Marker je Ausschnitt, einschließlich Datumsgrenze; Kartenbilder verwenden einen getrennten HTTP-Cache ohne BearStack-Zugangsdaten.
+
+- BearStack Personen wird **BearStack Fotos 0.10.0** (versionCode 22). Native Galerie als Einstieg mit Datumsgruppen, Ordnern mit zwei Vorschauen, globaler Suche, Vollbild/Zoom und Foto-Informationen. Personenfunktionen bleiben im Menü erhalten; Lesekonten können die Galerie ohne Bearbeitungsrechte öffnen.
+- Lesende API unter `/api/photos/v1/`, gemeinsame Dienste und HTTPS-Verbindung mit der vorhandenen Personenverwaltung. Begrenzte Medien-, Ordner- und Textseiten; Ordnervorschauen erst nach Seitenauswahl, Blog-Inhalte erst beim Öffnen. `.txt` wird neben `.md` als Textbeitrag indexiert.
+- Original-Download über Androids Speicherdialog mit begrenzten Übertragungspuffern und Abbruchbereinigung. Einstellbare Diashow und Fotoframe mit Anzeigedauer, Wiederholung, Beschriftung und Bildschirmfüllung; Wiedergabe pausiert in Info-/Einstellungsdialogen und im Hintergrund. Nativer Media3-Player für Video und Audio.
+- Galerie- und Personenansichten auf Deutsch/Englisch mit System-Hell-/Dunkelmodus. Adaptives Icon für runden Beschnitt angepasst. Weitere Ausbaupunkte und vollständige Geräteabnahme werden in `apps/android/PHOTOS_PLAN.md` nachgehalten.
+- MINOR für abwärtskompatible App- und API-Funktionen, ohne manuelle Datenmigration. Rechte-, Pfad-, Seitengrenzen-, Such- und Anfrageabbruchtests ergänzt; OpenAPI und Android-Dokumentation erweitert.
+
 ### BearStack 0.49.0
 
 - Android-App **0.9.0** (versionCode 21): **Menü → Ähnliche Gruppen** zeigt jeweils ein Gruppenpaar ohne Vorschlagsliste zum Scrollen. **Zusammenführen** und **Getrennt lassen** bleiben unten sichtbar; nach bestätigter Entscheidung lädt das nächste Paar. Beide Portraits bieten die bekannte Originalfoto-Vorschau per Halten und Wischen mit Gesichtsmarkierung und TalkBack-Aktionen.

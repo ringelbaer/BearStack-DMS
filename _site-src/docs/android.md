@@ -1,6 +1,90 @@
-# BearStack Personen für Android
+# BearStack Fotos für Android
 
-Native, deutschsprachige App für Android 8.0 oder neuer. App-Version **0.9.0**; erforderlich sind **BearStack 0.35.0**, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit `photos.edit` (Rolle „Fotos bearbeiten“/`photos_editor`, `photos_manager` oder Administrator; Freigabe für Fotobearbeiter ab BearStack 0.36.0). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.
+Native App für Android 8.0 oder neuer, App-Version **0.10.0**. Die Galerie benötigt
+**BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
+benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
+beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
+
+## Galerie
+
+**Fotos** zeigt den gesamten Fotobestand nach Datum. Unter **Ordner** öffnest du die
+bekannte Verzeichnisstruktur; jede Kachel enthält zwei Vorschauen und die Medienanzahl.
+**Suchen** nutzt die Browsersyntax, zum Beispiel `person:Anna` oder `tag:Urlaub`.
+Die Suche wird mit der Suchen-Taste der Tastatur gestartet.
+
+Ein Foto öffnet den Vollbildbetrachter. Wische zum nächsten Foto oder nutze die
+Vor-/Zurück-Schaltflächen. Mit zwei Fingern oder **Vergrößern** lässt sich das Bild
+vergrößern. **Informationen** lädt Dateiname, Pfad, Auflösung, Dateigröße sowie
+vorhandene Kamera- und GPS-Daten. Markdown- und Textbeiträge stehen im jeweiligen
+Ordner unter **Geschichten & Notizen** und werden erst beim Öffnen vollständig geladen.
+Ladefehler erscheinen mit **Erneut versuchen** direkt in der Textansicht; leere
+Beiträge werden als leer angezeigt und beenden den Ladezustand.
+
+**Weitere Optionen → Personen verwalten** führt zu den bisherigen Funktionen.
+Zurück aus dem Benennen-Bereich oder **Menü → Fotos** öffnet die Galerie.
+Galerie, Personenverwaltung, Hilfetexte und Fehlermeldungen stehen vollständig auf
+Deutsch und Englisch zur Verfügung. Die App folgt der Android-Sprache und dem
+System-Hell-/Dunkelmodus. Ab Android 13 lässt sich die Sprache auch einzeln unter
+**Android-Einstellungen → Apps → BearStack Fotos → Sprache** wählen; ältere Geräte
+verwenden die Systemsprache. Bereits sichtbare Fehler werden bei einem Sprachwechsel
+neu übersetzt, ohne die aktuelle Gruppe oder eine offene Aktion zu verlieren.
+
+Fehlermeldungen verwenden feste Meldungsschlüssel statt ungefilterter technischer
+Ausnahmetexte. Kamera-, Datei- und Personenbezeichnungen bleiben die Originaldaten.
+Die abschließende visuelle Abnahme ist Teil des laufenden Ausbaus.
+
+### Karten
+
+**Weitere Optionen → Karte** zeigt die GPS-Aufnahmen des aktuellen Ordners
+inklusive Unterordnern oder der aktuellen Suche. Verschieben und Zwei-Finger-Zoom
+ändern den Ausschnitt; Plus/Minus und **Alle Orte anzeigen** sind ebenfalls verfügbar.
+Zahlen bündeln benachbarte Aufnahmen. Antippen vergrößert die Umgebung; ein einzelner
+Punkt öffnet die Aufnahme. Mehrere Aufnahmen am exakt gleichen Ort oder bei
+maximalem Zoom öffnen eine Fotoauswahl mit höchstens 96 Einträgen pro Seite.
+Die Seitenschalter ersetzen den Inhalt und halten den Speicherbedarf begrenzt.
+In **Informationen** erscheint eine Karte zum Foto.
+
+Die Karten-API bündelt alle passenden indexierten Aufnahmen in höchstens 289
+Markern pro Ausschnitt. Sie lädt keine vollständigen Fotolisten in den App-Speicher.
+Ist der Fotoindex noch nicht bereit, bietet die Ansicht erneutes Laden an.
+OpenStreetMap liefert nur die gerade sichtbaren Kartenbilder. Ein eigener Client
+ohne BearStack-Zugangsdaten nutzt einen auf 64 MiB begrenzten HTTP-Cache und beachtet
+Cache-Header sowie bedingte Anfragen. Die Quellenangabe bleibt auf der Karte sichtbar.
+GPX- und fotobasierte Routen werden im weiteren Ausbau ergänzt.
+
+### Original speichern
+
+Im Vollbild öffnet **Original herunterladen** Androids Speicherdialog. Wähle den
+Zielordner und Dateinamen. Die Originaldatei wird stückweise übertragen, ohne sie
+vollständig in den Arbeitsspeicher zu laden. Die Fortschrittsanzeige erlaubt
+Abbrechen; bei Fehler oder Abbruch wird versucht, die neu angelegte unvollständige
+Datei zu entfernen. Es wird keine allgemeine Speicherberechtigung verlangt.
+
+### Diashow und Fotoframe
+
+Im Vollbild startet die Wiedergabetaste die Diashow. **Diashow einstellen** bietet
+Anzeigedauern von 3 bis 300 Sekunden und eine Wiederholung am Ende. Die Zeit läuft
+erst nach dem Laden des Fotos; Informationen, Einstellungen, Zoom und der Wechsel
+in eine andere App pausieren die automatische Wiedergabe.
+
+**Weitere Optionen → Fotoframe starten** spielt die Fotos des aktuellen Ordners
+mit Unterordnern ab. Im Frame blendet Antippen die Steuerung ein; Name/Datum und
+Bildschirmfüllung mit Beschnitt sind einstellbar. Zurück stellt die vorherige
+Galerie wieder her. Während der Wiedergabe bleibt der Bildschirm aktiv.
+Videos und Audio im normalen Vollbild verwenden den nativen Media3-Player und
+dieselbe HTTPS-Verbindung; nur die sichtbare Seite hält einen Decoder bereit.
+
+Die API `/api/photos/v1/` verwendet dieselben Foto-Dienste, Suchregeln und
+Zugriffskontrollen wie der Browser. Seiten enthalten bis zu 96 Medien, 24 Ordner
+mit jeweils zwei Vorschauen und 20 Textzusammenfassungen. Fotos und Texte werden
+bei Bedarf geladen; ein Ansichts- oder Kontowechsel bricht veraltete Anfragen ab.
+Vollbild und Frame laden über WLAN höchstens die nächste Aufnahme vor; Wechsel
+der Ansicht oder Verlust der WLAN-Verbindung brechen dieses Vorladen ab. Anzeige
+und Vorladen teilen sich den begrenzten Drei-Minuten-Speichercache, mit höchstens
+2048 Pixeln für die decodierte Vorschau. Der Bildcache liegt ausschließlich im
+begrenzten Arbeitsspeicher. Die App-ID
+`de.bearstack.people` bleibt für bestehende Installationen erhalten; der Bär im
+adaptiven Icon liegt jetzt innerhalb des runden Beschnitts.
 
 ## Bauen und installieren
 
@@ -15,7 +99,7 @@ Alternativ im Android-Verzeichnis: `./gradlew :app:assembleDebug`. APKs werden l
 
 ## Verbindung und Zertifikat
 
-HTTPS-Adresse (gegebenenfalls mit Reverse-Proxy-Pfad), Benutzername und Passwort eingeben. Die App prüft Protokollversion und Personenrechte. HTTP und automatische Weiterleitungen sind ausgeschlossen; bei einer Umleitung die endgültige HTTPS-Adresse verwenden.
+HTTPS-Adresse (gegebenenfalls mit Reverse-Proxy-Pfad), Benutzername und Passwort eingeben. Die App prüft Protokollversion und Fotoleserechte; Personenfunktionen werden nur bei passenden Bearbeitungsrechten angeboten. HTTP und automatische Weiterleitungen sind ausgeschlossen; bei einer Umleitung die endgültige HTTPS-Adresse verwenden.
 
 Öffentlich vertrauenswürdige Zertifikate werden regulär geprüft. Bei einem selbstsignierten Serverzertifikat erscheint **vor Übermittlung der Zugangsdaten** dessen SHA-256-Fingerabdruck. Auf dem Server den Fingerabdruck der tatsächlich verwendeten Zertifikatsdatei ermitteln:
 

@@ -2,12 +2,44 @@
 package photos
 
 import (
+	"context"
 	"html"
 	"html/template"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
+
+// Blog reads supported text content using the same renderer and size limit as
+// the browser. Resolve rejects symlink traversal; access is checked before IO.
+func (l *Library) Blog(ctx context.Context, path string, includeAdminOnly bool) (BlogPost, error) {
+	if err := ctx.Err(); err != nil {
+		return BlogPost{}, err
+	}
+	rel, err := CleanPath(path)
+	if err != nil {
+		return BlogPost{}, err
+	}
+	if kind, ok := supportedKind(rel); !ok || kind != MediaTypeBlog {
+		return BlogPost{}, os.ErrNotExist
+	}
+	for _, part := range strings.Split(rel, "/") {
+		if ignoredName(part) {
+			return BlogPost{}, os.ErrNotExist
+		}
+	}
+	if !includeAdminOnly {
+		private, err := l.FolderAdminOnly(parentPath(rel))
+		if err != nil {
+			return BlogPost{}, err
+		}
+		if private {
+			return BlogPost{}, ErrAdminOnly()
+		}
+	}
+	return l.blogFromPathData(rel)
+}
 
 func (l *Library) blogFromPath(rel string) (BlogPost, error) {
 	post, err := l.blogFromPathData(rel)
@@ -48,6 +80,13 @@ func markdownDate(raw []byte) *time.Time {
 		}
 	}
 	return nil
+}
+
+func blogContent(name string, raw []byte) (string, template.HTML) {
+	if strings.EqualFold(filepath.Ext(name), ".txt") {
+		return string(raw), template.HTML("<pre>" + html.EscapeString(string(raw)) + "</pre>")
+	}
+	return markdownText(raw), renderMarkdown(raw)
 }
 
 func renderMarkdown(raw []byte) template.HTML {

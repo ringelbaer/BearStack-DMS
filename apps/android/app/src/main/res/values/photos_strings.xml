@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photos_media_error">Dieses Medium konnte nicht abgespielt werden.</string>
+    <string name="photos_download">Original herunterladen</string>
+    <string name="photos_downloading">%1$s wird gespeichert · %2$s</string>
+    <string name="photos_downloaded">%1$s gespeichert</string>
+    <string name="photos_cancel">Abbrechen</string>
+    <string name="app_name">BearStack Fotos</string>
+    <string name="photos_title">Fotos</string>
+    <string name="photos_folders">Ordner</string>
+    <string name="photos_search">Suchen</string>
+    <string name="photos_search_hint">Fotos, Orte, Personen, Tags …</string>
+    <string name="photos_search_help">Suche wie im Browser, zum Beispiel person:Anna oder tag:Urlaub.</string>
+    <string name="photos_people">Personen verwalten</string>
+    <string name="photos_connection">Verbindung wechseln</string>
+    <string name="photos_menu">Weitere Optionen</string>
+    <string name="photos_back">Zurück</string>
+    <string name="photos_retry">Erneut versuchen</string>
+    <string name="photos_more">Mehr laden</string>
+    <string name="photos_empty">Hier sind noch keine Fotos.</string>
+    <string name="photos_no_results">Keine passenden Inhalte gefunden.</string>
+    <plurals name="photos_count">
+        <item quantity="one">1 Medium</item>
+        <item quantity="other">%1$d Medien</item>
+    </plurals>
+    <plurals name="photos_count_approximate">
+        <item quantity="one">Mindestens 1 Medium</item>
+        <item quantity="other">Mindestens %1$d Medien</item>
+    </plurals>
+    <string name="photos_texts">Geschichten &amp; Notizen</string>
+    <string name="photos_close">Schließen</string>
+    <string name="photos_info">Informationen</string>
+    <string name="photos_original">Foto in Vollbild</string>
+    <string name="photos_image_error">Bild konnte nicht geladen werden.</string>
+    <string name="photos_previous">Vorheriges Foto</string>
+    <string name="photos_next">Nächstes Foto</string>
+    <string name="photos_zoom">Vergrößern</string>
+    <string name="photos_zoom_reset">Ganzes Foto</string>
+    <string name="photos_file">Datei</string>
+    <string name="photos_camera">Kamera</string>
+    <string name="photos_location">Aufnahmeort</string>
+    <string name="photos_details">%1$d × %2$d · %3$s</string>
+    <string name="photos_loading">Wird geladen …</string>
+    <string name="photos_of">%1$d von %2$d</string>
+    <string name="photos_frame">Fotoframe starten</string>
+    <string name="photos_slideshow_settings">Diashow einstellen</string>
+    <string name="photos_frame_settings">Fotoframe einstellen</string>
+    <string name="photos_interval">Anzeigedauer pro Foto</string>
+    <string name="photos_seconds">%1$d Sekunden</string>
+    <string name="photos_repeat">Am Ende wiederholen</string>
+    <string name="photos_frame_fill">Bildschirm füllen (mit Beschnitt)</string>
+    <string name="photos_frame_captions">Name und Datum anzeigen</string>
+    <string name="photos_playback_help">Die Wiedergabe wartet, bis das Foto geladen ist, und pausiert in Informationen, Einstellungen und im Hintergrund. Im Frame blendet Antippen die Steuerung ein.</string>
+    <string name="photos_save">Speichern</string>
+    <string name="photos_play">Diashow starten</string>
+    <string name="photos_pause">Diashow pausieren</string>
+    <string name="photos_map">Karte</string>
+    <string name="photos_map_east">Nach Osten verschieben</string>
+    <string name="photos_map_west">Nach Westen verschieben</string>
+    <string name="photos_map_north">Nach Norden verschieben</string>
+    <string name="photos_map_south">Nach Süden verschieben</string>
+    <string name="photos_map_zoom_in">Karte vergrößern</string>
+    <string name="photos_map_zoom_out">Karte verkleinern</string>
+    <string name="photos_map_fit">Alle Orte anzeigen</string>
+    <string name="photos_map_marker">%1$d Aufnahmen an diesem Ort</string>
+    <string name="photos_map_retry">Kartenbilder erneut laden</string>
+    <string name="photos_map_help">Verschiebe die Karte oder ziehe sie mit zwei Fingern auf. Tippe auf eine Zahl zum Vergrößern und auf einen einzelnen Punkt zum Öffnen der Aufnahme. Unterordner sind enthalten.</string>
+    <string name="photos_map_index_pending">Die Karte wartet auf den Fotoindex. Versuche es in Kürze erneut.</string>
+    <string name="photos_map_error">Die Karte konnte nicht geladen werden. Prüfe die Verbindung und versuche es erneut.</string>
+    <plurals name="photos_map_count">
+        <item quantity="one">1 Aufnahme im Kartenausschnitt</item>
+        <item quantity="other">%1$d Aufnahmen im Kartenausschnitt</item>
+    </plurals>
+    <string name="photos_map_empty">Keine Aufnahmen mit GPS-Daten gefunden.</string>
+    <plurals name="photos_map_selection">
+        <item quantity="one">1 Aufnahme an diesem Ort</item>
+        <item quantity="other">%1$d Aufnahmen an diesem Ort</item>
+    </plurals>
+    <string name="photos_map_page">Seite %1$d</string>
+    <string name="photos_map_marker_one">1 Aufnahme an diesem Ort</string>
+    <string name="photos_map_previous_page">Vorherige Seite</string>
+    <string name="photos_map_next_page">Nächste Seite</string>
+    <string name="photos_text_empty">Dieser Beitrag enthält keinen Text.</string>
+</resources>

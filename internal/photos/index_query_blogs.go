@@ -10,6 +10,26 @@ import (
 )
 
 func (l *Library) indexBlogs(ctx context.Context, rel, query string, includeAdminOnly bool) ([]BlogPost, error) {
+	return l.indexBlogsPage(ctx, rel, query, includeAdminOnly, 0, 50, false)
+}
+
+func (l *Library) indexListingBlogs(ctx context.Context, rel string, opts ListOptions, listing *Listing) error {
+	if opts.BlogPageSize <= 0 {
+		var err error
+		listing.Blogs, err = l.indexBlogs(ctx, rel, opts.Query, opts.IncludeAdminOnly)
+		return err
+	}
+	posts, err := l.indexBlogsPage(ctx, rel, opts.Query, opts.IncludeAdminOnly,
+		(opts.Page-1)*opts.BlogPageSize, opts.BlogPageSize+1, opts.BlogSummaries)
+	if err != nil {
+		return err
+	}
+	listing.BlogHasNext = len(posts) > opts.BlogPageSize
+	listing.Blogs = posts[:min(len(posts), opts.BlogPageSize)]
+	return nil
+}
+
+func (l *Library) indexBlogsPage(ctx context.Context, rel, query string, includeAdminOnly bool, offset, limit int, summaries bool) ([]BlogPost, error) {
 	if l == nil || !l.index.available() {
 		return nil, nil
 	}
@@ -74,13 +94,20 @@ func (l *Library) indexBlogs(ctx context.Context, rel, query string, includeAdmi
 	if joinSearch {
 		from += " JOIN blog_search ON blog_search.rowid = bi.rowid"
 	}
-	sql := `SELECT bi.path, bi.name, bi.date, bi.mod_time_unix_nano, bi.text, bi.tags, bi.admin_only FROM ` + from
+	textColumn := "bi.text"
+	if summaries && query == "" {
+		textColumn = "''"
+	}
+	sql := `SELECT bi.path, bi.name, bi.date, bi.mod_time_unix_nano, ` + textColumn + `, bi.tags, bi.admin_only FROM ` + from
 	if len(where) > 0 {
 		sql += ` WHERE ` + strings.Join(where, " AND ")
 	}
 	sql += ` ORDER BY bi.date DESC, bi.mod_time_unix_nano DESC, bi.path DESC`
-	if !postFilter {
-		sql += ` LIMIT 50`
+	// Search still passes through the shared matcher. Paginate matches, not candidates.
+	if query == "" {
+		sql += ` LIMIT ? OFFSET ?`
+		args = append(args, limit, offset)
+		offset = 0
 	}
 	rows, err := l.index.db.QueryContext(ctx, sql, args...)
 	if err != nil {
@@ -89,7 +116,12 @@ func (l *Library) indexBlogs(ctx context.Context, rel, query string, includeAdmi
 	}
 	defer rows.Close()
 	blogs := make([]BlogPost, 0)
+	scanned := 0
 	for rows.Next() {
+		scanned++
+		if query != "" && scanned > 10000 {
+			return nil, ErrSearchTooBroad()
+		}
 		var post BlogPost
 		var dateValue string
 		var modUnix int64
@@ -106,17 +138,25 @@ func (l *Library) indexBlogs(ctx context.Context, rel, query string, includeAdmi
 				post.Date = &parsed
 			}
 		}
-		post.HTML = renderMarkdown([]byte(post.Text))
 		if query == "" || matchesBlogQuery(post, query) {
+			if offset > 0 {
+				offset--
+				continue
+			}
+			if summaries {
+				post.Text = ""
+			} else {
+				_, post.HTML = blogContent(post.Name, []byte(post.Text))
+			}
 			blogs = append(blogs, post)
+			if len(blogs) >= limit {
+				break
+			}
 		}
 	}
 	if err := rows.Err(); err != nil {
 		finishTrace(ListTraceString("error", err.Error()))
 		return nil, err
-	}
-	if postFilter && len(blogs) > 50 {
-		blogs = blogs[:50]
 	}
 	finishTrace(
 		ListTraceInt("count", len(blogs)),

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.49.0
+  version: 0.50.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -32,6 +32,613 @@ tags:
     description: Tags, custom fields and virtual folders.
 
 paths:
+  /api/photos/v1/session:
+    get:
+      tags:
+      - Photos
+      operationId: getPhotoCatalogSession
+      summary: Check native gallery protocol, identity and capabilities
+      description: Requires photos.read. Available from BearStack 0.50.0. Does not modify photo content.
+      responses:
+        '200':
+          description: Successful response. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogSession'
+        '400':
+          description: Invalid path, page, section or filter.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '404':
+          description: Content not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '422':
+          description: Search too broad; refine the query.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Missing photos.read or admin-only content. Error shape follows the access middleware or catalog code.
+  /api/photos/v1/map:
+    get:
+      tags: [Photos]
+      operationId: mapPhotoCatalog
+      summary: Read clustered GPS locations for a native map
+      description: >-
+        Requires photos.read. Recursively aggregates the complete indexed folder or global search,
+        excluding admin-only content. At most 289 markers are returned for the requested viewport;
+        total counts every matching GPS item, with no media-page truncation. A marker with count 1
+        includes a path for media/info. Supply all four bounds or omit all for a world overview.
+        West greater than east crosses the antimeridian. Search uses the gallery query planner;
+        complex searches exceeding its candidate budget return 422 rather than partial results.
+        An index that has not yet scanned the requested folder returns 503.
+      parameters:
+      - name: path
+        in: query
+        schema: {type: string, default: ''}
+        description: Library-relative folder. Subfolders are included. Nonempty q searches the whole library.
+      - name: q
+        in: query
+        schema: {type: string}
+        description: Shared gallery search syntax, maximum 800 UTF-8 bytes.
+      - name: type
+        in: query
+        schema: {type: string, enum: [image, video, audio]}
+      - name: south
+        in: query
+        schema: {type: number, format: double, minimum: -90, maximum: 90}
+      - name: north
+        in: query
+        schema: {type: number, format: double, minimum: -90, maximum: 90}
+        description: Must be greater than south.
+      - name: west
+        in: query
+        schema: {type: number, format: double, minimum: -180, maximum: 180}
+      - name: east
+        in: query
+        schema: {type: number, format: double, minimum: -180, maximum: 180}
+        description: Must differ from west. Use west -180 and east 180 for all longitudes.
+      responses:
+        '200':
+          description: GPS markers and their geographic extent. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoMap'
+        '400':
+          description: Invalid path, query, type or bounds (invalid_bounds).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Missing photos.read or admin-only folder.
+        '404':
+          description: Folder not found.
+        '422':
+          description: Search exceeds candidate budget (search_too_broad).
+        '503':
+          description: Photo index not ready (map_index_not_ready). Retry-After is 10 seconds.
+        '500':
+          description: Internal error.
+  /api/photos/v1/map/media:
+    get:
+      tags:
+      - Photos
+      operationId: readPhotoMapMedia
+      summary: Read a bounded media page for a dense GPS location
+      description: Requires photos.read. Recursively lists up to 96 indexed media in a geographic bounding box, using exactly the same folder, visibility, type and
+        search predicates as the map. All four bounds are required. No originals or metadata are modified.
+      parameters:
+      - name: path
+        in: query
+        schema:
+          type: string
+          default: ''
+        description: Library-relative folder. Subfolders are included. Nonempty q searches the whole library.
+      - name: q
+        in: query
+        schema:
+          type: string
+        description: Shared gallery search syntax, maximum 800 UTF-8 bytes.
+      - name: type
+        in: query
+        schema:
+          type: string
+          enum:
+          - image
+          - video
+          - audio
+      - name: south
+        in: query
+        schema:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        required: true
+      - name: north
+        in: query
+        schema:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        description: Must be greater than south.
+        required: true
+      - name: west
+        in: query
+        schema:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        required: true
+      - name: east
+        in: query
+        schema:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        description: Must differ from west. Use west -180 and east 180 for all longitudes.
+        required: true
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          default: 1
+      responses:
+        '200':
+          description: Bounded page. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoMapMediaPage'
+        '400':
+          description: Invalid path, query, type or bounds (invalid_bounds).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Missing photos.read or admin-only folder.
+        '404':
+          description: Folder not found.
+        '422':
+          description: Search exceeds candidate budget (search_too_broad).
+        '503':
+          description: Photo index not ready (map_index_not_ready). Retry-After is 10 seconds.
+        '500':
+          description: Internal error.
+  /api/photos/v1/browse:
+    get:
+      tags:
+      - Photos
+      operationId: browsePhotoCatalog
+      summary: Read a bounded native gallery page
+      description: Requires photos.read. Pages contain at most 96 media, 24 folders with two previews each, and 20 blog summaries. Folder previews are fetched only after slicing the folder page. Blog bodies load on demand. Native listings exclude admin-only content. Existing sorting, search, index and visibility rules are shared with the browser. Page numbers refer to the live library; clients should deduplicate paths if indexing occurs during browsing.
+      responses:
+        '200':
+          description: Successful response. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogPage'
+        '400':
+          description: Invalid path, page, section or filter.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '404':
+          description: Content not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '422':
+          description: Search too broad; refine the query.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Missing photos.read or admin-only content. Error shape follows the access middleware or catalog code.
+      parameters:
+      - name: path
+        in: query
+        required: false
+        description: Current folder; omitted means root.
+        schema:
+          type: string
+      - name: q
+        in: query
+        required: false
+        description: Uses the browser photo-search syntax and searches globally; nonempty q resets path.
+        schema:
+          type: string
+          maxLength: 800
+      - name: page
+        in: query
+        required: false
+        description: ''
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+          default: 1
+      - name: section
+        in: query
+        required: false
+        description: Empty includes all sections. Subsequent section pages can load independently.
+        schema:
+          type: string
+          enum:
+          - ''
+          - media
+          - folders
+          - blogs
+          default: ''
+      - name: sort
+        in: query
+        required: false
+        description: ''
+        schema:
+          type: string
+          enum:
+          - ascending_date
+          - descending_date
+          - ascending_name
+          - descending_name
+          default: descending_date
+      - name: type
+        in: query
+        required: false
+        description: ''
+        schema:
+          type: string
+          enum:
+          - ''
+          - image
+          - video
+          - audio
+      - name: recursive
+        in: query
+        required: false
+        description: List media recursively; folder/blog navigation uses direct listings.
+        schema:
+          type: string
+          enum:
+          - '0'
+          - '1'
+          default: '0'
+      - name: gps
+        in: query
+        required: false
+        description: Only media with GPS coordinates.
+        schema:
+          type: string
+          enum:
+          - '0'
+          - '1'
+          default: '0'
+  /api/photos/v1/media/info:
+    get:
+      tags:
+      - Photos
+      operationId: getPhotoCatalogInfo
+      summary: Read original photo metadata
+      description: Requires photos.read. Available from BearStack 0.50.0. Does not modify photo content.
+      responses:
+        '200':
+          description: Successful response. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - media
+                properties:
+                  media:
+                    $ref: '#/components/schemas/PhotoCatalogMedia'
+        '400':
+          description: Invalid path, page, section or filter.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '404':
+          description: Content not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '422':
+          description: Search too broad; refine the query.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Missing photos.read or admin-only content. Error shape follows the access middleware or catalog code.
+      parameters:
+      - name: path
+        in: query
+        required: true
+        description: Library-relative path. Absolute paths and traversal are rejected.
+        schema:
+          type: string
+  /api/photos/v1/blog:
+    get:
+      tags:
+      - Photos
+      operationId: getPhotoCatalogBlog
+      summary: Read safe Markdown or text content
+      description: Requires photos.read. Reads .md and .txt from the photo library using the shared one-MiB source limit and safe renderer. Private folders, symlinks and traversal are checked before reading.
+      responses:
+        '200':
+          description: Successful response. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - blog
+                properties:
+                  blog:
+                    $ref: '#/components/schemas/PhotoCatalogBlog'
+        '400':
+          description: Invalid path, page, section or filter.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '404':
+          description: Content not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '422':
+          description: Search too broad; refine the query.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Missing photos.read or admin-only content. Error shape follows the access middleware or catalog code.
+      parameters:
+      - name: path
+        in: query
+        required: true
+        description: Library-relative path. Absolute paths and traversal are rejected.
+        schema:
+          type: string
+  /api/photos/v1/media:
+    get:
+      tags:
+      - Photos
+      operationId: getPhotoCatalogOriginal
+      summary: Read media
+      description: Requires photos.read. Streams the original file using the existing media implementation. Supports byte ranges and conditional requests.
+      responses:
+        '200':
+          description: Streams the original file using the existing media implementation. Supports byte ranges and conditional requests.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid path, page, section or filter.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '404':
+          description: Content not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '422':
+          description: Search too broad; refine the query.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Missing photos.read or admin-only content. Error shape follows the access middleware or catalog code.
+        '206':
+          description: Requested byte range.
+        '304':
+          description: Not modified.
+      parameters:
+      - name: path
+        in: query
+        required: true
+        description: Library-relative path. Absolute paths and traversal are rejected.
+        schema:
+          type: string
+      - name: v
+        in: query
+        required: false
+        description: Opaque source revision returned in the listing.
+        schema:
+          type: string
+  /api/photos/v1/thumbnail:
+    get:
+      tags:
+      - Photos
+      operationId: getPhotoCatalogThumbnail
+      summary: Read thumbnail
+      description: Requires photos.read. Uses the existing bounded thumbnail generator and private versioned cache policy.
+      responses:
+        '200':
+          description: Uses the existing bounded thumbnail generator and private versioned cache policy.
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid path, page, section or filter.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '404':
+          description: Content not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '422':
+          description: Search too broad; refine the query.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Missing photos.read or admin-only content. Error shape follows the access middleware or catalog code.
+      parameters:
+      - name: path
+        in: query
+        required: true
+        description: Library-relative path. Absolute paths and traversal are rejected.
+        schema:
+          type: string
+      - name: v
+        in: query
+        required: false
+        description: Opaque source revision returned in the listing.
+        schema:
+          type: string
+      - name: size
+        in: query
+        required: false
+        description: Requested longest side; the server normalizes supported thumbnail sizes.
+        schema:
+          type: integer
+          minimum: 1
+  /api/photos/v1/thumbnail/status:
+    post:
+      tags:
+      - Photos
+      operationId: getPhotoCatalogThumbnailStatus
+      summary: Check and schedule visible thumbnails in a batch
+      description: Requires photos.read. Read-only with respect to photo content; it can schedule derivative thumbnail work. Reuses the browser batch service. Maximum request body 64 KiB; at most 200 requests are processed. Cache-Control is no-store.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - items
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                    - path
+                    - size
+                    properties:
+                      path:
+                        type: string
+                      size:
+                        type: integer
+                        minimum: 0
+                  maxItems: 200
+      responses:
+        '200':
+          description: Thumbnail readiness, Cache-Control no-store.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - path
+                      - size
+                      - ready
+                      properties:
+                        path:
+                          type: string
+                        size:
+                          type: integer
+                          minimum: 0
+                        ready:
+                          type: boolean
+                    maxItems: 200
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /api/photos/labeling/v1/faces/{id}/favorite:
     parameters:
       - name: id
@@ -2163,6 +2770,293 @@ components:
             format: binary
 
   schemas:
+    PhotoCatalogError:
+      type: object
+      required:
+      - code
+      properties:
+        code:
+          type: string
+    PhotoCatalogMedia:
+      type: object
+      required:
+      - path
+      - name
+      - type
+      - mime
+      - version
+      - modified
+      - bytes
+      - width
+      - height
+      properties:
+        path:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+          - image
+          - video
+          - audio
+        mime:
+          type: string
+        version:
+          type: string
+          description: Opaque source revision used as v in media URLs.
+        modified:
+          type: string
+          format: date-time
+        captured:
+          type: string
+          format: date-time
+        bytes:
+          type: integer
+          format: int64
+          minimum: 0
+        width:
+          type: integer
+          minimum: 0
+        height:
+          type: integer
+          minimum: 0
+        camera:
+          type: string
+        lens:
+          type: string
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        rating:
+          type: number
+        tags:
+          type: array
+          items:
+            type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        faces:
+          type: array
+          items:
+            type: object
+        automatic_faces:
+          type: array
+          items:
+            type: object
+    PhotoCatalogBlog:
+      type: object
+      required:
+      - path
+      - name
+      - modified
+      properties:
+        path:
+          type: string
+        name:
+          type: string
+        date:
+          type: string
+          format: date-time
+        modified:
+          type: string
+          format: date-time
+        text:
+          type: string
+          description: Full text only on the blog endpoint.
+        html:
+          type: string
+          description: Escaped server formatting; full content only on the blog endpoint. Never needs a WebView.
+    PhotoCatalogFolder:
+      type: object
+      required:
+      - path
+      - name
+      - media_count
+      - approximate
+      - folder_count
+      - previews
+      properties:
+        path:
+          type: string
+        name:
+          type: string
+        date:
+          type: string
+          format: date-time
+        media_count:
+          type: integer
+          minimum: 0
+        approximate:
+          type: boolean
+        folder_count:
+          type: integer
+          minimum: 0
+        previews:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhotoCatalogMedia'
+          maxItems: 2
+    PhotoCatalogSession:
+      type: object
+      required:
+      - protocol
+      - instance
+      - dataset
+      - account
+      - can_manage_people
+      - settings
+      properties:
+        protocol:
+          type: integer
+          const: 1
+        instance:
+          type: string
+        dataset:
+          type: string
+        account:
+          type: string
+        can_manage_people:
+          type: boolean
+        settings:
+          type: object
+          required:
+          - thumbnail_size
+          - folder_thumbnail_size
+          - preview_size
+          - large_preview_size
+          - slideshow_seconds
+          - frame_seconds
+          properties:
+            thumbnail_size:
+              type: integer
+              minimum: 0
+            folder_thumbnail_size:
+              type: integer
+              minimum: 0
+            preview_size:
+              type: integer
+              minimum: 0
+            large_preview_size:
+              type: integer
+              minimum: 0
+            slideshow_seconds:
+              type: integer
+              minimum: 0
+            frame_seconds:
+              type: integer
+              minimum: 0
+    PhotoMap:
+      type: object
+      required: [total, markers]
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        bounds:
+          $ref: '#/components/schemas/PhotoMapBounds'
+        markers:
+          type: array
+          maxItems: 289
+          items:
+            type: object
+            required: [latitude, longitude, count, bounds]
+            properties:
+              latitude: {type: number, format: double, minimum: -90, maximum: 90}
+              longitude: {type: number, format: double, minimum: -180, maximum: 180}
+              count: {type: integer, minimum: 1}
+              bounds:
+                $ref: '#/components/schemas/PhotoMapBounds'
+              path:
+                type: string
+                description: Library-relative media path, present only for single-item markers.
+    PhotoMapMediaPage:
+      type: object
+      required:
+      - total
+      - page
+      - has_next
+      - media
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        has_next:
+          type: boolean
+        media:
+          type: array
+          maxItems: 96
+          items:
+            $ref: '#/components/schemas/PhotoCatalogMedia'
+    PhotoMapBounds:
+      type: object
+      description: Geographic extent of matching items. Omitted for an empty result. Coordinates may coincide for a single location; west greater than east crosses the antimeridian.
+      required: [south, west, north, east]
+      properties:
+        south: {type: number, format: double, minimum: -90, maximum: 90}
+        west: {type: number, format: double, minimum: -180, maximum: 180}
+        north: {type: number, format: double, minimum: -90, maximum: 90}
+        east: {type: number, format: double, minimum: -180, maximum: 180}
+    PhotoCatalogPage:
+      type: object
+      required:
+      - path
+      - parent
+      - page
+      - total
+      - has_next
+      - folder_total
+      - folder_has_next
+      - blog_has_next
+      - media
+      - folders
+      - blogs
+      properties:
+        path:
+          type: string
+        parent:
+          type: string
+        page:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          minimum: 0
+        has_next:
+          type: boolean
+        folder_total:
+          type: integer
+          minimum: 0
+        folder_has_next:
+          type: boolean
+        blog_has_next:
+          type: boolean
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhotoCatalogMedia'
+          maxItems: 96
+        folders:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhotoCatalogFolder'
+          maxItems: 24
+        blogs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhotoCatalogBlog'
+          maxItems: 20
+
     GroupPhotosPage:
       type: object
       required: [minimum, photo]

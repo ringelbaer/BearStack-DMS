@@ -1,15 +1,11 @@
 package de.bearstack.people.data.remote
 
+import de.bearstack.people.text.*
+import de.bearstack.people.R
 import de.bearstack.people.connection.Connections
 import java.io.IOException
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlinx.coroutines.suspendCancellableCoroutine
-import okhttp3.Call
-import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Response
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -26,18 +22,27 @@ data class Candidates(val people: List<Person>, val next: Long, val hasNext: Boo
 data class MergeSuggestion(val id: Long, val source: Person, val target: Person)
 data class Receipt(val operation: String, val action: String, val source: Long, val target: Long, val newId: Long,
     val faces: Long, val groups: Int, val at: Long, val sourceRevision: Long = 0)
-class ApiFailure(val status: Int, val code: String, message: String) : IOException(message)
+class ApiFailure(val status: Int, val code: String, message: String,
+    override val userText: UiText = when {
+        status==401 -> UiText(R.string.error_auth)
+        status==403 -> UiText(R.string.error_people_permission)
+        code=="name_exists" -> UiText(R.string.error_name_exists)
+        status==409 -> UiText(R.string.error_group_changed)
+        else -> UiText(R.string.error_server,status)
+    }) : IOException(message),DescribedFailure {
+    constructor(status: Int,code: String,text: UiText):this(status,code,"API failure ($status)",text)
+}
 
 interface LabelingService {
     suspend fun session(): Session
     suspend fun candidates(after: Long, upper: Long): Candidates
-    suspend fun namedPeople(after: Long, upper: Long): Candidates = throw ApiFailure(404,"not_found","Der Personenbereich benötigt BearStack 0.43.0.")
+    suspend fun namedPeople(after: Long, upper: Long): Candidates = throw ApiFailure(404,"not_found",UiText(R.string.error_people_version))
     suspend fun searchPeople(after: Long, upper: Long, q: String): Candidates =
-        if(q.isBlank()) namedPeople(after,upper) else throw ApiFailure(404,"not_found","Die Textsuche benötigt BearStack 0.45.0.")
+        if(q.isBlank()) namedPeople(after,upper) else throw ApiFailure(404,"not_found",UiText(R.string.error_search_version))
     suspend fun personFaces(id: Long, offset: Int, after: Long): Person = person(id,offset)
     suspend fun person(id: Long, offset: Int = 0): Person
     suspend fun suggestions(q: String, exact: Boolean = false): List<Person>
-    suspend fun nextMergeSuggestion(): MergeSuggestion? = throw ApiFailure(404,"not_found","Ähnliche Gruppen benötigen BearStack 0.49.0.")
+    suspend fun nextMergeSuggestion(): MergeSuggestion? = throw ApiFailure(404,"not_found",UiText(R.string.error_merge_version))
     suspend fun action(id: Long, body: String): Receipt
     suspend fun receipt(operation: String, dataset: String): Receipt
 }
@@ -53,40 +58,20 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
     private suspend fun json(path: String, query: Map<String,String> = emptyMap(), body: String? = null): JSONObject {
         val url = base.resolve(path)!!.newBuilder().apply { query.forEach { (k,v) -> addQueryParameter(k,v) } }.build()
         val request = Request.Builder().url(url).apply { body?.let { post(it.toRequestBody("application/json".toMediaType())) } }.build()
-        return suspendCancellableCoroutine { continuation ->
-            val call = client.newCall(request)
-            continuation.invokeOnCancellation { call.cancel() }
-            call.enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) { if (!continuation.isCancelled) continuation.resumeWithException(e) }
-                override fun onResponse(call: Call, response: Response) {
-                    response.use {
-                        try {
-                            val responseBody = it.body ?: throw IOException("Leere Serverantwort")
-                            val source = responseBody.source()
-                            if (source.request(256 * 1024L + 1)) throw IOException("Serverantwort überschreitet das Größenlimit")
-                            val text = source.readUtf8()
-                            if (!it.isSuccessful) {
-                                val code = runCatching { JSONObject(text).optString("code") }.getOrDefault("")
-                                val message = when(it.code) {
-                                    401 -> "Anmeldung abgelaufen oder Zugangsdaten falsch."
-                                    403 -> "Das Konto benötigt das Recht zur Personenverwaltung."
-                                    404 -> "Datensatz oder API nicht vorhanden (BearStack ab 0.30.0 erforderlich)."
-                                    409 -> if (code == "name_exists") "Dieser Name existiert bereits." else "Die Personengruppe wurde geändert. Bitte erneut prüfen."
-                                    else -> "Serverfehler (${it.code}). Erneut versuchen."
-                                }
-                                throw ApiFailure(it.code, code, message)
-                            }
-                            val result = JSONObject(text)
-                            if (!continuation.isCancelled) continuation.resume(result)
-                        } catch (e: Exception) { if (!continuation.isCancelled) continuation.resumeWithException(e) }
-                    }
-                }
-            })
+        return client.json(request, 256 * 1024L) { status, code ->
+            when(status) {
+                401 -> UiText(R.string.error_auth)
+                403 -> UiText(R.string.error_people_permission)
+                404 -> UiText(R.string.error_people_missing)
+                409 -> if (code == "name_exists") UiText(R.string.error_name_exists) else UiText(R.string.error_group_changed)
+                else -> UiText(R.string.error_server,status)
+            }
         }
     }
+
     override suspend fun session(): Session {
         val o = json("session")
-        require(o.getInt("protocol") == 1 && o.getBoolean("can_manage")) { "Inkompatible API oder fehlende Personenrechte." }
+        requireMessage(o.getInt("protocol") == 1 && o.getBoolean("can_manage"),R.string.error_people_protocol)
         return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"))
     }
     override suspend fun candidates(after: Long, upper: Long): Candidates {

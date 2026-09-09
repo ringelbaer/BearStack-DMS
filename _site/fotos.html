@@ -1002,6 +1002,11 @@
 
 
 <h1 id="fotos">Fotos<a class="headerlink" href="#fotos" title="Permanent link">&para;</a></h1>
+<p>Ab BearStack <strong>0.50.0</strong> steht die lesende Galerie auch nativ in <strong>BearStack Fotos für
+Android</strong> zur Verfügung: Datumsgruppen, Ordner mit zwei Vorschauen, Suche,
+Vollbild/Zoom, Foto-Informationen sowie Markdown- und Textbeiträge. Die App nutzt
+denselben Fotoindex und dieselben Zugriffsregeln. Die gesamte App-Oberfläche, Hilfen und Fehlermeldungen sind deutsch/englisch. Details zum laufenden Ausbau
+stehen in der <a href="android.html">Android-Anleitung</a>.</p>
 <p>Das Fotomodul ist optional und nutzt einen directory-first Ansatz: BearStack importiert Fotos nicht in die Dokumentenablage, sondern rendert ein vorhandenes, read-only Fotoverzeichnis als Galerie. Die Mediendateien bleiben unverändert; BearStack legt Index, Tags, Vorschaubilder und Einstellungen getrennt davon ab.</p>
 <h2 id="aktivierung">Aktivierung<a class="headerlink" href="#aktivierung" title="Permanent link">&para;</a></h2>
 <p>Minimal in <code>.env</code>:</p>
@@ -1011,6 +1016,7 @@
 </span></code></pre></div>
 <p><code>BEARSTACK_PHOTOS_DIR</code> ist das vorhandene read-only Fotoverzeichnis. <code>BEARSTACK_PHOTOS_DATA_DIR</code> ist der BearStack-eigene Fotobereich für erzeugte Dateien; standardmäßig liegen darunter <code>thumbnails/</code> und die separate Foto-Indexdatenbank <code>photos.db</code>. Bei Bedarf können <code>BEARSTACK_PHOTOS_CACHE_DIR</code> und <code>BEARSTACK_PHOTOS_DB_PATH</code> einzeln überschrieben werden.</p>
 <p>Nach dem Neustart erscheint <code>Fotos</code> in der Hauptnavigation.</p>
+<p>Die native Android-Karte unter <strong>Weitere Optionen → Karte</strong> berücksichtigt Ordner samt Unterordnern oder die aktuelle Suche. <code>/api/photos/v1/map</code> bündelt alle passenden indexierten GPS-Aufnahmen je Ausschnitt in maximal 289 Marker. Die App bietet außerdem eine Karte in den Foto-Informationen; GPX- und fotobasierte Routen folgen im weiteren Ausbau.</p>
 <h2 id="galerie-und-suche">Galerie und Suche<a class="headerlink" href="#galerie-und-suche" title="Permanent link">&para;</a></h2>
 <p>Auf kleinen Bildschirmen steht die Foto-Info unter dem Foto über die volle Breite. Das Panel ist separat scrollbar; sein Schließen-Knopf bleibt sichtbar.</p>
 <p>Die Foto-Lightbox stoppt am ersten und letzten Medium. Die jeweiligen Navigationspfeile sind dort deaktiviert; auch die Diashow endet beim letzten Medium.</p>

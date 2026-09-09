@@ -1,5 +1,7 @@
 package de.bearstack.people.people
 
+import de.bearstack.people.text.*
+import de.bearstack.people.R
 import androidx.room.withTransaction
 import de.bearstack.people.data.local.*
 import de.bearstack.people.data.remote.*
@@ -26,7 +28,7 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
     suspend fun state(): QueueState = dao.state(scope) ?: QueueState(scope, session.upper, UUID.randomUUID().toString()).also { dao.state(it) }
     suspend fun pending(): Pending? = dao.pending(scope)
     suspend fun next(): Person? {
-        check(pending() == null) { "Zuerst die offene Aktion klären." }
+        checkMessage(pending() == null,R.string.error_pending_first)
         var state = state()
         while (true) {
             if (state.current != 0L) {
@@ -69,7 +71,7 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
     }
     suspend fun prepare(person: Person, action: String, name: String = "", target: Person? = null, face: Long = 0,
         allowDuplicate: Boolean = false, favorite: Boolean? = null, suggestionId: Long? = null) {
-        check(pending() == null) { "Zuerst die offene Aktion klären." }
+        checkMessage(pending() == null,R.string.error_pending_first)
         val operation = UUID.randomUUID().toString()
         val body = JSONObject().put("operation_id",operation).put("dataset",session.dataset).put("revision",person.revision)
             .put("action",action).put("name",name).put("allow_duplicate",allowDuplicate).put("face_id",face)
@@ -86,7 +88,7 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
         try {
             val receipt = try { api.receipt(pending.operation,session.dataset) }
                 catch (e: ApiFailure) { if(e.status != 404) throw e; api.action(pending.source,pending.body) }
-            require(receipt.operation == pending.operation && receipt.source == pending.source) { "Ungültige Aktionsquittung" }
+            requireMessage(receipt.operation == pending.operation && receipt.source == pending.source,R.string.error_receipt)
             db.withTransaction {
                 val inserted = dao.event(Event(scope,receipt.operation,receipt.action,receipt.faces,receipt.groups,receipt.at))
                 if (inserted != -1L) dao.state(state().afterReceipt(receipt))
@@ -102,7 +104,7 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
     suspend fun skip(person: Person) = db.withTransaction {
         check(pending() == null)
         val state = state()
-        check(state.current == person.id) { "Die aktuelle Gruppe wurde geändert." }
+        checkMessage(state.current == person.id,R.string.error_group_changed)
         dao.event(Event(scope,"skip:${state.pass}:${person.id}","skip",person.count,1,System.currentTimeMillis()/1000))
         dao.state(state.copy(current=0,page=0,skipped=(state.skipped.ids()+person.id).distinct().stored(),
             skipHistory=(state.skipHistory.positions().filterNot { it.id==person.id }+GroupPosition(person.id,state.page)).storedPositions()))
@@ -126,7 +128,7 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
             resume=(restored.filterNot {it==selected}+paused+before.resume.positions()).distinctBy {it.id}.storedPositions()))
     }
     suspend fun back(): Person? {
-        check(pending() == null) { "Zuerst die offene Aktion klären." }
+        checkMessage(pending() == null,R.string.error_pending_first)
         while (true) {
             val before=state()
             val history=before.skipHistory.positions()
@@ -140,7 +142,7 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
             }
             val usable=person!=null && person.name.isEmpty() && person.count>0
             db.withTransaction {
-                check(pending()==null && state()==before) { "Die Warteschlange wurde geändert. Erneut versuchen." }
+                checkMessage(pending()==null && state()==before,R.string.error_queue_changed)
                 val trimmed=before.copy(skipHistory=history.dropLast(1).storedPositions())
                 if(usable) {
                     val resume=(if(before.current!=0L && before.current!=previous.id) listOf(GroupPosition(before.current,before.page)) else emptyList()) + before.resume.positions()
@@ -159,7 +161,7 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
         check(pending() == null)
         val old = state()
         val fresh = api.session()
-        require(fresh.scope == scope) { "Datenbestand oder Konto wurde geändert. Verbindung erneut öffnen." }
+        requireMessage(fresh.scope == scope,R.string.error_scope_changed)
         dao.state(QueueState(scope,fresh.upper,UUID.randomUUID().toString(),
             remaining=if(skippedOnly) old.skipped else "", exhausted=skippedOnly,
             detached=old.detached,skipped=if(skippedOnly) "" else old.skipped,stagedIgnores=old.stagedIgnores))

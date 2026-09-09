@@ -18,6 +18,33 @@ import org.junit.Test
 
 /** Runs only against the disposable Go fixture, never against a configured user instance. */
 class ServerIntegrationTest {
+    @Test fun nativeGalleryReadOnlyAgainstRealGoServerBehindPrefix() = runBlocking {
+        val root=InstrumentationRegistry.getArguments().getString("labelingUrl")
+        assumeTrue("Optional Go integration fixture",root=="https://127.0.0.1:18787/")
+        val offer=Connections.inspect(root!!)!!
+        val address=root+"gallery/"
+        val client=Connections.client(Profile(address,"reader","secret",offer.encoded))
+        try {
+            val api=PhotosApi(client,address)
+            assertFalse(api.session().canManagePeople)
+            val page=api.browse(PhotoQuery(recursive=true))
+            assertEquals(1,page.media.size)
+            val photo=page.media.single()
+            assertEquals("one.jpg",photo.path)
+            assertEquals(32,api.info(photo.path).width)
+            assertTrue(api.browse(PhotoQuery(query="one")).media.isNotEmpty())
+            assertTrue(api.browse(PhotoQuery(),page=2,section="media").media.isEmpty())
+            val blog=api.blog("story.md")
+            assertTrue(blog.html.contains("<h2>Gallery story</h2>"))
+            withContext(Dispatchers.IO) {
+                client.newCall(Request.Builder().url(api.original(photo)).header("Range","bytes=0-9").build()).execute().use {
+                    assertEquals(206,it.code);assertEquals(10,it.body!!.bytes().size)
+                }
+            }
+            try { LabelingApi(client,address).session();fail("reader allowed to edit people") }
+            catch(e:ApiFailure) {assertEquals(403,e.status)}
+        } finally {Connections.close(client)}
+    }
     @Test fun mergeDecisionsAndPortraitsAgainstRealGoServerBehindPrefix() = runBlocking {
         val root=InstrumentationRegistry.getArguments().getString("labelingUrl")
         assumeTrue("Optional Go integration fixture",root=="https://127.0.0.1:18787/")

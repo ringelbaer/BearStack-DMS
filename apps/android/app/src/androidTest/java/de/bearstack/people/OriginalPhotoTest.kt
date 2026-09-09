@@ -39,7 +39,7 @@ class OriginalPhotoTest {
                 setAttribute(ExifInterface.TAG_ORIENTATION,ExifInterface.ORIENTATION_ROTATE_90.toString())
                 saveAttributes()
             }
-            compose.setContent { MaterialTheme {
+            compose.setGermanContent { MaterialTheme {
                 OriginalPhoto(file,loader,FaceBounds(.1f,.2f,.2f,.3f),0f,{},{},Modifier.size(300.dp,400.dp))
             } }
             compose.waitUntil(5000) { compose.onAllNodesWithTag("original-face-box").fetchSemanticsNodes().size==1 }
@@ -57,7 +57,7 @@ class OriginalPhotoTest {
         val bitmap=Bitmap.createBitmap(600,300,Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.BLUE) }
         var zoom by mutableFloatStateOf(0f)
         try {
-            compose.setContent { MaterialTheme {
+            compose.setGermanContent { MaterialTheme {
                 val distance=with(LocalDensity.current) { 240.dp.toPx() }
                 OriginalPhoto(bitmap,loader,FaceBounds(.1f,.2f,.2f,.3f),zoom,{zoom=it},
                     {zoom=zoomAfterDrag(zoom,it,distance)},Modifier.size(300.dp,400.dp))
@@ -85,7 +85,7 @@ class OriginalPhotoTest {
         var held by mutableStateOf<Long?>(null);var zoom by mutableFloatStateOf(0f);var edits=0
         var dismissed by mutableStateOf(false)
         try {
-            compose.setContent { MaterialTheme { Box(Modifier.fillMaxSize()) {
+            compose.setGermanContent { MaterialTheme { Box(Modifier.fillMaxSize()) {
                 val distance=with(LocalDensity.current) { 240.dp.toPx() }
                 val drag: (Float)->Unit={zoom=zoomAfterDrag(zoom,it,distance)}
                 PersonSwipeArea(1,held==null,{edits++},Modifier.fillMaxSize()) {

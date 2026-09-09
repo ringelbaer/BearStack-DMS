@@ -160,6 +160,7 @@ type listingSourceState struct {
 	mediaFiltered                  bool
 	mediaSorted                    bool
 	mediaPaged                     bool
+	blogsPaged                     bool
 	recursiveFolderPreviewFallback bool
 	previewFilesystemFallback      bool
 }
@@ -170,6 +171,7 @@ var (
 		mediaFiltered:             true,
 		mediaSorted:               true,
 		mediaPaged:                true,
+		blogsPaged:                true,
 		previewFilesystemFallback: false,
 	}
 	filesystemListingSource = listingSourceState{
@@ -210,13 +212,15 @@ func (l *Library) finishListing(ctx context.Context, opts ListOptions, listing *
 			ListTraceInt("blogs", len(listing.Blogs)),
 		)
 	}
-	if !opts.Recursive {
-		finishPreviews := StartListTraceStep(ctx, "photos.library.folder_previews", ListTraceInt("folders", len(listing.Folders)), ListTraceInt("limit", opts.FolderPreviewSize))
-		if err := l.populateFolderPreviews(ctx, listing.Folders, opts.FolderPreviewSize, opts.IncludeAdminOnly, source.recursiveFolderPreviewFallback, source.previewFilesystemFallback); err != nil {
-			finishPreviews(ListTraceString("error", err.Error()))
-			return err
-		}
-		finishPreviews(ListTraceInt("preview_items", folderPreviewItemCount(listing.Folders)))
+	if opts.SkipFolders {
+		listing.Folders = nil
+	}
+	if opts.SkipBlogs {
+		listing.Blogs = nil
+	}
+	if opts.SkipMedia {
+		listing.Media = nil
+		listing.Total = 0
 	}
 	finishDisplay := StartListTraceStep(ctx, "photos.library.display_names", ListTraceInt("folders", len(listing.Folders)), ListTraceInt("breadcrumbs", len(listing.Breadcrumbs)))
 	decorateListingDisplay(listing)
@@ -224,6 +228,27 @@ func (l *Library) finishListing(ctx context.Context, opts ListOptions, listing *
 	finishFolderSort := StartListTraceStep(ctx, "photos.library.sort_folders", ListTraceInt("count", len(listing.Folders)), ListTraceString("order", listing.Order), ListTraceString("sort", opts.Sort))
 	sortFolders(listing.Folders, listing.Order, opts.Sort)
 	finishFolderSort()
+	listing.FolderTotal = len(listing.Folders)
+	if opts.FolderPageSize > 0 {
+		listing.Folders, listing.FolderHasNext = listingPage(listing.Folders, opts.Page, opts.FolderPageSize)
+	}
+	if opts.BlogPageSize > 0 && !source.blogsPaged {
+		listing.Blogs, listing.BlogHasNext = listingPage(listing.Blogs, opts.Page, opts.BlogPageSize)
+	}
+	if opts.BlogSummaries {
+		for i := range listing.Blogs {
+			listing.Blogs[i].Text = ""
+			listing.Blogs[i].HTML = ""
+		}
+	}
+	if !opts.Recursive && !opts.SkipFolders {
+		finishPreviews := StartListTraceStep(ctx, "photos.library.folder_previews", ListTraceInt("folders", len(listing.Folders)), ListTraceInt("limit", opts.FolderPreviewSize))
+		if err := l.populateFolderPreviews(ctx, listing.Folders, opts.FolderPreviewSize, opts.IncludeAdminOnly, source.recursiveFolderPreviewFallback, source.previewFilesystemFallback); err != nil {
+			finishPreviews(ListTraceString("error", err.Error()))
+			return err
+		}
+		finishPreviews(ListTraceInt("preview_items", folderPreviewItemCount(listing.Folders)))
+	}
 	if !source.mediaFiltered && queryHasPerson(opts.Query) {
 		if err := l.AddAutomaticFaces(ctx, listing.Media); err != nil {
 			return err
@@ -271,6 +296,19 @@ func (l *Library) finishListing(ctx context.Context, opts ListOptions, listing *
 	paginateListingMedia(listing, opts)
 	finishPaginate(ListTraceInt("page_count", len(listing.Media)))
 	return nil
+}
+
+// Compare before multiplying so even an out-of-range page cannot overflow.
+func listingPage[T any](items []T, page, size int) ([]T, bool) {
+	if page < 1 {
+		page = 1
+	}
+	if size <= 0 || len(items) == 0 || page-1 > (len(items)-1)/size {
+		return nil, false
+	}
+	start := (page - 1) * size
+	end := start + min(size, len(items)-start)
+	return items[start:end], end < len(items)
 }
 
 func folderPreviewItemCount(folders []Folder) int {

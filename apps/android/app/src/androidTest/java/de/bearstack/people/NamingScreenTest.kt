@@ -38,7 +38,7 @@ class NamingScreenTest {
             }
         }
         try {
-            compose.setContent {PeopleApp(vm)}
+            compose.setGermanContent {PeopleApp(vm)}
             compose.waitUntil(10_000){!vm.state.value.busy && vm.state.value.person!=null}
             compose.runOnIdle {vm.ignore()}
             compose.waitUntil(10_000){!vm.state.value.busy && vm.state.value.person?.id==2L}
@@ -80,7 +80,7 @@ class NamingScreenTest {
         lateinit var vm: PeopleViewModel
         compose.runOnUiThread {vm=PeopleViewModel(app,db,api,api.session);store.put("test",vm)}
         try {
-            compose.setContent {
+            compose.setGermanContent {
                 val density=LocalDensity.current
                 CompositionLocalProvider(LocalDensity provides Density(density.density,2f)) {PeopleApp(vm)}
             }
@@ -92,7 +92,7 @@ class NamingScreenTest {
             compose.waitUntil(10_000){vm.state.value.duplicates.isNotEmpty()}
             compose.onNodeWithText("Name bereits vorhanden").assertIsDisplayed()
             compose.onNodeWithText("Separat benennen").assertIsDisplayed()
-            compose.onNodeWithText("1 Gesichter · #9").performScrollTo().performClick()
+            compose.onNodeWithText("1 Gesicht · #9").performScrollTo().performClick()
             compose.waitUntil(10_000){api.commits==1 && !vm.state.value.busy}
             assertFalse(vm.state.value.naming)
             assertEquals(2L,vm.state.value.person!!.id)

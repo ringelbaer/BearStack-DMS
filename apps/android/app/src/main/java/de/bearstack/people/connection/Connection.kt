@@ -1,5 +1,7 @@
 package de.bearstack.people.connection
 
+import de.bearstack.people.text.*
+import de.bearstack.people.R
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -22,7 +24,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -42,10 +44,8 @@ object Connections {
         } finally { client.dispatcher.executorService.shutdown() }
     }
     fun address(raw: String): HttpUrl {
-        val url = raw.trim().trimEnd('/').plus('/').toHttpUrl()
-        require(url.isHttps && url.username.isEmpty() && url.password.isEmpty() && url.query == null && url.fragment == null) {
-            "Eine HTTPS-Adresse ohne Zugangsdaten, Abfrage oder Fragment eingeben."
-        }
+        val url = raw.trim().trimEnd('/').plus('/').toHttpUrlOrNull() ?: throw UserInputFailure(UiText(R.string.error_address))
+        requireMessage(url.isHttps && url.username.isEmpty() && url.password.isEmpty() && url.query == null && url.fragment == null,R.string.error_address)
         return url
     }
     private fun systemTrust(): X509TrustManager = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply {
@@ -62,7 +62,7 @@ object Connections {
                 chain[0].checkValidity()
                 if (pinned.isNotEmpty()) {
                     if (Base64.encodeToString(chain[0].encoded, Base64.NO_WRAP) != pinned)
-                        throw CertificateException("Serverzertifikat geändert. Verbindung erneut einrichten und Fingerabdruck prüfen.")
+                        throw UserCertificateFailure(UiText(R.string.error_certificate_changed))
                     return
                 }
                 try { system.checkServerTrusted(chain, type) } catch (e: CertificateException) {
@@ -90,7 +90,7 @@ object Connections {
             cert?.let {
                 CertificateOffer(Base64.encodeToString(it.encoded, Base64.NO_WRAP),
                     MessageDigest.getInstance("SHA-256").digest(it.encoded).joinToString(":") { b -> "%02X".format(b) },
-                    it.subjectX500Principal.name, it.notAfter.toString())
+                    it.subjectX500Principal.name, it.notAfter.toInstant().toString())
             }
         } catch (e: java.io.IOException) {
             throw ConnectionAttemptException(ConnectionStage.CERTIFICATE_CHECK,e)
@@ -98,11 +98,11 @@ object Connections {
     }
     fun client(profile: Profile): OkHttpClient {
         val base = address(profile.url)
-        require(profile.username.isNotBlank() && ':' !in profile.username && profile.username.none { it.isISOControl() }) { "Ungültiger Benutzername" }
+        requireMessage(profile.username.isNotBlank() && ':' !in profile.username && profile.username.none { it.isISOControl() },R.string.error_username)
         return builder(trust(profile.certificate)).addInterceptor { chain ->
             val request = chain.request()
-            check(request.url.scheme == base.scheme && request.url.host == base.host && request.url.port == base.port &&
-                request.url.encodedPath.startsWith(base.encodedPath)) { "Anfrage außerhalb der BearStack-Instanz" }
+            checkMessage(request.url.scheme == base.scheme && request.url.host == base.host && request.url.port == base.port &&
+                request.url.encodedPath.startsWith(base.encodedPath),R.string.error_request_origin)
             chain.proceed(request.newBuilder().header("Authorization", Credentials.basic(profile.username, profile.password, Charsets.UTF_8))
                 .header("Accept", "application/json").build())
         }.build()
@@ -122,7 +122,7 @@ class ProfileStore(context: Context) {
     suspend fun read(): Profile? = withContext(Dispatchers.IO) {
         if (!file.baseFile.exists()) return@withContext null
         val bytes = file.readFully()
-        require(bytes.size > 28) { "Gespeicherte Verbindung ist beschädigt" }
+        requireMessage(bytes.size > 28,R.string.error_profile)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, bytes.copyOfRange(0,12))) }
         val json = JSONObject(String(cipher.doFinal(bytes.copyOfRange(12,bytes.size)), Charsets.UTF_8))
         Profile(json.getString("url"), json.getString("username"), json.getString("password"), json.optString("certificate"))

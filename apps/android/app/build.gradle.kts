@@ -13,7 +13,8 @@ android {
         applicationId = "de.bearstack.people"
         minSdk = 26
         targetSdk = 36
-        versionCode = 21
+        resourceConfigurations += listOf("de","en")
+        versionCode = 22
         versionName = rootProject.file("VERSION").readText().trim()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -51,6 +52,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("androidx.media3:media3-exoplayer:1.11.0")
+    implementation("androidx.media3:media3-ui:1.11.0")
+    implementation("androidx.media3:media3-datasource-okhttp:1.11.0")
     implementation("androidx.room:room-runtime:2.8.4")
     kapt("androidx.room:room-compiler:2.8.4")
     testImplementation("junit:junit:4.13.2")

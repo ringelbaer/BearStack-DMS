@@ -6,6 +6,12 @@ icon: lucide/images
 
 # Fotos
 
+Ab BearStack **0.50.0** steht die lesende Galerie auch nativ in **BearStack Fotos für
+Android** zur Verfügung: Datumsgruppen, Ordner mit zwei Vorschauen, Suche,
+Vollbild/Zoom, Foto-Informationen sowie Markdown- und Textbeiträge. Die App nutzt
+denselben Fotoindex und dieselben Zugriffsregeln. Die gesamte App-Oberfläche, Hilfen und Fehlermeldungen sind deutsch/englisch. Details zum laufenden Ausbau
+stehen in der [Android-Anleitung](android.md).
+
 Das Fotomodul ist optional und nutzt einen directory-first Ansatz: BearStack importiert Fotos nicht in die Dokumentenablage, sondern rendert ein vorhandenes, read-only Fotoverzeichnis als Galerie. Die Mediendateien bleiben unverändert; BearStack legt Index, Tags, Vorschaubilder und Einstellungen getrennt davon ab.
 
 ## Aktivierung
@@ -21,6 +27,8 @@ BEARSTACK_PHOTOS_DATA_DIR=/var/lib/bearstack/photos
 `BEARSTACK_PHOTOS_DIR` ist das vorhandene read-only Fotoverzeichnis. `BEARSTACK_PHOTOS_DATA_DIR` ist der BearStack-eigene Fotobereich für erzeugte Dateien; standardmäßig liegen darunter `thumbnails/` und die separate Foto-Indexdatenbank `photos.db`. Bei Bedarf können `BEARSTACK_PHOTOS_CACHE_DIR` und `BEARSTACK_PHOTOS_DB_PATH` einzeln überschrieben werden.
 
 Nach dem Neustart erscheint `Fotos` in der Hauptnavigation.
+
+Die native Android-Karte unter **Weitere Optionen → Karte** berücksichtigt Ordner samt Unterordnern oder die aktuelle Suche. `/api/photos/v1/map` bündelt alle passenden indexierten GPS-Aufnahmen je Ausschnitt in maximal 289 Marker. Die App bietet außerdem eine Karte in den Foto-Informationen; GPX- und fotobasierte Routen folgen im weiteren Ausbau.
 
 ## Galerie und Suche
 

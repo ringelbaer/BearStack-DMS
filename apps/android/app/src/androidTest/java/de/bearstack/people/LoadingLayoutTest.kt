@@ -35,7 +35,7 @@ class LoadingLayoutTest {
         lateinit var vm: PeopleViewModel
         compose.runOnUiThread {vm=PeopleViewModel(app,db,fake,fake.session);store.put("test",vm)}
         try {
-            compose.setContent {PeopleApp(vm)}
+            compose.setGermanContent {PeopleApp(vm)}
             compose.waitUntil(10_000){!vm.state.value.busy && vm.state.value.person!=null}
             compose.onNodeWithText("Zurück").assertDoesNotExist()
             compose.onNodeWithText("Weiter").assertDoesNotExist()
@@ -50,7 +50,7 @@ class LoadingLayoutTest {
         lateinit var vm: PeopleViewModel
         compose.runOnUiThread {vm=PeopleViewModel(app,db,fake,fake.session);store.put("test",vm)}
         try {
-            compose.setContent {
+            compose.setGermanContent {
                 val density=LocalDensity.current
                 CompositionLocalProvider(LocalDensity provides Density(density.density,2f)) {PeopleApp(vm)}
             }
@@ -102,7 +102,7 @@ class LoadingLayoutTest {
         lateinit var vm: PeopleViewModel
         compose.runOnUiThread {vm=PeopleViewModel(app,db,service,fake.session);store.put("test",vm)}
         try {
-            compose.setContent {
+            compose.setGermanContent {
                 val density=LocalDensity.current
                 CompositionLocalProvider(LocalDensity provides Density(density.density,fontScale)) {PeopleApp(vm)}
             }

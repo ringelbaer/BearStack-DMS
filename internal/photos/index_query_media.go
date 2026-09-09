@@ -21,6 +21,7 @@ const (
 var indexPostFilterCandidateMax = 10000
 
 type indexMediaOptions struct {
+	MapBounds        *MapBounds
 	Directory        string
 	ExactDir         bool
 	Subtree          bool
@@ -265,7 +266,7 @@ func (l *Library) indexMediaNegatedTagFast(ctx context.Context, opts indexMediaO
 
 func indexMediaFrom(opts indexMediaOptions, joinSearch bool) string {
 	from := `media_index mi`
-	if !joinSearch {
+	if !joinSearch && opts.MapBounds == nil {
 		if opts.useGlobalGPSDateIndex() {
 			from = `media_index AS mi INDEXED BY idx_media_index_gps_date`
 		} else if opts.useGlobalDateIndex() {
@@ -327,6 +328,9 @@ func (p indexQueryPlan) onlyNegatedTagTerm() bool {
 }
 
 func (l *Library) indexFastTotal(ctx context.Context, opts indexMediaOptions) (int, bool) {
+	if opts.MapBounds != nil {
+		return 0, false
+	}
 	if opts.Plan.ExpressionSQL != "" {
 		return 0, false
 	}
@@ -402,6 +406,11 @@ func indexWhere(opts indexMediaOptions) (string, []any, bool) {
 	}
 	if opts.GPSOnly {
 		where = append(where, "mi.latitude IS NOT NULL AND mi.longitude IS NOT NULL")
+	}
+	if opts.MapBounds != nil {
+		condition, values := mapViewportWhere(*opts.MapBounds)
+		where = append(where, condition)
+		args = append(args, values...)
 	}
 	if opts.Plan.ExpressionSQL != "" {
 		where = append(where, opts.Plan.ExpressionSQL)

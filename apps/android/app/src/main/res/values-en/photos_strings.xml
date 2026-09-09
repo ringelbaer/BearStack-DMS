@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photos_media_error">Could not play this media file.</string>
+    <string name="photos_download">Download original</string>
+    <string name="photos_downloading">Saving %1$s · %2$s</string>
+    <string name="photos_downloaded">Saved %1$s</string>
+    <string name="photos_cancel">Cancel</string>
+    <string name="app_name">BearStack Photos</string>
+    <string name="photos_title">Photos</string>
+    <string name="photos_folders">Folders</string>
+    <string name="photos_search">Search</string>
+    <string name="photos_search_hint">Photos, places, people, tags …</string>
+    <string name="photos_search_help">Search as in the browser, for example person:Anna or tag:Holiday.</string>
+    <string name="photos_people">Manage people</string>
+    <string name="photos_connection">Switch connection</string>
+    <string name="photos_menu">More options</string>
+    <string name="photos_back">Back</string>
+    <string name="photos_retry">Try again</string>
+    <string name="photos_more">Load more</string>
+    <string name="photos_empty">No photos here yet.</string>
+    <string name="photos_no_results">No matching content found.</string>
+    <plurals name="photos_count">
+        <item quantity="one">1 media item</item>
+        <item quantity="other">%1$d media items</item>
+    </plurals>
+    <plurals name="photos_count_approximate">
+        <item quantity="one">At least 1 media item</item>
+        <item quantity="other">At least %1$d media items</item>
+    </plurals>
+    <string name="photos_texts">Stories &amp; notes</string>
+    <string name="photos_close">Close</string>
+    <string name="photos_info">Information</string>
+    <string name="photos_original">Full screen photo</string>
+    <string name="photos_image_error">Could not load image.</string>
+    <string name="photos_previous">Previous photo</string>
+    <string name="photos_next">Next photo</string>
+    <string name="photos_zoom">Zoom in</string>
+    <string name="photos_zoom_reset">Fit photo</string>
+    <string name="photos_file">File</string>
+    <string name="photos_camera">Camera</string>
+    <string name="photos_location">Location</string>
+    <string name="photos_details">%1$d × %2$d · %3$s</string>
+    <string name="photos_loading">Loading …</string>
+    <string name="photos_of">%1$d of %2$d</string>
+    <string name="photos_frame">Start photo frame</string>
+    <string name="photos_slideshow_settings">Slideshow settings</string>
+    <string name="photos_frame_settings">Photo frame settings</string>
+    <string name="photos_interval">Time per photo</string>
+    <string name="photos_seconds">%1$d seconds</string>
+    <string name="photos_repeat">Repeat at the end</string>
+    <string name="photos_frame_fill">Fill screen (crop photos)</string>
+    <string name="photos_frame_captions">Show name and date</string>
+    <string name="photos_playback_help">Playback waits for the photo to load and pauses while viewing information, settings or another app. Tap the frame to show controls.</string>
+    <string name="photos_save">Save</string>
+    <string name="photos_play">Start slideshow</string>
+    <string name="photos_pause">Pause slideshow</string>
+    <string name="photos_map">Map</string>
+    <string name="photos_map_east">Pan east</string>
+    <string name="photos_map_west">Pan west</string>
+    <string name="photos_map_north">Pan north</string>
+    <string name="photos_map_south">Pan south</string>
+    <string name="photos_map_zoom_in">Zoom in</string>
+    <string name="photos_map_zoom_out">Zoom out</string>
+    <string name="photos_map_fit">Show all locations</string>
+    <string name="photos_map_marker">%1$d items at this location</string>
+    <string name="photos_map_retry">Retry map tiles</string>
+    <string name="photos_map_help">Drag the map or pinch to zoom. Tap a number to zoom in and a single point to open the item. Subfolders are included.</string>
+    <string name="photos_map_index_pending">The map is waiting for the photo index. Try again shortly.</string>
+    <string name="photos_map_error">The map could not be loaded. Check your connection and try again.</string>
+    <plurals name="photos_map_count">
+        <item quantity="one">1 item in this map area</item>
+        <item quantity="other">%1$d items in this map area</item>
+    </plurals>
+    <string name="photos_map_empty">No items with GPS coordinates found.</string>
+    <plurals name="photos_map_selection">
+        <item quantity="one">1 item at this location</item>
+        <item quantity="other">%1$d items at this location</item>
+    </plurals>
+    <string name="photos_map_page">Page %1$d</string>
+    <string name="photos_map_marker_one">1 item at this location</string>
+    <string name="photos_map_previous_page">Previous page</string>
+    <string name="photos_map_next_page">Next page</string>
+    <string name="photos_text_empty">This post contains no text.</string>
+</resources>
