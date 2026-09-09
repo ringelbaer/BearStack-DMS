@@ -120,10 +120,27 @@ test("recognize one photo and name faces inside its info panel", async ({ browse
   await expect(lightbox.locator("[data-photo-face-status]")).toHaveText("Keine aktiven Gesichter gefunden.");
   const analyze = lightbox.getByRole("button", { name: "Gesichter erkennen und zuordnen" });
   const refresh = lightbox.getByRole("button", { name: "Gesichter aktualisieren", exact: true });
-  const analyzeBox = await analyze.boundingBox(), refreshBox = await refresh.boundingBox();
-  expect(refreshBox.x).toBeGreaterThanOrEqual(analyzeBox.x + analyzeBox.width);
-  expect(refreshBox.width).toBe(44);
-  expect(refreshBox.y + refreshBox.height / 2).toBeCloseTo(analyzeBox.y + analyzeBox.height / 2, 0);
+  const actions = lightbox.getByRole("group", { name: "Gesichtsfunktionen" });
+  const controls = [actions.getByRole("img", { name: "Gesichter", exact: true }), analyze,
+    actions.getByRole("button", { name: "Gesicht einrahmen", exact: true }), refresh];
+  for (const width of [320, 1024, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await actions.scrollIntoViewIfNeeded();
+    let previous;
+    for (const [index, control] of controls.entries()) {
+      const box = await control.boundingBox();
+      expect(box.height).toBe(44);
+      if (index > 0) {
+        expect(box.width).toBe(44);
+        expect(box.x).toBeGreaterThanOrEqual(previous.x + previous.width);
+        expect(box.y).toBeCloseTo(previous.y, 0);
+        await expect(control).toHaveAttribute("title", /.+/);
+      }
+      expect(box.x + box.width).toBeLessThanOrEqual(width);
+      previous = box;
+    }
+  }
+  await actions.screenshot({ path: "/tmp/bearstack-face-action-row.png" });
   const callsBeforeRefresh = inferenceCalls;
   await refresh.click();
   await expect(lightbox.locator("[data-photo-face-status]")).toHaveText("Keine aktiven Gesichter gefunden.");
@@ -158,7 +175,7 @@ test("recognize one photo and name faces inside its info panel", async ({ browse
   await expect(lightbox.locator(".photo-info-face")).toContainText("Daria");
   // Reanalysis preserves explicit naming; no global face worker is needed.
   await analyze.click();
-  await expect(lightbox.locator("[data-photo-face-status]")).toContainText("1 Gesicht.");
+  await expect(lightbox.locator("[data-photo-face-status]")).toBeEmpty();
   await expect(lightbox.locator(".photo-info-face")).toContainText("Daria");
   expect(errors).toEqual([]);
   await context.close();

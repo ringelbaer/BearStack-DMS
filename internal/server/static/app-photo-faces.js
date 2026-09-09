@@ -71,7 +71,7 @@
           if (token !== generation || current !== item) return;
           if (!response.ok) throw new Error(result.error || "Gesichter konnten nicht geladen werden.");
           var count = render(result.photo);
-          status.textContent = count ? count + (count === 1 ? " Gesicht. Bei Bedarf mit dem Stift benennen oder zuordnen." : " Gesichter. Bei Bedarf mit dem Stift benennen oder zuordnen.") : "Keine aktiven Gesichter gefunden.";
+          status.textContent = count ? "" : "Keine aktiven Gesichter gefunden.";
         } catch (error) {
           if (token !== generation || error.name === "AbortError") return;
           status.textContent = error.message || "Gesichtserkennung fehlgeschlagen. Bitte erneut versuchen.";

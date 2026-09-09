@@ -3687,10 +3687,11 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 
 .photo-face-tools { display: grid; gap: 8px; margin-block: 12px; }
 .photo-face-tools[hidden] { display: none; }
-.photo-face-actions { display: grid; grid-template-columns: minmax(0,1fr) 44px; align-items: center; gap: 8px; }
-.photo-face-actions > [data-photo-face-analyze] { min-width: 0; white-space: normal; }
-.photo-face-actions > [data-photo-face-refresh] { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; }
+.photo-face-actions { display: flex; align-items: center; gap: 8px; }
+.photo-face-actions > button { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; min-width: 44px; padding: 0; }
+.photo-face-symbol { display: grid; place-items: center; flex: 0 0 32px; height: 44px; }
 .photo-face-tools > [role="status"] { color: #e5e7eb; margin: 0; }
+.photo-face-tools > [role="status"]:empty { display: none; }
 .photo-info-face { display: grid; grid-template-columns: 64px minmax(0,1fr) 44px; align-items: center; gap: 8px; margin-block: 8px; }
 .photo-info-face img { width: 64px; height: 64px; object-fit: contain; border-radius: 6px; }
 .photo-info-face span { overflow-wrap: anywhere; }

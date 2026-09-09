@@ -352,7 +352,11 @@ angezeigten Gesicht, auch nach dem Wechsel des Vorschaubilds oder Gruppenfotos.
 Lange Pfade brechen mobil um; zusätzliche Serverabfragen sind nicht erforderlich.
 
 **Gesichter direkt aus der Foto-Info bearbeiten:** Fotobearbeiter können im
-Infopanel des geöffneten Bildes **Gesichter erkennen und zuordnen** wählen.
+Infopanel des geöffneten Bildes die Lupe **Gesichter erkennen und zuordnen** wählen.
+Die kompakte Symbolleiste zeigt in einer Zeile das Gesichtsicon, die Lupe,
+den Auswahlrahmen für **Gesicht einrahmen** und den Refresh-Button. Alle Buttons
+haben Tooltips, zugängliche Namen und 44 Pixel große Bedienflächen. Die Gesichtsliste
+erscheint ohne zusätzlichen Zähl- und Bedienhinweis.
 Bearbeitet wird nur dieses Foto, auch bei pausierter automatischer Verarbeitung;
 ein konfigurierter lokaler Gesichtsdienst ist erforderlich. Der Vorgang wartet bei
 Bedarf auf die gerade laufende Bildanalyse und nutzt dieselbe Erkennung und
@@ -364,7 +368,7 @@ Gesichter und Namen im Infopanel aktualisiert. **Ignorieren** im Dialog blendet
 das angezeigte unbenannte Gesicht aus; andere Gesichter derselben Gruppe bleiben
 erhalten. Bei zwischenzeitlichen Änderungen wird die aktuelle Gesichtsliste
 geladen und die Auswahl muss erneut geprüft werden. Das kleine **Refresh-Symbol**
-rechts neben dem Erkennen-Button lädt bestehende Zuordnungen ohne neue Bildanalyse
+am Ende der Symbolleiste lädt bestehende Zuordnungen ohne neue Bildanalyse
 (Tooltip: **Gesichter aktualisieren**). Videos und Audios bieten diese
 Aktionen nicht an. Manuelle Korrekturen, ignorierte Gesichter und Favoriten werden
 bei eindeutiger Wiedererkennung übernommen. Beim Bildwechsel wird die laufende

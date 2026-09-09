@@ -6,6 +6,8 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ### BearStack 0.50.0 – in Entwicklung
 
+- Foto-Info: alle Gesichtsfunktionen in einer kompakten Zeile mit Gesichtsicon, Lupe, Auswahlrahmen und überarbeitetem Refresh-Pfeil. Einheitliche 44-Pixel-Bedienflächen, Tooltips und zugängliche Namen; der zusätzliche Zähl- und Bedienhinweis unter der Symbolleiste entfällt. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.
+
 - Gesichtserkennung findet auch große Porträtgesichter: zusätzlicher 320-Pixel-Suchlauf mit Rückrechnung aller Rahmen und Landmarken, stabiler Bevorzugung vorhandener Treffer und unveränderter Erkennungsschwelle. Merkmalsextraktion weiterhin auf der größeren Vorlage; Modell und Vektoren kompatibel. Reproduziert mit einem zuvor übersehenen Porträt und abgesichert durch öffentliche Modelltests für große und gemischte Gesichtsgrößen. Gesichtsdienst neu bauen/starten und betroffene Fotos erneut analysieren. PATCH-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION unverändert.
 
 - Fehlende Gesichter lassen sich in der Foto-Info mit Maus, Touch oder Tastatur einrahmen und atomar benennen oder einer vorhandenen Person zuordnen. Ohne Erkennungsdienst; manuelle Regionen bleiben bei erneuter Analyse erhalten, ohne künstliche Vergleichsvektoren oder doppelte überlappende Treffer. Quellrevision, Rechte-, Geometrie- und Mengenprüfungen; additive API und automatische Foto-Schema-Migration 29. MINOR-Erweiterung innerhalb der unveröffentlichten 0.50.0; VERSION unverändert.
