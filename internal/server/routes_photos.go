@@ -2,6 +2,8 @@
 package server
 
 var photoRouteSpecs = []routeSpec{
+	{pattern: "GET /photos/people/merge-suggestions", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceMergeSuggestions},
+	{pattern: "POST /photos/people/merge-suggestions/{id}/{action}", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceMergeSuggestionAction},
 	{pattern: "GET /photos/people/groups", capabilities: authCapPhotosEdit, handler: (*Server).handleGroupPhotos},
 	{pattern: "GET /photos/people/groups/image/{id}", capabilities: authCapPhotosEdit, handler: (*Server).handleGroupPhotoImage},
 	{pattern: "POST /photos/people/groups/ignore", capabilities: authCapPhotosEdit, handler: (*Server).handleGroupPhotoIgnore},

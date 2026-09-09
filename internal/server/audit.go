@@ -456,6 +456,8 @@ func auditActionTarget(r *http.Request) (string, string) {
 		return "Fotoperson benennen", idAuditTarget("Person", r.PathValue("id"))
 	case "POST /photos/people/{id}/merge":
 		return "Fotopersonen zusammenführen", idAuditTarget("Person", r.PathValue("id"))
+	case "POST /photos/people/merge-suggestions/{id}/{action}":
+		return "Zusammenführungsvorschlag " + r.PathValue("action"), idAuditTarget("Vorschlag", r.PathValue("id"))
 	case "POST /photos/people/groups/ignore":
 		return "Unbenannte Gesichter im Gruppenbild ignorieren", ""
 	case "POST /photos/faces/edit":

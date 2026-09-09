@@ -396,6 +396,57 @@ Gesichtsbilder werden beim Benennen nicht erneut geladen. Die automatische Migra
 auf Foto-Schema **23** ergänzt lediglich den Auswahlindex und analysiert keine Bilder neu.
 Die JSON-Ansicht sowie der Ignorieren- und Bild-Endpunkt sind in OpenAPI dokumentiert.
 
+**Bessere Gesichtszuordnung (ab 0.48.0):** Der Abgleich bewertet sämtliche
+zulässigen Referenzvektoren exakt. Anschließend werden die besten unterschiedlichen
+Personen mit aktuellen Sichtbarkeits- und Zuordnungsprüfungen ausgewählt. Viele
+ähnliche Referenzen oder bereits im Foto zugeordnete Personen verdrängen damit
+keine passenden Vergleichsgruppen. Die bisherigen Grenzwerte für neue Fotos
+bleiben bei 0,55 Ähnlichkeit und 0,08 Abstand zur zweitbesten Person.
+
+Unter **Einstellungen → Gesichtserkennung → Vorhandene Zuordnungen verbessern**
+arbeitet ein separat pausierbarer Hintergrundlauf mit gespeicherten Vektoren,
+auch ohne laufenden Erkennungsdienst. Er ist standardmäßig aktiviert und wird nach
+Benennen, manuellen Korrekturen, Favoriten-/Referenzänderungen und erfolgreichen
+Analysepaketen vorgemerkt. **Zuordnungen erneut prüfen** startet eine neue Prüfung;
+**Abgleich pausieren/fortsetzen** erhält deren Fortschritt. Cursor und Ergebnisse
+werden gemeinsam gespeichert; Abbruch und Neustart verlieren keine abgeschlossenen
+Pakete. Geprüft werden höchstens 100 Datensätze je Paket mit zusätzlichem Zeitbudget.
+
+Automatisch verschoben werden nur unbenannte, unbestätigte, nicht ignorierte und
+nicht favorisierte Gesichter zu ausdrücklich benannten Personen. Dafür gelten
+strengere Grenzwerte von 0,62 und 0,10 Abstand. Manuelle Trennungen bleiben erhalten;
+eine bereits im selben Foto vorhandene Zielperson ist ausgeschlossen. Schlechte
+Aufnahmen mit gemessener unzureichender Qualität treiben keinen automatischen
+Nachabgleich an. Die Zähler zeigen geprüfte Datensätze, neue Zuordnungen und im
+aktuellen Lauf erzeugte Vorschläge.
+
+**Ähnliche Gruppen** unter `/photos/people/merge-suggestions` zeigt Fotobearbeitern
+bis zu 60 gespeicherte Zusammenführungsvorschläge. Auch ähnliche unbenannte
+Teilgruppen werden berücksichtigt. Vorschläge ab 0,45 Ähnlichkeit sind keine
+Wahrscheinlichkeitsangaben und benötigen eine Prüfung. **Zusammenführen** verwendet
+die angezeigten Gruppenrevisionen; zwischenzeitliche Änderungen verlangen eine
+neue Prüfung. **Getrennt lassen** bleibt als Entscheidung gespeichert und verhindert
+auch künftige automatische Zuordnungen zwischen diesen Gruppen. Aufrufe der Seite
+lösen keine neue Vektorsuche aus. Bearbeiten benötigt `photos.edit`, Einstellungen
+und Steuerung benötigen `photos.manage`.
+
+**Kleine Gesichter:** Nach der ersten Analyse des maximal 1.600 Pixel großen Fotos
+werden bei Bedarf bis zu acht Originalausschnitte nachanalysiert. Das Original wird
+dafür einmal zusätzlich dekodiert; Ausschnitte sind auf 1.600 Pixel und zusammen
+16 MiB begrenzt. Nur eindeutig wiedergefundene Gesichter mit ausreichend höherer
+Auflösung übernehmen den verbesserten Vektor. Die ursprünglichen Markierungen
+bleiben stabil. Ausfälle der optionalen Nachanalyse behalten das erste Ergebnis;
+Abbruch, Quelländerungen und Schutzmarkierungen stoppen die Verarbeitung.
+
+Der aktualisierte Gesichtsdienst liefert zusätzlich Gesichtsauflösung und Schärfe.
+Neue automatisch ausgewählte Referenzen benötigen mindestens 48 Gesichtspixel und
+Schärfewert 20; diese technischen Mindestwerte sind keine allgemeine Genauigkeits-
+garantie. Explizite Favoriten dürfen die Qualitätsauswahl überschreiben, niemals
+Sichtbarkeitsregeln. Ältere kompatible Dienste und gespeicherte Vektoren ohne
+Qualitätswerte bleiben verwendbar. Für gemessene Qualitätsfilter den Gesichtsdienst
+mit aktualisieren. Modelle und Protokoll 1 bleiben kompatibel. Foto-Schema 25
+migriert automatisch, ohne bestehende Namen oder Gesichter zu löschen.
+
 **Referenzen pro Person:** Unter **Einstellungen → Gesichtserkennung** lässt sich
 die Zielanzahl auf 1–100 einstellen; der Standard ist **30**. Seit 0.40.0 werden
 Vergleichsbilder möglichst über verschiedene Galerieordner verteilt. Innerhalb
@@ -417,8 +468,8 @@ wiedergefundene Region übertragen. Gelöschte oder ersetzte Fotos verlieren ihr
 veralteten Gesichtsdaten einschließlich der Favoriten.
 
 Änderungen der Zielanzahl und das Update bestehender Referenzen werden vor der
-nächsten Analyse in kurzen, fortsetzbaren Schritten übernommen. Bestehende Gruppen
-werden dadurch nicht automatisch zusammengeführt. Die Android-Oberfläche erhält
+nächsten Analyse in kurzen, fortsetzbaren Schritten übernommen. Die Referenzauswahl selbst führt keine Gruppen zusammen. Der separate
+Hintergrundabgleich prüft unbestätigte Zuordnungen und erzeugt Vorschläge. Die Android-Oberfläche erhält
 vorerst keine Sterne. Für spätere Clients stehen `GET` und `PUT` unter
 `/api/photos/labeling/v1/faces/{id}/favorite` bereit (`photos.edit`). Der PUT-Body
 enthält `person_id` und den gewünschten booleschen Wert `favorite`; Wiederholungen

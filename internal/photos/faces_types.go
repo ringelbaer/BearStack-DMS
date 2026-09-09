@@ -1,11 +1,7 @@
 // Face recognition data types; internal vectors are never part of public views.
 package photos
 
-import (
-	"sync"
-
-	"github.com/coder/hnsw"
-)
+import "sync"
 
 type RecognizedFace struct {
 	nameSource string
@@ -71,7 +67,7 @@ type FaceStatus struct {
 type faceRuntime struct {
 	referenceLimit int
 	mu             sync.Mutex
-	graph          *hnsw.Graph[int64]
+	graph          *faceVectorIndex
 	revision       int64
 	people         map[int64]int64
 	nodes          map[int64][]int64

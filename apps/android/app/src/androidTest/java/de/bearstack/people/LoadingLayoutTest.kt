@@ -42,6 +42,51 @@ class LoadingLayoutTest {
         } finally {compose.runOnUiThread {store.clear()}}
     }
 
+    @Test fun stickyActionsSeparateNavigationHelpAndNaming() {
+        val app=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as Application
+        val db=Room.inMemoryDatabaseBuilder(app,LabelingDatabase::class.java).build()
+        val fake=FakeService().apply { people[1]=people.getValue(1).copy(count=8) }
+        val store=ViewModelStore()
+        lateinit var vm: PeopleViewModel
+        compose.runOnUiThread {vm=PeopleViewModel(app,db,fake,fake.session);store.put("test",vm)}
+        try {
+            compose.setContent {
+                val density=LocalDensity.current
+                CompositionLocalProvider(LocalDensity provides Density(density.density,2f)) {PeopleApp(vm)}
+            }
+            compose.waitUntil(10_000){!vm.state.value.busy && vm.state.value.person!=null}
+            val bar=compose.onNodeWithTag("labeling-action-bar")
+            val bounds=bar.getUnclippedBoundsInRoot()
+            val actions=compose.onNodeWithContentDescription("Gruppenaktionen")
+            val help=compose.onNodeWithContentDescription("Hilfe zum Benennen")
+            val pencil=compose.onNodeWithContentDescription("Person benennen")
+            assertTrue(actions.getUnclippedBoundsInRoot().left < help.getUnclippedBoundsInRoot().left)
+            assertTrue(help.getUnclippedBoundsInRoot().left < pencil.getUnclippedBoundsInRoot().left)
+            compose.onNodeWithText("Weiter").performScrollTo()
+            assertEquals(bounds,bar.getUnclippedBoundsInRoot())
+            compose.onNodeWithText("Menü").performClick()
+            compose.onNodeWithText("Gruppe ignorieren").assertDoesNotExist()
+            compose.onNodeWithText("Statistik").performClick()
+            bar.assertDoesNotExist()
+            compose.onNodeWithText("Menü").performClick()
+            compose.onNodeWithText("Zur Bearbeitung").performClick()
+            help.performClick()
+            compose.onNodeWithText("Stift: Person benennen oder einer vorhandenen Person zuordnen.").assertIsDisplayed()
+            compose.onNodeWithText("Schließen").performClick()
+            actions.performClick()
+            compose.onNodeWithText("Gruppe ignorieren").assertIsEnabled()
+            compose.onNodeWithText("Letztes Überspringen zurücknehmen").assertIsNotEnabled()
+            compose.onNodeWithText("Gruppe überspringen").performClick()
+            compose.waitUntil(10_000){!vm.state.value.busy && vm.state.value.canGoBack}
+            actions.performClick()
+            compose.onNodeWithText("Letztes Überspringen zurücknehmen").performClick()
+            compose.waitUntil(10_000){!vm.state.value.busy && vm.state.value.person?.id==1L}
+            pencil.performClick()
+            compose.onNodeWithText("Name").assertExists()
+            compose.onNodeWithText("Abbrechen").performClick()
+        } finally {compose.runOnUiThread {store.clear()}}
+    }
+
     private fun checkLoadingLayout(fontScale: Float, scrollToNavigation: Boolean) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as Application
         val db=Room.inMemoryDatabaseBuilder(app,LabelingDatabase::class.java).build()

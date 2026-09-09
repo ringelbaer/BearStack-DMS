@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack private face inference
-  version: 1.0.0
+  version: 1.1.0
 security:
 - bearer: []
 paths:
@@ -36,7 +36,7 @@ paths:
               format: binary
       responses:
         '200':
-          description: Normalized boxes and vectors.
+          description: Normalized boxes and vectors, with optional recognition-quality metadata.
           content:
             application/json:
               schema:
@@ -76,6 +76,27 @@ paths:
                           maxItems: 128
                           items:
                             type: number
+                        quality:
+                          type: object
+                          description: |
+                            Additive metadata; older services omit this object.
+                            Detection confidence does not express identity quality.
+                            Values describe the pixels used for this embedding.
+                          required: [face_pixels, sharpness, reference_eligible]
+                          properties:
+                            face_pixels:
+                              type: number
+                              exclusiveMinimum: 0
+                              maximum: 1600
+                              description: Shorter side of the clipped detected face in input pixels.
+                            sharpness:
+                              type: number
+                              minimum: 0
+                              maximum: 1000000000
+                              description: Laplacian variance of the central 80x80 grayscale area of the aligned 112x112 crop.
+                            reference_eligible:
+                              type: boolean
+                              description: Engineering floor of at least 48 face pixels and sharpness of at least 20; not a calibrated identity probability.
         '401':
           description: Invalid token.
         '413':

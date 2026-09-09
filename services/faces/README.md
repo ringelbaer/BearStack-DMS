@@ -6,6 +6,26 @@ upright JPEG bytes and returns bounded face boxes and normalized 128-dimensional
 vectors. No filesystem paths or external image URLs are accepted. Python release artifacts
 are pinned with pip-enforced SHA-256 hashes in `requirements.txt`.
 
+Responses include additive `quality` metadata: the shorter detected face side in
+input pixels, central aligned-crop Laplacian sharpness, and `reference_eligible`.
+The current engineering floors are 48 face pixels and sharpness 20. Weak faces
+remain visible for manual assignment but do not automatically seed references;
+explicit favorites can still be retained as references. Detector confidence is
+separate from recognition quality. Legacy service responses without `quality`
+remain compatible. These floors are not a population accuracy calibration.
+
+BearStack can refine up to eight faces smaller than 80 preview pixels using
+original-resolution crops when at least 1.5 times as much detail can be recovered.
+The original is decoded once for all selected crops, with the existing 40 MP
+limit and decode concurrency bound. Only JPEG crops are sent through the same
+`/v1/analyze` endpoint; each retains the 1600-pixel and 8 MiB limits and the total
+crop payload per photo is bounded to 16 MiB. Upright coordinates are mapped back
+through EXIF orientation, and original detection boxes stay unchanged. An
+ambiguous crop, insufficient quality or unavailable refinement keeps the initial
+result. Source replacement, privacy changes and cancellation abort processing.
+Refinement uses the same SFace alignment, weights and embedding space, so the
+protocol model ID is unchanged and existing vectors remain comparable.
+
 ## Run without Docker
 
 ```sh
@@ -53,14 +73,17 @@ vectors from different generations are never compared.
 - https://docs.opencv.org/4.13.0/d0/dd4/tutorial_dnn_face.html
 
 Detection uses confidence >= 0.9. Automatic grouping requires cosine similarity
->= 0.55 and a margin >= 0.08 over the second distinct candidate person, after an
-HNSW candidate search and exact re-scoring. These are conservative engineering
+>= 0.55 and a margin >= 0.08 over the second distinct candidate person, with exact
+comparison of the selected references for every person. Retrospective assignment
+to a confirmed named person requires >= 0.62 and a margin >= 0.10; possible group
+merges from >= 0.45 are offered for review. These are conservative engineering
 defaults, not a claim of calibrated accuracy for every population or photo collection.
 The reference limit is configurable in BearStack (1–100, default 30), prioritizing
 manual assignments and detector confidence. It does not yet balance capture years.
 Changes rebuild references from stored vectors before the next analysis, with
-restartable checkpoints and no image re-analysis. The HNSW candidate count grows
-with the limit so a second person can still be considered. Low-confidence identity matches remain unnamed groups.
+restartable checkpoints and no image re-analysis. Duplicate references cannot
+crowd a competing person out of comparison. Low-confidence identity matches
+remain unnamed groups.
 
 Limits: 8 MiB compressed request, 1,600-pixel maximum edge, 256 faces, one concurrent
 inference and eight concurrent HTTP connections. Excess requests receive 429;
@@ -75,13 +98,18 @@ BEARSTACK_TEST_FACE_MODELS_DIR=/your/model/directory \
   .venv-faces/bin/python -m unittest discover -s services/faces/tests -v
 go test ./internal/facerec ./internal/photos ./internal/server
 go test -race ./internal/facerec ./internal/photos ./internal/server
+BEARSTACK_TEST_FACE_MODELS_DIR=/your/model/directory \
+  BEARSTACK_TEST_FACE_PYTHON="$PWD/.venv-faces/bin/python" \
+  go test ./internal/photos -run TestFaceRefinementRealModel -count=1 -v
 BEARSTACK_FACE_SCALE_TEST=1 go test ./internal/photos -run TestFaceScaleMillion -count=1 -v
 PLAYWRIGHT_BROWSER_CHANNEL=chromium make test-playwright
 ```
 
 Protocol tests use a local HTTP server. Real-model tests use the documented NASA
 fixture; without `BEARSTACK_TEST_FACE_MODELS_DIR` they are explicitly skipped. This
-small fixture set verifies integration and same-image consistency, not population
-accuracy. The opt-in scale test creates 100,000 photo records and one million face
+small fixture set verifies integration, same-image consistency and improved
+original-crop detail for a small detected face, not population accuracy. Quality
+unit tests also verify that tiny or smooth crops cannot seed automatic references.
+The opt-in scale test creates 100,000 photo records and one million face
 records (about 1 GiB temporary disk), then measures the 300,000-reference index and
 person-gallery queries during synthetic background queue writes.

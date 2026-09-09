@@ -15,32 +15,40 @@ import (
 const faceSettingsKey = "photo_face_settings"
 
 type FaceSettings struct {
-	ReferenceLimit  int  `json:"reference_limit"`
-	Enabled         bool `json:"enabled"`
-	BatchSize       int  `json:"batch_size"`
-	DelayMillis     int  `json:"delay_millis"`
-	IntervalMinutes int  `json:"interval_minutes"`
+	ReconcileEnabled bool `json:"reconcile_enabled"`
+	ReferenceLimit   int  `json:"reference_limit"`
+	Enabled          bool `json:"enabled"`
+	BatchSize        int  `json:"batch_size"`
+	DelayMillis      int  `json:"delay_millis"`
+	IntervalMinutes  int  `json:"interval_minutes"`
 }
 type faceWorkerState struct {
-	wake         chan struct{}
-	lastFinished time.Time
-	mu           sync.Mutex
-	run          sync.Mutex
-	cancel       context.CancelFunc
-	running      bool
-	lastError    string
-	lastScan     time.Time
+	reconcileRun     sync.Mutex
+	reconcileCancel  context.CancelFunc
+	reconcileRunning bool
+	reconcileError   string
+	wake             chan struct{}
+	lastFinished     time.Time
+	mu               sync.Mutex
+	run              sync.Mutex
+	cancel           context.CancelFunc
+	running          bool
+	lastError        string
+	lastScan         time.Time
 }
 type FaceSettingsView struct {
-	Settings   FaceSettings      `json:"settings"`
-	Status     photos.FaceStatus `json:"status"`
-	Running    bool              `json:"running"`
-	Error      string            `json:"error,omitempty"`
-	Configured bool              `json:"configured"`
+	Reconciliation        photos.FaceReconciliationProgress `json:"reconciliation"`
+	ReconciliationRunning bool                              `json:"reconciliation_running"`
+	ReconciliationError   string                            `json:"reconciliation_error,omitempty"`
+	Settings              FaceSettings                      `json:"settings"`
+	Status                photos.FaceStatus                 `json:"status"`
+	Running               bool                              `json:"running"`
+	Error                 string                            `json:"error,omitempty"`
+	Configured            bool                              `json:"configured"`
 }
 
 func (s *Server) faceSettings(ctx context.Context) (FaceSettings, error) {
-	v := FaceSettings{BatchSize: 100, DelayMillis: 1000, IntervalMinutes: 15}
+	v := FaceSettings{ReconcileEnabled: true, BatchSize: 100, DelayMillis: 1000, IntervalMinutes: 15}
 	raw, _, err := s.repo.GetSetting(ctx, faceSettingsKey)
 	if err != nil {
 		return v, err
@@ -71,7 +79,14 @@ func (s *Server) saveFaceSettings(ctx context.Context, v FaceSettings) error {
 	if err = s.repo.SaveSetting(ctx, faceSettingsKey, string(b)); err != nil {
 		return err
 	}
-	return s.photos.SetFaceProcessingEnabled(ctx, v.Enabled)
+	if err := s.photos.SetFaceProcessingEnabled(ctx, v.Enabled); err != nil {
+		return err
+	}
+	select {
+	case s.faceWorker.wake <- struct{}{}:
+	default:
+	}
+	return nil
 }
 func (s *Server) faceClient() (*facerec.Client, error) {
 	return facerec.New(s.cfg.Photos.FaceServiceURL, s.cfg.Photos.FaceServiceToken)
@@ -130,6 +145,7 @@ func (s *Server) RunFaceWorker(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			s.stopFaceRun()
+			s.stopFaceReconciliationRun()
 			return
 		case <-timer.C:
 		case <-s.faceWorker.wake:
@@ -142,11 +158,28 @@ func (s *Server) RunFaceWorker(ctx context.Context) {
 		if err == nil && start {
 			s.startFaceRun()
 		}
+		if err == nil && settings.ReconcileEnabled {
+			progress, e := s.photos.FaceReconciliationStatus(ctx)
+			if e == nil && progress.Pending {
+				s.startFaceReconciliationRun()
+			}
+			wait = min(wait, 5*time.Second)
+		}
 
 		timer.Reset(wait)
 	}
 }
-func (s *Server) processFaceBatch(ctx context.Context) error {
+func (s *Server) processFaceBatch(ctx context.Context) (runErr error) {
+	committed := false
+	defer func() {
+		if committed {
+			scheduleCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+			defer cancel()
+			if err := s.photos.ScheduleFaceReconciliation(scheduleCtx); err != nil && runErr == nil {
+				runErr = err
+			}
+		}
+	}()
 	settings, err := s.faceSettings(ctx)
 	if err != nil || !settings.Enabled {
 		return err
@@ -194,7 +227,13 @@ func (s *Server) processFaceBatch(ctx context.Context) error {
 			var result facerec.Result
 			result, e = client.Analyze(ctx, data)
 			if e == nil {
+				result, e = s.photos.RefineFaceResult(ctx, job.Path, result, client.Analyze)
+			}
+			if e == nil {
 				e = s.photos.CommitFaceResult(ctx, job, result)
+				if e == nil {
+					committed = true
+				}
 			}
 		}
 		if ctx.Err() != nil {

@@ -105,8 +105,12 @@ func testNearestPersonVisibility(t *testing.T, favorite bool) {
 			if got != want {
 				t.Fatalf("matched %d, want %d", got, want)
 			}
-			if q.calls != 1 {
-				t.Fatalf("%d candidate queries, want one batch", q.calls)
+			wantQueries := 1
+			if variant == "canceled" {
+				wantQueries = 0
+			}
+			if q.calls != wantQueries {
+				t.Fatalf("%d candidate queries, want %d", q.calls, wantQueries)
 			}
 		})
 	}

@@ -17,6 +17,19 @@ import numpy as np
 MODEL = "yunet-2023mar-sface-2021dec-v1"
 MAX_BYTES = 8 * 1024 * 1024
 MAX_FACES = 256
+MIN_REFERENCE_PIXELS = 48
+MIN_REFERENCE_SHARPNESS = 20
+
+
+def recognition_quality(aligned, face_pixels):
+    # Measure the same central aligned region at every input size. Excluding
+    # the outer border avoids warp padding masquerading as a sharp face.
+    gray = cv2.cvtColor(aligned, cv2.COLOR_BGR2GRAY)
+    center = gray[16:-16, 16:-16]
+    sharpness = float(cv2.Laplacian(center, cv2.CV_64F).var())
+    return {"face_pixels": float(face_pixels), "sharpness": sharpness,
+            "reference_eligible": bool(face_pixels >= MIN_REFERENCE_PIXELS and
+                                       sharpness >= MIN_REFERENCE_SHARPNESS)}
 
 
 class Engine:
@@ -56,7 +69,8 @@ class Engine:
                 norm = float(np.linalg.norm(feature))
                 if feature.size != 128 or not np.isfinite(feature).all() or norm <= 0:
                     raise ValueError("Invalid feature")
-                result.append({"x": left / width, "y": top / height, "width": (right-left) / width, "height": (bottom-top) / height, "confidence": float(face[-1]), "embedding": (feature/norm).tolist()})
+                quality = recognition_quality(aligned, min(right-left, bottom-top))
+                result.append({"x": left / width, "y": top / height, "width": (right-left) / width, "height": (bottom-top) / height, "confidence": float(face[-1]), "embedding": (feature/norm).tolist(), "quality": quality})
         return {"model": MODEL, "faces": result}
 
 

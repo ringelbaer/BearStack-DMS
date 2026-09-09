@@ -86,6 +86,8 @@ private fun ConnectionScreen(state: PeopleState, vm: PeopleViewModel) {
 @Composable
 private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
     var menu by remember { mutableStateOf(false) }
+    var actions by remember { mutableStateOf(false) }
+    var help by remember { mutableStateOf(false) }
     var statistics by rememberSaveable { mutableStateOf(false) }
     var held by remember { mutableStateOf<Long?>(null) }
     var heldDismissed by remember { mutableStateOf(false) }
@@ -101,20 +103,38 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
             DropdownMenu(menu,{menu=false}) {
                 DropdownMenuItem(text={Text("Personen")},onClick={vm.openDirectory();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(if(statistics) "Zur Bearbeitung" else "Statistik")},onClick={statistics=!statistics;menu=false},enabled=enabled)
-                DropdownMenuItem(text={Text("Gruppe ignorieren")},onClick={vm.ignore();menu=false},enabled=enabled && state.person!=null)
-                DropdownMenuItem(text={Text("Gruppe überspringen")},onClick={vm.skip();menu=false},enabled=enabled && state.person!=null)
-                DropdownMenuItem(text={Text("Letztes Überspringen zurücknehmen")},onClick={vm.back();menu=false},enabled=enabled && state.canGoBack)
                 DropdownMenuItem(text={Text("Übersprungene bearbeiten (${state.skipped})")},onClick={vm.newPass(true);menu=false},enabled=enabled && state.person==null && state.skipped>0)
                 DropdownMenuItem(text={Text("Verbindung wechseln")},onClick={vm.switchConnection();menu=false},enabled=!state.busy)
             }
-        }) },floatingActionButton={
-            if(!statistics && state.person!=null) FloatingActionButton(onClick={if(enabled)vm.startNaming()},
-                modifier=Modifier.semantics { contentDescription="Person benennen"; if(!enabled) disabled() }) {
-                Text("✎",style=MaterialTheme.typography.headlineMedium)
+        }) },bottomBar={
+            if(!statistics) Surface(color=MaterialTheme.colorScheme.surfaceContainer,tonalElevation=2.dp) {
+                Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal+WindowInsetsSides.Bottom))
+                    .heightIn(min=56.dp).padding(horizontal=12.dp).testTag("labeling-action-bar"),
+                    horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
+                    Box {
+                        IconButton(onClick={actions=true},enabled=enabled && !state.naming,
+                            modifier=Modifier.semantics {contentDescription="Gruppenaktionen"}) {
+                            Text("…",style=MaterialTheme.typography.headlineSmall)
+                        }
+                        DropdownMenu(actions,{actions=false}) {
+                            DropdownMenuItem(text={Text("Gruppe ignorieren")},onClick={actions=false;vm.ignore()},enabled=enabled && state.person!=null)
+                            DropdownMenuItem(text={Text("Gruppe überspringen")},onClick={actions=false;vm.skip()},enabled=enabled && state.person!=null)
+                            DropdownMenuItem(text={Text("Letztes Überspringen zurücknehmen")},onClick={actions=false;vm.back()},enabled=enabled && state.canGoBack)
+                        }
+                    }
+                    IconButton(onClick={help=true},enabled=held==null && !state.naming,
+                        modifier=Modifier.semantics {contentDescription="Hilfe zum Benennen"}) {
+                        Text("?",style=MaterialTheme.typography.titleLarge)
+                    }
+                    FilledTonalIconButton(onClick=vm::startNaming,enabled=enabled && !state.naming && state.person!=null,
+                        modifier=Modifier.semantics {contentDescription="Person benennen"}) {
+                        Text("✎",style=MaterialTheme.typography.headlineSmall)
+                    }
+                }
             }
         }) { padding ->
             PersonSwipeArea(gestureKey=state.person?.let { it.id to it.revision },
-                enabled=enabled && !statistics && !menu && !state.naming && (state.person!=null || state.canGoBack),
+                enabled=enabled && !statistics && !menu && !actions && !help && !state.naming && (state.person!=null || state.canGoBack),
                 onSwipe={when(it) { SwipeAction.Ignore -> vm.ignore(); SwipeAction.Skip -> vm.skip(); SwipeAction.Back -> vm.back() }},
                 modifier=Modifier.fillMaxSize().padding(padding).imePadding()) {
                 // Keep the progress slot and column spacing stable across loading transitions.
@@ -140,8 +160,6 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                         OutlinedButton(onClick={vm.page(-1)},enabled=enabled && person.offset>0) { Text("Zurück") }
                         OutlinedButton(onClick={vm.page(1)},enabled=enabled && person.offset+4<person.count) { Text("Weiter") }
                     }
-                    Text("Halten: Originalfoto, dabei runter: vergrößern, hoch: verkleinern · Nach oben: ignorieren · Nach links: überspringen · Nach rechts: zurück",style=MaterialTheme.typography.bodySmall)
-                    Spacer(Modifier.height(80.dp))
                 } ?: run {
                     if(!state.busy && !state.unresolved) {
                         Text("Durchgang abgeschlossen",style=MaterialTheme.typography.headlineSmall)
@@ -169,6 +187,13 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
             }
         }
     }
+    if(help) AlertDialog(onDismissRequest={help=false},title={Text("Hilfe zum Benennen")},
+        text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            Text("Stift: Person benennen oder einer vorhandenen Person zuordnen.")
+            Text("Portrait 250 ms halten: Originalfoto anzeigen. Dabei nach unten wischen zum Vergrößern, nach oben zum Verkleinern. Loslassen schließt die Vorschau.")
+            Text("Nach oben wischen: Gruppe ignorieren. Nach links: Gruppe überspringen. Nach rechts: letztes Überspringen zurücknehmen. Bei langem Inhalt zunächst bis zum Ende scrollen.")
+            Text("Unter … findest du dieselben Gruppenaktionen. Nach dem Ignorieren kannst du die Aktion kurz über „Rückgängig“ zurücknehmen.")
+        }},confirmButton={TextButton(onClick={help=false}) {Text("Schließen")}})
     if(state.naming) NamingDialog(state,vm,enabled)
 }
 
@@ -231,11 +256,11 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
                                         modifier=Modifier.align(Alignment.BottomStart).padding(4.dp).size(48.dp)
                                             .padding(if(managing) 8.dp else 0.dp)
                                             .semantics { contentDescription=if(managing) "Zuordnung entfernen" else "Dieses Gesicht einzeln benennen" }) { Text("×",style=if(managing) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineMedium) }
-                                    if(managing) FilledTonalIconButton(onClick={onFavorite(face)},enabled=enabled && !holding,
+                                    if(managing) IconButton(onClick={onFavorite(face)},enabled=enabled && !holding,
                                         modifier=Modifier.align(Alignment.BottomEnd).padding(4.dp).size(48.dp).semantics {
                                             contentDescription=if(face in person.favorites) "Favorisierung aufheben" else "Bild favorisieren"
                                             stateDescription=if(face in person.favorites) "Favorisiert" else "Nicht favorisiert"
-                                        }) { Text(if(face in person.favorites) "★" else "☆",style=MaterialTheme.typography.headlineMedium) }
+                                        }) { Text(if(face in person.favorites) "★" else "☆",style=MaterialTheme.typography.titleMedium) }
                                 }
                                 person.facePaths[face]?.takeIf {it.isNotEmpty()}?.let {
                                     Text(it,style=MaterialTheme.typography.bodySmall,

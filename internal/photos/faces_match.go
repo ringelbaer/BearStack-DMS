@@ -11,9 +11,6 @@ import (
 
 	"bearstack/internal/facerec"
 	"bearstack/internal/searchtext"
-	"bearstack/internal/sqlutil"
-
-	"github.com/coder/hnsw"
 )
 
 func encodeVector(v []float32) []byte {
@@ -67,14 +64,12 @@ func (l *Library) ensureFaceGraph(ctx context.Context, model string) error {
 		return err
 	}
 	rt.referenceLimit = limit
-	rt.graph = hnsw.NewGraph[int64]()
-	rt.graph.Distance = hnsw.CosineDistance
-	rt.graph.EfSearch = max(20, limit+1)
+	rt.graph = newFaceVectorIndex()
 	rt.people = map[int64]int64{}
 	rt.nodes = map[int64][]int64{}
 	rt.favorites = map[int64][]float32{}
 	rt.model = model
-	rows, err := l.index.db.QueryContext(ctx, `SELECT f.id,f.person_id,f.embedding,f.favorite FROM photo_face_references r JOIN photo_faces f ON f.id=r.face_id JOIN media_index m ON m.path=f.path WHERE f.model=? AND f.ignored=0 AND m.admin_only=0 ORDER BY f.id`, model)
+	rows, err := l.index.db.QueryContext(ctx, `SELECT f.id,f.person_id,f.embedding,f.favorite FROM photo_face_references r JOIN photo_faces f ON f.id=r.face_id JOIN media_index m ON m.path=f.path WHERE f.model=? AND f.ignored=0 AND m.admin_only=0 AND (f.favorite=1 OR coalesce(f.reference_eligible,1)=1) ORDER BY f.id`, model)
 	if err != nil {
 		rt.graph = nil
 		return err
@@ -92,10 +87,11 @@ func (l *Library) ensureFaceGraph(ctx context.Context, model string) error {
 			if favorite {
 				rt.favorites[id] = v
 			} else {
-				rt.graph.Add(hnsw.MakeNode(id, v))
+				rt.graph.vectors[id] = v
 			}
 			rt.people[id] = p
 			rt.nodes[p] = append(rt.nodes[p], id)
+			rt.graph.groups[p] = append(rt.graph.groups[p], v)
 		}
 		if err = ctx.Err(); err != nil {
 			rt.graph = nil
@@ -115,95 +111,20 @@ type faceRowsQuery interface {
 }
 
 func (l *Library) nearestPerson(ctx context.Context, tx faceRowsQuery, v []float32, excluded map[int64]bool) (int64, error) {
-	rt := &l.faceRuntime
-	if len(rt.people) == 0 {
+	candidates, err := l.facePersonCandidates(ctx, tx, v, excluded, 2)
+	if err != nil || len(candidates) == 0 {
+		return 0, err
+	}
+	// Keep the established conservative identity threshold and person-level margin.
+	// An exact search establishes when no other currently visible person exists.
+	second := -1.0
+	if len(candidates) > 1 {
+		second = candidates[1].score
+	}
+	if candidates[0].score < 0.55 || candidates[0].score-second < 0.08 {
 		return 0, nil
 	}
-	// Favorites are compared exactly, even when they exceed the configured limit.
-	// Keep them outside HNSW so they cannot crowd out ordinary competitors.
-	neighbors := rt.graph.Search(v, max(25, rt.referenceLimit+1))
-	for id, vector := range rt.favorites {
-		if !excluded[rt.people[id]] {
-			neighbors = append(neighbors, hnsw.MakeNode(id, vector))
-		}
-	}
-	vectors := make(map[int64][]float32, len(neighbors))
-	args := make([]any, 0, len(neighbors))
-	for _, node := range neighbors {
-		if !excluded[rt.people[node.Key]] {
-			args = append(args, node.Key)
-			vectors[node.Key] = node.Value
-		}
-	}
-	visibility := newFaceDirectoryVisibility(l.root)
-	scores := map[int64]float64{}
-	// Normally one query; unlimited favorites use bounded batches to stay below
-	// SQLite's parameter limit. All candidates see the same current transaction.
-	for start := 0; start < len(args); start += 512 {
-		batch := args[start:min(start+512, len(args))]
-		rows, err := tx.QueryContext(ctx, `SELECT f.id,f.person_id,f.path,p.name_source FROM photo_faces f
- JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path
- WHERE f.id IN (`+sqlutil.Placeholders(len(batch))+`) AND f.ignored=0 AND m.admin_only=0`, batch...)
-		if err != nil {
-			return 0, err
-		}
-		type candidate struct {
-			id, person       int64
-			path, nameSource string
-		}
-		candidates := make([]candidate, 0, len(batch))
-		for rows.Next() {
-			var c candidate
-			if err := rows.Scan(&c.id, &c.person, &c.path, &c.nameSource); err != nil {
-				rows.Close()
-				return 0, err
-			}
-			candidates = append(candidates, c)
-		}
-		err = rows.Err()
-		rows.Close()
-		if err != nil {
-			return 0, err
-		}
-		for _, c := range candidates {
-			if err := ctx.Err(); err != nil {
-				return 0, err
-			}
-			if c.person != rt.people[c.id] || visibility.private(parentPath(c.path)) {
-				continue
-			}
-			if c.nameSource != "" && visibility.private(parentPath(c.nameSource)) {
-				continue
-			}
-			score := cosine(v, vectors[c.id])
-			if old, ok := scores[c.person]; !ok || score > old {
-				scores[c.person] = score
-			}
-		}
-	}
-	best, second := -1.0, -1.0
-	var id int64
-	for p, s := range scores {
-		if s > best {
-			second = best
-			best = s
-			id = p
-		} else if s > second {
-			second = s
-		}
-	}
-	// Deliberately stricter than the pair-verification example threshold: a wrong
-	// automatic identity is more costly than two groups the user can merge.
-	// An approximate search can miss every competing person when many near-
-	// duplicate references dominate its neighborhood. Do not interpret a missing
-	// runner-up as an infinitely large margin if other people exist in the graph.
-	if second == -1 && len(rt.nodes) > len(excluded)+1 {
-		return 0, nil
-	}
-	if best < 0.55 || best-second < 0.08 {
-		return 0, nil
-	}
-	return id, nil
+	return candidates[0].person, nil
 }
 
 func overlap(a, b Face) float64 {
@@ -390,7 +311,13 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 		}
 		used[person] = true
 		affected[person] = true
-		_, err = tx.ExecContext(ctx, `INSERT INTO photo_faces(path,directory,person_id,x,y,width,height,confidence,embedding,model,manual,ignored,favorite) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`, j.Path, media.Directory, person, d.X, d.Y, d.Width, d.Height, d.Confidence, encodeVector(d.Embedding), j.Model, manual, ignored, favorite)
+		var referenceEligible, facePixels, sharpness any
+		if d.Quality != nil {
+			referenceEligible = d.Quality.ReferenceEligible
+			facePixels = d.Quality.FacePixels
+			sharpness = d.Quality.Sharpness
+		}
+		_, err = tx.ExecContext(ctx, `INSERT INTO photo_faces(path,directory,person_id,x,y,width,height,confidence,embedding,model,manual,ignored,favorite,reference_eligible,face_pixels,sharpness) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, j.Path, media.Directory, person, d.X, d.Y, d.Width, d.Height, d.Confidence, encodeVector(d.Embedding), j.Model, manual, ignored, favorite, referenceEligible, facePixels, sharpness)
 		if err != nil {
 			return err
 		}
@@ -424,7 +351,7 @@ func (l *Library) syncFaceGraphPeople(ctx context.Context, people map[int64]bool
 		return nil
 	}
 	for p := range people {
-		rows, err := l.index.db.QueryContext(ctx, `SELECT f.id,f.embedding,f.favorite FROM photo_face_references r JOIN photo_faces f ON f.id=r.face_id WHERE r.person_id=? AND f.model=? AND f.ignored=0`, p, rt.model)
+		rows, err := l.index.db.QueryContext(ctx, `SELECT f.id,f.embedding,f.favorite FROM photo_face_references r JOIN photo_faces f ON f.id=r.face_id WHERE r.person_id=? AND f.model=? AND f.ignored=0 AND (f.favorite=1 OR coalesce(f.reference_eligible,1)=1)`, p, rt.model)
 		if err != nil {
 			rt.graph = nil
 			return err
@@ -453,31 +380,35 @@ func (l *Library) syncFaceGraphPeople(ctx context.Context, people map[int64]bool
 		}
 		for _, id := range rt.nodes[p] {
 			if _, ok := next[id]; !ok || (rt.favorites[id] != nil) != favorites[id] {
+				// The affected-person map has no iteration order. A moved face may
+				// already have been installed under its target person in this sync.
+				if rt.people[id] != p {
+					continue
+				}
 				if rt.favorites[id] == nil {
-					rt.graph.Delete(id)
+					delete(rt.graph.vectors, id)
 				}
 				delete(rt.favorites, id)
 				delete(rt.people, id)
 			}
 		}
-		// hnsw v0.6.1 leaves empty layers after deleting the final node.
-		if rt.graph.Len() == 0 {
-			rt.graph = hnsw.NewGraph[int64]()
-			rt.graph.Distance = hnsw.CosineDistance
-			rt.graph.EfSearch = max(20, rt.referenceLimit+1)
-		}
 		rt.nodes[p] = nil
+		rt.graph.groups[p] = nil
 		for id, v := range next {
 			if favorites[id] {
+				delete(rt.graph.vectors, id)
 				rt.favorites[id] = v
-			} else if _, ok := rt.people[id]; !ok {
-				rt.graph.Add(hnsw.MakeNode(id, v))
+			} else {
+				delete(rt.favorites, id)
+				rt.graph.vectors[id] = v
 			}
 			rt.people[id] = p
 			rt.nodes[p] = append(rt.nodes[p], id)
+			rt.graph.groups[p] = append(rt.graph.groups[p], v)
 		}
 		if len(rt.nodes[p]) == 0 {
 			delete(rt.nodes, p)
+			delete(rt.graph.groups, p)
 		}
 	}
 	// Never acknowledge concurrent index deletions that were not synchronized here.

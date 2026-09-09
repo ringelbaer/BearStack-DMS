@@ -239,7 +239,14 @@ func (s *Server) handleFaceSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	s.faceWorker.mu.Lock()
 	view := FaceSettingsView{Settings: settings, Status: status, Running: s.faceWorker.running, Error: s.faceWorker.lastError, Configured: s.cfg.Photos.FaceServiceURL != "" && s.cfg.Photos.FaceServiceToken != ""}
+	view.ReconciliationRunning = s.faceWorker.reconcileRunning
+	view.ReconciliationError = s.faceWorker.reconcileError
 	s.faceWorker.mu.Unlock()
+	view.Reconciliation, err = s.photos.FaceReconciliationStatus(r.Context())
+	if err != nil {
+		s.faceError(w, r, err)
+		return
+	}
 	w.Header().Set("Cache-Control", "private, no-store")
 	if r.URL.Query().Get("format") == "json" {
 		_ = writeJSON(w, http.StatusOK, view)
@@ -252,6 +259,20 @@ func (s *Server) handleSaveFaceSettings(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	settings := FaceSettings{Enabled: r.FormValue("enabled") == "1", BatchSize: boundedInt(r.FormValue("batch_size"), 100, 1, 1000), DelayMillis: boundedInt(r.FormValue("delay_millis"), 1000, 100, 60000), IntervalMinutes: boundedInt(r.FormValue("interval_minutes"), 15, 1, 1440)}
+	previous, err := s.faceSettings(r.Context())
+	if err != nil {
+		s.faceError(w, r, err)
+		return
+	}
+	settings.ReconcileEnabled = previous.ReconcileEnabled
+	if r.PostForm.Has("reconcile_enabled") {
+		raw := r.PostForm.Get("reconcile_enabled")
+		if raw != "0" && raw != "1" {
+			s.faceError(w, r, errors.New("ungültige Einstellung für den Gesichtsabgleich"))
+			return
+		}
+		settings.ReconcileEnabled = raw == "1"
+	}
 	if raw := r.FormValue("reference_limit"); raw != "" {
 		limit, err := strconv.Atoi(raw)
 		if err != nil || limit < 1 || limit > photos.MaxFaceReferenceLimit {
@@ -274,6 +295,9 @@ func (s *Server) handleSaveFaceSettings(w http.ResponseWriter, r *http.Request) 
 		s.faceError(w, r, err)
 		return
 	}
+	if !settings.ReconcileEnabled {
+		s.stopFaceReconciliationRun()
+	}
 	if !settings.Enabled {
 		s.stopFaceRun()
 	} else {
@@ -291,6 +315,17 @@ func (s *Server) handleFaceControl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch r.PathValue("action") {
+	case "reconcile", "reconcile-resume", "reconcile-pause":
+		settings.ReconcileEnabled = r.PathValue("action") != "reconcile-pause"
+		err = s.saveFaceSettings(r.Context(), settings)
+		if err == nil && r.PathValue("action") == "reconcile" {
+			err = s.photos.ScheduleFaceReconciliation(r.Context())
+		}
+		if err == nil && settings.ReconcileEnabled {
+			s.startFaceReconciliationRun()
+		} else if !settings.ReconcileEnabled {
+			s.stopFaceReconciliationRun()
+		}
 	case "pause":
 		settings.Enabled = false
 		err = s.saveFaceSettings(r.Context(), settings)
@@ -323,11 +358,15 @@ func (s *Server) handleFaceControl(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		settings.Enabled = false
+		settings.ReconcileEnabled = false
 		err = s.saveFaceSettings(r.Context(), settings)
 		if err == nil {
 			s.stopFaceRun()
+			s.stopFaceReconciliationRun()
 			s.faceWorker.run.Lock()
+			s.faceWorker.reconcileRun.Lock()
 			err = s.photos.ClearFaces(r.Context())
+			s.faceWorker.reconcileRun.Unlock()
 			s.faceWorker.run.Unlock()
 		}
 	default:

@@ -20,6 +20,14 @@ const Dimensions = 128
 const MaxFaces = 256
 const MaxImageBytes = 8 << 20
 
+// Quality describes the pixels used for recognition, independently of detector
+// confidence. A missing quality object is a legacy service response.
+type Quality struct {
+	FacePixels        float64 `json:"face_pixels"`
+	Sharpness         float64 `json:"sharpness"`
+	ReferenceEligible bool    `json:"reference_eligible"`
+}
+
 type Detection struct {
 	X          float64   `json:"x"`
 	Y          float64   `json:"y"`
@@ -27,6 +35,7 @@ type Detection struct {
 	Height     float64   `json:"height"`
 	Confidence float64   `json:"confidence"`
 	Embedding  []float32 `json:"embedding"`
+	Quality    *Quality  `json:"quality,omitempty"`
 }
 type Result struct {
 	Model string      `json:"model"`
@@ -108,6 +117,11 @@ func (c *Client) Analyze(ctx context.Context, jpeg []byte) (Result, error) {
 	return result, nil
 }
 func Validate(d *Detection) error {
+	if q := d.Quality; q != nil {
+		if math.IsNaN(q.FacePixels) || math.IsInf(q.FacePixels, 0) || q.FacePixels <= 0 || q.FacePixels > 1600 || math.IsNaN(q.Sharpness) || math.IsInf(q.Sharpness, 0) || q.Sharpness < 0 || q.Sharpness > 1e9 {
+			return errors.New("ungültige Gesichtsqualität")
+		}
+	}
 	for _, v := range []float64{d.X, d.Y, d.Width, d.Height, d.Confidence} {
 		if math.IsNaN(v) || math.IsInf(v, 0) {
 			return errors.New("ungültige Gesichtskoordinaten")

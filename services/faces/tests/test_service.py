@@ -7,7 +7,7 @@ import threading
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from server import Engine, MODEL, Server, MAX_BYTES
+from server import Engine, MODEL, Server, MAX_BYTES, recognition_quality
 import cv2
 import numpy as np
 
@@ -56,6 +56,23 @@ class ProtocolTests(unittest.TestCase):
             self.server.inference.release()
 
 
+class QualityTests(unittest.TestCase):
+    def test_small_and_blurry_faces_do_not_seed_references(self):
+        yy, xx = np.indices((112, 112))
+        textured = np.repeat((((xx // 3 + yy // 3) % 2) * 255).astype(np.uint8)[..., None], 3, axis=2)
+        self.assertFalse(recognition_quality(textured, 47)["reference_eligible"])
+        self.assertTrue(recognition_quality(textured, 48)["reference_eligible"])
+        flat = np.full((112, 112, 3), 128, dtype=np.uint8)
+        quality = recognition_quality(flat, 100)
+        self.assertEqual(quality["sharpness"], 0)
+        self.assertFalse(quality["reference_eligible"])
+
+    def test_warp_padding_does_not_inflate_sharpness(self):
+        image = np.zeros((112, 112, 3), dtype=np.uint8)
+        image[10:-10, 10:-10] = 128
+        self.assertFalse(recognition_quality(image, 100)["reference_eligible"])
+
+
 @unittest.skipUnless(os.environ.get("BEARSTACK_TEST_FACE_MODELS_DIR"), "Set BEARSTACK_TEST_FACE_MODELS_DIR for real-model tests")
 class ModelTests(unittest.TestCase):
     @classmethod
@@ -88,6 +105,34 @@ class ModelTests(unittest.TestCase):
             self.assertAlmostEqual(float(np.linalg.norm(face["embedding"])), 1, places=5)
             self.assertGreaterEqual(face["x"], 0)
             self.assertLessEqual(face["x"] + face["width"], 1)
+            self.assertGreater(face["quality"]["face_pixels"], 0)
+            self.assertTrue(np.isfinite(face["quality"]["sharpness"]))
+
+    def test_original_crop_recovers_small_face_identity_detail(self):
+        # The very same source face shrinks to about 28 px in the bounded
+        # preview. Re-detecting its original crop recovers about 92 px without
+        # changing weights or increasing the whole-image detection resolution.
+        source = np.zeros((2400, 4800, 3), dtype=np.uint8)
+        source[200:712, 700:1212] = self.image
+        preview = cv2.resize(source, (1600, 800), interpolation=cv2.INTER_AREA)
+        detected = self.analyze(preview)
+        self.assertEqual(len(detected), 1)
+        face = detected[0]
+        self.assertFalse(face["quality"]["reference_eligible"])
+        width, height = source.shape[1], source.shape[0]
+        cx = (face["x"] + face["width"] / 2) * width
+        cy = (face["y"] + face["height"] / 2) * height
+        half = .9 * max(face["width"] * width, face["height"] * height)
+        left, top = max(0, int(np.floor(cx-half))), max(0, int(np.floor(cy-half)))
+        right, bottom = min(width, int(np.ceil(cx+half))), min(height, int(np.ceil(cy+half)))
+        refined = self.analyze(source[top:bottom, left:right])
+        self.assertEqual(len(refined), 1)
+        self.assertTrue(refined[0]["quality"]["reference_eligible"])
+        baseline = np.array(self.analyze(self.image)[0]["embedding"])
+        preview_score = float(baseline @ np.array(face["embedding"]))
+        refined_score = float(baseline @ np.array(refined[0]["embedding"]))
+        self.assertGreater(refined_score, preview_score + .1)
+        self.assertGreater(refined_score, .9)
 
     def test_small_rotation_consistency(self):
         transform = cv2.getRotationMatrix2D((256, 256), 10, 1)

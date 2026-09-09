@@ -37,6 +37,7 @@ func refreshFaceReferencesTx(ctx context.Context, tx *sql.Tx, person int64) erro
  row_number() OVER (PARTITION BY f.directory ORDER BY f.favorite DESC,f.manual DESC,f.confidence DESC,f.id) AS directory_rank
  FROM photo_faces f JOIN media_index m ON m.path=f.path
  WHERE f.person_id=? AND f.ignored=0 AND m.admin_only=0
+ AND (f.favorite=1 OR coalesce(f.reference_eligible,1)=1)
  AND f.model=(SELECT model FROM photo_face_state WHERE id=1)
  ) INSERT OR REPLACE INTO photo_face_references(face_id,person_id)
  SELECT id,person_id FROM ranked WHERE favorite=0

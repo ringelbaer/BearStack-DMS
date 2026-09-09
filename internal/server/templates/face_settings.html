@@ -50,6 +50,7 @@
               <span class="checkbox-help-label">Gesichtserkennung aktivieren <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Gesichtserkennung aktivieren" aria-expanded="false" data-context-help-title="Gesichtserkennung aktivieren" data-context-help="Startet nach dem Speichern die lokale Erkennung für ausstehende Bilder. Beim Ausschalten bleiben erkannte Gesichter, Namen und Zuordnungen erhalten. Zum Aktivieren muss der Erkennungsdienst erreichbar sein.">i</span></span>
             </label>
             <div class="face-settings-inputs">
+			  <label>Vorhandene Zuordnungen im Hintergrund prüfen <select name="reconcile_enabled"><option value="1" {{if .FaceSettings.Settings.ReconcileEnabled}}selected{{end}}>Aktiviert</option><option value="0" {{if not .FaceSettings.Settings.ReconcileEnabled}}selected{{end}}>Pausiert</option></select></label>
               <label><span class="checkbox-help-label">Bilder pro Lauf <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Bilder pro Lauf" aria-expanded="false" data-context-help-title="Bilder pro Lauf" data-context-help="Begrenzt die Anzahl der Bilder, die ein Verarbeitungslauf aus der Warteschlange bearbeitet. Größere Werte verlängern einen Lauf; die Bilder werden weiterhin nacheinander verarbeitet.">i</span></span><input type="number" name="batch_size" min="1" max="1000" value="{{.FaceSettings.Settings.BatchSize}}"></label>
               <label><span class="checkbox-help-label">Pause zwischen Bildern (ms) <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Pause zwischen Bildern (ms)" aria-expanded="false" data-context-help-title="Pause zwischen Bildern (ms)" data-context-help="Wartezeit nach der Verarbeitung eines Bildes. Höhere Werte entlasten den Server zwischen den Analysen, verlängern aber die Verarbeitung der Warteschlange. 1.000 ms entsprechen einer Sekunde.">i</span></span><input type="number" name="delay_millis" min="100" max="60000" value="{{.FaceSettings.Settings.DelayMillis}}"></label>
               <label><span class="checkbox-help-label">Wartezeit zwischen Läufen (Minuten) <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Wartezeit zwischen Läufen (Minuten)" aria-expanded="false" data-context-help-title="Wartezeit zwischen Läufen (Minuten)" data-context-help="Nach Abschluss eines Laufs wartet BearStack diese Zeit bis zum nächsten automatischen Lauf. Kürzere Abstände arbeiten die Warteschlange schneller ab und lassen dem Server weniger Ruhezeit.">i</span></span><input type="number" name="interval_minutes" min="1" max="1440" value="{{.FaceSettings.Settings.IntervalMinutes}}"></label>
@@ -60,6 +61,20 @@
         </div>
         <div class="settings-actions"><button type="submit">Speichern</button></div>
       </form>
+
+      <section class="settings-form" aria-labelledby="face-reconciliation-heading">
+        <h3 id="face-reconciliation-heading">Vorhandene Zuordnungen verbessern</h3>
+        <p>Prüft gespeicherte Gesichter ohne erneute Bildanalyse, auch wenn der Erkennungsdienst ausgeschaltet ist. Eindeutige unbestätigte Gesichter werden bestätigten benannten Personen zugeordnet. Manuelle Zuordnungen bleiben erhalten; ähnliche Teilgruppen werden zur Prüfung vorgeschlagen. Nach einer Unterbrechung wird der Lauf fortgesetzt.</p>
+        <p role="status" data-face-reconciliation-state>{{if not .FaceSettings.Settings.ReconcileEnabled}}Pausiert{{else if .FaceSettings.ReconciliationRunning}}Abgleich läuft{{else if .FaceSettings.Reconciliation.Pending}}Abgleich ausstehend{{else}}Abgleich abgeschlossen{{end}}</p>
+        <div class="notice error-state" data-face-reconciliation-error {{if not .FaceSettings.ReconciliationError}}hidden{{end}}>{{.FaceSettings.ReconciliationError}}</div>
+        <dl class="face-settings-status"><div><dt>Geprüft</dt><dd data-face-reconciliation-count="processed">{{.FaceSettings.Reconciliation.Processed}}</dd></div><div><dt>Neu zugeordnet</dt><dd data-face-reconciliation-count="reassigned">{{.FaceSettings.Reconciliation.Reassigned}}</dd></div><div><dt>Vorschläge im Lauf</dt><dd data-face-reconciliation-count="suggestions">{{.FaceSettings.Reconciliation.Suggestions}}</dd></div></dl>
+        <div class="settings-actions">
+          <form method="post" action="/settings/photos/faces/reconcile"><button type="submit">Zuordnungen erneut prüfen</button></form>
+          <form method="post" action="/settings/photos/faces/reconcile-pause"><button type="submit" class="secondary-button">Abgleich pausieren</button></form>
+          <form method="post" action="/settings/photos/faces/reconcile-resume"><button type="submit" class="secondary-button">Abgleich fortsetzen</button></form>
+          <a class="secondary-button" href="/photos/people/merge-suggestions">Zusammenführungsvorschläge</a>
+        </div>
+      </section>
 
       <section class="face-settings-delete settings-form" aria-labelledby="face-delete-heading">
         <h3 id="face-delete-heading">Gesichtsdaten löschen</h3>

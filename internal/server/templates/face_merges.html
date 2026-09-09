@@ -1,0 +1,21 @@
+{{define "face_merges.html"}}
+{{template "head" .}}
+<section class="page-head"><div><h1>Ähnliche Personengruppen</h1><p>Prüfe, ob diese Gruppen dieselbe Person zeigen.</p></div><div class="page-actions"><a class="secondary-button" href="/photos/people">Alle Personen</a>{{if .Auth.CanPhotosManage}}<a class="secondary-button" href="/settings/photos/faces">Gesichtserkennung</a>{{end}}</div></section>
+<p>Beim Zusammenführen werden alle Gesichter der ersten Gruppe der zweiten Gruppe zugeordnet. Öffne die Gruppen, um weitere Aufnahmen zu vergleichen. „Getrennt lassen“ verhindert einen automatischen Abgleich zwischen diesen Gruppen.</p>
+<div class="face-merge-suggestions">
+{{range .FaceMergeSuggestions}}
+<section class="panel face-merge-suggestion" aria-label="Zusammenführung prüfen">
+<div class="face-merge-pair">
+<a class="person-card" href="/photos/people/{{.SourceID}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.SourceFaceID}}/thumbnail" alt="Erste Gruppe"><strong>{{if .SourceName}}{{.SourceName}}{{else}}Unbenannt{{end}}</strong></a>
+<a class="person-card" href="/photos/people/{{.TargetID}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.TargetFaceID}}/thumbnail" alt="Zweite Gruppe"><strong>{{if .TargetName}}{{.TargetName}}{{else}}Unbenannt{{end}}</strong></a>
+</div>
+<form method="post" action="/photos/people/merge-suggestions/{{.ID}}/accept" class="settings-actions">
+<input type="hidden" name="source_revision" value="{{.SourceRevision}}"><input type="hidden" name="target_revision" value="{{.TargetRevision}}">
+<button type="submit">Zusammenführen</button><button type="submit" class="secondary-button" formaction="/photos/people/merge-suggestions/{{.ID}}/reject">Getrennt lassen</button>
+</form>
+</section>
+{{else}}<p>Aktuell keine Zusammenführungsvorschläge. Neue Vorschläge entstehen beim Hintergrundabgleich.{{if .Auth.CanPhotosManage}} Du kannst ihn unter <a href="/settings/photos/faces">Gesichtserkennung</a> erneut starten.{{end}}</p>{{end}}
+</div>
+{{if .FaceMergeSuggestions}}<p>Bis zu 60 Vorschläge werden angezeigt. Nach dem Bearbeiten rücken weitere nach.</p>{{end}}
+{{template "foot" .}}
+{{end}}

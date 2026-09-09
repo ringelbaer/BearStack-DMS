@@ -132,6 +132,9 @@ func (l *Library) ClearFaces(ctx context.Context) error {
 			return err
 		}
 	}
+	if err := clearFaceReconciliationTx(ctx, tx); err != nil {
+		return err
+	}
 	if _, err = tx.ExecContext(ctx, `UPDATE photo_labeling_identity SET dataset=lower(hex(randomblob(16))) WHERE id=1`); err != nil {
 		return err
 	}

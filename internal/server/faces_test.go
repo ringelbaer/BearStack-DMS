@@ -52,7 +52,15 @@ func faceTestServer(t *testing.T) *Server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { s.stopFaceRun(); s.faceWorker.run.Lock(); s.faceWorker.run.Unlock(); s.photos.Close() })
+	t.Cleanup(func() {
+		s.stopFaceRun()
+		s.stopFaceReconciliationRun()
+		s.faceWorker.run.Lock()
+		s.faceWorker.run.Unlock()
+		s.faceWorker.reconcileRun.Lock()
+		s.faceWorker.reconcileRun.Unlock()
+		s.photos.Close()
+	})
 	if _, err = s.photos.RebuildIndex(context.Background()); err != nil {
 		t.Fatal(err)
 	}

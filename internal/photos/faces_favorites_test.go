@@ -228,7 +228,7 @@ func TestFaceFavoriteMigration(t *testing.T) {
 	ctx := context.Background()
 	l := faceLibrary(t, "a.jpg")
 	finishFace(t, l, 0)
-	if _, err := l.index.db.Exec(`DROP INDEX idx_face_reference_folders; DROP INDEX idx_face_favorites; ALTER TABLE photo_faces DROP COLUMN favorite; UPDATE schema_migrations SET version=21 WHERE component='photos'; UPDATE photo_face_reference_settings SET reference_limit=5,pending=0,cursor=0`); err != nil {
+	if _, err := l.index.db.Exec(`DROP INDEX idx_face_reconcile_candidates; DROP TRIGGER face_reconcile_face_change; DROP TRIGGER face_reconcile_face_trust; DROP INDEX idx_face_reference_folders; DROP INDEX idx_face_favorites; ALTER TABLE photo_faces DROP COLUMN favorite; UPDATE schema_migrations SET version=21 WHERE component='photos'; UPDATE photo_face_reference_settings SET reference_limit=5,pending=0,cursor=0`); err != nil {
 		t.Fatal(err)
 	}
 	root, cache, db := l.Root(), l.CacheDir(), l.DBPath()

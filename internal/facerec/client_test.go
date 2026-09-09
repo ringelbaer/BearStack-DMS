@@ -97,3 +97,22 @@ func TestClientConfigAndCancellation(t *testing.T) {
 		t.Fatal("cancellation ignored")
 	}
 }
+
+func TestValidateRecognitionQuality(t *testing.T) {
+	for _, q := range []*Quality{nil, {FacePixels: 32, Sharpness: 2}, {FacePixels: 128, Sharpness: 100, ReferenceEligible: true}} {
+		v := make([]float32, Dimensions)
+		v[0] = 1
+		d := Detection{Width: .2, Height: .2, Confidence: .99, Embedding: v, Quality: q}
+		if err := Validate(&d); err != nil {
+			t.Fatalf("valid or legacy quality rejected: %v", err)
+		}
+	}
+	for _, q := range []Quality{{FacePixels: 0}, {FacePixels: -1}, {FacePixels: 1601}, {FacePixels: math.NaN()}, {FacePixels: math.Inf(1)}, {FacePixels: 100, Sharpness: -1}, {FacePixels: 100, Sharpness: math.Inf(1)}, {FacePixels: 100, Sharpness: math.NaN()}, {FacePixels: 100, Sharpness: 1e10}} {
+		v := make([]float32, Dimensions)
+		v[0] = 1
+		d := Detection{Width: .2, Height: .2, Confidence: .99, Embedding: v, Quality: &q}
+		if err := Validate(&d); err == nil {
+			t.Fatalf("invalid quality accepted: %+v", q)
+		}
+	}
+}

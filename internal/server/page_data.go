@@ -9,6 +9,7 @@ import (
 )
 
 type PageData struct {
+	FaceMergeSuggestions    []photos.FaceMergeSuggestion
 	GroupPhotos             photos.GroupPhotosPage
 	People                  photos.PeoplePage
 	FaceSettings            FaceSettingsView

@@ -4,6 +4,18 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.48.0
+
+- Android-App **0.8.2** (versionCode 19): Favoritenstern im Personenbereich so klein wie „×“, ohne sichtbaren Schaltflächenhintergrund und mit weiterhin 48 dp Touchfläche. UI-PATCH im vorgesehenen Release 0.48.0; API unverändert.
+
+- Android-App **0.8.1** (versionCode 18): feste, schlanke Aktionsleiste im Benennen-Modus mit Gruppenaktionen links, aufklappbarer Hilfe mittig und Stift rechts. Gruppenaktionen wandern aus dem oberen Menü, der permanente Hilfetext entfällt. Scrollbarer Inhalt berücksichtigt Leiste und Systemnavigation. UI-PATCH innerhalb des vorgesehenen Releases 0.48.0, ohne API-Änderung.
+
+- Exakte personenbezogene Kandidatensuche ersetzt den HNSW-Index. Alle Referenzen einschließlich Favoriten werden berücksichtigt; ausgeschlossene oder inzwischen private Kandidaten werden nachgeladen. Grenzwerte für neue Fotos bleiben erhalten. Inkrementelle Cache-Aktualisierung erhält verschobene Referenzen unabhängig von der Reihenfolge betroffener Gruppen.
+- Separat pausierbarer, nach Neustart fortsetzbarer Hintergrundabgleich gespeicherter Vektoren mit kurzen Transaktionen, Fortschrittsanzeige und automatischer Vormerkung nach Referenzverbesserungen. Nur unbestätigte Gesichter werden eindeutig bestätigten benannten Personen zugeordnet; manuelle Entscheidungen und Fotos mit bereits vorhandener Zielperson bleiben geschützt.
+- Neue Seite für gespeicherte Zusammenführungsvorschläge ähnlicher Teilgruppen, einschließlich unbenannter Gruppen. Annehmen prüft beide Gruppenrevisionen atomar; Ablehnen verhindert weitere automatische Zuordnungen zwischen den Gruppen. Neue HTTP-Endpunkte benötigen Fotobearbeitungsrechte.
+- Kleine Gesichter werden mit begrenzten Originalausschnitten nachanalysiert. Auflösung und Schärfe steuern die automatische Referenzauswahl; explizite Favoriten bleiben möglich. Bestehende Vektoren ohne Qualitätsmetadaten und Protokoll 1 bleiben kompatibel. Gesichtsdienst für Qualitätsmetadaten mit aktualisieren.
+- MINOR für kompatible Funktionen und automatische Migration auf Foto-Schema 25. README, Website und OpenAPI aktualisiert; Regressionen für Suchqualität, Wiederaufnahme, Konflikte, Datenschutz, Qualitätsfilter, Originalausschnitte und Bedienung ergänzt.
+
 ### BearStack 0.47.1
 
 - „Ignorieren“ im Benenn-Modal links neben „Abbrechen“ verwendet die bestehende Einzelgesichtsaktion. Bei mehreren unbenannten Gruppen werden ausschließlich deren angezeigte Vorschaubilder gemeinsam ignoriert; benannte Gruppen deaktivieren die Aktion. Namenseingaben werden nicht mitgespeichert.

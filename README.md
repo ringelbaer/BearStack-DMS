@@ -27,11 +27,15 @@ Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie `127.0
 
 ## Android-App zum Personenbenennen
 
-Ab BearStack **0.30.0** steht unter [`apps/android/`](apps/android/README.md) eine native Android-App (Android 8.0+, App-Version 0.8.0) zur Verfügung. Sie zeigt bis zu vier Gesichtsausschnitte, unterstützt Benennen und Zuordnen mit Namensvorschlägen, Abtrennen, Ignorieren mit klickbarer Rückgängig-Meldung am oberen Bildschirmrand bei weiter bedienbarer Ansicht und lokale Statistiken. Die aktuelle App benötigt BearStack **0.35.0**: Beim Halten eines Gesichtsausschnitts zeigt sie das vollständige Originalfoto, beim Loslassen wieder das Grid. Eine dünne Bounding Box markiert das Gesicht; Herunterwischen während des Haltens zoomt zum Gesicht, Hochwischen wieder heraus. Unter Ausschnitten und Originalfoto steht der vollständige, nach Galerieregeln aufbereitete Bildpfad. Wischaktionen funktionieren auch auf dem freien Hintergrund der Bearbeitungsansicht. Rechtswischen holt die zuletzt übersprungene Person zurück und korrigiert die lokale Statistik. Erforderlich sind HTTPS und ein Konto mit Personenrechten; ab BearStack 0.36.0 reicht dafür „Fotos bearbeiten“ (`photos.edit`). Selbstsignierte Zertifikate werden vor der Anmeldung über ihren SHA-256-Fingerabdruck bestätigt. Ab App 0.5.2 bleibt der Inhalt beim Ein- und Ausblenden des Ladebalkens an derselben Position. Ab App 0.5.3 warten automatische Ignorier-Schreibvorgänge auf das Schließen eines offenen Namensdialogs; ablaufende Rückgängig-Meldungen unterbrechen dessen Texteingabe und Tastatur nicht mehr. App 0.4.1 behebt den allgemeinen Fehler beim Kontowechsel; falsche Zugangsdaten und fehlende Personenrechte werden auch im Zertifikatsdialog angezeigt.
+Ab BearStack **0.30.0** steht unter [`apps/android/`](apps/android/README.md) eine native Android-App (Android 8.0+, App-Version 0.8.2) zur Verfügung. Sie zeigt bis zu vier Gesichtsausschnitte, unterstützt Benennen und Zuordnen mit Namensvorschlägen, Abtrennen, Ignorieren mit klickbarer Rückgängig-Meldung am oberen Bildschirmrand bei weiter bedienbarer Ansicht und lokale Statistiken. Die aktuelle App benötigt BearStack **0.35.0**: Beim Halten eines Gesichtsausschnitts zeigt sie das vollständige Originalfoto, beim Loslassen wieder das Grid. Eine dünne Bounding Box markiert das Gesicht; Herunterwischen während des Haltens zoomt zum Gesicht, Hochwischen wieder heraus. Unter Ausschnitten und Originalfoto steht der vollständige, nach Galerieregeln aufbereitete Bildpfad. Wischaktionen funktionieren auch auf dem freien Hintergrund der Bearbeitungsansicht. Rechtswischen holt die zuletzt übersprungene Person zurück und korrigiert die lokale Statistik. Erforderlich sind HTTPS und ein Konto mit Personenrechten; ab BearStack 0.36.0 reicht dafür „Fotos bearbeiten“ (`photos.edit`). Selbstsignierte Zertifikate werden vor der Anmeldung über ihren SHA-256-Fingerabdruck bestätigt. Ab App 0.5.2 bleibt der Inhalt beim Ein- und Ausblenden des Ladebalkens an derselben Position. Ab App 0.5.3 warten automatische Ignorier-Schreibvorgänge auf das Schließen eines offenen Namensdialogs; ablaufende Rückgängig-Meldungen unterbrechen dessen Texteingabe und Tastatur nicht mehr. App 0.4.1 behebt den allgemeinen Fehler beim Kontowechsel; falsche Zugangsdaten und fehlende Personenrechte werden auch im Zertifikatsdialog angezeigt.
 
 Ab App **0.6.0** ergänzt **Menü → Personen** die vollständige Liste benannter Personen mit Portraits. Die Detailansicht bietet Umbenennen, Zurücksetzen einzelner Gesichter auf unbenannt (auch des letzten Gesichts), Favorisieren, Galeriesuche im Browser und dieselbe Originalfoto-Vorschau per Halten und Wischen. Dieser Bereich benötigt **BearStack 0.43.0**. Personen werden seitenweise geladen; Originaldateien bleiben beim Zurücksetzen erhalten. Änderungen verwenden Revisionsprüfung und gespeicherte Aktionsquittungen; der aktuelle Zuordnungsstand bleibt beim Bereichswechsel erhalten.
 
 Ab App **0.6.1** und BearStack **0.43.1** teilen unterschiedliche Gesichter desselben Fotos das dekodierte Original für bis zu drei Minuten ab Laden. Bounding Box und Zoom bleiben pro Gesicht getrennt. Der Cache bleibt auf 16 MiB begrenzt, speichert nichts auf Datenträger und wird beim Verbindungswechsel geleert; Cachetreffer verlängern die Frist nicht.
+
+Ab App **0.8.2** hat der Favoritenstern im Personenbereich dieselbe Schriftgröße wie „×“ und keinen sichtbaren Schaltflächenhintergrund; die unsichtbare Touchfläche bleibt 48 dp groß.
+
+Ab App **0.8.1** bleibt unten eine schlanke Aktionsleiste stehen: links **…** für Ignorieren, Überspringen und dessen Rücknahme, mittig **?** für die scrollbar angezeigte Bedienhilfe, rechts der **Stift** zum Benennen. Die Leiste reserviert Platz unter dem Inhalt und berücksichtigt die Systemnavigation. Das obere Menü enthält die App-Navigation.
 
 Ab App **0.7.0** bietet der Personenbereich eine Textsuche über den gesamten Bestand (BearStack **0.45.0**), eine Bestätigung vor „× / Zuordnung entfernen“ und automatisches Nachladen beim Scrollen in Personenliste und Portrait-Raster. Der Server liefert Portraits über einen indexierten Cursor in Paketen bis 40; bestätigte Änderungen erhalten den geladenen Bestand und die Scrollposition. Ab App **0.8.0** erscheinen im Benennen-Modus „Zurück“ und „Weiter“ nur bei mehr als vier Fotos. Die Originalvorschau öffnet nach 250 ms Halten. Über WLAN werden Originale der angezeigten Portraits nacheinander im vorhandenen Drei-Minuten-Cache vorgeladen; beim Verlassen der Ansicht oder WLAN wird das Vorladen abgebrochen. Ab App **0.7.1** ist das „×“ zum Entfernen einer Zuordnung im Personenbereich kleiner; die Touchfläche bleibt mindestens 48 dp groß.
 
@@ -635,6 +639,57 @@ Gesichtsbilder werden beim Benennen nicht erneut geladen. Die automatische Migra
 auf Foto-Schema **23** ergänzt lediglich den Auswahlindex und analysiert keine Bilder neu.
 Die JSON-Ansicht sowie der Ignorieren- und Bild-Endpunkt sind in OpenAPI dokumentiert.
 
+**Bessere Gesichtszuordnung (ab 0.48.0):** Der Abgleich bewertet sämtliche
+zulässigen Referenzvektoren exakt. Anschließend werden die besten unterschiedlichen
+Personen mit aktuellen Sichtbarkeits- und Zuordnungsprüfungen ausgewählt. Viele
+ähnliche Referenzen oder bereits im Foto zugeordnete Personen verdrängen damit
+keine passenden Vergleichsgruppen. Die bisherigen Grenzwerte für neue Fotos
+bleiben bei 0,55 Ähnlichkeit und 0,08 Abstand zur zweitbesten Person.
+
+Unter **Einstellungen → Gesichtserkennung → Vorhandene Zuordnungen verbessern**
+arbeitet ein separat pausierbarer Hintergrundlauf mit gespeicherten Vektoren,
+auch ohne laufenden Erkennungsdienst. Er ist standardmäßig aktiviert und wird nach
+Benennen, manuellen Korrekturen, Favoriten-/Referenzänderungen und erfolgreichen
+Analysepaketen vorgemerkt. **Zuordnungen erneut prüfen** startet eine neue Prüfung;
+**Abgleich pausieren/fortsetzen** erhält deren Fortschritt. Cursor und Ergebnisse
+werden gemeinsam gespeichert; Abbruch und Neustart verlieren keine abgeschlossenen
+Pakete. Geprüft werden höchstens 100 Datensätze je Paket mit zusätzlichem Zeitbudget.
+
+Automatisch verschoben werden nur unbenannte, unbestätigte, nicht ignorierte und
+nicht favorisierte Gesichter zu ausdrücklich benannten Personen. Dafür gelten
+strengere Grenzwerte von 0,62 und 0,10 Abstand. Manuelle Trennungen bleiben erhalten;
+eine bereits im selben Foto vorhandene Zielperson ist ausgeschlossen. Schlechte
+Aufnahmen mit gemessener unzureichender Qualität treiben keinen automatischen
+Nachabgleich an. Die Zähler zeigen geprüfte Datensätze, neue Zuordnungen und im
+aktuellen Lauf erzeugte Vorschläge.
+
+**Ähnliche Gruppen** unter `/photos/people/merge-suggestions` zeigt Fotobearbeitern
+bis zu 60 gespeicherte Zusammenführungsvorschläge. Auch ähnliche unbenannte
+Teilgruppen werden berücksichtigt. Vorschläge ab 0,45 Ähnlichkeit sind keine
+Wahrscheinlichkeitsangaben und benötigen eine Prüfung. **Zusammenführen** verwendet
+die angezeigten Gruppenrevisionen; zwischenzeitliche Änderungen verlangen eine
+neue Prüfung. **Getrennt lassen** bleibt als Entscheidung gespeichert und verhindert
+auch künftige automatische Zuordnungen zwischen diesen Gruppen. Aufrufe der Seite
+lösen keine neue Vektorsuche aus. Bearbeiten benötigt `photos.edit`, Einstellungen
+und Steuerung benötigen `photos.manage`.
+
+**Kleine Gesichter:** Nach der ersten Analyse des maximal 1.600 Pixel großen Fotos
+werden bei Bedarf bis zu acht Originalausschnitte nachanalysiert. Das Original wird
+dafür einmal zusätzlich dekodiert; Ausschnitte sind auf 1.600 Pixel und zusammen
+16 MiB begrenzt. Nur eindeutig wiedergefundene Gesichter mit ausreichend höherer
+Auflösung übernehmen den verbesserten Vektor. Die ursprünglichen Markierungen
+bleiben stabil. Ausfälle der optionalen Nachanalyse behalten das erste Ergebnis;
+Abbruch, Quelländerungen und Schutzmarkierungen stoppen die Verarbeitung.
+
+Der aktualisierte Gesichtsdienst liefert zusätzlich Gesichtsauflösung und Schärfe.
+Neue automatisch ausgewählte Referenzen benötigen mindestens 48 Gesichtspixel und
+Schärfewert 20; diese technischen Mindestwerte sind keine allgemeine Genauigkeits-
+garantie. Explizite Favoriten dürfen die Qualitätsauswahl überschreiben, niemals
+Sichtbarkeitsregeln. Ältere kompatible Dienste und gespeicherte Vektoren ohne
+Qualitätswerte bleiben verwendbar. Für gemessene Qualitätsfilter den Gesichtsdienst
+mit aktualisieren. Modelle und Protokoll 1 bleiben kompatibel. Foto-Schema 25
+migriert automatisch, ohne bestehende Namen oder Gesichter zu löschen.
+
 **Referenzen pro Person:** Unter **Einstellungen → Gesichtserkennung** lässt sich
 die Zielanzahl auf 1–100 einstellen; der Standard ist **30**. Seit 0.40.0 werden
 Vergleichsbilder möglichst über verschiedene Galerieordner verteilt. Innerhalb
@@ -656,8 +711,8 @@ wiedergefundene Region übertragen. Gelöschte oder ersetzte Fotos verlieren ihr
 veralteten Gesichtsdaten einschließlich der Favoriten.
 
 Änderungen der Zielanzahl und das Update bestehender Referenzen werden vor der
-nächsten Analyse in kurzen, fortsetzbaren Schritten übernommen. Bestehende Gruppen
-werden dadurch nicht automatisch zusammengeführt. Die Android-Oberfläche erhält
+nächsten Analyse in kurzen, fortsetzbaren Schritten übernommen. Die Referenzauswahl selbst führt keine Gruppen zusammen. Der separate
+Hintergrundabgleich prüft unbestätigte Zuordnungen und erzeugt Vorschläge. Die Android-Oberfläche erhält
 vorerst keine Sterne. Für spätere Clients stehen `GET` und `PUT` unter
 `/api/photos/labeling/v1/faces/{id}/favorite` bereit (`photos.edit`). Der PUT-Body
 enthält `person_id` und den gewünschten booleschen Wert `favorite`; Wiederholungen

@@ -325,6 +325,10 @@ func (l *Library) MergePeopleNamed(ctx context.Context, source, target int64, na
 }
 
 func (l *Library) mergePeople(ctx context.Context, source, target int64, name *string, additional ...int64) error {
+	return l.mergePeopleChecked(ctx, source, target, name, nil, additional...)
+}
+
+func (l *Library) mergePeopleChecked(ctx context.Context, source, target int64, name *string, expected *faceMergeExpectation, additional ...int64) error {
 	sources := []int64{source}
 	seen := map[int64]bool{source: true}
 	for _, id := range additional {
@@ -351,6 +355,12 @@ func (l *Library) mergePeople(ctx context.Context, source, target int64, name *s
 		return err
 	}
 	defer tx.Rollback()
+	if _, err = tx.ExecContext(ctx, `UPDATE photo_face_state SET id=id WHERE id=1`); err != nil {
+		return err
+	}
+	if err = validateFaceMergeSuggestionTx(ctx, tx, source, target, expected); err != nil {
+		return err
+	}
 	for _, id := range append(append([]int64{}, sources...), target) {
 		var exists int
 		if err = tx.QueryRowContext(ctx, `SELECT 1 FROM photo_people WHERE id=? AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=? AND ignored=0)`, id, id).Scan(&exists); err != nil {
