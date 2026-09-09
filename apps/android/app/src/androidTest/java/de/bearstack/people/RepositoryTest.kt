@@ -14,7 +14,14 @@ import java.io.IOException
 
 internal class FakeService : LabelingService {
     var upper=2L
-    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true)
+    var supportsMerges=true
+    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true,mergeSuggestions=supportsMerges)
+    val mergePairs=mutableListOf<MergeSuggestion>()
+    var failNextMerge=false
+    override suspend fun nextMergeSuggestion(): MergeSuggestion? {
+        if(failNextMerge) throw IOException("Nächster Vorschlag nicht erreichbar")
+        return mergePairs.firstOrNull()
+    }
     var actionDelay=0L
     val people = mutableMapOf(1L to Person(1,"",1,5,10,listOf(10,11,12,13)),2L to Person(2,"",1,1,20,listOf(20)))
     val receipts = mutableMapOf<String,Receipt>()
@@ -61,6 +68,20 @@ internal class FakeService : LabelingService {
         val p=people[id] ?: throw ApiFailure(409,"conflict","gone")
         if(p.revision!=request.getLong("revision")) throw ApiFailure(409,"conflict","stale")
         val action=request.getString("action")
+        if(action=="accept_merge" || action=="reject_merge") {
+            val pair=mergePairs.firstOrNull {it.id==request.getLong("suggestion_id")} ?: throw ApiFailure(409,"conflict","gone")
+            val target=people[request.getLong("target_id")] ?: throw ApiFailure(409,"conflict","gone")
+            if(pair.source.id!=id || pair.target.id!=target.id || target.revision!=request.getLong("target_revision")) throw ApiFailure(409,"conflict","stale")
+            if(action=="accept_merge") {
+                people[target.id]=target.copy(count=target.count+p.count,faces=target.faces+p.faces,revision=target.revision+1)
+                people.remove(id)
+                mergePairs.removeAll {it.source.id in listOf(id,target.id) || it.target.id in listOf(id,target.id)}
+            } else mergePairs.remove(pair)
+            val receipt=Receipt(op,action,id,target.id,0,if(action=="accept_merge")p.count else 0,0,100,if(action=="accept_merge")0 else p.revision)
+            commits++;receipts[op]=receipt
+            if(loseResponse) {loseResponse=false;throw IOException("response lost after commit")}
+            return receipt
+        }
         if(action in listOf("rename","favorite","unassign")) {
             val face=request.optLong("face_id")
             val newId=if(action=="unassign") (people.keys.maxOrNull() ?: 0)+1 else 0L
@@ -90,6 +111,29 @@ internal class FakeService : LabelingService {
 }
 class RepositoryTest {
     private fun database() = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext,LabelingDatabase::class.java).build()
+    @Test fun mergeDecisionSurvivesRestartAndRejectPreservesCurrentPage() = runBlocking {
+        for(accept in listOf(false,true)) {
+            val db=database()
+            try {
+                val api=FakeService()
+                val repo=PeopleRepository(db,api,api.session)
+                repo.next();repo.page(4)
+                val source=api.people.getValue(1)
+                val target=api.people.getValue(2)
+                api.mergePairs+=MergeSuggestion(7,source,target)
+                repo.prepare(source,if(accept) "accept_merge" else "reject_merge",target=target,suggestionId=7)
+                val saved=JSONObject(repo.pending()!!.body)
+                assertEquals(7L,saved.getLong("suggestion_id"));assertEquals(target.revision,saved.getLong("target_revision"))
+                api.loseResponse=true
+                try {repo.resolve();fail("expected lost response")} catch(_:IOException) {}
+                val restored=PeopleRepository(db,api,api.session)
+                assertNotNull(restored.resolve());assertNull(restored.pending());assertEquals(1,api.commits)
+                if(accept) assertEquals(2L,restored.next()!!.id)
+                else {assertEquals(1L,restored.next()!!.id);assertEquals(4,restored.state().page)}
+                assertTrue(restored.statistics(0).first().none {it.action=="name" || it.action=="assign"})
+            } finally {db.close()}
+        }
+    }
     @Test fun unsentIgnoresRecoverAfterRestartAndReceiptsKeepCurrentCard() = runBlocking {
         val db=database()
         try {

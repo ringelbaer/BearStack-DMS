@@ -1,6 +1,6 @@
 # BearStack Personen für Android
 
-Native, deutschsprachige App für Android 8.0 oder neuer. App-Version **0.8.3**; erforderlich sind **BearStack 0.35.0**, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit `photos.edit` (Rolle „Fotos bearbeiten“/`photos_editor`, `photos_manager` oder Administrator; Freigabe für Fotobearbeiter ab BearStack 0.36.0). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.
+Native, deutschsprachige App für Android 8.0 oder neuer. App-Version **0.9.0**; erforderlich sind **BearStack 0.35.0**, aktiviertes Fotomodul, vorhandene erkannte Gesichter und ein Konto mit `photos.edit` (Rolle „Fotos bearbeiten“/`photos_editor`, `photos_manager` oder Administrator; Freigabe für Fotobearbeiter ab BearStack 0.36.0). Bestehende lokale Daten werden beim Update automatisch erhalten; Rücknahmen stehen für ab Version 0.2.0 übersprungene Gruppen bereit. Die App arbeitet online und spricht ausschließlich mit BearStack, niemals direkt mit dem Python-Gesichtsdienst.
 
 ## Bauen und installieren
 
@@ -26,6 +26,19 @@ openssl x509 -in /pfad/zum/server.crt -noout -fingerprint -sha256
 Alle Hexadezimalpaare vergleichen, anschließend „Abgeglichen und vertrauen“ wählen. Nur dieses Zertifikat wird für das Profil akzeptiert; Hostname und Gültigkeit bleiben verbindlich. Eine IP-Adresse funktioniert nur mit einem entsprechenden IP-Eintrag im Subject Alternative Name des Zertifikats. Bei einem Zertifikatswechsel die Verbindung erneut einrichten und den neuen Fingerabdruck prüfen. Private Zertifikatsketten mit eigener CA werden in Version 1 nicht als selbstsigniertes Blattzertifikat angeboten.
 
 Es gibt ein aktives Profil. Zugangsdaten und bestätigtes Zertifikat werden mit AES-GCM unter einem Schlüssel im Android Keystore in `noBackupFilesDir` gespeichert. Backups und Gerätetransfers sind ausgeschlossen. Screenshots und die Vorschau im App-Umschalter sind gesperrt. Die App schreibt keine Zugangsdaten in Logs. Bilder werden nur im begrenzten Arbeitsspeichercache gehalten; ein Profilwechsel leert den Cache.
+
+## Ähnliche Gruppen
+
+Ab App **0.9.0** und **BearStack 0.49.0** öffnet **Menü → Ähnliche Gruppen** jeweils eine einzelne Entscheidung. Zwei Portraits zeigen die tatsächlichen Vergleichsgesichter der Gruppen mit Namen und Gesichtsanzahl. Es gibt keine scrollbare Vorschlagsliste; die Portraits passen sich dem verfügbaren Platz an und die beiden Entscheidungsbuttons bleiben unten sichtbar.
+
+- **Zusammenführen:** Alle Gesichter der ersten Gruppe werden der zweiten zugeordnet. Favoriten bleiben erhalten. Ist die zweite Gruppe unbenannt, wird ein vorhandener Name der ersten übernommen.
+- **Getrennt lassen:** Die Trennung bleibt gespeichert und verhindert auch künftige automatische Zuordnungen zwischen diesen Gruppen.
+- Nach Serverbestätigung lädt automatisch das nächste Gruppenpaar. Wenn keine Vorschläge vorliegen, erscheint ein Hinweis mit „Aktualisieren“.
+- **Portrait halten und wischen:** Wie beim Benennen/Zuordnen erscheint das vollständige Original mit Gesichtsmarkierung. Herunterwischen vergrößert zum Gesicht, Hochwischen verkleinert; Loslassen oder Abbrechen schließt die Vorschau. Beide Portraits bieten die TalkBack-Aktion „Originalfoto anzeigen“. Der vollständige Galeriepfad steht in der Originalvorschau; lange Pfade lassen sich dort lesen.
+
+Während des Speicherns und bei einer ungeklärten Antwort sind weitere Entscheidungen gesperrt. „Offene Aktion prüfen“ klärt die dauerhaft gespeicherte Aktionsquittung, auch nach einem App-Neustart. Konflikte durch andere Bearbeitungen verlangen eine neue Prüfung. Schlägt erst das Nachladen fehl, wird ausschließlich der nächste Vorschlag neu geladen. Zurück führt zum Benennen; bei unveränderten Gruppen bleibt auch die bisherige Bildseite erhalten. Diese Entscheidungen erhöhen nicht die Statistik für erstmaliges Benennen/Zuordnen.
+
+Der Server liest höchstens 20 gespeicherte Kandidaten und liefert nur ein Paar mit je einem Vergleichsgesicht. Beim Öffnen wird keine Vektorsuche gestartet. Auch Vergleichsgesichter weit hinten in großen Gruppen werden über den Gesichts-ID-Index abgerufen. Die bestehende Originalvorschau mit maximal 2048 Pixeln, Drei-Minuten-/16-MiB-Speichercache und seriellem WLAN-Vorladen wird wiederverwendet. Auf älteren Servern zeigt die App einen Hinweis auf BearStack 0.49.0; Benennen und Personenverwaltung bleiben verfügbar.
 
 ## Personen verwalten
 
@@ -91,7 +104,7 @@ Der Server liefert dazu je Gesicht die optionale, undurchsichtige `original_key`
 
 ## API und Datenmigration
 
-Der gemeinsame Vertrag steht in [`openapi.yaml`](https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml), unter `/api/photos/labeling/v1`. Anfragen verwenden HTTP Basic über HTTPS und JSON. Die Sitzung meldet `named_people` ab BearStack 0.43.0. `GET /people?after=…&upper=…` liefert benannte Personen; die Aktionen `rename`, `unassign` und `favorite` erweitern den bestehenden Aktionsendpunkt ohne Protokollwechsel. Operationen tragen eine zufällige ID, Datenbestandskennung, Quellrevision und bei Zuordnung eine Zielrevision. Die Antwort enthält tatsächliche Gesichtszahlen und betroffene Gruppen-IDs.
+Der gemeinsame Vertrag steht in [`openapi.yaml`](https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml), unter `/api/photos/labeling/v1`. Anfragen verwenden HTTP Basic über HTTPS und JSON. Die Sitzung meldet `named_people` ab BearStack 0.43.0. `GET /people?after=…&upper=…` liefert benannte Personen; die Aktionen `rename`, `unassign` und `favorite` erweitern den bestehenden Aktionsendpunkt ohne Protokollwechsel. Ab BearStack 0.49.0 meldet die Sitzung `merge_suggestions`; `GET /merge-suggestions/next` liefert ein Paar oder `suggestion: null`. `accept_merge` und `reject_merge` am Aktionsendpunkt benötigen zusätzlich `suggestion_id`, `target_id` und `target_revision`. Operationen tragen eine zufällige ID, Datenbestandskennung, Quellrevision und bei Zuordnung oder Gruppenentscheidung eine Zielrevision. Die Antwort enthält tatsächliche Gesichtszahlen und betroffene Gruppen-IDs.
 
 Die Labeling-Tabellen bestehen seit Foto-Schema 19. BearStack 0.43.0 migriert kompatibel auf Schema 24 und ergänzt einen partiellen Index für benannte Personen; Namen, Gesichter, Revisionen und Quittungen bleiben erhalten. Das Room-Schema der App bleibt unverändert. Datenbanktrigger erhöhen Revisionen auch bei Web- und Hintergrundänderungen. Mutation und Quittung werden in derselben SQLite-Transaktion gespeichert. Quittungen sind kontogebunden und bleiben bis zum Löschen der Gesichtserkennungsdaten erhalten. Dieser Reset erzeugt eine neue Datenbestandskennung. Die Foto-Datenbank einschließlich dieser Tabellen gemeinsam sichern und wiederherstellen. Bestehende Web-Endpunkte bleiben erhalten; ausgeschlossene geschützte Fotos werden auch über diese API nicht angeboten.
 
@@ -119,6 +132,8 @@ Compose-Regressionstests prüfen beim Vor- und Zurückblättern, dass Gesichtsra
 Cachetests prüfen tatsächliche HTTPS-Anfragezahlen und die Wiederverwendung desselben dekodierten Bitmaps für unterschiedliche Gesichter, den festen Drei-Minuten-Ablauf, Fehlerantworten, Cacheleeren, Speicherbegrenzung und alte Server ohne Bildkennung.
 
 Zusätzliche Regressionen prüfen die vollständige Personenliste über mehrere Seiten, Umbenennen, Favoritenwechsel, Entfernen des letzten Gesichts, große Schrift, Halten/Wischen/Abbruch und TalkBack-Vorschau. Repository- und ViewModel-Tests sichern verlorene Antworten, Konflikte und den Erhalt der Zuordnungswarteschlange ab. Der echte HTTPS-Integrationstest führt die neuen Verwaltungsaktionen gegen den Go-Server aus. Ab 0.7.0 prüfen zusätzliche Tests Textsuche jenseits der ersten Seite, verspätete Suchantworten, Bestätigen/Abbrechen, fortlaufendes Nachladen über 80 Gesichter, Scrollposition nach Favorisieren und Revisionskonflikte beim Anfügen.
+
+Ab App 0.9.0 prüfen Regressionen einzelne Gruppenentscheidungen, sichtbare Buttons bei doppelter Schriftgröße, beide Portrait-Vorschauen, doppelte Klicks, Konflikte, verlorene Antworten und Fehler beim Nachladen. Repository-Neustarts erhalten offene Entscheidungen und die Benennen-Bildseite. Die HTTPS-Integration prüft beide Entscheidungen samt Originalen, Vorschaubildern und Quittungswiederholung gegen isolierte Go-Instanzen hinter URL-Präfixen. Servertests prüfen zusätzlich Sichtbarkeit, Rollback, Vergleichsgesichter jenseits der ersten Bildseite und gleichzeitiges Annehmen/Ablehnen.
 
 Der Integrationstest öffnet ausschließlich `127.0.0.1:18787`, nutzt temporäre Daten und führt `adb reverse` aus. Er greift auf keine installierte BearStack-Instanz zu. Ohne Testadresse wird dieser zusätzliche instrumentierte Test übersprungen.
 

@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.49.0
+
+- Android-App **0.9.0** (versionCode 21): **Menü → Ähnliche Gruppen** zeigt jeweils ein Gruppenpaar ohne Vorschlagsliste zum Scrollen. **Zusammenführen** und **Getrennt lassen** bleiben unten sichtbar; nach bestätigter Entscheidung lädt das nächste Paar. Beide Portraits bieten die bekannte Originalfoto-Vorschau per Halten und Wischen mit Gesichtsmarkierung und TalkBack-Aktionen.
+- Die Labeling-API liefert genau einen gespeicherten Vorschlag mit den tatsächlichen Vergleichsgesichtern, Pfaden, Original-Cache-Schlüsseln und Gruppenrevisionen. Beide Entscheidungen werden atomar mit einer Aktionsquittung gespeichert. Verlorene Antworten, doppelte Klicks, Konflikte und Fehler beim Nachladen sind abgesichert. Ablehnen verändert keine Gesichter und verhindert künftige automatische Zuordnungen zwischen den Gruppen.
+- Die Benennen-Warteschlange einschließlich Bildseite bleibt bei unveränderten Gruppen erhalten. Nur die beiden aktuellen Portraits werden geladen; WLAN-Vorladen nutzt den vorhandenen begrenzten Originalbildcache. Ältere Server zeigen den erforderlichen Versionsstand an.
+- MINOR für die zusätzliche App- und API-Funktion, ohne Datenmigration. README, Android-Anleitung, Website und OpenAPI aktualisiert; Regressionen für Entscheidungen, Quittungen, Rechte, Sichtbarkeit, große Gruppen, Vergrößerung und Bedienung ergänzt.
+
 ### BearStack 0.48.1
 
 - Im Benenn-Modal nutzt die Vorschlagsliste die freie Höhe neben der Fotovorschau. Längere Listen scrollen innerhalb dieses Bereichs; die reservierte Fläche hält die Dialogaktionen beim Ein- und Ausblenden stabil.

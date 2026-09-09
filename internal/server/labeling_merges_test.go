@@ -1,0 +1,59 @@
+package server
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
+	"testing"
+
+	"bearstack/internal/photos"
+)
+
+func TestLabelingMergeHTTP(t *testing.T) {
+	for _, action := range []string{"accept_merge", "reject_merge"} {
+		t.Run(action, func(t *testing.T) {
+			s, expected := mergeSuggestionServer(t)
+			const path = "/api/photos/labeling/v1/merge-suggestions/next"
+			for _, user := range []string{"reader", "editor", "manager"} {
+				w := labelRequest(s, "GET", path, user, "")
+				if user == "reader" {
+					if w.Code != 403 {
+						t.Fatalf("reader: %d", w.Code)
+					}
+					continue
+				}
+				var result struct {
+					Suggestion photos.LabelMergeSuggestion `json:"suggestion"`
+				}
+				if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &result) != nil || result.Suggestion.ID != expected.ID || len(result.Suggestion.Source.Faces) != 1 || len(result.Suggestion.Target.Faces) != 1 || w.Header().Get("Cache-Control") != "private, no-store" || strings.Contains(w.Body.String(), "embedding") {
+					t.Fatalf("%s: %d %s", user, w.Code, w.Body.String())
+				}
+			}
+			session, err := s.photos.LabelSession(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			body, err := json.Marshal(photos.LabelAction{Action: action, OperationID: "android-merge-0001", Dataset: session.Dataset,
+				Revision: expected.SourceRevision, TargetID: expected.TargetID, TargetRevision: expected.TargetRevision, SuggestionID: expected.ID})
+			if err != nil {
+				t.Fatal(err)
+			}
+			actionPath := fmt.Sprintf("/api/photos/labeling/v1/people/%d/actions", expected.SourceID)
+			if w := labelRequest(s, "POST", actionPath, "reader", string(body)); w.Code != 403 {
+				t.Fatalf("reader action: %d", w.Code)
+			}
+			first := labelRequest(s, "POST", actionPath, "editor", string(body))
+			if first.Code != 200 {
+				t.Fatalf("action: %d %s", first.Code, first.Body.String())
+			}
+			again := labelRequest(s, "POST", actionPath, "editor", string(body))
+			if again.Code != 200 || again.Body.String() != first.Body.String() {
+				t.Fatalf("replay: %d %s", again.Code, again.Body.String())
+			}
+			if w := labelRequest(s, "GET", path, "editor", ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"suggestion":null`) {
+				t.Fatalf("next: %d %s", w.Code, w.Body.String())
+			}
+		})
+	}
+}

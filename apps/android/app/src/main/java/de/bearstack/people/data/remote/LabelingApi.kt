@@ -15,7 +15,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
 data class Session(val instance: String, val dataset: String, val account: String, val upper: Long,
-    val namedPeople: Boolean = false, val namedSearch: Boolean = false) {
+    val namedPeople: Boolean = false, val namedSearch: Boolean = false, val mergeSuggestions: Boolean = false) {
     val scope: String get() = JSONObject().put("instance", instance).put("dataset", dataset).put("account", account).toString()
 }
 data class Person(val id: Long, val name: String, val revision: Long, val count: Long, val faceId: Long,
@@ -23,6 +23,7 @@ data class Person(val id: Long, val name: String, val revision: Long, val count:
     val faceBounds: Map<Long,FaceBounds> = emptyMap(), val favorites: Set<Long> = emptySet(),
     val originalKeys: Map<Long,String> = emptyMap())
 data class Candidates(val people: List<Person>, val next: Long, val hasNext: Boolean)
+data class MergeSuggestion(val id: Long, val source: Person, val target: Person)
 data class Receipt(val operation: String, val action: String, val source: Long, val target: Long, val newId: Long,
     val faces: Long, val groups: Int, val at: Long, val sourceRevision: Long = 0)
 class ApiFailure(val status: Int, val code: String, message: String) : IOException(message)
@@ -36,6 +37,7 @@ interface LabelingService {
     suspend fun personFaces(id: Long, offset: Int, after: Long): Person = person(id,offset)
     suspend fun person(id: Long, offset: Int = 0): Person
     suspend fun suggestions(q: String, exact: Boolean = false): List<Person>
+    suspend fun nextMergeSuggestion(): MergeSuggestion? = throw ApiFailure(404,"not_found","Ähnliche Gruppen benötigen BearStack 0.49.0.")
     suspend fun action(id: Long, body: String): Receipt
     suspend fun receipt(operation: String, dataset: String): Receipt
 }
@@ -85,7 +87,7 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
     override suspend fun session(): Session {
         val o = json("session")
         require(o.getInt("protocol") == 1 && o.getBoolean("can_manage")) { "Inkompatible API oder fehlende Personenrechte." }
-        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"))
+        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"))
     }
     override suspend fun candidates(after: Long, upper: Long): Candidates {
         val o = json("candidates", mapOf("after" to "$after", "upper" to "$upper"))
@@ -103,6 +105,9 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
         mapOf("offset" to "$offset","after_face" to "$after","limit" to "40")))
     override suspend fun person(id: Long, offset: Int): Person = person(json("people/$id",mapOf("offset" to "$offset")))
     override suspend fun suggestions(q: String, exact: Boolean): List<Person> = people(json("suggestions",mapOf("q" to q,"exact" to if(exact) "1" else "0")))
+    override suspend fun nextMergeSuggestion(): MergeSuggestion? = json("merge-suggestions/next").optJSONObject("suggestion")?.let {
+        MergeSuggestion(it.getLong("id"),person(it.getJSONObject("source")),person(it.getJSONObject("target")))
+    }
     override suspend fun action(id: Long, body: String): Receipt = receipt(json("people/$id/actions", body=body))
     override suspend fun receipt(operation: String, dataset: String): Receipt = receipt(json("actions/$operation",mapOf("dataset" to dataset)))
     private fun people(o: JSONObject): List<Person> = o.getJSONArray("people").let { a -> List(a.length()) { person(a.getJSONObject(it)) } }

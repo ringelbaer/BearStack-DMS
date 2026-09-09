@@ -114,6 +114,16 @@ func (s *Server) handleLabelSuggestions(w http.ResponseWriter, r *http.Request) 
 	_ = writeJSON(w, 200, map[string]any{"people": out})
 }
 
+func (s *Server) handleLabelMergeSuggestion(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
+	out, err := s.photos.LabelNextMergeSuggestion(r.Context())
+	if err != nil {
+		s.labelError(w, r, err)
+		return
+	}
+	_ = writeJSON(w, http.StatusOK, map[string]any{"suggestion": out})
+}
+
 func (s *Server) handleLabelReceipt(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "private, no-store")
 	operation := r.PathValue("operation")

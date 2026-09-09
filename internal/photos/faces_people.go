@@ -373,15 +373,7 @@ func (l *Library) mergePeopleChecked(ctx context.Context, source, target int64, 
 		}
 	}
 	for _, id := range sources {
-		// Preserve a source name when the explicitly selected target is unnamed.
-		// Copy its provenance as well so imported names retain their visibility rules.
-		if _, err = tx.ExecContext(ctx, `UPDATE photo_people SET (name,name_fold,manual_name,name_source)=(SELECT name,name_fold,manual_name,name_source FROM photo_people WHERE id=?) WHERE id=? AND name='' AND EXISTS(SELECT 1 FROM photo_people WHERE id=? AND name<>'')`, id, target, id); err != nil {
-			return err
-		}
-		if _, err = tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=?,manual=1 WHERE person_id=?`, target, id); err != nil {
-			return err
-		}
-		if _, err = tx.ExecContext(ctx, `DELETE FROM photo_people WHERE id=?`, id); err != nil {
+		if err = mergePersonTx(ctx, tx, id, target); err != nil {
 			return err
 		}
 		if err = refreshFaceReferencesTx(ctx, tx, id); err != nil {
@@ -399,6 +391,20 @@ func (l *Library) mergePeopleChecked(ctx context.Context, source, target int64, 
 	}
 	l.faceRuntime.graph = nil
 	return nil
+}
+
+// Shared by web merges and receipted labeling decisions. The caller validates
+// revisions, refreshes affected references and commits the complete transaction.
+func mergePersonTx(ctx context.Context, tx *sql.Tx, source, target int64) error {
+	// Preserve a source name and its provenance when the target is unnamed.
+	if _, err := tx.ExecContext(ctx, `UPDATE photo_people SET (name,name_fold,manual_name,name_source)=(SELECT name,name_fold,manual_name,name_source FROM photo_people WHERE id=?) WHERE id=? AND name='' AND EXISTS(SELECT 1 FROM photo_people WHERE id=? AND name<>'')`, source, target, source); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=?,manual=1 WHERE person_id=?`, target, source); err != nil {
+		return err
+	}
+	_, err := tx.ExecContext(ctx, `DELETE FROM photo_people WHERE id=?`, source)
+	return err
 }
 
 // AddAutomaticFaces decorates only the returned page, not all search candidates.

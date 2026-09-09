@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.48.1
+  version: 0.49.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -328,6 +328,41 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/photos/labeling/v1/merge-suggestions/next:
+    get:
+      tags: [Photos]
+      operationId: getNextLabelingMergeSuggestion
+      summary: Read one similar-group decision with both matching portraits
+      description: |
+        Since 0.49.0; requires photos.edit and session.merge_suggestions.
+        Reads at most 20 cached candidates in descending score / ascending ID order;
+        never starts vector matching. Returns one currently visible pair or null.
+        Each group's faces contains exactly its matching witness, including bounds,
+        display_path and original_key. Revisions describe the displayed groups.
+        After a confirmed accept_merge/reject_merge action, read this endpoint again.
+        Conflicts require a fresh read and an explicit new decision.
+      responses:
+        "200":
+          description: One suggestion or none. Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [suggestion]
+                properties:
+                  suggestion:
+                    oneOf:
+                      - $ref: "#/components/schemas/LabelingMergeSuggestion"
+                      - type: "null"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/photos/labeling/v1/people/{id}/actions:
     post:
       tags: [Photos]
@@ -341,6 +376,15 @@ paths:
         unassign moves one face to a new manually unnamed group and clears its
         favorite status, even for the last face. favorite explicitly sets the
         reference favorite for one face; it is not a toggle.
+        Since 0.49.0, accept_merge and reject_merge decide a cached similar-group
+        suggestion (session.merge_suggestions). Both require suggestion_id,
+        target_id and target_revision, matching the displayed source and target.
+        Targets may be named or unnamed. accept_merge moves the entire source,
+        including ignored faces and favorites, into the target and removes the
+        source group; source name/provenance is preserved if the target is unnamed.
+        reject_merge retains a durable separation that also vetoes automatic
+        reassociation; it changes no faces or group revisions. Both actions and
+        their receipts commit atomically and use groups=0; reject_merge uses faces=0.
         All active faces are changed in one transaction with the receipt; there is
         no 500-face limit or client-side batching. Images are never deleted.
         operation_id is unique per account and dataset. An identical replay returns
@@ -2154,6 +2198,7 @@ components:
       type: object
       required: [protocol, instance, dataset, account, upper_id, can_manage]
       properties:
+        merge_suggestions: {type: boolean, const: true, description: "One-pair review and receipted accept_merge/reject_merge actions since 0.49.0. Older servers omit this field."}
         named_people: {type: boolean, const: true, description: "Named people list and rename/unassign/favorite receipt actions available since 0.43.0. Older servers omit this field."}
         named_search: {type: boolean, const: true, description: "Name search, 40-face cursor pages and receipt source_revision available since 0.45.0. Older servers omit this field."}
         face_favorites: {type: boolean, const: true, description: "Favorite API available since 0.40.0. Older servers omit this field."}
@@ -2231,6 +2276,19 @@ components:
           type: array
           maxItems: 20
           items: {$ref: "#/components/schemas/LabelingPerson"}
+    LabelingMergeSuggestion:
+      type: object
+      required: [id, source, target]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        source:
+          allOf:
+            - $ref: "#/components/schemas/LabelingPerson"
+          description: First group; faces contains exactly the source witness, also used as face_id.
+        target:
+          allOf:
+            - $ref: "#/components/schemas/LabelingPerson"
+          description: Second group; faces contains exactly the target witness, also used as face_id.
     LabelingAction:
       type: object
       additionalProperties: false
@@ -2239,11 +2297,12 @@ components:
         operation_id: {type: string, minLength: 16, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$'}
         dataset: {type: string}
         revision: {type: integer, format: int64, minimum: 1}
-        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite]}
+        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge]}
+        suggestion_id: {type: integer, format: int64, minimum: 1, description: Required cached suggestion ID for accept_merge/reject_merge since 0.49.0.}
         name: {type: string, maxLength: 200, description: Required and nonempty for name or rename; whitespace normalized.}
         allow_duplicate: {type: boolean, default: false, description: Explicitly allow a separate group with the same name.}
-        target_id: {type: integer, format: int64, description: Named target for assign.}
-        target_revision: {type: integer, format: int64, description: Expected target revision for assign.}
+        target_id: {type: integer, format: int64, description: Named target for assign; displayed target for accept_merge/reject_merge.}
+        target_revision: {type: integer, format: int64, description: Expected target revision for assign or accept_merge/reject_merge.}
         face_id: {type: integer, format: int64, description: One active source face for detach/unassign/favorite; only detach requires at least two faces.}
         favorite: {type: boolean, description: Required explicit desired state for the favorite action.}
     LabelingReceipt:
@@ -2252,12 +2311,12 @@ components:
       properties:
         source_revision: {type: integer, format: int64, minimum: 0, description: "Optional since 0.45.0. Source revision at commit (zero if absent). Preserved on replay; use for local updates, never as proof of the latest server state."}
         operation_id: {type: string}
-        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite]}
+        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge]}
         source_id: {type: integer, format: int64}
-        target_id: {type: integer, format: int64, description: Assignment target or zero.}
+        target_id: {type: integer, format: int64, description: Assignment or merge-decision target; otherwise zero.}
         new_id: {type: integer, format: int64, description: New unnamed group for detach/unassign or zero.}
-        faces: {type: integer, format: int64, minimum: 1, description: Actually affected active face count.}
-        groups: {type: integer, enum: [0, 1], description: Zero for detach/rename/unassign/favorite; one for name/assign/ignore.}
+        faces: {type: integer, format: int64, minimum: 0, description: Actually affected active face count; zero for reject_merge.}
+        groups: {type: integer, enum: [0, 1], description: Zero for detach/rename/unassign/favorite/accept_merge/reject_merge; one for name/assign/ignore.}
         at: {type: integer, format: int64, description: Server confirmation time in Unix seconds.}
 
     Error:

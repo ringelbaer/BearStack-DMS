@@ -47,6 +47,7 @@ fun PeopleApp(vm: PeopleViewModel) {
     MaterialTheme(colorScheme=if(dark) darkColorScheme(primary=Color(0xff75d2e8)) else lightColorScheme(primary=Color(0xff146e83))) {
         Surface(Modifier.fillMaxSize()) {
             if (!state.connected) ConnectionScreen(state,vm)
+            else if(state.mergeReview) MergeReviewScreen(state,vm)
             else if(state.directory) PeopleDirectoryScreen(state,vm)
             else LabelingScreen(state,vm)
             if(state.undoIgnores.isNotEmpty()) key(state.naming) { IgnoreUndoToast(state.undoIgnores.size,vm::undoIgnore) }
@@ -104,6 +105,7 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
             TextButton(onClick={menu=true}) { Text("Menü") }
             DropdownMenu(menu,{menu=false}) {
                 DropdownMenuItem(text={Text("Personen")},onClick={vm.openDirectory();menu=false},enabled=enabled)
+                DropdownMenuItem(text={Text("Ähnliche Gruppen")},onClick={vm.openMergeReview();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(if(statistics) "Zur Bearbeitung" else "Statistik")},onClick={statistics=!statistics;menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text("Übersprungene bearbeiten (${state.skipped})")},onClick={vm.newPass(true);menu=false},enabled=enabled && state.person==null && state.skipped>0)
                 DropdownMenuItem(text={Text("Verbindung wechseln")},onClick={vm.switchConnection();menu=false},enabled=!state.busy)
@@ -201,7 +203,7 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
 fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Long, Boolean) -> String?,
     onDetach: (Long) -> Unit, onHold: (Long?) -> Unit, onZoom: (Long) -> Unit,
     onZoomDrag: (Float) -> Unit = {}, managing: Boolean = false, onFavorite: (Long) -> Unit = {},
-    onPrefetch: suspend (List<Long>) -> Unit = {}) {
+    onPrefetch: suspend (List<Long>) -> Unit = {}, allowDetach: Boolean = true, showPaths: Boolean = true) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val prefetch by rememberUpdatedState(onPrefetch)
     LaunchedEffect(person.id,person.faces,images,lifecycle) {
@@ -252,7 +254,7 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
                                     }) {
                                     if(images!=null) AsyncImage(image(face,false),null,imageLoader=images,
                                         modifier=Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
-                                    if(managing || person.count>1) FilledTonalIconButton(onClick={onDetach(face)},enabled=enabled && !holding,
+                                    if(allowDetach && (managing || person.count>1)) FilledTonalIconButton(onClick={onDetach(face)},enabled=enabled && !holding,
                                         modifier=Modifier.align(Alignment.BottomStart).padding(4.dp).size(48.dp)
                                             .padding(if(managing) 8.dp else 0.dp)
                                             .semantics { contentDescription=if(managing) "Zuordnung entfernen" else "Dieses Gesicht einzeln benennen" }) { Text("×",style=if(managing) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineMedium) }
@@ -262,7 +264,7 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
                                             stateDescription=if(face in person.favorites) "Favorisiert" else "Nicht favorisiert"
                                         }) { Text(if(face in person.favorites) "★" else "☆",style=MaterialTheme.typography.titleMedium) }
                                 }
-                                person.facePaths[face]?.takeIf {it.isNotEmpty()}?.let {
+                                person.facePaths[face]?.takeIf {showPaths && it.isNotEmpty()}?.let {
                                     Text(it,style=MaterialTheme.typography.bodySmall,
                                         modifier=Modifier.fillMaxWidth().padding(top=6.dp).testTag("face-path-$face"))
                                 }

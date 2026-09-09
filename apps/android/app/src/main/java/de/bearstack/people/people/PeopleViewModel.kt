@@ -29,6 +29,7 @@ data class PeopleState(
     val namedCursor: Long = 0, val namedUpper: Long = 0, val namedHasNext: Boolean = false,
     val selectedPerson: Person? = null, val namedQuery: String = "", val loadedNamedQuery: String = "",
     val namedSearch: Boolean = false, val removeFace: Long? = null, val removeRevision: Long = 0,
+    val mergeReview: Boolean = false, val mergeSuggestion: MergeSuggestion? = null,
 )
 class PeopleViewModel private constructor(application: Application, private val db: LabelingDatabase,
     initialRepository: PeopleRepository?) : AndroidViewModel(application) {
@@ -83,7 +84,8 @@ class PeopleViewModel private constructor(application: Application, private val 
                             val repo = repository ?: return@runCatching
                             if (repo.api.session().scope != repo.scope) {
                                 clearConnection(); update { it.copy(error="Der Datenbestand wurde geändert. Bitte neu verbinden.") }
-                            } else if(state.value.directory) refreshSelectedPerson() else loadNext()
+                            } else if(state.value.mergeReview) loadMergeSuggestion()
+                            else if(state.value.directory) refreshSelectedPerson() else loadNext()
                         }
                     }
                 }
@@ -184,7 +186,9 @@ class PeopleViewModel private constructor(application: Application, private val 
     fun original(face: Long) = api?.original(face)
     fun originalKey(face: Long): String? {
         val current=state.value
-        val person=if(current.directory) current.selectedPerson else current.person
+        val person=if(current.mergeReview) current.mergeSuggestion?.let {
+            if(face in it.source.faces) it.source else it.target
+        } else if(current.directory) current.selectedPerson else current.person
         return person?.originalKeys?.get(face)?.let { "${repository?.scope}:$it" }
     }
     suspend fun prefetchOriginals(faces: List<Long>) {
@@ -200,6 +204,33 @@ class PeopleViewModel private constructor(application: Application, private val 
     }
     fun gallery(name: String) = api?.gallery(name)
     private fun editable() = state.value.connected && !state.value.busy && !state.value.unresolved
+    fun openMergeReview() { if(editable() && !state.value.naming) task {
+        search?.cancel(); searchPreload?.cancel()
+        preloads.forEach { it.dispose() }; preloads.clear()
+        update { it.copy(mergeReview=true,mergeSuggestion=null) }
+        loadMergeSuggestion()
+    } }
+    private suspend fun loadMergeSuggestion() {
+        update { it.copy(mergeSuggestion=null) }
+        val repo=repository ?: return
+        val session=repo.api.session()
+        require(session.scope==repo.scope) { "Der Datenbestand wurde geändert. Bitte neu verbinden." }
+        if(!session.mergeSuggestions) throw ApiFailure(404,"not_found","Ähnliche Gruppen benötigen BearStack 0.49.0.")
+        val suggestion=repo.api.nextMergeSuggestion()
+        update { it.copy(mergeSuggestion=suggestion) }
+    }
+    fun decideMerge(accept: Boolean) { if(editable() && state.value.mergeReview) task {
+        val suggestion=state.value.mergeSuggestion ?: return@task
+        val repo=repository ?: return@task
+        repo.prepare(suggestion.source,if(accept) "accept_merge" else "reject_merge",
+            target=suggestion.target,suggestionId=suggestion.id)
+        repo.resolve()
+        loadMergeSuggestion()
+    } }
+    fun closeMergeReview() { if(editable()) task {
+        update { it.copy(mergeReview=false,mergeSuggestion=null) }
+        loadNext()
+    } }
     fun page(delta: Int) { if (editable()) task {
         val old = state.value.person ?: return@task
         val offset = (old.offset + delta * 4).coerceAtLeast(0)
@@ -420,7 +451,7 @@ class PeopleViewModel private constructor(application: Application, private val 
         whenReady(repo) {
             try { repo.restoreIgnores(setOf(id),show=id) } finally { undoRequests-=id }
             search?.cancel()
-            update {it.copy(naming=false,suggestions=emptyList(),duplicates=emptyList(),directory=false,selectedPerson=null)}
+            update {it.copy(naming=false,suggestions=emptyList(),duplicates=emptyList(),directory=false,selectedPerson=null,mergeReview=false,mergeSuggestion=null)}
             loadNext()
         }
     }
@@ -453,7 +484,8 @@ class PeopleViewModel private constructor(application: Application, private val 
             repo.restoreIgnores(repo.state().stagedIgnores.positions().map {it.id}.toSet()-ignoreJobs.keys-undoRequests)
         }
         update { it.copy(unresolved=false,naming=if(receipt!=null && (receipt.source==it.person?.id || receipt.source==it.selectedPerson?.id)) false else it.naming) }
-        if(state.value.directory) {
+        if(state.value.mergeReview) loadMergeSuggestion()
+        else if(state.value.directory) {
             if(receipt!=null && body!=null && state.value.selectedPerson!=null) applyManagementReceipt(receipt,body)
             else if(state.value.selectedPerson!=null) refreshSelectedPerson() else loadNamedPeople(true)
         } else loadNext()

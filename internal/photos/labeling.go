@@ -18,13 +18,14 @@ var ErrLabelInvalid = errors.New("ungültige Benennungsaktion")
 var ErrLabelNameExists = errors.New("Name bereits vorhanden")
 
 type LabelSession struct {
-	NamedSearch   bool   `json:"named_search"`
-	NamedPeople   bool   `json:"named_people"`
-	FaceFavorites bool   `json:"face_favorites"`
-	Protocol      int    `json:"protocol"`
-	Instance      string `json:"instance"`
-	Dataset       string `json:"dataset"`
-	UpperID       int64  `json:"upper_id"`
+	MergeSuggestions bool   `json:"merge_suggestions"`
+	NamedSearch      bool   `json:"named_search"`
+	NamedPeople      bool   `json:"named_people"`
+	FaceFavorites    bool   `json:"face_favorites"`
+	Protocol         int    `json:"protocol"`
+	Instance         string `json:"instance"`
+	Dataset          string `json:"dataset"`
+	UpperID          int64  `json:"upper_id"`
 }
 type LabelPerson struct {
 	ID       int64       `json:"id"`
@@ -56,6 +57,7 @@ type LabelCandidates struct {
 	HasNext bool          `json:"has_next"`
 }
 type LabelAction struct {
+	SuggestionID   int64  `json:"suggestion_id,omitempty"`
 	Favorite       *bool  `json:"favorite,omitempty"`
 	OperationID    string `json:"operation_id"`
 	Dataset        string `json:"dataset"`
@@ -84,7 +86,7 @@ const labelFrom = ` FROM photo_people p JOIN photo_person_revisions r ON r.perso
 const labelExists = ` EXISTS(SELECT 1 FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0) `
 
 func (l *Library) LabelSession(ctx context.Context) (LabelSession, error) {
-	out := LabelSession{Protocol: 1, FaceFavorites: true, NamedPeople: true, NamedSearch: true}
+	out := LabelSession{Protocol: 1, FaceFavorites: true, NamedPeople: true, NamedSearch: true, MergeSuggestions: true}
 	err := l.index.db.QueryRowContext(ctx, `SELECT instance,dataset,(SELECT coalesce(max(id),0) FROM photo_people) FROM photo_labeling_identity WHERE id=1`).Scan(&out.Instance, &out.Dataset, &out.UpperID)
 	return out, err
 }
@@ -213,7 +215,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		return out, ErrLabelInvalid
 	}
 	switch a.Action {
-	case "name", "assign", "detach", "ignore", "rename", "unassign", "favorite":
+	case "name", "assign", "detach", "ignore", "rename", "unassign", "favorite", "accept_merge", "reject_merge":
 	default:
 		return out, ErrLabelInvalid
 	}
@@ -222,6 +224,10 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		return out, ErrLabelInvalid
 	}
 	if (a.Action == "name" || a.Action == "rename") && name == "" || a.Action == "favorite" && a.Favorite == nil {
+		return out, ErrLabelInvalid
+	}
+	merging := a.Action == "accept_merge" || a.Action == "reject_merge"
+	if merging && (a.SuggestionID <= 0 || a.TargetID <= 0 || a.TargetID == id || a.TargetRevision <= 0) {
 		return out, ErrLabelInvalid
 	}
 	encoded, _ := json.Marshal(struct {
@@ -279,7 +285,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		return out, err
 	}
 	managing := a.Action == "rename" || a.Action == "unassign" || a.Action == "favorite"
-	if source.Revision != a.Revision || (source.Name != "") != managing {
+	if source.Revision != a.Revision || (!merging && (source.Name != "") != managing) {
 		return out, ErrLabelConflict
 	}
 	var baseRevision int64
@@ -290,6 +296,17 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	}
 	out = LabelReceipt{OperationID: a.OperationID, Action: a.Action, SourceID: id, Faces: source.Count, Groups: 1, At: time.Now().Unix()}
 	switch a.Action {
+	case "accept_merge", "reject_merge":
+		if err = validateFaceMergeSuggestionTx(ctx, tx, id, a.TargetID, &faceMergeExpectation{a.SuggestionID, a.Revision, a.TargetRevision}); err != nil {
+			return out, err
+		}
+		out.TargetID, out.Groups = a.TargetID, 0
+		if a.Action == "reject_merge" {
+			_, err = tx.ExecContext(ctx, `UPDATE photo_face_merge_suggestions SET rejected=1 WHERE id=?`, a.SuggestionID)
+			out.Faces = 0
+		} else {
+			err = mergePersonTx(ctx, tx, id, a.TargetID)
+		}
 	case "name", "rename":
 		if !a.AllowDuplicate {
 			var exists bool
@@ -361,9 +378,12 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 			affected[pid] = true
 		}
 	}
-	committedRevision, err := refreshFaceMutationTx(ctx, tx, affected)
-	if err != nil {
-		return out, err
+	var committedRevision int64
+	if a.Action != "reject_merge" {
+		committedRevision, err = refreshFaceMutationTx(ctx, tx, affected)
+		if err != nil {
+			return out, err
+		}
 	}
 	if err = tx.QueryRowContext(ctx, `SELECT coalesce((SELECT revision FROM photo_person_revisions WHERE person_id=?),0)`, id).Scan(&out.SourceRevision); err != nil {
 		return out, err
@@ -380,7 +400,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	}
 	if managing {
 		l.syncFaceMutation(ctx, affected, baseRevision, committedRevision)
-	} else {
+	} else if a.Action != "reject_merge" {
 		l.faceRuntime.graph = nil
 	}
 	return out, nil

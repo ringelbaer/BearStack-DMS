@@ -20,6 +20,7 @@ func TestLabelingRoutesPreserveValidationPermissionsAndCacheHeaders(t *testing.T
 		code               string
 	}{
 		{"GET", "/session", "", 200, ""},
+		{"GET", "/merge-suggestions/next", "", 200, ""},
 		{"GET", "/candidates?upper=0", "", 200, ""},
 		{"GET", "/people?upper=0", "", 200, ""},
 		{"GET", "/people", "", 400, "invalid"},

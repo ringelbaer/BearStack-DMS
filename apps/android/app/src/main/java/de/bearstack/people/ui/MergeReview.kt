@@ -1,0 +1,122 @@
+package de.bearstack.people.ui
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.*
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import de.bearstack.people.people.PeopleState
+import de.bearstack.people.people.PeopleViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
+    val suggestion=state.mergeSuggestion
+    var held by remember { mutableStateOf<Long?>(null) }
+    var heldDismissed by remember { mutableStateOf(false) }
+    var accessible by remember { mutableStateOf(false) }
+    var zoom by remember { mutableFloatStateOf(0f) }
+    var help by remember { mutableStateOf(false) }
+    val distance=with(LocalDensity.current) {240.dp.toPx()}
+    val drag: (Float)->Unit={zoom=zoomAfterDrag(zoom,it,distance)}
+    val enabled=!state.busy && !state.unresolved && held==null && !help
+    val lifecycle=LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(suggestion) {held=null;accessible=false;zoom=0f}
+    LaunchedEffect(suggestion,lifecycle) {
+        val faces=suggestion?.let {it.source.faces+it.target.faces} ?: emptyList()
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {vm.prefetchOriginals(faces)}
+    }
+    BackHandler {
+        if(held!=null) {if(accessible) held=null else heldDismissed=true}
+        else if(help) help=false else vm.closeMergeReview()
+    }
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(topBar={TopAppBar(title={Text("Ähnliche Gruppen",maxLines=1,overflow=TextOverflow.Ellipsis)},
+            navigationIcon={TextButton(onClick=vm::closeMergeReview,enabled=enabled) {Text("Zurück")}},
+            actions={TextButton(onClick={help=true},enabled=held==null) {Text("Hilfe")}})
+        },bottomBar={
+            Surface(color=MaterialTheme.colorScheme.surfaceContainer,tonalElevation=2.dp) {
+                Column(Modifier.fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal+WindowInsetsSides.Bottom))
+                    .padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                    Button(onClick={vm.decideMerge(true)},enabled=enabled && suggestion!=null,modifier=Modifier.fillMaxWidth()) {Text("Zusammenführen")}
+                    OutlinedButton(onClick={vm.decideMerge(false)},enabled=enabled && suggestion!=null,modifier=Modifier.fillMaxWidth()) {Text("Getrennt lassen")}
+                }
+            }
+        }) {padding ->
+            Column(Modifier.fillMaxSize().padding(padding).testTag("merge-review")) {
+                Box(Modifier.fillMaxWidth().height(4.dp)) {if(state.busy) LinearProgressIndicator(Modifier.fillMaxSize())}
+                state.error?.let {error ->
+                    Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                        Text(error,color=MaterialTheme.colorScheme.error,modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite})
+                        Row {
+                            TextButton(onClick=vm::retry,enabled=!state.busy && held==null) {Text(if(state.unresolved) "Offene Aktion prüfen" else "Erneut versuchen")}
+                            TextButton(onClick=vm::switchConnection,enabled=!state.busy && held==null) {Text("Verbindung")}
+                        }
+                    }
+                }
+                if(suggestion!=null) {
+                    Text("Dieselbe Person?",style=MaterialTheme.typography.titleLarge,modifier=Modifier.padding(horizontal=16.dp,vertical=8.dp))
+                    Row(Modifier.weight(1f).fillMaxWidth().padding(horizontal=12.dp,vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                        listOf(suggestion.source,suggestion.target).forEachIndexed {index,person ->
+                            Column(Modifier.weight(1f).fillMaxHeight(),horizontalAlignment=Alignment.CenterHorizontally) {
+                                Text(if(index==0) "Erste Gruppe" else "Zweite Gruppe",style=MaterialTheme.typography.labelMedium)
+                                Text(person.name.ifBlank {"Unbenannt"},maxLines=2,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.titleMedium)
+                                Text("${person.count} Gesichter",style=MaterialTheme.typography.bodySmall)
+                                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(),contentAlignment=Alignment.Center) {
+                                    Box(Modifier.size(minOf(maxWidth,maxHeight))) {
+                                        FaceGrid(person,enabled,vm.images,vm::image,onDetach={},
+                                            onHold={held=it;heldDismissed=false;zoom=0f},
+                                            onZoom={held=it;heldDismissed=false;zoom=0f;accessible=true},
+                                            onZoomDrag=drag,allowDetach=false,showPaths=false)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if(!state.busy && state.error==null) {
+                    Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                        Text("Aktuell keine ähnlichen Gruppen.",Modifier.semantics {liveRegion=LiveRegionMode.Polite},style=MaterialTheme.typography.titleLarge)
+                        Text("Neue Vorschläge entstehen beim Hintergrundabgleich.")
+                        TextButton(onClick=vm::retry,enabled=enabled) {Text("Aktualisieren")}
+                    }
+                }
+            }
+        }
+        held?.takeUnless {heldDismissed}?.let {face ->
+            val person=suggestion?.let {if(face in it.source.faces) it.source else it.target}
+            Column(Modifier.fillMaxSize().background(Color.Black.copy(alpha=.94f)).safeDrawingPadding().padding(16.dp),
+                horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                vm.images?.let {images ->
+                    OriginalPhoto(vm.original(face),images,person?.faceBounds?.get(face),zoom,cacheKey=vm.originalKey(face),
+                        onZoom={zoom=it},onDrag=drag,modifier=Modifier.weight(1f).fillMaxWidth(),
+                        onNewTouch=if(accessible) null else {{heldDismissed=true}})
+                }
+                person?.facePaths?.get(face)?.takeIf {it.isNotEmpty()}?.let {
+                    Text(it,color=Color.White,style=MaterialTheme.typography.bodySmall,
+                        modifier=Modifier.fillMaxWidth().heightIn(max=96.dp).verticalScroll(rememberScrollState()).testTag("original-photo-path"))
+                }
+                if(accessible) Button(onClick={held=null;accessible=false}) {Text("Vorschau schließen")}
+            }
+        }
+    }
+    if(help) AlertDialog(onDismissRequest={help=false},title={Text("Ähnliche Gruppen prüfen")},
+        text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            Text("Prüfe, ob beide Gruppen dieselbe Person zeigen. Zusammenführen ordnet alle Gesichter der ersten Gruppe der zweiten zu. Getrennt lassen speichert die Trennung und verhindert künftige automatische Zuordnungen zwischen diesen Gruppen.")
+            Text("Nach jeder gespeicherten Entscheidung erscheint das nächste Gruppenpaar.")
+            Text("Portrait 250 ms halten: Originalfoto anzeigen. Dabei nach unten wischen zum Gesicht vergrößern, nach oben zum Verkleinern. Loslassen schließt die Vorschau.")
+        }},confirmButton={TextButton(onClick={help=false}) {Text("Schließen")}})
+}

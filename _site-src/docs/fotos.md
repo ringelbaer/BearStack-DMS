@@ -430,6 +430,8 @@ auch künftige automatische Zuordnungen zwischen diesen Gruppen. Aufrufe der Sei
 lösen keine neue Vektorsuche aus. Bearbeiten benötigt `photos.edit`, Einstellungen
 und Steuerung benötigen `photos.manage`.
 
+Ab Android-App **0.9.0** und BearStack **0.49.0** ist **Ähnliche Gruppen** auch über das App-Menü verfügbar: immer eine Entscheidung mit zwei Portraits und festen Buttons, ohne scrollbare Vorschlagsliste. Nach **Zusammenführen** oder **Getrennt lassen** lädt automatisch das nächste Gruppenpaar. Beide Portraits bieten dieselbe Originalfoto-Vergrößerung per Halten und Wischen wie beim Benennen/Zuordnen. Aktionsquittungen verhindern doppelte Änderungen bei verlorenen Antworten; Konflikte verlangen eine erneute Prüfung. Details stehen in der [Android-Anleitung](android.md#ahnliche-gruppen).
+
 **Kleine Gesichter:** Nach der ersten Analyse des maximal 1.600 Pixel großen Fotos
 werden bei Bedarf bis zu acht Originalausschnitte nachanalysiert. Das Original wird
 dafür einmal zusätzlich dekodiert; Ausschnitte sind auf 1.600 Pixel und zusammen

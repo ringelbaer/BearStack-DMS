@@ -1,0 +1,51 @@
+package de.bearstack.people
+
+import de.bearstack.people.data.remote.ApiFailure
+import de.bearstack.people.data.remote.LabelingApi
+import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.Assert.*
+import org.junit.Test
+
+class MergeApiTest {
+    @Test fun nextPairPreservesWitnessMetadataProxyPrefixAndEmptyState() = runBlocking {
+        val key="a".repeat(64)
+        val responses=ArrayDeque(listOf("""{"suggestion":{"id":8,
+            "source":{"id":2,"name":"","revision":7,"count":5000,"face_id":9000,"faces":[{"id":9000,"original_key":"$key","display_path":"Fotos / Urlaub / A.jpg","bounds":{"x":0.1,"y":0.2,"width":0.3,"height":0.4}}]},
+            "target":{"id":3,"name":"Anna","revision":9,"count":30,"face_id":11,"faces":[{"id":11,"display_path":"Fotos / B.jpg"}]}}}""",
+            """{"suggestion":null}"""))
+        val paths=mutableListOf<String>()
+        val client=OkHttpClient.Builder().addInterceptor {chain ->
+            paths+=chain.request().url.encodedPath
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body(responses.removeFirst().toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        try {
+            val api=LabelingApi(client,"https://example.test/bearstack/")
+            val pair=api.nextMergeSuggestion()!!
+            assertEquals(8L,pair.id);assertEquals(5000L,pair.source.count)
+            assertEquals(listOf(9000L),pair.source.faces)
+            assertEquals("Anna",pair.target.name);assertEquals(9L,pair.target.revision)
+            assertEquals(key,pair.source.originalKeys[9000])
+            assertEquals("Fotos / Urlaub / A.jpg",pair.source.facePaths[9000])
+            assertEquals(.3f,pair.source.faceBounds.getValue(9000).width,0f)
+            assertNull(api.nextMergeSuggestion())
+            assertEquals(List(2) {"/bearstack/api/photos/labeling/v1/merge-suggestions/next"},paths)
+        } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+    }
+
+    @Test fun conflictRemainsTypedForFreshDecision() = runBlocking {
+        val client=OkHttpClient.Builder().addInterceptor {chain ->
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(409).message("Conflict")
+                .body("""{"code":"conflict","error":"changed"}""".toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        try {
+            try {LabelingApi(client,"https://example.test/").action(3,"{}");fail("conflict accepted")}
+            catch(e:ApiFailure) {assertEquals(409,e.status);assertEquals("conflict",e.code)}
+        } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+    }
+}

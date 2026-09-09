@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -54,7 +55,14 @@ func TestAndroidLabelingFixture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	server := httptest.NewUnstartedServer(s.Handler())
+	mux := http.NewServeMux()
+	mux.Handle("/", s.Handler())
+	for _, action := range []string{"accept", "reject"} {
+		mergeServer, _ := mergeSuggestionServer(t)
+		prefix := "/merges-" + action
+		mux.Handle(prefix+"/", http.StripPrefix(prefix, mergeServer.Handler()))
+	}
+	server := httptest.NewUnstartedServer(mux)
 	server.Listener.Close()
 	server.Listener = listener
 	server.StartTLS()

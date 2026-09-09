@@ -15,7 +15,7 @@ internal fun String.positions(): List<GroupPosition> = if (isEmpty()) emptyList(
 internal fun List<GroupPosition>.storedPositions(): String = joinToString(",") { "${it.id}:${it.page}" }
 internal fun QueueState.afterReceipt(r: Receipt): QueueState {
     val next = if (r.action == "detach" || r.action == "unassign") copy(detached=(detached.ids()+r.newId).distinct().stored())
-        else if (r.action == "rename" || r.action == "favorite") this
+        else if (r.action == "rename" || r.action == "favorite" || r.action == "reject_merge") this
         else if (current==r.source) copy(current=0,page=0) else this
     return if(r.action=="ignore") next.copy(stagedIgnores=next.stagedIgnores.positions().filterNot {it.id==r.source}.storedPositions()) else next
 }
@@ -68,13 +68,16 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
         return p
     }
     suspend fun prepare(person: Person, action: String, name: String = "", target: Person? = null, face: Long = 0,
-        allowDuplicate: Boolean = false, favorite: Boolean? = null) {
+        allowDuplicate: Boolean = false, favorite: Boolean? = null, suggestionId: Long? = null) {
         check(pending() == null) { "Zuerst die offene Aktion klären." }
         val operation = UUID.randomUUID().toString()
         val body = JSONObject().put("operation_id",operation).put("dataset",session.dataset).put("revision",person.revision)
             .put("action",action).put("name",name).put("allow_duplicate",allowDuplicate).put("face_id",face)
             .put("target_id",target?.id ?: 0).put("target_revision",target?.revision ?: 0)
-            .apply { if(favorite!=null) put("favorite",favorite) }.toString()
+            .apply {
+                if(favorite!=null) put("favorite",favorite)
+                if(suggestionId!=null) put("suggestion_id",suggestionId)
+            }.toString()
         // Saved before transmission. There is at most one unresolved write per scope.
         dao.pending(Pending(scope,operation,person.id,body))
     }

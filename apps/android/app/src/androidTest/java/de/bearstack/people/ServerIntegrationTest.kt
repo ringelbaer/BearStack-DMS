@@ -18,6 +18,42 @@ import org.junit.Test
 
 /** Runs only against the disposable Go fixture, never against a configured user instance. */
 class ServerIntegrationTest {
+    @Test fun mergeDecisionsAndPortraitsAgainstRealGoServerBehindPrefix() = runBlocking {
+        val root=InstrumentationRegistry.getArguments().getString("labelingUrl")
+        assumeTrue("Optional Go integration fixture",root=="https://127.0.0.1:18787/")
+        val offer=Connections.inspect(root!!)!!
+        for(accept in listOf(true,false)) {
+            val address=root+if(accept) "merges-accept/" else "merges-reject/"
+            val client=Connections.client(Profile(address,"editor","secret",offer.encoded))
+            val api=LabelingApi(client,address)
+            val db=Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext,LabelingDatabase::class.java).build()
+            try {
+                val session=api.session();assertTrue(session.mergeSuggestions)
+                val pair=api.nextMergeSuggestion()!!
+                assertEquals("Ada",pair.target.name)
+                for(person in listOf(pair.source,pair.target)) {
+                    assertEquals(1,person.faces.size)
+                    assertNotNull(person.faceBounds[person.faceId]);assertNotNull(person.originalKeys[person.faceId])
+                    withContext(Dispatchers.IO) {
+                        for(url in listOf(api.image(person.faceId),api.original(person.faceId))) {
+                            client.newCall(Request.Builder().url(url).build()).execute().use {
+                                assertEquals(200,it.code);assertEquals("image/jpeg",it.header("Content-Type"))
+                                assertTrue(it.body!!.bytes().isNotEmpty())
+                            }
+                        }
+                    }
+                }
+                val repo=PeopleRepository(db,api,session)
+                repo.prepare(pair.source,if(accept) "accept_merge" else "reject_merge",target=pair.target,suggestionId=pair.id)
+                val pending=repo.pending()!!
+                val receipt=repo.resolve()!!
+                assertEquals(receipt,api.action(pending.source,pending.body))
+                assertEquals(receipt,api.receipt(pending.operation,session.dataset))
+                assertNull(api.nextMergeSuggestion())
+                assertEquals(if(accept) 2L else 1L,api.person(pair.target.id).count)
+            } finally {db.close();Connections.close(client)}
+        }
+    }
     @Test fun selfSignedTlsRealGoActionsAndConcurrentWebEdits() = runBlocking {
         val address=InstrumentationRegistry.getArguments().getString("labelingUrl")
         assumeTrue("Optional Go integration fixture",address=="https://127.0.0.1:18787/")
