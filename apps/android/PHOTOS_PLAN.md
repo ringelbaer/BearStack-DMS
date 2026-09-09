@@ -70,9 +70,9 @@ Noch wichtig für die Fertigstellung:
   fotobasierte Routen sowie die visuelle Abnahme mit echten Kartenbildern fehlen noch.
 - Galerie, Personenansichten, Hilfen, Fehler und zugängliche Aktionen sind auf
   Deutsch/Englisch lokalisiert. Die visuelle Gesamtprüfung bleibt offen.
-- Metadatenlisten wachsen derzeit mit jeder geladenen Seite. Begrenztes Paging,
-  tiefe Seiten/Ordner, Vorladen und Account-/Cache-Verhalten müssen abschließend
-  optimiert und mit großen Sammlungen geprüft werden.
+- Die App hält jetzt höchstens drei Metadatenseiten je Bereich und lädt in beide
+  Richtungen nach. Tiefe serverseitige Seiten/Ordner sowie Account-/Cache-Verhalten
+  müssen weiter mit großen Sammlungen geprüft und gegebenenfalls optimiert werden.
 - Fotoframe filtert aktuell auf Bilder; Browser-Medienverhalten bei Videos abgleichen.
 - Navigation/Scrollposition beim Wechsel zwischen Galerie und Personen, Querformat,
   große Schrift, Bildfehler und visuelle Gestaltung prüfen und vervollständigen.
@@ -127,7 +127,7 @@ Aktuelle Nachweise:
   ohne Befund.
 
 Der Gesamtauftrag bleibt offen. Als nächstes folgen gemeinsame GPX-/Fotorouten,
-begrenztes Galerie-Paging und die visuelle Gesamtprüfung.
+serverseitige Seitenskalierung und die visuelle Gesamtprüfung.
 
 ## Lokalisierung – weiterer Zwischenstand 2026-09-09
 
@@ -157,3 +157,66 @@ Abschließende Nachweise für diesen Zwischenstand:
   OpenAPI-YAML lesbar und `git diff --check` ohne Befund.
 - Der Commit hält den implementierten Zwischenstand fest. Die oben genannten
   offenen Ausbaupunkte und die visuelle Gesamtprüfung bleiben bestehen.
+
+## Begrenzte Galerie-Metadaten – Zwischenstand 2026-09-09
+
+- Gemeinsames Seitenfenster für Medien, Ordner und Texte: maximal drei API-Seiten
+  bzw. 288 Medien, 72 Ordner und 60 Textzusammenfassungen je Ansicht. Der Frame
+  bewahrt zusätzlich die vorherige Galerie mit denselben Grenzen für die Rückkehr.
+- Seiten können an beiden Rändern nachgeladen werden. Ein sichtbarer Inhaltsanker
+  erhält seine Pixelposition beim Einfügen und Entfernen von Seiten, auch wenn die
+  Ladezeile selbst am Rand steht. Verdeckte Galerien laden nicht automatisch nach.
+- Vollbild verwendet stabile Fotopfade; Nachbarn und Wiederholungsanfang werden nach
+  dem Laden erneut aufgelöst. Die Positionsanzeige zählt die gesamte Sammlung.
+  Nach dem Schließen zeigt die Galerie das zuletzt betrachtete Foto.
+- Fehler bleiben beim betroffenen Bereich, Wiederholen lädt dieselbe Seite. Eine
+  andere Ansicht oder ein Kontowechsel kann keine verspäteten Seitendaten übernehmen.
+  Der Wechsel zur Personenverwaltung und zurück erhält die Galerieposition.
+- JVM-Tests mit 250 Medien-/Ordner-/Textseiten in beide Richtungen, einem virtuellen
+  Millionenbestand, Ladefehlern, Wiederholung, Seitenauslagerung und verspäteten
+  Antworten bestehen. Die Gerätetests prüfen zusätzlich sichtbare Anker und Dialoge.
+- Bei der Geräteprüfung behoben: eine direkte Pager-Layoutbeobachtung verursachte
+  fortlaufende Neuberechnungen. Die Beobachtung meldet jetzt nur Änderungen der
+  sichtbaren Foto-ID. Test-Sprachkontexte gelten ausdrücklich auch für die Ressourcen
+  von Dialogen und Menüs, unabhängig von der Emulator-Sprache.
+- Performance-/Bedienkorrektur innerhalb des unveröffentlichten Gesamtfeatures:
+  BearStack bleibt 0.50.0, Android 0.10.0 (22). Keine Änderung am API-Vertrag;
+  README, Android-Anleitung, Fotodokumentation und Website werden mitgeführt.
+
+Zusätzlicher Schutz bei langsamen Anfragen: Die aktuelle sichtbare Auswahl wird
+vor dem Entfernen älterer Seiten erneut geprüft. Würde eine inzwischen überholte
+Antwort sichtbare Einträge entfernen, wird diese Antwort verworfen. Scrollt der
+Benutzer während des Ladens weiter, wird sein neuer Inhaltsanker verwendet.
+Ein verspäteter Klick auf ein bereits entferntes Foto öffnet kein anderes Foto.
+Sechs gezielte Galerie-Gerätetests bestehen, einschließlich pixelgenauer Ankerprüfung,
+Richtungswechsel während einer blockierten Anfrage, Seitenauslagerung im Vollbild,
+Fehler/Wiederholen, Wiederaufnahme sowie Ordner- und Textseiten.
+
+Abschließende Nachweise für diesen Schritt:
+
+- **40 JVM-Tests: 0 Fehler, 0 übersprungen.**
+- **80 Geräte-/HTTPS-Tests: 0 Fehler, 0 übersprungen**, vollständig mit dem isolierten
+  Go-Testserver ausgeführt. Ein zunächst mehrdeutiger „Zurück“-Selektor wurde auf
+  den Textdialog eingegrenzt; der Test prüft auch den weiterhin geöffneten Ordner.
+- Build und Lint erfolgreich; Website neu erzeugt und `git diff --check` sauber.
+  Server und HTTP-Schemas wurden in diesem Schritt nicht verändert.
+
+Geprüfte Anschlusspunkte für die weitere Arbeit:
+
+- GPX-Verarbeitung in `internal/photos/library_gpx.go` ist bereits geteilt und
+  begrenzt (16 MiB/100.000 Punkte pro Track, 32 MiB Cache, eigener Parser-Zugang).
+  `internal/photos/route.go` liefert die gemeinsame Fotorouten-Aggregation mit
+  der konfigurierten Entfernung. Die native Erweiterung muss diese Regeln nutzen
+  und große Routen vor der Übertragung und Darstellung sinnvoll begrenzen.
+- Der Browser-Fotoframe (`internal/server/static/app-photos-frame.js`) unterstützt
+  Videos. Der native Frame filtert bisher auf Bilder; Medienwechsel und Wiederholung
+  müssen einschließlich einzelner Videos vervollständigt und geprüft werden.
+- Beide Bildreferenzen erneut angesehen: kompakter Dreispaltenraster, schwebende
+  Navigation und Foto-Informationen als Blatt über dem Bild sind die visuelle
+  Orientierung. Der aktuelle native Aufbau benötigt weiterhin die visuelle Abnahme.
+- In Foto-Informationen werden aktuell Datum, Datei, Größe, Kamera/Objektiv und GPS
+  dargestellt. Vollständige Uhrzeit und weitere vom Browser bzw. der API angebotene
+  Metadaten sind gegen die tatsächliche Browseransicht zu prüfen und zu ergänzen.
+
+Der Gesamtauftrag bleibt aktiv; dieser Schritt schließt die übrigen offenen
+Funktionen, serverseitigen Skalierungsprüfungen und visuellen Nachweise nicht ab.

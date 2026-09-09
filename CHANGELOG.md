@@ -6,6 +6,8 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ### BearStack 0.50.0 – in Entwicklung
 
+- Galerie-Metadaten bleiben auf drei Seiten je Bereich begrenzt. Vorwärts- und Zurückscrollen laden Seiten bei Bedarf erneut; sichtbare Elemente, absolute Fotopositionen und die Rückkehr aus Vollbild/Personenverwaltung bleiben erhalten. Seitenspezifische Fehler sind ohne Neustart der Galerie wiederholbar. Performance-/Bedienkorrektur im geplanten Release 0.50.0 / App 0.10.0; API-Vertrag und Versionsstände bleiben gleich.
+
 - Gesamte Android-Oberfläche auf Deutsch/Englisch: Personenverwaltung, Benennen, ähnliche Gruppen, Originalvorschau, Statistik, Hilfen und TalkBack-Aktionen. Spracheinstellungen ab Android 13 deklariert; Einzahl/Mehrzahl und Zertifikatsdatum lokalisiert. Sprachwechsel übersetzen auch vorhandene Fehler, ohne die Warteschlange zurückzusetzen.
 - Gemeinsame strukturierte Fehlermeldungen für Personen- und Galerieabläufe vermeiden die Anzeige ungefilterter Ausnahmen. Ladefehler von Textbeiträgen sind direkt im Dialog wiederholbar; leere Beiträge bleiben nicht im Ladezustand hängen.
 

@@ -27,6 +27,8 @@ Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie `127.0
 
 ## BearStack Fotos für Android
 
+Die Galerie begrenzt ihre Metadaten auf drei Seiten je Bereich und lädt ältere Seiten beim Zurückscrollen erneut. Vollbild und Diashow behalten dabei die Fotoreihenfolge; die Rückkehr zur Galerie erhält die Position.
+
 Die gesamte Android-Oberfläche einschließlich Personenverwaltung, Hilfen, Statistik und Fehlermeldungen ist deutsch/englisch. Ab Android 13 kann die Appsprache separat gewählt werden; der Hell-/Dunkelmodus folgt dem System. Fehler werden ohne rohe technische Ausnahmetexte angezeigt.
 
 Native Karten zeigen GPS-Aufnahmen je Ordner/Suche und in den Foto-Informationen. Die Karten-API bündelt den vollständigen indexierten Bestand pro Ausschnitt in höchstens 289 Marker; öffentliche Kartenbilder verwenden einen eigenen HTTP-Cache ohne BearStack-Zugangsdaten.

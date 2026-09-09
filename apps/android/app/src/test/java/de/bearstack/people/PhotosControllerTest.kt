@@ -71,7 +71,8 @@ class PhotosControllerTest {
         val controller=PhotosController(this,fake,session);runCurrent()
         controller.more("media");runCurrent()
         assertEquals(listOf("a"),controller.state.value.media.map {it.path})
-        assertNotNull(controller.state.value.error)
+        assertNotNull(controller.state.value.pageErrors["media"])
+        assertNull(controller.state.value.error)
         assertTrue(controller.state.value.hasNext)
         fail=false;controller.more("media");runCurrent()
         assertEquals(listOf("a","b"),controller.state.value.media.map {it.path})
@@ -111,5 +112,125 @@ class PhotosControllerTest {
         assertEquals(3,fake.requests.last().second)
         controller.close()
         assertTrue(controller.state.value.media.isEmpty())
+    }
+
+    @Test fun largeCollectionsKeepThreePagesPerSectionAndReloadEvictedPagesInOrder()=runTest {
+        val fake=Fake().apply {handler={q,p,section ->
+            val media=if(section=="" || section=="media") List(96) {photo("image-${(p-1)*96+it}")} else emptyList()
+            val folders=if(section=="" || section=="folders") List(24) {
+                PhotoFolder("folder-${(p-1)*24+it}","Folder",null,100,false,0,media.take(2))
+            } else emptyList()
+            val blogs=if(section=="" || section=="blogs") List(20) {
+                PhotoBlog("post-${(p-1)*20+it}.md","Post",null,"2026-09-09T10:00:00Z")
+            } else emptyList()
+            PhotoPage(q.path,"",p,1_000_000,true,100_000,true,true,media,folders,blogs)
+        }}
+        val controller=PhotosController(this,fake,session);runCurrent()
+        repeat(249) {
+            for(section in listOf("media","folders","blogs")) controller.more(section)
+            runCurrent()
+            val s=controller.state.value
+            assertTrue(s.media.size<=288);assertTrue(s.folders.size<=72);assertTrue(s.blogs.size<=60)
+        }
+        assertEquals(248,controller.state.value.mediaPages.firstPage)
+        assertEquals(250,controller.state.value.mediaPages.lastPage)
+        val expectedFirst="image-${247*96}"
+        assertEquals(expectedFirst,controller.state.value.media.first().path)
+        assertEquals(247*96+1,controller.state.value.mediaPages.position(expectedFirst))
+        repeat(249) {
+            for(section in listOf("media","folders","blogs")) controller.previous(section)
+            runCurrent()
+            val s=controller.state.value
+            assertTrue(s.media.size<=288);assertTrue(s.folders.size<=72);assertTrue(s.blogs.size<=60)
+        }
+        assertFalse(controller.state.value.mediaPages.hasPrevious)
+        assertEquals((0 until 288).map {"image-$it"},controller.state.value.media.map {it.path})
+        assertEquals((0 until 72).map {"folder-$it"},controller.state.value.folders.map {it.path})
+        assertEquals((0 until 60).map {"post-$it.md"},controller.state.value.blogs.map {it.path})
+        controller.close()
+    }
+
+    @Test fun viewerNeighboursSurviveEvictionFailureReverseAndRepeat()=runTest {
+        var fail=false
+        val fake=Fake().apply {handler={q,p,_ ->
+            if(fail) throw java.io.IOException("offline")
+            page(q,p,List(96) {photo("image-${(p-1)*96+it}")},p<5).copy(total=480)
+        }}
+        val controller=PhotosController(this,fake,session);runCurrent()
+        for(p in 2..4) {controller.more("media");runCurrent()}
+        assertEquals(2,controller.state.value.mediaPages.firstPage)
+        assertEquals("image-384",controller.neighbour("image-383",1)?.path)
+        assertEquals(3,controller.state.value.mediaPages.firstPage)
+        assertEquals(385,controller.state.value.mediaPages.position("image-384"))
+        fail=true
+        assertNull(controller.neighbour("image-192",-1))
+        assertTrue(controller.state.value.pageErrors.getValue("media").previous)
+        assertEquals("image-192",controller.state.value.media.first().path)
+        fail=false
+        assertEquals("image-191",controller.neighbour("image-192",-1)?.path)
+        assertTrue(controller.state.value.pageErrors.isEmpty())
+        assertEquals(2,controller.state.value.mediaPages.firstPage)
+        controller.more("media");runCurrent()
+        assertNull(controller.neighbour("image-479",1))
+        assertEquals("image-0",controller.neighbour("image-479",1,repeat=true)?.path)
+        assertEquals(1,controller.state.value.mediaPages.firstPage)
+        assertEquals(96,controller.state.value.media.size)
+        controller.close()
+    }
+
+    @Test fun latePrefetchCannotEvictTheNewViewportOrOpenAnEvictedPhoto()=runTest {
+        val gate=CompletableDeferred<Unit>()
+        val fake=Fake().apply {handler={q,p,_ ->
+            if(p==4) gate.await()
+            page(q,p,List(96) {photo("image-${(p-1)*96+it}")},true)
+        }}
+        val controller=PhotosController(this,fake,session);runCurrent()
+        repeat(2) {controller.more("media");runCurrent()}
+        controller.galleryVisible(setOf("photo:image-287"))
+        controller.more("media");runCurrent()
+        controller.galleryVisible(setOf("photo:image-0"))
+        gate.complete(Unit);runCurrent()
+        assertEquals(1,controller.state.value.mediaPages.firstPage)
+        assertEquals(3,controller.state.value.mediaPages.lastPage)
+        assertTrue(controller.state.value.loadingSections.isEmpty())
+        controller.galleryVisible(setOf("photo:image-287"))
+        controller.select("image-0")
+        controller.more("media");runCurrent()
+        assertEquals(1,controller.state.value.mediaPages.firstPage)
+        controller.select(null)
+        controller.more("media");runCurrent()
+        assertEquals(2,controller.state.value.mediaPages.firstPage)
+        controller.select("image-0")
+        assertNull(controller.state.value.selected)
+        controller.close()
+        assertNull(controller.gridPosition)
+    }
+
+    @Test fun backwardFailureRetriesItsPageAndLateResponsesCannotRestoreOldCollections()=runTest {
+        var fail=false
+        val gate=CompletableDeferred<Unit>()
+        var delayed=false
+        val fake=Fake().apply {handler={q,p,_ ->
+            if(delayed && q.path.isEmpty()) withContext(NonCancellable) {gate.await()}
+            if(fail) throw java.io.IOException("offline")
+            page(q,p,List(96) {photo("${q.path}/image-${(p-1)*96+it}")},true)
+        }}
+        val controller=PhotosController(this,fake,session);runCurrent()
+        repeat(4) {controller.more("media");runCurrent()}
+        fail=true
+        controller.previous("media");runCurrent()
+        assertEquals(3,controller.state.value.mediaPages.firstPage)
+        fail=false
+        controller.retryPage("media");runCurrent()
+        assertEquals(2,controller.state.value.mediaPages.firstPage)
+        assertEquals(listOf(2,2),fake.requests.takeLast(2).map {it.second})
+        delayed=true
+        controller.previous("media");runCurrent()
+        controller.open(PhotoQuery(path="new"));runCurrent()
+        gate.complete(Unit);runCurrent()
+        assertEquals("new/image-0",controller.state.value.media.first().path)
+        assertFalse(controller.state.value.mediaPages.hasPrevious)
+        assertTrue(controller.state.value.pageErrors.isEmpty())
+        controller.close()
     }
 }

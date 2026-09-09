@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -99,35 +100,83 @@ fun PhotosScreen(controller: PhotosController, images: ImageLoader, canManage: B
                     }
                 }
             }
-            key(state.query) {
-                val grid = rememberLazyGridState()
-                LazyVerticalGrid(columns=GridCells.Fixed(6),state=grid,modifier=Modifier.fillMaxSize(),
+            key(state.query,state.frame) {
+                val rows=remember(state.mediaPages,state.folderPages,state.blogPages) {galleryRows(state)}
+                val latestCatalog by rememberUpdatedState(state)
+                var pageAnchor by remember {mutableStateOf<GalleryPageAnchor?>(null)}
+                val saved=remember {controller.gridPosition}
+                val grid = rememberLazyGridState(
+                    initialFirstVisibleItemIndex=rows.indexOfFirst {it.key==saved?.key}.coerceAtLeast(0),
+                    initialFirstVisibleItemScrollOffset=saved?.offset ?: 0)
+                fun load(section: String,previous: Boolean) {
+                    if(section in state.loadingSections) return
+                    val anchor=grid.layoutInfo.visibleItemsInfo.firstOrNull {
+                        val key=it.key.toString()
+                        key.startsWith("photo:") || key.startsWith("folder:") || key.startsWith("blog:")
+                    }
+                    if(anchor!=null) pageAnchor=GalleryPageAnchor(section,state.section(section),GalleryPosition(anchor.key.toString(),-anchor.offset.y))
+                    if(previous) controller.previous(section) else controller.more(section)
+                }
+                LaunchedEffect(rows,state.loadingSections,pageAnchor) {
+                    val anchor=pageAnchor ?: return@LaunchedEffect
+                    if(state.section(anchor.section)!==anchor.pages) {
+                        val index=rows.indexOfFirst {it.key==anchor.position.key}
+                        if(index>=0) grid.scrollToItem(index,anchor.position.offset)
+                        pageAnchor=null
+                    } else if(anchor.section !in state.loadingSections) pageAnchor=null
+                }
+                LaunchedEffect(grid,state.selected,state.frame) {
+                    if(state.selected==null && !state.frame) snapshotFlow {
+                        val visible=grid.layoutInfo.visibleItemsInfo
+                        val content=visible.firstOrNull {
+                            val key=it.key.toString()
+                            key.startsWith("photo:") || key.startsWith("folder:") || key.startsWith("blog:")
+                        }
+                        GalleryViewport(
+                            visible.firstOrNull()?.let {GalleryPosition(it.key.toString(),grid.firstVisibleItemScrollOffset)},
+                            visible.mapTo(HashSet()) {it.key.toString()},
+                            content?.let {GalleryPosition(it.key.toString(),-it.offset.y)},grid.isScrollInProgress)
+                    }.collect {viewport ->
+                        viewport.position?.let {controller.gridPosition=it}
+                        controller.galleryVisible(viewport.keys)
+                        pageAnchor?.let {anchor ->
+                            if(viewport.scrolling || (viewport.content!=null && viewport.content.key!=anchor.position.key)) anchor.userScrolled=true
+                            if(anchor.userScrolled && latestCatalog.section(anchor.section)===anchor.pages) {
+                                viewport.content?.let {anchor.position=it}
+                            }
+                        }
+                    }
+                }
+                LaunchedEffect(state.scrollToKey,rows) {
+                    val target=state.scrollToKey ?: return@LaunchedEffect
+                    val index=rows.indexOfFirst {it.key==target}
+                    if(index>=0) {grid.scrollToItem(index);controller.scrollConsumed()}
+                }
+                LazyVerticalGrid(columns=GridCells.Fixed(6),state=grid,modifier=Modifier.fillMaxSize().testTag("photo-gallery"),
                     horizontalArrangement=Arrangement.spacedBy(2.dp),verticalArrangement=Arrangement.spacedBy(2.dp),contentPadding=PaddingValues(bottom=16.dp)) {
-                    items(state.folders,key={"folder:${it.path}"},span={GridItemSpan(3)},contentType={"folder"}) { folder ->
-                        FolderTile(folder,controller,images) { controller.open(PhotoQuery(path=folder.path),tab=1) }
-                    }
-                    if(state.folderHasNext) item(key="more-folders",span={GridItemSpan(maxLineSpan)}) {
-                        LoadSection("folders",state,controller)
-                    }
-                    if(state.blogs.isNotEmpty()) {
-                        item(span={GridItemSpan(maxLineSpan)}) { SectionTitle(stringResource(R.string.photos_texts)) }
-                        items(state.blogs,key={"blog:${it.path}"},span={GridItemSpan(maxLineSpan)},contentType={"blog"}) { post ->
-                            ListItem(headlineContent={Text(post.name)},supportingContent={Text(photoDateLabel(post.date ?: post.modified,locale))},
-                                modifier=Modifier.clickable {controller.openBlog(post)})
+                    items(rows,key={it.key},span={GridItemSpan(when(it) {
+                        is GalleryRow.Folder -> 3; is GalleryRow.Media -> 2; else -> maxLineSpan
+                    })},contentType={when(it) {
+                        is GalleryRow.Folder -> "folder"; is GalleryRow.Media -> "photo"; is GalleryRow.Blog -> "blog"
+                        is GalleryRow.Boundary -> "boundary"; else -> "heading"
+                    }}) {row ->
+                        when(row) {
+                            is GalleryRow.Folder -> FolderTile(row.value,controller,images) {
+                                controller.open(PhotoQuery(path=row.value.path),tab=1)
+                            }
+                            is GalleryRow.Blog -> ListItem(headlineContent={Text(row.value.name)},
+                                supportingContent={Text(photoDateLabel(row.value.date ?: row.value.modified,locale))},
+                                modifier=Modifier.clickable {controller.openBlog(row.value)})
+                            is GalleryRow.Media -> PhotoThumbnail(row.value,controller,images,controller.session.thumbnailSize,
+                                Modifier.fillMaxWidth().aspectRatio(1f).clickable {controller.select(row.value.path)})
+                            is GalleryRow.Date -> SectionTitle(photoDateLabel(row.value.date,locale))
+                            GalleryRow.Texts -> SectionTitle(stringResource(R.string.photos_texts))
+                            is GalleryRow.Boundary -> {
+                                val visible by remember(grid,row.key) {derivedStateOf {grid.layoutInfo.visibleItemsInfo.any {it.key==row.key}}}
+                                LoadSection(row.section,row.previous,visible && pageAnchor==null,state) {load(row.section,row.previous)}
+                            }
                         }
-                        if(state.blogHasNext) item(key="more-blogs",span={GridItemSpan(maxLineSpan)}) { LoadSection("blogs",state,controller) }
                     }
-                    state.media.forEachIndexed { index,photo ->
-                        val day=photo.date.take(10)
-                        if(index==0 || state.media[index-1].date.take(10)!=day) item(key="date:${photo.path}",span={GridItemSpan(maxLineSpan)},contentType="date") {
-                            SectionTitle(photoDateLabel(photo.date,locale))
-                        }
-                        item(key="photo:${photo.path}",span={GridItemSpan(2)},contentType="photo") {
-                            PhotoThumbnail(photo,controller,images,controller.session.thumbnailSize,
-                                Modifier.fillMaxWidth().aspectRatio(1f).clickable {controller.select(photo.path)})
-                        }
-                    }
-                    if(state.hasNext) item(key="more-media",span={GridItemSpan(maxLineSpan)}) { LoadSection("media",state,controller) }
                     if(!state.loading && state.media.isEmpty() && state.folders.isEmpty() && state.blogs.isEmpty() && state.error==null) {
                         item(span={GridItemSpan(maxLineSpan)}) {
                             Column(Modifier.fillMaxWidth().padding(40.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(16.dp)) {
@@ -180,12 +229,24 @@ fun PhotosScreen(controller: PhotosController, images: ImageLoader, canManage: B
 }
 
 @Composable
-private fun LoadSection(section: String, state: PhotosState, controller: PhotosController) {
-    val count=when(section) { "media" -> state.media.size; "folders" -> state.folders.size; else -> state.blogs.size }
-    LaunchedEffect(section,count) { controller.more(section) }
-    Box(Modifier.fillMaxWidth().padding(12.dp),contentAlignment=Alignment.Center) {
-        if(section in state.loadingSections) CircularProgressIndicator(Modifier.size(24.dp))
-        else TextButton(onClick={controller.more(section)}) {Text(stringResource(R.string.photos_more))}
+private fun LoadSection(section: String, previous: Boolean, visible: Boolean, state: PhotosState, load: () -> Unit) {
+    val text=uiStrings()
+    val pages=state.section(section)
+    val boundary=if(previous) pages.firstPage else pages.lastPage
+    val failure=state.pageErrors[section]?.takeIf {it.previous==previous}
+    LaunchedEffect(section,boundary,previous,visible,state.selected,state.frame) {
+        if(visible && failure==null && state.selected==null && !state.frame) load()
+    }
+    Column(Modifier.fillMaxWidth().padding(12.dp),horizontalAlignment=Alignment.CenterHorizontally) {
+        failure?.let {Text(text(it.message),color=MaterialTheme.colorScheme.error)}
+        Box(Modifier.heightIn(min=48.dp),contentAlignment=Alignment.Center) {
+            if(section in state.loadingSections) CircularProgressIndicator(Modifier.size(24.dp))
+            else TextButton(onClick=load) {Text(stringResource(when {
+                failure!=null -> R.string.photos_retry
+                previous -> R.string.photos_load_previous
+                else -> R.string.photos_more
+            }))}
+        }
     }
 }
 @Composable private fun SectionTitle(title: String) {
@@ -219,3 +280,8 @@ private fun LoadSection(section: String, state: PhotosState, controller: PhotosC
 internal fun photoDateLabel(date: String, locale: Locale): String = runCatching {
     OffsetDateTime.parse(date).toLocalDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale))
 }.getOrDefault(date.take(10))
+
+private class GalleryPageAnchor(val section: String,val pages: PhotoPages<*>,var position: GalleryPosition) {
+    var userScrolled=false
+}
+private data class GalleryViewport(val position: GalleryPosition?,val keys: Set<String>,val content: GalleryPosition?,val scrolling: Boolean)

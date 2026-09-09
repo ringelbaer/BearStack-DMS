@@ -8,6 +8,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -44,7 +45,7 @@ class PhotoMapTest {
         val selected=AtomicReference<String>()
         val isEnglish=locale==Locale.ENGLISH
         try {
-            compose.setContent {CompositionLocalProvider(LocalContext provides context,LocalConfiguration provides context.resources.configuration) {
+            compose.setContent {CompositionLocalProvider(LocalContext provides context,LocalResources provides context.resources,LocalConfiguration provides context.resources.configuration) {
                 MaterialTheme {
                     PhotoMap(PhotoMapBounds(52.50,13.38,52.58,13.48),
                         listOf(PhotoMapMarker(52.52,13.405,1,"berlin.jpg"),PhotoMapMarker(52.55,13.45,12),

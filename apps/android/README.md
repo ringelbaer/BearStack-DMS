@@ -78,6 +78,16 @@ Die API `/api/photos/v1/` verwendet dieselben Foto-Dienste, Suchregeln und
 Zugriffskontrollen wie der Browser. Seiten enthalten bis zu 96 Medien, 24 Ordner
 mit jeweils zwei Vorschauen und 20 Textzusammenfassungen. Fotos und Texte werden
 bei Bedarf geladen; ein Ansichts- oder Kontowechsel bricht veraltete Anfragen ab.
+Eine Galerieansicht hält pro Bereich höchstens drei Seiten im Speicher: 288 Medien,
+72 Ordner mit bis zu zwei Vorschauen und 60 Textzusammenfassungen. Für die Rückkehr
+aus dem Fotoframe bleibt zusätzlich die vorherige Galerie mit denselben Grenzen
+erhalten. Ältere Seiten
+werden beim Zurückscrollen erneut geladen. Das sichtbare Element behält seine
+Position; Vollbild und Diashow wechseln auch über Seitengrenzen zum richtigen Foto.
+Ladefehler lassen sich am betroffenen Bereich wiederholen. Nach dem Schließen des
+Vollbilds zeigt das Raster das zuletzt betrachtete Foto; der Wechsel zur
+Personenverwaltung und zurück erhält die Galerieposition.
+
 Vollbild und Frame laden über WLAN höchstens die nächste Aufnahme vor; Wechsel
 der Ansicht oder Verlust der WLAN-Verbindung brechen dieses Vorladen ab. Anzeige
 und Vorladen teilen sich den begrenzten Drei-Minuten-Speichercache, mit höchstens

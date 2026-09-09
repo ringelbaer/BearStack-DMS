@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import java.util.Locale
@@ -19,6 +20,7 @@ fun ComposeContentTestRule.setGermanContent(content: @Composable () -> Unit) = s
     }
     CompositionLocalProvider(
         LocalContext provides context,
+        LocalResources provides context.resources,
         LocalConfiguration provides context.resources.configuration,
         content = content,
     )

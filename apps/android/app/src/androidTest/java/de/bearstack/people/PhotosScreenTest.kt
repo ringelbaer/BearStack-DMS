@@ -6,6 +6,7 @@ import android.graphics.Color
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -55,7 +56,7 @@ class PhotosScreenTest {
         lateinit var controller:PhotosController
         compose.runOnUiThread {controller=PhotosController(owner,api,PhotoSession("gallery-test",false,240,240,1280,2048,5,8))}
         try {
-            compose.setContent {CompositionLocalProvider(LocalContext provides context,LocalConfiguration provides context.resources.configuration) {
+            compose.setContent {CompositionLocalProvider(LocalContext provides context,LocalResources provides context.resources,LocalConfiguration provides context.resources.configuration) {
                 MaterialTheme {
                     if(showMapSelection) MapPhotoSelection(controller,images,PhotoQuery(),PhotoMapMarker(52.5,13.4,2)) {}
                     else PhotosScreen(controller,images,false,{fail("reader reached people editing")},{})
@@ -105,7 +106,9 @@ class PhotosScreenTest {
         compose.onNodeWithText("Geschichten & Notizen").assertIsDisplayed()
         compose.onNodeWithText("story.md").performClick()
         compose.waitUntil(10_000) {controller.state.value.blog?.html?.isNotEmpty()==true}
-        compose.onNodeWithContentDescription("Zurück").performClick()
+        compose.onNode(hasContentDescription("Zurück") and hasAnyAncestor(isDialog())).performClick()
+        assertNull(controller.state.value.blog)
+        assertEquals("Holiday",controller.state.value.query.path)
         compose.onNodeWithText("Suchen").performClick()
         compose.onNode(hasSetTextAction()).performTextInput("second")
         compose.onNode(hasSetTextAction()).performImeAction()

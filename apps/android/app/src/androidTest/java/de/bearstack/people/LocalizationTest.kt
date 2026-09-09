@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.res.Configuration
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
@@ -40,7 +41,7 @@ class LocalizationTest {
         try {
             compose.setContent {
                 val context=remember(locale) {app.createConfigurationContext(Configuration(app.resources.configuration).apply {setLocale(locale)})}
-                CompositionLocalProvider(LocalContext provides context,LocalConfiguration provides context.resources.configuration) {PeopleApp(vm)}
+                CompositionLocalProvider(LocalContext provides context,LocalResources provides context.resources,LocalConfiguration provides context.resources.configuration) {PeopleApp(vm)}
             }
             idle(vm)
             test(vm,api) {next ->compose.runOnUiThread {locale=next};compose.waitForIdle()}

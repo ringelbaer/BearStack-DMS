@@ -40,8 +40,6 @@ import de.bearstack.people.data.remote.PhotoMapMarker
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -60,7 +58,7 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
     if(photos.isEmpty()) return
     val catalog by controller.state.collectAsStateWithLifecycle()
     val frame=catalog.frame && !standalone
-    val initial=remember(controller,path) { photos.indexOfFirst { it.path==path }.coerceAtLeast(0) }
+    val initial=remember(controller) { photos.indexOfFirst { it.path==path }.coerceAtLeast(0) }
     val pager=rememberPagerState(initialPage=initial,pageCount={photos.size})
     val scope=rememberCoroutineScope()
     val context=LocalContext.current
@@ -77,7 +75,27 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
     val settings=controller.playback?.state?.collectAsStateWithLifecycle()?.value ?: localSettings
     val seconds=(if(frame) settings.frameSeconds.takeIf {it>0} ?: controller.session.frameSeconds
         else settings.seconds.takeIf {it>0} ?: controller.session.slideshowSeconds).coerceIn(3,300)
-    val current=photos[pager.currentPage.coerceAtMost(photos.lastIndex)]
+    val visibleKey by remember(pager) {derivedStateOf {
+        pager.layoutInfo.visiblePagesInfo.firstOrNull {it.index==pager.currentPage}?.key
+    }}
+    val current=photos.firstOrNull {it.path==visibleKey} ?: photos[pager.currentPage.coerceAtMost(photos.lastIndex)]
+    val currentIndex=photos.indexOfFirst {it.path==current.path}
+    var pendingPath by remember {mutableStateOf<String?>(null)}
+    var moving by remember {mutableStateOf(false)}
+    suspend fun move(direction: Int, repeat: Boolean = false) {
+        if(moving || pendingPath!=null || pager.isScrollInProgress) return
+        moving=true
+        try {
+            val next=if(standalone) photos.getOrNull(currentIndex+direction) else controller.neighbour(current.path,direction,repeat)
+            if(next!=null) pendingPath=next.path
+            else {playing=false;controls=true}
+        } finally {moving=false}
+    }
+    LaunchedEffect(pendingPath,photos) {
+        val target=pendingPath ?: return@LaunchedEffect
+        val index=photos.indexOfFirst {it.path==target}
+        if(index>=0) {pager.animateScrollToPage(index);pendingPath=null}
+    }
     val lifecycle=LocalLifecycleOwner.current.lifecycle
     var foreground by remember(lifecycle) {mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))}
     DisposableEffect(lifecycle) {
@@ -85,28 +103,24 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
         lifecycle.addObserver(observer)
         onDispose {lifecycle.removeObserver(observer)}
     }
-    LaunchedEffect(pager.currentPage,photos.size) {
-        if(!standalone && pager.currentPage>=photos.size-8) controller.more("media")
+    LaunchedEffect(current.path,photos) {
+        if(!standalone) {
+            controller.viewerAt(current.path)
+            if(currentIndex<8 && catalog.mediaPages.hasPrevious) controller.previous("media")
+            else if(currentIndex>=photos.size-8) controller.more("media")
+        }
     }
-    val adjacent=photos.getOrNull(pager.currentPage+1) ?: if(!catalog.hasNext && settings.repeat) photos.firstOrNull() else null
+    val adjacent=photos.getOrNull(currentIndex+1) ?: if(!catalog.hasNext && !catalog.mediaPages.hasPrevious && settings.repeat) photos.firstOrNull() else null
     LaunchedEffect(adjacent?.path,adjacent?.version,foreground) {
         if(foreground) controller.prefetch(adjacent,images)
     }
-    LaunchedEffect(playing,current.path,seconds,foreground,infoOpen,settingsOpen,zoomed,readyPath,endedPath) {
-        if(!playing || !foreground || infoOpen || settingsOpen || zoomed || standalone) return@LaunchedEffect
+    LaunchedEffect(playing,current.path,seconds,foreground,infoOpen,settingsOpen,zoomed,readyPath,endedPath,pager.isScrollInProgress) {
+        if(!playing || !foreground || infoOpen || settingsOpen || zoomed || standalone || pager.isScrollInProgress) return@LaunchedEffect
         if(current.type=="image") {
             if(readyPath!=current.path) return@LaunchedEffect
             delay(seconds*1000L)
         } else if(endedPath!=current.path) return@LaunchedEffect
-        val next=pager.currentPage+1
-        if(next>=controller.state.value.media.size && controller.state.value.hasNext) {
-            controller.more("media")
-            controller.state.map {it.media.size>next || !it.hasNext || it.error!=null}.first {it}
-        }
-        if(next<controller.state.value.media.size) pager.animateScrollToPage(next)
-        else if(controller.state.value.error!=null) playing=false
-        else if(settings.repeat) {if(pager.currentPage>0) pager.animateScrollToPage(0)}
-        else playing=false
+        move(1,settings.repeat)
     }
     LaunchedEffect(controls,frame,playing,infoOpen,settingsOpen) {
         if(frame && controls && playing && !infoOpen && !settingsOpen) {delay(5000);controls=false}
@@ -143,18 +157,25 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                                     if(!standalone) IconButton(onClick={settingsOpen=true}) {Icon(painterResource(R.drawable.ic_more_horiz),stringResource(if(frame) R.string.photos_frame_settings else R.string.photos_slideshow_settings))}
                                 })
                             controller.downloads?.let {PhotoDownloadStatus(it)}
+                            if(!standalone && "media" in catalog.loadingSections) LinearProgressIndicator(Modifier.fillMaxWidth())
+                            if(!standalone) catalog.pageErrors["media"]?.let {error ->
+                                Row(Modifier.fillMaxWidth().padding(horizontal=12.dp),verticalAlignment=Alignment.CenterVertically) {
+                                    Text(text(error.message),Modifier.weight(1f),style=MaterialTheme.typography.bodySmall)
+                                    TextButton(onClick={controller.retryPage("media")}) {Text(stringResource(R.string.photos_retry))}
+                                }
+                            }
                         }
                         Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().then(if(frame) Modifier.safeDrawingPadding() else Modifier)
                             .background(Color.Black.copy(alpha=.8f)).padding(horizontal=12.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween,
                             verticalAlignment=Alignment.CenterVertically) {
-                            IconButton(onClick={scope.launch {pager.animateScrollToPage(pager.currentPage-1)}},enabled=pager.currentPage>0) {
+                            IconButton(onClick={scope.launch {move(-1)}},enabled=!moving && pendingPath==null && !pager.isScrollInProgress && (currentIndex>0 || (!standalone && catalog.mediaPages.hasPrevious))) {
                                 Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_previous))
                             }
                             if(!standalone) IconButton(onClick={endedPath=null;playing=!playing}) {
                                 Icon(painterResource(if(playing) R.drawable.ic_pause else R.drawable.ic_play),stringResource(if(playing) R.string.photos_pause else R.string.photos_play))
                             }
-                            Text(stringResource(R.string.photos_of,pager.currentPage+1,if(standalone) photos.size else catalog.total),style=MaterialTheme.typography.labelSmall)
-                            IconButton(onClick={scope.launch {pager.animateScrollToPage(pager.currentPage+1)}},enabled=pager.currentPage<photos.lastIndex) {
+                            Text(stringResource(R.string.photos_of,if(standalone) currentIndex+1 else catalog.mediaPages.position(current.path),if(standalone) photos.size else catalog.total),style=MaterialTheme.typography.labelSmall)
+                            IconButton(onClick={scope.launch {move(1)}},enabled=!moving && pendingPath==null && !pager.isScrollInProgress && (currentIndex<photos.lastIndex || (!standalone && catalog.hasNext))) {
                                 Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_next),Modifier.rotate(180f))
                             }
                         }

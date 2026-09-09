@@ -81,4 +81,5 @@
     <string name="photos_map_previous_page">Previous page</string>
     <string name="photos_map_next_page">Next page</string>
     <string name="photos_text_empty">This post contains no text.</string>
+    <string name="photos_load_previous">Load previous</string>
 </resources>
