@@ -102,6 +102,12 @@ func (l *Library) facePersonCandidates(ctx context.Context, tx faceRowsQuery, v 
 	if err != nil {
 		return nil, err
 	}
+	return l.validateFacePersonCandidates(ctx, tx, v, ranked, limit)
+}
+
+// ranked contains per-person upper bounds in descending order.
+func (l *Library) validateFacePersonCandidates(ctx context.Context, tx faceRowsQuery, v []float32, ranked []facePersonCandidate, limit int) ([]facePersonCandidate, error) {
+	rt := &l.faceRuntime
 	limit = min(limit, len(ranked))
 	result := make([]facePersonCandidate, 0, limit)
 	visibility := newFaceDirectoryVisibility(l.root)

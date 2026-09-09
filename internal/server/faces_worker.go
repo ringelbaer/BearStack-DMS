@@ -23,6 +23,8 @@ type FaceSettings struct {
 	IntervalMinutes  int  `json:"interval_minutes"`
 }
 type faceWorkerState struct {
+	analysisOnce     sync.Once
+	analysis         chan struct{}
 	reconcileRun     sync.Mutex
 	reconcileCancel  context.CancelFunc
 	reconcileRunning bool
@@ -215,33 +217,26 @@ func (s *Server) processFaceBatch(ctx context.Context) (runErr error) {
 		if !current.Enabled {
 			return nil
 		}
-		job, e := s.photos.NextFaceJob(ctx)
-		if errors.Is(e, sql.ErrNoRows) {
-			return nil
-		}
-		if e != nil {
-			return e
-		}
-		data, e := s.photos.FaceImage(ctx, job.Path)
-		if e == nil {
-			var result facerec.Result
-			result, e = client.Analyze(ctx, data)
-			if e == nil {
-				result, e = s.photos.RefineFaceResult(ctx, job.Path, result, client.Analyze)
+		e = func() error {
+			release, err := s.acquireFaceAnalysis(ctx)
+			if err != nil {
+				return err
 			}
-			if e == nil {
-				e = s.photos.CommitFaceResult(ctx, job, result)
-				if e == nil {
-					committed = true
-				}
+			defer release()
+			job, err := s.photos.NextFaceJob(ctx)
+			if err != nil {
+				return err
 			}
-		}
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		if e != nil {
+			err = s.analyzeFaceJob(ctx, client, job)
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			if err == nil {
+				committed = true
+				return nil
+			}
 			reason := "Bild konnte nicht analysiert werden"
-			if errors.Is(e, photos.ErrAdminOnly()) {
+			if errors.Is(err, photos.ErrAdminOnly()) {
 				reason = "Foto ist geschützt"
 			}
 			if err = s.photos.FailFaceJob(ctx, job, reason); err != nil {
@@ -250,7 +245,15 @@ func (s *Server) processFaceBatch(ctx context.Context) (runErr error) {
 			s.faceWorker.mu.Lock()
 			s.faceWorker.lastError = reason
 			s.faceWorker.mu.Unlock()
+			return nil
+		}()
+		if errors.Is(e, sql.ErrNoRows) {
+			return nil
 		}
+		if e != nil {
+			return e
+		}
+
 		timer := time.NewTimer(time.Duration(settings.DelayMillis) * time.Millisecond)
 		select {
 		case <-ctx.Done():
@@ -275,4 +278,22 @@ func faceWorkerSchedule(settings FaceSettings, running bool, finished, now time.
 		return true, time.Minute
 	}
 	return false, wait
+}
+
+// Caller holds the per-image analysis gate; manual and background work share
+// the same orientation, refinement, matching and override-preservation path.
+func (s *Server) analyzeFaceJob(ctx context.Context, client *facerec.Client, job photos.FaceJob) error {
+	data, err := s.photos.FaceImage(ctx, job.Path)
+	if err != nil {
+		return err
+	}
+	result, err := client.Analyze(ctx, data)
+	if err != nil {
+		return err
+	}
+	result, err = s.photos.RefineFaceResult(ctx, job.Path, result, client.Analyze)
+	if err != nil {
+		return err
+	}
+	return s.photos.CommitFaceResult(ctx, job, result)
 }

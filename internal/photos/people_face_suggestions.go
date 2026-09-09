@@ -2,6 +2,8 @@ package photos
 
 import (
 	"context"
+	"math"
+	"slices"
 
 	"bearstack/internal/sqlutil"
 )
@@ -9,6 +11,16 @@ import (
 // SuggestPeopleForFace performs an on-demand comparison with current named
 // reference groups. It never runs inference or changes person assignments.
 func (l *Library) SuggestPeopleForFace(ctx context.Context, id int64) (PeopleSuggestions, error) {
+	return l.suggestPeopleForFace(ctx, id, nil)
+}
+
+// SuggestPeopleForFaceStream emits checked interim rankings while more named
+// groups are still being scored. Returning an error from emit stops the search.
+func (l *Library) SuggestPeopleForFaceStream(ctx context.Context, id int64, emit func(PeopleSuggestions) error) (PeopleSuggestions, error) {
+	return l.suggestPeopleForFace(ctx, id, emit)
+}
+
+func (l *Library) suggestPeopleForFace(ctx context.Context, id int64, emit func(PeopleSuggestions) error) (PeopleSuggestions, error) {
 	out := PeopleSuggestions{People: []PersonSuggestion{}}
 	if id <= 0 {
 		return out, ErrLabelInvalid
@@ -39,7 +51,8 @@ func (l *Library) SuggestPeopleForFace(ctx context.Context, id int64) (PeopleSug
 	for person := range l.faceRuntime.nodes {
 		excluded[person] = true
 	}
-	rows, err := l.index.db.QueryContext(ctx, `SELECT id FROM photo_people WHERE name<>''`)
+	var named []int64
+	rows, err := l.index.db.QueryContext(ctx, `SELECT id FROM photo_people WHERE name<>'' ORDER BY id`)
 	if err != nil {
 		return out, err
 	}
@@ -50,6 +63,9 @@ func (l *Library) SuggestPeopleForFace(ctx context.Context, id int64) (PeopleSug
 			return out, err
 		}
 		delete(excluded, person)
+		if person != source.PersonID {
+			named = append(named, person)
+		}
 	}
 	err = rows.Err()
 	rows.Close()
@@ -57,10 +73,26 @@ func (l *Library) SuggestPeopleForFace(ctx context.Context, id int64) (PeopleSug
 		return out, err
 	}
 	excluded[source.PersonID] = true
-	candidates, err := l.facePersonCandidates(ctx, l.index.db, vector, excluded, 20)
+	var candidates []facePersonCandidate
+	if emit == nil {
+		candidates, err = l.facePersonCandidates(ctx, l.index.db, vector, excluded, 20)
+	} else {
+		candidates, err = l.streamNamedFaceCandidates(ctx, vector, named, func(ranking []facePersonCandidate) error {
+			current, err := l.faceSuggestionPeople(ctx, id, source.PersonID, ranking)
+			if err != nil {
+				return err
+			}
+			return emit(current)
+		})
+	}
 	if err != nil {
 		return out, err
 	}
+	return l.faceSuggestionPeople(ctx, id, source.PersonID, candidates)
+}
+
+func (l *Library) faceSuggestionPeople(ctx context.Context, id, sourcePerson int64, candidates []facePersonCandidate) (PeopleSuggestions, error) {
+	out := PeopleSuggestions{People: []PersonSuggestion{}}
 	ids := []int64{}
 	args := []any{}
 	for _, candidate := range candidates {
@@ -75,10 +107,10 @@ func (l *Library) SuggestPeopleForFace(ctx context.Context, id int64) (PeopleSug
 	}
 	// Counts and names must also respect fresh protection markers in other folders
 	// belonging to a candidate, not just the matching reference's folder.
-	if err = l.refreshPersonIDsVisibility(ctx, ids...); err != nil {
+	if err := l.refreshPersonIDsVisibility(ctx, ids...); err != nil {
 		return out, err
 	}
-	rows, err = l.index.db.QueryContext(ctx, `SELECT p.id,p.name,f.id,
+	rows, err := l.index.db.QueryContext(ctx, `SELECT p.id,p.name,f.id,
  (SELECT count(DISTINCT path) FROM photo_faces WHERE person_id=p.id AND ignored=0)
  FROM photo_faces f JOIN photo_people p ON p.id=f.person_id
  WHERE f.id IN (`+sqlutil.Placeholders(len(args))+`) AND f.ignored=0 AND p.name<>''`, args...)
@@ -104,7 +136,7 @@ func (l *Library) SuggestPeopleForFace(ctx context.Context, id int64) (PeopleSug
 	if err = l.index.db.QueryRowContext(ctx, `SELECT person_id FROM photo_faces WHERE id=? AND ignored=0`, id).Scan(&current); err != nil {
 		return out, err
 	}
-	if current != source.PersonID {
+	if current != sourcePerson {
 		return out, ErrLabelConflict
 	}
 	for _, candidate := range candidates {
@@ -113,4 +145,56 @@ func (l *Library) SuggestPeopleForFace(ctx context.Context, id int64) (PeopleSug
 		}
 	}
 	return out, nil
+}
+
+// Score each group once. Before the first hit, validate immediately; afterwards
+// use small batches so interim updates do not turn every vector into a SQL call.
+func (l *Library) streamNamedFaceCandidates(ctx context.Context, vector []float32, named []int64, emit func([]facePersonCandidate) error) ([]facePersonCandidate, error) {
+	var best, batch []facePersonCandidate
+	flush := func() error {
+		if len(batch) == 0 {
+			return nil
+		}
+		slices.SortFunc(batch, compareFaceCandidates)
+		checked, err := l.validateFacePersonCandidates(ctx, l.index.db, vector, batch, 20)
+		batch = batch[:0]
+		if err != nil {
+			return err
+		}
+		previous := slices.Clone(best)
+		best = append(best, checked...)
+		slices.SortFunc(best, compareFaceCandidates)
+		best = best[:min(20, len(best))]
+		if !slices.Equal(previous, best) {
+			return emit(best)
+		}
+		return nil
+	}
+	for index, person := range named {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		score := math.Inf(-1)
+		for i, reference := range l.faceRuntime.graph.groups[person] {
+			if i%256 == 0 {
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
+			}
+			score = max(score, cosine(vector, reference))
+		}
+		candidate := facePersonCandidate{person: person, score: score}
+		if score >= faceSuggestionMinimum && (len(best) < 20 || compareFaceCandidates(candidate, best[len(best)-1]) < 0) {
+			batch = append(batch, candidate)
+		}
+		if len(best) == 0 || (index+1)%32 == 0 {
+			if err := flush(); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if err := flush(); err != nil {
+		return nil, err
+	}
+	return best, nil
 }

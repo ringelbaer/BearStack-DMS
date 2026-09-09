@@ -2141,6 +2141,78 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /photos/faces:
+    get:
+      tags: [Photos]
+      operationId: getPhotoFaces
+      summary: Read current face assignments for a photo
+      description: >-
+        Requires photos.edit. Refreshes source visibility and returns existing
+        detections without running inference. Valid photos without detections
+        return an empty faces array. Cache-Control is private, no-store.
+      parameters:
+      - name: path
+        in: query
+        required: true
+        schema: {type: string}
+        description: Gallery-relative image path.
+      responses:
+        '200':
+          description: Current detections, including unnamed and ignored faces.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [photo]
+                properties:
+                  photo: {$ref: '#/components/schemas/PhotoFaces'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /photos/faces/analyze:
+    post:
+      tags: [Photos]
+      operationId: analyzePhotoFaces
+      summary: Recognize and assign faces in the current photo
+      description: >-
+        Requires photos.edit and a configured local inference service. Processes only
+        the requested image using the same orientation, refinement and conservative
+        grouping as the background worker. Preserves one-to-one matched manual
+        corrections, ignored faces and favorites. Does not enable background processing
+        or scan the full gallery. The request waits for the shared per-image analysis
+        slot and is bounded to two minutes including waiting. Client cancellation
+        stops pending work; a result committed before cancellation remains saved.
+        Repeated successful requests intentionally reanalyze the photo. Returns the
+        current PhotoFaces for inline naming, including an empty faces array when
+        no faces were detected. Source privacy and fingerprints are
+        rechecked before committing. Cache-Control is private, no-store.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [path]
+              properties:
+                path: {type: string, description: Gallery-relative image path.}
+      responses:
+        '200':
+          description: Recognition completed and automatic grouping saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, photo]
+                properties:
+                  ok: {type: boolean, enum: [true]}
+                  photo: {$ref: '#/components/schemas/PhotoFaces'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '502': {description: Analysis could not be confirmed; refresh the current faces before retrying.}
+        '503': {description: Face recognition service is not configured.}
   /photos/faces/{id}/suggestions:
     get:
       tags: [Photos]
@@ -2156,7 +2228,14 @@ paths:
         face_id identifies the matching reference portrait, rather than the group's
         usual overview portrait. has_next is always false; this is a bounded ranking,
         not a paginated list. Cache-Control is private, no-store. No embeddings or
-        identity probabilities are returned.
+        identity probabilities are returned. With Accept: application/x-ndjson,
+        checked interim rankings are flushed while remaining named groups are
+        still being scored. Each newline-delimited frame replaces the previous
+        ranking and contains done=false until the final done=true frame. A failure
+        after streaming starts is a terminal frame with error and an empty people
+        array; errors before the first frame use normal HTTP error statuses.
+        Interim candidates are selectable but their rank can change. Aborting the
+        request stops work. Proxy buffering is disabled via X-Accel-Buffering: no.
       parameters:
       - name: id
         in: path
@@ -2168,6 +2247,10 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/PhotoPeopleSuggestions'}
+            application/x-ndjson:
+              schema:
+                type: string
+                description: Newline-delimited PhotoFaceSuggestionUpdate JSON objects, ending with done=true.
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -3347,6 +3430,19 @@ components:
           oneOf:
             - $ref: '#/components/schemas/GroupPhoto'
             - type: 'null'
+    PhotoFaces:
+      description: Existing group photo data or a valid photo without detections.
+      oneOf:
+      - $ref: '#/components/schemas/GroupPhoto'
+      - type: object
+        required: [path, display_path, revision, remaining, image_face_id, faces]
+        properties:
+          path: {type: string, description: Gallery-relative image path.}
+          display_path: {type: string, description: Human-readable gallery path.}
+          revision: {type: string, enum: ['']}
+          remaining: {type: integer, enum: [0]}
+          image_face_id: {type: integer, enum: [0]}
+          faces: {type: array, maxItems: 0, items: {$ref: '#/components/schemas/RecognizedPhotoFace'}}
     GroupPhoto:
       type: object
       required: [path, display_path, revision, remaining, image_face_id, faces]
@@ -4126,6 +4222,23 @@ components:
             y: {type: number}
             width: {type: number}
             height: {type: number}
+    PhotoFaceSuggestionUpdate:
+      type: object
+      required: [people, has_next, done]
+      properties:
+        people:
+          type: array
+          maxItems: 20
+          items: {$ref: '#/components/schemas/PhotoPeopleSuggestions/properties/people/items'}
+        has_next:
+          type: boolean
+          enum: [false]
+        done:
+          type: boolean
+          description: False for an interim ranking; true when the comparison ends.
+        error:
+          type: string
+          description: Present on terminal failure; discard interim candidates and allow retry.
     PhotoPeopleSuggestions:
       type: object
       additionalProperties: false

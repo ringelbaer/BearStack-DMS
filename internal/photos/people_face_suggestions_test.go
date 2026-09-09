@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -99,6 +100,18 @@ func TestSuggestPeopleForFaceLimitsNamedRanking(t *testing.T) {
 	if err != nil || len(got.People) != 20 {
 		t.Fatalf("bounded named candidates: %+v %v", got, err)
 	}
+	var snapshots []PeopleSuggestions
+	streamed, err := l.SuggestPeopleForFaceStream(ctx, 1, func(update PeopleSuggestions) error { snapshots = append(snapshots, update); return nil })
+	if err != nil || !reflect.DeepEqual(streamed, got) || len(snapshots) < 2 || len(snapshots[0].People) != 1 {
+		t.Fatalf("not incremental or ranking differs: snapshots=%+v result=%+v err=%v", snapshots, streamed, err)
+	}
+	stopped := errors.New("consumer stopped")
+	calls := 0
+	_, err = l.SuggestPeopleForFaceStream(ctx, 1, func(PeopleSuggestions) error { calls++; return stopped })
+	if !errors.Is(err, stopped) || calls != 1 {
+		t.Fatalf("consumer cancellation: %d %v", calls, err)
+	}
+
 	for i, p := range got.People {
 		if p.Name == "" || p.ID != int64(27+i) {
 			t.Fatalf("unstable ranking: %+v", got)

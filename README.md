@@ -557,11 +557,32 @@ zum Beispiel **Fotos / 11.05.2026 · Urlaub / IMG_1234.jpg**. Er gehört immer z
 angezeigten Gesicht, auch nach dem Wechsel des Vorschaubilds oder Gruppenfotos.
 Lange Pfade brechen mobil um; zusätzliche Serverabfragen sind nicht erforderlich.
 
+**Gesichter direkt aus der Foto-Info bearbeiten:** Fotobearbeiter können im
+Infopanel des geöffneten Bildes **Gesichter erkennen und zuordnen** wählen.
+Bearbeitet wird nur dieses Foto, auch bei pausierter automatischer Verarbeitung;
+ein konfigurierter lokaler Gesichtsdienst ist erforderlich. Der Vorgang wartet bei
+Bedarf auf die gerade laufende Bildanalyse und nutzt dieselbe Erkennung und
+Zuordnung wie der Hintergrundprozess. Erkannte Gesichter erscheinen mit Vorschaubild
+und Name. Über den Stift lassen sie sich im bekannten Dialog benennen oder einer
+vorhandenen Person zuordnen, einschließlich Live-Abgleich per Lupe. Die Auswahl
+wirkt wie bisher auf die gesamte Personengruppe. Nach dem Speichern werden die
+Gesichter und Namen im Infopanel aktualisiert. **Gesichter aktualisieren** lädt
+bestehende Zuordnungen ohne neue Bildanalyse. Videos und Audios bieten diese
+Aktionen nicht an. Manuelle Korrekturen, ignorierte Gesichter und Favoriten werden
+bei eindeutiger Wiedererkennung übernommen. Beim Bildwechsel wird die laufende
+Anfrage abgebrochen; bereits gespeicherte Ergebnisse bleiben bestehen. Der neue
+POST-Endpunkt `/photos/faces/analyze` benötigt `photos.edit`, aktiviert keinen
+globalen Erkennungslauf und begrenzt Warten und Analyse zusammen auf zwei Minuten.
+`GET /photos/faces?path=…` liefert die vorhandenen Gesichter mit denselben Rechten;
+ein noch nicht analysiertes Foto liefert eine leere Gesichtsliste.
+
 **Gesichtsabgleich im Benennen-Dialog:** Die Lupe rechts neben dem Namensfeld
 vergleicht das aktuell angezeigte Gesicht auf Klick mit den gespeicherten
 Referenzgesichtern benannter Personen. Bis zu 20 Kandidaten ab 0,45 Ähnlichkeit
-erscheinen nach Ähnlichkeit sortiert in derselben Vervollständigung, mit Name,
-Fotoanzahl und dem passenden Vergleichsgesicht. Die aktuelle Gruppe ist
+erscheinen bereits während des Abgleichs in derselben Vervollständigung, mit Name,
+Fotoanzahl und dem passenden Vergleichsgesicht. Erste geprüfte Treffer sind sofort
+auswählbar; bessere Treffer können die nach Ähnlichkeit sortierte Liste noch
+verändern. „Abgleich läuft …“ kennzeichnet die vorläufigen Ergebnisse. Die aktuelle Gruppe ist
 ausgeschlossen. Ein Treffer ist ein Vorschlag, keine sichere Identifikation;
 die Auswahl ordnet wie bisher die gesamte Gruppe zu. Bei Mehrfachauswahl wird
 das Gesicht aus der Dialogvorschau verglichen. Tippen startet wieder die
@@ -569,6 +590,10 @@ Namenssuche; verspätete Antworten werden verworfen. Die Suche nutzt den vorhand
 Referenzcache einschließlich Favoriten, prüft Sichtbarkeit und Quellfoto aktuell
 und benötigt weder eine erneute Bildanalyse noch einen laufenden Erkennungsdienst.
 `GET /photos/faces/{id}/suggestions` benötigt `photos.edit` und ändert keine Zuordnung.
+Der Dialog fordert `application/x-ndjson` an: Jeder Datensatz ersetzt die bisherige
+Trefferliste, `done=true` schließt den Stream ab. Die normale JSON-Antwort bleibt
+verfügbar. Abbruch, neue Eingaben und Dialogschließen stoppen die Anfrage; aktive
+Tastaturauswahl und unveränderte Vorschaubilder bleiben bei Updates erhalten.
 
 **Anzeigeeinstellungen der Personenübersicht (ab 0.47.0):** Das **…-Menü**
 unter `/photos/people` steuert **Ordnername anzeigen**, **Fotoanzahl anzeigen** und

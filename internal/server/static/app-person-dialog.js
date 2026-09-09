@@ -208,7 +208,7 @@
     var matching = false;
     var allowCreate = form.hasAttribute("data-person-create");
     var renameAction = allowCreate ? form.action : "";
-    var items = [], active = -1, revision = 0;
+    var items = [], active = -1, revision = 0, pointerPerson;
     var timer, controller, pendingDirection;
 
     function cancel() {
@@ -224,6 +224,7 @@
       input.setAttribute("aria-expanded", "false");
       input.removeAttribute("aria-activedescendant");
       active = -1;
+      pointerPerson = undefined;
     }
     function validate() {
       if (allowCreate) {
@@ -277,17 +278,30 @@
         var url = faceMatch ? "/photos/faces/" + encodeURIComponent(form.dataset.personFaceId) + "/suggestions" : "/photos/people?format=suggestions&q=" + encodeURIComponent(query);
         var response = await fetch(url, {
           signal: controller.signal, credentials: "same-origin", redirect: "error",
-          headers: { Accept: "application/json" }
+          headers: { Accept: faceMatch ? "application/x-ndjson" : "application/json" }
         });
         if (!response.ok) throw new Error(faceMatch ? "Gesichtsabgleich fehlgeschlagen. Bitte erneut versuchen oder die Ansicht aktualisieren." : "Personen konnten nicht geladen werden. Bitte erneut suchen.");
-        var data = await response.json();
+        function render(data, pending) {
+        if (data.error) throw new Error(data.error);
         if (!Array.isArray(data.people)) throw new Error("Ungültige Antwort der Personensuche.");
         if (request !== revision || document.activeElement !== input) return;
+        var activeID = active >= 0 && items[active] ? String(items[active].id) : null;
+        var previous = new Map(Array.from(list.children).map(function (node) { return [node.dataset.personKey, node]; }));
+        var scrollTop = popup.scrollTop;
         items = data.people.filter(function (person) { return typeof person.name === "string" && person.name.trim() && String(person.id) !== form.dataset.personExclude; });
         if (allowCreate && query && !faceMatch) items.push({ id: 0, name: query, create: true });
         var options = document.createDocumentFragment();
         items.forEach(function (person, index) {
-          var option = document.createElement("div");
+          var key = JSON.stringify(person);
+          var option = previous.get(key);
+          if (option) {
+            option.id = list.id + "-" + index;
+            option.dataset.personOption = String(index);
+            options.append(option);
+            return;
+          }
+          option = document.createElement("div");
+          option.dataset.personKey = key;
           option.id = list.id + "-" + index;
           option.dataset.personOption = String(index);
           option.setAttribute("role", "option");
@@ -309,11 +323,41 @@
           options.append(option);
         });
         list.replaceChildren(options);
-        feedback.textContent = data.has_next ? "Weitere Personen vorhanden. Bitte die Suche eingrenzen." :
+        popup.scrollTop = scrollTop;
+        feedback.textContent = pending ? items.length + " Kandidaten gefunden – Abgleich läuft …" : data.has_next ? "Weitere Personen vorhanden. Bitte die Suche eingrenzen." :
           (items.length ? items.length + (items.length === 1 ? " Vorschlag verfügbar." : " Vorschläge verfügbar.") : (faceMatch ? "Keine ähnlichen benannten Personen gefunden." : "Keine passende Person gefunden."));
-        if (items.length && pendingDirection) activate(pendingDirection === "last" ? items.length - 1 : 0);
+        if (activeID !== null) activate(items.findIndex(function (person) { return String(person.id) === activeID; }));
+        else if (items.length && pendingDirection) { activate(pendingDirection === "last" ? items.length - 1 : 0); pendingDirection = undefined; }
+        else activate(-1);
+        }
+        if (faceMatch && (response.headers.get("Content-Type") || "").includes("application/x-ndjson")) {
+          var reader = response.body.getReader();
+          var decoder = new TextDecoder(), buffer = "", complete = false;
+          try {
+            while (!complete) {
+              var chunk = await reader.read();
+              if (request !== revision) return;
+              buffer += decoder.decode(chunk.value, { stream: !chunk.done });
+              var newline;
+              while ((newline = buffer.indexOf("\n")) >= 0) {
+                var line = buffer.slice(0, newline); buffer = buffer.slice(newline + 1);
+                if (!line.trim()) continue;
+                var update = JSON.parse(line);
+                render(update, !update.done);
+                if (update.done) { complete = true; break; }
+              }
+              if (buffer.length > 128 * 1024) throw new Error("Ungültige Antwort des Gesichtsabgleichs.");
+              if (chunk.done && !complete) throw new Error("Gesichtsabgleich unterbrochen. Bitte erneut versuchen.");
+            }
+          } finally { await reader.cancel().catch(function () {}); }
+        } else {
+          render(await response.json(), false);
+        }
       } catch (error) {
-        if (request === revision && error.name !== "AbortError") feedback.textContent = error.message;
+        if (request === revision && error.name !== "AbortError") {
+          if (faceMatch) { items = []; list.replaceChildren(); activate(-1); }
+          feedback.textContent = error.message;
+        }
       } finally {
         if (request === revision) { matching = false; if (matchButton) matchButton.removeAttribute("aria-busy"); }
       }
@@ -356,11 +400,16 @@
     });
     // Keep keyboard focus on the combobox when clicking or tapping an option.
     list.addEventListener("pointerdown", function (event) {
-      if (event.target.closest("[data-person-option]")) event.preventDefault();
+      var option = event.target.closest("[data-person-option]");
+      if (option) {
+        pointerPerson = items[Number(option.dataset.personOption)].id;
+        event.preventDefault();
+      }
     });
     list.addEventListener("click", function (event) {
       var option = event.target.closest("[data-person-option]");
-      if (option) choose(Number(option.dataset.personOption));
+      if (option) choose(pointerPerson !== undefined ? items.findIndex(function (person) { return person.id === pointerPerson; }) : Number(option.dataset.personOption));
+      pointerPerson = undefined;
     });
     form.addEventListener("person-picker-reset", function (event) {
       close();

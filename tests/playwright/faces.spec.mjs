@@ -259,7 +259,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.getByLabel("Auswählen", { exact: true }).first().check();
   await expect(lightbox).not.toBeVisible();
   await page.getByLabel("Auswählen", { exact: true }).first().uncheck();
-  await page.getByLabel("Name",{exact:true}).fill("Jürgen");await page.getByRole("button",{name:"Benennen",exact:true}).click();await expect(page.getByRole("heading",{name:"Jürgen",exact:true})).toBeVisible();
+  await page.getByRole("combobox",{name:"Name",exact:true}).fill("Jürgen");await page.getByRole("button",{name:"Benennen",exact:true}).click();await expect(page.getByRole("heading",{name:"Jürgen",exact:true})).toBeVisible();
   await expect(page.locator("button[data-face-favorite]")).toHaveCount(2);
   await page.locator("button[data-face-favorite]").first().click();
   await expect(page.locator("button[data-face-favorite]").first()).toHaveAttribute("aria-pressed", "true");
@@ -422,7 +422,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await moveSearch.press("Tab");
   await page.getByLabel("Auswählen",{exact:true}).first().check();await page.getByLabel("Name der neuen Person").fill("Marie");await page.getByRole("button",{name:"Auswahl verschieben"}).click();
   await page.locator("a.person-card").filter({hasText:"Marie"}).click();
-  const mergeForm = page.locator("form[data-person-create]");
+  const mergeForm = page.locator("form[data-person-create]:not([data-person-modal])");
   const personSearch = mergeForm.getByRole("combobox", { name: "Name", exact: true });
   const personOptions = mergeForm.getByRole("option").filter({ hasNotText: "Neu anlegen:" });
   await expect(mergeForm.locator("select")).toHaveCount(0);
@@ -624,8 +624,34 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(personDialog.locator("[data-person-feedback]")).toContainText("Keine ähnlichen benannten Personen");
   const targetCard = page.locator('.person-overview-card[data-person-name="Merge-Ziel"]');
   const matchedPerson = { id: Number(await targetCard.getAttribute("data-person-id")), face_id: Number(await targetCard.getAttribute("data-face-id")), name: "Merge-Ziel", count: 1 };
-  await page.route(matchURL, route => route.fulfill({ json: { people: [matchedPerson], has_next: false } }), { times: 1 });
+  // Keep a real ReadableStream open: the first candidate must appear before EOF.
+  await page.evaluate(() => {
+    window.originalMatchFetch = window.fetch;
+    window.fetch = function (url, options) {
+      if (!String(url).match(/\/photos\/faces\/\d+\/suggestions$/)) return window.originalMatchFetch(url, options);
+      const stream = new ReadableStream({
+        start(controller) { window.matchStream = controller; },
+        cancel() { window.matchStreamCancelled = true; }
+      });
+      options.signal.addEventListener("abort", () => { try { window.matchStream.error(new DOMException("Aborted", "AbortError")); } catch (_) {} });
+      return Promise.resolve(new Response(stream, { headers: { "Content-Type": "application/x-ndjson" } }));
+    };
+  });
   await faceMatch.click();
+  await expect(faceMatch).toHaveAttribute("aria-busy", "true");
+  const firstUpdate = JSON.stringify({ people: [matchedPerson], has_next: false, done: false }) + "\n";
+  await page.evaluate(line => { const bytes = new TextEncoder().encode(line); window.matchStream.enqueue(bytes.slice(0, 9)); window.matchStream.enqueue(bytes.slice(9)); }, firstUpdate);
+  await expect(personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ })).toBeVisible();
+  await expect(personDialog.locator("[data-person-feedback]")).toContainText("Abgleich läuft");
+  await expect(faceMatch).toHaveAttribute("aria-busy", "true");
+  await dialogName.press("ArrowDown");
+  const firstOption = await personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ }).elementHandle();
+  await page.evaluate(person => {
+    window.matchStream.enqueue(new TextEncoder().encode(JSON.stringify({ people: [person], has_next: false, done: true }) + "\n"));
+  }, matchedPerson);
+  await expect(faceMatch).not.toHaveAttribute("aria-busy", "true");
+  expect(await firstOption.evaluate(node => node.isConnected && node.getAttribute("aria-selected") === "true")).toBe(true);
+  await page.evaluate(() => { window.fetch = window.originalMatchFetch; });
   await expect(personDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" })).toHaveCount(1);
   const suggestedPortrait = personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ }).locator("img");
   await expect(suggestedPortrait).toHaveAttribute("src", await page.locator('.person-overview-card[data-person-name="Merge-Ziel"] .person-card img').getAttribute("src"));

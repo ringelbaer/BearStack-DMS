@@ -6,6 +6,10 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ### BearStack 0.50.0 – in Entwicklung
 
+- Foto-Infopanel bietet gezielte Gesichtserkennung und automatische Zuordnung für das aktuelle Bild, unabhängig vom pausierten Hintergrundlauf. Erkannte Gesichter lassen sich direkt über den bestehenden Benennen-Dialog samt Live-Lupe bearbeiten. Gemeinsame serielle Bildanalyse, Quell- und Rechteprüfungen, Erhalt manueller Korrekturen und abbrechbare Requests. Additive Endpunkte `POST /photos/faces/analyze` und `GET /photos/faces` (auch für Fotos ohne erkannte Gesichter); MINOR-Erweiterung innerhalb der unveröffentlichten 0.50.0, VERSION unverändert.
+
+- Modal-Lupe zeigt geprüfte Kandidaten bereits während des Gesichtsabgleichs und ergänzt oder sortiert die Liste fortlaufend. Abbrechbarer NDJSON-Stream, frühe Auswahl, stabile Tastaturauswahl und wiederverwendete Vorschaubilder; bestehende JSON-Antwort bleibt kompatibel. Kleine Vergleichspakete begrenzen zusätzliche Datenbankarbeit. MINOR-Erweiterung innerhalb der unveröffentlichten 0.50.0; VERSION unverändert.
+
 - Benennen-Dialog zeigt unter der Fotovorschau den nach Galerieregeln aufbereiteten Bildpfad mit lesbaren Ordnerdaten und unverändertem Dateinamen. Personen- und Gruppenbilderansicht aktualisieren ihn mit dem angezeigten Gesicht, ohne zusätzliche Abfragen. Ergänzendes JSON-Feld `people[].display_path`; Erweiterung innerhalb der unveröffentlichten 0.50.0, VERSION unverändert.
 
 - Lupe im Web-Benennen-Dialog gleicht das angezeigte Gesicht auf Klick live mit benannten Referenzgruppen ab. Bis zu 20 nach Ähnlichkeit sortierte Kandidaten erscheinen in der vorhandenen Vervollständigung. Gemeinsamer Referenzcache, aktuelle Sichtbarkeitsprüfungen, abbrechbare Anfragen und additiver GET-Endpunkt; keine erneute Bildanalyse. MINOR-Erweiterung innerhalb der unveröffentlichten 0.50.0, VERSION unverändert.

@@ -81,7 +81,7 @@
   {{if .People.HasNext}}<a class="secondary-button" rel="last" href="?page={{.People.TotalPages}}&amp;q={{queryEscape .People.Query}}{{if .People.KnownOnly}}&amp;known=1{{end}}{{if .People.UnknownOnly}}&amp;unknown=1{{end}}{{if .People.IgnoredOnly}}&amp;ignored=1{{end}}">Letzte Seite</a>{{else if gt .People.TotalPages 1}}<span class="secondary-button" aria-disabled="true">Letzte Seite</span>{{end}}
 </nav>
 {{if .People.PersonID}}<div class="photo-module" data-photo-module data-photo-mode="view">{{template "photo_lightbox" .}}</div>{{end}}
-<script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
+{{if not .People.PersonID}}<script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>{{end}}
 <script src="{{assetURL "/static/app-people.js"}}" defer></script>
 {{template "foot" .}}
 {{end}}

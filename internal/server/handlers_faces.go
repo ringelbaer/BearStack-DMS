@@ -365,7 +365,13 @@ func (s *Server) handleFaceControl(w http.ResponseWriter, r *http.Request) {
 			s.stopFaceReconciliationRun()
 			s.faceWorker.run.Lock()
 			s.faceWorker.reconcileRun.Lock()
-			err = s.photos.ClearFaces(r.Context())
+			release, lockErr := s.acquireFaceAnalysis(r.Context())
+			if lockErr != nil {
+				err = lockErr
+			} else {
+				err = s.photos.ClearFaces(r.Context())
+				release()
+			}
 			s.faceWorker.reconcileRun.Unlock()
 			s.faceWorker.run.Unlock()
 		}

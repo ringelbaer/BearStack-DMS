@@ -44,6 +44,14 @@
           <span class="photo-info-map-marker" data-photo-info-map-marker hidden aria-hidden="true"></span>
         </div>
       </section>
+      {{if .Auth.CanPhotosEdit}}
+      <section class="photo-face-tools" data-photo-face-tools hidden aria-label="Gesichter im Foto">
+        <button type="button" data-photo-face-analyze>Gesichter erkennen und zuordnen</button>
+        <button type="button" class="secondary-button" data-photo-face-refresh>Gesichter aktualisieren</button>
+        <p role="status" data-photo-face-status></p>
+        <div data-photo-face-list></div>
+      </section>
+      {{end}}
       <dl>
         <dt>Datei</dt><dd data-photo-info-name>-</dd>
         <dt>Aufgenommen</dt><dd data-photo-info-date>-</dd>
@@ -58,4 +66,9 @@
     </aside>
   </div>
 </dialog>
+{{if .Auth.CanPhotosEdit}}
+{{template "person_edit_dialog" .}}
+<script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
+<script src="{{assetURL "/static/app-photo-faces.js"}}" defer></script>
+{{end}}
 {{end}}

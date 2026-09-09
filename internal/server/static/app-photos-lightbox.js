@@ -64,6 +64,11 @@
     var exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
     var lightboxRequestedFullscreen = false;
 
+    var faceEditor = window.BearStackPhotoFaces ? window.BearStackPhotoFaces.init({
+      dialog: dialog, stopSlideshow: stopSlideshow,
+      onFaces: function (item, faces) { item.automaticFaces = faces; if (items[current] === item) renderPeople(item); }
+    }) : null;
+
     function ensureItemsCollected() {
       if (itemsCollected) return items;
       items = collectItems(gallery);
@@ -370,6 +375,7 @@
 
     function setInfoPanel(open) {
       dialog.classList.toggle("info-open", open);
+      if (faceEditor) { if (open) faceEditor.show(items[current]); else faceEditor.reset(); }
       if (infoButton) {
         infoButton.setAttribute("aria-pressed", open ? "true" : "false");
         infoButton.setAttribute("aria-label", open ? "Informationen ausblenden" : "Informationen anzeigen");
@@ -516,6 +522,13 @@
       setText("[data-photo-info-size]", item.size);
       setText("[data-photo-info-resolution]", item.resolution);
       setText("[data-photo-info-coords]", item.coords);
+      renderPeople(item);
+      if (faceEditor && dialog.classList.contains("info-open")) faceEditor.show(item);
+      setDownload(item);
+      setMap(item);
+    }
+
+    function renderPeople(item) {
       var people = dialog.querySelector("[data-photo-info-people]");
       if (people) {
         people.replaceChildren();
@@ -528,8 +541,6 @@
         });
         if (!people.childNodes.length) people.textContent = "–";
       }
-      setDownload(item);
-      setMap(item);
     }
 
     function show(index) {
@@ -880,7 +891,7 @@
     }
     syncLightboxZoomUI();
     document.addEventListener("keydown", function (event) {
-      if (!dialog.open) return;
+      if (!dialog.open || document.querySelector("[data-person-dialog][open]")) return;
       if (eventIsSpace(event) && !event.repeat && !isKeyboardControlTarget(event.target) && toggleCurrentPlayback()) {
         event.preventDefault();
         return;

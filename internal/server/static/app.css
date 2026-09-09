@@ -3684,3 +3684,12 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 .person-picker-search-row { display: flex; align-items: stretch; gap: 8px; min-width: 0; }
 .person-picker-search-row > input { flex: 1 1 0; min-width: 0; width: 0; }
 .person-picker-search-row > button { display: flex; align-items: center; justify-content: center; flex: 0 0 44px; min-width: 44px; min-height: 44px; padding: 8px; }
+
+.photo-face-tools { display: grid; gap: 8px; margin-block: 12px; }
+.photo-face-tools[hidden] { display: none; }
+.photo-face-tools > button { width: 100%; white-space: normal; }
+.photo-face-tools > [role="status"] { color: #e5e7eb; margin: 0; }
+.photo-info-face { display: grid; grid-template-columns: 64px minmax(0,1fr) 44px; align-items: center; gap: 8px; margin-block: 8px; }
+.photo-info-face img { width: 64px; height: 64px; object-fit: contain; border-radius: 6px; }
+.photo-info-face span { overflow-wrap: anywhere; }
+.photo-info-face .person-edit-button { position: static; width: 44px; height: 44px; }
