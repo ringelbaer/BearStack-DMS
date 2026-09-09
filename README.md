@@ -566,8 +566,12 @@ Zuordnung wie der Hintergrundprozess. Erkannte Gesichter erscheinen mit Vorschau
 und Name. Über den Stift lassen sie sich im bekannten Dialog benennen oder einer
 vorhandenen Person zuordnen, einschließlich Live-Abgleich per Lupe. Die Auswahl
 wirkt wie bisher auf die gesamte Personengruppe. Nach dem Speichern werden die
-Gesichter und Namen im Infopanel aktualisiert. **Gesichter aktualisieren** lädt
-bestehende Zuordnungen ohne neue Bildanalyse. Videos und Audios bieten diese
+Gesichter und Namen im Infopanel aktualisiert. **Ignorieren** im Dialog blendet
+das angezeigte unbenannte Gesicht aus; andere Gesichter derselben Gruppe bleiben
+erhalten. Bei zwischenzeitlichen Änderungen wird die aktuelle Gesichtsliste
+geladen und die Auswahl muss erneut geprüft werden. Das kleine **Refresh-Symbol**
+rechts neben dem Erkennen-Button lädt bestehende Zuordnungen ohne neue Bildanalyse
+(Tooltip: **Gesichter aktualisieren**). Videos und Audios bieten diese
 Aktionen nicht an. Manuelle Korrekturen, ignorierte Gesichter und Favoriten werden
 bei eindeutiger Wiedererkennung übernommen. Beim Bildwechsel wird die laufende
 Anfrage abgebrochen; bereits gespeicherte Ergebnisse bleiben bestehen. Der neue
@@ -575,6 +579,26 @@ POST-Endpunkt `/photos/faces/analyze` benötigt `photos.edit`, aktiviert keinen
 globalen Erkennungslauf und begrenzt Warten und Analyse zusammen auf zwei Minuten.
 `GET /photos/faces?path=…` liefert die vorhandenen Gesichter mit denselben Rechten;
 ein noch nicht analysiertes Foto liefert eine leere Gesichtsliste.
+
+**Fehlendes Gesicht manuell einrahmen:** In der Foto-Info öffnet **Gesicht
+einrahmen** das ausgerichtete Foto. Mit Maus oder Finger einen Rahmen ziehen,
+einen neuen Namen eingeben oder eine vorhandene Person auswählen und **Gesicht
+speichern** wählen. **Rahmen mittig setzen** ermöglicht die Tastaturbedienung:
+Pfeiltasten verschieben den Rahmen, Umschalt + Pfeiltasten ändern seine Größe.
+Abbrechen verwirft den Entwurf vollständig. Die Markierung funktioniert ohne
+Erkennungsdienst und erscheint sofort mit Vorschaubild und Name in der Info.
+
+Manuell eingezeichnete Rahmen bleiben bei erneuter Erkennung erhalten; deutlich
+überlappende automatische Treffer werden nicht doppelt angelegt. Die Region hat
+keinen berechneten Gesichtsvektor und dient deshalb nicht als automatische
+Vergleichsreferenz; die Namenssuche funktioniert weiterhin. Manuelle Regionen
+werden nicht in der Statistik automatischer Zuordnungen mitgezählt. Änderungen
+an der Bilddatei machen einen geöffneten Entwurf ungültig. Bereits gespeicherte
+Regionen werden bei ersetzten oder entfernten Quelldateien wie andere Gesichter
+verworfen. Pro Foto sind insgesamt höchstens 256 Gesichter zulässig. Schema 29
+wird automatisch migriert. Die zusätzlichen Endpunkte
+`GET /photos/faces/drawing-image` und `POST /photos/faces/manual` benötigen
+`photos.edit`; sie aktivieren keinen Hintergrundlauf.
 
 **Gesichtsabgleich im Benennen-Dialog:** Die Lupe rechts neben dem Namensfeld
 vergleicht das aktuell angezeigte Gesicht auf Klick mit den gespeicherten

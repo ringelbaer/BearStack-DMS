@@ -891,7 +891,7 @@
     }
     syncLightboxZoomUI();
     document.addEventListener("keydown", function (event) {
-      if (!dialog.open || document.querySelector("[data-person-dialog][open]")) return;
+      if (!dialog.open || document.querySelector("[data-person-dialog][open], [data-face-drawing-dialog][open]")) return;
       if (eventIsSpace(event) && !event.repeat && !isKeyboardControlTarget(event.target) && toggleCurrentPlayback()) {
         event.preventDefault();
         return;

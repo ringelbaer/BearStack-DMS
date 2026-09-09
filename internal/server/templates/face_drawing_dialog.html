@@ -1,0 +1,25 @@
+{{define "face_drawing_dialog"}}
+<dialog class="app-dialog face-drawing-dialog" data-face-drawing-dialog aria-labelledby="face-drawing-title">
+  <form method="post" action="/photos/faces/manual" data-person-picker data-person-create data-person-manual-create>
+    <header><strong id="face-drawing-title">Gesicht einrahmen und benennen</strong></header>
+    <div class="app-dialog-body">
+      <p id="face-drawing-help">Ziehe einen Rahmen um das fehlende Gesicht. Du kannst ihn durch erneutes Ziehen ersetzen.</p>
+      <div class="face-drawing-stage" data-face-drawing-stage>
+        <img data-face-drawing-image alt="Foto zum Einrahmen eines Gesichts" draggable="false">
+        <div class="face-drawing-box" data-face-drawing-box tabindex="0" role="group" aria-label="Gesichtsrahmen: Pfeiltasten verschieben, Umschalt und Pfeiltasten ändern die Größe" hidden></div>
+      </div>
+      <p class="person-dialog-path" data-face-drawing-path></p>
+      <button type="button" class="secondary-button" data-face-drawing-center>Rahmen mittig setzen</button>
+      <p class="muted">Rahmen per Tastatur: Pfeiltasten verschieben; Umschalt + Pfeiltasten ändern die Größe.</p>
+      <div class="person-picker-field">
+        <label for="face-drawing-name">Name</label>
+        <input id="face-drawing-name" name="name" maxlength="200" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="face-drawing-options" autocomplete="off" data-person-search placeholder="Person suchen oder neuen Namen eingeben">
+        <input type="hidden" name="target" data-person-target>
+        <div class="person-picker-popup" data-person-popup hidden><div id="face-drawing-options" role="listbox" aria-label="Zielpersonen" data-person-options></div><p role="status" data-person-feedback></p></div>
+      </div>
+      <p role="status" data-face-drawing-status></p>
+    </div>
+    <footer><button type="button" class="secondary-button" data-face-drawing-cancel>Abbrechen</button><button data-person-submit>Gesicht speichern</button></footer>
+  </form>
+</dialog>
+{{end}}

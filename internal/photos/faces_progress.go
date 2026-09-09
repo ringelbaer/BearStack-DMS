@@ -67,8 +67,9 @@ func (l *Library) FaceProgress(ctx context.Context) (FaceStatus, error) {
 
 func (l *Library) faceCounts(ctx context.Context) (FaceStatus, error) {
 	var s FaceStatus
-	err := l.index.db.QueryRowContext(ctx, `SELECT (SELECT count(*) FROM photo_face_jobs WHERE status='queued'),(SELECT count(*) FROM photo_face_jobs WHERE status='done'),(SELECT count(*) FROM photo_face_jobs WHERE status='failed'),(SELECT count(*) FROM photo_faces WHERE ignored=0),(SELECT count(DISTINCT person_id) FROM photo_faces WHERE ignored=0),(SELECT count(*) FROM photo_faces WHERE ignored=0 AND recognition_assignment='matched'),(SELECT count(*) FROM photo_faces WHERE ignored=0 AND recognition_assignment='new')`).Scan(&s.Queued, &s.Done, &s.Failed, &s.Faces, &s.People, &s.RecognitionMatched, &s.RecognitionNew)
-	s.RecognitionUnknown = s.Faces - s.RecognitionMatched - s.RecognitionNew
+	var drawn int
+	err := l.index.db.QueryRowContext(ctx, `SELECT (SELECT count(*) FROM photo_face_jobs WHERE status='queued'),(SELECT count(*) FROM photo_face_jobs WHERE status='done'),(SELECT count(*) FROM photo_face_jobs WHERE status='failed'),(SELECT count(*) FROM photo_faces WHERE ignored=0),(SELECT count(DISTINCT person_id) FROM photo_faces WHERE ignored=0),(SELECT count(*) FROM photo_faces WHERE ignored=0 AND recognition_assignment='matched'),(SELECT count(*) FROM photo_faces WHERE ignored=0 AND recognition_assignment='new'),(SELECT count(*) FROM photo_faces WHERE drawn=1 AND ignored=0)`).Scan(&s.Queued, &s.Done, &s.Failed, &s.Faces, &s.People, &s.RecognitionMatched, &s.RecognitionNew, &drawn)
+	s.RecognitionUnknown = s.Faces - s.RecognitionMatched - s.RecognitionNew - drawn
 	if total := s.RecognitionMatched + s.RecognitionNew; total > 0 {
 		s.RecognitionMatchPercent = 100 * float64(s.RecognitionMatched) / float64(total)
 	}

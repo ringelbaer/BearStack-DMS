@@ -422,7 +422,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await moveSearch.press("Tab");
   await page.getByLabel("Auswählen",{exact:true}).first().check();await page.getByLabel("Name der neuen Person").fill("Marie");await page.getByRole("button",{name:"Auswahl verschieben"}).click();
   await page.locator("a.person-card").filter({hasText:"Marie"}).click();
-  const mergeForm = page.locator("form[data-person-create]:not([data-person-modal])");
+  const mergeForm = page.locator(".people-management form[data-person-create]");
   const personSearch = mergeForm.getByRole("combobox", { name: "Name", exact: true });
   const personOptions = mergeForm.getByRole("option").filter({ hasNotText: "Neu anlegen:" });
   await expect(mergeForm.locator("select")).toHaveCount(0);

@@ -6,6 +6,10 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ### BearStack 0.50.0 – in Entwicklung
 
+- Fehlende Gesichter lassen sich in der Foto-Info mit Maus, Touch oder Tastatur einrahmen und atomar benennen oder einer vorhandenen Person zuordnen. Ohne Erkennungsdienst; manuelle Regionen bleiben bei erneuter Analyse erhalten, ohne künstliche Vergleichsvektoren oder doppelte überlappende Treffer. Quellrevision, Rechte-, Geometrie- und Mengenprüfungen; additive API und automatische Foto-Schema-Migration 29. MINOR-Erweiterung innerhalb der unveröffentlichten 0.50.0; VERSION unverändert.
+
+- Foto-Info: kompaktes Refresh-Symbol rechts neben der Erkennung; der Benennen-Dialog kann das angezeigte unbenannte Gesicht ignorieren. Bestehende Einzelgesicht-API mit Revisionsprüfung, Konfliktbehandlung und Aktualisierung ohne Neuladen. PATCH-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API-Verträge unverändert.
+
 - Foto-Infopanel bietet gezielte Gesichtserkennung und automatische Zuordnung für das aktuelle Bild, unabhängig vom pausierten Hintergrundlauf. Erkannte Gesichter lassen sich direkt über den bestehenden Benennen-Dialog samt Live-Lupe bearbeiten. Gemeinsame serielle Bildanalyse, Quell- und Rechteprüfungen, Erhalt manueller Korrekturen und abbrechbare Requests. Additive Endpunkte `POST /photos/faces/analyze` und `GET /photos/faces` (auch für Fotos ohne erkannte Gesichter); MINOR-Erweiterung innerhalb der unveröffentlichten 0.50.0, VERSION unverändert.
 
 - Modal-Lupe zeigt geprüfte Kandidaten bereits während des Gesichtsabgleichs und ergänzt oder sortiert die Liste fortlaufend. Abbrechbarer NDJSON-Stream, frühe Auswahl, stabile Tastaturauswahl und wiederverwendete Vorschaubilder; bestehende JSON-Antwort bleibt kompatibel. Kleine Vergleichspakete begrenzen zusätzliche Datenbankarbeit. MINOR-Erweiterung innerhalb der unveröffentlichten 0.50.0; VERSION unverändert.

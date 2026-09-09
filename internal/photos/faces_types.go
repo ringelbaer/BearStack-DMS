@@ -14,6 +14,7 @@ type RecognizedFace struct {
 	Y                     float64 `json:"y"`
 	Width                 float64 `json:"width"`
 	Height                float64 `json:"height"`
+	Drawn                 bool    `json:"drawn"`
 	Manual                bool    `json:"manual"`
 	Ignored               bool    `json:"ignored"`
 	Favorite              bool    `json:"favorite"`

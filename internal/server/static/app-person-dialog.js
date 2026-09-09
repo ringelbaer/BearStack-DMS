@@ -227,6 +227,10 @@
       pointerPerson = undefined;
     }
     function validate() {
+      if (form.hasAttribute("data-person-manual-create")) {
+        input.setCustomValidity((target.value && target.value !== "0") || input.value.trim() ? "" : "Bitte einen Namen eingeben oder eine Person auswählen.");
+        return;
+      }
       if (allowCreate) {
         var merging = target.value && target.value !== "0";
         form.action = merging ? renameAction.replace(/\/rename$/, "/merge") : renameAction;

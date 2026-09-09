@@ -2170,6 +2170,88 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /photos/faces/drawing-image:
+    get:
+      tags: [Photos]
+      operationId: getFaceDrawingImage
+      summary: Load an oriented photo for manual face marking
+      description: >-
+        Requires photos.edit. Returns a JPEG using the same orientation and bounded
+        dimensions as face thumbnails, without inference. Maximum source size is
+        40 megapixels; the longest returned edge is at most 1600 pixels. Private
+        sources are rejected. Cache-Control is private, no-store. Use the returned
+        source revision when saving a region; it binds coordinates to this file.
+      parameters:
+      - name: path
+        in: query
+        required: true
+        schema: {type: string}
+      responses:
+        '200':
+          description: Oriented photo ready for marking.
+          headers:
+            X-Photo-Source-Revision:
+              description: Opaque revision required by the manual-face endpoint.
+              schema: {type: string, minLength: 64, maxLength: 64}
+          content:
+            image/jpeg:
+              schema: {type: string, format: binary}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {description: Source changed while the image was loaded.}
+  /photos/faces/manual:
+    post:
+      tags: [Photos]
+      operationId: addDrawnFace
+      summary: Draw and name a missing face
+      description: >-
+        Requires photos.edit. Atomically stores a manual region and either creates
+        a named group or assigns it to a currently visible existing person. No
+        inference service is required or called. Coordinates are normalized to the
+        oriented drawing image. Both dimensions must be at least 0.002 and the
+        entire region must lie inside the image. A region overlapping an existing
+        face with IoU at least 0.7 is rejected, including repeated submissions.
+        At most 256 total faces per photo are allowed. Stale source revisions and
+        missing targets return 409 without mutation. Drawn regions survive later
+        analysis, suppress detections overlapping them with IoU at least 0.5, and
+        carry no recognition vector. They are excluded from automatic assignment
+        statistics and reference matching, including when marked as favorites.
+        Replacing/deleting the source or clearing face data removes these regions
+        like other faces. Cache-Control is private, no-store.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [path, source_revision, x, y, width, height]
+              properties:
+                path: {type: string}
+                source_revision: {type: string, minLength: 64, maxLength: 64}
+                x: {type: number, minimum: 0, maximum: 1}
+                y: {type: number, minimum: 0, maximum: 1}
+                width: {type: number, minimum: 0.002, maximum: 1}
+                height: {type: number, minimum: 0.002, maximum: 1}
+                target: {type: integer, format: int64, minimum: 0, description: Existing person ID; zero or omitted creates a new named group.}
+                name: {type: string, maxLength: 200, description: Required and nonblank when target is zero or omitted; ignored for an existing target.}
+      responses:
+        '200':
+          description: Region and assignment saved; refresh the photo's faces separately.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, face_id]
+                properties:
+                  ok: {type: boolean, enum: [true]}
+                  face_id: {type: integer, format: int64, minimum: 1}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {description: Stale source, missing target, overlapping region or face limit reached.}
   /photos/faces/analyze:
     post:
       tags: [Photos]
@@ -2187,6 +2269,8 @@ paths:
         current PhotoFaces for inline naming, including an empty faces array when
         no faces were detected. Source privacy and fingerprints are
         rechecked before committing. Cache-Control is private, no-store.
+        Hand-drawn regions remain unchanged, including when no new face is detected.
+        Automatic detections overlapping them with IoU at least 0.5 are skipped.
       requestBody:
         required: true
         content:
@@ -2228,7 +2312,9 @@ paths:
         face_id identifies the matching reference portrait, rather than the group's
         usual overview portrait. has_next is always false; this is a bounded ranking,
         not a paginated list. Cache-Control is private, no-store. No embeddings or
-        identity probabilities are returned. With Accept: application/x-ndjson,
+        identity probabilities are returned. Hand-drawn source regions return
+        an empty ranking because they have no
+        recognition vector. With Accept: application/x-ndjson,
         checked interim rankings are flushed while remaining named groups are
         still being scored. Each newline-delimited frame replaces the previous
         ranking and contains done=false until the final done=true frame. A failure
@@ -4186,6 +4272,9 @@ components:
           maximum: 1
         manual:
           type: boolean
+        drawn:
+          type: boolean
+          description: Hand-drawn region without a recognition vector. Additive since 0.50.0; older servers omit this field.
         ignored:
           type: boolean
         favorite:
@@ -4406,7 +4495,7 @@ components:
             recognition_unknown:
               type: integer
               minimum: 0
-              description: Active stored faces without a recorded recognition decision, including pre-migration faces. Excluded from the percentage.
+              description: Active detected faces without a recorded recognition decision, including pre-migration faces. Hand-drawn regions are excluded, as are ignored and deleted faces. Excluded from the percentage.
             recognition_match_percent:
               type: number
               minimum: 0

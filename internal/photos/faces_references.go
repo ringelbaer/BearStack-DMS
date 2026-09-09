@@ -22,7 +22,7 @@ func refreshFaceReferencesTx(ctx context.Context, tx *sql.Tx, person int64) erro
 	result, err := tx.ExecContext(ctx, `INSERT OR REPLACE INTO photo_face_references(face_id,person_id)
  SELECT f.id,f.person_id FROM photo_faces f INDEXED BY idx_face_favorites JOIN media_index m ON m.path=f.path
  WHERE f.person_id=? AND f.favorite=1 AND f.ignored=0 AND m.admin_only=0
- AND f.model=(SELECT model FROM photo_face_state WHERE id=1)`, person)
+ AND f.drawn=0 AND f.model=(SELECT model FROM photo_face_state WHERE id=1)`, person)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func refreshFaceReferencesTx(ctx context.Context, tx *sql.Tx, person int64) erro
  FROM photo_faces f JOIN media_index m ON m.path=f.path
  WHERE f.person_id=? AND f.ignored=0 AND m.admin_only=0
  AND (f.favorite=1 OR coalesce(f.reference_eligible,1)=1)
- AND f.model=(SELECT model FROM photo_face_state WHERE id=1)
+ AND f.drawn=0 AND f.model=(SELECT model FROM photo_face_state WHERE id=1)
  ) INSERT OR REPLACE INTO photo_face_references(face_id,person_id)
  SELECT id,person_id FROM ranked WHERE favorite=0
  ORDER BY directory_rank,manual DESC,confidence DESC,id

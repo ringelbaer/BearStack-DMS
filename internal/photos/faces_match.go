@@ -195,14 +195,14 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 	if private != 0 || size != j.Size || mtime != j.ModTime || xmp != j.XMP {
 		return errors.New("Foto während Analyse geändert")
 	}
-	oldRows, err := tx.QueryContext(ctx, `SELECT f.id,f.person_id,f.x,f.y,f.width,f.height,(f.manual OR p.manual_name),f.ignored,f.favorite,f.recognition_assignment FROM photo_faces f JOIN photo_people p ON p.id=f.person_id WHERE f.path=?`, j.Path)
+	oldRows, err := tx.QueryContext(ctx, `SELECT f.id,f.person_id,f.x,f.y,f.width,f.height,(f.manual OR p.manual_name),f.ignored,f.favorite,f.recognition_assignment,f.drawn FROM photo_faces f JOIN photo_people p ON p.id=f.person_id WHERE f.path=?`, j.Path)
 	if err != nil {
 		return err
 	}
 	var old []RecognizedFace
 	for oldRows.Next() {
 		var f RecognizedFace
-		if err = oldRows.Scan(&f.ID, &f.PersonID, &f.X, &f.Y, &f.Width, &f.Height, &f.Manual, &f.Ignored, &f.Favorite, &f.recognitionAssignment); err != nil {
+		if err = oldRows.Scan(&f.ID, &f.PersonID, &f.X, &f.Y, &f.Width, &f.Height, &f.Manual, &f.Ignored, &f.Favorite, &f.recognitionAssignment, &f.Drawn); err != nil {
 			oldRows.Close()
 			return err
 		}
@@ -217,12 +217,31 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 	for _, f := range old {
 		affected[f.PersonID] = true
 	}
-	if _, err = tx.ExecContext(ctx, `DELETE FROM photo_faces WHERE path=?`, j.Path); err != nil {
+	if _, err = tx.ExecContext(ctx, `DELETE FROM photo_faces WHERE path=? AND drawn=0`, j.Path); err != nil {
 		return err
 	}
 	used := map[int64]bool{}
+	var drawn []RecognizedFace
+	for _, f := range old {
+		if f.Drawn {
+			drawn = append(drawn, f)
+			used[f.PersonID] = true
+		}
+	}
+	count := len(drawn)
+detections:
 	for _, d := range result.Faces {
 		box := Face{X: d.X, Y: d.Y, Width: d.Width, Height: d.Height}
+		// Explicit user regions survive missing detections and suppress duplicates.
+		for _, f := range drawn {
+			if overlap(box, Face{X: f.X, Y: f.Y, Width: f.Width, Height: f.Height}) >= 0.5 {
+				continue detections
+			}
+		}
+		if count >= facerec.MaxFaces {
+			break
+		}
+		count++
 		var person int64
 		manual, ignored, favorite := false, false, false
 		assignment := "matched"

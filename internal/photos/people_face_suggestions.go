@@ -34,6 +34,9 @@ func (l *Library) suggestPeopleForFace(ctx context.Context, id int64, emit func(
 	if source.Ignored {
 		return out, ErrLabelConflict
 	}
+	if source.Drawn {
+		return out, nil
+	}
 	var encoded []byte
 	var model string
 	if err = l.index.db.QueryRowContext(ctx, `SELECT embedding,model FROM photo_faces WHERE id=? AND ignored=0`, id).Scan(&encoded, &model); err != nil {

@@ -8,11 +8,13 @@
       var status = section.querySelector("[data-photo-face-status]");
       var analyze = section.querySelector("[data-photo-face-analyze]");
       var refreshButton = section.querySelector("[data-photo-face-refresh]");
-      var current, controller, generation = 0, busy = false, editing = false, displayPath = "";
+      var drawButton = section.querySelector("[data-photo-face-draw]");
+      var current, controller, generation = 0, busy = false, editing = false, displayPath = "", revision = "";
       function setBusy(value) {
         busy = value;
         analyze.disabled = value || editing;
         refreshButton.disabled = value || editing;
+        drawButton.disabled = value || editing;
         grid.querySelectorAll("button").forEach(function (button) { button.disabled = value || editing; });
         section.setAttribute("aria-busy", String(value || editing));
       }
@@ -23,11 +25,13 @@
         grid.replaceChildren();
         status.textContent = "";
         displayPath = "";
+        revision = "";
         setBusy(false);
       }
       function render(photo) {
         if (!photo || photo.path !== current.path || !Array.isArray(photo.faces)) throw new Error("Ungültige Antwort der Gesichtserkennung.");
         displayPath = photo.display_path || "";
+        revision = photo.revision || "";
         var faces = photo.faces.filter(function (face) { return !face.ignored; });
         grid.replaceChildren();
         faces.forEach(function (face) {
@@ -81,11 +85,26 @@
         isBusy: function () { return busy; },
         onBusy: function (value) { editing = value; setBusy(busy); },
         getPreviewPath: function () { return displayPath; },
+        getIgnoreRequest: function (cards) {
+          var card = cards[0];
+          if (!current || !revision || cards.length !== 1 || !card || card.dataset.personName || !card.dataset.faceId) return null;
+          return { action: "/photos/people/groups/ignore", body: new URLSearchParams({ path: current.path, revision: revision, face_id: card.dataset.faceId }) };
+        },
+        onIgnoreConflict: function () { return request(false); },
         onSave: function () { return request(false); }
       });
       grid.addEventListener("click", function (event) { if (event.target.closest("[data-person-edit]")) options.stopSlideshow(); }, true);
       analyze.addEventListener("click", function () { options.stopSlideshow(); request(true).catch(function () {}); });
       refreshButton.addEventListener("click", function () { request(false).catch(function () {}); });
+      var drawing = window.BearStackFaceDrawing.init({
+        onBusy: function (value) { editing = value; setBusy(busy); },
+        onSave: function () { return request(false); }
+      });
+      drawButton.addEventListener("click", function () {
+        if (!current || busy || editing) return;
+        options.stopSlideshow();
+        drawing.open(current.path, displayPath, drawButton);
+      });
       return {
         reset: reset,
         show: function (item) {

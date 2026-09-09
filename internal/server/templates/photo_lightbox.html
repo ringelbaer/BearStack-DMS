@@ -46,8 +46,13 @@
       </section>
       {{if .Auth.CanPhotosEdit}}
       <section class="photo-face-tools" data-photo-face-tools hidden aria-label="Gesichter im Foto">
-        <button type="button" data-photo-face-analyze>Gesichter erkennen und zuordnen</button>
-        <button type="button" class="secondary-button" data-photo-face-refresh>Gesichter aktualisieren</button>
+        <div class="photo-face-actions">
+          <button type="button" data-photo-face-analyze>Gesichter erkennen und zuordnen</button>
+          <button type="button" class="secondary-button" data-photo-face-refresh aria-label="Gesichter aktualisieren" title="Gesichter aktualisieren – ohne neue Erkennung">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 20 12M4 12a8 8 0 0 0 13.9 5.9"/></svg>
+          </button>
+        </div>
+        <button type="button" class="secondary-button" data-photo-face-draw>Gesicht einrahmen</button>
         <p role="status" data-photo-face-status></p>
         <div data-photo-face-list></div>
       </section>
@@ -68,7 +73,9 @@
 </dialog>
 {{if .Auth.CanPhotosEdit}}
 {{template "person_edit_dialog" .}}
+{{template "face_drawing_dialog" .}}
 <script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
+<script src="{{assetURL "/static/app-face-drawing.js"}}" defer></script>
 <script src="{{assetURL "/static/app-photo-faces.js"}}" defer></script>
 {{end}}
 {{end}}

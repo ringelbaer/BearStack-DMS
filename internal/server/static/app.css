@@ -3687,9 +3687,21 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 
 .photo-face-tools { display: grid; gap: 8px; margin-block: 12px; }
 .photo-face-tools[hidden] { display: none; }
-.photo-face-tools > button { width: 100%; white-space: normal; }
+.photo-face-actions { display: grid; grid-template-columns: minmax(0,1fr) 44px; align-items: center; gap: 8px; }
+.photo-face-actions > [data-photo-face-analyze] { min-width: 0; white-space: normal; }
+.photo-face-actions > [data-photo-face-refresh] { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; }
 .photo-face-tools > [role="status"] { color: #e5e7eb; margin: 0; }
 .photo-info-face { display: grid; grid-template-columns: 64px minmax(0,1fr) 44px; align-items: center; gap: 8px; margin-block: 8px; }
 .photo-info-face img { width: 64px; height: 64px; object-fit: contain; border-radius: 6px; }
 .photo-info-face span { overflow-wrap: anywhere; }
 .photo-info-face .person-edit-button { position: static; width: 44px; height: 44px; }
+.face-drawing-dialog { width: min(760px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); }
+.face-drawing-dialog form { display: flex; flex-direction: column; max-height: calc(100dvh - 24px); min-height: 0; }
+.face-drawing-dialog .app-dialog-body { overflow: auto; min-height: 0; }
+.face-drawing-dialog header, .face-drawing-dialog footer { flex-shrink: 0; }
+.face-drawing-stage { position: relative; height: min(45dvh, 420px); background: #111820; touch-action: none; user-select: none; cursor: crosshair; }
+.face-drawing-stage img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.face-drawing-box { position: absolute; border: 2px solid #ffe065; background: rgba(255,224,101,.15); }
+.face-drawing-box:focus-visible { outline: 3px solid white; outline-offset: 3px; }
+.face-drawing-dialog .person-picker-field { margin-top: 12px; }
+.face-drawing-dialog .person-picker-popup { position: static; max-height: 180px; }

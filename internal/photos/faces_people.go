@@ -11,11 +11,11 @@ import (
 	"bearstack/internal/sqlutil"
 )
 
-const faceColumns = `f.id,f.person_id,p.name,f.path,f.x,f.y,f.width,f.height,f.manual,f.ignored,f.favorite,p.name_source`
+const faceColumns = `f.id,f.person_id,p.name,f.path,f.x,f.y,f.width,f.height,f.manual,f.ignored,f.favorite,p.name_source,f.drawn`
 
 func scanFace(s interface{ Scan(...any) error }) (RecognizedFace, error) {
 	var f RecognizedFace
-	err := s.Scan(&f.ID, &f.PersonID, &f.Name, &f.Path, &f.X, &f.Y, &f.Width, &f.Height, &f.Manual, &f.Ignored, &f.Favorite, &f.nameSource)
+	err := s.Scan(&f.ID, &f.PersonID, &f.Name, &f.Path, &f.X, &f.Y, &f.Width, &f.Height, &f.Manual, &f.Ignored, &f.Favorite, &f.nameSource, &f.Drawn)
 	return f, err
 }
 
