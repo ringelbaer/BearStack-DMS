@@ -135,6 +135,7 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 			if err = rows.Scan(&p.ID, &p.Name, &p.Count, &p.FaceID, &source, &p.Portrait.X, &p.Portrait.Y, &p.Portrait.Width, &p.Portrait.Height); err != nil {
 				return out, err
 			}
+			p.DisplayPath = mediaDisplayPath(source)
 			p.Directory = path.Dir(source)
 			if p.Directory == "." {
 				p.Directory = "Fotos"

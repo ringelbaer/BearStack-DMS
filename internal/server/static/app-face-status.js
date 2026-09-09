@@ -16,6 +16,8 @@
         var value = data.status[element.dataset.faceCount];
         if (typeof value === "number") element.textContent = String(value);
       });
+      var percent = document.querySelector("[data-face-match-percent]");
+      if (percent && typeof data.status.recognition_match_percent === "number") percent.textContent = data.status.recognition_match_percent.toFixed(1);
       state.textContent = data.running ? "Verarbeitung läuft" : data.settings.enabled ? "Aktiviert – wartet auf nächsten Lauf" : "Pausiert / ausgeschaltet";
       var error = document.querySelector("[data-face-worker-error]");
       error.textContent = data.error || "";

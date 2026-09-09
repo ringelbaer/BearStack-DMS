@@ -2141,6 +2141,39 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /photos/faces/{id}/suggestions:
+    get:
+      tags: [Photos]
+      operationId: suggestPeopleForFace
+      summary: Compare the current face with named people
+      description: >-
+        Requires photos.edit. Performs a live comparison of the stored face embedding
+        against eligible references of named groups, including favorites, without
+        running image inference. Returns at most 20 candidates with similarity at
+        least 0.45, ordered by descending similarity and person ID for ties.
+        The source group is excluded. Current source and candidate visibility is
+        checked; ignored source faces return 409. No assignment is changed.
+        face_id identifies the matching reference portrait, rather than the group's
+        usual overview portrait. has_next is always false; this is a bounded ranking,
+        not a paginated list. Cache-Control is private, no-store. No embeddings or
+        identity probabilities are returned.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '200':
+          description: Ranked named candidates; an empty people array means no match.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhotoPeopleSuggestions'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: The source face is ignored or its group changed during comparison.
   /photos/people/merge-suggestions:
     get:
       tags: [Photos]
@@ -4078,6 +4111,9 @@ components:
           type: integer
           format: int64
           minimum: 1
+        display_path:
+          type: string
+          description: Gallery-formatted path of the representative face's source image, including readable folder dates and the unchanged filename; never contains the server filesystem root.
         directory:
           type: string
           description: Since 0.47.0, relative parent directory of the representative active portrait; Fotos for the photo root. Other photos of the person may be in other directories.
@@ -4246,6 +4282,23 @@ components:
         status:
           type: object
           properties:
+            recognition_matched:
+              type: integer
+              minimum: 0
+              description: Active stored faces assigned to an existing group during recognition, including XMP name assignments. Later edits and reconciliation do not change the recorded decision.
+            recognition_new:
+              type: integer
+              minimum: 0
+              description: Active stored faces that created a new group during recognition; the group may have grown or merged since then.
+            recognition_unknown:
+              type: integer
+              minimum: 0
+              description: Active stored faces without a recorded recognition decision, including pre-migration faces. Excluded from the percentage.
+            recognition_match_percent:
+              type: number
+              minimum: 0
+              maximum: 100
+              description: 100 * recognition_matched / (recognition_matched + recognition_new), or zero with no recorded decisions. Ignored and deleted faces are excluded. Reanalysis records a new decision unless carrying an existing override, which preserves its recorded decision.
             errors:
               type: array
               maxItems: 20

@@ -146,6 +146,12 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(page.getByRole("spinbutton", { name: /^Referenzen pro Person/ })).toHaveValue("50");
   const settingsResponse = await context.request.get(baseURL + "/settings/photos/faces?format=json");
   expect((await settingsResponse.json()).settings.reference_limit).toBe(50);
+  await expect(page.locator('[data-face-count="recognition_matched"]')).toHaveText("1");
+  await expect(page.locator('[data-face-count="recognition_new"]')).toHaveText("2");
+  await expect(page.locator('[data-face-count="recognition_unknown"]')).toHaveText("0");
+  await expect(page.locator('[data-face-match-percent]')).toHaveText("33.3");
+  await page.locator('[data-face-count="recognition_matched"]').evaluate(el => { el.textContent = "outdated"; });
+  await expect(page.locator('[data-face-count="recognition_matched"]')).toHaveText("1", { timeout: 12000 });
   await page.goto(baseURL+"/photos/people");await expect(page.locator("a.person-card")).toHaveCount(2);
   for (const width of [320, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
@@ -606,11 +612,47 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.evaluate(() => { window.modalPageMarker = "assign"; });
   await selectPerson("Dialog-Quelle");
   await page.locator("[data-people-edit-button]").click();
-  await dialogName.fill("Merge-Ziel");
+  const faceMatch = personDialog.getByRole("button", { name: "Ähnliche benannte Personen suchen" });
+  const matchURL = "**/photos/faces/*/suggestions";
+  await page.route(matchURL, route => route.fulfill({ status: 503, json: { error: "Unavailable" } }), { times: 1 });
+  await faceMatch.click();
+  await expect(personDialog.locator("[data-person-feedback]")).toContainText("Gesichtsabgleich fehlgeschlagen");
+  await expect(faceMatch).toBeEnabled();
+  await faceMatch.focus();
+  await faceMatch.press("Enter");
+  // These fixture faces are deliberately dissimilar; the real matcher returns no candidates.
+  await expect(personDialog.locator("[data-person-feedback]")).toContainText("Keine ähnlichen benannten Personen");
+  const targetCard = page.locator('.person-overview-card[data-person-name="Merge-Ziel"]');
+  const matchedPerson = { id: Number(await targetCard.getAttribute("data-person-id")), face_id: Number(await targetCard.getAttribute("data-face-id")), name: "Merge-Ziel", count: 1 };
+  await page.route(matchURL, route => route.fulfill({ json: { people: [matchedPerson], has_next: false } }), { times: 1 });
+  await faceMatch.click();
   await expect(personDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" })).toHaveCount(1);
   const suggestedPortrait = personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ }).locator("img");
   await expect(suggestedPortrait).toHaveAttribute("src", await page.locator('.person-overview-card[data-person-name="Merge-Ziel"] .person-card img').getAttribute("src"));
   await expect.poll(() => suggestedPortrait.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  await expect(personDialog.getByRole("option", { name: /Neu anlegen:/ })).toHaveCount(0);
+  const nameBounds = await dialogName.boundingBox(), matchBounds = await faceMatch.boundingBox();
+  expect(matchBounds.x).toBeGreaterThanOrEqual(nameBounds.x + nameBounds.width);
+  expect(matchBounds.width).toBeGreaterThanOrEqual(44);
+  // A late live-match response cannot overwrite a newly typed name.
+  let releaseMatch, startedMatch, finishedMatch;
+  const matchingFinished = new Promise(resolve => { finishedMatch = resolve; });
+  const matchingStarted = new Promise(resolve => { startedMatch = resolve; });
+  await page.route(matchURL, async route => {
+    startedMatch();
+    await new Promise(resolve => { releaseMatch = resolve; });
+    try {
+      await route.fulfill({ json: { people: [{ id: 99999, name: "Veralteter Abgleich", count: 1 }], has_next: false } });
+    } finally { finishedMatch(); }
+  });
+  await faceMatch.click();
+  await matchingStarted;
+  await dialogName.fill("Merge-Ziel");
+  await expect(personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ })).toBeVisible();
+  releaseMatch();
+  await matchingFinished;
+  await page.unroute(matchURL);
+  await expect(personDialog.getByRole("option", { name: /Veralteter Abgleich/ })).toHaveCount(0);
   // A failed image keeps the row and its keyboard selection usable.
   await page.route("**/photos/faces/*/thumbnail", route => route.fulfill({ status: 404, body: "unavailable" }));
   await dialogName.fill("Merge-Zie");
@@ -618,6 +660,19 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ })).toBeVisible();
   await page.unroute("**/photos/faces/*/thumbnail");
   await dialogName.press("ArrowDown");
+  const caption = personDialog.locator("[data-person-preview-path]");
+  await expect(caption).toHaveText(await page.locator('.person-overview-card[data-person-name="Dialog-Quelle"]').getAttribute("data-display-path"));
+  await expect(caption).toContainText("Fotos / 2002 / 10.10.2002 · Assisi / BILDER LUKAS /");
+  const previewBounds = await personDialog.locator("[data-person-preview]").boundingBox();
+  const captionBounds = await caption.boundingBox();
+  expect(captionBounds.y).toBeGreaterThanOrEqual(previewBounds.y + previewBounds.height);
+  expect(await caption.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  const dialogBounds = await personDialog.boundingBox();
+  for (const button of await personDialog.locator("footer button").all()) {
+    const bounds = await button.boundingBox();
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(dialogBounds.y + dialogBounds.height);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(page.viewportSize().height);
+  }
   await page.screenshot({ path: "/tmp/bearstack-people-modal-mobile.png", fullPage: true });
   expect(await personDialog.evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth + 1)).toBe(true);
   await dialogName.press("Enter");

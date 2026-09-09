@@ -189,6 +189,8 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   for (const closing of ["cancel", "escape"]) {
     await repeatedPerson.locator("[data-person-edit]").click();
     await expect(modal).toBeVisible();
+    await expect(modal.locator("[data-person-preview-path]")).toHaveText(await surface.locator("[data-group-title]").textContent());
+    await expect(modal.locator("form")).toHaveAttribute("data-person-face-id", await repeatedPerson.getAttribute("data-group-face"));
     // Repeated detections share a person ID, but only the clicked thumbnail is marked.
     await expect(modalSource).toHaveCount(1);
     await expect(modalSource).toHaveAttribute("data-group-face", await repeatedPerson.getAttribute("data-group-face"));

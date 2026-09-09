@@ -552,6 +552,24 @@ Auf Smartphones stehen die Navigationslinks der Personenansicht kompakt in zwei
 Spalten. Das Anzeigemenü sitzt neben den Filteraktionen, damit mehr Platz für
 die Personenbilder bleibt.
 
+Unter der Fotovorschau im Benennen-Dialog steht der aufbereitete Bildpfad,
+zum Beispiel **Fotos / 11.05.2026 · Urlaub / IMG_1234.jpg**. Er gehört immer zum
+angezeigten Gesicht, auch nach dem Wechsel des Vorschaubilds oder Gruppenfotos.
+Lange Pfade brechen mobil um; zusätzliche Serverabfragen sind nicht erforderlich.
+
+**Gesichtsabgleich im Benennen-Dialog:** Die Lupe rechts neben dem Namensfeld
+vergleicht das aktuell angezeigte Gesicht auf Klick mit den gespeicherten
+Referenzgesichtern benannter Personen. Bis zu 20 Kandidaten ab 0,45 Ähnlichkeit
+erscheinen nach Ähnlichkeit sortiert in derselben Vervollständigung, mit Name,
+Fotoanzahl und dem passenden Vergleichsgesicht. Die aktuelle Gruppe ist
+ausgeschlossen. Ein Treffer ist ein Vorschlag, keine sichere Identifikation;
+die Auswahl ordnet wie bisher die gesamte Gruppe zu. Bei Mehrfachauswahl wird
+das Gesicht aus der Dialogvorschau verglichen. Tippen startet wieder die
+Namenssuche; verspätete Antworten werden verworfen. Die Suche nutzt den vorhandenen
+Referenzcache einschließlich Favoriten, prüft Sichtbarkeit und Quellfoto aktuell
+und benötigt weder eine erneute Bildanalyse noch einen laufenden Erkennungsdienst.
+`GET /photos/faces/{id}/suggestions` benötigt `photos.edit` und ändert keine Zuordnung.
+
 **Anzeigeeinstellungen der Personenübersicht (ab 0.47.0):** Das **…-Menü**
 unter `/photos/people` steuert **Ordnername anzeigen**, **Fotoanzahl anzeigen** und
 **Thumbnailgröße S, M oder L**. S entspricht der bisherigen Größe (bis 160 Pixel),
@@ -686,6 +704,21 @@ eine bereits im selben Foto vorhandene Zielperson ist ausgeschlossen. Schlechte
 Aufnahmen mit gemessener unzureichender Qualität treiben keinen automatischen
 Nachabgleich an. Die Zähler zeigen geprüfte Datensätze, neue Zuordnungen und im
 aktuellen Lauf erzeugte Vorschläge.
+
+**Gruppierungsstatistik der Erkennung:** Im normalen Status stehen die Zahlen
+**Bestehender Gruppe zugeordnet**, **Neue Gruppe gebildet** und der
+**Zuordnungsanteil**. Gezählt wird die bei der Bildanalyse gespeicherte Entscheidung
+für die aktuell vorhandenen, nicht ignorierten Gesichter, einschließlich
+XMP-Zuordnungen. Der Anteil ist `zugeordnet / (zugeordnet + neu) × 100`, bei leerer
+Basis 0 %. Spätere manuelle Änderungen und der Hintergrundabgleich ändern die
+Einteilung nicht; eine damals neue Gruppe kann inzwischen gewachsen sein.
+Gelöschte und ignorierte Gesichter entfallen aus den Zahlen. Bei erneuter Analyse
+wird die Entscheidung neu erfasst; übernommene Korrekturen behalten ihre bisherige
+Einteilung. Foto-Schema 28 ergänzt das Feld automatisch. Altbestände bleiben
+**Noch nicht erfasst** und zählen nicht zum Prozentwert: Die ursprüngliche
+Entscheidung lässt sich aus heutigen Gruppengrößen nicht zuverlässig ableiten.
+Die Statusabfrage nutzt einen schmalen Index und den vorhandenen gemeinsamen
+Fünf-Sekunden-Cache, ohne Bilder oder Verzeichnisse zusätzlich zu lesen.
 
 **Ähnliche Gruppen** unter `/photos/people/merge-suggestions` zeigt Fotobearbeitern
 bis zu 60 gespeicherte Zusammenführungsvorschläge. Auch ähnliche unbenannte

@@ -28,6 +28,14 @@
           <div><dt>Gesichter</dt><dd data-face-count="faces">{{.FaceSettings.Status.Faces}}</dd></div>
           <div><dt>Personengruppen</dt><dd data-face-count="people">{{.FaceSettings.Status.People}}</dd></div>
         </dl>
+        <h4>Automatische Gruppierung bei der Erkennung</h4>
+        <dl class="face-settings-status">
+          <div><dt>Bestehender Gruppe zugeordnet</dt><dd data-face-count="recognition_matched">{{.FaceSettings.Status.RecognitionMatched}}</dd></div>
+          <div><dt>Neue Gruppe gebildet</dt><dd data-face-count="recognition_new">{{.FaceSettings.Status.RecognitionNew}}</dd></div>
+          <div><dt>Zuordnungsanteil</dt><dd><span data-face-match-percent>{{printf "%.1f" .FaceSettings.Status.RecognitionMatchPercent}}</span> %</dd></div>
+          <div><dt>Noch nicht erfasst</dt><dd data-face-count="recognition_unknown">{{.FaceSettings.Status.RecognitionUnknown}}</dd></div>
+        </dl>
+        <p class="muted">Entscheidung bei der Erkennung für die aktuell gespeicherten, nicht ignorierten Gesichter, einschließlich Zuordnungen aus XMP-Namen. Spätere Korrekturen und Hintergrundabgleiche ändern diese Einteilung nicht. Eine damals neue Gruppe kann inzwischen weitere Gesichter enthalten. Ältere Gesichter ohne erfasste Entscheidung zählen nicht zum Zuordnungsanteil; ohne erfasste Entscheidungen beträgt er 0 %. Eine erneute Bildanalyse aktualisiert die Einteilung, übernommene Korrekturen behalten sie.</p>
         {{if .FaceSettings.Status.Errors}}
         <details class="face-settings-errors">
           <summary>Letzte Dateifehler</summary>

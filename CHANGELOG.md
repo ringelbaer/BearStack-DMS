@@ -6,6 +6,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ### BearStack 0.50.0 – in Entwicklung
 
+- Benennen-Dialog zeigt unter der Fotovorschau den nach Galerieregeln aufbereiteten Bildpfad mit lesbaren Ordnerdaten und unverändertem Dateinamen. Personen- und Gruppenbilderansicht aktualisieren ihn mit dem angezeigten Gesicht, ohne zusätzliche Abfragen. Ergänzendes JSON-Feld `people[].display_path`; Erweiterung innerhalb der unveröffentlichten 0.50.0, VERSION unverändert.
+
+- Lupe im Web-Benennen-Dialog gleicht das angezeigte Gesicht auf Klick live mit benannten Referenzgruppen ab. Bis zu 20 nach Ähnlichkeit sortierte Kandidaten erscheinen in der vorhandenen Vervollständigung. Gemeinsamer Referenzcache, aktuelle Sichtbarkeitsprüfungen, abbrechbare Anfragen und additiver GET-Endpunkt; keine erneute Bildanalyse. MINOR-Erweiterung innerhalb der unveröffentlichten 0.50.0, VERSION unverändert.
+
+- Erkennungsstatus zeigt Zuordnungen zu bestehenden Gruppen, neu gebildete Gruppen und den prozentualen Zuordnungsanteil, unabhängig vom nachträglichen Hintergrundabgleich. Foto-Schema 28 speichert die Erkennungsentscheidung; Altbestände bleiben ausdrücklich nicht erfasst. Additive JSON-Statusfelder, indexbasierte Zählung und automatische Migration. MINOR-Funktion innerhalb der unveröffentlichten 0.50.0; VERSION bleibt 0.50.0.
+
 - Ähnliche Personengruppen lassen sich ohne Seitenneuladen zusammenführen oder getrennt lassen. Vorschläge rücken nach, unveränderte Karten bleiben erhalten; Konflikte und Netzwerkfehler erscheinen direkt auf der Seite. Bestehende JSON-Endpunkte und Revisionsprüfungen bleiben unverändert. PATCH innerhalb der unveröffentlichten 0.50.0, kein zusätzlicher Versionssprung.
 
 - Mobile Personenansicht: zweispaltige Navigation, kompaktere Filter und Anzeigemenü direkt neben den Filteraktionen statt einer eigenen Zeile. Keine zusätzlichen Abfragen oder Änderungen an API und Datenformaten. PATCH-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION bleibt unverändert.

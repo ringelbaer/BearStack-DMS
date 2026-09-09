@@ -33,6 +33,7 @@
     var previewImage = personDialog.querySelector("[data-person-preview-image]");
     var previewBox = personDialog.querySelector("[data-person-preview-box]");
     var previewStatus = personDialog.querySelector("[data-person-preview-status]");
+    var previewPath = personDialog.querySelector("[data-person-preview-path]");
     var previewRegion;
     function drawPreview() {
       if (!preview || !previewRegion || !previewImage.complete || !previewImage.naturalWidth) return;
@@ -57,6 +58,8 @@
     function showPreview(card) {
       if (!preview) return;
       previewRegion = null;
+      var displayPath = options.getPreviewPath ? options.getPreviewPath(card) : card.dataset.displayPath;
+      if (previewPath) { previewPath.textContent = displayPath || ""; previewPath.hidden = !displayPath; }
       previewBox.hidden = true;
       previewImage.style.transform = "";
       previewImage.hidden = true;
@@ -91,6 +94,8 @@
       var card = personSurface.querySelector('[data-person-id="' + ids[0] + '"]');
       if (!card) return;
       opener = button;
+      var faceCard = button.closest("[data-person-id]") || card;
+      dialogForm.dataset.personFaceId = faceCard.dataset.groupFace || faceCard.dataset.faceId || "";
       dialogForm.dataset.personExclude = ids.length === 1 ? ids[0] : "";
       dialogForm.dataset.personCount = String(ids.length);
       dialogForm.dataset.renameAction = "/photos/people/" + encodeURIComponent(ids[0]) + "/rename";
@@ -119,6 +124,7 @@
     personDialog.addEventListener("close", function () {
       if (sourceCard) sourceCard.removeAttribute("data-person-dialog-source");
       sourceCard = null;
+      if (previewPath) { previewPath.textContent = ""; previewPath.hidden = true; }
       previewRegion = null;
       if (preview) { previewImage.removeAttribute("src"); previewBox.hidden = true; }
       dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
@@ -198,6 +204,8 @@
     var list = form.querySelector("[data-person-options]");
     var popup = form.querySelector("[data-person-popup]");
     var feedback = form.querySelector("[data-person-feedback]");
+    var matchButton = form.querySelector("[data-person-face-match]");
+    var matching = false;
     var allowCreate = form.hasAttribute("data-person-create");
     var renameAction = allowCreate ? form.action : "";
     var items = [], active = -1, revision = 0;
@@ -207,6 +215,8 @@
       clearTimeout(timer);
       if (controller) controller.abort();
       revision++;
+      matching = false;
+      if (matchButton) matchButton.removeAttribute("aria-busy");
     }
     function close() {
       cancel();
@@ -248,8 +258,10 @@
       close();
       if (form.hasAttribute("data-person-modal")) form.requestSubmit();
     }
-    async function load(direction) {
+    async function load(direction, faceMatch) {
       cancel();
+      matching = !!faceMatch;
+      if (matchButton && matching) matchButton.setAttribute("aria-busy", "true");
       pendingDirection = direction;
       var request = revision;
       controller = new AbortController();
@@ -258,20 +270,21 @@
       activate(-1);
       popup.hidden = false;
       input.setAttribute("aria-expanded", "true");
-      feedback.textContent = "Personen werden geladen …";
+      feedback.textContent = faceMatch ? "Gesicht wird mit benannten Personen abgeglichen …" : "Personen werden geladen …";
       // A selected label contains the ID; opening it again lists alternatives.
       var query = target.value && target.value !== "0" ? "" : input.value.trim();
       try {
-        var response = await fetch("/photos/people?format=suggestions&q=" + encodeURIComponent(query), {
+        var url = faceMatch ? "/photos/faces/" + encodeURIComponent(form.dataset.personFaceId) + "/suggestions" : "/photos/people?format=suggestions&q=" + encodeURIComponent(query);
+        var response = await fetch(url, {
           signal: controller.signal, credentials: "same-origin", redirect: "error",
           headers: { Accept: "application/json" }
         });
-        if (!response.ok) throw new Error("Personen konnten nicht geladen werden. Bitte erneut suchen.");
+        if (!response.ok) throw new Error(faceMatch ? "Gesichtsabgleich fehlgeschlagen. Bitte erneut versuchen oder die Ansicht aktualisieren." : "Personen konnten nicht geladen werden. Bitte erneut suchen.");
         var data = await response.json();
         if (!Array.isArray(data.people)) throw new Error("Ungültige Antwort der Personensuche.");
         if (request !== revision || document.activeElement !== input) return;
         items = data.people.filter(function (person) { return typeof person.name === "string" && person.name.trim() && String(person.id) !== form.dataset.personExclude; });
-        if (allowCreate && query) items.push({ id: 0, name: query, create: true });
+        if (allowCreate && query && !faceMatch) items.push({ id: 0, name: query, create: true });
         var options = document.createDocumentFragment();
         items.forEach(function (person, index) {
           var option = document.createElement("div");
@@ -297,11 +310,23 @@
         });
         list.replaceChildren(options);
         feedback.textContent = data.has_next ? "Weitere Personen vorhanden. Bitte die Suche eingrenzen." :
-          (items.length ? items.length + (items.length === 1 ? " Vorschlag verfügbar." : " Vorschläge verfügbar.") : "Keine passende Person gefunden.");
+          (items.length ? items.length + (items.length === 1 ? " Vorschlag verfügbar." : " Vorschläge verfügbar.") : (faceMatch ? "Keine ähnlichen benannten Personen gefunden." : "Keine passende Person gefunden."));
         if (items.length && pendingDirection) activate(pendingDirection === "last" ? items.length - 1 : 0);
       } catch (error) {
         if (request === revision && error.name !== "AbortError") feedback.textContent = error.message;
+      } finally {
+        if (request === revision) { matching = false; if (matchButton) matchButton.removeAttribute("aria-busy"); }
       }
+    }
+    if (matchButton) {
+      matchButton.addEventListener("pointerdown", function (event) { event.preventDefault(); });
+      matchButton.addEventListener("click", function () {
+        if (input.disabled || matching || !form.dataset.personFaceId) return;
+        input.focus({ preventScroll: true });
+        target.value = "";
+        validate();
+        load(undefined, true);
+      });
     }
     input.addEventListener("focus", function () { load(); });
     input.addEventListener("click", function () { if (popup.hidden) load(); });

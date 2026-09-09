@@ -24,7 +24,7 @@ func TestPeoplePortraitFollowsVisibleActiveThumbnail(t *testing.T) {
 			t.Fatalf("portrait metadata: %+v", person)
 		}
 		face, err := l.Face(ctx, person.FaceID)
-		if err != nil || *person.Portrait != (FaceRegion{face.X, face.Y, face.Width, face.Height}) {
+		if err != nil || *person.Portrait != (FaceRegion{face.X, face.Y, face.Width, face.Height}) || person.DisplayPath != mediaDisplayPath(face.Path) {
 			t.Fatalf("portrait mismatch: %+v %+v %v", person.Portrait, face, err)
 		}
 		return person

@@ -195,14 +195,14 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 	if private != 0 || size != j.Size || mtime != j.ModTime || xmp != j.XMP {
 		return errors.New("Foto während Analyse geändert")
 	}
-	oldRows, err := tx.QueryContext(ctx, `SELECT f.id,f.person_id,f.x,f.y,f.width,f.height,(f.manual OR p.manual_name),f.ignored,f.favorite FROM photo_faces f JOIN photo_people p ON p.id=f.person_id WHERE f.path=?`, j.Path)
+	oldRows, err := tx.QueryContext(ctx, `SELECT f.id,f.person_id,f.x,f.y,f.width,f.height,(f.manual OR p.manual_name),f.ignored,f.favorite,f.recognition_assignment FROM photo_faces f JOIN photo_people p ON p.id=f.person_id WHERE f.path=?`, j.Path)
 	if err != nil {
 		return err
 	}
 	var old []RecognizedFace
 	for oldRows.Next() {
 		var f RecognizedFace
-		if err = oldRows.Scan(&f.ID, &f.PersonID, &f.X, &f.Y, &f.Width, &f.Height, &f.Manual, &f.Ignored, &f.Favorite); err != nil {
+		if err = oldRows.Scan(&f.ID, &f.PersonID, &f.X, &f.Y, &f.Width, &f.Height, &f.Manual, &f.Ignored, &f.Favorite, &f.recognitionAssignment); err != nil {
 			oldRows.Close()
 			return err
 		}
@@ -225,6 +225,7 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 		box := Face{X: d.X, Y: d.Y, Width: d.Width, Height: d.Height}
 		var person int64
 		manual, ignored, favorite := false, false, false
+		assignment := "matched"
 		xmpConflict := false
 		// Carry overrides only on a one-to-one region match, never by detection order.
 		var matches []RecognizedFace
@@ -243,6 +244,7 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 			}
 			if n == 1 {
 				person, manual, ignored, favorite = f.PersonID, f.Manual, f.Ignored, f.Favorite
+				assignment = f.recognitionAssignment
 			}
 		}
 		if person == 0 {
@@ -287,6 +289,7 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 								return e
 							}
 							person, _ = res.LastInsertId()
+							assignment = "new"
 						}
 
 					} else if count > 1 {
@@ -308,6 +311,7 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 				return e
 			}
 			person, _ = res.LastInsertId()
+			assignment = "new"
 		}
 		used[person] = true
 		affected[person] = true
@@ -317,7 +321,7 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 			facePixels = d.Quality.FacePixels
 			sharpness = d.Quality.Sharpness
 		}
-		_, err = tx.ExecContext(ctx, `INSERT INTO photo_faces(path,directory,person_id,x,y,width,height,confidence,embedding,model,manual,ignored,favorite,reference_eligible,face_pixels,sharpness) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, j.Path, media.Directory, person, d.X, d.Y, d.Width, d.Height, d.Confidence, encodeVector(d.Embedding), j.Model, manual, ignored, favorite, referenceEligible, facePixels, sharpness)
+		_, err = tx.ExecContext(ctx, `INSERT INTO photo_faces(path,directory,person_id,x,y,width,height,confidence,embedding,model,manual,ignored,favorite,reference_eligible,face_pixels,sharpness,recognition_assignment) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, j.Path, media.Directory, person, d.X, d.Y, d.Width, d.Height, d.Confidence, encodeVector(d.Embedding), j.Model, manual, ignored, favorite, referenceEligible, facePixels, sharpness, assignment)
 		if err != nil {
 			return err
 		}

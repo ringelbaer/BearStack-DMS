@@ -141,6 +141,7 @@
     if (existing) {
       existing.dataset.personName = person.name || "";
       existing.dataset.faceId = String(person.face_id);
+      existing.dataset.displayPath = person.display_path || "";
       ["x", "y", "width", "height"].forEach(function (key) { if (person.portrait) existing.dataset[key] = String(person.portrait[key]); else delete existing.dataset[key]; });
       existing.querySelector(".person-card").setAttribute("aria-label", "Person anzeigen: " + name);
       var existingImage = existing.querySelector("img");
@@ -166,6 +167,7 @@
     card.dataset.personId = person.id;
     card.dataset.personName = person.name || "";
     card.dataset.faceId = String(person.face_id);
+    card.dataset.displayPath = person.display_path || "";
     ["x", "y", "width", "height"].forEach(function (key) { if (person.portrait) card.dataset[key] = String(person.portrait[key]); });
     var link = document.createElement("a");
     link.className = "person-card";

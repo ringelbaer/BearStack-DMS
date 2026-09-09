@@ -4,26 +4,28 @@ package photos
 import "sync"
 
 type RecognizedFace struct {
-	nameSource string
-	ID         int64   `json:"id"`
-	PersonID   int64   `json:"person_id"`
-	Name       string  `json:"name"`
-	Path       string  `json:"path"`
-	X          float64 `json:"x"`
-	Y          float64 `json:"y"`
-	Width      float64 `json:"width"`
-	Height     float64 `json:"height"`
-	Manual     bool    `json:"manual"`
-	Ignored    bool    `json:"ignored"`
-	Favorite   bool    `json:"favorite"`
+	recognitionAssignment string
+	nameSource            string
+	ID                    int64   `json:"id"`
+	PersonID              int64   `json:"person_id"`
+	Name                  string  `json:"name"`
+	Path                  string  `json:"path"`
+	X                     float64 `json:"x"`
+	Y                     float64 `json:"y"`
+	Width                 float64 `json:"width"`
+	Height                float64 `json:"height"`
+	Manual                bool    `json:"manual"`
+	Ignored               bool    `json:"ignored"`
+	Favorite              bool    `json:"favorite"`
 }
 type Person struct {
-	ID        int64       `json:"id"`
-	Name      string      `json:"name"`
-	Count     int         `json:"count"`
-	FaceID    int64       `json:"face_id"`
-	Directory string      `json:"directory,omitempty"`
-	Portrait  *FaceRegion `json:"portrait,omitempty"`
+	DisplayPath string      `json:"display_path"`
+	ID          int64       `json:"id"`
+	Name        string      `json:"name"`
+	Count       int         `json:"count"`
+	FaceID      int64       `json:"face_id"`
+	Directory   string      `json:"directory,omitempty"`
+	Portrait    *FaceRegion `json:"portrait,omitempty"`
 }
 type FaceRegion struct {
 	X      float64 `json:"x"`
@@ -57,12 +59,16 @@ type FaceJobError struct {
 	Attempts int    `json:"attempts"`
 }
 type FaceStatus struct {
-	Errors []FaceJobError `json:"errors,omitempty"`
-	Queued int            `json:"queued"`
-	Done   int            `json:"done"`
-	Failed int            `json:"failed"`
-	Faces  int            `json:"faces"`
-	People int            `json:"people"`
+	RecognitionMatched      int            `json:"recognition_matched"`
+	RecognitionNew          int            `json:"recognition_new"`
+	RecognitionUnknown      int            `json:"recognition_unknown"`
+	RecognitionMatchPercent float64        `json:"recognition_match_percent"`
+	Errors                  []FaceJobError `json:"errors,omitempty"`
+	Queued                  int            `json:"queued"`
+	Done                    int            `json:"done"`
+	Failed                  int            `json:"failed"`
+	Faces                   int            `json:"faces"`
+	People                  int            `json:"people"`
 }
 type faceRuntime struct {
 	referenceLimit int

@@ -3,15 +3,21 @@
 <form method="post" data-person-picker data-person-create data-person-modal>
 <header><strong id="person-dialog-title">Person benennen oder zuordnen</strong></header>
 <div class="app-dialog-body person-dialog-layout">
-<figure class="person-dialog-preview" data-person-preview>
+<figure class="person-dialog-photo">
+<div class="person-dialog-preview" data-person-preview>
 <img data-person-preview-image alt="Gesicht im Foto – 300 % der Bounding Box">
 <div class="group-photo-box" data-person-preview-box hidden aria-hidden="true"></div>
 <p data-person-preview-status role="status"></p>
+</div>
+<figcaption class="person-dialog-path" data-person-preview-path hidden></figcaption>
 </figure>
 <div class="person-dialog-fields">
 <div class="person-picker-field">
 <label for="overview-person-search">Name</label>
+<div class="person-picker-search-row">
 <input id="overview-person-search" name="name" maxlength="200" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="overview-person-options" aria-describedby="overview-person-hint" autocomplete="off" data-person-search placeholder="Person suchen oder neuen Namen eingeben" autofocus>
+<button type="button" class="secondary-button" data-person-face-match aria-label="Ähnliche benannte Personen suchen" title="Aktuelles Gesicht mit benannten Personen abgleichen"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
+</div>
 <input type="hidden" name="target" data-person-target>
 <p id="overview-person-hint">Ein neuer Name benennt diese Gruppe. Eine vorhandene Person auswählen, um die gesamte Gruppe mit ihr zusammenzuführen.</p>
 <div class="person-dialog-suggestions"><div class="person-picker-popup" data-person-popup hidden><div id="overview-person-options" role="listbox" aria-label="Zielpersonen" data-person-options></div><p role="status" data-person-feedback></p></div></div>

@@ -26,7 +26,7 @@ var (
 const (
 	indexSchemaSetupTimeout = 30 * time.Second
 	photoSchemaComponent    = "photos"
-	photoSchemaVersion      = 27
+	photoSchemaVersion      = 28
 )
 
 type photoSchemaMigration struct {
@@ -66,6 +66,7 @@ var photoSchemaMigrations = []photoSchemaMigration{
 	{Version: 25, Name: "face quality and resumable reconciliation"},
 	{Version: 26, Name: "indexed GPX inventory", Table: "photo_folder_scan", Column: "gpx_scanned", SQL: `ALTER TABLE photo_folder_scan ADD COLUMN gpx_scanned INTEGER NOT NULL DEFAULT 0`},
 	{Version: 27, Name: "scoped photo route revisions"},
+	{Version: 28, Name: "face recognition assignment statistics"},
 }
 
 func openIndexDB(path string) (*sql.DB, string, error) {
@@ -322,6 +323,12 @@ func runPhotoSchemaMigrations(ctx context.Context, db *sql.DB) error {
 			continue
 		}
 		if current >= migration.Version {
+			continue
+		}
+		if migration.Version == 28 {
+			if err := setupFaceAssignmentStats(ctx, db); err != nil {
+				return fmt.Errorf("photo schema migration 28: %w", err)
+			}
 			continue
 		}
 		if migration.Version == 25 {

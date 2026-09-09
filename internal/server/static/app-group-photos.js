@@ -277,6 +277,7 @@
     status: status,
     isBusy: function () { return busy || navigationPending; },
     onBusy: setBusy,
+    getPreviewPath: function () { return surface.querySelector("[data-group-title]").textContent; },
     getIgnoreRequest: function (cards) {
       var card = cards[0];
       if (cards.length !== 1 || !card || card.dataset.personName || card.dataset.ignored === "true" || !card.dataset.groupFace) return null;
