@@ -6,6 +6,10 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ### BearStack 0.50.0 – in Entwicklung
 
+- Ähnliche Personengruppen lassen sich ohne Seitenneuladen zusammenführen oder getrennt lassen. Vorschläge rücken nach, unveränderte Karten bleiben erhalten; Konflikte und Netzwerkfehler erscheinen direkt auf der Seite. Bestehende JSON-Endpunkte und Revisionsprüfungen bleiben unverändert. PATCH innerhalb der unveröffentlichten 0.50.0, kein zusätzlicher Versionssprung.
+
+- Mobile Personenansicht: zweispaltige Navigation, kompaktere Filter und Anzeigemenü direkt neben den Filteraktionen statt einer eigenen Zeile. Keine zusätzlichen Abfragen oder Änderungen an API und Datenformaten. PATCH-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION bleibt unverändert.
+
 - Browserkarten prüfen neue Ordnersperren vor dem Lesen der Marker-Metadaten; Pfade, Namen und GPS-Koordinaten geschützter Unterordner bleiben bereits in der ersten Kartenantwort verborgen.
 - Große optionale Kartenindizes entstehen außerhalb des 30-Sekunden-Startlimits im Hintergrund mit dateibasierter Sortierung. Kartenaufrufe warten abbrechbar auf den Aufbau; normale Galerie-Lesezugriffe bleiben verfügbar. Ein unterbrochener Aufbau wird beim nächsten Start wiederholt.
 - Browser-GPX-Inventar nutzt den vorhandenen Index in begrenzten Paketen und parst Tracks erst bei Bedarf. Der bisherige Dateisystemlauf bleibt bis zum vollständigen GPX-Backfill erhalten.

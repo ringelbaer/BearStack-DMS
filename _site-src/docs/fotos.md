@@ -342,6 +342,10 @@ Der gemeinsame Personen-Dialog und seine Suche werden unabhängig von der
 Personenübersicht geladen; die Gruppenbilder-Ansicht benötigt nur ihr eigenes
 Modul und `app-person-dialog.js`.
 
+Auf Smartphones stehen die Navigationslinks der Personenansicht kompakt in zwei
+Spalten. Das Anzeigemenü sitzt neben den Filteraktionen, damit mehr Platz für
+die Personenbilder bleibt.
+
 **Anzeigeeinstellungen der Personenübersicht (ab 0.47.0):** Das **…-Menü**
 unter `/photos/people` steuert **Ordnername anzeigen**, **Fotoanzahl anzeigen** und
 **Thumbnailgröße S, M oder L**. S entspricht der bisherigen Größe (bis 160 Pixel),
@@ -483,7 +487,11 @@ Teilgruppen werden berücksichtigt. Vorschläge ab 0,45 Ähnlichkeit sind keine
 Wahrscheinlichkeitsangaben und benötigen eine Prüfung. **Zusammenführen** verwendet
 die angezeigten Gruppenrevisionen; zwischenzeitliche Änderungen verlangen eine
 neue Prüfung. **Getrennt lassen** bleibt als Entscheidung gespeichert und verhindert
-auch künftige automatische Zuordnungen zwischen diesen Gruppen. Aufrufe der Seite
+auch künftige automatische Zuordnungen zwischen diesen Gruppen. Beide Aktionen
+aktualisieren mit JavaScript die Vorschläge ohne Seitenneuladen; unveränderte
+Karten bleiben erhalten. Fehler werden direkt angezeigt, veraltete Vorschläge
+müssen erneut geprüft werden. Ohne JavaScript bleiben die normalen Formulare
+nutzbar. Aufrufe der Seite
 lösen keine neue Vektorsuche aus. Bearbeiten benötigt `photos.edit`, Einstellungen
 und Steuerung benötigen `photos.manage`.
 

@@ -174,8 +174,20 @@ test("stored face reconciliation works offline with responsive merge review and 
       expect(layout.contained, `merge controls clipped at ${width}px`).toBe(true);
     }
 
+    await page.evaluate(() => { window.mergePageMarker = "same document"; });
+    const unchangedCard = await cards.filter({ has: page.getByText("Grace", { exact: true }) }).elementHandle();
+    await page.route("**/merge-suggestions/*/accept", route => route.abort(), { times: 1 });
+    await cards.filter({ has: page.getByText("Ada", { exact: true }) }).getByRole("button", { name: "Zusammenführen", exact: true }).click();
+    await expect(page.locator("[data-merge-status]")).toContainText("konnte nicht bestätigt werden");
+    await expect(cards).toHaveCount(2);
+    await page.getByRole("button", { name: "Vorschläge aktualisieren", exact: true }).click();
+    await expect(page.locator("[data-merge-refresh]")).toBeHidden();
+
     await cards.filter({ has: page.getByText("Ada", { exact: true }) }).getByRole("button", { name: "Zusammenführen", exact: true }).click();
     await expect(cards).toHaveCount(1);
+    await expect(page.locator("[data-merge-suggestions]")).toHaveAttribute("aria-busy", "false");
+    expect(await page.evaluate(() => window.mergePageMarker)).toBe("same document");
+    expect(await unchangedCard.evaluate(card => card.isConnected)).toBe(true);
     await expect(page.locator(".notice")).toHaveText("Personengruppen zusammengeführt.");
     const adaResponse = await context.request.get(`${baseURL}/photos/people/${people[0].id}?format=json`);
     const ada = await adaResponse.json();
@@ -190,10 +202,10 @@ test("stored face reconciliation works offline with responsive merge review and 
     await cards.getByRole("button", { name: "Getrennt lassen", exact: true }).click();
     const stale = await staleResponse;
     expect(stale.status()).toBe(409);
-    expect(stale.headers()["content-type"]).toContain("text/html");
-    await expect(page.getByRole("heading", { name: "Fehler", exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Zurück", exact: true })).toHaveAttribute("href", "/photos/people/merge-suggestions");
-    await page.getByRole("link", { name: "Zurück", exact: true }).click();
+    expect(stale.headers()["content-type"]).toContain("application/json");
+    await expect(page.locator("[data-merge-status]")).toContainText("Personengruppen haben sich geändert");
+    await expect(page.locator("[data-merge-suggestions]")).toHaveAttribute("aria-busy", "false");
+    expect(await page.evaluate(() => window.mergePageMarker)).toBe("same document");
     await expect(page.getByRole("heading", { name: "Ähnliche Personengruppen", exact: true })).toBeVisible();
 
     await page.goto(settingsURL);
@@ -202,9 +214,12 @@ test("stored face reconciliation works offline with responsive merge review and 
     await expect.poll(async () => (await suggestions()).length).toBe(1);
     await page.goto(suggestionsURL);
     await expect(cards).toContainText("Grace geändert");
+    await page.evaluate(() => { window.mergePageMarker = "reject document"; });
     await cards.getByRole("button", { name: "Getrennt lassen", exact: true }).click();
     await expect(cards).toHaveCount(0);
     await expect(page.locator(".notice")).toHaveText("Die Gruppen bleiben getrennt.");
+    await expect(page.locator("[data-merge-suggestions]")).toContainText("Aktuell keine Zusammenführungsvorschläge");
+    expect(await page.evaluate(() => window.mergePageMarker)).toBe("reject document");
     // A new pass must respect the explicit rejection, even with the service off.
     await page.goto(settingsURL);
     await page.getByRole("button", { name: "Zuordnungen erneut prüfen", exact: true }).click();

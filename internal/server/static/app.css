@@ -3413,7 +3413,7 @@ label span {
 [data-people-view][data-size="m"] .people-grid .person-card img { width: 224px; }
 [data-people-view][data-size="l"] .people-grid .person-card img { width: 320px; }
 [data-people-view] [hidden], [data-people-view][data-show-count="false"] [data-people-overview] [data-person-count], [data-people-view][data-show-folders="false"] [data-person-folder] { display: none !important; }
-.people-display-menu { position: relative; width: max-content; margin: 0 0 .5rem auto; z-index: 13; }
+.people-display-menu { position: relative; width: max-content; margin: 0 0 0 auto; z-index: 13; }
 .people-display-menu > summary { list-style: none; cursor: pointer; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .25rem .8rem; font-size: 1.4rem; background: var(--surface); }
 .people-display-menu > summary::-webkit-details-marker { display: none; }
 .people-display-options { position: absolute; right: 0; top: 100%; width: min(280px,calc(100vw - 48px)); padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); box-shadow: 0 6px 20px rgb(0 0 0 / .15); display: grid; gap: .75rem; }
@@ -3673,3 +3673,5 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
   .group-photo-filter label { flex-basis: 100%; }
   .group-photo-filter > button { width: 100%; }
 }
+
+.people-filter-actions > .people-display-menu > summary { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0; }

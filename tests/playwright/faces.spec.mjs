@@ -42,6 +42,50 @@ test.afterAll(async ({}, testInfo) => {
   if (root) await rm(root, { recursive: true, force: true });
 });
 
+test("people navigation and filters leave room for results on mobile", async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto(baseURL + "/login");
+  await page.getByLabel("Benutzername").fill("admin");
+  await page.locator('input[name="password"]').fill("secret");
+  await page.getByRole("button", { name: "Anmelden" }).click();
+  await page.goto(baseURL + "/photos/people?filter=unknown");
+  for (const width of [320, 390, 640, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    const layout = await page.evaluate(() => {
+      const links = [...document.querySelectorAll(".people-page-head .page-actions a")].map(el => el.getBoundingClientRect());
+      const filter = document.querySelector("[data-people-filter]").getBoundingClientRect();
+      const menu = document.querySelector("[data-people-display] summary").getBoundingClientRect();
+      return {
+        overflow: document.documentElement.scrollWidth - innerWidth,
+        paired: links[0].top === links[1].top && links[2].top === links[3].top,
+        filterBottom: filter.bottom,
+        menuInside: menu.top >= filter.top && menu.bottom <= filter.bottom,
+        touchTargets: links.every(rect => rect.height >= 44) && menu.height >= 44,
+      };
+    });
+    expect(layout.overflow).toBeLessThanOrEqual(1);
+    expect(layout.menuInside).toBe(true);
+    if (width <= 640) {
+      expect(layout.paired).toBe(true);
+      expect(layout.touchTargets).toBe(true);
+      expect(layout.filterBottom).toBeLessThan(620);
+    }
+    await page.getByLabel("Anzeigeeinstellungen", { exact: true }).click();
+    await page.getByLabel("Ordnername anzeigen", { exact: true }).check();
+    await expect(page.locator("[data-people-view]")).toHaveAttribute("data-show-folders", "true");
+    const panel = await page.locator(".people-display-options").boundingBox();
+    expect(panel.x).toBeGreaterThanOrEqual(0);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(width);
+    await page.keyboard.press("Escape");
+  }
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.screenshot({ path: "/tmp/bearstack-people-mobile-fixed.png", fullPage: true });
+  await page.getByRole("button", { name: "Suchen", exact: true }).click();
+  await expect(page.locator('select[name="filter"]')).toHaveValue("unknown");
+  await context.close();
+});
+
 test("face settings fit the shared desktop and mobile layout", async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();

@@ -1325,6 +1325,9 @@ und JSON ohne <code>progress=1</code> prüfen die Sichtbarkeit wie bisher.</p>
 <p>Der gemeinsame Personen-Dialog und seine Suche werden unabhängig von der
 Personenübersicht geladen; die Gruppenbilder-Ansicht benötigt nur ihr eigenes
 Modul und <code>app-person-dialog.js</code>.</p>
+<p>Auf Smartphones stehen die Navigationslinks der Personenansicht kompakt in zwei
+Spalten. Das Anzeigemenü sitzt neben den Filteraktionen, damit mehr Platz für
+die Personenbilder bleibt.</p>
 <p><strong>Anzeigeeinstellungen der Personenübersicht (ab 0.47.0):</strong> Das <strong>…-Menü</strong>
 unter <code>/photos/people</code> steuert <strong>Ordnername anzeigen</strong>, <strong>Fotoanzahl anzeigen</strong> und
 <strong>Thumbnailgröße S, M oder L</strong>. S entspricht der bisherigen Größe (bis 160 Pixel),
@@ -1452,7 +1455,11 @@ Teilgruppen werden berücksichtigt. Vorschläge ab 0,45 Ähnlichkeit sind keine
 Wahrscheinlichkeitsangaben und benötigen eine Prüfung. <strong>Zusammenführen</strong> verwendet
 die angezeigten Gruppenrevisionen; zwischenzeitliche Änderungen verlangen eine
 neue Prüfung. <strong>Getrennt lassen</strong> bleibt als Entscheidung gespeichert und verhindert
-auch künftige automatische Zuordnungen zwischen diesen Gruppen. Aufrufe der Seite
+auch künftige automatische Zuordnungen zwischen diesen Gruppen. Beide Aktionen
+aktualisieren mit JavaScript die Vorschläge ohne Seitenneuladen; unveränderte
+Karten bleiben erhalten. Fehler werden direkt angezeigt, veraltete Vorschläge
+müssen erneut geprüft werden. Ohne JavaScript bleiben die normalen Formulare
+nutzbar. Aufrufe der Seite
 lösen keine neue Vektorsuche aus. Bearbeiten benötigt <code>photos.edit</code>, Einstellungen
 und Steuerung benötigen <code>photos.manage</code>.</p>
 <p>Ab Android-App <strong>0.9.0</strong> und BearStack <strong>0.49.0</strong> ist <strong>Ähnliche Gruppen</strong> auch über das App-Menü verfügbar: immer eine Entscheidung mit zwei Portraits und festen Buttons, ohne scrollbare Vorschlagsliste. Nach <strong>Zusammenführen</strong> oder <strong>Getrennt lassen</strong> lädt automatisch das nächste Gruppenpaar. Beide Portraits bieten dieselbe Originalfoto-Vergrößerung per Halten und Wischen wie beim Benennen/Zuordnen. Aktionsquittungen verhindern doppelte Änderungen bei verlorenen Antworten; Konflikte verlangen eine erneute Prüfung. Details stehen in der <a href="android.html#ahnliche-gruppen">Android-Anleitung</a>.</p>
