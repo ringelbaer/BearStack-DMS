@@ -8,6 +8,11 @@ icon: lucide/shield-check
 
 BearStack wird bewusst als kleines, lokal betreibbares Archivsystem entwickelt. KI und Codex helfen dabei als Entwicklungswerkzeug: Sie beschleunigen Recherche, Refactoring, Testergänzungen und Dokumentation, ersetzen aber nicht die technischen Sicherheitsgrenzen im Projekt. Änderungen sollen aus dem vorhandenen Code heraus entstehen, klein bleiben und durch Tests, Benchmarks oder manuelle Prüfung belegbar sein.
 
+
+Die Regressionen zur Dokumentverarbeitung vergleichen SQL-Thumbnail-Kandidaten und Renderer für alle unterstützten Formate, MIME-Parameter und Dateiendungen, einschließlich Pagination, Papierkorb und bereits erzeugter Vorschauen. Ein Benchmark prüft einen Bestand von 50.000 Dokumenten mit wenigen passenden Formaten. Mail-Service-Tests verwenden ein isoliertes Postfach-Doppel und prüfen, dass Import-/Abruffehler keine Löschung auslösen. OCR-Service-Tests prüfen Textübernahme, Fehler, Abbruch, Zeitlimit, gelöschte Dokumente und begrenzte Wecksignale ohne HTTP-Server.
+
+`internal/testutil` stellt die gemeinsame Soffice-Fixture für Import-, Vorschau- und Thumbnail-Tests bereit. Jeder Test erhält ein eigenes temporäres Programmverzeichnis und einen wiederhergestellten `PATH`. Die Fixture prüft die Integration und ersetzt keine Prüfung realer LibreOffice-Konvertierungen.
+
 ## KI und Codex im Projekt
 
 Codex wird als Repo-naher Assistent eingesetzt. Der Arbeitsstil ist konservativ: zuerst Code lesen, bestehende Patterns übernehmen, keine unnötigen Abstraktionen einführen und keine fremden Änderungen zurückrollen. Für BearStack ist das besonders wichtig, weil Dokumente, Fotos, Metadaten und Berechtigungen eng zusammenhängen.

@@ -8,23 +8,6 @@ import (
 	"testing"
 )
 
-func TestDocumentClassificationSeparatesPlainTextAndLibreOffice(t *testing.T) {
-	if !IsPlainTextDocument("note.txt", "") || !IsPlainTextDocument("note.md", "") {
-		t.Fatal("txt/md should be plain text documents")
-	}
-	if IsLibreOfficeDocument("note.txt", "text/plain") || IsLibreOfficeDocument("note.md", "text/markdown") {
-		t.Fatal("txt/md should not be LibreOffice documents")
-	}
-	for _, name := range []string{"note.rtf", "note.doc", "note.docx", "note.pages"} {
-		if !IsLibreOfficeDocument(name, "") {
-			t.Fatalf("%s should be a LibreOffice document", name)
-		}
-		if IsPlainTextDocument(name, "") {
-			t.Fatalf("%s should not be a plain text document", name)
-		}
-	}
-}
-
 func TestPlainTextPDFEscapesAndWrapsContent(t *testing.T) {
 	pdf, err := PlainTextPDF("# Heading <script>\n" + strings.Repeat("longword ", 80))
 	if err != nil {

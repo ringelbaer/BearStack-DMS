@@ -10,6 +10,7 @@ import (
 
 	"bearstack/internal/document"
 	"bearstack/internal/documentconvert"
+	"bearstack/internal/documentformat"
 	"bearstack/internal/storage"
 	"bearstack/internal/textmeta"
 )
@@ -142,6 +143,7 @@ func (i Importer) ImportCandidateWithOptions(ctx context.Context, candidate stor
 }
 
 func ExtractDocumentText(path, mimeType string) (string, string, error) {
+	mimeType = documentformat.NormalizeMIME(mimeType)
 	if mimeType == "application/pdf" {
 		text, err := textmeta.ExtractPDFText(path, 10<<20)
 		if err == nil && strings.TrimSpace(text) != "" {
@@ -162,7 +164,7 @@ func ExtractDocumentText(path, mimeType string) (string, string, error) {
 	if strings.HasPrefix(mimeType, "image/") {
 		return "", document.ContentTextSourceNone, nil
 	}
-	if documentconvert.IsLibreOfficeDocument(path, mimeType) {
+	if documentformat.IsLibreOfficeDocument(path, mimeType) {
 		text, err := documentconvert.ExtractText(context.Background(), path)
 		if err != nil {
 			return "", document.ContentTextSourceNone, err
@@ -172,7 +174,7 @@ func ExtractDocumentText(path, mimeType string) (string, string, error) {
 		}
 		return text, document.ContentTextSourceFile, nil
 	}
-	if documentconvert.IsPlainTextDocument(path, mimeType) {
+	if documentformat.IsPlainTextDocument(path, mimeType) {
 		text, err := extractRawText(path)
 		if err != nil {
 			return "", document.ContentTextSourceNone, err

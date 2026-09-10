@@ -10,6 +10,7 @@ import (
 
 	"bearstack/internal/document"
 	"bearstack/internal/storage"
+	"bearstack/internal/testutil"
 )
 
 func TestImporterDefersTextExtractionAndPostProcessing(t *testing.T) {
@@ -288,7 +289,7 @@ func TestExtractDocumentTextSources(t *testing.T) {
 }
 
 func TestExtractDocumentTextUsesFileSourceForOfficeDocuments(t *testing.T) {
-	installFakeSoffice(t)
+	testutil.InstallSoffice(t)
 	dir := t.TempDir()
 	path := filepath.Join(dir, "note.rtf")
 	if err := os.WriteFile(path, []byte(`{\rtf1\ansi invoice text}`), 0o600); err != nil {
@@ -302,43 +303,6 @@ func TestExtractDocumentTextUsesFileSourceForOfficeDocuments(t *testing.T) {
 	if text == "" || source != document.ContentTextSourceFile {
 		t.Fatalf("office text source = text:%q source:%q", text, source)
 	}
-}
-
-func installFakeSoffice(t *testing.T) {
-	t.Helper()
-	dir := t.TempDir()
-	script := filepath.Join(dir, "soffice")
-	if err := os.WriteFile(script, []byte(`#!/bin/sh
-format=""
-outdir=""
-source=""
-while [ "$#" -gt 0 ]; do
-	case "$1" in
-		--convert-to)
-			shift
-			format="$1"
-			;;
-		--outdir)
-			shift
-			outdir="$1"
-			;;
-		*)
-			source="$1"
-			;;
-	esac
-	shift
-done
-base=$(basename "$source")
-stem=${base%.*}
-case "$format" in
-	txt*) cp "$source" "$outdir/$stem.txt" ;;
-	pdf*) printf '%s' '%PDF fake' > "$outdir/$stem.pdf" ;;
-	*) exit 2 ;;
-esac
-`), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 }
 
 type fakeRepository struct {

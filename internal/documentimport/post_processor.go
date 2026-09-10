@@ -11,6 +11,7 @@ import (
 
 	"bearstack/internal/document"
 	"bearstack/internal/documentconvert"
+	"bearstack/internal/documentformat"
 	"bearstack/internal/textmeta"
 )
 
@@ -130,7 +131,7 @@ func (p *PostProcessor) Process(ctx context.Context, doc document.Document) erro
 	if p == nil {
 		return nil
 	}
-	if documentconvert.IsLibreOfficeDocument(doc.OriginalName, doc.MIMEType) {
+	if documentformat.IsLibreOfficeDocument(doc.OriginalName, doc.MIMEType) {
 		return p.processOfficeDocument(ctx, doc)
 	}
 	return p.processGeneric(ctx, doc)

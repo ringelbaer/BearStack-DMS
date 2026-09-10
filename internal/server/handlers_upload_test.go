@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"log/slog"
 	"mime/multipart"
@@ -261,16 +260,6 @@ func TestHandleUploadAPIMasksImportErrors(t *testing.T) {
 	}
 	if strings.Contains(rec.Body.String(), "sql") || strings.Contains(rec.Body.String(), "closed") {
 		t.Fatalf("internal import detail leaked: %s", rec.Body.String())
-	}
-}
-
-func TestFriendlyUploadErrorMasksUnexpectedDetails(t *testing.T) {
-	got := friendlyUploadError(errors.New("open /private/tmp/bearstack-secret/documents/.tmp: permission denied"))
-	if got != "Datei konnte nicht verarbeitet werden" {
-		t.Fatalf("error = %q", got)
-	}
-	if strings.Contains(got, "/private/tmp") || strings.Contains(got, "permission denied") {
-		t.Fatalf("internal detail leaked: %q", got)
 	}
 }
 

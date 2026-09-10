@@ -12,6 +12,7 @@ import (
 
 	"bearstack/internal/config"
 	"bearstack/internal/document"
+	"bearstack/internal/documentimport"
 	"bearstack/internal/storage"
 )
 
@@ -203,7 +204,7 @@ func (s *Server) handleWebDAVPut(w http.ResponseWriter, r *http.Request) {
 			status = http.StatusRequestEntityTooLarge
 		}
 		s.logWebDAVPutRejected(r, status, err, "filename", filename)
-		http.Error(w, friendlyUploadError(err), status)
+		http.Error(w, documentimport.UploadErrorMessage(err), status)
 		return
 	}
 
@@ -227,7 +228,7 @@ func (s *Server) handleWebDAVPut(w http.ResponseWriter, r *http.Request) {
 		if s.log != nil {
 			s.log.Warn("webdav import failed", "filename", filename, "error", result.Error)
 		}
-		s.renderError(w, r, http.StatusInternalServerError, errors.New(friendlyImportError(result.Error)))
+		s.renderError(w, r, http.StatusInternalServerError, errors.New(documentimport.ImportErrorMessage(result.Error)))
 		return
 	}
 	s.renderError(w, r, http.StatusInternalServerError, errors.New("Dokument konnte nicht importiert werden"))
@@ -336,7 +337,7 @@ func (s *Server) logWebDAVPutRejected(r *http.Request, status int, err error, ex
 		reason = "invalid_filename"
 	case errors.Is(err, storage.ErrFileTooLarge):
 		reason = "file_too_large"
-	case isIncompleteRequestBodyError(err):
+	case documentimport.IsIncompleteRequestBodyError(err):
 		reason = "incomplete_request_body"
 	}
 	logArgs := []any{

@@ -13,7 +13,6 @@ import (
 
 	"bearstack/internal/document"
 	"bearstack/internal/documentimport"
-	"bearstack/internal/storage"
 	"bearstack/internal/uploadlimit"
 )
 
@@ -134,7 +133,7 @@ func (s *Server) processUploadPart(ctx context.Context, part *multipart.Part, up
 	filename := filepath.Base(part.FileName())
 	candidate, err := s.store.Receive(part, s.cfg.MaxUploadBytes)
 	if err != nil {
-		outcome.Errors = append(outcome.Errors, uploadErrorItem{Filename: filename, Error: friendlyUploadError(err)})
+		outcome.Errors = append(outcome.Errors, uploadErrorItem{Filename: filename, Error: documentimport.UploadErrorMessage(err)})
 		return
 	}
 
@@ -149,7 +148,7 @@ func (s *Server) processUploadPart(ctx context.Context, part *multipart.Part, up
 		if s.log != nil {
 			s.log.Warn("document import failed", "filename", filename, "error", result.Error)
 		}
-		outcome.Errors = append(outcome.Errors, uploadErrorItem{Filename: filename, Error: friendlyImportError(result.Error)})
+		outcome.Errors = append(outcome.Errors, uploadErrorItem{Filename: filename, Error: documentimport.ImportErrorMessage(result.Error)})
 	}
 }
 
@@ -179,37 +178,6 @@ func duplicateItemFromImport(duplicate documentimport.Duplicate) duplicateItem {
 		ExistingFilename: duplicate.Existing.OriginalName,
 		DocumentURL:      fmt.Sprintf("/documents/%d", duplicate.Existing.ID),
 	}
-}
-
-func friendlyUploadError(err error) string {
-	if errors.Is(err, storage.ErrFileTooLarge) {
-		return "Datei überschreitet die konfigurierte Maximalgröße"
-	}
-	if errors.Is(err, storage.ErrInvalidFilename) {
-		return "Dateiname ist ungültig"
-	}
-	if errors.Is(err, storage.ErrUnsupportedFileType) {
-		return "Dateityp wird nicht unterstützt"
-	}
-	if isIncompleteRequestBodyError(err) {
-		return "Upload unvollständig übertragen"
-	}
-	return "Datei konnte nicht verarbeitet werden"
-}
-
-func isIncompleteRequestBodyError(err error) bool {
-	if err == nil {
-		return false
-	}
-	text := strings.ToLower(strings.TrimSpace(err.Error()))
-	return strings.Contains(text, "content-length") && strings.Contains(text, "only wrote")
-}
-
-func friendlyImportError(err error) string {
-	if err == nil {
-		return ""
-	}
-	return "Dokument konnte nicht importiert werden"
 }
 
 func uploadNotice(outcome uploadOutcome) string {

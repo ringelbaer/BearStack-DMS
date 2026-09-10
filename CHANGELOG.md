@@ -6,6 +6,8 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ### BearStack 0.50.0 – in Entwicklung
 
+- Dokumentverarbeitung: gemeinsame Formatklassifikation für Renderer und SQL-Thumbnail-Auswahl; MIME-Parameter, Schreibweise und Leerzeichen werden konsistent behandelt. Filterung bleibt vor der ID-basierten Pagination, ohne Schemaänderung. Mail- und OCR-Abläufe in eigene Servicepakete mit schmalen Schnittstellen ausgelagert; HTTP, Audit-Anbindung und Worker-Lifecycle bleiben im Server. Gemeinsame Soffice-Test-Fixture, Format-/Service-Regressionen und Benchmark für 50.000 Dokumente ergänzt. PATCH-Korrektur und Refactoring innerhalb der unveröffentlichten 0.50.0; VERSION bleibt unverändert. README, Website und OpenAPI-Beschreibungen aktualisiert.
+
 - Mobile Einzelpersonenansicht: kompakte Kopfzeile mit Gruppenstift, kurze Auswahlaktion und gleichmäßig gefülltes Gesichtsraster. Anzeige, Hilfe und Mehr-Menü öffnen sich einzeln über die volle Breite im Seitenfluss, ohne Überlagerungen. Desktop-Funktionen und gespeicherte Anzeigeoptionen bleiben erhalten. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert. README und Website aktualisiert.
 
 - Ähnliche Gruppen: WebUI und Android-App zeigen den Ähnlichkeitswert des aktuellen Vergleichspaars klein und mittig über den Entscheidungsbuttons, mit zwei Nachkommastellen. Additives `score` im Labeling-Endpunkt; ältere Server ohne Wert bleiben kompatibel. Keine zusätzliche Vektorsuche. MINOR-Erweiterung innerhalb der unveröffentlichten BearStack 0.50.0 / App 0.10.0; VERSION und versionCode unverändert. README, Website und OpenAPI aktualisiert.

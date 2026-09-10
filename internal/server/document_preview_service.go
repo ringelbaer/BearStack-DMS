@@ -9,6 +9,7 @@ import (
 
 	"bearstack/internal/document"
 	"bearstack/internal/documentconvert"
+	"bearstack/internal/documentformat"
 	"bearstack/internal/fsutil"
 )
 
@@ -61,7 +62,7 @@ func ensureDocumentOfficePreview(ctx context.Context, store interface {
 	if err != nil {
 		return "", err
 	}
-	if documentconvert.IsPlainTextDocument(doc.OriginalName, doc.MIMEType) {
+	if documentformat.IsPlainTextDocument(doc.OriginalName, doc.MIMEType) {
 		err = documentconvert.ConvertPlainTextToPDF(source, previewAbs)
 	} else {
 		err = documentconvert.ConvertToPDF(ctx, source, previewAbs)

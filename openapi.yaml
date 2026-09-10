@@ -1682,7 +1682,10 @@ paths:
       summary: Retrieve an inline document preview
       description: |
         Returns the original PDF/image or a generated PDF for supported office
-        and text formats. Requires the `documents.read` capability.
+        and text formats. MIME type matching ignores parameters, ASCII whitespace
+        around the type, and letter case. Text/office filename extensions are
+        also recognized when the MIME type is unspecified or generic.
+        Requires the `documents.read` capability.
       parameters:
         - $ref: "#/components/parameters/DocumentID"
       responses:
@@ -1718,8 +1721,10 @@ paths:
       operationId: getDocumentThumbnail
       summary: Retrieve a document thumbnail
       description: |
-        Generates the thumbnail on demand when possible. Requires the
-        `documents.read` capability.
+        Generates the thumbnail on demand when possible. Supports PDF, JPEG,
+        PNG, GIF and the text/office preview formats. Background selection and
+        on-demand generation share format rules, including MIME parameters
+        and case-insensitive matching. Requires the `documents.read` capability.
       parameters:
         - $ref: "#/components/parameters/DocumentID"
       responses:

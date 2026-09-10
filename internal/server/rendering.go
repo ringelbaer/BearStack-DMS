@@ -2,6 +2,7 @@
 package server
 
 import (
+	"bearstack"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -20,9 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"bearstack"
 	"bearstack/internal/document"
-	"bearstack/internal/documentconvert"
+	"bearstack/internal/documentformat"
 	"bearstack/internal/photos"
 	"bearstack/internal/tagutil"
 )
@@ -76,7 +76,7 @@ func parseTemplates() (*template.Template, error) {
 		"isPDF":         func(mimeType string) bool { return mimeType == "application/pdf" },
 		"isImage":       func(mimeType string) bool { return strings.HasPrefix(mimeType, "image/") },
 		"isPreviewableDocument": func(name, mimeType string) bool {
-			return mimeType == "application/pdf" || strings.HasPrefix(mimeType, "image/") || documentconvert.IsPreviewDocument(name, mimeType)
+			return documentformat.IsInlinePreview(mimeType) || documentformat.IsPreviewDocument(name, mimeType)
 		},
 		"shortHash": func(s string) string {
 			if len(s) > 12 {

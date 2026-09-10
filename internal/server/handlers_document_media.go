@@ -9,9 +9,9 @@ import (
 	"html"
 	"net/http"
 	"os"
-	"strings"
 
 	"bearstack/internal/documentconvert"
+	"bearstack/internal/documentformat"
 )
 
 func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
@@ -29,11 +29,11 @@ func (s *Server) handlePreview(w http.ResponseWriter, r *http.Request) {
 		s.renderPreviewHTTPError(w, err)
 		return
 	}
-	if doc.MIMEType == "application/pdf" || strings.HasPrefix(doc.MIMEType, "image/") {
+	if documentformat.IsInlinePreview(doc.MIMEType) {
 		s.serveStoredFile(w, r, doc, "inline")
 		return
 	}
-	if !documentconvert.IsPreviewDocument(doc.OriginalName, doc.MIMEType) {
+	if !documentformat.IsPreviewDocument(doc.OriginalName, doc.MIMEType) {
 		renderPreviewError(w, http.StatusUnsupportedMediaType, "Vorschau ist fuer diesen Dateityp nicht verfuegbar.")
 		return
 	}

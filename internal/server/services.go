@@ -21,7 +21,7 @@ type mailImportRunner interface {
 	ImportPDFs(context.Context, document.MailImportSettings) (mailImportRunResult, error)
 	CheckSettings(context.Context, document.MailImportSettings) error
 	RecordAudit(context.Context, string, string, int)
-	importPDFsFromMail(context.Context, io.Reader, string) (mailMessageImportResult, error)
+	ImportMessage(context.Context, io.Reader, string) (mailMessageImportResult, error)
 }
 
 type ocrRunner interface {
@@ -84,7 +84,7 @@ func (s *Server) initServices() {
 			}
 		}
 		if docs.ocr == nil {
-			docs.ocr = newOCRService(s.repo, s.store, s.log, make(chan struct{}, 1), s.invalidateDocumentCountCache, s.recordAuditLog)
+			docs.ocr = newOCRService(s.repo, s.store, s.log, s.invalidateDocumentCountCache, s.recordAuditLog)
 		}
 		if docs.postImport == nil {
 			docs.postImport = newDocumentPostProcessor(s.repo, s.store, docs.thumbnails, s.log, s.invalidateDocumentCountCache)

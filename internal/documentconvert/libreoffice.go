@@ -21,58 +21,6 @@ const libreOfficeTimeout = 2 * time.Minute
 
 var libreOfficeJobs = make(chan struct{}, 1)
 
-func IsLibreOfficeDocumentName(name string) bool {
-	switch strings.ToLower(filepath.Ext(name)) {
-	case ".rtf", ".doc", ".docx", ".pages":
-		return true
-	default:
-		return false
-	}
-}
-
-func IsLibreOfficeDocumentMIME(mimeType string) bool {
-	switch strings.ToLower(strings.TrimSpace(strings.Split(mimeType, ";")[0])) {
-	case "text/rtf",
-		"application/rtf",
-		"application/msword",
-		"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-		"application/vnd.apple.pages":
-		return true
-	default:
-		return false
-	}
-}
-
-func IsLibreOfficeDocument(name, mimeType string) bool {
-	return IsLibreOfficeDocumentName(name) || IsLibreOfficeDocumentMIME(mimeType)
-}
-
-func IsPlainTextDocumentName(name string) bool {
-	switch strings.ToLower(filepath.Ext(name)) {
-	case ".txt", ".md":
-		return true
-	default:
-		return false
-	}
-}
-
-func IsPlainTextDocumentMIME(mimeType string) bool {
-	switch strings.ToLower(strings.TrimSpace(strings.Split(mimeType, ";")[0])) {
-	case "text/plain", "text/markdown":
-		return true
-	default:
-		return false
-	}
-}
-
-func IsPlainTextDocument(name, mimeType string) bool {
-	return IsPlainTextDocumentName(name) || IsPlainTextDocumentMIME(mimeType)
-}
-
-func IsPreviewDocument(name, mimeType string) bool {
-	return IsPlainTextDocument(name, mimeType) || IsLibreOfficeDocument(name, mimeType)
-}
-
 func ConvertToPDF(ctx context.Context, source, target string) error {
 	return convertToFile(ctx, source, target, "pdf")
 }

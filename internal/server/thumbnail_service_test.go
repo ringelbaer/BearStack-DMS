@@ -21,6 +21,7 @@ import (
 	"bearstack/internal/document"
 	"bearstack/internal/repository"
 	"bearstack/internal/storage"
+	"bearstack/internal/testutil"
 )
 
 func TestDocumentThumbnailRejectsOversizedHeaderBeforeDecode(t *testing.T) {
@@ -126,7 +127,7 @@ func TestWriteDocumentImageThumbnailReplacesTargetAndCleansTemp(t *testing.T) {
 }
 
 func TestThumbnailServiceCreatesOfficeThumbnailFromPreviewPDF(t *testing.T) {
-	installServerFakeSoffice(t)
+	testutil.InstallSoffice(t)
 	installFakePDFToPPM(t)
 	ctx := context.Background()
 	repo, err := repository.Open(ctx, filepath.Join(t.TempDir(), "test.db"))

@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"bearstack/internal/document"
-	"bearstack/internal/documentconvert"
+	"bearstack/internal/documentformat"
 	"bearstack/internal/fsutil"
 	"bearstack/internal/repository"
 	"bearstack/internal/storage"
@@ -94,13 +94,12 @@ func (t thumbnailService) Ensure(ctx context.Context, doc document.Document) err
 			}
 		}
 	}
-	if doc.MIMEType == "application/pdf" {
+	switch documentformat.Classify(doc.OriginalName, doc.MIMEType) {
+	case documentformat.PDF:
 		return t.ensurePDFThumbnail(ctx, doc)
-	}
-	if isImageThumbnailMIME(doc.MIMEType) {
+	case documentformat.Image:
 		return t.ensureImageThumbnail(ctx, doc)
-	}
-	if documentconvert.IsPreviewDocument(doc.OriginalName, doc.MIMEType) {
+	case documentformat.PlainText, documentformat.Office:
 		return t.ensureOfficeThumbnail(ctx, doc)
 	}
 	return nil
@@ -256,15 +255,6 @@ func (t thumbnailService) acquireJob(ctx context.Context) (func(), error) {
 		return func() { <-t.jobs }, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	}
-}
-
-func isImageThumbnailMIME(mimeType string) bool {
-	switch strings.ToLower(strings.TrimSpace(mimeType)) {
-	case "image/jpeg", "image/png", "image/gif":
-		return true
-	default:
-		return false
 	}
 }
 

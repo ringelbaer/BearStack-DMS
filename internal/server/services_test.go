@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 
@@ -55,13 +56,8 @@ func TestServicesShareInstancesAcrossConcurrentFirstUse(t *testing.T) {
 			if first.preview != thumb {
 				t.Fatal("default office previews do not share the thumbnail service")
 			}
-			ocr := first.ocr.(*ocrService)
-			mail := first.mail.(*mailImportService)
-			if cap(thumb.jobs) != 1 || cap(ocr.wake) != 1 {
-				t.Fatal("worker notification channels missing")
-			}
-			if mail.importer.Repo != s.apps.documents.importer.Repo || mail.importer.Store != s.apps.documents.importer.Store || mail.importer.AfterCreate == nil {
-				t.Fatal("mail and HTTP imports do not share their dependencies")
+			if cap(thumb.jobs) != 1 {
+				t.Fatal("thumbnail job channel missing")
 			}
 			if s.background.active != 0 || s.jobCtx != nil {
 				t.Fatal("construction started background work")
@@ -80,15 +76,37 @@ func TestServicesPreserveInjectedDependenciesAndImportHook(t *testing.T) {
 	created := make(chan int64, 1)
 	s.apps.documents.importer = documentImporter{
 		Repo:        s.repo,
+		Store:       s.store,
 		AfterCreate: func(doc document.Document) { created <- doc.ID },
 	}
 	if s.thumbnailService() != thumb || s.ocrService() != ocr {
 		t.Fatal("injected service replaced")
 	}
-	s.mailImportService().(*mailImportService).importer.AfterCreate(document.Document{ID: 42})
+	candidate, err := s.store.ReceiveReader("hook.pdf", strings.NewReader("%PDF-1.4\nhook test"), 1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Both the HTTP importer and mail service must preserve the injected hook.
+	httpResult := s.documentImporter().ImportCandidate(context.Background(), candidate, document.UploadWayWeb)
+	if httpResult.Error != nil {
+		t.Fatal(httpResult.Error)
+	}
+	if httpResult.Created == nil {
+		t.Fatalf("HTTP import = %#v", httpResult)
+	}
+	select {
+	case <-created:
+	default:
+		t.Fatal("HTTP importer did not call the injected hook")
+	}
+	message := "From: billing@example.com\r\nSubject: hook\r\nMIME-Version: 1.0\r\nContent-Type: application/pdf; name=hook.pdf\r\nContent-Disposition: attachment; filename=hook.pdf\r\n\r\n%PDF-1.4\nmail hook test"
+	result, err := s.mailImportService().ImportMessage(context.Background(), strings.NewReader(message), "")
+	if err != nil || result.Uploaded != 1 {
+		t.Fatalf("mail import = %#v, %v", result, err)
+	}
 	select {
 	case id := <-created:
-		if id != 42 {
+		if id <= 0 || id == httpResult.Created.Document.ID {
 			t.Fatalf("import hook ID = %d", id)
 		}
 	default:

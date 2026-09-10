@@ -441,7 +441,7 @@ func (r *Repository) ensureDocumentPostImportPendingColumn(ctx context.Context) 
 		  AND post_import_pending = 0
 		  AND (
 			(mime_type NOT LIKE 'image/%' AND content_text_source = ?)
-			OR (mime_type IN ('application/pdf', 'image/jpeg', 'image/png', 'image/gif') AND thumbnail_path = '')
+			OR (`+thumbnailFormatPredicate+` AND thumbnail_path = '')
 		  )`,
 		document.ContentTextSourceNone,
 	)

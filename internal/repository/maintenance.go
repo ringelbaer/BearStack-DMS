@@ -31,24 +31,7 @@ func (r *Repository) ThumbnailCandidatesAfter(ctx context.Context, afterID int64
 			FROM documents
 			WHERE deleted_at IS NULL
 			  AND id > ?
-			  AND (
-			      mime_type IN ('application/pdf', 'image/jpeg', 'image/png', 'image/gif')
-			      OR lower(mime_type) LIKE 'text/plain%'
-			      OR lower(mime_type) LIKE 'text/markdown%'
-			      OR lower(mime_type) IN (
-			          'text/rtf',
-			          'application/rtf',
-			          'application/msword',
-			          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-			          'application/vnd.apple.pages'
-			      )
-			      OR lower(original_name) LIKE '%.txt'
-			      OR lower(original_name) LIKE '%.md'
-			      OR lower(original_name) LIKE '%.rtf'
-			      OR lower(original_name) LIKE '%.doc'
-			      OR lower(original_name) LIKE '%.docx'
-			      OR lower(original_name) LIKE '%.pages'
-			  )
+			  AND `+thumbnailFormatPredicate+`
 			  AND thumbnail_path = ''
 		ORDER BY id ASC
 		LIMIT ?`, afterID, limit)

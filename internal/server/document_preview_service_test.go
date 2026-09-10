@@ -15,10 +15,11 @@ import (
 	"bearstack/internal/document"
 	"bearstack/internal/repository"
 	"bearstack/internal/storage"
+	"bearstack/internal/testutil"
 )
 
 func TestHandlePreviewConvertsLibreOfficeDocumentToPDF(t *testing.T) {
-	installServerFakeSoffice(t)
+	testutil.InstallSoffice(t)
 	ctx := context.Background()
 	repo, err := repository.Open(ctx, filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
@@ -206,43 +207,6 @@ func TestHandlePreviewReportsMissingSofficeForLibreOfficeDocument(t *testing.T) 
 	if _, err := os.Stat(storedAbs); err != nil {
 		t.Fatalf("stored file stat = %v", err)
 	}
-}
-
-func installServerFakeSoffice(t *testing.T) {
-	t.Helper()
-	dir := t.TempDir()
-	script := filepath.Join(dir, "soffice")
-	if err := os.WriteFile(script, []byte(`#!/bin/sh
-format=""
-outdir=""
-source=""
-while [ "$#" -gt 0 ]; do
-	case "$1" in
-		--convert-to)
-			shift
-			format="$1"
-			;;
-		--outdir)
-			shift
-			outdir="$1"
-			;;
-		*)
-			source="$1"
-			;;
-	esac
-	shift
-done
-base=$(basename "$source")
-stem=${base%.*}
-case "$format" in
-	txt*) cp "$source" "$outdir/$stem.txt" ;;
-	pdf*) printf '%s' '%PDF fake' > "$outdir/$stem.pdf" ;;
-	*) exit 2 ;;
-esac
-`), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 }
 
 func fileSize(info os.FileInfo) int64 {

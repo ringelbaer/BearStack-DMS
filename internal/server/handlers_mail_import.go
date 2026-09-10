@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"bearstack/internal/document"
-	"bearstack/internal/repository"
 )
 
 func (s *Server) handleMailImportSettings(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +41,7 @@ func (s *Server) handleSaveMailImportSettings(w http.ResponseWriter, r *http.Req
 		s.renderMailImportFormError(w, r, current, err)
 		return
 	}
-	if err := repository.ValidateMailImportSettings(settings); err != nil {
+	if err := document.ValidateMailImportSettings(settings); err != nil {
 		s.renderMailImportFormError(w, r, settings, err)
 		return
 	}
@@ -85,7 +84,7 @@ func (s *Server) handleRunMailImportNow(w http.ResponseWriter, r *http.Request) 
 		s.renderError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	if err := repository.ValidateMailImportSettings(settings); err != nil {
+	if err := document.ValidateMailImportSettings(settings); err != nil {
 		s.renderMailImportFormError(w, r, settings, err)
 		return
 	}
@@ -145,7 +144,7 @@ func mailImportSettingsFromRequest(r *http.Request, current document.MailImportS
 	if settings.Password == "" {
 		settings.Password = current.Password
 	}
-	return repository.NormalizeMailImportSettings(settings), nil
+	return document.NormalizeMailImportSettings(settings), nil
 }
 
 func (s *Server) renderMailImportFormError(w http.ResponseWriter, r *http.Request, settings document.MailImportSettings, err error) {

@@ -87,6 +87,10 @@ Eine `.env`-Datei im Arbeitsverzeichnis wird automatisch gelesen. Zusaetzlich ka
 
 Externe Werkzeuge sind je nach Funktion optional: `pdftoppm`/`pdfinfo`/`pdfunite` aus `poppler-utils` fuer PDF-Vorschau, E-Mail-Archiv-Merge und OCR-Vorbereitung, `chromium` fuer gerenderte EML-Mailabbildungen, `soffice` aus LibreOffice fuer Text-/Office-Vorschau und Volltextextraktion, `tesseract` plus Sprachpakete fuer OCR, `ffmpeg` fuer Video- und Fallback-Bild-Thumbnails sowie optional `vipsthumbnail` fuer Bild-Thumbnails.
 
+Dokumentformate werden zentral in `internal/documentformat` klassifiziert. Vorschau und Thumbnail-Auswahl verwenden dieselben Regeln für Dateiendungen und MIME-Typen einschließlich Parametern wie `application/rtf; charset=utf-8`. Der SQL-Filter wird einmal aus diesen Regeln erzeugt; bestehende Datenbanken benötigen dafür keine Migration.
+
+Die Mail- und OCR-Abläufe liegen in `internal/mailservice` und `internal/ocrservice`. Sie erhalten Datenzugriff, Speicher, Importer beziehungsweise OCR-Engine über schmale Schnittstellen. `internal/server` verbindet die Services mit HTTP, Audit-Protokoll und Hintergrund-Lifecycle. Importfehlertexte und Mail-Einstellungsregeln werden gemeinsam verwendet.
+
 ## Tests
 
 Go-Tests und Browser-Syntaxchecks:
