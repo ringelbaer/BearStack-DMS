@@ -10,6 +10,7 @@ import (
 
 type LabelMergeSuggestion struct {
 	ID     int64       `json:"id"`
+	Score  float64     `json:"score"`
 	Source LabelPerson `json:"source"`
 	Target LabelPerson `json:"target"`
 }
@@ -23,7 +24,7 @@ func (l *Library) LabelNextMergeSuggestion(ctx context.Context) (*LabelMergeSugg
 		return nil, err
 	}
 	for _, candidate := range candidates {
-		out := LabelMergeSuggestion{ID: candidate.ID}
+		out := LabelMergeSuggestion{ID: candidate.ID, Score: candidate.Score}
 		valid := true
 		for _, side := range []struct {
 			id, revision, face int64

@@ -346,6 +346,14 @@ Auf Smartphones stehen die Navigationslinks der Personenansicht kompakt in zwei
 Spalten. Das Anzeigemenü sitzt neben den Filteraktionen, damit mehr Platz für
 die Personenbilder bleibt.
 
+Die Einzelpersonenansicht nutzt mobil eine kompakte Aktionsreihe mit **Alle Personen**,
+dem **Stift für die gesamte Gruppe** und dem Mehr-Menü. **Alle auswählen** markiert
+nur die Gesichter der aktuellen Seite. Anzeige, Hilfe und Mehr-Menü öffnen sich
+jeweils einzeln im Seitenfluss über die volle Breite, ohne andere Bedienelemente zu
+überdecken. Kleine Gesichtskarten füllen die verfügbare Breite gleichmäßig; auf
+schmalen Smartphones passen zwei Spalten nebeneinander. Die Einstellungen für
+Thumbnailgröße und Ordnerpfade bleiben gespeichert.
+
 Unter der Fotovorschau im Benennen-Dialog steht der aufbereitete Bildpfad,
 zum Beispiel **Fotos / 11.05.2026 · Urlaub / IMG_1234.jpg**. Er gehört immer zum
 angezeigten Gesicht, auch nach dem Wechsel des Vorschaubilds oder Gruppenfotos.
@@ -426,7 +434,7 @@ wird automatisch migriert. Die zusätzlichen Endpunkte
 
 **Gesichtsabgleich im Benennen-Dialog:** Die Lupe rechts neben dem Namensfeld
 vergleicht das aktuell angezeigte Gesicht auf Klick mit den gespeicherten
-Referenzgesichtern benannter Personen. Bis zu 20 Kandidaten ab 0,45 Ähnlichkeit
+Referenzgesichtern benannter Personen. Bis zu 20 Kandidaten ab der konfigurierten Ähnlichkeit (Standard 0,45)
 erscheinen bereits während des Abgleichs in derselben Vervollständigung, mit Name,
 Fotoanzahl und dem passenden Vergleichsgesicht. Erste geprüfte Treffer sind sofort
 auswählbar; bessere Treffer können die nach Ähnlichkeit sortierte Liste noch
@@ -560,8 +568,8 @@ Die JSON-Ansicht sowie der Ignorieren- und Bild-Endpunkt sind in OpenAPI dokumen
 zulässigen Referenzvektoren exakt. Anschließend werden die besten unterschiedlichen
 Personen mit aktuellen Sichtbarkeits- und Zuordnungsprüfungen ausgewählt. Viele
 ähnliche Referenzen oder bereits im Foto zugeordnete Personen verdrängen damit
-keine passenden Vergleichsgruppen. Die bisherigen Grenzwerte für neue Fotos
-bleiben bei 0,55 Ähnlichkeit und 0,08 Abstand zur zweitbesten Person.
+keine passenden Vergleichsgruppen. Die Standardgrenzwerte für neue Fotos
+liegen bei 0,55 Ähnlichkeit und 0,08 Abstand zur zweitbesten Person.
 
 Unter **Einstellungen → Gesichtserkennung → Vorhandene Zuordnungen verbessern**
 arbeitet ein separat pausierbarer Hintergrundlauf mit gespeicherten Vektoren,
@@ -574,11 +582,37 @@ Pakete. Geprüft werden höchstens 100 Datensätze je Paket mit zusätzlichem Ze
 
 Automatisch verschoben werden nur unbenannte, unbestätigte, nicht ignorierte und
 nicht favorisierte Gesichter zu ausdrücklich benannten Personen. Dafür gelten
-strengere Grenzwerte von 0,62 und 0,10 Abstand. Manuelle Trennungen bleiben erhalten;
+standardmäßig strengere Grenzwerte von 0,62 und 0,10 Abstand. Manuelle Trennungen bleiben erhalten;
 eine bereits im selben Foto vorhandene Zielperson ist ausgeschlossen. Schlechte
 Aufnahmen mit gemessener unzureichender Qualität treiben keinen automatischen
 Nachabgleich an. Die Zähler zeigen geprüfte Datensätze, neue Zuordnungen und im
 aktuellen Lauf erzeugte Vorschläge.
+
+**Expertenbereich (ab 0.50.0):** Unter **Einstellungen → Gesichtserkennung**
+lassen sich im ausklappbaren Expertenbereich drei getrennte Wertepaare einstellen:
+
+| Abgleich | Ähnlichkeit (Standard) | Mindestabstand (Standard) |
+| --- | --- | --- |
+| Automatische Zuordnung bei der Erkennung | 0,55 | 0,08 |
+| Automatische Zuordnung im Hintergrund | 0,62 | 0,10 |
+| Vorschläge zur manuellen Prüfung | 0,45 | 0,00 |
+
+Für jede Ähnlichkeit sind **0,4 bis 0,7**, für jeden Mindestabstand **0,0 bis 0,2**
+zulässig. Höhere Werte filtern strenger; der Abstand bezeichnet die Differenz zum
+besten anderen Personentreffer. Manuelle Vorschläge umfassen **Ähnliche Gruppen**
+und die Gesichtssuche nach benannten Personen. Bei Abstand 0 dürfen mehrere
+Alternativen erscheinen; ein positiver Abstand lässt nur einen eindeutig besten
+Treffer zu. In der Gesichtssuche wird dann die vollständige begrenzte Rangliste
+abgewartet, bevor Treffer ausgegeben werden. Die Werte sind keine Wahrscheinlichkeiten
+und werden durch menschliche Bewertungen nicht automatisch angepasst.
+
+Speichern geänderter Werte entfernt offene Gruppenvorschläge und plant einen neuen,
+paketweisen Abgleich der gespeicherten Gesichtsvektoren. Bei pausiertem Hintergrundlauf
+entstehen neue Gruppenvorschläge erst nach dem Fortsetzen. Abgelehnte Paare und manuelle
+Zuordnungen bleiben erhalten; bereits erfolgte automatische Zuordnungen werden nicht
+zurückgesetzt. Die Regeln zum Schutz bestätigter Zuordnungen gelten weiterhin.
+Bestehende Installationen erhalten durch die automatische Foto-Schema-Migration **30**
+die bisherigen Standardwerte; eine erneute Bildanalyse ist nicht nötig.
 
 **Gruppierungsstatistik der Erkennung:** Im normalen Status stehen die Zahlen
 **Bestehender Gruppe zugeordnet**, **Neue Gruppe gebildet** und der
@@ -597,9 +631,11 @@ Fünf-Sekunden-Cache, ohne Bilder oder Verzeichnisse zusätzlich zu lesen.
 
 Sind beide Gruppen unbenannt, erscheint in App und WebUI der **Stift – Zusammenführen und benennen/zuordnen**. Er öffnet die Namenssuche: einen neuen Namen speichern oder eine vorhandene Person auswählen, um beide Gruppen in einem Schritt zusammenzuführen und zu benennen beziehungsweise zuzuordnen. **Abbrechen** verändert nichts. Veränderte Gruppen oder Zielpersonen müssen erneut geprüft werden. Die App zeigt den Stift nur bei Servern mit `merge_naming` (ab BearStack 0.50.0); nach bestätigtem Speichern folgt das nächste Paar.
 
+Bei **Ähnliche Gruppen** zeigen WebUI und Android-App den Ähnlichkeitswert des aktuellen Gruppenpaars klein und mittig über den Entscheidungsbuttons, auf zwei Nachkommastellen gerundet. Der Wert beschreibt die Ähnlichkeit der angezeigten Vergleichsgesichter, keine Wahrscheinlichkeit. Nach einer Entscheidung erscheint der Wert des nächsten Paars. Ältere Server ohne `score` liefern in der App keine Wertanzeige.
+
 **Ähnliche Gruppen** unter `/photos/people/merge-suggestions` zeigt Fotobearbeitern
 bis zu 60 gespeicherte Zusammenführungsvorschläge. Auch ähnliche unbenannte
-Teilgruppen werden berücksichtigt. Vorschläge ab 0,45 Ähnlichkeit sind keine
+Teilgruppen werden berücksichtigt. Vorschläge ab der konfigurierten Schwelle (Standard 0,45) sind keine
 Wahrscheinlichkeitsangaben und benötigen eine Prüfung. **Zusammenführen** verwendet
 die angezeigten Gruppenrevisionen; zwischenzeitliche Änderungen verlangen eine
 neue Prüfung. **Getrennt lassen** bleibt als Entscheidung gespeichert und verhindert

@@ -77,7 +77,8 @@ func (l *Library) suggestPeopleForFace(ctx context.Context, id int64, emit func(
 	}
 	excluded[source.PersonID] = true
 	var candidates []facePersonCandidate
-	if emit == nil {
+	// Partial rankings cannot establish a positive lead over the runner-up.
+	if emit == nil || l.matchingThresholds().SuggestionMargin > 0 {
 		candidates, err = l.facePersonCandidates(ctx, l.index.db, vector, excluded, 20)
 	} else {
 		candidates, err = l.streamNamedFaceCandidates(ctx, vector, named, func(ranking []facePersonCandidate) error {
@@ -98,9 +99,13 @@ func (l *Library) faceSuggestionPeople(ctx context.Context, id, sourcePerson int
 	out := PeopleSuggestions{People: []PersonSuggestion{}}
 	ids := []int64{}
 	args := []any{}
-	for _, candidate := range candidates {
-		if candidate.score < faceSuggestionMinimum {
+	thresholds := l.matchingThresholds()
+	for index, candidate := range candidates {
+		if candidate.score < thresholds.SuggestionSimilarity {
 			break
+		}
+		if !reviewCandidateAllowed(candidates, index, thresholds.SuggestionMargin) {
+			continue
 		}
 		ids = append(ids, candidate.person)
 		args = append(args, candidate.face)
@@ -187,7 +192,7 @@ func (l *Library) streamNamedFaceCandidates(ctx context.Context, vector []float3
 			score = max(score, cosine(vector, reference))
 		}
 		candidate := facePersonCandidate{person: person, score: score}
-		if score >= faceSuggestionMinimum && (len(best) < 20 || compareFaceCandidates(candidate, best[len(best)-1]) < 0) {
+		if score >= l.matchingThresholds().SuggestionSimilarity && (len(best) < 20 || compareFaceCandidates(candidate, best[len(best)-1]) < 0) {
 			batch = append(batch, candidate)
 		}
 		if len(best) == 0 || (index+1)%32 == 0 {

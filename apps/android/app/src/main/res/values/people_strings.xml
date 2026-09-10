@@ -106,4 +106,5 @@
     <string name="people_face_search_running">Gesicht wird mit benannten Personen verglichen …</string>
     <string name="people_face_search_empty">Keine ähnlichen benannten Personen gefunden.</string>
     <string name="people_face_search_unavailable">Gesichtssuche nicht verfügbar. Bitte den Server aktualisieren oder die Person neu öffnen.</string>
+    <string name="people_merge_similarity">Ähnlichkeit: %1$.2f</string>
 </resources>

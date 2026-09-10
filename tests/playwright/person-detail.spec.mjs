@@ -61,12 +61,31 @@ test("person detail keeps actions compact and scopes face editing, selection and
     await expect(cards).toHaveCount(2);
     await expect(dialog).toHaveCount(1);
     await expect(page.locator(".people-pagination")).toBeHidden();
-    for (const width of [320,390,1440]) {
+    for (const width of [320,390,480,640,1440]) {
       await page.setViewportSize({width,height:900});
       await page.screenshot({path:`/tmp/bearstack-person-detail-${width}.png`,fullPage:true});
       const geometry = await cards.first().boundingBox();
-      expect(geometry.y).toBeLessThan(360); expect(geometry.height).toBeLessThan(260);
+      expect(geometry.y).toBeLessThan(width <= 640 ? 290 : 360); expect(geometry.height).toBeLessThan(260);
       expect(await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+    }
+    for (const width of [320,390]) {
+      await page.setViewportSize({width,height:900});
+      const display = page.locator("[data-detail-display]");
+      const help = page.locator(".person-detail-help");
+      const more = page.locator(".person-detail-more");
+      for (const [menu, panel] of [[display, ".people-display-options"], [help, ".person-detail-help-content"], [more, ":scope > div"]]) {
+        await menu.locator("summary").click();
+        await expect(menu).toHaveAttribute("open", "");
+        const box = await menu.locator(panel).boundingBox();
+        const firstCard = await cards.first().boundingBox();
+        expect(box.width).toBeGreaterThan(width-60);
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x+box.width).toBeLessThanOrEqual(width);
+        expect(box.y+box.height).toBeLessThanOrEqual(firstCard.y);
+        await page.screenshot({path:`/tmp/bearstack-person-detail-${width}-${panel.includes("help") ? "help" : panel.includes("options") ? "display" : "more"}.png`,fullPage:true});
+        expect(await page.locator('details[name="person-detail-tools"][open]').count()).toBe(1);
+      }
+      await more.locator("summary").click();
     }
     await page.setViewportSize({width:1440,height:900});
     await page.getByLabel("Anzeigeeinstellungen", {exact:true}).click();

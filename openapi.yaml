@@ -2376,7 +2376,10 @@ paths:
         Requires photos.edit. Performs a live comparison of the stored face embedding
         against eligible references of named groups, including favorites, without
         running image inference. Returns at most 20 candidates with similarity at
-        least 0.45, ordered by descending similarity and person ID for ties.
+        least the configured suggestion_similarity (default 0.45), ordered by descending
+        similarity and person ID for ties. A positive suggestion_margin requires the
+        best candidate to beat the runner-up by that margin; only that best candidate
+        is returned. With a positive margin, streaming waits for the complete ranking.
         The source group is excluded. Current source and candidate visibility is
         checked; ignored source faces return 409. No assignment is changed.
         face_id identifies the matching reference portrait, rather than the group's
@@ -2873,7 +2876,12 @@ paths:
       summary: Configure optional face recognition
       description: Requires photos.manage. Form writes redirect to the corresponding
         HTML page. Existing authentication, same-origin protection and audit logging
-        apply.
+        apply. Since 0.50.0, six optional expert fields configure similarity (0.4–0.7)
+        and margin (0–0.2) separately. Invalid, non-finite and duplicate threshold
+        values return 400 without saving. Changed thresholds atomically invalidate
+        open merge suggestions and schedule a new stored-vector pass; rejected pairs
+        remain intact. Paused reconciliation remains paused. No image inference is
+        needed, and existing assignments are not undone. Defaults preserve prior behavior.
       parameters: []
       requestBody:
         required: true
@@ -2914,6 +2922,42 @@ paths:
                     Omission preserves the existing value. Changes refresh stored references
                     before the next analysis or reassociation, without analyzing photos again.
                     The independent stored-vector worker also schedules a new pass.
+                assignment_similarity:
+                  type: number
+                  minimum: 0.4
+                  maximum: 0.7
+                  default: 0.55
+                  description: "Minimum similarity for initial automatic recognition assignment. Omission preserves the saved value."
+                assignment_margin:
+                  type: number
+                  minimum: 0
+                  maximum: 0.2
+                  default: 0.08
+                  description: "Minimum lead over the runner-up for initial automatic assignment. Omission preserves the saved value."
+                reconcile_similarity:
+                  type: number
+                  minimum: 0.4
+                  maximum: 0.7
+                  default: 0.62
+                  description: "Minimum similarity for retrospective automatic assignment to a confirmed named person. Omission preserves the saved value."
+                reconcile_margin:
+                  type: number
+                  minimum: 0
+                  maximum: 0.2
+                  default: 0.1
+                  description: "Minimum lead over the runner-up for retrospective automatic assignment. Omission preserves the saved value."
+                suggestion_similarity:
+                  type: number
+                  minimum: 0.4
+                  maximum: 0.7
+                  default: 0.45
+                  description: "Minimum similarity for cached merge suggestions and live named-person face search. Omission preserves the saved value."
+                suggestion_margin:
+                  type: number
+                  minimum: 0
+                  maximum: 0.2
+                  default: 0
+                  description: "Zero allows alternatives. A positive value requires a unique best candidate with this lead over the runner-up. Omission preserves the saved value."
                 interval_minutes:
                   type: integer
                   minimum: 1
@@ -3229,6 +3273,47 @@ components:
             format: binary
 
   schemas:
+    FaceThresholds:
+      type: object
+      description: Persisted expert settings since 0.50.0; human decisions do not tune these values automatically.
+      required: [assignment_similarity, assignment_margin, reconcile_similarity, reconcile_margin, suggestion_similarity, suggestion_margin]
+      properties:
+        assignment_similarity:
+          type: number
+          minimum: 0.4
+          maximum: 0.7
+          default: 0.55
+          description: "Minimum similarity for initial automatic recognition assignment."
+        assignment_margin:
+          type: number
+          minimum: 0
+          maximum: 0.2
+          default: 0.08
+          description: "Minimum lead over the runner-up for initial automatic assignment."
+        reconcile_similarity:
+          type: number
+          minimum: 0.4
+          maximum: 0.7
+          default: 0.62
+          description: "Minimum similarity for retrospective automatic assignment to a confirmed named person."
+        reconcile_margin:
+          type: number
+          minimum: 0
+          maximum: 0.2
+          default: 0.1
+          description: "Minimum lead over the runner-up for retrospective automatic assignment."
+        suggestion_similarity:
+          type: number
+          minimum: 0.4
+          maximum: 0.7
+          default: 0.45
+          description: "Minimum similarity for cached merge suggestions and live named-person face search."
+        suggestion_margin:
+          type: number
+          minimum: 0
+          maximum: 0.2
+          default: 0
+          description: "Zero allows alternatives. A positive value requires a unique best candidate with this lead over the runner-up."
     PhotoCatalogError:
       type: object
       required:
@@ -3734,6 +3819,9 @@ components:
       required: [id, source, target]
       properties:
         id: {type: integer, format: int64, minimum: 1}
+        score:
+          type: number
+          description: "Cosine similarity of the displayed comparison faces, not a probability. Included since 0.50.0; older servers omit it. Clients display two decimal places when present."
         source:
           allOf:
             - $ref: "#/components/schemas/LabelingPerson"
@@ -4577,6 +4665,8 @@ components:
               maximum: 100
               default: 30
               description: Reference target; all eligible favorites are included even above this number.
+            thresholds:
+              $ref: '#/components/schemas/FaceThresholds'
             interval_minutes:
               type: integer
         status:

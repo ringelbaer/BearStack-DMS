@@ -28,7 +28,7 @@
       selection.hidden = count === 0;
       document.body.classList.toggle("has-person-selection", count > 0);
       selection.querySelector("[data-detail-selection-count]").textContent = count + " ausgewählt";
-      selectAll.textContent = count === cards().length && count ? "Auswahl aufheben" : "Alle auf dieser Seite auswählen";
+      selectAll.textContent = count === cards().length && count ? "Auswahl aufheben" : "Alle auswählen";
     }
   }
   function setBusy(value) { busy = value; updateControls(); }

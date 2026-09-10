@@ -31,8 +31,8 @@ class MergeReviewTest {
             upper=6
             for(id in 3L..6L) people[id]=Person(id,if(id%2==0L) "Person $id" else "",1,1,id*10,listOf(id*10),
                 facePaths=mapOf(id*10 to "Fotos / Urlaub / Bild$id.jpg"),faceBounds=mapOf(id*10 to FaceBounds(.2f,.2f,.3f,.3f)))
-            mergePairs+=MergeSuggestion(1,people.getValue(3),people.getValue(4))
-            mergePairs+=MergeSuggestion(2,people.getValue(5),people.getValue(6))
+            mergePairs+=MergeSuggestion(1,people.getValue(3),people.getValue(4),.5234)
+            mergePairs+=MergeSuggestion(2,people.getValue(5),people.getValue(6),.6789)
         }
         setup(api)
         val store=ViewModelStore()
@@ -111,15 +111,18 @@ class MergeReviewTest {
     }
 
     @Test fun oneDecisionAtATimeButtonsVisibleWithLargeFontAndQueuePreserved() = screen(2f) {vm,api,_ ->
+        compose.onNodeWithTag("merge-similarity").assertIsDisplayed().assertTextEquals("Ähnlichkeit: 0,52")
         compose.onNodeWithText("Person 4").assertIsDisplayed()
         compose.onNodeWithText("Person 6").assertDoesNotExist()
         compose.onNodeWithTag("face-30").assertIsDisplayed()
         compose.onNodeWithTag("face-40").assertIsDisplayed()
         compose.onNodeWithText("Zusammenführen").assertIsDisplayed().performClick();idle(vm)
         compose.onNodeWithText("Person 4").assertDoesNotExist()
+        compose.onNodeWithTag("merge-similarity").assertIsDisplayed().assertTextEquals("Ähnlichkeit: 0,68")
         compose.onNodeWithText("Person 6").assertIsDisplayed()
         compose.onNodeWithText("Getrennt lassen").assertIsDisplayed().performClick();idle(vm)
         compose.onNodeWithText("Aktuell keine ähnlichen Gruppen.").assertIsDisplayed()
+        compose.onNodeWithTag("merge-similarity").assertDoesNotExist()
         compose.onNodeWithText("Zusammenführen").assertIsNotEnabled()
         compose.onNodeWithText("Getrennt lassen").assertIsNotEnabled()
         assertEquals(2,api.commits)

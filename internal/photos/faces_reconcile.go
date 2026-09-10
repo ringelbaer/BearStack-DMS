@@ -9,12 +9,6 @@ import (
 	"time"
 )
 
-// A retrospective automatic move is stricter than an initial assignment.
-// We only move unconfirmed faces into an explicitly named identity.
-const faceReconcileMinimum = 0.62
-const faceReconcileMargin = 0.10
-const faceSuggestionMinimum = 0.45
-
 type FaceReconciliationProgress struct {
 	Pending     bool  `json:"pending"`
 	Cursor      int64 `json:"cursor"`
@@ -217,7 +211,8 @@ func (l *Library) ReconcileFacesBatch(ctx context.Context, batchSize int) (FaceR
 		if err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM photo_face_merge_suggestions WHERE rejected=1 AND ((source_id=? AND target_id=?) OR (source_id=? AND target_id=?)))`, person, best.person, best.person, person).Scan(&rejected); err != nil {
 			return state, err
 		}
-		if trusted && !rejected && best.score >= faceReconcileMinimum && margin >= faceReconcileMargin {
+		thresholds := l.matchingThresholds()
+		if trusted && !rejected && best.score >= thresholds.ReconcileSimilarity && margin >= thresholds.ReconcileMargin {
 			if _, err = tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=? WHERE id=?`, best.person, f.id); err != nil {
 				return state, err
 			}
@@ -225,9 +220,12 @@ func (l *Library) ReconcileFacesBatch(ctx context.Context, batchSize int) (FaceR
 			reassigned++
 			continue
 		}
-		for _, candidate := range candidates {
-			if candidate.score < faceSuggestionMinimum {
+		for index, candidate := range candidates {
+			if candidate.score < thresholds.SuggestionSimilarity {
 				break
+			}
+			if !reviewCandidateAllowed(candidates, index, thresholds.SuggestionMargin) {
+				continue
 			}
 			evidence = append(evidence, faceSuggestionEvidence{source: person, target: candidate.person, face: f.id, targetFace: candidate.face, score: candidate.score})
 		}

@@ -72,6 +72,7 @@ type FaceStatus struct {
 	People                  int            `json:"people"`
 }
 type faceRuntime struct {
+	thresholds     FaceThresholds
 	referenceLimit int
 	mu             sync.Mutex
 	graph          *faceVectorIndex

@@ -210,3 +210,33 @@ test("general and document forms preserve each other's settings", async ({ brows
   await expect(page.locator('input[name="tag_display_mode"][value="strtoupper"]')).toBeChecked();
   await context.close();
 });
+
+test("face expert settings expand, validate and persist on mobile", async ({ browser }) => {
+  const { context, page } = await adminPage(browser, { viewport: { width: 390, height: 844 } });
+  try {
+    await page.goto(baseURL + "/settings/photos/faces");
+    const expert = page.locator("details.face-settings-expert");
+    const similarity = expert.locator('[name="suggestion_similarity"]');
+    await expect(similarity).not.toBeVisible();
+    await expert.locator("summary").click();
+    await expect(similarity).toBeVisible();
+    await expect(expert.locator('input[type="number"]')).toHaveCount(6);
+    await similarity.fill("0.71");
+    expect(await similarity.evaluate(input => input.checkValidity())).toBe(false);
+    await similarity.fill("0.6");
+    await expert.locator('[name="suggestion_margin"]').fill("0.1");
+    for (const width of [320, 390, 1440]) {
+      await page.setViewportSize({ width, height: 844 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+    }
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await expect(page.locator(".notice").filter({ hasText: "Einstellungen gespeichert." })).toBeVisible();
+    await expert.locator("summary").click();
+    await expect(similarity).toHaveValue("0.6");
+    await expect(expert.locator('[name="suggestion_margin"]')).toHaveValue("0.1");
+    await expect(expert.locator('[name="assignment_similarity"]')).toHaveValue("0.55");
+    await expect(expert.locator('[name="reconcile_similarity"]')).toHaveValue("0.62");
+  } finally {
+    await context.close();
+  }
+});

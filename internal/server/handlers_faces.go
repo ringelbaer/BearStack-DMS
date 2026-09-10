@@ -272,6 +272,32 @@ func (s *Server) handleSaveFaceSettings(w http.ResponseWriter, r *http.Request) 
 		s.faceError(w, r, err)
 		return
 	}
+	settings.Thresholds = previous.Thresholds
+	for _, field := range []struct {
+		name  string
+		value *float64
+	}{
+		{"assignment_similarity", &settings.Thresholds.AssignmentSimilarity},
+		{"assignment_margin", &settings.Thresholds.AssignmentMargin},
+		{"reconcile_similarity", &settings.Thresholds.ReconcileSimilarity},
+		{"reconcile_margin", &settings.Thresholds.ReconcileMargin},
+		{"suggestion_similarity", &settings.Thresholds.SuggestionSimilarity},
+		{"suggestion_margin", &settings.Thresholds.SuggestionMargin},
+	} {
+		if r.PostForm.Has(field.name) {
+			values := r.PostForm[field.name]
+			value, parseErr := strconv.ParseFloat(r.PostForm.Get(field.name), 64)
+			if len(values) != 1 || parseErr != nil {
+				s.faceError(w, r, errors.New("ungültiger Gesichts-Schwellwert"))
+				return
+			}
+			*field.value = value
+		}
+	}
+	if err := settings.Thresholds.Validate(); err != nil {
+		s.faceError(w, r, err)
+		return
+	}
 	settings.ReconcileEnabled = previous.ReconcileEnabled
 	if r.PostForm.Has("reconcile_enabled") {
 		raw := r.PostForm.Get("reconcile_enabled")

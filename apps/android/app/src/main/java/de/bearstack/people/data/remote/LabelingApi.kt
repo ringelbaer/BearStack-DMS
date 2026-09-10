@@ -21,7 +21,7 @@ data class Person(val id: Long, val name: String, val revision: Long, val count:
 data class FaceMatch(val id: Long, val name: String, val count: Long, val faceId: Long)
 
 data class Candidates(val people: List<Person>, val next: Long, val hasNext: Boolean)
-data class MergeSuggestion(val id: Long, val source: Person, val target: Person)
+data class MergeSuggestion(val id: Long, val source: Person, val target: Person, val score: Double? = null)
 data class Receipt(val operation: String, val action: String, val source: Long, val target: Long, val newId: Long,
     val faces: Long, val groups: Int, val at: Long, val sourceRevision: Long = 0)
 class ApiFailure(val status: Int, val code: String, message: String,
@@ -110,7 +110,8 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
         } }.onEach { requireMessage(it.id > 0 && it.faceId > 0 && it.name.isNotBlank() && it.count > 0, R.string.error_response_invalid) }
     }
     override suspend fun nextMergeSuggestion(): MergeSuggestion? = json("merge-suggestions/next").optJSONObject("suggestion")?.let {
-        MergeSuggestion(it.getLong("id"),person(it.getJSONObject("source")),person(it.getJSONObject("target")))
+        MergeSuggestion(it.getLong("id"),person(it.getJSONObject("source")),person(it.getJSONObject("target")),
+            it.optDouble("score",Double.NaN).takeIf {score -> score.isFinite()})
     }
     override suspend fun action(id: Long, body: String): Receipt = receipt(json("people/$id/actions", body=body))
     override suspend fun receipt(operation: String, dataset: String): Receipt = receipt(json("actions/$operation",mapOf("dataset" to dataset)))

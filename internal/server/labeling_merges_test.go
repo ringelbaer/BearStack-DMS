@@ -22,6 +22,9 @@ func TestLabelingMergeHTTP(t *testing.T) {
 			if strings.Contains(html.Body.String(), "data-merge-name") != (action == "name_merge") {
 				t.Fatal("wrong pencil visibility")
 			}
+			if !strings.Contains(html.Body.String(), fmt.Sprintf("Ähnlichkeit: %.2f", expected.Score)) {
+				t.Fatal("missing similarity in WebUI")
+			}
 			const path = "/api/photos/labeling/v1/merge-suggestions/next"
 			for _, user := range []string{"reader", "editor", "manager"} {
 				w := labelRequest(s, "GET", path, user, "")
@@ -34,7 +37,7 @@ func TestLabelingMergeHTTP(t *testing.T) {
 				var result struct {
 					Suggestion photos.LabelMergeSuggestion `json:"suggestion"`
 				}
-				if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &result) != nil || result.Suggestion.ID != expected.ID || len(result.Suggestion.Source.Faces) != 1 || len(result.Suggestion.Target.Faces) != 1 || w.Header().Get("Cache-Control") != "private, no-store" || strings.Contains(w.Body.String(), "embedding") {
+				if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &result) != nil || result.Suggestion.ID != expected.ID || result.Suggestion.Score != expected.Score || len(result.Suggestion.Source.Faces) != 1 || len(result.Suggestion.Target.Faces) != 1 || w.Header().Get("Cache-Control") != "private, no-store" || strings.Contains(w.Body.String(), "embedding") {
 					t.Fatalf("%s: %d %s", user, w.Code, w.Body.String())
 				}
 			}

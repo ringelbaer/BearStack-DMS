@@ -48,6 +48,11 @@ func cosine(a, b []float32) float64 {
 
 func (l *Library) ensureFaceGraph(ctx context.Context, model string) error {
 	rt := &l.faceRuntime
+	thresholds, err := l.FaceThresholds(ctx)
+	if err != nil {
+		return err
+	}
+	rt.thresholds = thresholds
 	if err := l.rebuildFaceReferences(ctx); err != nil {
 		rt.graph = nil
 		return err
@@ -115,13 +120,14 @@ func (l *Library) nearestPerson(ctx context.Context, tx faceRowsQuery, v []float
 	if err != nil || len(candidates) == 0 {
 		return 0, err
 	}
-	// Keep the established conservative identity threshold and person-level margin.
+	// Apply the configured recognition threshold and person-level margin.
 	// An exact search establishes when no other currently visible person exists.
 	second := -1.0
 	if len(candidates) > 1 {
 		second = candidates[1].score
 	}
-	if candidates[0].score < 0.55 || candidates[0].score-second < 0.08 {
+	thresholds := l.matchingThresholds()
+	if candidates[0].score < thresholds.AssignmentSimilarity || candidates[0].score-second < thresholds.AssignmentMargin {
 		return 0, nil
 	}
 	return candidates[0].person, nil

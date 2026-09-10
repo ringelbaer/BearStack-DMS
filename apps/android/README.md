@@ -217,6 +217,8 @@ Es gibt ein aktives Profil. Zugangsdaten und bestätigtes Zertifikat werden mit 
 
 ## Ähnliche Gruppen
 
+Ab App **0.10.0** und BearStack **0.50.0** steht der Ähnlichkeitswert des aktuellen Paars klein und mittig über den Entscheidungsbuttons. Zwei Nachkommastellen, keine Prozentwahrscheinlichkeit; bei älteren Servern ohne Wert bleibt die Zeile ausgeblendet.
+
 Sind beide Gruppen unbenannt, erscheint in App und WebUI der **Stift – Zusammenführen und benennen/zuordnen**. Er öffnet die Namenssuche: einen neuen Namen speichern oder eine vorhandene Person auswählen, um beide Gruppen in einem Schritt zusammenzuführen und zu benennen beziehungsweise zuzuordnen. **Abbrechen** verändert nichts. Veränderte Gruppen oder Zielpersonen müssen erneut geprüft werden. Die App zeigt den Stift nur bei Servern mit `merge_naming` (ab BearStack 0.50.0); nach bestätigtem Speichern folgt das nächste Paar.
 
 Ab App **0.9.0** und **BearStack 0.49.0** öffnet **Menü → Ähnliche Gruppen** jeweils eine einzelne Entscheidung. Zwei Portraits zeigen die tatsächlichen Vergleichsgesichter der Gruppen mit Namen und Gesichtsanzahl. Es gibt keine scrollbare Vorschlagsliste; die Portraits passen sich dem verfügbaren Platz an und die beiden Entscheidungsbuttons bleiben unten sichtbar.

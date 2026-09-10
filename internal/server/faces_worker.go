@@ -15,12 +15,13 @@ import (
 const faceSettingsKey = "photo_face_settings"
 
 type FaceSettings struct {
-	ReconcileEnabled bool `json:"reconcile_enabled"`
-	ReferenceLimit   int  `json:"reference_limit"`
-	Enabled          bool `json:"enabled"`
-	BatchSize        int  `json:"batch_size"`
-	DelayMillis      int  `json:"delay_millis"`
-	IntervalMinutes  int  `json:"interval_minutes"`
+	Thresholds       *photos.FaceThresholds `json:"thresholds,omitempty"`
+	ReconcileEnabled bool                   `json:"reconcile_enabled"`
+	ReferenceLimit   int                    `json:"reference_limit"`
+	Enabled          bool                   `json:"enabled"`
+	BatchSize        int                    `json:"batch_size"`
+	DelayMillis      int                    `json:"delay_millis"`
+	IntervalMinutes  int                    `json:"interval_minutes"`
 }
 type faceWorkerState struct {
 	analysisOnce     sync.Once
@@ -64,9 +65,19 @@ func (s *Server) faceSettings(ctx context.Context) (FaceSettings, error) {
 	v.DelayMillis = max(100, min(60000, v.DelayMillis))
 	v.IntervalMinutes = max(1, min(1440, v.IntervalMinutes))
 	v.ReferenceLimit, err = s.photos.FaceReferenceLimit(ctx)
+	if err != nil {
+		return v, err
+	}
+	thresholds, err := s.photos.FaceThresholds(ctx)
+	v.Thresholds = &thresholds
 	return v, err
 }
 func (s *Server) saveFaceSettings(ctx context.Context, v FaceSettings) error {
+	if v.Thresholds != nil {
+		if err := s.photos.SetFaceThresholds(ctx, *v.Thresholds); err != nil {
+			return err
+		}
+	}
 	// Reference limits are authoritative in the photo DB. Zero preserves the
 	// current value for existing internal callers and older forms.
 	if v.ReferenceLimit != 0 {
@@ -74,6 +85,8 @@ func (s *Server) saveFaceSettings(ctx context.Context, v FaceSettings) error {
 			return err
 		}
 	}
+	// Thresholds are authoritative in the photo DB; do not keep a second copy.
+	v.Thresholds = nil
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err

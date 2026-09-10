@@ -57,6 +57,11 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                 Column(Modifier.fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal+WindowInsetsSides.Bottom))
                     .padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                    suggestion?.score?.let {score ->
+                        Text(text(R.string.people_merge_similarity,score),style=MaterialTheme.typography.bodySmall,
+                            color=MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier=Modifier.align(Alignment.CenterHorizontally).testTag("merge-similarity"))
+                    }
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                         Button(onClick={vm.decideMerge(true)},enabled=enabled && suggestion!=null,modifier=Modifier.weight(1f)) {Text(text(R.string.people_merge))}
                         if(state.mergeNaming && suggestion?.source?.name=="" && suggestion.target.name.isEmpty()) {

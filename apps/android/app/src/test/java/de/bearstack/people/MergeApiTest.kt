@@ -14,7 +14,7 @@ import org.junit.Test
 class MergeApiTest {
     @Test fun nextPairPreservesWitnessMetadataProxyPrefixAndEmptyState() = runBlocking {
         val key="a".repeat(64)
-        val responses=ArrayDeque(listOf("""{"suggestion":{"id":8,
+        val responses=ArrayDeque(listOf("""{"suggestion":{"id":8,"score":0.5234,
             "source":{"id":2,"name":"","revision":7,"count":5000,"face_id":9000,"faces":[{"id":9000,"original_key":"$key","display_path":"Fotos / Urlaub / A.jpg","bounds":{"x":0.1,"y":0.2,"width":0.3,"height":0.4}}]},
             "target":{"id":3,"name":"Anna","revision":9,"count":30,"face_id":11,"faces":[{"id":11,"display_path":"Fotos / B.jpg"}]}}}""",
             """{"suggestion":null}"""))
@@ -27,6 +27,7 @@ class MergeApiTest {
         try {
             val api=LabelingApi(client,"https://example.test/bearstack/")
             val pair=api.nextMergeSuggestion()!!
+            assertEquals(0.5234,pair.score!!,0.0)
             assertEquals(8L,pair.id);assertEquals(5000L,pair.source.count)
             assertEquals(listOf(9000L),pair.source.faces)
             assertEquals("Anna",pair.target.name);assertEquals(9L,pair.target.revision)
@@ -36,6 +37,16 @@ class MergeApiTest {
             assertNull(api.nextMergeSuggestion())
             assertEquals(List(2) {"/bearstack/api/photos/labeling/v1/merge-suggestions/next"},paths)
         } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+    }
+
+    @Test fun olderServerScoreIsAbsent() = runBlocking {
+        val body="""{"suggestion":{"id":1,"source":{"id":2,"name":"","revision":1,"count":1,"face_id":2,"faces":[]},"target":{"id":3,"name":"","revision":1,"count":1,"face_id":3,"faces":[]}}}"""
+        val client=OkHttpClient.Builder().addInterceptor {chain ->
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body(body.toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        try {assertNull(LabelingApi(client,"https://example.test/").nextMergeSuggestion()!!.score)}
+        finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
     }
 
     @Test fun mergeNamingCapabilityRequiresExplicitServerSupport() = runBlocking {

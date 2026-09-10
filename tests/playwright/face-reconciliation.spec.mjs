@@ -154,6 +154,10 @@ test("stored face reconciliation works offline with responsive merge review and 
     await page.getByRole("link", { name: "Zusammenführungsvorschläge", exact: true }).click();
     const cards = page.locator(".face-merge-suggestion");
     await expect(cards).toHaveCount(2);
+    for (const score of await cards.locator(".face-merge-score").all()) {
+      await expect(score).toHaveText(/^Ähnlichkeit: 0\.\d{2}$/);
+      await expect(score).toHaveCSS("text-align", "center");
+    }
     for (const width of [320, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       for (const image of await cards.locator("img").all()) {

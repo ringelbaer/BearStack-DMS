@@ -67,6 +67,29 @@
             <p class="muted" id="face-reference-help">Standard: 30. Alle Favoriten werden verwendet, auch oberhalb dieser Anzahl. Freie Plätze werden aus möglichst vielen Galerieordnern ergänzt. Änderungen wirken vor der nächsten Analyse.</p>
           </fieldset>
         </div>
+        <details class="face-settings-expert">
+          <summary>Expertenbereich: Ähnlichkeit und Mindestabstand</summary>
+          <p class="muted">Ähnlichkeit: 0,4–0,7; Mindestabstand zum besten anderen Treffer: 0,0–0,2. Höhere Werte filtern strenger. Ähnlichkeitswerte sind keine Wahrscheinlichkeiten. Menschliche Entscheidungen ändern diese Werte nicht automatisch.</p>
+          <fieldset><legend>Automatische Zuordnung bei der Erkennung</legend>
+            <div class="face-settings-inputs">
+              <label>Ähnlichkeit (Standard 0,55)<input type="number" name="assignment_similarity" min="0.4" max="0.7" step="0.01" required value="{{.FaceSettings.Settings.Thresholds.AssignmentSimilarity}}"></label>
+              <label>Mindestabstand (Standard 0,08)<input type="number" name="assignment_margin" min="0" max="0.2" step="0.01" required value="{{.FaceSettings.Settings.Thresholds.AssignmentMargin}}"></label>
+            </div>
+          </fieldset>
+          <fieldset><legend>Automatische Zuordnung im Hintergrund</legend>
+            <div class="face-settings-inputs">
+              <label>Ähnlichkeit (Standard 0,62)<input type="number" name="reconcile_similarity" min="0.4" max="0.7" step="0.01" required value="{{.FaceSettings.Settings.Thresholds.ReconcileSimilarity}}"></label>
+              <label>Mindestabstand (Standard 0,10)<input type="number" name="reconcile_margin" min="0" max="0.2" step="0.01" required value="{{.FaceSettings.Settings.Thresholds.ReconcileMargin}}"></label>
+            </div>
+          </fieldset>
+          <fieldset><legend>Vorschläge zur manuellen Prüfung</legend>
+            <div class="face-settings-inputs">
+              <label>Ähnlichkeit (Standard 0,45)<input type="number" name="suggestion_similarity" min="0.4" max="0.7" step="0.01" required value="{{.FaceSettings.Settings.Thresholds.SuggestionSimilarity}}"></label>
+              <label>Mindestabstand (Standard 0,00)<input type="number" name="suggestion_margin" min="0" max="0.2" step="0.01" required value="{{.FaceSettings.Settings.Thresholds.SuggestionMargin}}"></label>
+            </div>
+          </fieldset>
+          <p class="muted">Manuelle Vorschläge gelten für „Ähnliche Gruppen“ und die Gesichtssuche nach benannten Personen. Abstand 0 erlaubt mehrere Alternativen; ein positiver Abstand verlangt einen eindeutig besten Treffer. Änderungen verwerfen offene Vorschläge und planen einen neuen Hintergrundabgleich mit gespeicherten Gesichtsmerkmalen. Bei pausiertem Abgleich entstehen neue Gruppenvorschläge erst nach dem Fortsetzen. Abgelehnte Paare und manuelle Zuordnungen bleiben erhalten. Automatische Hintergrundzuordnungen benötigen weiterhin eine bestätigte benannte Zielperson.</p>
+        </details>
         <div class="settings-actions"><button type="submit">Speichern</button></div>
       </form>
 
