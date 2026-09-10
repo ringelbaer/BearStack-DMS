@@ -21,6 +21,8 @@ test.beforeAll(async () => {
   await writeFile(path.join(photos, "f.png"), png);
   await writeFile(path.join(photos, "g.png"), png);
   await writeFile(path.join(photos, "h.png"), png);
+  await writeFile(path.join(photos, "i.png"), png);
+  await writeFile(path.join(photos, "j.png"), png);
   service = http.createServer((request, response) => {
     request.resume();
     request.on("end", () => {
@@ -102,8 +104,19 @@ test("draw and name missing faces with mouse, touch and keyboard without inferen
   await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: touchBounds.x + touchBounds.width * .6, y: touchBounds.y + touchBounds.height * .6 }] });
   await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await drawing.getByRole("combobox", { name: "Name", exact: true }).fill("Erika");
-  await drawing.getByRole("option").filter({ hasText: "Erika" }).first().click();
-  await drawing.getByRole("button", { name: "Gesicht speichern" }).click();
+  const erika = drawing.getByRole("option").filter({ hasText: "Erika (#" });
+  await expect(erika.locator(".person-picker-thumbnail")).toBeVisible();
+  await erika.scrollIntoViewIfNeeded();
+  const optionBounds = await erika.boundingBox();
+  // A scroll gesture starting on a suggestion must not save the draft.
+  const touchX = optionBounds.x + optionBounds.width / 2, touchY = optionBounds.y + optionBounds.height / 2;
+  await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: touchX, y: touchY }] });
+  await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: touchX, y: touchY + 45 }] });
+  await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  expect((await (await context.request.get(baseURL + "/photos/faces?path=f.png")).json()).photo.faces).toHaveLength(0);
+  await expect(drawing).toBeVisible();
+  await client.detach();
+  await erika.tap();
   await expect(drawing).not.toBeVisible();
   await expect(lightbox.locator(".photo-info-face")).toContainText("Erika");
   const assigned = (await (await context.request.get(baseURL + "/photos/faces?path=f.png")).json()).photo.faces[0];
@@ -111,6 +124,102 @@ test("draw and name missing faces with mouse, touch and keyboard without inferen
   expect(inferenceCalls).toBe(beforeCalls);
   expect(errors).toEqual([]);
   await context.close();
+});
+
+test("drawing shows labeled existing regions and submits picker choices only with a valid draft", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, hasTouch: true, httpCredentials: { username: "editor", password: "secret" } });
+  try {
+    const post = async (route, form) => {
+      const response = await context.request.post(baseURL + route, { form, headers: { Origin: baseURL, Accept: "application/json" } });
+      expect(response.ok(), await response.text()).toBe(true);
+      return response.json();
+    };
+    detectionsPerPhoto = 3; embeddingIndex = 20;
+    const detected = (await post("/photos/faces/analyze", { path: "i.png" })).photo.faces;
+    const name = 'Zoë <img src=x onerror="alert(1)">';
+    await post(`/photos/people/${detected[0].person_id}/rename`, { name });
+    await post("/photos/faces/edit", { action: "ignore", face_id: String(detected[1].id) });
+    const calls = inferenceCalls;
+    const page = await context.newPage();
+    const errors = []; page.on("pageerror", error => errors.push(error.message));
+    let writes = 0, faceReads = 0;
+    page.on("request", request => {
+      const pathname = new URL(request.url()).pathname;
+      if (pathname === "/photos/faces/manual" && request.method() === "POST") writes++;
+      if (pathname === "/photos/faces") faceReads++;
+    });
+    await page.goto(baseURL + "/photos");
+    await page.locator('[data-photo-path="i.png"] .photo-card-button').click();
+    const lightbox = page.locator("[data-photo-lightbox]");
+    await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await expect(lightbox.locator(".photo-info-face")).toHaveCount(2);
+    const reads = faceReads;
+    const draw = lightbox.getByRole("button", { name: "Gesicht einrahmen", exact: true });
+    const drawing = page.locator("[data-face-drawing-dialog]");
+    const boxes = drawing.locator(".face-drawing-existing-box");
+    const input = drawing.getByRole("combobox", { name: "Name", exact: true });
+    await draw.click();
+    await expect(drawing.locator("[data-face-drawing-status]")).toHaveText("Ziehe einen Rahmen um das Gesicht.");
+    expect(faceReads).toBe(reads);
+    await expect(boxes).toHaveCount(3);
+    await expect(boxes.locator("span")).toHaveText([name, "Unbenannt (ignoriert)", "Unbenannt"]);
+    await expect(boxes.locator("img")).toHaveCount(0);
+    await expect(boxes.nth(1)).toHaveAttribute("data-ignored", "");
+    for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
+      await page.setViewportSize(viewport);
+      // The photo is square and letterboxed differently on mobile and desktop.
+      await expect.poll(async () => {
+        const stage = await drawing.locator("[data-face-drawing-stage]").boundingBox();
+        const side = Math.min(stage.width, stage.height);
+        const left = stage.x + (stage.width - side) / 2;
+        const top = stage.y + (stage.height - side) / 2;
+        const actual = await boxes.first().boundingBox();
+        return Math.max(Math.abs(actual.x - left - detected[0].x * side), Math.abs(actual.y - top - detected[0].y * side),
+          Math.abs(actual.width - detected[0].width * side), Math.abs(actual.height - detected[0].height * side));
+      }).toBeLessThan(2);
+      await expect(boxes.first().locator("span")).toBeVisible();
+      await page.screenshot({ path: `/tmp/bearstack-face-drawing-labels-${viewport.width}.png`, fullPage: true });
+    }
+    // Choosing before drawing cannot create a region or close the dialog.
+    await input.fill("Zoë");
+    const zoe = drawing.getByRole("option").filter({ hasText: "Zoë <img" }).first();
+    await expect(zoe.locator(".person-picker-thumbnail")).toBeVisible();
+    await zoe.tap();
+    await expect(drawing.locator("[data-face-drawing-status]")).toContainText("zuerst einen Rahmen");
+    expect(writes).toBe(0);
+    await drawing.getByRole("button", { name: "Rahmen mittig setzen" }).click();
+    await input.fill("Klara");
+    await expect(drawing.getByRole("option", { name: "Neu anlegen: „Klara“", exact: true })).toBeVisible();
+    await page.route("**/photos/faces/manual", route => route.fulfill({ status: 409, json: { error: "Changed" } }), { times: 1 });
+    await input.press("ArrowDown");
+    await input.press("Enter");
+    await expect(drawing.locator("[data-face-drawing-status]")).toContainText("wurde geändert");
+    await expect(drawing).toBeVisible();
+    expect(writes).toBe(1);
+    // Selecting the create option by keyboard confirms and closes after success.
+    await input.click();
+    await expect(drawing.getByRole("option", { name: "Neu anlegen: „Klara“", exact: true })).toBeVisible();
+    await input.press("ArrowDown");
+    await input.press("Enter");
+    await expect(drawing).not.toBeVisible();
+    expect(writes).toBe(2);
+    await expect(lightbox.locator(".photo-info-face").filter({ hasText: "Klara" })).toHaveCount(1);
+    await draw.click();
+    await expect(drawing.locator("[data-face-drawing-status]")).toHaveText("Ziehe einen Rahmen um das Gesicht.");
+    await expect(boxes).toHaveCount(4);
+    await expect(boxes.filter({ hasText: "Klara" })).toBeVisible();
+    await drawing.getByRole("button", { name: "Abbrechen" }).click();
+    await lightbox.locator("[data-photo-close]").press("Enter");
+    await page.locator('[data-photo-path="j.png"] .photo-card-button').click();
+    await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await draw.click();
+    await expect(drawing.locator("[data-face-drawing-status]")).toHaveText("Ziehe einen Rahmen um das Gesicht.");
+    await expect(boxes).toHaveCount(0);
+    await expect(input).toHaveValue("");
+    await expect(drawing.locator("[data-face-drawing-box]")).toBeHidden();
+    expect(inferenceCalls).toBe(calls);
+    expect(errors).toEqual([]);
+  } finally { detectionsPerPhoto = 1; embeddingIndex = 0; await context.close(); }
 });
 test.afterAll(async ({}, info) => {
   info.setTimeout(75000);

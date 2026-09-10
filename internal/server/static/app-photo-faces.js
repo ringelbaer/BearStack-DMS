@@ -11,6 +11,7 @@
       var drawButton = section.querySelector("[data-photo-face-draw]");
       var restoreButton = section.querySelector("[data-photo-face-unignore]");
       var ignoredCount = 0, ignoredPeople = [], uncertain = false;
+      var currentFaces = [];
       var current, controller, generation = 0, busy = false, editing = false, displayPath = "", revision = "";
       function setBusy(value) {
         busy = value;
@@ -25,6 +26,7 @@
         generation++;
         if (controller) controller.abort();
         current = null;
+        currentFaces = [];
         grid.replaceChildren();
         status.textContent = "";
         displayPath = "";
@@ -35,6 +37,7 @@
         if (!photo || photo.path !== current.path || !Array.isArray(photo.faces)) throw new Error("Ungültige Antwort der Gesichtserkennung.");
         displayPath = photo.display_path || "";
         revision = photo.revision || "";
+        currentFaces = photo.faces;
         ignoredCount = photo.faces.filter(function (face) { return face.ignored; }).length;
         ignoredPeople = Array.from(new Set(photo.faces.filter(function (face) { return face.ignored; }).map(function (face) { return String(face.person_id); })));
         var faces = photo.faces.filter(function (face) { return !face.ignored; });
@@ -128,7 +131,7 @@
       drawButton.addEventListener("click", function () {
         if (!current || busy || editing || uncertain) return;
         options.stopSlideshow();
-        drawing.open(current.path, displayPath, drawButton);
+        drawing.open(current.path, displayPath, drawButton, currentFaces);
       });
       return {
         reset: reset,

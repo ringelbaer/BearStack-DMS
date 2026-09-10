@@ -225,7 +225,7 @@
     var matching = false;
     var allowCreate = form.hasAttribute("data-person-create");
     var renameAction = allowCreate ? form.action : "";
-    var items = [], active = -1, revision = 0, pointerPerson;
+    var items = [], active = -1, revision = 0, pointerPerson, touchChoice;
     var timer, controller, pendingDirection, renderFrame, pendingRender;
 
     function cancel() {
@@ -245,6 +245,7 @@
       input.removeAttribute("aria-activedescendant");
       active = -1;
       pointerPerson = undefined;
+      touchChoice = null;
     }
     function validate() {
       if (form.hasAttribute("data-person-restore")) {
@@ -462,13 +463,32 @@
     });
     // Keep keyboard focus on the combobox when clicking or tapping an option.
     list.addEventListener("pointerdown", function (event) {
+      if (event.isPrimary === false || event.button !== 0) return;
       var option = event.target.closest("[data-person-option]");
       if (option) {
         pointerPerson = items[Number(option.dataset.personOption)].id;
+        touchChoice = event.pointerType === "touch" ? { id: event.pointerId, x: event.clientX, y: event.clientY } : null;
         event.preventDefault();
       }
     });
+    // Touch release remains reliable when the browser suppresses the follow-up
+    // click after drawing. Scrolling/cancelled gestures never select a person.
+    list.addEventListener("pointercancel", function () { touchChoice = null; pointerPerson = undefined; });
+    list.addEventListener("pointermove", function (event) {
+      if (touchChoice && touchChoice.id === event.pointerId &&
+          (Math.abs(event.clientX - touchChoice.x) > 10 || Math.abs(event.clientY - touchChoice.y) > 10)) touchChoice = null;
+    });
+    list.addEventListener("pointerup", function (event) {
+      var touch = touchChoice;
+      touchChoice = null;
+      if (!touch || touch.id !== event.pointerId) return;
+      if (Math.abs(event.clientX - touch.x) <= 10 && Math.abs(event.clientY - touch.y) <= 10) {
+        choose(items.findIndex(function (person) { return person.id === pointerPerson; }));
+      }
+      pointerPerson = undefined;
+    });
     list.addEventListener("click", function (event) {
+      if (event.pointerType === "touch") return;
       var option = event.target.closest("[data-person-option]");
       if (option) choose(pointerPerson !== undefined ? items.findIndex(function (person) { return person.id === pointerPerson; }) : Number(option.dataset.personOption));
       pointerPerson = undefined;

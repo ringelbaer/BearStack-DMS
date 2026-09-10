@@ -7,6 +7,7 @@
       var stage = dialog.querySelector("[data-face-drawing-stage]");
       var image = dialog.querySelector("[data-face-drawing-image]");
       var outline = dialog.querySelector("[data-face-drawing-box]");
+      var existing = dialog.querySelector("[data-face-drawing-existing]");
       var status = dialog.querySelector("[data-face-drawing-status]");
       var center = dialog.querySelector("[data-face-drawing-center]");
       var submit = form.querySelector("[data-person-submit]");
@@ -26,6 +27,36 @@
         var scale = Math.min(rect.width / image.naturalWidth, rect.height / image.naturalHeight);
         var width = image.naturalWidth * scale, height = image.naturalHeight * scale;
         return { x: (rect.width - width) / 2, y: (rect.height - height) / 2, width: width, height: height, left: rect.left, top: rect.top };
+      }
+      function showExisting(faces) {
+        var boxes = document.createDocumentFragment();
+        faces.forEach(function (face) {
+          var x = face.x, y = face.y, width = face.width, height = face.height;
+          if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return;
+          var left = clamp(x, 0, 1), top = clamp(y, 0, 1);
+          var right = clamp(x + width, left, 1), bottom = clamp(y + height, top, 1);
+          if (right <= left || bottom <= top) return;
+          var box = document.createElement("div");
+          box.className = "face-drawing-existing-box";
+          box.style.left = (left * 100) + "%"; box.style.top = (top * 100) + "%";
+          box.style.width = ((right - left) * 100) + "%"; box.style.height = ((bottom - top) * 100) + "%";
+          if (face.ignored) box.dataset.ignored = "";
+          var label = document.createElement("span");
+          label.textContent = (face.name || "Unbenannt") + (face.ignored ? " (ignoriert)" : "");
+          box.title = label.textContent;
+          box.append(label); boxes.append(box);
+        });
+        existing.replaceChildren(boxes);
+      }
+      function resize() {
+        existing.hidden = loading || !image.naturalWidth || !existing.childElementCount;
+        if (!existing.hidden) {
+          // Scale one layer on resize; pointer moves only update the new region.
+          var rect = imageRect();
+          existing.style.left = rect.x + "px"; existing.style.top = rect.y + "px";
+          existing.style.width = rect.width + "px"; existing.style.height = rect.height + "px";
+        }
+        draw();
       }
       function draw() {
         outline.hidden = !region;
@@ -91,7 +122,7 @@
         }
         draw();
       });
-      new ResizeObserver(draw).observe(stage);
+      new ResizeObserver(resize).observe(stage);
       cancel.addEventListener("click", function () { if (!saving) dialog.close(); });
       dialog.addEventListener("cancel", function (event) { if (saving) event.preventDefault(); });
       dialog.addEventListener("close", function () {
@@ -99,13 +130,15 @@
         if (controller) controller.abort();
         form.dispatchEvent(new CustomEvent("person-picker-close"));
         image.removeAttribute("src");
+        existing.replaceChildren(); existing.hidden = true;
         pointer = null;
         options.onBusy(false);
         if (opener && opener.isConnected) opener.focus({ preventScroll: true });
       });
       form.addEventListener("submit", async function (event) {
         event.preventDefault();
-        if (!region || loading || saving || saved) return;
+        if (loading || saving || saved || pointer) return;
+        if (!region) { status.textContent = "Bitte zuerst einen Rahmen um das Gesicht ziehen."; return; }
         var body = new URLSearchParams(new FormData(form));
         body.set("path", path); body.set("source_revision", revision);
         ["x", "y", "width", "height"].forEach(function (key) { body.set(key, String(region[key])); });
@@ -124,13 +157,14 @@
         } finally { saving = false; sync(); }
       });
       return {
-        open: async function (photoPath, displayPath, button) {
+        open: async function (photoPath, displayPath, button, faces) {
           path = photoPath; opener = button; region = null; pointer = null; saved = false; loading = true;
           var token = ++generation;
           options.onBusy(true);
           form.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: "" } }));
           dialog.querySelector("[data-face-drawing-path]").textContent = displayPath || path;
           status.textContent = "Foto wird geladen …";
+          existing.hidden = true; showExisting(faces || []);
           draw(); sync(); dialog.showModal();
           dialog.querySelector(".app-dialog-body").scrollTop = 0;
           controller = new AbortController();
@@ -151,7 +185,7 @@
             image.src = imageURL;
             await image.decode();
             if (token !== generation) return;
-            loading = false; sync(); status.textContent = "Ziehe einen Rahmen um das Gesicht.";
+            loading = false; resize(); sync(); status.textContent = "Ziehe einen Rahmen um das Gesicht.";
           } catch (error) {
             if (token === generation && error.name !== "AbortError") status.textContent = error.message;
           }

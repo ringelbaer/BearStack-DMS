@@ -3665,7 +3665,7 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 }
 /* Keep dialog actions stationary when the input loses focus before a click. */
 .person-dialog-suggestions { position: relative; flex: 1; min-height: 180px; }
-.person-edit-dialog .person-picker-popup { position: absolute; inset: 0; max-height: 100%; }
+.person-dialog-suggestions > .person-picker-popup { position: absolute; inset: 0; max-height: 100%; }
 .person-edit-dialog [data-person-dialog-status]:empty { display: none; }
 
 /* Group photos keep the original and its face controls visible together. */
@@ -3733,10 +3733,13 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 .face-drawing-dialog header, .face-drawing-dialog footer { flex-shrink: 0; }
 .face-drawing-stage { position: relative; min-height: 0; background: #111820; touch-action: none; user-select: none; cursor: crosshair; }
 .face-drawing-stage img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.face-drawing-existing { position: absolute; pointer-events: none; }
+.face-drawing-existing-box { position: absolute; border: 1px solid #fff; box-shadow: 0 0 0 1px #111; }
+.face-drawing-existing-box[data-ignored] { border-style: dashed; }
+.face-drawing-existing-box > span { position: absolute; top: 0; left: 0; max-width: 100%; padding: 1px 3px; background: rgb(0 0 0 / .8); color: #fff; font-size: 12px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .face-drawing-box { position: absolute; border: 2px solid #ffe065; background: rgba(255,224,101,.15); }
 .face-drawing-box:focus-visible { outline: 3px solid white; outline-offset: 3px; }
 .face-drawing-dialog .person-picker-field { margin-top: 12px; }
-.face-drawing-dialog .person-picker-popup { position: static; max-height: 180px; }
 @media (max-width: 900px) {
   .app-dialog.face-drawing-dialog { width: 100vw; height: 100dvh; margin: 0; border-radius: 0; }
   .face-drawing-dialog .app-dialog-body { display: block; overflow-y: auto; }
