@@ -22,6 +22,7 @@
       thumb: thumb,
       type: type,
       title: node.dataset.photoTitle || "Foto",
+      folderName: node.dataset.photoFolderName || "-",
       date: node.dataset.photoDate || "-",
       dateTime: node.dataset.photoDateTime || "-",
       camera: node.dataset.photoCamera || "-",
@@ -49,6 +50,7 @@
     item.thumb = data.thumb || item.thumb || "";
     item.type = data.type || item.type || "image";
     item.title = data.title || data.name || item.title || "Foto";
+    item.folderName = data.folder_name || item.folderName || "-";
     item.date = data.date || item.date || "-";
     item.dateTime = data.date_time || data.dateTime || item.date || item.dateTime || "-";
     item.automaticFaces = data.automatic_faces || [];

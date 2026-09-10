@@ -4764,11 +4764,15 @@ components:
           type: boolean
     PhotoFaceMetadata:
       type: object
-      description: Existing media fields remain unchanged; only automatic_faces is new.
+      description: Media metadata including imported and recognized faces and the normalized containing folder name.
       additionalProperties: true
       properties:
         path:
           type: string
+        folder_name:
+          type: string
+          description: Containing folder name normalized like gallery folder titles (date prefixes removed when followed by a title, separators replaced with spaces). Fotos for media in the photo root; no filesystem root or ancestor path is included.
+          example: Sommer Urlaub
         faces:
           type: array
           description: Existing imported XMP data.

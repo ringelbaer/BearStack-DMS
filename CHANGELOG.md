@@ -6,6 +6,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ### BearStack 0.50.0 – in Entwicklung
 
+- Foto-Infosidebar: Die Metadaten zeigen unter „Ordner“ den normalisierten Namen des enthaltenden Fotoordners nach den Regeln der Galerie; im Hauptverzeichnis „Fotos“. Das additive JSON-Feld `folder_name` wird über die vorhandenen Metadatenanfragen ohne zusätzliche Datei- oder Datenbankzugriffe geliefert. Normalisierung, Einzel-/Batch-API, DOM, Bildwechsel und mobile Sidebar durch Tests abgesichert. README, Website und OpenAPI aktualisiert. MINOR-Erweiterung innerhalb der unveröffentlichten 0.50.0; VERSION bleibt unverändert.
+
+- Personennavigation: Textbuttons und Einstellungszahnrad verwenden einheitlich mindestens 44 Pixel Höhe, auch auf dem Desktop. README und Website aktualisiert. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.
+
+- Personenübersicht und Personendetail verwenden gemeinsame CSS-Regeln für Kachelgrößen S/M/L, Raster, Bilder, Rahmen, Abstände und Auswahlmarkierung. Checkbox, Ignorieren und Stift haben einheitliche Positionen und 44-Pixel-Bedienflächen; der Vergleichsstern bleibt in der Detailansicht. README und Website aktualisiert. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.
+
 - Personendetail: Gesichtskarten zeigen die Auswahlcheckbox oben links, Ignorieren (×) oben rechts, den Vergleichsstern unten links und den Stift unten rechts. 44-Pixel-Bedienflächen; die Kennzeichnung manueller Zuordnung steht kollisionsfrei unten mittig. README und Website aktualisiert. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.
 
 - Personennavigation: „← Fotos“, „Gruppenbilder“, „Ähnliche Gesichter“ und ein Zahnrad mit Tooltip und zugänglichem Namen für die Gesichtserkennungs-Einstellungen. Rücklinks heißen „← Alle Personen“. README und Website aktualisiert. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.

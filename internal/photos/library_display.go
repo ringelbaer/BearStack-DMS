@@ -12,6 +12,20 @@ import (
 // MediaDisplayPath formats a relative photo path for shared UI previews.
 func MediaDisplayPath(rel string) string { return mediaDisplayPath(rel) }
 
+// MediaFolderName returns the containing folder's gallery display name.
+// rel is a library-relative media path; the filesystem root is never displayed.
+func MediaFolderName(rel string) string {
+	dir := path.Dir(rel)
+	if dir == "." {
+		return "Fotos"
+	}
+	name, date := folderNameDisplay(path.Base(dir))
+	if name == "" && date != nil {
+		return date.Format("02.01.2006")
+	}
+	return name
+}
+
 // mediaDisplayPath uses the gallery breadcrumb rules for every folder while
 // preserving the source filename. Never expose the host's filesystem root.
 func mediaDisplayPath(rel string) string {

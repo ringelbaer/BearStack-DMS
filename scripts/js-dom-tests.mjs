@@ -994,6 +994,7 @@ function testPhotoMediaHelpersWorkWithoutGallery() {
       "data-photo-large-preview": "/photos/thumbnail?size=1600",
       "data-photo-src": "/photos/media?path=album%2Fphoto.jpg",
       "data-photo-title": "Albumfoto",
+      "data-photo-folder-name": "Album",
       "data-photo-width": "3000",
       "data-photo-height": "2000",
     }),
@@ -1008,6 +1009,8 @@ function testPhotoMediaHelpersWorkWithoutGallery() {
   const items = context.window.BearStack.photos.collectItems(root);
   assert.equal(items.length, 2);
   assert.equal(items[0].title, "Albumfoto");
+  assert.equal(items[0].folderName, "Album");
+  assert.equal(items[1].folderName, "-");
   assert.equal(context.window.BearStack.photos.bestPhotoDisplaySrc(items[0]), "/photos/thumbnail?size=1600");
   context.devicePixelRatio = 2;
   assert.equal(context.window.BearStack.photos.bestPhotoDisplaySrc(items[0]), "/photos/thumbnail?size=1600");
@@ -1016,10 +1019,11 @@ function testPhotoMediaHelpersWorkWithoutGallery() {
   context.devicePixelRatio = 1;
   assert.equal(context.window.BearStack.photos.bestPhotoDisplaySrc(items[0]), "/photos/thumbnail?size=320");
   const details = context.window.BearStack.photos.applyPhotoItemDetails({}, {
-    path: "album/photo.jpg", large_preview: "/large", date_time: "18.05.2026 12:00", width: "3000", height: "2000"
+    path: "album/photo.jpg", folder_name: "Sommer Urlaub", large_preview: "/large", date_time: "18.05.2026 12:00", width: "3000", height: "2000"
   });
   assert.equal(details.largePreview, "/large");
   assert.equal(details.dateTime, "18.05.2026 12:00");
+  assert.equal(details.folderName, "Sommer Urlaub");
   assert.equal(details.width, 3000);
   assert.equal(details.detailsLoaded, true);
   assert.equal(context.window.BearStack.photos.bestPhotoDisplaySrc({ type: "image", original: "/original" }), "/original");

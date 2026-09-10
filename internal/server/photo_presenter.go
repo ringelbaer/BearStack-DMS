@@ -271,6 +271,7 @@ type photoMediaAPIResponse struct {
 	Path           string                  `json:"path"`
 	Name           string                  `json:"name"`
 	Title          string                  `json:"title"`
+	FolderName     string                  `json:"folder_name"`
 	Src            string                  `json:"src"`
 	Original       string                  `json:"original"`
 	Preview        string                  `json:"preview"`
@@ -336,6 +337,7 @@ func photoMediaAPIResponseFrom(item PhotoMediaView) photoMediaAPIResponse {
 		Path:           item.Path,
 		Name:           item.Name,
 		Title:          item.Name,
+		FolderName:     photos.MediaFolderName(item.Path),
 		Src:            src,
 		Original:       item.MediaURL,
 		Preview:        item.PreviewURL,

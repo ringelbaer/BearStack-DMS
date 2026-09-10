@@ -444,6 +444,7 @@ test("photo lightbox ignores metadata arriving after navigation without map help
         ensureItemDetails: (item) => new Promise((resolve) => {
           pending[item.path] = () => resolve(Object.assign(item, {
             detailsLoaded: true, title: `Details: ${item.path}`, camera: item.path,
+            folderName: `Ordner: ${item.path}`,
             lat: "52.5", lon: "13.4",
           }));
         }),
@@ -458,6 +459,7 @@ test("photo lightbox ignores metadata arriving after navigation without map help
     await page.evaluate(() => window.lightboxPendingDetails["public-a.png"]());
     await expect(dialog.locator("[data-photo-title]")).toHaveText("Details: public-b.png");
     await expect(dialog.locator("[data-photo-info-camera]")).toHaveText("public-b.png");
+    await expect(dialog.locator("[data-photo-info-folder]")).toHaveText("Ordner: public-b.png");
     await expect(dialog.locator("[data-photo-image]")).toHaveAttribute("src", /path=public-b\.png/);
     await page.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
@@ -699,6 +701,25 @@ test("photo lightbox toggles fullscreen mode", async ({ browser }) => {
   }
 });
 
+test("photo info panel shows normalized containing folder names", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  try {
+    for (const [photoPath, folderName] of [["scroll/folder-00/photo.png", "folder 00"], ["public-a.png", "Fotos"]]) {
+      const directory = path.posix.dirname(photoPath);
+      await page.goto(`${fixture.baseURL}/photos?path=${encodeURIComponent(directory === "." ? "" : directory)}`);
+      await photoItem(page, path.posix.basename(photoPath)).locator(".photo-card-button").click();
+      const lightbox = page.locator("[data-photo-lightbox]");
+      await revealPhotoControls(page);
+      await lightbox.locator("[data-photo-info-toggle]").click();
+      await expect(lightbox.locator("[data-photo-info-folder]")).toBeVisible();
+      await expect(lightbox.locator("[data-photo-info-folder]")).toHaveText(folderName);
+      await page.keyboard.press("Escape");
+    }
+  } finally {
+    await context.close();
+  }
+});
+
 test("photo info panel fits below the image on mobile and remains scrollable", async ({ browser }) => {
   const { context, page } = await editorPage(browser, {
     hasTouch: true,
@@ -712,6 +733,8 @@ test("photo info panel fits below the image on mobile and remains scrollable", a
     const panel = lightbox.locator(".photo-info-panel");
     const stage = lightbox.locator(".photo-lightbox-stage");
     await lightbox.locator("[data-photo-info-toggle]").tap();
+
+    await expect(lightbox.locator("[data-photo-info-folder]")).toHaveText("Fotos");
 
     for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
       await page.setViewportSize(viewport);

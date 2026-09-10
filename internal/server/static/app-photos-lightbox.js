@@ -516,6 +516,7 @@
       }
       applyImageTransform(false);
       setText("[data-photo-info-name]", item.title);
+      setText("[data-photo-info-folder]", item.folderName);
       setText("[data-photo-info-date]", item.dateTime || item.date);
       setText("[data-photo-info-camera]", item.camera);
       setText("[data-photo-info-lens]", item.lens);

@@ -2019,7 +2019,11 @@ func TestHandlePhotoMediaInfoReturnsFaces(t *testing.T) {
 
 func TestHandlePhotoMediaInfoBatch(t *testing.T) {
 	root := t.TempDir()
-	for _, path := range []string{"one.jpg", "two.jpg"} {
+	const secondPath = "Archiv/2026_07_15_Sommer_Urlaub/two.jpg"
+	if err := os.MkdirAll(filepath.Join(root, filepath.Dir(secondPath)), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"one.jpg", secondPath} {
 		if err := os.WriteFile(filepath.Join(root, path), []byte("photo"), 0o600); err != nil {
 			t.Fatal(err)
 		}
@@ -2034,7 +2038,7 @@ func TestHandlePhotoMediaInfoBatch(t *testing.T) {
 		log:    slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/photos/media/info", bytes.NewBufferString(`{"paths":["one.jpg","two.jpg","one.jpg"]}`))
+	req := httptest.NewRequest(http.MethodPost, "/photos/media/info", bytes.NewBufferString(`{"paths":["one.jpg","`+secondPath+`","one.jpg"]}`))
 	rec := httptest.NewRecorder()
 	server.handlePhotoMediaInfo(rec, req)
 	if rec.Code != http.StatusOK {
@@ -2042,8 +2046,9 @@ func TestHandlePhotoMediaInfoBatch(t *testing.T) {
 	}
 	var payload struct {
 		Media []struct {
-			Path string `json:"path"`
-			Src  string `json:"src"`
+			Path       string `json:"path"`
+			Src        string `json:"src"`
+			FolderName string `json:"folder_name"`
 		} `json:"media"`
 	}
 	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
@@ -2052,11 +2057,31 @@ func TestHandlePhotoMediaInfoBatch(t *testing.T) {
 	if len(payload.Media) != 2 {
 		t.Fatalf("media count = %d payload = %#v", len(payload.Media), payload.Media)
 	}
-	if payload.Media[0].Path != "one.jpg" || payload.Media[1].Path != "two.jpg" {
+	if payload.Media[0].Path != "one.jpg" || payload.Media[1].Path != secondPath {
 		t.Fatalf("media order = %#v", payload.Media)
 	}
 	if payload.Media[0].Src == "" || payload.Media[1].Src == "" {
 		t.Fatalf("missing src in payload = %#v", payload.Media)
+	}
+	if payload.Media[0].FolderName != "Fotos" || payload.Media[1].FolderName != "Sommer Urlaub" {
+		t.Fatalf("folder names = %#v", payload.Media)
+	}
+	for _, media := range payload.Media {
+		req := httptest.NewRequest(http.MethodGet, "/photos/media/info?path="+url.QueryEscape(media.Path), nil)
+		rec := httptest.NewRecorder()
+		server.handlePhotoMediaInfo(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("single info status = %d body = %s", rec.Code, rec.Body.String())
+		}
+		var single struct {
+			Media photoMediaAPIResponse `json:"media"`
+		}
+		if err := json.NewDecoder(rec.Body).Decode(&single); err != nil {
+			t.Fatal(err)
+		}
+		if single.Media.FolderName != media.FolderName {
+			t.Fatalf("single folder name = %q, batch = %q", single.Media.FolderName, media.FolderName)
+		}
 	}
 }
 

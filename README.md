@@ -44,8 +44,14 @@ auf schmalen Bildschirmen brechen sie passend um. Ein zusätzlicher Kasten ersch
 nur für das Namenssuchfeld mit **Suchen**. Die Seitennavigation bleibt auf schmalen
 Bildschirmen kompakt.
 
+Personenübersicht und Personendetailseite verwenden dieselbe Kacheldarstellung mit
+einheitlichen Größen S/M/L, Bildflächen, Abständen, Rahmen und Aktionspositionen.
+Die Übersicht zeigt Personennamen und Fotoanzahl, die Detailseite den Dateinamen
+und zusätzlich den Vergleichsstern.
+
 Die Kopfzeile der Personenübersicht bietet **← Fotos**, **Gruppenbilder**,
 **Ähnliche Gesichter** und ein Zahnrad für die Einstellungen zur Gesichtserkennung.
+Textbuttons und Zahnrad haben eine einheitliche Mindesthöhe von 44 Pixeln.
 Unterseiten führen mit **← Alle Personen** zurück zur Übersicht.
 
 Der Lupen-Gesichtabgleich verwendet unveränderliche Referenzstände benannter Gruppen
@@ -410,6 +416,8 @@ Gesichtsdaten werden aus eingebettetem JPEG-XMP sowie XMP-Sidecars gelesen (`pho
 Unter `Einstellungen -> Fotos` kann die Foto-Track-Aufloesung der Karte in sinnvollen Stufen von 500 m bis 10 km eingestellt werden. Sie legt fest, wie nah GPS-Fotos liegen muessen, um im fotobasierten Karten-Track zu einem Trackpunkt zusammengefasst zu werden. Dort kann auch ein Index-Worker aktiviert werden. Er crawlt den Foto-Root ordnerweise im Hintergrund, ueberspringt unveraenderte Ordner anhand ihres letzten Scan-Zeitpunkts und entfernt nicht mehr vorhandene Foto-, Ordner- und Blogeintraege ordnerlokal aus dem Index. Standardmaessig ist er deaktiviert; bei Aktivierung laeuft er alle 60 Minuten mit niedriger I/O-Prioritaet, falls vom System unterstuetzt, und 250 ms Pause pro gescanntem Ordner. Der separate Thumbnail-Worker ist ebenfalls standardmaessig deaktiviert; bei Aktivierung laeuft er alle 15 Minuten, erzeugt standardmaessig bis zu 15 fehlende Thumbnails pro Lauf und nutzt standardmaessig eine Thumbnail-Parallelitaet von 1.
 
 Bei Stat- oder Blog-Lesefehlern bleibt der Index des betroffenen Ordners einschließlich manueller Tags unverändert. Der Scan wird später erneut versucht. Vollständige Scans entfernen tatsächlich verschwundene Einträge; zusammengehörige Metadaten, Tagzuordnungen und Such-/Vorschauindizes werden je Löschpaket beziehungsweise Ordnerteilbaum gemeinsam zurückgerollt, falls die Bereinigung scheitert oder abgebrochen wird.
+
+Die Info-Seitenleiste zeigt bei den Metadaten unter **Ordner** den normalisierten Namen des enthaltenden Fotoordners, etwa **Sommer Urlaub** für `2026_07_15_Sommer_Urlaub`. Für Medien direkt im Foto-Hauptverzeichnis steht dort **Fotos**. Der Wert wird mit den vorhandenen Metadaten als `folder_name` geladen.
 
 Foto-Info-Batchanfragen bündeln Metadaten- und Gesichtsabfragen in Paketen und teilen sich die Rechteprüfung gemeinsamer Elternordner. Dateistand und XMP-Sidecars werden weiterhin geprüft; aktuelle `.adminonly`-Markierungen und geschützte Gesichtsnamen bleiben berücksichtigt.
 

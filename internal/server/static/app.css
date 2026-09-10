@@ -808,10 +808,13 @@ label span {
   margin: 0;
 }
 
+.page-actions:has(> .people-settings-button) > .secondary-button {
+  min-height: 44px;
+}
+
 .page-actions > .people-settings-button {
   width: 44px;
   min-width: 44px;
-  min-height: 44px;
   padding: 0;
 }
 
@@ -3415,10 +3418,10 @@ label span {
 
 /* Persons use bounded, lazy face previews even for large collections. */
 .people-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr)); gap:1rem; margin:1rem 0; }
-[data-people-view][data-size="m"] .people-grid { grid-template-columns: repeat(auto-fill,minmax(min(100%,256px),1fr)); }
-[data-people-view][data-size="l"] .people-grid { grid-template-columns: repeat(auto-fill,minmax(min(100%,352px),1fr)); }
-[data-people-view][data-size="m"] .people-grid .person-card img { width: 224px; }
-[data-people-view][data-size="l"] .people-grid .person-card img { width: 320px; }
+[data-people-view][data-size="m"] [data-ignored-faces] { grid-template-columns: repeat(auto-fill,minmax(min(100%,256px),1fr)); }
+[data-people-view][data-size="l"] [data-ignored-faces] { grid-template-columns: repeat(auto-fill,minmax(min(100%,352px),1fr)); }
+[data-people-view][data-size="m"] [data-ignored-faces] .person-card img { width: 224px; }
+[data-people-view][data-size="l"] [data-ignored-faces] .person-card img { width: 320px; }
 [data-people-view] [hidden], [data-people-view][data-show-count="false"] [data-people-overview] [data-person-count], [data-people-view][data-show-folders="false"] [data-person-folder] { display: none !important; }
 .people-display-menu { position: relative; width: max-content; margin: 0 0 0 auto; z-index: 13; }
 .people-display-menu > summary { list-style: none; cursor: pointer; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .25rem .8rem; font-size: 1.4rem; background: var(--surface); }
@@ -3785,11 +3788,21 @@ body.has-group-strip { padding-bottom: calc(158px + env(safe-area-inset-bottom))
 .person-detail-help p { max-width: 80ch; color: var(--muted); }
 .person-detail [role="status"]:empty { display: none; }
 .person-detail [data-detail-status] { margin: .6rem 0; }
-.person-detail-grid { --detail-thumb: 172px; display: grid; grid-template-columns: repeat(auto-fill,minmax(min(100%,var(--detail-thumb)),var(--detail-thumb))); gap: .75rem; margin-top: 1rem; }
-.person-detail[data-size="m"] .person-detail-grid { --detail-thumb: 224px; }
-.person-detail[data-size="l"] .person-detail-grid { --detail-thumb: 288px; }
-.person-detail-grid .person-card { padding: 6px; gap: 4px; background: var(--surface); border-color: var(--line); }
-.person-detail-grid .person-photo-button img { width: 100%; height: auto; }
+/* Overview and person details share one tile layout and size scale. */
+:is([data-people-overview], .person-detail-grid) { --person-tile-size: 172px; display: grid; grid-template-columns: repeat(auto-fill,minmax(min(100%,var(--person-tile-size)),var(--person-tile-size))); gap: .75rem; margin: 1rem 0; }
+:is([data-people-view], [data-person-detail])[data-size="m"] :is([data-people-overview], .person-detail-grid) { --person-tile-size: 238px; }
+:is([data-people-view], [data-person-detail])[data-size="l"] :is([data-people-overview], .person-detail-grid) { --person-tile-size: 334px; }
+:is([data-people-overview], .person-detail-grid) .person-card { padding: 6px; gap: 4px; background: var(--surface); border-color: var(--line); }
+:is([data-people-overview], .person-detail-grid) .person-card img { width: 100%; height: auto; }
+[data-people-overview] .person-card { padding-bottom: 54px; }
+[data-people-overview] .person-card > :is(strong, span) { padding-inline: 0; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; font-size: .8rem; }
+[data-people-overview] .person-select { justify-content: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: .35rem; cursor: pointer; }
+[data-people-overview] .person-ignore-button { width: 44px; height: 44px; min-height: 44px; border: 1px solid var(--primary); font-size: 1.4rem; }
+[data-people-overview] .person-edit-button { bottom: 6px; right: 6px; width: 44px; height: 44px; min-height: 44px; border: 0; border-radius: .35rem; }
+[data-people-overview] .person-edit-button:hover { background: var(--surface-2); }
+[data-people-overview] .person-overview-card:has([data-person-select]:checked) { outline: none; }
+[data-people-overview] .person-overview-card:has([data-person-select]:checked) > .person-card { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.person-detail-grid .person-photo-button { gap: inherit; }
 .person-detail-grid .person-photo-button > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .8rem; }
 .person-detail-path { display: none; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .75rem; color: var(--muted); }
 .person-detail[data-show-paths="true"] .person-detail-path { display: block; }
@@ -3830,7 +3843,7 @@ body.has-person-selection { padding-bottom: 150px; }
   .person-detail-help-content p:first-child { margin-top: 0; }
   .person-detail-help-content p:last-child { margin-bottom: 0; }
   .person-detail-toolbar details:not([open]) > :not(summary), .person-detail-more:not([open]) > div { display: none; }
-  .person-detail[data-size="s"] .person-detail-grid { grid-template-columns: repeat(auto-fill,minmax(min(100%,140px),1fr)); gap: .5rem; margin-top: .6rem; }
+  :is([data-people-view], [data-person-detail])[data-size="s"] :is([data-people-overview], .person-detail-grid) { grid-template-columns: repeat(auto-fill,minmax(min(100%,140px),1fr)); gap: .5rem; margin-top: .6rem; }
   .person-detail-selection { display: grid; grid-template-columns: 1fr auto; width: calc(100vw - 24px); }
   .person-detail-selection > strong { grid-column: 1; }
   .person-detail-selection [data-detail-clear] { grid-column: 2; grid-row: 1; }

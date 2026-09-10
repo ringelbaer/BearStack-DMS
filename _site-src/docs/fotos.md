@@ -106,6 +106,8 @@ Umbenennen und Entfernen eines Tags verwenden die vorhandenen Tagindizes, um nur
 
 ## Foto-Zufall und Metadaten
 
+Die Info-Seitenleiste zeigt bei den Metadaten unter **Ordner** den normalisierten Namen des enthaltenden Fotoordners, etwa **Sommer Urlaub** für `2026_07_15_Sommer_Urlaub`. Für Medien direkt im Foto-Hauptverzeichnis steht dort **Fotos**. Der Wert wird mit den vorhandenen Metadaten als `folder_name` geladen.
+
 Foto-Info-Batchanfragen bündeln Metadaten- und Gesichtsabfragen in Paketen und teilen sich die Rechteprüfung gemeinsamer Elternordner. Dateistand und XMP-Sidecars werden weiterhin geprüft; aktuelle `.adminonly`-Markierungen und geschützte Gesichtsnamen bleiben berücksichtigt.
 
 Der Zufallsendpunkt `/photos/random` liefert standardmäßig das Original direkt aus. Mit `size=original` bleibt es beim Original; mit `size=ordner`, `size=galerie`, `size=gross`, `size=groß` oder `size=hd` wird stattdessen die jeweilige konfigurierte Thumbnailgröße ausgeliefert.
@@ -213,8 +215,14 @@ Eine eigene Dienstadresse lässt sich über folgende optionale Werte setzen:
 
 #### Personen sortieren
 
+Personenübersicht und Personendetailseite verwenden dieselbe Kacheldarstellung mit
+einheitlichen Größen S/M/L, Bildflächen, Abständen, Rahmen und Aktionspositionen.
+Die Übersicht zeigt Personennamen und Fotoanzahl, die Detailseite den Dateinamen
+und zusätzlich den Vergleichsstern.
+
 Die Kopfzeile der Personenübersicht bietet **← Fotos**, **Gruppenbilder**,
 **Ähnliche Gesichter** und ein Zahnrad für die Einstellungen zur Gesichtserkennung.
+Textbuttons und Zahnrad haben eine einheitliche Mindesthöhe von 44 Pixeln.
 Unterseiten führen mit **← Alle Personen** zurück zur Übersicht.
 
 Ein dünner gemeinsamer Rahmen fasst die Filter **Alle**, **Benannt** und **Unbenannt**
