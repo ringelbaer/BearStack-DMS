@@ -21,6 +21,21 @@ import org.junit.Test
 
 class FaceGridTest {
     @get:Rule val compose=createComposeRule()
+    @Test fun shortTapSelectsButHoldDragAndCancellationDoNot() {
+        var taps=0;var held by mutableStateOf<Long?>(null)
+        compose.setGermanContent {MaterialTheme {
+            FaceGrid(Person(1,"",1,1,10,listOf(10)),held==null,null,{_,_->null},{},{held=it},{},allowDetach=false,onTap={taps++})
+        }}
+        val face=compose.onNodeWithTag("face-10")
+        face.performTouchInput {click()}
+        compose.runOnIdle {assertEquals(1,taps)}
+        face.performTouchInput {down(center)};compose.mainClock.advanceTimeBy(300)
+        compose.runOnIdle {assertEquals(10L,held)}
+        face.performTouchInput {moveBy(Offset(0f,-40f));up()}
+        compose.runOnIdle {assertNull(held);assertEquals(1,taps)}
+        face.performTouchInput {down(center);cancel()}
+        compose.runOnIdle {assertEquals(1,taps)}
+    }
     @Test fun fullGalleryPathWrapsBelowTheImageAtLargeFontSize() {
         val path="Fotos / 11.05.2026 · Urlaub / Ein sehr langer Unterordner / IMG_1234.jpg"
         compose.setGermanContent {MaterialTheme {

@@ -32,6 +32,7 @@ data class PeopleState(
     val namedSearch: Boolean = false, val removeFace: Long? = null, val removeRevision: Long = 0,
     val mergeNaming: Boolean = false, val mergeReview: Boolean = false, val mergeSuggestion: MergeSuggestion? = null,
     val showGallery: Boolean = false, val canManagePeople: Boolean = false,
+    val manualMerge: Boolean = false,
 )
 class PeopleViewModel private constructor(application: Application, private val database: Lazy<LabelingDatabase>,
     initialRepository: PeopleRepository?) : AndroidViewModel(application) {
@@ -47,6 +48,8 @@ class PeopleViewModel private constructor(application: Application, private val 
     private val mutable = MutableStateFlow(PeopleState())
     val state = mutable.asStateFlow()
     private var repository: PeopleRepository? = null
+    var manualMerges: ManualMergeController? = null
+        private set
     private val api get() = session.active?.people
     val photos get() = session.active?.photos
     val images: ImageLoader? get() = session.active?.images
@@ -80,7 +83,9 @@ class PeopleViewModel private constructor(application: Application, private val 
             catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 if (e is ApiFailure && e.status == 409) {
-                    if (e.code == "name_exists") {
+                    if(state.value.manualMerge) {
+                        if(e.code=="name_exists") manualMerges?.duplicateName() else manualMerges?.refresh()
+                    } else if (e.code == "name_exists") {
                         runCatching { repository?.api?.suggestions(state.value.name, true) }.getOrNull()?.let { names ->
                             update { it.copy(naming=true,duplicates=names.filterNot { p -> it.directory && !it.mergeReview && p.id==it.selectedPerson?.id }) }
                         }
@@ -173,7 +178,9 @@ class PeopleViewModel private constructor(application: Application, private val 
     fun original(face: Long) = api?.original(face)
     fun originalKey(face: Long): String? {
         val current=state.value
-        val person=if(current.mergeReview) current.mergeSuggestion?.let {
+        val person=if(current.manualMerge) manualMerges?.state?.value?.let {s ->
+            (s.selected+s.pages.values.flatten()).firstOrNull {it.faceId==face}
+        } else if(current.mergeReview) current.mergeSuggestion?.let {
             if(face in it.source.faces) it.source else it.target
         } else if(current.directory) current.selectedPerson else current.person
         return person?.originalKeys?.get(face)?.let { "${repository?.scope}:$it" }
@@ -190,6 +197,36 @@ class PeopleViewModel private constructor(application: Application, private val 
         }
     }
     fun gallery(name: String) = api?.gallery(name)
+    fun openManualMerge() { if(editable() && !state.value.naming) task {
+        val repo=repository ?: return@task
+        search?.cancel();cancelFaceSearch();searchPreload?.cancel()
+        ignoreJobs.values.forEach {it.cancel()};ignoreJobs.clear()
+        repo.restoreIgnores()
+        manualMerges?.cancel()
+        manualMerges=ManualMergeController(viewModelScope,repo.api,repo.scope)
+        update {it.copy(manualMerge=true,undoIgnores=emptyList())}
+        manualMerges!!.reset()
+    } }
+    fun closeManualMerge() { if(editable() && manualMerges?.state?.value?.naming!=true) task {
+        manualMerges?.cancel();manualMerges=null
+        update {it.copy(manualMerge=false)}
+        loadNext()
+    } }
+    fun combineManualGroups(named: Boolean = false) {
+        val controller=manualMerges ?: return
+        val selection=controller.state.value
+        if(!editable() || !state.value.manualMerge || selection.selected.size<2 ||
+            (!named && selection.naming) || (named && (!selection.naming || selection.name.isBlank()))) return
+        controller.cancel()
+        task {
+            val repo=repository ?: return@task
+            repo.prepareGroupMerge(selection.selected,if(named) selection.name.trim() else null,named && selection.duplicateName)
+            update {it.copy(unresolved=true)}
+            repo.resolve()
+            update {it.copy(unresolved=false)}
+            controller.refresh()
+        }
+    }
     private fun editable() = state.value.connected && !state.value.busy && !state.value.unresolved
     fun openMergeReview() { if(editable() && !state.value.naming) task {
         search?.cancel(); searchPreload?.cancel()
@@ -277,13 +314,17 @@ class PeopleViewModel private constructor(application: Application, private val 
         update { it.copy(faceSearching=true,suggestions=emptyList(),duplicates=emptyList(),error=null) }
         faceSearch=viewModelScope.launch {
             try {
-                val matches=repo.api.faceMatches(face)
+                repo.api.faceMatches(face).collect { matches ->
+                    if(repository===repo && generation==faceSearchGeneration && state.value.naming) update {
+                        it.copy(faceMatches=matches.filterNot { match -> match.id==person.id })
+                    }
+                }
                 if(repository===repo && generation==faceSearchGeneration && state.value.naming) update {
-                    it.copy(faceMatches=matches.filterNot { match -> match.id==person.id },faceSearchDone=true)
+                    it.copy(faceSearchDone=true)
                 }
             } catch(e: CancellationException) { throw e }
             catch(e: Exception) {
-                if(repository===repo && generation==faceSearchGeneration) update { it.copy(error=message(e)) }
+                if(repository===repo && generation==faceSearchGeneration) update { it.copy(faceMatches=emptyList(),error=message(e)) }
             } finally {
                 if(repository===repo && generation==faceSearchGeneration) update { it.copy(faceSearching=false) }
             }
@@ -506,6 +547,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     fun background() {
         inBackground=true
         cancelFaceSearch()
+        manualMerges?.cancel()
         val repo=repository ?: return
         val ids=ignoreJobs.keys.toSet()
         ignoreJobs.values.forEach {it.cancel()};ignoreJobs.clear()
@@ -532,7 +574,9 @@ class PeopleViewModel private constructor(application: Application, private val 
             repo.restoreIgnores(repo.state().stagedIgnores.positions().map {it.id}.toSet()-ignoreJobs.keys-undoRequests)
         }
         update { it.copy(unresolved=false,naming=if(receipt!=null && (receipt.source==it.person?.id || receipt.source==it.selectedPerson?.id)) false else it.naming) }
-        if(state.value.mergeReview) loadMergeSuggestion()
+        if(state.value.manualMerge) {
+            if(receipt!=null) manualMerges?.refresh() else manualMerges?.retry()
+        } else if(state.value.mergeReview) loadMergeSuggestion()
         else if(state.value.directory) {
             if(receipt!=null && body!=null && state.value.selectedPerson!=null) applyManagementReceipt(receipt,body)
             else if(state.value.selectedPerson!=null) refreshSelectedPerson() else loadNamedPeople(true)
@@ -543,6 +587,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     fun openPeople() { if(!state.value.busy && repository!=null) update { it.copy(showGallery=false) } }
     fun switchConnection() { if(!state.value.busy) task { repository?.restoreIgnores(); session.disconnect(forget=true) } }
     private fun detachPeople() {
+        manualMerges?.cancel();manualMerges=null
         ignoreJobs.values.forEach {it.cancel()};ignoreJobs.clear()
         undoRequests.clear()
         search?.cancel(); cancelFaceSearch(); directorySearch?.cancel(); searchPreload?.cancel(); statsJob?.cancel()

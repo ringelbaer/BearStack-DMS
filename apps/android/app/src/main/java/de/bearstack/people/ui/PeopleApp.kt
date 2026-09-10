@@ -53,6 +53,7 @@ fun PeopleApp(vm: PeopleViewModel) {
             if (!state.connected) ConnectionScreen(state,vm)
             else if(state.showGallery && vm.photos!=null && vm.images!=null)
                 de.bearstack.people.photos.PhotosScreen(vm.photos!!,vm.images!!,state.canManagePeople,vm::openPeople,vm::switchConnection)
+            else if(state.manualMerge && vm.manualMerges!=null) ManualMergeScreen(state,vm,vm.manualMerges!!)
             else if(state.mergeReview) MergeReviewScreen(state,vm)
             else if(state.directory) PeopleDirectoryScreen(state,vm)
             else LabelingScreen(state,vm)
@@ -115,6 +116,7 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                 if(vm.photos!=null) DropdownMenuItem(text={Text(stringResource(R.string.photos_title))},onClick={vm.openGallery();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(text(R.string.people_directory))},onClick={vm.openDirectory();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(text(R.string.people_similar_groups))},onClick={vm.openMergeReview();menu=false},enabled=enabled)
+                DropdownMenuItem(text={Text(text(R.string.people_manual_merge))},onClick={vm.openManualMerge();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(if(statistics) text(R.string.people_return_labeling) else text(R.string.people_statistics))},onClick={statistics=!statistics;menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(text(R.string.people_review_skipped,state.skipped))},onClick={vm.newPass(true);menu=false},enabled=enabled && state.person==null && state.skipped>0)
                 DropdownMenuItem(text={Text(text(R.string.photos_connection))},onClick={vm.switchConnection();menu=false},enabled=!state.busy)
@@ -212,7 +214,8 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
 fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Long, Boolean) -> String?,
     onDetach: (Long) -> Unit, onHold: (Long?) -> Unit, onZoom: (Long) -> Unit,
     onZoomDrag: (Float) -> Unit = {}, managing: Boolean = false, onFavorite: (Long) -> Unit = {},
-    onPrefetch: suspend (List<Long>) -> Unit = {}, allowDetach: Boolean = true, showPaths: Boolean = true) {
+    onPrefetch: suspend (List<Long>) -> Unit = {}, allowDetach: Boolean = true, showPaths: Boolean = true,
+    onTap: ((Long) -> Unit)? = null) {
     val text=uiStrings()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val prefetch by rememberUpdatedState(onPrefetch)
@@ -230,6 +233,7 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
         val active by rememberUpdatedState(enabled)
         val hold by rememberUpdatedState(onHold)
         val zoomDrag by rememberUpdatedState(onZoomDrag)
+        val tap by rememberUpdatedState(onTap)
         Column(Modifier.fillMaxWidth().testTag("face-grid"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             person.faces.chunked(2).forEach { row ->
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -239,12 +243,20 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
                                 Box(Modifier.fillMaxWidth().testTag("face-$face").aspectRatio(1f).clip(RoundedCornerShape(16.dp))
                                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                                     .semantics { contentDescription=text(R.string.people_face_number,person.faces.indexOf(face)+person.offset+1)
+                                        if(onTap!=null) onClick(text(R.string.people_manual_select)) {if(active) {tap?.invoke(face);true} else false}
                                         customActions=listOf(CustomAccessibilityAction(text(R.string.people_show_original)) { if(active) {onZoom(face);true} else false }) }
                                     .pointerInput(face) {
                                         awaitEachGesture {
                                             val down=awaitFirstDown()
                                             if(!active) return@awaitEachGesture
-                                            val pressed=awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
+                                            val pressed=awaitLongPressOrCancellation(down.id)
+                                            if(pressed==null) {
+                                                val up=currentEvent.changes.singleOrNull {it.id==down.id}
+                                                if(active && up!=null && !up.pressed && !up.isConsumed && tap!=null) {
+                                                    up.consume();tap?.invoke(face)
+                                                }
+                                                return@awaitEachGesture
+                                            }
                                             if(!active) return@awaitEachGesture
                                             holding=true
                                             try {
@@ -304,15 +316,18 @@ internal fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Bool
                 keyboardActions=KeyboardActions(onDone={vm.submitName()}))
             if(state.faceSearching) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
-                Text(text(R.string.people_face_search_running),Modifier.semantics {liveRegion=LiveRegionMode.Polite})
+                Text(if(state.faceMatches.isEmpty()) text(R.string.people_face_search_running)
+                    else text(R.string.people_face_search_progress,state.faceMatches.size),Modifier.semantics {liveRegion=LiveRegionMode.Polite})
             } else if(state.faceSearchDone && state.faceMatches.isEmpty()) {
                 Text(text(R.string.people_face_search_empty),Modifier.semantics {liveRegion=LiveRegionMode.Polite})
             }
             state.faceMatches.forEach { match ->
-                Surface(onClick={vm.assignFaceMatch(match)},enabled=enabled,shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surfaceContainer) {
-                    Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                        vm.images?.let { AsyncImage(vm.image(match.faceId),null,imageLoader=it,modifier=Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))) }
-                        Column(Modifier.weight(1f)) { Text(match.name);Text(text(R.string.people_face_count_id,text.faces(match.count),match.id),style=MaterialTheme.typography.bodySmall) }
+                key(match.id) {
+                    Surface(onClick={vm.assignFaceMatch(match)},enabled=enabled,shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surfaceContainer) {
+                        Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                            vm.images?.let { AsyncImage(vm.image(match.faceId),null,imageLoader=it,modifier=Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))) }
+                            Column(Modifier.weight(1f)) { Text(match.name);Text(text(R.string.people_face_count_id,text.faces(match.count),match.id),style=MaterialTheme.typography.bodySmall) }
+                        }
                     }
                 }
             }

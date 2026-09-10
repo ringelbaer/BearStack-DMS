@@ -31,6 +31,7 @@ var photoRouteSpecs = []routeSpec{
 	{pattern: "GET /api/photos/labeling/v1/session", capabilities: authCapPhotosEdit, handler: (*Server).handleLabelSession},
 	{pattern: "GET /api/photos/labeling/v1/candidates", capabilities: authCapPhotosEdit, handler: (*Server).handleLabelCandidates},
 	{pattern: "GET /api/photos/labeling/v1/people", capabilities: authCapPhotosEdit, handler: (*Server).handleLabelNamedPeople},
+	{pattern: "GET /api/photos/labeling/v1/groups", capabilities: authCapPhotosEdit, handler: (*Server).handleLabelMergeGroups},
 	{pattern: "GET /api/photos/labeling/v1/people/{id}", capabilities: authCapPhotosEdit, handler: (*Server).handleLabelPerson},
 	{pattern: "GET /api/photos/labeling/v1/suggestions", capabilities: authCapPhotosEdit, handler: (*Server).handleLabelSuggestions},
 	{pattern: "GET /api/photos/labeling/v1/merge-suggestions/next", capabilities: authCapPhotosEdit, handler: (*Server).handleLabelMergeSuggestion},

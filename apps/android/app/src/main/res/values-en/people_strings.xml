@@ -104,7 +104,22 @@
     <string name="people_merge_name_help">When both groups are unnamed, the pencil opens name search. Saving merges both groups under a new name or into a selected person. Cancel leaves both groups unchanged.</string>
     <string name="people_face_search">Find similar named people</string>
     <string name="people_face_search_running">Comparing face with named people …</string>
+    <string name="people_face_search_progress">Found: %1$d – comparison in progress …</string>
+    <string name="people_face_search_failed">Face comparison interrupted. Please try again.</string>
     <string name="people_face_search_empty">No similar named people found.</string>
     <string name="people_face_search_unavailable">Face search unavailable. Update the server or reopen the person.</string>
     <string name="people_merge_similarity">Similarity: %1$.2f</string>
+    <string name="people_manual_merge">Combine groups manually</string>
+    <string name="people_manual_merge_version">Manual combining requires a newer server version. Please update the server.</string>
+    <string name="people_manual_select">Select or deselect group</string>
+    <string name="people_manual_include_named">Include named groups</string>
+    <string name="people_manual_selected">%1$d groups selected</string>
+    <string name="people_manual_clear">Clear selection</string>
+    <string name="people_manual_merge_limit">Select up to 60 groups at a time.</string>
+    <string name="people_manual_stays_unnamed">The combined group remains unnamed.</string>
+    <string name="people_manual_keeps_name">Name retained: %1$s</string>
+    <string name="people_manual_combine">Combine</string>
+    <string name="people_manual_combine_name">Combine and name</string>
+    <string name="people_manual_help">Tap to select, hold to enlarge. More groups load as you scroll. Changing the filter clears the selection.</string>
+    <string name="people_manual_empty">No matching groups available.</string>
 </resources>

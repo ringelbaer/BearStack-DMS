@@ -7,6 +7,7 @@ import de.bearstack.people.data.local.*
 import de.bearstack.people.data.remote.*
 import java.util.UUID
 import org.json.JSONObject
+import org.json.JSONArray
 
 internal fun String.ids(): List<Long> = split(',').mapNotNull { it.toLongOrNull() }
 internal fun List<Long>.stored(): String = joinToString(",")
@@ -15,7 +16,15 @@ internal fun String.positions(): List<GroupPosition> = if (isEmpty()) emptyList(
     val parts=it.split(':'); GroupPosition(parts[0].toLong(),parts[1].toInt())
 }
 internal fun List<GroupPosition>.storedPositions(): String = joinToString(",") { "${it.id}:${it.page}" }
-internal fun QueueState.afterReceipt(r: Receipt): QueueState {
+internal fun QueueState.afterReceipt(r: Receipt, merged: Set<Long> = emptySet()): QueueState {
+    if(r.action=="merge_groups" || r.action=="name_groups") return copy(
+        current=if(current in merged) 0 else current,page=if(current in merged) 0 else page,
+        remaining=remaining.ids().filterNot {it in merged}.stored(),
+        detached=(detached.ids().filterNot {it in merged}+if(r.action=="merge_groups") listOf(r.target) else emptyList()).distinct().stored(),
+        skipped=skipped.ids().filterNot {it in merged}.stored(),
+        skipHistory=skipHistory.positions().filterNot {it.id in merged}.storedPositions(),
+        resume=resume.positions().filterNot {it.id in merged}.storedPositions(),
+        stagedIgnores=stagedIgnores.positions().filterNot {it.id in merged}.storedPositions())
     val next = if (r.action == "detach" || r.action == "unassign") copy(detached=(detached.ids()+r.newId).distinct().stored())
         else if (r.action == "rename" || r.action == "favorite" || r.action == "reject_merge") this
         else if (current==r.source) copy(current=0,page=0) else this
@@ -91,11 +100,13 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
                 catch (e: ApiFailure) { if(e.status != 404) throw e; api.action(pending.source,pending.body) }
             requireMessage(receipt.operation == pending.operation && receipt.source == pending.source,R.string.error_receipt)
             db.withTransaction {
-                val eventAction=if(receipt.action=="name_merge") {
+                val eventAction=if(receipt.action=="name_groups") "name" else if(receipt.action=="name_merge") {
                     if(JSONObject(pending.body).optLong("assign_id")!=0L) "assign" else "name"
                 } else receipt.action
                 val inserted = dao.event(Event(scope,receipt.operation,eventAction,receipt.faces,receipt.groups,receipt.at))
-                if (inserted != -1L) dao.state(state().afterReceipt(receipt))
+                val groups=JSONObject(pending.body).optJSONArray("groups")
+                val merged=if(groups==null) emptySet() else (0 until groups.length()).map {groups.getJSONObject(it).getLong("id")}.toSet()
+                if (inserted != -1L) dao.state(state().afterReceipt(receipt,merged))
                 dao.clearPending(scope)
             }
             return receipt
@@ -104,6 +115,16 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
             if (e.status == 400 || e.status == 404 || e.status == 409) dao.clearPending(scope)
             throw e
         }
+    }
+    suspend fun prepareGroupMerge(groups: List<Person>, name: String? = null, allowDuplicate: Boolean = false) {
+        checkMessage(pending()==null,R.string.error_pending_first)
+        requireMessage(groups.size in 2..60 && groups.map {it.id}.distinct().size==groups.size,R.string.error_response_invalid)
+        val operation=UUID.randomUUID().toString()
+        val body=JSONObject().put("operation_id",operation).put("dataset",session.dataset)
+            .put("revision",groups.first().revision).put("action",if(name==null) "merge_groups" else "name_groups")
+            .put("name",name.orEmpty()).put("allow_duplicate",allowDuplicate)
+            .put("groups",JSONArray().apply {groups.forEach {put(JSONObject().put("id",it.id).put("revision",it.revision))}}).toString()
+        dao.pending(Pending(scope,operation,groups.first().id,body))
     }
     suspend fun skip(person: Person) = db.withTransaction {
         check(pending() == null)

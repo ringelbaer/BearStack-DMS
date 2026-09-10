@@ -18,6 +18,7 @@ var ErrLabelInvalid = errors.New("ungültige Benennungsaktion")
 var ErrLabelNameExists = errors.New("Name bereits vorhanden")
 
 type LabelSession struct {
+	ManualMerge      bool   `json:"manual_merge"`
 	MergeNaming      bool   `json:"merge_naming"`
 	MergeSuggestions bool   `json:"merge_suggestions"`
 	NamedSearch      bool   `json:"named_search"`
@@ -58,19 +59,20 @@ type LabelCandidates struct {
 	HasNext bool          `json:"has_next"`
 }
 type LabelAction struct {
-	AssignID       int64  `json:"assign_id,omitempty"`
-	AssignRevision int64  `json:"assign_revision,omitempty"`
-	SuggestionID   int64  `json:"suggestion_id,omitempty"`
-	Favorite       *bool  `json:"favorite,omitempty"`
-	OperationID    string `json:"operation_id"`
-	Dataset        string `json:"dataset"`
-	Revision       int64  `json:"revision"`
-	Action         string `json:"action"`
-	Name           string `json:"name,omitempty"`
-	AllowDuplicate bool   `json:"allow_duplicate,omitempty"`
-	TargetID       int64  `json:"target_id,omitempty"`
-	TargetRevision int64  `json:"target_revision,omitempty"`
-	FaceID         int64  `json:"face_id,omitempty"`
+	Groups         []LabelGroupRef `json:"groups,omitempty"`
+	AssignID       int64           `json:"assign_id,omitempty"`
+	AssignRevision int64           `json:"assign_revision,omitempty"`
+	SuggestionID   int64           `json:"suggestion_id,omitempty"`
+	Favorite       *bool           `json:"favorite,omitempty"`
+	OperationID    string          `json:"operation_id"`
+	Dataset        string          `json:"dataset"`
+	Revision       int64           `json:"revision"`
+	Action         string          `json:"action"`
+	Name           string          `json:"name,omitempty"`
+	AllowDuplicate bool            `json:"allow_duplicate,omitempty"`
+	TargetID       int64           `json:"target_id,omitempty"`
+	TargetRevision int64           `json:"target_revision,omitempty"`
+	FaceID         int64           `json:"face_id,omitempty"`
 }
 type LabelReceipt struct {
 	SourceRevision int64  `json:"source_revision"`
@@ -89,7 +91,7 @@ const labelFrom = ` FROM photo_people p JOIN photo_person_revisions r ON r.perso
 const labelExists = ` EXISTS(SELECT 1 FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0) `
 
 func (l *Library) LabelSession(ctx context.Context) (LabelSession, error) {
-	out := LabelSession{Protocol: 1, FaceFavorites: true, NamedPeople: true, NamedSearch: true, MergeSuggestions: true, MergeNaming: true}
+	out := LabelSession{Protocol: 1, FaceFavorites: true, NamedPeople: true, NamedSearch: true, MergeSuggestions: true, MergeNaming: true, ManualMerge: true}
 	err := l.index.db.QueryRowContext(ctx, `SELECT instance,dataset,(SELECT coalesce(max(id),0) FROM photo_people) FROM photo_labeling_identity WHERE id=1`).Scan(&out.Instance, &out.Dataset, &out.UpperID)
 	return out, err
 }
@@ -167,9 +169,7 @@ func (l *Library) labelPersonPage(ctx context.Context, id int64, offset, limit i
 		f.DisplayPath = mediaDisplayPath(source)
 		// Share decoded originals across faces without exposing filesystem paths.
 		// Indexed file metadata invalidates the key after a detected file change.
-		encoded, _ := json.Marshal([]any{source, size, modified})
-		sum := sha256.Sum256(encoded)
-		f.OriginalKey = hex.EncodeToString(sum[:])
+		f.OriginalKey = labelOriginalKey(source, size, modified)
 		p.Faces = append(p.Faces, f)
 	}
 	err = rows.Err()
@@ -218,13 +218,17 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		return out, ErrLabelInvalid
 	}
 	switch a.Action {
-	case "name", "assign", "detach", "ignore", "rename", "unassign", "favorite", "accept_merge", "reject_merge", "name_merge":
+	case "name", "assign", "detach", "ignore", "rename", "unassign", "favorite", "accept_merge", "reject_merge", "name_merge", "merge_groups", "name_groups":
 	default:
 		return out, ErrLabelInvalid
 	}
 	name, err := normalizedPersonName(a.Name)
 	if err != nil {
 		return out, ErrLabelInvalid
+	}
+	manualMerge := a.Action == "merge_groups" || a.Action == "name_groups"
+	if err := validateLabelGroupSelection(id, a, name); err != nil {
+		return out, err
 	}
 	if (a.Action == "name" || a.Action == "rename") && name == "" || a.Action == "favorite" && a.Favorite == nil {
 		return out, ErrLabelInvalid
@@ -245,7 +249,13 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	fingerprint := hex.EncodeToString(sum[:])
 	visibilityFilter := `p.id IN (?,?,?)`
 	visibilityArgs := []any{id, a.TargetID, a.AssignID}
-	if (a.Action == "name" || a.Action == "rename" || (a.Action == "name_merge" && a.AssignID == 0)) && !a.AllowDuplicate {
+	if manualMerge {
+		for _, group := range a.Groups {
+			visibilityFilter += ` OR p.id=?`
+			visibilityArgs = append(visibilityArgs, group.ID)
+		}
+	}
+	if (a.Action == "name" || a.Action == "rename" || a.Action == "name_groups" || (a.Action == "name_merge" && a.AssignID == 0)) && !a.AllowDuplicate {
 		visibilityFilter += ` OR p.name=?`
 		visibilityArgs = append(visibilityArgs, name)
 	}
@@ -292,7 +302,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		return out, err
 	}
 	managing := a.Action == "rename" || a.Action == "unassign" || a.Action == "favorite"
-	if source.Revision != a.Revision || (!merging && (source.Name != "") != managing) {
+	if source.Revision != a.Revision || (!merging && !manualMerge && (source.Name != "") != managing) {
 		return out, ErrLabelConflict
 	}
 	var baseRevision int64
@@ -303,6 +313,8 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	}
 	out = LabelReceipt{OperationID: a.OperationID, Action: a.Action, SourceID: id, Faces: source.Count, Groups: 1, At: time.Now().Unix()}
 	switch a.Action {
+	case "merge_groups", "name_groups":
+		out, err = mergeLabelGroupsTx(ctx, tx, a, name, out)
 	case "accept_merge", "reject_merge", "name_merge":
 		if err = validateFaceMergeSuggestionTx(ctx, tx, id, a.TargetID, &faceMergeExpectation{a.SuggestionID, a.Revision, a.TargetRevision}); err != nil {
 			return out, err
@@ -382,6 +394,11 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		return out, err
 	}
 	affected := map[int64]bool{}
+	if manualMerge {
+		for _, group := range a.Groups {
+			affected[group.ID] = true
+		}
+	}
 	for _, pid := range []int64{id, a.TargetID, out.TargetID, out.NewID} {
 		if pid > 0 {
 			affected[pid] = true
@@ -416,6 +433,12 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 }
 func LabelActor(source, subject, username string, accountID int64) string {
 	encoded, _ := json.Marshal([]any{source, subject, accountID, username})
+	sum := sha256.Sum256(encoded)
+	return hex.EncodeToString(sum[:])
+}
+
+func labelOriginalKey(source string, size, modified int64) string {
+	encoded, _ := json.Marshal([]any{source, size, modified})
 	sum := sha256.Sum256(encoded)
 	return hex.EncodeToString(sum[:])
 }

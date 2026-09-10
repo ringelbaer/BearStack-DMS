@@ -523,6 +523,17 @@
 </li>
 
         <li class="md-nav__item">
+  <a href="#gruppen-manuell-kombinieren" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gruppen manuell kombinieren
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
   <a href="#galerie" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -865,6 +876,17 @@
 </li>
 
         <li class="md-nav__item">
+  <a href="#gruppen-manuell-kombinieren" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gruppen manuell kombinieren
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
   <a href="#galerie" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1059,8 +1081,12 @@
 benötigt zusätzlich <code>photos.edit</code>; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.</p>
 <h2 id="gesichtssuche-beim-benennen">Gesichtssuche beim Benennen<a class="headerlink" href="#gesichtssuche-beim-benennen" title="Permanent link">&para;</a></h2>
-<p>Ab App <strong>0.10.0</strong> startet die <strong>Lupe neben dem Namensfeld</strong> im Benenn-Dialog einen Gesichtsabgleich mit bereits benannten Personen. Sie verwendet das erste Gesicht der angezeigten Seite beziehungsweise das Quellgesicht im Modus „Ähnliche Gruppen“. Die Treffer erscheinen in Ähnlichkeitsreihenfolge mit dem passenden Referenzportrait. Antippen ordnet die aktuelle Gruppe zu; beim gemeinsamen Benennen zweier Gruppen werden beide zugeordnet. Die Suche selbst verändert nichts. Ladezustand, leere Trefferliste und Fehler werden angezeigt; erneutes Antippen wiederholt die Suche. Tippen im Namensfeld, Schließen des Dialogs oder Wechsel in den Hintergrund bricht sie ab. Das separate Umbenennen einer bereits benannten Person bleibt eine Namensänderung.</p>
-<p>Der Abgleich nutzt den vorhandenen Endpunkt <code>GET /photos/faces/{id}/suggestions</code> (BearStack ab 0.50.0), benötigt keine erneute Bilderkennung und liefert höchstens 20 Treffer. Die App lädt nur bei explizitem Start, begrenzt die Antwortgröße und lädt die aktuelle Revision ausschließlich der ausgewählten Zielperson nach. Eine inzwischen umbenannte Zielperson erfordert eine neue Entscheidung; Zuordnungen behalten die vorhandenen Revisionsprüfungen und Aktionsquittungen. Ältere Server zeigen eine verständliche Fehlermeldung; die Namenssuche bleibt verfügbar.</p>
+<p>Ab App <strong>0.10.0</strong> startet die <strong>Lupe neben dem Namensfeld</strong> im Benenn-Dialog einen Gesichtsabgleich mit bereits benannten Personen. Sie verwendet das erste Gesicht der angezeigten Seite beziehungsweise das Quellgesicht im Modus „Ähnliche Gruppen“. Die Treffer erscheinen schon während des Abgleichs in Ähnlichkeitsreihenfolge mit dem passenden Referenzportrait. Weitere Zwischenstände aktualisieren die Liste; der Ladehinweis bleibt bis zum Abschluss sichtbar. Treffer lassen sich bereits während der Suche auswählen. Antippen ordnet die aktuelle Gruppe zu; beim gemeinsamen Benennen zweier Gruppen werden beide zugeordnet. Die Suche selbst verändert nichts. Ladezustand, leere Trefferliste und Fehler werden angezeigt; erneutes Antippen wiederholt die Suche. Tippen im Namensfeld, Schließen des Dialogs oder Wechsel in den Hintergrund bricht sie ab. Das separate Umbenennen einer bereits benannten Person bleibt eine Namensänderung.</p>
+<p>Der Abgleich nutzt den vorhandenen Endpunkt <code>GET /photos/faces/{id}/suggestions</code> (BearStack ab 0.50.0), benötigt keine erneute Bilderkennung und liefert höchstens 20 Treffer. Die App fordert NDJSON-Streaming an, verarbeitet höchstens 64 KiB pro Zwischenstand und hält nur die aktuelle Trefferliste sowie den neuesten noch nicht angezeigten Zwischenstand im Speicher. Ein fehlender Abschluss oder ein Übertragungsfehler leert die vorläufigen Treffer und erlaubt einen erneuten Versuch. Ältere Server mit diesem Endpunkt können weiterhin eine einzelne JSON-Antwort liefern. Bei einem positiven Mindestabstand zwischen erstem und zweitem Treffer wartet auch der Server auf den vollständigen Abgleich. Die App lädt nur bei explizitem Start und lädt die aktuelle Revision ausschließlich der ausgewählten Zielperson nach. Eine inzwischen umbenannte Zielperson erfordert eine neue Entscheidung; Zuordnungen behalten die vorhandenen Revisionsprüfungen und Aktionsquittungen. Ältere Server zeigen eine verständliche Fehlermeldung; die Namenssuche bleibt verfügbar.</p>
+<h2 id="gruppen-manuell-kombinieren">Gruppen manuell kombinieren<a class="headerlink" href="#gruppen-manuell-kombinieren" title="Permanent link">&para;</a></h2>
+<p><strong>Menü → Gruppen manuell kombinieren</strong> öffnet ein fortlaufendes Gruppenraster. Standardmäßig erscheinen nur unbenannte Gruppen; <strong>Auch benannte Gruppen anzeigen</strong> nimmt benannte Gruppen hinzu. Kurz auf ein Portrait tippen wählt die Gruppe aus oder ab. Langes Drücken öffnet wie gewohnt das Originalfoto mit Gesichtsmarkierung und Vergrößerung durch Wischen. Weitere Gruppen laden automatisch beim Scrollen, auch beim Zurückscrollen.</p>
+<p>Ab zwei ausgewählten Gruppen erscheinen <strong>Kombinieren</strong> und <strong>Kombinieren und benennen</strong>. Kombinieren behält den ersten ausgewählten vorhandenen Namen; ohne benannte Auswahl bleibt die Gruppe unbenannt. Der erhaltene Name steht über den Aktionen. Kombinieren und benennen fragt vor dem Speichern nach einem Namen. Abbrechen verändert nichts. Bei einem bereits anderweitig vergebenen Namen kann eine separate gleichnamige Gruppe ausdrücklich bestätigt werden. Ein Filterwechsel oder „Aktualisieren“ leert die Auswahl. Pro Aktion sind höchstens 60 Gruppen wählbar.</p>
+<p>Die Funktion benötigt die neue Server-Capability <code>manual_merge</code> innerhalb BearStack <strong>0.50.0</strong>; App und Server müssen dafür aktualisiert sein. Der Server prüft die Revision aller ausgewählten Gruppen und führt die komplette Auswahl samt Aktionsquittung atomar zusammen. Eine veraltete Auswahl muss neu getroffen werden; eine verlorene Antwort kann über „Offene Aktion prüfen“ aufgelöst werden. Ignorierte Gesichter bleiben ignoriert, Favoriten und Originaldateien erhalten. Die App lädt Pakete von höchstens 20 Gruppen, hält normalerweise drei Seiten um den sichtbaren Bereich und separat die begrenzte Auswahl. Kleine ID-Marken erlauben das Nachladen früherer Seiten. Nach dem Kombinieren bleibt die Scrollposition erhalten; die betroffenen Seiten werden neu geladen.</p>
 <h2 id="galerie">Galerie<a class="headerlink" href="#galerie" title="Permanent link">&para;</a></h2>
 <p><strong>Fotos</strong> zeigt den gesamten Fotobestand nach Datum. Unter <strong>Ordner</strong> öffnest du die
 bekannte Verzeichnisstruktur; jede Kachel enthält zwei Vorschauen und die Medienanzahl.

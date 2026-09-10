@@ -1021,6 +1021,44 @@ paths:
         "500":
           $ref: '#/components/responses/InternalServerError'
 
+  /api/photos/labeling/v1/groups:
+    get:
+      tags: [Photos]
+      operationId: listLabelingMergeGroups
+      summary: Browse groups for manual combination
+      description: >-
+        Since 0.50.0, advertised by session.manual_merge. Requires photos.edit.
+        Returns at most 20 active groups in ascending ID order, unnamed by default.
+        include_named=1 also includes named groups. Supply upper_id from a fresh
+        session as upper and the previous next as after. A filter change starts
+        a new cursor traversal. Visibility is checked in small batches. Only the
+        returned groups receive one representative face with original preview
+        metadata; no complete face arrays or total count are loaded.
+        The Android client retains nearby pages and a bounded selection; saved
+        ID intervals allow earlier pages to be reloaded without offset scans.
+        Cache-Control is private, no-store.
+      parameters:
+        - name: after
+          in: query
+          schema: {type: integer, format: int64, minimum: 0, maximum: 4611686018427387904, default: 0}
+        - name: upper
+          in: query
+          required: true
+          schema: {type: integer, format: int64, minimum: 0, maximum: 4611686018427387904}
+        - name: include_named
+          in: query
+          schema: {type: string, enum: ['0', '1'], default: '0'}
+      responses:
+        '200':
+          description: Cursor page of selectable groups.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LabelingCandidates'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '500': {$ref: '#/components/responses/InternalServerError'}
+
   /api/photos/labeling/v1/people/{id}:
     get:
       tags: [Photos]
@@ -1158,6 +1196,21 @@ paths:
       summary: Atomically label or manage a person with a durable receipt
       description: |
         Requires photos.edit. JSON is limited to 16 KiB.
+        Since 0.50.0, merge_groups and name_groups (session.manual_merge) combine
+        2 to 60 freely selected named or unnamed groups, without a cached suggestion.
+        Supply the complete ordered groups array of unique id/revision pairs.
+        Its first entry must match the path id and top-level revision; that group
+        survives. merge_groups keeps its name, or adopts the first selected named
+        source's name when it is unnamed. name_groups requires a nonempty name and
+        checks duplicate names outside the selection unless allow_duplicate=true.
+        Other target/assignment/suggestion/face fields must be zero or omitted.
+        Every selected revision and visibility is checked before any group changes.
+        All faces, including ignored faces and favorites, move in one transaction
+        with a durable receipt. Ignored faces remain ignored. The receipt uses
+        source_id=target_id for the surviving group, the sum of active faces,
+        groups=0 for merge_groups or the selected group count for name_groups.
+        A stale or missing group rejects the entire action with 409. Retrying the
+        same operation_id and payload replays the original receipt.
         name, assign, detach and ignore require an unnamed source.
         Since 0.43.0, rename, unassign and favorite require a named source
         (advertised by session.named_people). rename changes the name without merging.
@@ -2375,9 +2428,12 @@ paths:
       operationId: suggestPeopleForFace
       summary: Compare the current face with named people
       description: >-
-        Used by the WebUI and Android naming dialogs. Android requests the bounded
-        JSON ranking and resolves the selected target through the labeling person
-        endpoint before submitting a revision-checked assignment.
+        Used by the WebUI and Android naming dialogs. Both request NDJSON streaming
+        and display interim rankings. Android also accepts a single JSON ranking
+        from older servers, bounds each frame to 64 KiB, and discards interim results
+        on failure or a stream ending without done=true. Android resolves the selected
+        target through the labeling person endpoint before submitting a revision-checked
+        assignment, including when selecting an interim candidate.
         Requires photos.edit. Performs a live comparison of the stored face embedding
         against eligible references of named groups, including favorites, without
         running image inference. Returns at most 20 candidates with similarity at
@@ -3740,6 +3796,7 @@ components:
       type: object
       required: [protocol, instance, dataset, account, upper_id, can_manage]
       properties:
+        manual_merge: {type: boolean, const: true, description: "Cursor group browsing and atomic merge_groups/name_groups since 0.50.0. Older servers omit this field."}
         merge_naming: {type: boolean, const: true, description: "Atomic name_merge for two unnamed suggested groups since 0.50.0. Older servers omit this field."}
         merge_suggestions: {type: boolean, const: true, description: "One-pair review and receipted accept_merge/reject_merge actions since 0.49.0. Older servers omit this field."}
         named_people: {type: boolean, const: true, description: "Named people list and rename/unassign/favorite receipt actions available since 0.43.0. Older servers omit this field."}
@@ -3764,7 +3821,7 @@ components:
         faces:
           type: array
           maxItems: 40
-          description: Present on a detail page with faces. Empty pages can omit this field.
+          description: Present on detail pages and manual-merge group pages (one portrait per group). Empty pages can omit this field.
           items:
             type: object
             required: [id, display_path, bounds, favorite]
@@ -3840,14 +3897,26 @@ components:
       additionalProperties: false
       required: [operation_id, dataset, revision, action]
       properties:
+        groups:
+          type: array
+          minItems: 2
+          maxItems: 60
+          description: Required only for merge_groups/name_groups; ordered unique group IDs with expected revisions. First entry matches path id and revision.
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, revision]
+            properties:
+              id: {type: integer, format: int64, minimum: 1}
+              revision: {type: integer, format: int64, minimum: 1}
         operation_id: {type: string, minLength: 16, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$'}
         dataset: {type: string}
         revision: {type: integer, format: int64, minimum: 1}
-        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge, name_merge]}
+        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge, name_merge, merge_groups, name_groups]}
         assign_id: {type: integer, format: int64, minimum: 0, description: "Optional named destination for name_merge. Must differ from both reviewed groups. Requires assign_revision and an empty name."}
         assign_revision: {type: integer, format: int64, minimum: 0, description: "Expected named destination revision for name_merge with assign_id; otherwise zero or omitted."}
         suggestion_id: {type: integer, format: int64, minimum: 1, description: Required cached suggestion ID for accept_merge/reject_merge (0.49.0) or name_merge (0.50.0).}
-        name: {type: string, maxLength: 200, description: Required and nonempty for name or rename, or name_merge without assign_id; whitespace normalized.}
+        name: {type: string, maxLength: 200, description: Required and nonempty for name, rename or name_groups, or name_merge without assign_id; whitespace normalized.}
         allow_duplicate: {type: boolean, default: false, description: Explicitly allow a separate group with the same name.}
         target_id: {type: integer, format: int64, description: Named target for assign; displayed target for accept_merge/reject_merge/name_merge.}
         target_revision: {type: integer, format: int64, description: Expected target revision for assign or accept_merge/reject_merge/name_merge.}
@@ -3859,12 +3928,12 @@ components:
       properties:
         source_revision: {type: integer, format: int64, minimum: 0, description: "Optional since 0.45.0. Source revision at commit (zero if absent). Preserved on replay; use for local updates, never as proof of the latest server state."}
         operation_id: {type: string}
-        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge, name_merge]}
+        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge, name_merge, merge_groups, name_groups]}
         source_id: {type: integer, format: int64}
         target_id: {type: integer, format: int64, description: Assignment or merge-decision target; otherwise zero.}
         new_id: {type: integer, format: int64, description: New unnamed group for detach/unassign or zero.}
         faces: {type: integer, format: int64, minimum: 0, description: Actually affected active face count; zero for reject_merge.}
-        groups: {type: integer, enum: [0, 1, 2], description: Zero for detach/rename/unassign/favorite/accept_merge/reject_merge; one for name/assign/ignore; two for name_merge.}
+        groups: {type: integer, minimum: 0, maximum: 60, description: Zero for detach/rename/unassign/favorite/accept_merge/reject_merge/merge_groups; one for name/assign/ignore; two for name_merge; selected group count for name_groups.}
         at: {type: integer, format: int64, description: Server confirmation time in Unix seconds.}
 
     Error:

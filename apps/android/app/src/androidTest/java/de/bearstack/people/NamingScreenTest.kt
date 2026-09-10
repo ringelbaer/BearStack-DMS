@@ -48,12 +48,16 @@ class NamingScreenTest {
             compose.waitUntil(10_000){!vm.state.value.faceSearching && vm.state.value.error!=null}
             search.assertIsEnabled()
             api.matchFailure=false;api.matches=listOf(FaceMatch(9,"Anna",1,90))
+            api.matchUpdates=listOf(api.matches);api.matchFinish=kotlinx.coroutines.CompletableDeferred()
             search.performClick()
             compose.waitUntil(10_000){vm.state.value.faceMatches.isNotEmpty()}
+            compose.onNodeWithText("Gefunden: 1 – Abgleich läuft …").assertIsDisplayed()
+            assertTrue(vm.state.value.faceSearching);assertFalse(vm.state.value.faceSearchDone)
             compose.onNodeWithText("1 Gesicht · #9").performScrollTo().performClick()
             compose.waitUntil(10_000){!vm.state.value.busy && api.commits==1}
             assertEquals("assign",api.receipts.values.single().action)
             assertFalse(vm.state.value.naming)
+            compose.waitUntil(10_000){api.cancelledMatches==1}
         } finally {compose.runOnUiThread {store.clear()}}
     }
     @Test @SdkSuppress(minSdkVersion=30)

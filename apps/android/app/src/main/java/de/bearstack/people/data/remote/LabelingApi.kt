@@ -4,6 +4,9 @@ import de.bearstack.people.text.*
 import de.bearstack.people.R
 import de.bearstack.people.connection.Connections
 import java.io.IOException
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.MediaType.Companion.toMediaType
@@ -11,7 +14,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
 data class Session(val instance: String, val dataset: String, val account: String, val upper: Long,
-    val namedPeople: Boolean = false, val namedSearch: Boolean = false, val mergeSuggestions: Boolean = false, val mergeNaming: Boolean = false) {
+    val namedPeople: Boolean = false, val namedSearch: Boolean = false, val mergeSuggestions: Boolean = false, val mergeNaming: Boolean = false,
+    val manualMerge: Boolean = false) {
     val scope: String get() = JSONObject().put("instance", instance).put("dataset", dataset).put("account", account).toString()
 }
 data class Person(val id: Long, val name: String, val revision: Long, val count: Long, val faceId: Long,
@@ -44,12 +48,17 @@ interface LabelingService {
     suspend fun personFaces(id: Long, offset: Int, after: Long): Person = person(id,offset)
     suspend fun person(id: Long, offset: Int = 0): Person
     suspend fun suggestions(q: String, exact: Boolean = false): List<Person>
-    suspend fun faceMatches(face: Long): List<FaceMatch> = throw ApiFailure(404,"not_found",UiText(R.string.people_face_search_unavailable))
+    suspend fun mergeGroups(after: Long, upper: Long, includeNamed: Boolean): Candidates =
+        throw ApiFailure(404,"not_found",UiText(R.string.people_manual_merge_version))
+    fun faceMatches(face: Long): Flow<List<FaceMatch>> = flow { throw ApiFailure(404,"not_found",UiText(R.string.people_face_search_unavailable)) }
     suspend fun nextMergeSuggestion(): MergeSuggestion? = throw ApiFailure(404,"not_found",UiText(R.string.error_merge_version))
     suspend fun action(id: Long, body: String): Receipt
     suspend fun receipt(operation: String, dataset: String): Receipt
 }
 class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
+    // A progressing search may outlast the ordinary request deadline. Keep the
+    // authenticated client's connection/read timeouts and shared connection pool.
+    private val faceMatchClient = client.newBuilder().callTimeout(0, TimeUnit.MILLISECONDS).build()
     private val server = Connections.address(address)
     private val base = Connections.address(address).resolve("api/photos/labeling/v1/")!!
     fun image(face: Long, large: Boolean = false): String = base.resolve("faces/$face/thumbnail")!!.newBuilder()
@@ -75,11 +84,24 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
     override suspend fun session(): Session {
         val o = json("session")
         requireMessage(o.getInt("protocol") == 1 && o.getBoolean("can_manage"),R.string.error_people_protocol)
-        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"),o.optBoolean("merge_naming"))
+        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"),o.optBoolean("merge_naming"),o.optBoolean("manual_merge"))
     }
     override suspend fun candidates(after: Long, upper: Long): Candidates {
         val o = json("candidates", mapOf("after" to "$after", "upper" to "$upper"))
         return Candidates(people(o),o.getLong("next"),o.getBoolean("has_next"))
+    }
+    override suspend fun mergeGroups(after: Long, upper: Long, includeNamed: Boolean): Candidates {
+        val o=json("groups",mapOf("after" to "$after","upper" to "$upper","include_named" to if(includeNamed) "1" else "0"))
+        val page=Candidates(people(o),o.getLong("next"),o.getBoolean("has_next"))
+        requireMessage(page.people.size<=20 && (!page.hasNext || page.people.size==20),R.string.error_response_invalid)
+        var previous=after
+        page.people.forEach {p ->
+            requireMessage(p.id>previous && p.id<=upper && p.revision>0 && p.count>0 && p.faceId>0 &&
+                (includeNamed || p.name.isEmpty()) && p.faces.size<=1 && p.faces.all {it==p.faceId},R.string.error_response_invalid)
+            previous=p.id
+        }
+        requireMessage(page.next==previous,R.string.error_response_invalid)
+        return page
     }
     override suspend fun namedPeople(after: Long, upper: Long): Candidates {
         val o = json("people", mapOf("after" to "$after", "upper" to "$upper"))
@@ -93,21 +115,11 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
         mapOf("offset" to "$offset","after_face" to "$after","limit" to "40")))
     override suspend fun person(id: Long, offset: Int): Person = person(json("people/$id",mapOf("offset" to "$offset")))
     override suspend fun suggestions(q: String, exact: Boolean): List<Person> = people(json("suggestions",mapOf("q" to q,"exact" to if(exact) "1" else "0")))
-    override suspend fun faceMatches(face: Long): List<FaceMatch> {
+    override fun faceMatches(face: Long): Flow<List<FaceMatch>> {
         require(face > 0)
         val request = Request.Builder().url(server.resolve("photos/faces/$face/suggestions")!!)
-            .header("Accept", "application/json").build()
-        val result = client.json(request, 64 * 1024L) { status, _ -> when(status) {
-            401 -> UiText(R.string.error_auth)
-            403 -> UiText(R.string.error_people_permission)
-            404 -> UiText(R.string.people_face_search_unavailable)
-            409 -> UiText(R.string.error_group_changed)
-            else -> UiText(R.string.error_server,status)
-        } }.getJSONArray("people")
-        requireMessage(result.length() <= 20, R.string.error_response_invalid)
-        return List(result.length()) { i -> result.getJSONObject(i).let {
-            FaceMatch(it.getLong("id"), it.getString("name"), it.getLong("count"), it.getLong("face_id"))
-        } }.onEach { requireMessage(it.id > 0 && it.faceId > 0 && it.name.isNotBlank() && it.count > 0, R.string.error_response_invalid) }
+            .header("Accept", "application/x-ndjson").build()
+        return faceMatchClient.faceMatchUpdates(request)
     }
     override suspend fun nextMergeSuggestion(): MergeSuggestion? = json("merge-suggestions/next").optJSONObject("suggestion")?.let {
         MergeSuggestion(it.getLong("id"),person(it.getJSONObject("source")),person(it.getJSONObject("target")),

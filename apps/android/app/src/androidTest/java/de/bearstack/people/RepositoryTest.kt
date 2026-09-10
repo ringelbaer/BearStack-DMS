@@ -6,6 +6,7 @@ import de.bearstack.people.data.local.*
 import de.bearstack.people.data.remote.*
 import de.bearstack.people.people.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.*
@@ -16,7 +17,7 @@ internal class FakeService : LabelingService {
     var upper=2L
     var supportsMerges=true
     var supportsMergeNaming=true
-    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true,mergeSuggestions=supportsMerges,mergeNaming=supportsMergeNaming)
+    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true,mergeSuggestions=supportsMerges,mergeNaming=supportsMergeNaming,manualMerge=true)
     val mergePairs=mutableListOf<MergeSuggestion>()
     var failNextMerge=false
     override suspend fun nextMergeSuggestion(): MergeSuggestion? {
@@ -31,6 +32,13 @@ internal class FakeService : LabelingService {
     var failPerson: Long? = null
     override suspend fun session() = session
     override suspend fun candidates(after: Long,upper: Long) = Candidates(people.values.filter { it.id>after && it.id<=upper && it.name.isEmpty() },upper,false)
+    val groupRequests=mutableListOf<Triple<Long,Long,Boolean>>()
+    override suspend fun mergeGroups(after:Long,upper:Long,includeNamed:Boolean):Candidates {
+        groupRequests+=Triple(after,upper,includeNamed)
+        val groups=people.values.filter {it.id>after && it.id<=upper && (includeNamed || it.name.isEmpty())}.sortedBy {it.id}.take(21)
+        val page=groups.take(20).map {it.copy(faces=listOf(it.faceId))}
+        return Candidates(page,page.lastOrNull()?.id ?: after,groups.size>20)
+    }
     override suspend fun namedPeople(after: Long,upper: Long): Candidates {
         val page=people.values.filter {it.id>after && it.id<=upper && it.name.isNotEmpty()}.sortedBy {it.id}.take(21)
         return Candidates(page.take(20),page.take(20).lastOrNull()?.id ?: after,page.size>20)
@@ -54,16 +62,21 @@ internal class FakeService : LabelingService {
         return if(offset==4 && person.count==5L) person.copy(offset=4,faces=listOf(14)) else person
     }
     var matches: List<FaceMatch> = emptyList()
+    var matchUpdates: List<List<FaceMatch>> = emptyList()
+    var matchFinish: kotlinx.coroutines.CompletableDeferred<Unit>? = null
     var matchDelay=0L
     var matchFailure=false
     var cancelledMatches=0
     val matchedFaces=mutableListOf<Long>()
-    override suspend fun faceMatches(face: Long): List<FaceMatch> {
+    override fun faceMatches(face: Long) = flow {
         matchedFaces+=face
-        try { kotlinx.coroutines.delay(matchDelay) }
+        try {
+            matchUpdates.forEach { emit(it) }
+            matchFinish?.await() ?: kotlinx.coroutines.delay(matchDelay)
+        }
         catch(e: kotlinx.coroutines.CancellationException) { cancelledMatches++;throw e }
         if(matchFailure) throw IOException("face search unavailable")
-        return matches
+        emit(matches)
     }
     val queries = mutableListOf<String>()
     var slowQuery: String? = null
@@ -81,6 +94,24 @@ internal class FakeService : LabelingService {
         val p=people[id] ?: throw ApiFailure(409,"conflict","gone")
         if(p.revision!=request.getLong("revision")) throw ApiFailure(409,"conflict","stale")
         val action=request.getString("action")
+        if(action=="merge_groups" || action=="name_groups") {
+            val refs=request.getJSONArray("groups")
+            val selected=(0 until refs.length()).map {i ->
+                val ref=refs.getJSONObject(i)
+                val person=people[ref.getLong("id")] ?: throw ApiFailure(409,"conflict","gone")
+                if(person.revision!=ref.getLong("revision")) throw ApiFailure(409,"conflict","stale")
+                person
+            }
+            val name=if(action=="name_groups") request.getString("name") else selected.firstOrNull {it.name.isNotEmpty()}?.name.orEmpty()
+            if(action=="name_groups" && !request.optBoolean("allow_duplicate") && people.values.any {it.name==name && it !in selected})
+                throw ApiFailure(409,"name_exists","duplicate")
+            people[id]=p.copy(name=name,count=selected.sumOf {it.count},faces=selected.flatMap {it.faces},revision=p.revision+1)
+            selected.drop(1).forEach {people.remove(it.id)}
+            val receipt=Receipt(op,action,id,id,0,selected.sumOf {it.count},if(action=="name_groups") selected.size else 0,100,p.revision+1)
+            commits++;receipts[op]=receipt
+            if(loseResponse) {loseResponse=false;throw IOException("response lost after commit")}
+            return receipt
+        }
         if(action=="accept_merge" || action=="reject_merge" || action=="name_merge") {
             val pair=mergePairs.firstOrNull {it.id==request.getLong("suggestion_id")} ?: throw ApiFailure(409,"conflict","gone")
             val target=people[request.getLong("target_id")] ?: throw ApiFailure(409,"conflict","gone")
@@ -136,6 +167,24 @@ internal class FakeService : LabelingService {
 }
 class RepositoryTest {
     private fun database() = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext,LabelingDatabase::class.java).build()
+    @Test fun manualMergePersistsWholeSelectionAndRecoversReceiptAfterRestart()=runBlocking {
+        val db=database()
+        try {
+            val api=FakeService()
+            val repo=PeopleRepository(db,api,api.session)
+            repo.next();repo.skip(api.people.getValue(1));repo.next()
+            repo.prepareGroupMerge(listOf(api.people.getValue(1),api.people.getValue(2)))
+            val body=JSONObject(repo.pending()!!.body)
+            assertEquals(2,body.getJSONArray("groups").length())
+            api.loseResponse=true
+            try {repo.resolve();fail("expected lost response")} catch(_:IOException) {}
+            assertNotNull(repo.pending());assertEquals(1,api.commits)
+            val restored=PeopleRepository(db,api,api.session)
+            assertNotNull(restored.resolve());assertNull(restored.pending());assertEquals(1,api.commits)
+            assertEquals("",restored.state().skipped)
+            assertEquals(1L,restored.next()!!.id)
+        } finally {db.close()}
+    }
     @Test fun mergeDecisionSurvivesRestartAndRejectPreservesCurrentPage() = runBlocking {
         for(accept in listOf(false,true)) {
             val db=database()

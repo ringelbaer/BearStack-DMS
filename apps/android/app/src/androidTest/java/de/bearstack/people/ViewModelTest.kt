@@ -13,6 +13,29 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ViewModelTest {
+    @Test fun manualMergeRequiresNewSelectionAfterConflictAndResolvesLostResponse()=runBlocking {
+        val api=FakeService()
+        model(api) {vm ->
+            withContext(Dispatchers.Main) {vm.openManualMerge()};idle(vm)
+            until {vm.manualMerges?.state?.value?.pages?.isNotEmpty()==true}
+            val controller=vm.manualMerges!!
+            withContext(Dispatchers.Main) {controller.state.value.pages[0]!!.forEach(controller::select)}
+            api.people[2]=api.people.getValue(2).copy(revision=2)
+            withContext(Dispatchers.Main) {vm.combineManualGroups()};idle(vm)
+            until {!controller.state.value.loading}
+            assertEquals(0,api.commits);assertTrue(controller.state.value.selected.isEmpty())
+            withContext(Dispatchers.Main) {controller.state.value.pages[0]!!.forEach(controller::select)}
+            api.loseResponse=true
+            withContext(Dispatchers.Main) {vm.combineManualGroups()};idle(vm)
+            assertTrue(vm.state.value.unresolved);assertEquals(1,api.commits)
+            withContext(Dispatchers.Main) {vm.retry()};idle(vm)
+            until {!controller.state.value.loading}
+            assertFalse(vm.state.value.unresolved);assertEquals(1,api.commits)
+            assertTrue(controller.state.value.selected.isEmpty())
+            withContext(Dispatchers.Main) {vm.closeManualMerge()};idle(vm)
+            assertFalse(vm.state.value.manualMerge);assertEquals(1L,vm.state.value.person!!.id)
+        }
+    }
     @Test fun delayedDirectorySearchDoesNotOverwriteNewQueryAndStreamingRejectsChangedRevision() = runBlocking {
         val api=FakeService().apply {
             upper=50
@@ -89,23 +112,49 @@ class ViewModelTest {
         }
     }
     @Test fun faceSearchCancelsOnTypingClosingAndBackgroundAndNeverWrites() = runBlocking {
-        val api=FakeService().apply { matchDelay=2000; matches=listOf(FaceMatch(9,"Anna",1,90)) }
+        val api=FakeService().apply {
+            matchFinish=CompletableDeferred()
+            matches=listOf(FaceMatch(9,"Anna",1,90));matchUpdates=listOf(matches)
+        }
         model(api) { vm ->
             withContext(Dispatchers.Main) {vm.startNaming();vm.findFaceMatches()}
-            until {api.matchedFaces.size==1}
+            until {api.matchedFaces.size==1 && vm.state.value.faceMatches.isNotEmpty()}
             withContext(Dispatchers.Main) {vm.nameChanged("Other")}
             until {api.cancelledMatches==1}
             assertTrue(vm.state.value.faceMatches.isEmpty());assertFalse(vm.state.value.faceSearching)
             withContext(Dispatchers.Main) {vm.findFaceMatches()}
-            until {api.matchedFaces.size==2}
+            until {api.matchedFaces.size==2 && vm.state.value.faceMatches.isNotEmpty()}
             withContext(Dispatchers.Main) {vm.closeNaming()}
             until {api.cancelledMatches==2}
             withContext(Dispatchers.Main) {vm.startNaming();vm.findFaceMatches()}
-            until {api.matchedFaces.size==3}
+            until {api.matchedFaces.size==3 && vm.state.value.faceMatches.isNotEmpty()}
             withContext(Dispatchers.Main) {vm.background()}
             until {api.cancelledMatches==3}
             assertEquals(0,api.commits)
             assertTrue(vm.state.value.faceMatches.isEmpty())
+        }
+    }
+    @Test fun faceSearchReplacesInterimRankingAndClearsItOnFailure() = runBlocking {
+        val anna=FaceMatch(9,"Anna",1,90)
+        val berta=FaceMatch(8,"Berta",2,80)
+        val api=FakeService().apply { matchUpdates=listOf(listOf(anna));matches=listOf(berta,anna) }
+        model(api) { vm ->
+            for(fail in listOf(false,true)) {
+                api.matchFinish=CompletableDeferred();api.matchFailure=fail
+                withContext(Dispatchers.Main) {vm.startNaming();vm.findFaceMatches()}
+                until {vm.state.value.faceMatches==listOf(anna)}
+                assertTrue(vm.state.value.faceSearching);assertFalse(vm.state.value.faceSearchDone)
+                api.matchFinish!!.complete(Unit)
+                until {!vm.state.value.faceSearching}
+                if(fail) {
+                    assertTrue(vm.state.value.faceMatches.isEmpty());assertNotNull(vm.state.value.error)
+                    assertFalse(vm.state.value.faceSearchDone)
+                } else {
+                    assertEquals(listOf(berta,anna),vm.state.value.faceMatches)
+                    assertTrue(vm.state.value.faceSearchDone)
+                }
+                assertEquals(0,api.commits)
+            }
         }
     }
     @Test fun faceSearchUsesDisplayedPageAndRechecksTargetBeforeAssigning() = runBlocking {

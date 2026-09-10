@@ -104,7 +104,22 @@
     <string name="people_merge_name_help">Sind beide Gruppen unbenannt, öffnet der Stift die Namenssuche. Speichern führt beide Gruppen unter einem neuen Namen oder mit einer ausgewählten Person zusammen. Abbrechen ändert nichts.</string>
     <string name="people_face_search">Ähnliche benannte Personen suchen</string>
     <string name="people_face_search_running">Gesicht wird mit benannten Personen verglichen …</string>
+    <string name="people_face_search_progress">Gefunden: %1$d – Abgleich läuft …</string>
+    <string name="people_face_search_failed">Gesichtsabgleich abgebrochen. Bitte erneut versuchen.</string>
     <string name="people_face_search_empty">Keine ähnlichen benannten Personen gefunden.</string>
     <string name="people_face_search_unavailable">Gesichtssuche nicht verfügbar. Bitte den Server aktualisieren oder die Person neu öffnen.</string>
     <string name="people_merge_similarity">Ähnlichkeit: %1$.2f</string>
+    <string name="people_manual_merge">Gruppen manuell kombinieren</string>
+    <string name="people_manual_merge_version">Manuelles Kombinieren benötigt eine neuere Serverversion. Bitte den Server aktualisieren.</string>
+    <string name="people_manual_select">Gruppe auswählen oder abwählen</string>
+    <string name="people_manual_include_named">Auch benannte Gruppen anzeigen</string>
+    <string name="people_manual_selected">%1$d Gruppen ausgewählt</string>
+    <string name="people_manual_clear">Auswahl leeren</string>
+    <string name="people_manual_merge_limit">Höchstens 60 Gruppen gleichzeitig auswählen.</string>
+    <string name="people_manual_stays_unnamed">Die kombinierte Gruppe bleibt unbenannt.</string>
+    <string name="people_manual_keeps_name">Name bleibt: %1$s</string>
+    <string name="people_manual_combine">Kombinieren</string>
+    <string name="people_manual_combine_name">Kombinieren und benennen</string>
+    <string name="people_manual_help">Kurz tippen zum Auswählen, gedrückt halten zum Vergrößern. Weitere Gruppen laden beim Scrollen. Ein Filterwechsel leert die Auswahl.</string>
+    <string name="people_manual_empty">Keine passenden Gruppen vorhanden.</string>
 </resources>
