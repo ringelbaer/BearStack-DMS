@@ -9,6 +9,29 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PhotosApiTest {
+    @Test fun datePositionKeepsProxyPrefixAndUsesABoundedValidatedResponse()=runBlocking {
+        var request:Request?=null
+        var body="""{"path":"album/a.jpg","date":"2026-06-12","page":321}"""
+        var status=200
+        val client=OkHttpClient.Builder().addInterceptor {chain ->
+            request=chain.request()
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(status).message("response")
+                .body(body.toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        try {
+            val api=PhotosApi(client,"https://example.test/proxy/")
+            val target=api.locateDate("2026-06-11")
+            assertEquals(321,target.page);assertEquals("2026-06-12",target.date)
+            assertEquals("/proxy/api/photos/v1/browse/date",request!!.url.encodedPath)
+            assertEquals("2026-06-11",request!!.url.queryParameter("date"))
+            body="""{"path":"a","date":"2026-02-30","page":0}"""
+            try {api.locateDate("2026-06-11");fail("invalid date position accepted")}
+            catch(_:IllegalArgumentException) {}
+            status=404;body="""{"code":"not_found"}"""
+            try {api.locateDate("2026-06-11");fail("missing endpoint accepted")}
+            catch(e:de.bearstack.people.text.UserIoFailure) {assertEquals(R.string.photos_date_unavailable,e.userText.resource)}
+        } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+    }
     @Test fun photoRouteKeepsSearchPrefixAndFullCountsWithBoundedGeometry()=runBlocking {
         var request:Request?=null
         val client=OkHttpClient.Builder().addInterceptor {chain ->

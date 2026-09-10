@@ -366,7 +366,9 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
     await page.setViewportSize({ width, height: 900 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   }
-  await page.getByRole("link", { name: "Alle Filter aufheben" }).click();
+  await filterName.fill("");
+  await page.getByRole("button", { name: "Suchen", exact: true }).click();
+  await page.getByRole("navigation", { name: "Personenfilter", exact: true }).getByRole("link", { name: "Alle", exact: true }).click();
   await expect(filterName).toHaveValue("");
   await expect(peopleFilter).toHaveValue("all");
   await expect(page.locator("a.person-card")).toHaveCount(2);
@@ -378,7 +380,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   const plainPage = await noJS.newPage();
   await plainPage.goto(baseURL + "/photos/people?unknown=1&known=1&ignored=1&q=NoMatch");
   await expect(plainPage.locator("a.person-card")).toHaveCount(0);
-  await plainPage.getByRole("link", { name: "Alle Filter aufheben" }).click();
+  await plainPage.getByRole("link", { name: "Unbenannt", exact: true }).click();
+  await plainPage.getByRole("navigation", { name: "Personenfilter", exact: true }).getByRole("link", { name: "Alle", exact: true }).click();
   await expect(plainPage.locator("a.person-card")).toHaveCount(2);
   await expect(plainPage.locator('[data-people-filter] input[name="filter"]')).toHaveValue("all");
   await noJS.close();

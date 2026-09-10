@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="photos_date_choose">Choose date</string>
+    <string name="photos_date_jump">Jump to date</string>
+    <string name="photos_date_hint">If there are no photos on this day, the nearest available day is shown. Equal distances prefer the older day.</string>
+    <string name="photos_date_loading">Jumping to %1$s …</string>
+    <string name="photos_date_unavailable">Please update the BearStack server to jump to a date.</string>
+    <string name="photos_date_changed">The photo library has changed. Please try jumping to the date again.</string>
     <string name="photos_share">Share</string>
     <string name="photos_share_preparing">Preparing %1$s for sharing …</string>
     <string name="photos_share_error">The image could not be prepared for sharing. Please try again.</string>

@@ -3541,7 +3541,6 @@ label span {
   flex: 0 0 auto;
 }
 .people-filter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
-.people-filter-reset { padding: .4rem .65rem; font-size: .85rem; white-space: normal; }
 .people-filter-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
 .people-filter-tabs > a { min-height: 44px; }
 :root .people-filter-tabs > a[aria-current="page"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }

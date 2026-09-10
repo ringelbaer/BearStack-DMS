@@ -13,6 +13,7 @@ var photoRouteSpecs = []routeSpec{
 	{pattern: "GET /api/photos/v1/map/track", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoMapTrack},
 	{pattern: "GET /api/photos/v1/session", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoCatalogSession},
 	{pattern: "GET /api/photos/v1/browse", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoCatalog},
+	{pattern: "GET /api/photos/v1/browse/date", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoCatalogDate},
 	{pattern: "GET /api/photos/v1/map", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoCatalogMap},
 	{pattern: "GET /api/photos/v1/map/media", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoMapMedia},
 	{pattern: "GET /api/photos/v1/media/info", capabilities: authCapPhotosRead, handler: (*Server).handlePhotoCatalogInfo},

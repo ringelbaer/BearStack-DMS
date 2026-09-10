@@ -45,8 +45,8 @@ func TestUnknownPeopleHTTPFilterAndReset(t *testing.T) {
 	w := httptest.NewRecorder()
 	s.Handler().ServeHTTP(w, request)
 	html := w.Body.String()
-	if w.Code != 200 || !strings.Contains(html, `name="filter" value="unknown"`) || strings.Contains(html, `type="search" name="q"`) || !strings.Contains(html, `aria-current="page">Unbenannt</a>`) || strings.Contains(html, `name="filter" value="known"`) || strings.Contains(html, `name="filter" value="ignored"`) || !strings.Contains(html, `href="/photos/people?page=1&amp;q=">Alle Filter aufheben`) {
-		t.Fatalf("normalized filters/reset: %d %s", w.Code, html)
+	if w.Code != 200 || !strings.Contains(html, `name="filter" value="unknown"`) || strings.Contains(html, `type="search" name="q"`) || !strings.Contains(html, `aria-current="page">Unbenannt</a>`) || strings.Contains(html, `name="filter" value="known"`) || strings.Contains(html, `name="filter" value="ignored"`) || strings.Contains(html, `Alle Filter aufheben`) {
+		t.Fatalf("normalized filters: %d %s", w.Code, html)
 	}
 	request = httptest.NewRequest("GET", "/photos/people?page=1&q=", nil)
 	request.SetBasicAuth("reader", "secret")

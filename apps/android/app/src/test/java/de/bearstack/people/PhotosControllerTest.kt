@@ -14,10 +14,12 @@ class PhotosControllerTest {
     private fun page(query: PhotoQuery, page: Int=1, media: List<Photo> = emptyList(), next: Boolean=false) =
         PhotoPage(query.path,"",page,media.size,next,0,false,false,media,emptyList(),emptyList())
     private inner class Fake : PhotosService {
+        var dateHandler: suspend (String) -> PhotoDatePosition = { PhotoDatePosition("target", it, 10) }
         var handler: suspend (PhotoQuery,Int,String) -> PhotoPage = {q,p,_ -> page(q,p)}
         var blogHandler: suspend (String)->PhotoBlog = {path -> PhotoBlog(path,path,null,"2026-09-09T10:00:00Z","Text","<p>Text</p>")}
         val requests=mutableListOf<Triple<PhotoQuery,Int,String>>()
         override suspend fun session()=session
+        override suspend fun locateDate(date: String)=dateHandler(date)
         override suspend fun browse(query: PhotoQuery,page: Int,section: String): PhotoPage {
             requests+=Triple(query,page,section);return handler(query,page,section)
         }
@@ -25,6 +27,63 @@ class PhotosControllerTest {
         override suspend fun blog(path: String)=blogHandler(path)
         override fun thumbnail(photo: Photo,size: Int)="https://example.test/thumbnail"
         override fun original(photo: Photo)="https://example.test/media"
+    }
+    @Test fun dateJumpLoadsOnlyTargetPageAndKeepsBothScrollDirections()=runTest {
+        val fake=Fake().apply {handler={q,p,_ -> page(q,p,listOf(photo(if(p==10) "target" else "page-$p")),true)}}
+        val controller=PhotosController(this,fake,session);runCurrent()
+        controller.jumpToDate(java.time.LocalDate.parse("2026-09-09"));runCurrent()
+        assertEquals(listOf(1,10),fake.requests.map {it.second})
+        assertEquals("date:target",controller.state.value.scrollToKey)
+        assertEquals(10,controller.state.value.mediaPages.firstPage)
+        assertTrue(controller.state.value.mediaPages.hasPrevious)
+        assertTrue(controller.state.value.mediaPages.hasNext)
+        assertFalse(controller.state.value.dateLoading)
+        controller.previous("media");runCurrent()
+        controller.more("media");runCurrent()
+        assertEquals(listOf(1,10,9,11),fake.requests.map {it.second})
+        assertEquals(listOf("page-9","target","page-11"),controller.state.value.media.map {it.path})
+        controller.close()
+    }
+    @Test fun failedOrChangedDateTargetPreservesOldStreamAndCanRetry()=runTest {
+        val fake=Fake().apply {handler={q,p,_ -> page(q,p,listOf(photo("page-$p")),true)}}
+        val controller=PhotosController(this,fake,session);runCurrent()
+        val old=controller.state.value.mediaPages
+        controller.jumpToDate(java.time.LocalDate.parse("2026-09-09"));runCurrent()
+        assertSame(old,controller.state.value.mediaPages)
+        assertEquals(R.string.photos_date_changed,controller.state.value.dateError!!.resource)
+        fake.handler={q,p,_ -> page(q,p,listOf(photo("target")),true)}
+        controller.jumpToDate(java.time.LocalDate.parse("2026-09-09"));runCurrent()
+        assertNull(controller.state.value.dateError)
+        assertEquals("target",controller.state.value.media.single().path)
+        controller.close()
+    }
+    @Test fun cancelledDateResolutionCannotLoadOrReplaceANewFolder()=runTest {
+        val gate=CompletableDeferred<Unit>()
+        val fake=Fake().apply {
+            handler={q,p,_ -> page(q,p,listOf(photo(q.path+"page-$p")),true)}
+            dateHandler={withContext(NonCancellable){gate.await()};PhotoDatePosition("target",it,10)}
+        }
+        val controller=PhotosController(this,fake,session);runCurrent()
+        controller.jumpToDate(java.time.LocalDate.parse("2026-09-09"));runCurrent()
+        controller.more("media");runCurrent()
+        assertEquals(1,fake.requests.size)
+        controller.cancelDateJump()
+        controller.open(PhotoQuery(path="new"),tab=1);runCurrent()
+        gate.complete(Unit);runCurrent()
+        assertEquals("newpage-1",controller.state.value.media.single().path)
+        assertEquals(listOf(1,1),fake.requests.map {it.second})
+        assertFalse(controller.state.value.dateLoading)
+        controller.close()
+    }
+    @Test fun emptyDateJumpEndsLoadingWithoutAnUnreachableScrollTarget()=runTest {
+        val fake=Fake().apply {dateHandler={PhotoDatePosition("","",1)}}
+        val controller=PhotosController(this,fake,session);runCurrent()
+        controller.jumpToDate(java.time.LocalDate.parse("2026-09-09"));runCurrent()
+        assertFalse(controller.state.value.dateLoading)
+        assertNull(controller.state.value.dateError)
+        assertNull(controller.state.value.scrollToKey)
+        assertTrue(controller.state.value.media.isEmpty())
+        controller.close()
     }
     @Test fun textErrorsEmptyPostsAndCancelledResponsesHaveSeparateState()=runTest {
         val fake=Fake()

@@ -80,7 +80,8 @@ test("sorting resets the page, persists through details and matches global serve
   await expect(page).toHaveURL(/page=2.*sort=date_desc|sort=date_desc.*page=2/);
   await page.goto(baseURL + "/photos/people");
   await expect(page).toHaveURL(/page=2.*sort=date_desc|sort=date_desc.*page=2/);
-  await page.getByRole("link", { name: "Alle Filter aufheben" }).click();
+  await expect(page.getByRole("link", { name: "Alle Filter aufheben" })).toHaveCount(0);
+  await page.getByRole("combobox", { name: "Sortieren", exact: true }).selectOption("name_asc");
   await expect(page.getByRole("combobox", { name: "Sortieren", exact: true })).toHaveValue("name_asc");
   await expect(page.locator(".people-pagination-current")).toHaveText("Seite 1 von 2");
   for (const width of [320, 390, 640, 1440]) {

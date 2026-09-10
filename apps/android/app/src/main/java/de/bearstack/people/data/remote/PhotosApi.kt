@@ -34,6 +34,7 @@ data class PhotoMapBounds(val south: Double, val west: Double, val north: Double
 data class PhotoMapMarker(val latitude: Double, val longitude: Double, val count: Int, val path: String = "",val bounds: PhotoMapBounds? = null)
 data class PhotoMapData(val total: Int, val bounds: PhotoMapBounds?, val markers: List<PhotoMapMarker>)
 data class PhotoMapPage(val total: Int,val page: Int,val hasNext: Boolean,val media: List<Photo>)
+data class PhotoDatePosition(val path: String, val date: String, val page: Int)
 
 data class PhotoTrackFile(val path: String,val name: String,val modified: String,val bytes: Long)
 data class PhotoTrackPage(val tracks: List<PhotoTrackFile>,val cursor: String,val previousCursor: String,
@@ -46,6 +47,8 @@ data class PhotoRouteData(val geometry: PhotoTrackGeometry,val totalMedia: Int,v
 interface PhotosService {
     suspend fun session(): PhotoSession
     suspend fun browse(query: PhotoQuery, page: Int = 1, section: String = ""): PhotoPage
+    suspend fun locateDate(date: String): PhotoDatePosition =
+        throw UserIoFailure(UiText(R.string.photos_date_unavailable))
     suspend fun info(path: String): Photo
     suspend fun blog(path: String): PhotoBlog
     suspend fun map(query: PhotoQuery, bounds: PhotoMapBounds? = null): PhotoMapData =
@@ -103,6 +106,19 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
             },o.getJSONArray("blogs").objects(::post))
     }
     override suspend fun info(path: String) = photo(json("media/info",mapOf("path" to path)).getJSONObject("media"))
+    override suspend fun locateDate(date: String): PhotoDatePosition {
+        val o = try { json("browse/date", mapOf("date" to date), maxBytes = 64 * 1024) }
+        catch(e: ApiFailure) {
+            if(e.status == 404) throw UserIoFailure(UiText(R.string.photos_date_unavailable))
+            throw e
+        }
+        val result = PhotoDatePosition(o.getString("path"), o.getString("date"), o.getInt("page"))
+        requireMessage(result.page in 1..1_000_000 &&
+            if(result.path.isEmpty()) result.date.isEmpty() && result.page == 1
+            else runCatching { java.time.LocalDate.parse(result.date) }.isSuccess,
+            R.string.error_response_invalid)
+        return result
+    }
     override suspend fun map(query: PhotoQuery, bounds: PhotoMapBounds?): PhotoMapData {
         val o=json("map",mapParams(query,bounds))
         val b=o.optJSONObject("bounds")

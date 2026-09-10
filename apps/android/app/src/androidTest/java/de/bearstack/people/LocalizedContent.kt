@@ -1,6 +1,7 @@
 package de.bearstack.people
 
 import android.content.res.Configuration
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -15,12 +16,14 @@ import java.util.Locale
 fun ComposeContentTestRule.setGermanContent(content: @Composable () -> Unit) = setLocalizedContent(Locale.GERMAN,content)
 
 fun ComposeContentTestRule.setLocalizedContent(locale: Locale,content: @Composable () -> Unit) = setContent {
+    val registry = checkNotNull(LocalActivityResultRegistryOwner.current)
     val base = LocalContext.current
     val configuration = LocalConfiguration.current
     val context = remember(base, configuration, locale) {
         base.createConfigurationContext(Configuration(configuration).apply { setLocale(locale) })
     }
     CompositionLocalProvider(
+        LocalActivityResultRegistryOwner provides registry,
         LocalContext provides context,
         LocalResources provides context.resources,
         LocalConfiguration provides context.resources.configuration,

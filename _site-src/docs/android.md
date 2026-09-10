@@ -62,6 +62,37 @@ zeigt auf breiten Displays sechs statt drei Fotos pro Reihe. Bei großer Schrift
 erhalten Ordner im Hochformat die gesamte Breite für ihre Beschriftung. Das
 adaptive App-Symbol bleibt auch beim runden Android-Beschnitt vollständig sichtbar.
 
+### Zu einem Datum springen
+
+Im Tab **Fotos** öffnet das **Kalendersymbol links neben dem Dreipunkt-Menü** einen
+Datumswähler. Er startet beim gerade sichtbaren Datum. Du kannst einen Tag im Kalender
+wählen, über die Jahresauswahl weiter zurückgehen oder zur Texteingabe wechseln.
+**Zum Datum springen** setzt den Bilderstrom an den Anfang des passenden Tages.
+Gibt es dort keine Aufnahmen, wird der zeitlich nächste vorhandene Tag gewählt;
+bei gleichem Abstand der ältere. Daten vor oder nach dem Bestand führen zum ältesten
+beziehungsweise neuesten vorhandenen Tag.
+
+Danach kannst du wie gewohnt in beide Richtungen weiterscrollen. Der Datumswähler
+setzt keinen Filter. Maßgeblich ist der angezeigte Aufnahmetag mit gespeicherter
+Zeitzone, ersatzweise der Tag der Dateiänderung. **Abbrechen** im Kalender verändert
+nichts; auch die laufende Suche nach der Position lässt sich abbrechen. Fehler lassen
+sich direkt wiederholen, während der bisherige Bilderstrom erhalten bleibt. Ein Wechsel
+von Tab, Konto oder in den Hintergrund verwirft eine noch laufende Anfrage.
+
+App und Server benötigen den aktuellen Entwicklungsstand von **Android 0.10.0 /
+BearStack 0.50.0**. Der neue lesende Endpunkt `/api/photos/v1/browse/date` gilt für den
+ungefilterten, nach Datum absteigenden Stream im Tab Fotos. Er benötigt `photos.read`
+und einen aufgebauten Fotoindex. Ältere Server zeigen einen Aktualisierungshinweis.
+Ordner, lokale Fotoordner und Suchergebnisse behalten ihre bisherige Navigation.
+
+Der Server ermittelt Nachbartage mit höchstens vier Bereichsabfragen in den vorhandenen
+Datumsindizes und zählt die vorangehenden Indexeinträge für die Zielseite. Er lädt keine
+Originale oder vollständigen Medienlisten. Position und Ziel stammen aus derselben
+Lesetransaktion; die App lädt anschließend ausschließlich die Zielseite mit höchstens
+96 Einträgen. Normales Nachladen hält weiterhin höchstens drei Seiten. Wird das Ziel
+zwischen Positionsabfrage und Seitenabruf verschoben, lässt sich der Sprung wiederholen.
+Es gibt keine Schemaänderung oder zusätzliche Indexmigration.
+
 ### Einzelne Bilder teilen
 
 **Teilen** oben im Vollbildbetrachter öffnet die Android-App-Auswahl mit der
@@ -287,7 +318,7 @@ openssl x509 -in /pfad/zum/server.crt -noout -fingerprint -sha256
 
 Alle Hexadezimalpaare vergleichen, anschließend „Abgeglichen und vertrauen“ wählen. Nur dieses Zertifikat wird für das Profil akzeptiert; Hostname und Gültigkeit bleiben verbindlich. Eine IP-Adresse funktioniert nur mit einem entsprechenden IP-Eintrag im Subject Alternative Name des Zertifikats. Bei einem Zertifikatswechsel die Verbindung erneut einrichten und den neuen Fingerabdruck prüfen. Private Zertifikatsketten mit eigener CA werden in Version 1 nicht als selbstsigniertes Blattzertifikat angeboten.
 
-Es gibt ein aktives Profil. Zugangsdaten und bestätigtes Zertifikat werden mit AES-GCM unter einem Schlüssel im Android Keystore in `noBackupFilesDir` gespeichert. Backups und Gerätetransfers sind ausgeschlossen. Screenshots und die Vorschau im App-Umschalter sind gesperrt. Die App schreibt keine Zugangsdaten in Logs. Bilder werden nur im begrenzten Arbeitsspeichercache gehalten; ein Profilwechsel leert den Cache.
+Es gibt ein aktives Profil. Zugangsdaten und bestätigtes Zertifikat werden mit AES-GCM unter einem Schlüssel im Android Keystore in `noBackupFilesDir` gespeichert. Backups und Gerätetransfers sind ausgeschlossen. Screenshots, Bildschirmaufnahmen und die Vorschau im App-Umschalter sind möglich. Die App schreibt keine Zugangsdaten in Logs. Bilder werden nur im begrenzten Arbeitsspeichercache gehalten; ein Profilwechsel leert den Cache.
 
 ## Ähnliche Gruppen
 

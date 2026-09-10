@@ -12,7 +12,8 @@ data class PhotosState(val query: PhotoQuery = PhotoQuery(recursive=true), val t
     val total: Int = 0, val loadingSections: Set<String> = emptySet(),
     val pageErrors: Map<String,PhotoPageFailure> = emptyMap(), val selected: String? = null, val blog: PhotoBlog? = null,
     val frame: Boolean = false, val blogLoading: Boolean = false, val blogError: UiText? = null,
-    val scrollToKey: String? = null) {
+    val scrollToKey: String? = null, val dateLoading: Boolean = false, val jumpDate: String? = null,
+    val dateError: UiText? = null, val jumpRevision: Long = 0) {
     val media get() = mediaPages.items
     val folders get() = folderPages.items
     val blogs get() = blogPages.items
@@ -47,13 +48,14 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     }
     private var generation = 0L
     private var request: Job? = null
+    private var dateRequest: Job? = null
     private var detail: Job? = null
     private var detailGeneration = 0L
     private val additional = mutableMapOf<String,Job>()
     init { open(initialQuery) }
     fun open(query: PhotoQuery, tab: Int = state.value.tab, frame: Boolean = false) {
         generation++
-        request?.cancel(); detail?.cancel(); additional.values.forEach { it.cancel() }; additional.clear()
+        request?.cancel(); dateRequest?.cancel(); detail?.cancel(); additional.values.forEach { it.cancel() }; additional.clear()
         gridPosition=null;visibleKeys=emptySet()
         mutable.value = PhotosState(query=query,tab=tab,frame=frame,loading=true)
         val expected = generation
@@ -74,12 +76,49 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
         requireMessage(page.page==number && page.media.size<=96 && page.folders.size<=24 && page.blogs.size<=20 &&
             page.folders.all {it.previews.size<=2},de.bearstack.people.R.string.error_response_invalid)
     }
+    fun jumpToDate(date: java.time.LocalDate) {
+        val current = state.value
+        if(current.loading || current.tab != 0 || current.frame || current.selected != null ||
+            current.query != PhotoQuery(recursive = true)) return
+        generation++
+        dateRequest?.cancel(); request?.cancel()
+        additional.values.forEach { it.cancel() }; additional.clear()
+        val expected = generation
+        mutable.update { it.copy(dateLoading = true, jumpDate = date.toString(), dateError = null,
+            loadingSections = emptySet(), pageErrors = emptyMap(), scrollToKey = null) }
+        dateRequest = scope.launch {
+            try {
+                val target = service.locateDate(date.toString())
+                if(generation != expected) return@launch
+                requireMessage(target.page in 1..1_000_000, de.bearstack.people.R.string.error_response_invalid)
+                val page = service.browse(current.query, target.page, "media")
+                validate(page, target.page)
+                requireMessage(if(target.path.isEmpty()) page.total == 0 && page.media.isEmpty()
+                    else page.media.any { it.path == target.path && it.date.take(10) == target.date },
+                    de.bearstack.people.R.string.photos_date_changed)
+                if(generation != expected) return@launch
+                val key = target.path.takeIf { it.isNotEmpty() }?.let { "date:$it" }
+                gridPosition = key?.let { GalleryPosition(it) }
+                visibleKeys = emptySet()
+                mutable.update { it.copy(dateLoading = false, dateError = null, error = null,
+                    mediaPages = PhotoPages.media().add(target.page, page.media, page.hasNext),
+                    total = page.total, scrollToKey = key, jumpRevision = it.jumpRevision + 1) }
+            } catch(e: CancellationException) { throw e }
+            catch(e: Exception) {
+                if(generation == expected) mutable.update { it.copy(dateLoading = false, dateError = failureText(e)) }
+            }
+        }
+    }
+    fun cancelDateJump() {
+        if(state.value.dateLoading) { generation++; dateRequest?.cancel() }
+        mutable.update { it.copy(dateLoading = false, dateError = null, jumpDate = null) }
+    }
     fun more(section: String) { loadSection(section,false) }
     fun previous(section: String) { loadSection(section,true) }
     fun retryPage(section: String) { state.value.pageErrors[section]?.let {loadSection(section,it.previous)} }
     private fun loadSection(section: String, previous: Boolean, reset: Boolean = false): Job? {
         val current = state.value
-        if(current.loading) return null
+        if(current.loading || current.dateLoading) return null
         if(section in current.loadingSections) return additional[section]
         val window=current.section(section)
         if(!reset && if(previous) !window.hasPrevious else !window.hasNext) return null
@@ -131,6 +170,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     }
     fun scrollConsumed() { mutable.update {it.copy(scrollToKey=null)} }
     fun select(path: String?) {
+        cancelDateJump()
         mutable.update {if(path==null || it.media.any {photo -> photo.path==path}) it.copy(selected=path) else it}
     }
     suspend fun prefetch(photo: Photo?, images: coil.ImageLoader) {
@@ -142,7 +182,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
         catch(_: Exception) { /* Optional prefetch never interrupts viewing. */ }
     }
     fun startFrame() {
-        if(state.value.loading || state.value.frame) return
+        if(state.value.loading || state.value.dateLoading || state.value.frame) return
         frameReturn=state.value.copy(loadingSections=emptySet(),selected=null) to gridPosition
         open(state.value.query.copy(recursive=true),frame=true)
     }

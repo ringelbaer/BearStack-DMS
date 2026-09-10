@@ -413,6 +413,69 @@ paths:
           description: Photo index not ready (map_index_not_ready). Retry-After is 10 seconds.
         '500':
           description: Internal error.
+  /api/photos/v1/browse/date:
+    get:
+      tags: [Photos]
+      operationId: locatePhotoCatalogDate
+      summary: Locate the closest calendar day in the native photo stream
+      description: |
+        Requires photos.read and an initialized photo index. Addresses only the global,
+        unfiltered stream returned by browse with recursive=1 and sort=descending_date;
+        no folder, search, GPS or media-type filters apply. Admin-only media is excluded
+        for every account, just as in native browse. The selected target receives a fresh
+        filesystem access check before any position or date is returned.
+        Chooses the nearest displayed calendar day, preferring the older day on equal
+        distances, then the first media of that day in the existing stream order.
+        Capture dates retain their stored timezone; missing capture dates use the
+        modification day as displayed by the server. Out-of-range dates select the
+        oldest or newest available day. An empty stream returns empty path/date and page 1.
+        Range seeks use existing covering date indexes; the preceding index entries
+        are counted to obtain the 96-item page. No original files are read and no full
+        media list is materialized. Target selection and position share a read transaction.
+        The caller fetches that page through browse and verifies the target path/date:
+        concurrent indexing can move the target between these two requests, requiring retry.
+        This locates a scroll position and does not filter the stream.
+      parameters:
+      - name: date
+        in: query
+        required: true
+        description: Calendar day in YYYY-MM-DD form, years 0001 through 9999.
+        schema:
+          type: string
+          format: date
+          minLength: 10
+          maxLength: 10
+      responses:
+        '200':
+          description: Target position; Cache-Control is private, no-store.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [path, date, page]
+                properties:
+                  path:
+                    type: string
+                    description: Library-relative target path, or empty for an empty stream.
+                  date:
+                    type: string
+                    description: Actual target day in YYYY-MM-DD form, or empty for an empty stream.
+                  page:
+                    type: integer
+                    minimum: 1
+                    description: One-based page with 96 media per page.
+        '400':
+          description: Missing or invalid date (invalid_date).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Missing photos.read or newly protected target.
+        '404':
+          description: Target removed since indexing.
+        '503':
+          description: Photo index not ready (catalog_index_not_ready); Retry-After is 10 seconds.
+        '500':
+          description: Internal error.
   /api/photos/v1/browse:
     get:
       tags:

@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="photos_date_choose">Datum auswählen</string>
+    <string name="photos_date_jump">Zum Datum springen</string>
+    <string name="photos_date_hint">Ohne Aufnahmen an diesem Tag wird der nächste vorhandene Tag angezeigt. Bei gleichem Abstand wird der ältere Tag gewählt.</string>
+    <string name="photos_date_loading">Springe zum %1$s …</string>
+    <string name="photos_date_unavailable">Bitte aktualisiere den BearStack-Server, um zum Datum zu springen.</string>
+    <string name="photos_date_changed">Der Fotobestand hat sich geändert. Bitte versuche den Datumssprung erneut.</string>
     <string name="photos_share">Teilen</string>
     <string name="photos_share_preparing">%1$s wird zum Teilen vorbereitet …</string>
     <string name="photos_share_error">Das Bild konnte nicht zum Teilen vorbereitet werden. Bitte versuche es erneut.</string>

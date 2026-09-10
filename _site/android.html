@@ -546,6 +546,17 @@
       <ul class="md-nav__list">
 
           <li class="md-nav__item">
+  <a href="#zu-einem-datum-springen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Zu einem Datum springen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#einzelne-bilder-teilen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -921,6 +932,17 @@
       <ul class="md-nav__list">
 
           <li class="md-nav__item">
+  <a href="#zu-einem-datum-springen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Zu einem Datum springen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#einzelne-bilder-teilen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1167,6 +1189,32 @@ Die kompakte, abgerundete Navigation verbindet Fotos, Ordner und Suche. Das Rast
 zeigt auf breiten Displays sechs statt drei Fotos pro Reihe. Bei großer Schrift
 erhalten Ordner im Hochformat die gesamte Breite für ihre Beschriftung. Das
 adaptive App-Symbol bleibt auch beim runden Android-Beschnitt vollständig sichtbar.</p>
+<h3 id="zu-einem-datum-springen">Zu einem Datum springen<a class="headerlink" href="#zu-einem-datum-springen" title="Permanent link">&para;</a></h3>
+<p>Im Tab <strong>Fotos</strong> öffnet das <strong>Kalendersymbol links neben dem Dreipunkt-Menü</strong> einen
+Datumswähler. Er startet beim gerade sichtbaren Datum. Du kannst einen Tag im Kalender
+wählen, über die Jahresauswahl weiter zurückgehen oder zur Texteingabe wechseln.
+<strong>Zum Datum springen</strong> setzt den Bilderstrom an den Anfang des passenden Tages.
+Gibt es dort keine Aufnahmen, wird der zeitlich nächste vorhandene Tag gewählt;
+bei gleichem Abstand der ältere. Daten vor oder nach dem Bestand führen zum ältesten
+beziehungsweise neuesten vorhandenen Tag.</p>
+<p>Danach kannst du wie gewohnt in beide Richtungen weiterscrollen. Der Datumswähler
+setzt keinen Filter. Maßgeblich ist der angezeigte Aufnahmetag mit gespeicherter
+Zeitzone, ersatzweise der Tag der Dateiänderung. <strong>Abbrechen</strong> im Kalender verändert
+nichts; auch die laufende Suche nach der Position lässt sich abbrechen. Fehler lassen
+sich direkt wiederholen, während der bisherige Bilderstrom erhalten bleibt. Ein Wechsel
+von Tab, Konto oder in den Hintergrund verwirft eine noch laufende Anfrage.</p>
+<p>App und Server benötigen den aktuellen Entwicklungsstand von <strong>Android 0.10.0 /
+BearStack 0.50.0</strong>. Der neue lesende Endpunkt <code>/api/photos/v1/browse/date</code> gilt für den
+ungefilterten, nach Datum absteigenden Stream im Tab Fotos. Er benötigt <code>photos.read</code>
+und einen aufgebauten Fotoindex. Ältere Server zeigen einen Aktualisierungshinweis.
+Ordner, lokale Fotoordner und Suchergebnisse behalten ihre bisherige Navigation.</p>
+<p>Der Server ermittelt Nachbartage mit höchstens vier Bereichsabfragen in den vorhandenen
+Datumsindizes und zählt die vorangehenden Indexeinträge für die Zielseite. Er lädt keine
+Originale oder vollständigen Medienlisten. Position und Ziel stammen aus derselben
+Lesetransaktion; die App lädt anschließend ausschließlich die Zielseite mit höchstens
+96 Einträgen. Normales Nachladen hält weiterhin höchstens drei Seiten. Wird das Ziel
+zwischen Positionsabfrage und Seitenabruf verschoben, lässt sich der Sprung wiederholen.
+Es gibt keine Schemaänderung oder zusätzliche Indexmigration.</p>
 <h3 id="einzelne-bilder-teilen">Einzelne Bilder teilen<a class="headerlink" href="#einzelne-bilder-teilen" title="Permanent link">&para;</a></h3>
 <p><strong>Teilen</strong> oben im Vollbildbetrachter öffnet die Android-App-Auswahl mit der
 Originaldatei des aktuell angezeigten Fotos, auch aus Karten und lokalen Fotoordnern.
@@ -1351,7 +1399,7 @@ adaptiven Icon liegt jetzt innerhalb des runden Beschnitts.</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>openssl<span class="w"> </span>x509<span class="w"> </span>-in<span class="w"> </span>/pfad/zum/server.crt<span class="w"> </span>-noout<span class="w"> </span>-fingerprint<span class="w"> </span>-sha256
 </span></code></pre></div>
 <p>Alle Hexadezimalpaare vergleichen, anschließend „Abgeglichen und vertrauen“ wählen. Nur dieses Zertifikat wird für das Profil akzeptiert; Hostname und Gültigkeit bleiben verbindlich. Eine IP-Adresse funktioniert nur mit einem entsprechenden IP-Eintrag im Subject Alternative Name des Zertifikats. Bei einem Zertifikatswechsel die Verbindung erneut einrichten und den neuen Fingerabdruck prüfen. Private Zertifikatsketten mit eigener CA werden in Version 1 nicht als selbstsigniertes Blattzertifikat angeboten.</p>
-<p>Es gibt ein aktives Profil. Zugangsdaten und bestätigtes Zertifikat werden mit AES-GCM unter einem Schlüssel im Android Keystore in <code>noBackupFilesDir</code> gespeichert. Backups und Gerätetransfers sind ausgeschlossen. Screenshots und die Vorschau im App-Umschalter sind gesperrt. Die App schreibt keine Zugangsdaten in Logs. Bilder werden nur im begrenzten Arbeitsspeichercache gehalten; ein Profilwechsel leert den Cache.</p>
+<p>Es gibt ein aktives Profil. Zugangsdaten und bestätigtes Zertifikat werden mit AES-GCM unter einem Schlüssel im Android Keystore in <code>noBackupFilesDir</code> gespeichert. Backups und Gerätetransfers sind ausgeschlossen. Screenshots, Bildschirmaufnahmen und die Vorschau im App-Umschalter sind möglich. Die App schreibt keine Zugangsdaten in Logs. Bilder werden nur im begrenzten Arbeitsspeichercache gehalten; ein Profilwechsel leert den Cache.</p>
 <h2 id="ahnliche-gruppen">Ähnliche Gruppen<a class="headerlink" href="#ahnliche-gruppen" title="Permanent link">&para;</a></h2>
 <p>Ab App <strong>0.10.0</strong> und BearStack <strong>0.50.0</strong> steht der Ähnlichkeitswert des aktuellen Paars klein und mittig über den Entscheidungsbuttons. Zwei Nachkommastellen, keine Prozentwahrscheinlichkeit; bei älteren Servern ohne Wert bleibt die Zeile ausgeblendet.</p>
 <p>Sind beide Gruppen unbenannt, erscheint in App und WebUI der <strong>Stift – Zusammenführen und benennen/zuordnen</strong>. Er öffnet die Namenssuche: einen neuen Namen speichern oder eine vorhandene Person auswählen, um beide Gruppen in einem Schritt zusammenzuführen und zu benennen beziehungsweise zuzuordnen. <strong>Abbrechen</strong> verändert nichts. Veränderte Gruppen oder Zielpersonen müssen erneut geprüft werden. Die App zeigt den Stift nur bei Servern mit <code>merge_naming</code> (ab BearStack 0.50.0); nach bestätigtem Speichern folgt das nächste Paar.</p>

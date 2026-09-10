@@ -61,6 +61,7 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
                     Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_back))
                 }
             },actions={
+                if(tab==0) PhotoDateAction(controller,state)
                 IconButton(onClick={menu=true}) { Icon(painterResource(R.drawable.ic_more_horiz),stringResource(R.string.photos_menu)) }
                 DropdownMenu(menu,{menu=false}) {
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_map))},onClick={menu=false;mapOpen=true},enabled=!state.loading)
@@ -94,6 +95,7 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
         }
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
+            PhotoDateStatus(controller,state)
             Box(Modifier.fillMaxWidth().height(3.dp)) { if(state.loading || state.loadingSections.isNotEmpty()) LinearProgressIndicator(Modifier.fillMaxSize()) }
             state.error?.let { error ->
                 Surface(color=MaterialTheme.colorScheme.errorContainer) {

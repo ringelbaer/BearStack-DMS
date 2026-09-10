@@ -37,7 +37,7 @@ internal fun galleryRows(state: PhotosState): List<GalleryRow> = buildList {
 internal data class GalleryPrefetch(val section: String,val previous: Boolean)
 
 internal fun galleryPrefetch(state: PhotosState,visibleKeys: Set<String>): GalleryPrefetch? {
-    if(state.loading || state.selected!=null || state.frame || state.scrollToKey!=null) return null
+    if(state.loading || state.dateLoading || state.selected!=null || state.frame || state.scrollToKey!=null) return null
     for((section,prefix) in listOf("folders" to "folder:","blogs" to "blog:","media" to "photo:")) {
         if(section in state.loadingSections) continue
         val window=state.section(section)

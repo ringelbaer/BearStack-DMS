@@ -67,8 +67,8 @@ func TestPeopleSortHTMLPaginationAndIgnoredRestore(t *testing.T) {
 	if strings.Count(html, "&amp;sort=date_desc") != 8 || strings.Count(html, "&amp;unknown=1") != 4 || !strings.Contains(html, `value="date_desc" selected`) {
 		t.Fatalf("sort control/links lost: %s", html)
 	}
-	if !strings.Contains(html, `href="/photos/people?page=1&amp;q=">Alle Filter aufheben`) {
-		t.Fatal("reset must restore default sorting")
+	if strings.Contains(html, `Alle Filter aufheben`) {
+		t.Fatal("obsolete reset link must not be shown")
 	}
 	s, photo := groupPhotoServerFixture(t)
 	face := photo.Faces[0]

@@ -24,7 +24,7 @@ internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, sta
     val locale=configuration.locales[0]
     val columns=if(configuration.screenWidthDp>=600) 12 else 6
     val folderSpan=if(columns==6 && configuration.fontScale>=1.5f) 6 else 3
-    key(state.query,state.frame) {
+    key(state.query,state.frame,state.jumpRevision) {
         val rows=remember(state.mediaPages,state.folderPages,state.blogPages,state.pageErrors,onDevice!=null) {
             (if(onDevice!=null) listOf(GalleryRow.Device) else emptyList()) + galleryRows(state)
         }
