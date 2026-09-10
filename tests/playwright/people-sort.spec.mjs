@@ -76,7 +76,7 @@ test("sorting resets the page, persists through details and matches global serve
   await page.locator('.people-pagination a[rel="next"]').click();
   await expect(page.getByRole("combobox", { name: "Sortieren", exact: true })).toHaveValue("date_desc");
   await page.locator("a.person-card").first().click();
-  await page.getByRole("link", { name: "Alle Personen", exact: true }).click();
+  await page.getByRole("link", { name: "← Alle Personen", exact: true }).click();
   await expect(page).toHaveURL(/page=2.*sort=date_desc|sort=date_desc.*page=2/);
   await page.goto(baseURL + "/photos/people");
   await expect(page).toHaveURL(/page=2.*sort=date_desc|sort=date_desc.*page=2/);
@@ -88,7 +88,8 @@ test("sorting resets the page, persists through details and matches global serve
     await page.setViewportSize({ width, height: 800 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
     const filter = await page.locator("[data-people-filter]").boundingBox();
-    expect(filter.y + filter.height).toBeLessThan(620);
+    // Allow the filter group's additional border and padding on narrow screens.
+    expect(filter.y + filter.height).toBeLessThan(630);
   }
   await page.setViewportSize({ width: 390, height: 800 });
   await page.screenshot({ path: "/tmp/bearstack-people-sort-mobile.png", fullPage: true });

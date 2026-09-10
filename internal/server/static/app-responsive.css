@@ -1146,7 +1146,7 @@
 }
 
 @media (max-width: 640px) {
-  .filters.people-form {
+  .filters.people-search-fields {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -1167,25 +1167,28 @@
     overflow-wrap: anywhere;
   }
 
-  [data-people-filter] {
+  .filters.people-search-fields {
     gap: 8px;
     padding: 10px;
   }
 
-  [data-people-filter] .people-filter-actions {
-    display: flex;
-    flex-wrap: wrap;
+  .people-toolbar { gap: 8px; }
+  .people-toolbar .people-filter-actions {
+    flex-basis: 100%;
+    align-items: end;
     gap: 6px;
   }
+  .people-sort-control { display: grid; flex: 1 1 200px; gap: 4px; }
 
-  [data-people-filter] .people-filter-actions > button {
+  .people-search-fields > button {
     min-height: 44px;
     padding: 8px;
     font-size: .8rem;
   }
 
-  .people-filter-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-  .people-filter-tabs > a { min-width: 0; padding: 8px 4px; font-size: .85rem; }
+  .people-filter-tabs { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 6px; width: 100%; }
+  .people-filter-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .people-filter-tabs a { min-width: 0; padding: 8px 4px; font-size: .85rem; }
 
   .people-pagination { flex-direction: row; flex-wrap: nowrap; gap: 6px; }
   .people-pagination > .secondary-button { flex: 0 0 44px; min-width: 44px; min-height: 44px; padding: 0; }
@@ -1197,7 +1200,8 @@
 }
 
 @media (max-width: 380px) {
-  .people-filter-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .people-filter-tabs { grid-template-columns: minmax(0, 1fr); }
+  .people-filter-tabs > a { justify-self: start; }
   .people-pagination { gap: 4px; }
   .people-pagination-current { padding: 0 4px; font-size: .85rem; }
 }

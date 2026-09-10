@@ -6,6 +6,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ### BearStack 0.50.0 – in Entwicklung
 
+- Personendetail: Gesichtskarten zeigen die Auswahlcheckbox oben links, Ignorieren (×) oben rechts, den Vergleichsstern unten links und den Stift unten rechts. 44-Pixel-Bedienflächen; die Kennzeichnung manueller Zuordnung steht kollisionsfrei unten mittig. README und Website aktualisiert. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.
+
+- Personennavigation: „← Fotos“, „Gruppenbilder“, „Ähnliche Gesichter“ und ein Zahnrad mit Tooltip und zugänglichem Namen für die Gesichtserkennungs-Einstellungen. Rücklinks heißen „← Alle Personen“. README und Website aktualisiert. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.
+
+- Personenansicht: Sortierung und Dreipunkt-Menü in die Filterbutton-Zeile verschoben, mit Umbruch auf schmalen Bildschirmen. Ein zusätzlicher Kasten erscheint nur für die Namenssuche in „Alle“ und „Benannt“. Bedienung mit und ohne JavaScript bleibt erhalten. README und Website aktualisiert. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.
+
+- Personenansicht: dünner gemeinsamer Rahmen um „Alle“, „Benannt“ und „Unbenannt“; „Ignoriert“ steht außerhalb, da ignorierte Gesichter nicht in „Alle“ enthalten sind. Gruppierung auch auf schmalen Bildschirmen und für Screenreader. README und Website aktualisiert. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.
+
 - Android: Datumswähler im Tab Fotos links neben dem Dreipunkt-Menü. Sprung zum ersten Eintrag des gewählten Tages oder zum zeitlich nächsten vorhandenen Tag; gleicher Abstand bevorzugt den älteren Tag. Weiterscrollen in beide Richtungen, unveränderter Stream und begrenzter Seitenspeicher. Abbrechbarer neuer GET-Endpunkt `/api/photos/v1/browse/date` mit vorhandenen Datumsindizes, konsistenter Lesetransaktion, Rechteprüfung und höchstens einer Zielseite im App-Abruf. Aufnahmetag in gespeicherter Zeitzone, Änderungstag als Ersatz; verständliche Fehler und Wiederholen bei zwischenzeitlich verschobenem Ziel. Index-/HTTP-/API-/Navigations-/UI-Tests und Benchmark bis 300.000 Einträge. MINOR-Erweiterung innerhalb der unveröffentlichten BearStack 0.50.0 / App 0.10.0; VERSION, App-VERSION und versionCode bleiben unverändert. Keine Migration; README, Website und OpenAPI aktualisiert.
 
 - Personenansicht: den nach Einführung der direkten Filterbuttons überflüssigen Link „Alle Filter aufheben“ entfernt, einschließlich ungenutzter CSS-Regeln. Bestehende Filter- und Suchtests angepasst; README und Website aktualisiert. PATCH-Korrektur innerhalb der unveröffentlichten 0.50.0, VERSION und API unverändert.

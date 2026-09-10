@@ -808,6 +808,13 @@ label span {
   margin: 0;
 }
 
+.page-actions > .people-settings-button {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+}
+
 .head-actions,
 .table-actions {
   align-items: center;
@@ -3508,10 +3515,11 @@ label span {
 .person-ignore-button:hover { color: var(--on-primary); }
 [data-people-status]:empty { display: none; }
 
-.filters.people-form {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+.filters.people-search-fields {
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin: 8px 0 0;
 }
-.people-form > label {
+.people-search-fields > label {
   display: grid;
   gap: 6px;
   min-width: 0;
@@ -3519,11 +3527,11 @@ label span {
 }
 .people-form input,
 .people-form select,
-.people-form > button {
+.people-search-fields > button {
   min-width: 0;
   width: 100%;
 }
-.people-form > button {
+.people-search-fields > button {
   white-space: normal;
   overflow-wrap: anywhere;
   padding-block: 10px;
@@ -3540,11 +3548,16 @@ label span {
   width: auto;
   flex: 0 0 auto;
 }
-.people-filter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
-.people-filter-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-.people-filter-tabs > a { min-height: 44px; }
-:root .people-filter-tabs > a[aria-current="page"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
-.people-filter-tabs > a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.people-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 8px; }
+.people-filter-actions { display: flex; flex: 1 1 340px; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.people-sort-control { display: flex; flex: 0 1 380px; align-items: center; gap: 8px; min-width: 0; }
+.people-sort-control select { min-height: 44px; }
+.people-filter-actions > noscript > button { min-height: 44px; }
+.people-filter-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.people-filter-group { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; padding: 4px; border: 1px solid var(--line); border-radius: calc(var(--radius-sm) + 4px); }
+.people-filter-tabs a { min-height: 44px; }
+:root .people-filter-tabs a[aria-current="page"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.people-filter-tabs a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 
 .person-picker-field { position: relative; display: grid; gap: 6px; min-width: 0; }
 .filters.people-form:has([data-person-search][aria-expanded="true"]) { z-index: 12; }
@@ -3780,13 +3793,16 @@ body.has-group-strip { padding-bottom: calc(158px + env(safe-area-inset-bottom))
 .person-detail-grid .person-photo-button > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .8rem; }
 .person-detail-path { display: none; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .75rem; color: var(--muted); }
 .person-detail[data-show-paths="true"] .person-detail-path { display: block; }
-.person-face-actions { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 40px; }
-.person-face-actions > button, .person-face-actions > label, .person-face-actions > .face-favorite-button { position: static; display: inline-flex; align-items: center; justify-content: center; flex: 1 1 36px; min-width: 0; max-width: 44px; height: 40px; padding: 0; margin: 0; border: 0; border-radius: .35rem; background: transparent; color: var(--muted); }
+.person-face-actions { display: grid; grid-template-columns: 44px minmax(0,1fr) 44px; align-items: center; width: 100%; min-height: 44px; margin-top: auto; }
+.person-face-actions > button, .person-face-actions > label, .person-face-actions > .face-favorite-button { position: static; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; width: 44px; min-height: 44px; height: 44px; padding: 0; margin: 0; border: 0; border-radius: .35rem; background: transparent; color: var(--muted); }
 .person-face-actions > button:hover { background: var(--surface-2); color: var(--primary); }
 .person-face-actions input { width: 18px; height: 18px; margin: 0; }
-.person-face-actions [data-detail-ignore-face] { font-size: 1.4rem; }
+.person-face-actions > .detail-face-select { position: absolute; top: 6px; left: 6px; background: var(--surface); border: 1px solid var(--line); cursor: pointer; }
+.person-face-actions > [data-detail-ignore-face] { position: absolute; top: 6px; right: 6px; border: 1px solid var(--primary); border-radius: 50%; background: var(--surface); color: var(--primary); font-size: 1.4rem; }
+.person-face-actions > .face-favorite-button { grid-column: 1; grid-row: 1; }
+.person-face-actions > [data-detail-edit-face] { grid-column: 3; grid-row: 1; }
 .person-face-actions .face-favorite-button[aria-pressed="true"], .person-face-actions .is-favorite { color: var(--primary); }
-.person-detail-manual { position: absolute; right: 10px; top: 10px; display: grid; place-items: center; width: 22px; height: 22px; background: var(--surface); border-radius: 50%; color: var(--muted); font-size: .8rem; pointer-events: none; }
+.person-detail-manual { grid-column: 2; grid-row: 1; justify-self: center; display: grid; place-items: center; width: 22px; height: 22px; background: var(--surface); border-radius: 50%; color: var(--muted); font-size: .8rem; pointer-events: none; }
 .person-detail-grid .person-card:has(input:checked) { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
 .person-detail-selection { position: fixed; bottom: max(16px,env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: .6rem; max-width: calc(100vw - 24px); width: max-content; padding: .75rem; background: var(--surface); border: 1px solid var(--line); border-radius: .75rem; box-shadow: var(--shadow); z-index: 25; }
 .person-detail-selection > button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; }

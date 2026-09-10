@@ -311,8 +311,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(unnamedCard.locator("strong")).toBeHidden();
   await expect(unnamedCard.locator("a.person-card")).toHaveAccessibleName("Person anzeigen: Unbenannt");
   await unnamedCard.locator("a.person-card").click();
-  await expect(page.getByRole("link", { name: "Alle Personen", exact: true })).toHaveAttribute("href", /unknown=1/);
-  await page.getByRole("link", { name: "Alle Personen", exact: true }).click();
+  await expect(page.getByRole("link", { name: "← Alle Personen", exact: true })).toHaveAttribute("href", /unknown=1/);
+  await page.getByRole("link", { name: "← Alle Personen", exact: true }).click();
   await expect(peopleFilter).toHaveValue("unknown");
   await page.goto(baseURL + "/photos/people");
   await expect(peopleFilter).toHaveValue("unknown");
@@ -436,7 +436,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await detailDialog.getByRole("button", { name: "Auswahl benennen", exact: true }).click();
   await expect(detailDialog).not.toBeVisible();
   await expect(page.getByLabel("Auswählen", { exact: true })).toHaveCount(1);
-  await page.getByRole("link", { name: "Alle Personen", exact: true }).click();
+  await page.getByRole("link", { name: "← Alle Personen", exact: true }).click();
   await page.locator("a.person-card").filter({ hasText: "Marie" }).click();
   await page.getByRole("button", { name: "Person benennen / zuordnen", exact: true }).click();
   const personSearch = detailDialog.getByRole("combobox", { name: "Name", exact: true });

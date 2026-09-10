@@ -1,6 +1,6 @@
 {{define "group_photos.html"}}
 {{template "head" .}}
-<section class="page-head"><div><h1>Gruppenbilder</h1><p>Personen auf Gruppenfotos benennen und verbleibende Gesichter bearbeiten.</p></div><div class="page-actions"><a class="secondary-button" href="/photos/people">Alle Personen</a></div></section>
+<section class="page-head"><div><h1>Gruppenbilder</h1><p>Personen auf Gruppenfotos benennen und verbleibende Gesichter bearbeiten.</p></div><div class="page-actions"><a class="secondary-button" href="/photos/people">← Alle Personen</a></div></section>
 <form method="get" action="/photos/people/groups" class="filters group-photo-filter" data-group-filter>
 <label>Mehr als <input type="number" name="min" value="{{.GroupPhotos.Minimum}}" min="0" max="255" required aria-describedby="group-photo-filter-help"> unbearbeitete Gesichter</label>
 <button>Durchlauf starten</button>

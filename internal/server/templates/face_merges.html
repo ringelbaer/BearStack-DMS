@@ -1,6 +1,6 @@
 {{define "face_merges.html"}}
 {{template "head" .}}
-<section class="page-head"><div><h1>Ähnliche Personengruppen</h1><p>Prüfe, ob diese Gruppen dieselbe Person zeigen.</p></div><div class="page-actions"><a class="secondary-button" href="/photos/people">Alle Personen</a>{{if .Auth.CanPhotosManage}}<a class="secondary-button" href="/settings/photos/faces">Gesichtserkennung</a>{{end}}</div></section>
+<section class="page-head"><div><h1>Ähnliche Personengruppen</h1><p>Prüfe, ob diese Gruppen dieselbe Person zeigen.</p></div><div class="page-actions"><a class="secondary-button" href="/photos/people">← Alle Personen</a>{{if .Auth.CanPhotosManage}}<a class="secondary-button people-settings-button" href="/settings/photos/faces" aria-label="Einstellungen zur Gesichtserkennung" title="Einstellungen zur Gesichtserkennung">{{template "settings_icon"}}</a>{{end}}</div></section>
 <p>Beim Zusammenführen werden alle Gesichter der ersten Gruppe der zweiten Gruppe zugeordnet. Öffne die Gruppen, um weitere Aufnahmen zu vergleichen. „Getrennt lassen“ verhindert einen automatischen Abgleich zwischen diesen Gruppen.</p>
 <p class="notice" role="status" data-merge-status hidden></p>
 <button type="button" class="secondary-button" data-merge-refresh hidden>Vorschläge aktualisieren</button>
