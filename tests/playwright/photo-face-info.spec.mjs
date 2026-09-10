@@ -23,6 +23,8 @@ test.beforeAll(async () => {
   await writeFile(path.join(photos, "h.png"), png);
   await writeFile(path.join(photos, "i.png"), png);
   await writeFile(path.join(photos, "j.png"), png);
+  await writeFile(path.join(photos, "k.png"), png);
+  await writeFile(path.join(photos, "l.png"), png);
   service = http.createServer((request, response) => {
     request.resume();
     request.on("end", () => {
@@ -68,6 +70,15 @@ test("draw and name missing faces with mouse, touch and keyboard without inferen
     expect(imageBox.height).toBeGreaterThan(viewport.height * .6);
     expect(footerBox.y + footerBox.height).toBeLessThanOrEqual(viewport.height);
     await page.screenshot({ path: `/tmp/bearstack-face-drawing-large-${viewport.width}.png`, fullPage: true });
+    const input = drawing.getByRole("combobox", { name: "Name", exact: true });
+    await input.focus();
+    await input.scrollIntoViewIfNeeded();
+    const inputBox = await input.boundingBox();
+    const fieldsBox = await drawing.locator(".face-drawing-fields").boundingBox();
+    expect(inputBox.x - fieldsBox.x).toBeGreaterThanOrEqual(4);
+    expect(fieldsBox.x + fieldsBox.width - inputBox.x - inputBox.width).toBeGreaterThanOrEqual(4);
+    await drawing.locator(".face-drawing-fields").screenshot({ path: `/tmp/bearstack-face-drawing-input-${viewport.width}.png` });
+    await input.blur();
   }
   // Cancelling a draft must not leave an unnamed group behind.
   await drawing.getByRole("button", { name: "Rahmen mittig setzen" }).click();
@@ -156,7 +167,7 @@ test("drawing shows labeled existing regions and submits picker choices only wit
     const reads = faceReads;
     const draw = lightbox.getByRole("button", { name: "Gesicht einrahmen", exact: true });
     const drawing = page.locator("[data-face-drawing-dialog]");
-    const boxes = drawing.locator(".face-drawing-existing-box");
+    const boxes = drawing.locator(".photo-face-box");
     const input = drawing.getByRole("combobox", { name: "Name", exact: true });
     await draw.click();
     await expect(drawing.locator("[data-face-drawing-status]")).toHaveText("Ziehe einen Rahmen um das Gesicht.");
@@ -241,6 +252,127 @@ test.afterAll(async ({}, info) => {
   if (root) await rm(root, { recursive: true, force: true });
 });
 
+test("photo face overlay follows zoom and navigation and remembers the session toggle", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, httpCredentials: { username: "editor", password: "secret" } });
+  try {
+    const post = async (route, form) => {
+      const response = await context.request.post(baseURL + route, { form, headers: { Origin: baseURL, Accept: "application/json" } });
+      expect(response.ok(), await response.text()).toBe(true);
+      return response.json();
+    };
+    embeddingIndex = 30; detectionsPerPhoto = 3;
+    const k = (await post("/photos/faces/analyze", { path: "k.png" })).photo;
+    await post(`/photos/people/${k.faces[0].person_id}/rename`, { name: "Beate" });
+    await post("/photos/faces/edit", { action: "ignore", face_id: String(k.faces[2].id) });
+    embeddingIndex = 35; detectionsPerPhoto = 1;
+    await post("/photos/faces/analyze", { path: "l.png" });
+    const calls = inferenceCalls;
+    const page = await context.newPage(), errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    let faceReads = 0;
+    page.on("request", request => { if (new URL(request.url()).pathname === "/photos/faces") faceReads++; });
+    const lightbox = page.locator("[data-photo-lightbox]");
+    const overlay = lightbox.locator("[data-photo-face-overlay]");
+    const boxes = overlay.locator(".photo-face-box");
+    const toggle = lightbox.getByRole("button", { name: "Beschriftete Gesichtsrahmen anzeigen", exact: true });
+    const open = async photo => {
+      if (await lightbox.isVisible()) await lightbox.locator("[data-photo-close]").press("Enter");
+      await page.locator(`[data-photo-path="${photo}"] .photo-card-button`).click();
+      await expect.poll(() => lightbox.locator("[data-photo-image]").evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+    };
+    const aligned = async face => {
+      await expect.poll(async () => {
+        // The image's bounding rect includes its actual zoom and pan transform.
+        const photo = await lightbox.locator("[data-photo-image]").boundingBox();
+        const side = Math.min(photo.width, photo.height);
+        const actual = await boxes.first().boundingBox();
+        if (!actual) return Infinity;
+        return Math.max(Math.abs(actual.x - photo.x - (photo.width - side) / 2 - face.x * side),
+          Math.abs(actual.y - photo.y - (photo.height - side) / 2 - face.y * side), Math.abs(actual.width - face.width * side));
+      }).toBeLessThan(2);
+    };
+    await page.goto(baseURL + "/photos");
+    await open("k.png");
+    await expect(overlay).toBeHidden();
+    expect(faceReads).toBe(0);
+    await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await expect(lightbox.locator(".photo-info-face")).toHaveCount(2);
+    const loadedReads = faceReads;
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-pressed", "true");
+    await expect(boxes.locator("span")).toHaveText(["Beate", "Unbenannt", "Unbenannt (ignoriert)"]);
+    expect(faceReads).toBe(loadedReads);
+    await aligned(k.faces[0]);
+    await lightbox.locator("[data-photo-info-close]").click();
+    await expect(overlay).toBeVisible();
+    await aligned(k.faces[0]);
+    await lightbox.locator("[data-photo-zoom-in]").press("Enter");
+    await expect(lightbox.locator("[data-photo-zoom-indicator]")).toHaveText("120%");
+    await aligned(k.faces[0]);
+    const stage = await lightbox.locator(".photo-lightbox-stage").boundingBox();
+    await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(stage.x + stage.width / 2 + 35, stage.y + stage.height / 2 + 25, { steps: 4 });
+    await page.mouse.up();
+    await aligned(k.faces[0]);
+    await lightbox.locator("[data-photo-zoom-reset]").press("Enter");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await aligned(k.faces[0]);
+    await page.screenshot({ path: "/tmp/bearstack-photo-face-overlay-mobile.png", fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await lightbox.locator("[data-person-edit]").first().click();
+    const naming = page.locator("[data-person-dialog]");
+    await naming.getByRole("combobox", { name: "Name", exact: true }).fill("Beatrix");
+    await naming.getByRole("button", { name: "Benennen", exact: true }).click();
+    await expect(naming).not.toBeVisible();
+    await expect(boxes.first()).toHaveText("Beatrix");
+    await page.screenshot({ path: "/tmp/bearstack-photo-face-overlay-desktop.png", fullPage: true });
+    // Reload and opening another image retain the toggle with the sidebar closed.
+    await page.reload();
+    await open("l.png");
+    await expect(overlay).toBeVisible();
+    await expect(boxes).toHaveCount(1);
+    await expect(boxes.first()).toHaveText("Unbenannt");
+    // A delayed face response must not be painted over the next photo.
+    let release, requested = false;
+    const pending = new Promise(resolve => { release = resolve; });
+    await page.route("**/photos/faces?path=k.png", async route => {
+      const response = await route.fetch(); requested = true;
+      await pending; await route.fulfill({ response }).catch(() => {});
+    });
+    await open("k.png");
+    await expect.poll(() => requested).toBe(true);
+    await expect(overlay).toBeHidden();
+    await open("j.png");
+    release();
+    await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await expect(lightbox.locator("[data-photo-face-status]")).toHaveText("Keine aktiven Gesichter gefunden.");
+    await expect(overlay).toBeHidden();
+    await expect(boxes).toHaveCount(0);
+    await expect(toggle).toHaveAttribute("aria-pressed", "true");
+    await page.unroute("**/photos/faces?path=k.png");
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+    await page.reload();
+    await open("k.png");
+    await expect(overlay).toBeHidden();
+    await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+    // Storage restrictions leave the in-page session toggle fully usable.
+    await page.addInitScript(() => Object.defineProperty(window, "sessionStorage", { get() { throw new DOMException("Blocked", "SecurityError"); } }));
+    await page.reload();
+    await open("k.png");
+    await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await toggle.click();
+    await expect(boxes).toHaveCount(3);
+    await open("l.png");
+    await expect(boxes).toHaveCount(1);
+    expect(inferenceCalls).toBe(calls);
+    expect(errors).toEqual([]);
+  } finally { detectionsPerPhoto = 1; embeddingIndex = 0; await context.close(); }
+});
+
 test("recognize one photo and name faces inside its info panel", async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
@@ -258,7 +390,7 @@ test("recognize one photo and name faces inside its info panel", async ({ browse
   const refresh = lightbox.getByRole("button", { name: "Gesichter aktualisieren", exact: true });
   const actions = lightbox.getByRole("group", { name: "Gesichtsfunktionen" });
   const controls = [actions.getByRole("img", { name: "Gesichter", exact: true }), analyze,
-    actions.getByRole("button", { name: "Gesicht einrahmen", exact: true }), actions.getByRole("button", { name: "Alle ignorierten Gesichter dieses Fotos wiederherstellen", exact:true }), refresh];
+    actions.getByRole("button", { name: "Gesicht einrahmen", exact: true }), actions.getByRole("button", { name: "Beschriftete Gesichtsrahmen anzeigen", exact: true }), actions.getByRole("button", { name: "Alle ignorierten Gesichter dieses Fotos wiederherstellen", exact:true }), refresh];
   for (const width of [320, 1024, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await actions.scrollIntoViewIfNeeded();
@@ -319,6 +451,7 @@ test("recognize one photo and name faces inside its info panel", async ({ browse
   const readPage = await reader.newPage();
   await readPage.goto(baseURL + "/photos");
   await expect(readPage.locator("[data-photo-face-tools]")).toHaveCount(0);
+  await expect(readPage.locator("[data-photo-face-overlay]")).toHaveCount(0);
   await reader.close();
 });
 

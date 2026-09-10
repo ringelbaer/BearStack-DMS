@@ -64,11 +64,65 @@
     var requestFullscreen = fullscreenTarget.requestFullscreen || fullscreenTarget.webkitRequestFullscreen;
     var exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
     var lightboxRequestedFullscreen = false;
+    var faceToggle = dialog.querySelector("[data-photo-face-toggle]");
+    var faceOverlay = dialog.querySelector("[data-photo-face-overlay]");
+    var faceRegions = dialog.querySelector("[data-photo-face-regions]");
+    var faceOverlayItem = null, faceOverlayFaces = [], faceOverlayEnabled = false;
+    var faceOverlayStorageKey = "bearstackPhotoFaceOverlay";
+    try { faceOverlayEnabled = Boolean(faceToggle) && window.sessionStorage.getItem(faceOverlayStorageKey) === "true"; } catch (_) {}
 
     var faceEditor = window.BearStackPhotoFaces ? window.BearStackPhotoFaces.init({
       dialog: dialog, stopSlideshow: stopSlideshow,
-      onFaces: function (item, faces) { item.automaticFaces = faces; if (items[current] === item) renderPeople(item); }
+      onFaces: function (item, faces, allFaces) {
+        item.automaticFaces = faces;
+        if (items[current] !== item) return;
+        renderPeople(item);
+        faceOverlayItem = item; faceOverlayFaces = allFaces;
+        renderFaceOverlay();
+      }
     }) : null;
+
+    function clearFaceOverlay() {
+      faceOverlayItem = null; faceOverlayFaces = [];
+      if (faceRegions) faceRegions.replaceChildren();
+      if (faceOverlay) faceOverlay.hidden = true;
+    }
+
+    function syncFaceEditor() {
+      if (!faceEditor) return;
+      if (dialog.classList.contains("info-open") || faceOverlayEnabled) faceEditor.show(items[current]);
+      else { faceEditor.reset(); clearFaceOverlay(); }
+    }
+
+    function syncFaceOverlay() {
+      if (!faceOverlay) return;
+      faceOverlay.hidden = !faceOverlayEnabled || !isImageStageActive() || faceOverlayItem !== items[current] ||
+        !image.complete || !image.naturalWidth || !faceRegions.childElementCount;
+      if (faceOverlay.hidden) return;
+      // One layer follows the same centered image transform, regardless of face count.
+      var rendered = currentImageRenderSize(items[current]);
+      faceRegions.style.width = rendered.width + "px";
+      faceRegions.style.height = rendered.height + "px";
+      faceOverlay.style.transform = image.style.transform;
+    }
+
+    function renderFaceOverlay() {
+      if (!faceRegions) return;
+      window.BearStackFaceBoxes.render(faceRegions, faceOverlayEnabled && faceOverlayItem === items[current] ? faceOverlayFaces : []);
+      syncFaceOverlay();
+    }
+
+    function syncFaceToggle() {
+      if (!faceToggle) return;
+      faceToggle.setAttribute("aria-pressed", String(faceOverlayEnabled));
+      faceToggle.title = faceOverlayEnabled ? "Beschriftete Gesichtsrahmen ausblenden" : "Beschriftete Gesichtsrahmen anzeigen";
+    }
+    syncFaceToggle();
+    if (faceToggle) faceToggle.addEventListener("click", function () {
+      faceOverlayEnabled = !faceOverlayEnabled;
+      try { window.sessionStorage.setItem(faceOverlayStorageKey, String(faceOverlayEnabled)); } catch (_) {}
+      syncFaceToggle(); syncFaceEditor(); renderFaceOverlay();
+    });
 
     function ensureItemsCollected() {
       if (itemsCollected) return items;
@@ -243,6 +297,7 @@
           image.style.transform = "";
         }
         syncLightboxZoomUI();
+        syncFaceOverlay();
         return;
       }
       var maxPan = imageMaxPan(item);
@@ -259,6 +314,7 @@
       stage.classList.toggle("is-zoomed", imageZoom > 1.001);
       stage.classList.toggle("is-dragging", Boolean(dragging && imageZoom > 1.001));
       syncLightboxZoomUI();
+      syncFaceOverlay();
     }
 
     function setImageZoom(nextZoom, options) {
@@ -376,7 +432,7 @@
 
     function setInfoPanel(open) {
       dialog.classList.toggle("info-open", open);
-      if (faceEditor) { if (open) faceEditor.show(items[current]); else faceEditor.reset(); }
+      syncFaceEditor();
       if (infoButton) {
         infoButton.setAttribute("aria-pressed", open ? "true" : "false");
         infoButton.setAttribute("aria-label", open ? "Informationen ausblenden" : "Informationen anzeigen");
@@ -525,7 +581,7 @@
       setText("[data-photo-info-resolution]", item.resolution);
       setText("[data-photo-info-coords]", item.coords);
       renderPeople(item);
-      if (faceEditor && dialog.classList.contains("info-open")) faceEditor.show(item);
+      syncFaceEditor();
       setDownload(item);
       setMap(item);
     }
@@ -553,6 +609,7 @@
       slideshowButton.disabled = nextButton.disabled;
       if (nextButton.disabled) stopSlideshow();
       var item = items[current];
+      if (faceOverlayItem !== item) clearFaceOverlay();
       if (title) title.textContent = item.title;
       renderCurrentItem(item);
       if (item.detailsLoaded) {
@@ -734,6 +791,8 @@
       setControlsVisible(false);
       leaveFullscreen();
       resetMedia();
+      if (faceEditor) faceEditor.reset();
+      clearFaceOverlay();
     });
     function syncViewportMedia() {
       syncFullscreenButton();
@@ -745,6 +804,9 @@
     document.addEventListener("fullscreenchange", syncViewportMedia);
     document.addEventListener("webkitfullscreenchange", syncViewportMedia);
     window.addEventListener("resize", syncViewportMedia);
+    if (faceOverlay && window.ResizeObserver) new ResizeObserver(function () {
+      if (dialog.open) applyImageTransform(false);
+    }).observe(stage);
 
     function suppressClickNavigationOnce() {
       suppressClickNavigation = true;

@@ -3716,8 +3716,9 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 
 .photo-face-tools { display: grid; gap: 8px; margin-block: 12px; }
 .photo-face-tools[hidden] { display: none; }
-.photo-face-actions { display: flex; align-items: center; gap: 8px; }
+.photo-face-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .photo-face-actions > button { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; min-width: 44px; padding: 0; }
+.photo-face-actions > [aria-pressed="true"] { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
 .photo-face-symbol { display: grid; place-items: center; flex: 0 0 32px; height: 44px; }
 .photo-face-tools > [role="status"] { color: #e5e7eb; margin: 0; }
 .photo-face-tools > [role="status"]:empty { display: none; }
@@ -3729,14 +3730,17 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 .face-drawing-dialog form { display: flex; flex-direction: column; height: 100%; max-height: 100%; min-height: 0; }
 .face-drawing-dialog .app-dialog-body { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 20px; flex: 1; overflow: hidden; min-height: 0; }
 .face-drawing-photo { display: grid; grid-template-rows: auto minmax(0,1fr) auto; gap: 10px; min-width: 0; min-height: 0; }
-.face-drawing-fields { display: flex; flex-direction: column; align-items: stretch; gap: 12px; min-width: 0; overflow-y: auto; }
+.face-drawing-fields { display: flex; flex-direction: column; align-items: stretch; gap: 12px; min-width: 0; overflow-y: auto; padding: 4px; margin: -4px; }
 .face-drawing-dialog header, .face-drawing-dialog footer { flex-shrink: 0; }
 .face-drawing-stage { position: relative; min-height: 0; background: #111820; touch-action: none; user-select: none; cursor: crosshair; }
 .face-drawing-stage img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 .face-drawing-existing { position: absolute; pointer-events: none; }
-.face-drawing-existing-box { position: absolute; border: 1px solid #fff; box-shadow: 0 0 0 1px #111; }
-.face-drawing-existing-box[data-ignored] { border-style: dashed; }
-.face-drawing-existing-box > span { position: absolute; bottom: calc(100% + 3px); left: -1px; width: max-content; padding: 1px 3px; background: rgb(0 0 0 / .8); color: #fff; font-size: 10px; line-height: 1.25; white-space: nowrap; }
+.photo-face-box { position: absolute; border: 1px solid #fff; box-shadow: 0 0 0 1px #111; }
+.photo-face-box[data-ignored] { border-style: dashed; }
+.photo-face-box > span { position: absolute; bottom: calc(100% + 3px); left: -1px; width: max-content; padding: 1px 3px; background: rgb(0 0 0 / .8); color: #fff; font-size: 10px; line-height: 1.25; white-space: nowrap; }
+.photo-face-overlay { position: absolute; inset: 0; pointer-events: none; transition: transform .12s ease; }
+.photo-face-overlay-regions { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.photo-lightbox-stage.is-dragging .photo-face-overlay { transition: none; }
 .face-drawing-box { position: absolute; border: 2px solid #ffe065; background: rgba(255,224,101,.15); }
 .face-drawing-box:focus-visible { outline: 3px solid white; outline-offset: 3px; }
 .face-drawing-dialog .person-picker-field { margin-top: 12px; }

@@ -59,7 +59,7 @@
           card.append(image, label, edit);
           grid.append(card);
         });
-        options.onFaces(current, faces);
+        options.onFaces(current, faces, currentFaces);
         return faces.length;
       }
       async function request(recognize) {

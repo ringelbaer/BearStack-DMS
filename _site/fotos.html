@@ -1446,7 +1446,8 @@ Lange Pfade brechen mobil um; zusätzliche Serverabfragen sind nicht erforderlic
 <p><strong>Gesichter direkt aus der Foto-Info bearbeiten:</strong> Fotobearbeiter können im
 Infopanel des geöffneten Bildes die Lupe <strong>Gesichter erkennen und zuordnen</strong> wählen.
 Die kompakte Symbolleiste zeigt in einer Zeile das Gesichtsicon, die Lupe,
-den Auswahlrahmen für <strong>Gesicht einrahmen</strong>, die Wiederherstellung ignorierter
+den Auswahlrahmen für <strong>Gesicht einrahmen</strong>, den Toggle <strong>Beschriftete Gesichtsrahmen
+anzeigen</strong>, die Wiederherstellung ignorierter
 Gesichter und den Refresh-Button. Alle Buttons
 haben Tooltips, zugängliche Namen und 44 Pixel große Bedienflächen. Die Gesichtsliste
 erscheint ohne zusätzlichen Zähl- und Bedienhinweis.
@@ -1470,6 +1471,15 @@ POST-Endpunkt <code>/photos/faces/analyze</code> benötigt <code>photos.edit</co
 globalen Erkennungslauf und begrenzt Warten und Analyse zusammen auf zwei Minuten.
 <code>GET /photos/faces?path=…</code> liefert die vorhandenen Gesichter mit denselben Rechten;
 ein noch nicht analysiertes Foto liefert eine leere Gesichtsliste.</p>
+<p><strong>Gesichtsrahmen im normalen Bild:</strong> Der Toggle <strong>Beschriftete Gesichtsrahmen
+anzeigen</strong> blendet vorhandene Rahmen samt vollständigen Namen oberhalb der Boxen
+ein oder aus. Unbenannte und ignorierte Gesichter sind entsprechend gekennzeichnet.
+Die Einstellung gilt für die gesamte Sitzung im Browser-Tab, auch beim Bild- oder
+Seitenwechsel, Neuladen und bei geschlossener Info-Sidebar, bis der Toggle wieder
+deaktiviert wird. Zoom und Verschieben bewegen Rahmen und Bild gemeinsam.
+Bereits geladene Gesichtsdaten werden wiederverwendet; bei aktivem Toggle lädt ein
+Bildwechsel die vorhandenen Gesichter auch ohne geöffnete Sidebar. Es wird keine
+neue Gesichtserkennung gestartet. Videos und Audio zeigen keine Gesichtsrahmen.</p>
 <p>Der Button <strong>Alle ignorierten Gesichter dieses Fotos wiederherstellen</strong> entfernt ab
 0.50.0 den Ignoriert-Status für alle betroffenen Gesichter im geöffneten Foto.
 Vorhandene Namen, Personengruppen und manuelle Markierungen bleiben erhalten;

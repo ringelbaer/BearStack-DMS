@@ -28,26 +28,6 @@
         var width = image.naturalWidth * scale, height = image.naturalHeight * scale;
         return { x: (rect.width - width) / 2, y: (rect.height - height) / 2, width: width, height: height, left: rect.left, top: rect.top };
       }
-      function showExisting(faces) {
-        var boxes = document.createDocumentFragment();
-        faces.forEach(function (face) {
-          var x = face.x, y = face.y, width = face.width, height = face.height;
-          if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return;
-          var left = clamp(x, 0, 1), top = clamp(y, 0, 1);
-          var right = clamp(x + width, left, 1), bottom = clamp(y + height, top, 1);
-          if (right <= left || bottom <= top) return;
-          var box = document.createElement("div");
-          box.className = "face-drawing-existing-box";
-          box.style.left = (left * 100) + "%"; box.style.top = (top * 100) + "%";
-          box.style.width = ((right - left) * 100) + "%"; box.style.height = ((bottom - top) * 100) + "%";
-          if (face.ignored) box.dataset.ignored = "";
-          var label = document.createElement("span");
-          label.textContent = (face.name || "Unbenannt") + (face.ignored ? " (ignoriert)" : "");
-          box.title = label.textContent;
-          box.append(label); boxes.append(box);
-        });
-        existing.replaceChildren(boxes);
-      }
       function resize() {
         existing.hidden = loading || !image.naturalWidth || !existing.childElementCount;
         if (!existing.hidden) {
@@ -164,7 +144,7 @@
           form.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: "" } }));
           dialog.querySelector("[data-face-drawing-path]").textContent = displayPath || path;
           status.textContent = "Foto wird geladen …";
-          existing.hidden = true; showExisting(faces || []);
+          existing.hidden = true; window.BearStackFaceBoxes.render(existing, faces || []);
           draw(); sync(); dialog.showModal();
           dialog.querySelector(".app-dialog-body").scrollTop = 0;
           controller = new AbortController();

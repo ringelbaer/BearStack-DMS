@@ -14,6 +14,11 @@
   <div class="photo-lightbox-body">
     <div class="photo-lightbox-stage">
       <img alt="" data-photo-image hidden>
+      {{if .Auth.CanPhotosEdit}}
+      <div class="photo-face-overlay" data-photo-face-overlay hidden>
+        <div class="photo-face-overlay-regions" data-photo-face-regions role="group" aria-label="Gesichter im Bild"></div>
+      </div>
+      {{end}}
       <video data-photo-video controls playsinline hidden></video>
       <div class="photo-audio-stage" data-photo-audio-stage hidden>
         <span class="photo-audio-note" aria-hidden="true">&#9835;</span>
@@ -54,6 +59,9 @@
           <button type="button" class="secondary-button" data-photo-face-draw aria-label="Gesicht einrahmen" title="Fehlendes Gesicht einrahmen und benennen">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M11 3h2M21 11v2M13 21h-2M3 13v-2"/></svg>
           </button>
+          <button type="button" class="secondary-button" data-photo-face-toggle aria-label="Beschriftete Gesichtsrahmen anzeigen" aria-pressed="false" title="Beschriftete Gesichtsrahmen anzeigen">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M5 12s2.5-4 7-4 7 4 7 4-2.5 4-7 4-7-4-7-4Z"/><circle cx="12" cy="12" r="1.5"/></svg>
+          </button>
           <button type="button" class="secondary-button" data-photo-face-unignore disabled aria-label="Alle ignorierten Gesichter dieses Fotos wiederherstellen" title="Alle ignorierten Gesichter dieses Fotos wiederherstellen – Namen und Zuordnungen beibehalten">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h5M3 10V5m0 5a9 9 0 1 1 0 5"/><path d="m9 12 2 2 4-4"/></svg>
           </button>
@@ -84,6 +92,7 @@
 {{template "person_edit_dialog" .}}
 {{template "face_drawing_dialog" .}}
 <script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
+<script src="{{assetURL "/static/app-face-boxes.js"}}" defer></script>
 <script src="{{assetURL "/static/app-face-drawing.js"}}" defer></script>
 <script src="{{assetURL "/static/app-photo-faces.js"}}" defer></script>
 {{end}}

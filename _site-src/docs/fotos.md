@@ -421,7 +421,8 @@ Lange Pfade brechen mobil um; zusätzliche Serverabfragen sind nicht erforderlic
 **Gesichter direkt aus der Foto-Info bearbeiten:** Fotobearbeiter können im
 Infopanel des geöffneten Bildes die Lupe **Gesichter erkennen und zuordnen** wählen.
 Die kompakte Symbolleiste zeigt in einer Zeile das Gesichtsicon, die Lupe,
-den Auswahlrahmen für **Gesicht einrahmen**, die Wiederherstellung ignorierter
+den Auswahlrahmen für **Gesicht einrahmen**, den Toggle **Beschriftete Gesichtsrahmen
+anzeigen**, die Wiederherstellung ignorierter
 Gesichter und den Refresh-Button. Alle Buttons
 haben Tooltips, zugängliche Namen und 44 Pixel große Bedienflächen. Die Gesichtsliste
 erscheint ohne zusätzlichen Zähl- und Bedienhinweis.
@@ -445,6 +446,16 @@ POST-Endpunkt `/photos/faces/analyze` benötigt `photos.edit`, aktiviert keinen
 globalen Erkennungslauf und begrenzt Warten und Analyse zusammen auf zwei Minuten.
 `GET /photos/faces?path=…` liefert die vorhandenen Gesichter mit denselben Rechten;
 ein noch nicht analysiertes Foto liefert eine leere Gesichtsliste.
+
+**Gesichtsrahmen im normalen Bild:** Der Toggle **Beschriftete Gesichtsrahmen
+anzeigen** blendet vorhandene Rahmen samt vollständigen Namen oberhalb der Boxen
+ein oder aus. Unbenannte und ignorierte Gesichter sind entsprechend gekennzeichnet.
+Die Einstellung gilt für die gesamte Sitzung im Browser-Tab, auch beim Bild- oder
+Seitenwechsel, Neuladen und bei geschlossener Info-Sidebar, bis der Toggle wieder
+deaktiviert wird. Zoom und Verschieben bewegen Rahmen und Bild gemeinsam.
+Bereits geladene Gesichtsdaten werden wiederverwendet; bei aktivem Toggle lädt ein
+Bildwechsel die vorhandenen Gesichter auch ohne geöffnete Sidebar. Es wird keine
+neue Gesichtserkennung gestartet. Videos und Audio zeigen keine Gesichtsrahmen.
 
 Der Button **Alle ignorierten Gesichter dieses Fotos wiederherstellen** entfernt ab
 0.50.0 den Ignoriert-Status für alle betroffenen Gesichter im geöffneten Foto.
