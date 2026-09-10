@@ -24,7 +24,8 @@
     var status = options.status;
     var personDialog = document.querySelector("[data-person-dialog]");
     if (!personDialog || !personSurface) return { open: function () {} };
-    var busy = false;
+    var busy = false, owner = {};
+    function ownsDialog() { return personDialog.bearstackOwner === owner; }
     var dialogForm = personDialog.querySelector("form");
     var dialogStatus = personDialog.querySelector("[data-person-dialog-status]");
     var ignoreButton = personDialog.querySelector("[data-person-dialog-ignore]");
@@ -90,11 +91,18 @@
     var opener, sourceCard, dialogIDs = [];
     function openPersonDialog(ids, button) {
       if (!ids.length || busy || options.isBusy() || button.disabled) return;
+      if (personDialog.open && !ownsDialog()) return;
+      personDialog.bearstackOwner = owner;
       dialogIDs = ids;
       var card = personSurface.querySelector('[data-person-id="' + ids[0] + '"]');
       if (!card) return;
       opener = button;
-      var faceCard = button.closest("[data-person-id]") || card;
+      var faceCard = (options.getPreviewCard ? options.getPreviewCard() : null) || button.closest("[data-person-id]") || card;
+      delete dialogForm.dataset.personFaceSelection;
+      delete dialogForm.dataset.personRestore;
+      ignoreButton.hidden = false;
+      dialogForm.querySelector("[data-person-face-match]").hidden = false;
+      dialogForm.dataset.personModal = "";
       dialogForm.dataset.personFaceId = faceCard.dataset.groupFace || faceCard.dataset.faceId || "";
       dialogForm.dataset.personExclude = ids.length === 1 ? ids[0] : "";
       dialogForm.dataset.personCount = String(ids.length);
@@ -104,8 +112,9 @@
       personDialog.querySelector("#person-dialog-title").textContent = ids.length > 1 ? ids.length + " Gruppen benennen oder zuordnen" : "Person benennen oder zuordnen";
       personDialog.querySelector("#overview-person-hint").textContent = ids.length > 1 ? "Alle markierten Gruppen werden unter dem neuen Namen oder mit der ausgewählten Person zusammengeführt." : "Ein neuer Name benennt diese Gruppe. Eine vorhandene Person auswählen, um die gesamte Gruppe mit ihr zusammenzuführen.";
       dialogForm.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: ids.length === 1 ? card.dataset.personName : "" } }));
+      if (options.configureDialog) options.configureDialog({ dialog: personDialog, form: dialogForm, card: faceCard });
       personDialog.showModal();
-      sourceCard = button.closest("[data-person-id]");
+      sourceCard = (options.getPreviewCard ? options.getPreviewCard() : null) || button.closest("[data-person-id]");
       if (sourceCard) sourceCard.setAttribute("data-person-dialog-source", "");
       showPreview(sourceCard || card);
       var ignoreCards = sourceCard ? [sourceCard] : ids.map(function (id) { return personSurface.querySelector('[data-person-id="' + id + '"]'); });
@@ -119,9 +128,10 @@
       var card = button.closest("[data-person-id]");
       openPersonDialog([card.dataset.personId], button);
     });
-    personDialog.querySelector("[data-person-dialog-cancel]").addEventListener("click", function () { if (!busy) personDialog.close(); });
-    personDialog.addEventListener("cancel", function (event) { if (busy) event.preventDefault(); });
+    personDialog.querySelector("[data-person-dialog-cancel]").addEventListener("click", function () { if (ownsDialog() && !busy) personDialog.close(); });
+    personDialog.addEventListener("cancel", function (event) { if (ownsDialog() && busy) event.preventDefault(); });
     personDialog.addEventListener("close", function () {
+      if (!ownsDialog()) return;
       if (sourceCard) sourceCard.removeAttribute("data-person-dialog-source");
       sourceCard = null;
       if (previewPath) { previewPath.textContent = ""; previewPath.hidden = true; }
@@ -135,7 +145,7 @@
       if (focus) focus.focus({ preventScroll: true });
     });
     async function savePerson(ignoring) {
-      if (busy || (ignoring && (!ignoreRequest || ignoreButton.disabled))) return;
+      if (!ownsDialog() || busy || (ignoring && (!ignoreRequest || ignoreButton.disabled))) return;
       var body = ignoring ? ignoreRequest.body : new URLSearchParams(new FormData(dialogForm));
       var action = ignoring ? ignoreRequest.action : dialogForm.action;
       var merging = action.endsWith("/merge");
@@ -152,6 +162,12 @@
         merging = true;
       }
 
+      if (!ignoring && options.getSaveRequest) {
+        var custom = options.getSaveRequest({ action: action, body: body });
+        if (!custom) return;
+        action = custom.action; body = custom.body;
+        merging = action.endsWith("/merge");
+      }
       busy = true;
       options.onBusy(busy);
       dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
@@ -175,10 +191,11 @@
         var result = await response.json();
         if (result.ok !== true) throw new Error("Person konnte nicht gespeichert werden.");
         saved = true;
-        await options.onSave(dialogIDs);
-        status.textContent = ignoring ? (dialogIDs.length > 1 ? "Angezeigte Gesichter ignoriert." : "Gesicht ignoriert.") : (merging ? "Personen zusammengeführt." : "Person benannt.");
+        await options.onSave(dialogIDs, { action: action, body: body, ignoring: ignoring });
+        status.textContent = options.savedMessage ? options.savedMessage(ignoring) : ignoring ? (dialogIDs.length > 1 ? "Angezeigte Gesichter ignoriert." : "Gesicht ignoriert.") : (merging ? "Personen zusammengeführt." : "Person benannt.");
         personDialog.close();
       } catch (error) {
+        if (options.onSaveError) conflict = options.onSaveError(error, saved) === true || conflict;
         dialogStatus.textContent = saved ? "Gespeichert, aber die Ansicht konnte nicht aktualisiert werden. Bitte die Seite neu laden." : error.message;
         // Do not offer the same mutation again after a successful save.
         if (saved && opener && opener.isConnected) opener.disabled = true;
@@ -227,6 +244,17 @@
       pointerPerson = undefined;
     }
     function validate() {
+      if (form.hasAttribute("data-person-restore")) {
+        var assigned = target.value && target.value !== "0";
+        form.querySelector("[data-person-submit]").textContent = assigned ? "Zuordnen und wiederherstellen" : "Benennen und wiederherstellen";
+        input.setCustomValidity(assigned || input.value.trim() ? "" : "Bitte einen Namen eingeben oder eine Person auswählen.");
+        return;
+      }
+      if (form.hasAttribute("data-person-face-selection")) {
+        form.querySelector("[data-person-submit]").textContent = target.value && target.value !== "0" ? "Auswahl zuordnen" : input.value.trim() ? "Auswahl benennen" : "Als neue Gruppe abtrennen";
+        input.setCustomValidity("");
+        return;
+      }
       if (form.hasAttribute("data-person-manual-create")) {
         input.setCustomValidity((target.value && target.value !== "0") || input.value.trim() ? "" : "Bitte einen Namen eingeben oder eine Person auswählen.");
         return;
@@ -258,6 +286,7 @@
       var person = items[index];
       if (!person || input.disabled || popup.hidden) return;
       target.value = String(person.id);
+      target.dataset.revision = String(person.revision || 0);
       input.value = person.create ? person.name : (person.name || "Unbenannt") + " (#" + person.id + ")";
       validate();
       close();
@@ -279,7 +308,7 @@
       // A selected label contains the ID; opening it again lists alternatives.
       var query = target.value && target.value !== "0" ? "" : input.value.trim();
       try {
-        var url = faceMatch ? "/photos/faces/" + encodeURIComponent(form.dataset.personFaceId) + "/suggestions" : "/photos/people?format=suggestions&q=" + encodeURIComponent(query);
+        var url = faceMatch ? "/photos/faces/" + encodeURIComponent(form.dataset.personFaceId) + "/suggestions" : (form.dataset.personSuggestionsUrl || "/photos/people?format=suggestions&q=") + encodeURIComponent(query);
         var response = await fetch(url, {
           signal: controller.signal, credentials: "same-origin", redirect: "error",
           headers: { Accept: faceMatch ? "application/x-ndjson" : "application/json" }

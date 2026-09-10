@@ -16,7 +16,7 @@ import (
 	"bearstack/internal/photos"
 )
 
-func mergeSuggestionServer(t *testing.T) (*Server, photos.FaceMergeSuggestion) {
+func mergeSuggestionServer(t *testing.T, named ...bool) (*Server, photos.FaceMergeSuggestion) {
 	t.Helper()
 	s := faceTestServer(t)
 	ctx := context.Background()
@@ -48,7 +48,7 @@ func mergeSuggestionServer(t *testing.T) (*Server, photos.FaceMergeSuggestion) {
 		if err = s.photos.CommitFaceResult(ctx, job, facerec.Result{Model: facerec.Model, Faces: []facerec.Detection{d}}); err != nil {
 			t.Fatal(err)
 		}
-		if i == 0 {
+		if i == 0 && (len(named) == 0 || named[0]) {
 			fs, err := s.photos.AutomaticFaces(ctx, job.Path)
 			if err != nil {
 				t.Fatal(err)

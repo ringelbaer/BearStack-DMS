@@ -13,6 +13,7 @@ import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import de.bearstack.people.data.local.LabelingDatabase
+import de.bearstack.people.data.remote.FaceMatch
 import de.bearstack.people.data.remote.Person
 import de.bearstack.people.people.PeopleViewModel
 import de.bearstack.people.ui.PeopleApp
@@ -24,6 +25,37 @@ import org.junit.Test
 
 class NamingScreenTest {
     @get:Rule val compose=createComposeRule()
+    @Test fun faceSearchShowsProgressEmptyErrorsAndAssignableMatches() {
+        val app=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as Application
+        val db=Room.inMemoryDatabaseBuilder(app,LabelingDatabase::class.java).build()
+        val api=FakeService().apply {matchDelay=500;people[9]=Person(9,"Anna",3,1,90,listOf(90))}
+        val store=ViewModelStore()
+        lateinit var vm: PeopleViewModel
+        compose.runOnUiThread {vm=PeopleViewModel(app,db,api,api.session);store.put("test",vm)}
+        try {
+            compose.setGermanContent {PeopleApp(vm)}
+            compose.waitUntil(10_000){!vm.state.value.busy && vm.state.value.person!=null}
+            compose.onNodeWithContentDescription("Person benennen").performClick()
+            val search=compose.onNodeWithContentDescription("Ähnliche benannte Personen suchen")
+            search.performClick()
+            compose.onNodeWithText("Gesicht wird mit benannten Personen verglichen …").assertIsDisplayed()
+            search.assertIsNotEnabled()
+            compose.waitUntil(10_000){vm.state.value.faceSearchDone}
+            compose.onNodeWithText("Keine ähnlichen benannten Personen gefunden.").assertIsDisplayed()
+            assertEquals(0,api.commits)
+            api.matchFailure=true
+            search.performClick()
+            compose.waitUntil(10_000){!vm.state.value.faceSearching && vm.state.value.error!=null}
+            search.assertIsEnabled()
+            api.matchFailure=false;api.matches=listOf(FaceMatch(9,"Anna",1,90))
+            search.performClick()
+            compose.waitUntil(10_000){vm.state.value.faceMatches.isNotEmpty()}
+            compose.onNodeWithText("1 Gesicht · #9").performScrollTo().performClick()
+            compose.waitUntil(10_000){!vm.state.value.busy && api.commits==1}
+            assertEquals("assign",api.receipts.values.single().action)
+            assertFalse(vm.state.value.naming)
+        } finally {compose.runOnUiThread {store.clear()}}
+    }
     @Test @SdkSuppress(minSdkVersion=30)
     fun expiringToastsKeepDialogFocusKeyboardAndDraft() {
         val app=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as Application

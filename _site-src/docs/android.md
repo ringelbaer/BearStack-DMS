@@ -5,6 +5,12 @@ Native App für Android 8.0 oder neuer, App-Version **0.10.0**. Die Galerie ben�
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
 
+## Gesichtssuche beim Benennen
+
+Ab App **0.10.0** startet die **Lupe neben dem Namensfeld** im Benenn-Dialog einen Gesichtsabgleich mit bereits benannten Personen. Sie verwendet das erste Gesicht der angezeigten Seite beziehungsweise das Quellgesicht im Modus „Ähnliche Gruppen“. Die Treffer erscheinen in Ähnlichkeitsreihenfolge mit dem passenden Referenzportrait. Antippen ordnet die aktuelle Gruppe zu; beim gemeinsamen Benennen zweier Gruppen werden beide zugeordnet. Die Suche selbst verändert nichts. Ladezustand, leere Trefferliste und Fehler werden angezeigt; erneutes Antippen wiederholt die Suche. Tippen im Namensfeld, Schließen des Dialogs oder Wechsel in den Hintergrund bricht sie ab. Das separate Umbenennen einer bereits benannten Person bleibt eine Namensänderung.
+
+Der Abgleich nutzt den vorhandenen Endpunkt `GET /photos/faces/{id}/suggestions` (BearStack ab 0.50.0), benötigt keine erneute Bilderkennung und liefert höchstens 20 Treffer. Die App lädt nur bei explizitem Start, begrenzt die Antwortgröße und lädt die aktuelle Revision ausschließlich der ausgewählten Zielperson nach. Eine inzwischen umbenannte Zielperson erfordert eine neue Entscheidung; Zuordnungen behalten die vorhandenen Revisionsprüfungen und Aktionsquittungen. Ältere Server zeigen eine verständliche Fehlermeldung; die Namenssuche bleibt verfügbar.
+
 ## Galerie
 
 **Fotos** zeigt den gesamten Fotobestand nach Datum. Unter **Ordner** öffnest du die
@@ -210,6 +216,8 @@ Alle Hexadezimalpaare vergleichen, anschließend „Abgeglichen und vertrauen“
 Es gibt ein aktives Profil. Zugangsdaten und bestätigtes Zertifikat werden mit AES-GCM unter einem Schlüssel im Android Keystore in `noBackupFilesDir` gespeichert. Backups und Gerätetransfers sind ausgeschlossen. Screenshots und die Vorschau im App-Umschalter sind gesperrt. Die App schreibt keine Zugangsdaten in Logs. Bilder werden nur im begrenzten Arbeitsspeichercache gehalten; ein Profilwechsel leert den Cache.
 
 ## Ähnliche Gruppen
+
+Sind beide Gruppen unbenannt, erscheint in App und WebUI der **Stift – Zusammenführen und benennen/zuordnen**. Er öffnet die Namenssuche: einen neuen Namen speichern oder eine vorhandene Person auswählen, um beide Gruppen in einem Schritt zusammenzuführen und zu benennen beziehungsweise zuzuordnen. **Abbrechen** verändert nichts. Veränderte Gruppen oder Zielpersonen müssen erneut geprüft werden. Die App zeigt den Stift nur bei Servern mit `merge_naming` (ab BearStack 0.50.0); nach bestätigtem Speichern folgt das nächste Paar.
 
 Ab App **0.9.0** und **BearStack 0.49.0** öffnet **Menü → Ähnliche Gruppen** jeweils eine einzelne Entscheidung. Zwei Portraits zeigen die tatsächlichen Vergleichsgesichter der Gruppen mit Namen und Gesichtsanzahl. Es gibt keine scrollbare Vorschlagsliste; die Portraits passen sich dem verfügbaren Platz an und die beiden Entscheidungsbuttons bleiben unten sichtbar.
 

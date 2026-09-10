@@ -15,7 +15,8 @@ import java.io.IOException
 internal class FakeService : LabelingService {
     var upper=2L
     var supportsMerges=true
-    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true,mergeSuggestions=supportsMerges)
+    var supportsMergeNaming=true
+    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true,mergeSuggestions=supportsMerges,mergeNaming=supportsMergeNaming)
     val mergePairs=mutableListOf<MergeSuggestion>()
     var failNextMerge=false
     override suspend fun nextMergeSuggestion(): MergeSuggestion? {
@@ -52,6 +53,18 @@ internal class FakeService : LabelingService {
         val person=people[id] ?: throw ApiFailure(404,"not_found","gone")
         return if(offset==4 && person.count==5L) person.copy(offset=4,faces=listOf(14)) else person
     }
+    var matches: List<FaceMatch> = emptyList()
+    var matchDelay=0L
+    var matchFailure=false
+    var cancelledMatches=0
+    val matchedFaces=mutableListOf<Long>()
+    override suspend fun faceMatches(face: Long): List<FaceMatch> {
+        matchedFaces+=face
+        try { kotlinx.coroutines.delay(matchDelay) }
+        catch(e: kotlinx.coroutines.CancellationException) { cancelledMatches++;throw e }
+        if(matchFailure) throw IOException("face search unavailable")
+        return matches
+    }
     val queries = mutableListOf<String>()
     var slowQuery: String? = null
     var cancelledQueries = 0
@@ -68,10 +81,22 @@ internal class FakeService : LabelingService {
         val p=people[id] ?: throw ApiFailure(409,"conflict","gone")
         if(p.revision!=request.getLong("revision")) throw ApiFailure(409,"conflict","stale")
         val action=request.getString("action")
-        if(action=="accept_merge" || action=="reject_merge") {
+        if(action=="accept_merge" || action=="reject_merge" || action=="name_merge") {
             val pair=mergePairs.firstOrNull {it.id==request.getLong("suggestion_id")} ?: throw ApiFailure(409,"conflict","gone")
             val target=people[request.getLong("target_id")] ?: throw ApiFailure(409,"conflict","gone")
             if(pair.source.id!=id || pair.target.id!=target.id || target.revision!=request.getLong("target_revision")) throw ApiFailure(409,"conflict","stale")
+            if(action=="name_merge") {
+                val assigned=request.optLong("assign_id")
+                val destination=if(assigned==0L) target.copy(name=request.getString("name")) else people.getValue(assigned)
+                people[destination.id]=destination.copy(count=p.count+target.count+(if(assigned==0L)0 else destination.count),revision=destination.revision+1)
+                people.remove(id)
+                if(assigned!=0L) people.remove(target.id)
+                mergePairs.remove(pair)
+                val receipt=Receipt(op,action,id,destination.id,0,p.count+target.count,2,100)
+                commits++;receipts[op]=receipt
+                if(loseResponse) {loseResponse=false;throw IOException("response lost after commit")}
+                return receipt
+            }
             if(action=="accept_merge") {
                 people[target.id]=target.copy(count=target.count+p.count,faces=target.faces+p.faces,revision=target.revision+1)
                 people.remove(id)

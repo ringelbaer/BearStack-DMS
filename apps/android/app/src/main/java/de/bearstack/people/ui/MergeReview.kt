@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
@@ -35,7 +36,8 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
     var help by remember { mutableStateOf(false) }
     val distance=with(LocalDensity.current) {240.dp.toPx()}
     val drag: (Float)->Unit={zoom=zoomAfterDrag(zoom,it,distance)}
-    val enabled=!state.busy && !state.unresolved && held==null && !help
+    val dialogEnabled=!state.busy && !state.unresolved
+    val enabled=!state.naming && !state.busy && !state.unresolved && held==null && !help
     val lifecycle=LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(suggestion) {held=null;accessible=false;zoom=0f}
     LaunchedEffect(suggestion,lifecycle) {
@@ -44,18 +46,26 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
     }
     BackHandler {
         if(held!=null) {if(accessible) held=null else heldDismissed=true}
-        else if(help) help=false else vm.closeMergeReview()
+        else if(help) help=false else if(state.naming) vm.closeNaming() else vm.closeMergeReview()
     }
     Box(Modifier.fillMaxSize()) {
         Scaffold(topBar={TopAppBar(title={Text(text(R.string.people_similar_groups),maxLines=1,overflow=TextOverflow.Ellipsis)},
             navigationIcon={TextButton(onClick=vm::closeMergeReview,enabled=enabled) {Text(text(R.string.photos_back))}},
-            actions={TextButton(onClick={help=true},enabled=held==null) {Text(text(R.string.common_help))}})
+            actions={TextButton(onClick={help=true},enabled=held==null && !state.naming) {Text(text(R.string.common_help))}})
         },bottomBar={
             Surface(color=MaterialTheme.colorScheme.surfaceContainer,tonalElevation=2.dp) {
                 Column(Modifier.fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal+WindowInsetsSides.Bottom))
                     .padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                    Button(onClick={vm.decideMerge(true)},enabled=enabled && suggestion!=null,modifier=Modifier.fillMaxWidth()) {Text(text(R.string.people_merge))}
+                    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                        Button(onClick={vm.decideMerge(true)},enabled=enabled && suggestion!=null,modifier=Modifier.weight(1f)) {Text(text(R.string.people_merge))}
+                        if(state.mergeNaming && suggestion?.source?.name=="" && suggestion.target.name.isEmpty()) {
+                            IconButton(onClick=vm::startMergeNaming,enabled=enabled,
+                                modifier=Modifier.semantics {contentDescription=text(R.string.people_merge_name)}) {
+                                Icon(painterResource(R.drawable.ic_edit),contentDescription=null,modifier=Modifier.size(24.dp))
+                            }
+                        }
+                    }
                     OutlinedButton(onClick={vm.decideMerge(false)},enabled=enabled && suggestion!=null,modifier=Modifier.fillMaxWidth()) {Text(text(R.string.people_keep_separate))}
                 }
             }
@@ -116,10 +126,12 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
             }
         }
     }
+    if(state.naming) NamingDialog(state.copy(directory=false),vm,dialogEnabled)
     if(help) AlertDialog(onDismissRequest={help=false},title={Text(text(R.string.people_merge_help_title))},
         text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text(text(R.string.people_merge_help))
             Text(text(R.string.people_merge_next_help))
+            Text(text(R.string.people_merge_name_help))
             Text(text(R.string.people_merge_preview_help))
         }},confirmButton={TextButton(onClick={help=false}) {Text(text(R.string.photos_close))}})
 }

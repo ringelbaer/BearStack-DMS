@@ -16,6 +16,7 @@
 
     var items = [];
     var itemsCollected = false;
+    if (gallery) gallery.addEventListener("photo-gallery-updated", function () { itemsCollected = false; });
     var image = dialog.querySelector("[data-photo-image]");
     var video = dialog.querySelector("[data-photo-video]");
     var audioStage = dialog.querySelector("[data-photo-audio-stage]");

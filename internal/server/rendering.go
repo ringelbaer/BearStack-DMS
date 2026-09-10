@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +33,8 @@ func parseTemplates() (*template.Template, error) {
 		return nil, err
 	}
 	funcs := template.FuncMap{
+		"photoDisplayPath":       photos.MediaDisplayPath,
+		"photoFilename":          path.Base,
 		"prevPage":               func(p int) int { return max(1, p-1) },
 		"nextPage":               func(p int) int { return p + 1 },
 		"formatBytes":            formatBytes,

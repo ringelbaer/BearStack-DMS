@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import de.bearstack.people.data.local.LabelingDatabase
+import de.bearstack.people.data.remote.FaceMatch
 import de.bearstack.people.data.remote.Person
 import de.bearstack.people.people.PeopleViewModel
 import kotlinx.coroutines.*
@@ -85,6 +86,44 @@ class ViewModelTest {
             assertNotNull(vm.state.value.error)
             withContext(Dispatchers.Main) {vm.unassign(100)};idle(vm)
             assertEquals(1,api.commits);assertNull(vm.state.value.selectedPerson)
+        }
+    }
+    @Test fun faceSearchCancelsOnTypingClosingAndBackgroundAndNeverWrites() = runBlocking {
+        val api=FakeService().apply { matchDelay=2000; matches=listOf(FaceMatch(9,"Anna",1,90)) }
+        model(api) { vm ->
+            withContext(Dispatchers.Main) {vm.startNaming();vm.findFaceMatches()}
+            until {api.matchedFaces.size==1}
+            withContext(Dispatchers.Main) {vm.nameChanged("Other")}
+            until {api.cancelledMatches==1}
+            assertTrue(vm.state.value.faceMatches.isEmpty());assertFalse(vm.state.value.faceSearching)
+            withContext(Dispatchers.Main) {vm.findFaceMatches()}
+            until {api.matchedFaces.size==2}
+            withContext(Dispatchers.Main) {vm.closeNaming()}
+            until {api.cancelledMatches==2}
+            withContext(Dispatchers.Main) {vm.startNaming();vm.findFaceMatches()}
+            until {api.matchedFaces.size==3}
+            withContext(Dispatchers.Main) {vm.background()}
+            until {api.cancelledMatches==3}
+            assertEquals(0,api.commits)
+            assertTrue(vm.state.value.faceMatches.isEmpty())
+        }
+    }
+    @Test fun faceSearchUsesDisplayedPageAndRechecksTargetBeforeAssigning() = runBlocking {
+        val api=FakeService().apply {people[9]=Person(9,"Anna",7,1,90,listOf(90));matches=listOf(FaceMatch(9,"Anna",1,90))}
+        model(api) { vm ->
+            withContext(Dispatchers.Main) {vm.page(1)};idle(vm)
+            withContext(Dispatchers.Main) {vm.startNaming();vm.findFaceMatches()}
+            until {vm.state.value.faceSearchDone}
+            assertEquals(listOf(14L),api.matchedFaces);assertEquals(0,api.commits)
+            api.people[9]=api.people.getValue(9).copy(name="Changed",revision=8)
+            withContext(Dispatchers.Main) {vm.assignFaceMatch(vm.state.value.faceMatches.single())};idle(vm)
+            assertEquals(0,api.commits);assertNotNull(vm.state.value.error)
+            api.people[9]=api.people.getValue(9).copy(name="Anna")
+            withContext(Dispatchers.Main) {vm.startNaming();vm.findFaceMatches()}
+            until {vm.state.value.faceSearchDone}
+            withContext(Dispatchers.Main) {vm.assignFaceMatch(vm.state.value.faceMatches.single())};idle(vm)
+            assertEquals(1,api.commits);assertEquals("assign",api.receipts.values.single().action)
+            assertFalse(vm.state.value.naming)
         }
     }
     private suspend fun model(api: FakeService, test: suspend (PeopleViewModel) -> Unit) {

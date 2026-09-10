@@ -229,3 +229,40 @@ func TestGroupPhotoImagePermissionsAndExclusions(t *testing.T) {
 		})
 	}
 }
+
+func TestGroupPhotoStripHTTP(t *testing.T) {
+	s, photo := groupPhotoServerFixture(t)
+	for _, user := range []string{"", "reader", "editor", "manager"} {
+		w := labelRequest(s, "GET", "/photos/people/groups?format=strip", user, "")
+		want := 200
+		if user == "" {
+			want = 401
+		}
+		if user == "reader" {
+			want = 403
+		}
+		if w.Code != want {
+			t.Fatalf("%s: %d %s", user, w.Code, w.Body.String())
+		}
+		if want == 200 {
+			var strip photos.GroupPhotoStrip
+			if err := json.Unmarshal(w.Body.Bytes(), &strip); err != nil || len(strip.Photos) != 1 || strip.Photos[0].Path != photo.Path || strip.Photos[0].Remaining != 6 {
+				t.Fatalf("strip=%+v %v", strip, err)
+			}
+			if w.Header().Get("Cache-Control") != "private, no-store" || strings.Contains(w.Body.String(), "embedding") {
+				t.Fatal("unsafe response")
+			}
+		}
+	}
+	for _, query := range []string{"min=-1", "min=256", "before=../bad", "after=/bad", "path=", "before=", "path=one.jpg&after=", "before=one.jpg&after=two.jpg"} {
+		if w := labelRequest(s, "GET", "/photos/people/groups?format=strip&"+query, "editor", ""); w.Code != 400 {
+			t.Fatalf("%s: %d %s", query, w.Code, w.Body.String())
+		}
+	}
+	if w := labelRequest(s, "GET", "/photos/people/groups?format=strip&min=6", "editor", ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"photos":[]`) {
+		t.Fatalf("empty: %d %s", w.Code, w.Body.String())
+	}
+	if w := labelRequest(s, "GET", "/photos/people/groups?format=strip&min=6&path="+url.QueryEscape(photo.Path), "editor", ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"remaining":6`) {
+		t.Fatalf("anchor: %d %s", w.Code, w.Body.String())
+	}
+}

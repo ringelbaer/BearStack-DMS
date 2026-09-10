@@ -70,7 +70,7 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
         return p
     }
     suspend fun prepare(person: Person, action: String, name: String = "", target: Person? = null, face: Long = 0,
-        allowDuplicate: Boolean = false, favorite: Boolean? = null, suggestionId: Long? = null) {
+        allowDuplicate: Boolean = false, favorite: Boolean? = null, suggestionId: Long? = null, assignment: Person? = null) {
         checkMessage(pending() == null,R.string.error_pending_first)
         val operation = UUID.randomUUID().toString()
         val body = JSONObject().put("operation_id",operation).put("dataset",session.dataset).put("revision",person.revision)
@@ -79,6 +79,7 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
             .apply {
                 if(favorite!=null) put("favorite",favorite)
                 if(suggestionId!=null) put("suggestion_id",suggestionId)
+                if(assignment!=null) { put("assign_id",assignment.id); put("assign_revision",assignment.revision) }
             }.toString()
         // Saved before transmission. There is at most one unresolved write per scope.
         dao.pending(Pending(scope,operation,person.id,body))
@@ -90,7 +91,10 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
                 catch (e: ApiFailure) { if(e.status != 404) throw e; api.action(pending.source,pending.body) }
             requireMessage(receipt.operation == pending.operation && receipt.source == pending.source,R.string.error_receipt)
             db.withTransaction {
-                val inserted = dao.event(Event(scope,receipt.operation,receipt.action,receipt.faces,receipt.groups,receipt.at))
+                val eventAction=if(receipt.action=="name_merge") {
+                    if(JSONObject(pending.body).optLong("assign_id")!=0L) "assign" else "name"
+                } else receipt.action
+                val inserted = dao.event(Event(scope,receipt.operation,eventAction,receipt.faces,receipt.groups,receipt.at))
                 if (inserted != -1L) dao.state(state().afterReceipt(receipt))
                 dao.clearPending(scope)
             }

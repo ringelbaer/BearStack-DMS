@@ -235,10 +235,19 @@ func (l *Library) RenamePerson(ctx context.Context, id int64, name string) error
 	return nil
 }
 
+// RestoreFaces restores only still-ignored faces; stale submissions cannot move
+// a face that has already been restored or assigned elsewhere.
+func (l *Library) RestoreFaces(ctx context.Context, ids []int64, target int64, name string) error {
+	return l.editFaces(ctx, ids, target, false, name, true)
+}
+
 // EditFaces is atomic: either all selected faces can be edited, or none are changed.
 // target=0 creates a new group; ignore=true marks reversible false detections.
-
 func (l *Library) EditFaces(ctx context.Context, ids []int64, target int64, ignore bool, name string) error {
+	return l.editFaces(ctx, ids, target, ignore, name, false)
+}
+
+func (l *Library) editFaces(ctx context.Context, ids []int64, target int64, ignore bool, name string, restore bool) error {
 	if len(ids) == 0 || len(ids) > 500 {
 		return errors.New("1 bis 500 Gesichter auswählen")
 	}
@@ -261,6 +270,9 @@ func (l *Library) EditFaces(ctx context.Context, ids []int64, target int64, igno
 		f, e := l.Face(ctx, id)
 		if e != nil {
 			return e
+		}
+		if restore && !f.Ignored {
+			return ErrLabelConflict
 		}
 		affected[f.PersonID] = true
 	}

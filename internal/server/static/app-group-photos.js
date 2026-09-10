@@ -19,6 +19,11 @@
   var remaining = grid.querySelectorAll('[data-person-name=""][data-ignored="false"]').length;
   var busy = false, navigationPending = false, request = 0, controller, retryParams;
   var hovered, focused, zoomed;
+  var strip = window.BearStackGroupStrip.bind({
+    minimum: function () { return minimum; },
+    isBusy: function () { return busy || navigationPending || document.querySelector("[data-person-dialog]").open; },
+    select: function (path) { status.textContent = ""; return loadPhoto({ path: path }); }
+  });
   var storageKey = "bearstack.people.groupMinimum:" + surface.dataset.groupUser;
   var unnamedStorageKey = "bearstack.people.groupUnnamed:" + surface.dataset.groupUser;
 
@@ -47,6 +52,7 @@
     ignoreButton.disabled = value || navigationPending || !remaining;
     skip.setAttribute("aria-disabled", String(value));
     retry.disabled = value;
+    strip.busy();
   }
 
   function faceBounds(card) {
@@ -206,6 +212,7 @@
     else if (params.after) address.searchParams.set("after", params.after);
     window.history.replaceState(null, "", address.pathname + address.search);
     filterFaces();
+    strip.sync(photo);
   }
 
   async function loadPhoto(params) {
@@ -290,6 +297,7 @@
   try { unnamedFilter.checked = window.localStorage.getItem(unnamedStorageKey) === "true"; } catch (_) {}
   filter.querySelector("[data-group-unnamed-control]").hidden = false;
   filterFaces();
+  strip.sync(currentPath ? { path: currentPath, display_path: surface.querySelector("[data-group-title]").textContent, remaining: remaining } : null);
   if (!new URL(window.location.href).searchParams.has("min")) {
     var saved;
     try { saved = window.localStorage.getItem(storageKey); } catch (_) {}

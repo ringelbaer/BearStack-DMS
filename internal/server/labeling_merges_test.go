@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -11,9 +12,16 @@ import (
 )
 
 func TestLabelingMergeHTTP(t *testing.T) {
-	for _, action := range []string{"accept_merge", "reject_merge"} {
+	for _, action := range []string{"accept_merge", "reject_merge", "name_merge"} {
 		t.Run(action, func(t *testing.T) {
-			s, expected := mergeSuggestionServer(t)
+			s, expected := mergeSuggestionServer(t, action != "name_merge")
+			request := httptest.NewRequest("GET", "/photos/people/merge-suggestions", nil)
+			request.SetBasicAuth("editor", "secret")
+			html := httptest.NewRecorder()
+			s.Handler().ServeHTTP(html, request)
+			if strings.Contains(html.Body.String(), "data-merge-name") != (action == "name_merge") {
+				t.Fatal("wrong pencil visibility")
+			}
 			const path = "/api/photos/labeling/v1/merge-suggestions/next"
 			for _, user := range []string{"reader", "editor", "manager"} {
 				w := labelRequest(s, "GET", path, user, "")
@@ -34,7 +42,11 @@ func TestLabelingMergeHTTP(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			body, err := json.Marshal(photos.LabelAction{Action: action, OperationID: "android-merge-0001", Dataset: session.Dataset,
+			name := ""
+			if action == "name_merge" {
+				name = "Ada"
+			}
+			body, err := json.Marshal(photos.LabelAction{Action: action, Name: name, OperationID: "android-merge-0001", Dataset: session.Dataset,
 				Revision: expected.SourceRevision, TargetID: expected.TargetID, TargetRevision: expected.TargetRevision, SuggestionID: expected.ID})
 			if err != nil {
 				t.Fatal(err)

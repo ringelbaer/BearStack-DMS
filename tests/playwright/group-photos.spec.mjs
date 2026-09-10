@@ -94,6 +94,21 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await expect(surface).toHaveAttribute("data-path", "b.png"); await expect(cards).toHaveCount(6);
   await expect(cards.locator("[data-group-ignore-face]")).toHaveCount(6);
   await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  const strip = page.locator("[data-group-strip]");
+  await expect(strip).toBeVisible();
+  await expect(strip).toHaveAttribute("aria-busy", "false");
+  await expect(strip.locator("[data-path]")).toHaveCount(3);
+  await expect(strip.locator('[aria-current="true"]')).toHaveAttribute("data-path", "b.png");
+  const beforeJump = await (await context.request.get(baseURL + "/photos/people/groups?format=json&path=b.png")).json();
+  await strip.locator('[data-path="d.png"]').click();
+  await expect(surface).toHaveAttribute("data-path", "d.png");
+  await expect(strip.locator('[aria-current="true"]')).toHaveAttribute("data-path", "d.png");
+  await strip.locator('[data-path="b.png"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(surface).toHaveAttribute("data-path", "b.png");
+  expect((await (await context.request.get(baseURL + "/photos/people/groups?format=json&path=b.png")).json()).photo.revision).toBe(beforeJump.photo.revision);
+  await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+  await expect(strip).toHaveAttribute("aria-busy", "false");
   const zoomRequests = [];
   page.on("request", request => { if (request.url().includes("/photos/people/groups")) zoomRequests.push(request.url()); });
   for (const width of [1440, 390, 320]) {
@@ -430,4 +445,76 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await expect(page.locator('[data-group-face][data-person-name="Concurrent modal change"]')).toHaveAttribute("data-ignored", "false");
   expect(errors).toEqual([]);
   await context.close();
+});
+
+test("group strip lazily scrolls both ways with bounded nodes, jumps and retries", async ({ browser }) => {
+  const context = await browser.newContext({ httpCredentials: { username: "manager", password: "secret" }, viewport: { width: 390, height: 850 } });
+  try {
+    const page = await context.newPage();
+    const errors = []; page.on("pageerror", error => errors.push(error.message));
+    const photo = (await (await context.request.get(baseURL + "/photos/people/groups?format=json&path=b.png")).json()).photo;
+    const photos = Array.from({ length: 240 }, (_, i) => ({ path: i ? `queue/${String(i).padStart(3, "0")}.png` : "b.png", display_path: `Gruppenfoto ${i}`, remaining: 6 }));
+    const reads = [], images = [];
+    let fail = false;
+    await page.route("**/photos/people/groups?**", async route => {
+      const url = new URL(route.request().url());
+      if (route.request().isNavigationRequest()) return route.continue();
+      if (url.searchParams.get("format") === "json") {
+        const path = url.searchParams.get("path");
+        return route.fulfill({ json: { minimum: 0, photo: { ...photo, path, display_path: path } } });
+      }
+      if (url.searchParams.get("format") !== "strip") return route.continue();
+      reads.push(url.search);
+      if (fail) { fail = false; return route.fulfill({ status: 503, json: { error: "temporary" } }); }
+      const find = key => photos.findIndex(p => p.path === url.searchParams.get(key));
+      let start = 0, end = 32;
+      if (url.searchParams.has("path")) { const at = find("path"); start = Math.max(0, at - 16); end = Math.min(photos.length, at + 17); }
+      if (url.searchParams.has("after")) { start = find("after") + 1; end = Math.min(photos.length, start + 32); }
+      if (url.searchParams.has("before")) { end = find("before"); start = Math.max(0, end - 32); }
+      const entries = photos.slice(start, end);
+      await route.fulfill({ json: { minimum: 0, photos: entries, before: entries[0]?.path || "", after: entries.at(-1)?.path || "", has_previous: start > 0, has_next: end < photos.length } });
+    });
+    const png = await readFile(new URL("../../services/faces/tests/fixtures/astronaut.png", import.meta.url));
+    await page.route("**/photos/thumbnail?**", route => { images.push(route.request().url()); return route.fulfill({ contentType: "image/png", body: png }); });
+    await page.goto(baseURL + "/photos/people/groups?min=0&path=b.png");
+    const strip = page.locator("[data-group-strip]"), rail = page.locator("[data-group-strip-rail]");
+    await expect(strip).toHaveAttribute("aria-busy", "false");
+    await expect(rail.locator("a")).toHaveCount(17);
+    await expect.poll(() => images.length).toBeGreaterThan(0);
+    expect(images.length).toBeLessThan(17);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+    const bounds = await strip.boundingBox(); expect(bounds.y + bounds.height).toBeLessThanOrEqual(851);
+    for (let i = 0; i < 4; i++) {
+      const count = reads.length;
+      await rail.evaluate(el => { el.scrollLeft = el.scrollWidth; });
+      await expect.poll(() => reads.length).toBeGreaterThan(count);
+      await expect(strip).toHaveAttribute("aria-busy", "false");
+      expect(await rail.locator("a").count()).toBeLessThanOrEqual(96);
+    }
+    const firstPath = await rail.locator("a").first().getAttribute("data-path");
+    expect(firstPath).not.toBe("b.png");
+    const count = reads.length;
+    await rail.evaluate(el => { el.scrollLeft = 0; });
+    await expect.poll(() => reads.length).toBeGreaterThan(count);
+    await expect(strip).toHaveAttribute("aria-busy", "false");
+    expect(reads.at(-1)).toContain("before=");
+    expect(await rail.locator("a").first().getAttribute("data-path")).not.toBe(firstPath);
+    // A failed page leaves existing links usable and can be retried separately.
+    fail = true;
+    await rail.evaluate(el => { el.scrollLeft = el.scrollWidth; });
+    await expect(strip.locator("[data-group-strip-retry]")).toBeVisible();
+    await strip.getByRole("button", { name: "Leiste erneut laden" }).click();
+    await expect(strip.locator("[data-group-strip-retry]")).toBeHidden();
+    await expect(strip).toHaveAttribute("aria-busy", "false");
+    const target = rail.locator("a").nth(50);
+    const targetPath = await target.getAttribute("data-path");
+    await target.click();
+    await expect(page.locator("[data-group-photos]")).toHaveAttribute("data-path", targetPath);
+    await expect(rail.locator('[aria-current="true"]')).toHaveAttribute("data-path", targetPath);
+    await strip.getByRole("button", { name: "Aktuelles Foto" }).click();
+    await expect(strip).toHaveAttribute("aria-busy", "false");
+    await expect(rail.locator("a")).toHaveCount(33);
+    await expect(rail.locator('[aria-current="true"]')).toBeInViewport();
+    expect(errors).toEqual([]);
+  } finally { await context.close(); }
 });

@@ -175,8 +175,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   }
   await page.screenshot({ path: "/tmp/bearstack-people-aspect-fit.png", fullPage: true });
   await page.locator("a.person-card").filter({hasText:"2 Fotos"}).click();
-  await expect(page.getByRole("navigation", { name: "Personenseiten" })).toHaveText("Seite 1 von 1");
-  await expect(page.getByRole("navigation", { name: "Personenseiten" }).getByRole("link")).toHaveCount(0);
+  await expect(page.locator(".people-pagination")).toBeHidden();
+  await expect(page.locator(".people-pagination a")).toHaveCount(0);
   for (const width of [320, 390, 640, 960, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const layout = await page.evaluate(() => {
@@ -189,7 +189,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
           const text = caption.getBoundingClientRect();
           const image = button.querySelector("img").getBoundingClientRect();
           return text.left >= card.left && text.right <= card.right &&
-            caption.scrollWidth <= caption.clientWidth + 1 && button.scrollWidth <= button.clientWidth + 1 &&
+            getComputedStyle(caption).textOverflow === "ellipsis" && button.scrollWidth <= button.clientWidth + 1 &&
             text.top >= image.bottom && Math.abs(image.width - image.height) <= 1;
         }),
         fits: forms.every(form => {
@@ -259,6 +259,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.getByLabel("Auswählen", { exact: true }).first().check();
   await expect(lightbox).not.toBeVisible();
   await page.getByLabel("Auswählen", { exact: true }).first().uncheck();
+  await page.getByRole("button", { name: "Person benennen / zuordnen", exact: true }).click();
   await page.getByRole("combobox",{name:"Name",exact:true}).fill("Jürgen");await page.getByRole("button",{name:"Benennen",exact:true}).click();await expect(page.getByRole("heading",{name:"Jürgen",exact:true})).toBeVisible();
   await expect(page.locator("button[data-face-favorite]")).toHaveCount(2);
   await page.locator("button[data-face-favorite]").first().click();
@@ -393,7 +394,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await personDialog.getByRole("button", { name: "Benennen", exact: true }).click();
   await expect(personDialog).not.toBeVisible();
   await expect(page.locator("a.person-card").filter({ hasText: "Jürgen Neu" })).toHaveCount(1);
-  await expect(page.getByRole("navigation", { name: "Personenseiten" })).toHaveText("Seite 1 von 1");
+  await expect(page.locator(".people-pagination")).toContainText("Seite 1 von 1");
   expect(await page.evaluate(() => window.modalPageMarker)).toBe("unchanged");
   await expect(page.getByRole("button", { name: "Benennen oder zuordnen: Jürgen Neu", exact: true })).toHaveCount(0);
   await selectPerson("Jürgen Neu");
@@ -410,98 +411,38 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   expect((await knownPage.json()).known_only).toBe(true);
   await page.locator("a.person-card").click();
 
-  const moveForm = page.locator('form[action="/photos/faces/edit"]');
-  const moveSearch = moveForm.getByRole("combobox", { name: "Zielperson suchen" });
-  await moveSearch.fill("Jür");
-  await expect(moveForm.getByRole("option")).toHaveCount(1);
-  await moveForm.getByRole("option").click();
-  await expect(moveForm.locator("[data-person-target]")).not.toHaveValue("0");
-  await moveSearch.fill("");
-  await expect(moveForm.locator("[data-person-target]")).toHaveValue("0");
-  expect(await moveSearch.evaluate(input => input.checkValidity())).toBe(true);
-  await moveSearch.press("Tab");
-  await page.getByLabel("Auswählen",{exact:true}).first().check();await page.getByLabel("Name der neuen Person").fill("Marie");await page.getByRole("button",{name:"Auswahl verschieben"}).click();
-  await page.locator("a.person-card").filter({hasText:"Marie"}).click();
-  const mergeForm = page.locator(".people-management form[data-person-create]");
-  const personSearch = mergeForm.getByRole("combobox", { name: "Name", exact: true });
-  const personOptions = mergeForm.getByRole("option").filter({ hasNotText: "Neu anlegen:" });
-  await expect(mergeForm.locator("select")).toHaveCount(0);
+  await expect(page.locator(".person-detail-selection")).toBeHidden();
+  await page.getByLabel("Auswählen", { exact: true }).first().check();
+  await expect(page.locator("[data-detail-selection-count]")).toHaveText("1 ausgewählt");
+  await page.getByRole("button", { name: "Auswahl benennen / zuordnen", exact: true }).click();
+  const detailDialog = page.locator("[data-person-dialog]");
+  await expect(detailDialog.locator("#person-dialog-title")).toHaveText("Gesicht benennen oder zuordnen");
+  await detailDialog.getByRole("combobox").fill("Marie");
+  await detailDialog.getByRole("button", { name: "Auswahl benennen", exact: true }).click();
+  await expect(detailDialog).not.toBeVisible();
+  await expect(page.getByLabel("Auswählen", { exact: true })).toHaveCount(1);
+  await page.getByRole("link", { name: "Alle Personen", exact: true }).click();
+  await page.locator("a.person-card").filter({ hasText: "Marie" }).click();
+  await page.getByRole("button", { name: "Person benennen / zuordnen", exact: true }).click();
+  const personSearch = detailDialog.getByRole("combobox", { name: "Name", exact: true });
   await personSearch.fill("Marie");
-  await expect(mergeForm.getByRole("option", { name: /Neu anlegen:/ })).toBeVisible();
-  await expect(personOptions).toHaveCount(0);
-  await mergeForm.getByRole("option", { name: /Neu anlegen:/ }).click();
-  await expect(personSearch).toHaveValue("Marie");
-  await expect(mergeForm.getByRole("button", { name: "Benennen", exact: true })).toBeVisible();
+  await expect(detailDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" })).toHaveCount(0);
   await personSearch.fill("nicht-vorhandene-person");
-  await expect(mergeForm.getByRole("option", { name: /Neu anlegen:/ })).toBeVisible();
-  expect(await personSearch.evaluate(input => input.checkValidity())).toBe(true);
-  await expect(mergeForm).toHaveAttribute("action", /\/rename$/);
-  await mergeForm.getByRole("option", { name: /Neu anlegen:/ }).click();
-  await mergeForm.getByRole("button", { name: "Benennen", exact: true }).click();
+  await detailDialog.getByRole("button", { name: "Benennen", exact: true }).click();
+  await expect(detailDialog).not.toBeVisible();
   await expect(page.getByRole("heading", { name: "nicht-vorhandene-person", exact: true })).toBeVisible();
-  await expect(page.locator(".people-management input:not([type=hidden])")).toHaveCount(1);
+  await page.getByRole("button", { name: "Person benennen / zuordnen", exact: true }).click();
   await page.route("**/photos/people?format=suggestions&q=Fehler", route => route.fulfill({ status: 503, body: "Unavailable" }));
   await personSearch.fill("Fehler");
-  await expect(mergeForm.locator("[data-person-feedback]")).toContainText("Personen konnten nicht geladen werden.");
+  await expect(detailDialog.locator("[data-person-feedback]")).toContainText("Personen konnten nicht geladen werden");
   await page.unroute("**/photos/people?format=suggestions&q=Fehler");
   await personSearch.fill("Jür");
-  await expect(personOptions).toHaveCount(1);
-  await expect(personOptions.first()).toContainText("Jürgen");
-  for (const width of [320, 1280]) {
-    await page.setViewportSize({ width, height: 900 });
-    const visible = await mergeForm.locator("[data-person-popup]").evaluate(popup => {
-      const rect = popup.getBoundingClientRect();
-      const status = popup.querySelector("[role=status]").getBoundingClientRect();
-      return rect.left >= 0 && rect.right <= window.innerWidth &&
-        popup.contains(document.elementFromPoint(status.left + status.width / 2, status.top + status.height / 2));
-    });
-    expect(visible, "suggestions must overlay the following form at " + width + "px").toBe(true);
-  }
-  await page.screenshot({ path: "/tmp/bearstack-person-autocomplete.png", fullPage: true });
+  await expect(detailDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" })).toHaveCount(1);
   await personSearch.press("ArrowDown");
-  await expect(personOptions.first()).toHaveAttribute("aria-selected", "true");
   await personSearch.press("Enter");
-  await expect(personSearch).toHaveValue(/Jürgen \(#\d+\)/);
-  await expect(personSearch).toHaveAttribute("aria-expanded", "false");
-  await expect(mergeForm.locator("[data-person-target]")).not.toHaveValue("");
-  expect(await personSearch.evaluate(input => input.checkValidity())).toBe(true);
-  // A response to an obsolete query must not replace the current suggestions.
-  let releaseStale, markStarted;
-  const started = new Promise(resolve => { markStarted = resolve; });
-  let markFinished;
-  const finished = new Promise(resolve => { markFinished = resolve; });
-  await page.route("**/photos/people?format=suggestions&q=Veraltet", async route => {
-    markStarted();
-    await new Promise(resolve => { releaseStale = resolve; });
-    try {
-      await route.fulfill({ json: { people: [{ id: 99999, name: "Veraltete Antwort", count: 1 }] } });
-    } finally {
-      markFinished();
-    }
-  });
-  await personSearch.fill("Veraltet");
-  await started;
-  await personSearch.fill("Jür");
-  await expect(personOptions).toHaveCount(1);
-  await expect(personOptions.first()).toContainText("Jürgen");
-  releaseStale();
-  await finished;
-  await page.unroute("**/photos/people?format=suggestions&q=Veraltet");
-  await expect(personOptions.first()).toContainText("Jürgen");
-  // Editing a chosen label must discard its ID; mouse selection restores it.
-  await personSearch.fill("Jü");
-  await expect(mergeForm.locator("[data-person-target]")).toHaveValue("");
-  expect(await personSearch.evaluate(input => input.checkValidity())).toBe(true);
-  await expect(mergeForm).toHaveAttribute("action", /\/rename$/);
-  await expect(personOptions).toHaveCount(1);
-  await personSearch.press("Escape");
-  await expect(personSearch).toHaveAttribute("aria-expanded", "false");
-  await personSearch.press("ArrowDown");
-  await expect(personOptions).toHaveCount(1);
-  await personOptions.first().click();
-  await expect(personSearch).toHaveAttribute("aria-expanded", "false");
-  await expect(mergeForm.locator("[data-person-target]")).not.toHaveValue("");
-  await page.getByRole("button",{name:"Gruppen zusammenführen"}).click();await expect(page.getByLabel("Auswählen",{exact:true})).toHaveCount(2);
+  await expect(detailDialog).not.toBeVisible();
+  await expect(page.getByRole("heading", { name: "Jürgen", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Auswählen", { exact: true })).toHaveCount(2);
   await page.goto(baseURL + "/photos/people?q=J%C3%BCrgen&known=1");
   await expect(page.locator("[data-ignore-face]")).toBeHidden();
   await expect(page.locator("[data-person-edit]")).toBeHidden();

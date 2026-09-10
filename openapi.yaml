@@ -1164,6 +1164,14 @@ paths:
         unassign moves one face to a new manually unnamed group and clears its
         favorite status, even for the last face. favorite explicitly sets the
         reference favorite for one face; it is not a toggle.
+        Since 0.50.0, name_merge (session.merge_naming) atomically accepts a
+        suggestion whose two groups are unnamed and names or assigns both groups.
+        It requires suggestion_id, revision, target_id and target_revision for the
+        displayed pair. Supply either a nonempty name (allow_duplicate is supported)
+        or a distinct named assign_id with assign_revision and an empty name.
+        All revisions, visibility, and names are checked before either group changes.
+        Its receipt uses the final destination as target_id, groups=2, and the sum
+        of active faces in the two reviewed groups. Retries replay the same receipt.
         Since 0.49.0, accept_merge and reject_merge decide a cached similar-group
         suggestion (session.merge_suggestions). Both require suggestion_id,
         target_id and target_revision, matching the displayed source and target.
@@ -1925,6 +1933,14 @@ paths:
         Skipping advances only the cursor; it never changes stored face data.
         Omit after and path to start a new pass. HTML by default; request format=json
         or Accept application/json for JSON. Cache-Control is private, no-store.
+        Since 0.50.0, format=strip returns lightweight queue previews without face
+        details. With no cursor or with after, it returns up to 32 eligible photos;
+        before returns up to 32 preceding photos, always in ascending path order.
+        path centers a window of up to 16 eligible photos on either side of the
+        current photo (up to 33 entries), retaining that photo below the threshold.
+        For strip, path, after and before are mutually exclusive. Scroll cursors
+        and flags permit navigation in both directions without a total-count scan.
+        Small images use the existing /photos/thumbnail?size=160&path= endpoint.
       parameters:
         - name: min
           in: query
@@ -1934,21 +1950,28 @@ paths:
           in: query
           schema: {type: string, maxLength: 4096}
           description: Gallery-relative path cursor; omitted starts at the beginning.
+        - name: before
+          in: query
+          schema: {type: string, minLength: 1, maxLength: 4096}
+          description: Exclusive backward path cursor for format=strip only.
         - name: path
           in: query
           schema: {type: string, minLength: 1, maxLength: 4096}
           description: Read this current photo regardless of its remaining count.
         - name: format
           in: query
-          schema: {type: string, enum: [json]}
+          schema: {type: string, enum: [json, strip]}
       responses:
         '200':
-          description: Current photo, or null when no eligible photo remains.
+          description: Current photo (or null), or a queue preview window for format=strip.
           content:
             text/html:
               schema: {type: string}
             application/json:
-              schema: {$ref: '#/components/schemas/GroupPhotosPage'}
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/GroupPhotosPage'
+                  - $ref: '#/components/schemas/GroupPhotoStrip'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2252,6 +2275,47 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {description: Stale source, missing target, overlapping region or face limit reached.}
+  /photos/faces/unignore:
+    post:
+      tags: [Photos]
+      operationId: unignorePhotoFaces
+      summary: Clear ignored flags for all faces in one photo
+      description: >-
+        Requires photos.edit and same-origin protection. Atomically clears ignored
+        flags only in the requested photo, preserving person IDs, names and manual
+        markers. Does not run inference or alter faces in other photos. The revision
+        from GET /photos/faces must match the current snapshot; stale requests return
+        409 without changes. A fresh snapshot with no ignored faces returns restored=0.
+        Only affected groups have their reference caches refreshed. The photo is
+        bounded to 256 detections. Responses are private, no-store. Refresh the photo
+        after completion or an uncertain response; do not automatically repeat writes.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [path, revision]
+              properties:
+                path: {type: string, description: Gallery-relative image path.}
+                revision: {type: string, minLength: 64, maxLength: 64, description: Snapshot revision from GET /photos/faces.}
+      responses:
+        '200':
+          description: Ignored flags cleared, or no ignored faces in the current snapshot.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, restored]
+                properties:
+                  ok: {type: boolean, const: true}
+                  restored: {type: integer, minimum: 0, maximum: 256}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: The photo's face snapshot changed; refresh before deciding again.
   /photos/faces/analyze:
     post:
       tags: [Photos]
@@ -2306,6 +2370,9 @@ paths:
       operationId: suggestPeopleForFace
       summary: Compare the current face with named people
       description: >-
+        Used by the WebUI and Android naming dialogs. Android requests the bounded
+        JSON ranking and resolves the selected target through the labeling person
+        endpoint before submitting a revision-checked assignment.
         Requires photos.edit. Performs a live comparison of the stored face embedding
         against eligible references of named groups, including favorites, without
         running image inference. Returns at most 20 candidates with similarity at
@@ -2676,10 +2743,13 @@ paths:
       tags:
       - Photos
       operationId: editPhotoFaces
-      summary: Move selected faces or ignore false detections
+      summary: Move, restore or ignore selected faces
       description: Requires photos.edit. Form writes redirect to the corresponding
         HTML page; requests with Accept application/json receive HTTP 200 with an ok flag. Existing authentication, same-origin protection and audit logging
-        apply.
+        apply. The restore action only accepts currently ignored faces and changes
+        all selected faces atomically. With target=0 and no name, it creates an
+        unnamed group; a name creates a named group, and an existing target assigns
+        only the restored faces to that person. Other faces remain unchanged.
       parameters: []
       requestBody:
         required: true
@@ -2701,16 +2771,17 @@ paths:
                   enum:
                   - move
                   - ignore
+                  - restore
                 target:
                   type: integer
                   minimum: 0
                   default: 0
                   description: Existing target person ID; 0 or omitted creates a new
-                    person for move.
+                    person for move or restore.
                 name:
                   type: string
                   maxLength: 200
-                  description: Name for the new person. Required and non-blank when ignored=1, action=move and target=0. Moving an ignored face restores it.
+                  description: Name for the new person. Required and non-blank when ignored=1, action=move and target=0. Moving an ignored face restores it. For action=restore, the name may be blank to restore as unnamed when target=0.
                 ignored:
                   type: string
                   enum: ['0', '1']
@@ -2756,6 +2827,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: At least one face is no longer ignored; no faces are restored or moved.
   /settings/photos/faces:
     get:
       tags:
@@ -3510,6 +3583,25 @@ components:
             $ref: '#/components/schemas/PhotoCatalogBlog'
           maxItems: 20
 
+    GroupPhotoStrip:
+      type: object
+      required: [minimum, photos, before, after, has_previous, has_next]
+      properties:
+        minimum: {type: integer, minimum: 0, maximum: 255}
+        before: {type: string, description: First path to use as the exclusive backward cursor.}
+        after: {type: string, description: Last path to use as the exclusive forward cursor.}
+        has_previous: {type: boolean, description: Earlier entries can be requested; visibility or edits may leave the next page empty.}
+        has_next: {type: boolean, description: Later entries can be requested; visibility or edits may leave the next page empty.}
+        photos:
+          type: array
+          maxItems: 33
+          items:
+            type: object
+            required: [path, display_path, remaining]
+            properties:
+              path: {type: string, description: Gallery-relative photo path and cursor.}
+              display_path: {type: string, description: Human-readable gallery path.}
+              remaining: {type: integer, minimum: 0, maximum: 256}
     GroupPhotosPage:
       type: object
       required: [minimum, photo]
@@ -3558,6 +3650,7 @@ components:
       type: object
       required: [protocol, instance, dataset, account, upper_id, can_manage]
       properties:
+        merge_naming: {type: boolean, const: true, description: "Atomic name_merge for two unnamed suggested groups since 0.50.0. Older servers omit this field."}
         merge_suggestions: {type: boolean, const: true, description: "One-pair review and receipted accept_merge/reject_merge actions since 0.49.0. Older servers omit this field."}
         named_people: {type: boolean, const: true, description: "Named people list and rename/unassign/favorite receipt actions available since 0.43.0. Older servers omit this field."}
         named_search: {type: boolean, const: true, description: "Name search, 40-face cursor pages and receipt source_revision available since 0.45.0. Older servers omit this field."}
@@ -3657,12 +3750,14 @@ components:
         operation_id: {type: string, minLength: 16, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$'}
         dataset: {type: string}
         revision: {type: integer, format: int64, minimum: 1}
-        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge]}
-        suggestion_id: {type: integer, format: int64, minimum: 1, description: Required cached suggestion ID for accept_merge/reject_merge since 0.49.0.}
-        name: {type: string, maxLength: 200, description: Required and nonempty for name or rename; whitespace normalized.}
+        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge, name_merge]}
+        assign_id: {type: integer, format: int64, minimum: 0, description: "Optional named destination for name_merge. Must differ from both reviewed groups. Requires assign_revision and an empty name."}
+        assign_revision: {type: integer, format: int64, minimum: 0, description: "Expected named destination revision for name_merge with assign_id; otherwise zero or omitted."}
+        suggestion_id: {type: integer, format: int64, minimum: 1, description: Required cached suggestion ID for accept_merge/reject_merge (0.49.0) or name_merge (0.50.0).}
+        name: {type: string, maxLength: 200, description: Required and nonempty for name or rename, or name_merge without assign_id; whitespace normalized.}
         allow_duplicate: {type: boolean, default: false, description: Explicitly allow a separate group with the same name.}
-        target_id: {type: integer, format: int64, description: Named target for assign; displayed target for accept_merge/reject_merge.}
-        target_revision: {type: integer, format: int64, description: Expected target revision for assign or accept_merge/reject_merge.}
+        target_id: {type: integer, format: int64, description: Named target for assign; displayed target for accept_merge/reject_merge/name_merge.}
+        target_revision: {type: integer, format: int64, description: Expected target revision for assign or accept_merge/reject_merge/name_merge.}
         face_id: {type: integer, format: int64, description: One active source face for detach/unassign/favorite; only detach requires at least two faces.}
         favorite: {type: boolean, description: Required explicit desired state for the favorite action.}
     LabelingReceipt:
@@ -3671,12 +3766,12 @@ components:
       properties:
         source_revision: {type: integer, format: int64, minimum: 0, description: "Optional since 0.45.0. Source revision at commit (zero if absent). Preserved on replay; use for local updates, never as proof of the latest server state."}
         operation_id: {type: string}
-        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge]}
+        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge, name_merge]}
         source_id: {type: integer, format: int64}
         target_id: {type: integer, format: int64, description: Assignment or merge-decision target; otherwise zero.}
         new_id: {type: integer, format: int64, description: New unnamed group for detach/unassign or zero.}
         faces: {type: integer, format: int64, minimum: 0, description: Actually affected active face count; zero for reject_merge.}
-        groups: {type: integer, enum: [0, 1], description: Zero for detach/rename/unassign/favorite/accept_merge/reject_merge; one for name/assign/ignore.}
+        groups: {type: integer, enum: [0, 1, 2], description: Zero for detach/rename/unassign/favorite/accept_merge/reject_merge; one for name/assign/ignore; two for name_merge.}
         at: {type: integer, format: int64, description: Server confirmation time in Unix seconds.}
 
     Error:

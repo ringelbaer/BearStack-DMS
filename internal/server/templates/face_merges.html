@@ -6,19 +6,21 @@
 <button type="button" class="secondary-button" data-merge-refresh hidden>Vorschläge aktualisieren</button>
 <div class="face-merge-suggestions" data-merge-suggestions>
 {{range .FaceMergeSuggestions}}
-<section class="panel face-merge-suggestion" data-merge-id="{{.ID}}" aria-label="Zusammenführung prüfen">
+<section class="panel face-merge-suggestion" data-merge-id="{{.ID}}" data-source-id="{{.SourceID}}" data-target-id="{{.TargetID}}" aria-label="Zusammenführung prüfen">
 <div class="face-merge-pair">
 <a class="person-card" href="/photos/people/{{.SourceID}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.SourceFaceID}}/thumbnail" alt="Erste Gruppe"><strong>{{if .SourceName}}{{.SourceName}}{{else}}Unbenannt{{end}}</strong></a>
 <a class="person-card" href="/photos/people/{{.TargetID}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.TargetFaceID}}/thumbnail" alt="Zweite Gruppe"><strong>{{if .TargetName}}{{.TargetName}}{{else}}Unbenannt{{end}}</strong></a>
 </div>
 <form method="post" action="/photos/people/merge-suggestions/{{.ID}}/accept" class="settings-actions">
 <input type="hidden" name="source_revision" value="{{.SourceRevision}}"><input type="hidden" name="target_revision" value="{{.TargetRevision}}">
-<button type="submit">Zusammenführen</button><button type="submit" class="secondary-button" formaction="/photos/people/merge-suggestions/{{.ID}}/reject">Getrennt lassen</button>
+<button type="submit">Zusammenführen</button>{{if and (not .SourceName) (not .TargetName)}}<button type="button" class="secondary-button" data-merge-name title="Zusammenführen und benennen/zuordnen" aria-label="Zusammenführen und benennen/zuordnen">{{template "person_pencil_icon"}}</button>{{end}}<button type="submit" class="secondary-button" formaction="/photos/people/merge-suggestions/{{.ID}}/reject">Getrennt lassen</button>
 </form>
 </section>
 {{else}}<p>Aktuell keine Zusammenführungsvorschläge. Neue Vorschläge entstehen beim Hintergrundabgleich.{{if .Auth.CanPhotosManage}} Du kannst ihn unter <a href="/settings/photos/faces">Gesichtserkennung</a> erneut starten.{{end}}</p>{{end}}
 </div>
 <p data-merge-hint {{if not .FaceMergeSuggestions}}hidden{{end}}>Bis zu 60 Vorschläge werden angezeigt. Nach dem Bearbeiten rücken weitere nach.</p>
+{{template "person_edit_dialog" .}}
+<script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
 <script src="{{assetURL "/static/app-face-merges.js"}}" defer></script>
 {{template "foot" .}}
 {{end}}

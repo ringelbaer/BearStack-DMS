@@ -18,6 +18,7 @@ var ErrLabelInvalid = errors.New("ungültige Benennungsaktion")
 var ErrLabelNameExists = errors.New("Name bereits vorhanden")
 
 type LabelSession struct {
+	MergeNaming      bool   `json:"merge_naming"`
 	MergeSuggestions bool   `json:"merge_suggestions"`
 	NamedSearch      bool   `json:"named_search"`
 	NamedPeople      bool   `json:"named_people"`
@@ -57,6 +58,8 @@ type LabelCandidates struct {
 	HasNext bool          `json:"has_next"`
 }
 type LabelAction struct {
+	AssignID       int64  `json:"assign_id,omitempty"`
+	AssignRevision int64  `json:"assign_revision,omitempty"`
 	SuggestionID   int64  `json:"suggestion_id,omitempty"`
 	Favorite       *bool  `json:"favorite,omitempty"`
 	OperationID    string `json:"operation_id"`
@@ -86,7 +89,7 @@ const labelFrom = ` FROM photo_people p JOIN photo_person_revisions r ON r.perso
 const labelExists = ` EXISTS(SELECT 1 FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0) `
 
 func (l *Library) LabelSession(ctx context.Context) (LabelSession, error) {
-	out := LabelSession{Protocol: 1, FaceFavorites: true, NamedPeople: true, NamedSearch: true, MergeSuggestions: true}
+	out := LabelSession{Protocol: 1, FaceFavorites: true, NamedPeople: true, NamedSearch: true, MergeSuggestions: true, MergeNaming: true}
 	err := l.index.db.QueryRowContext(ctx, `SELECT instance,dataset,(SELECT coalesce(max(id),0) FROM photo_people) FROM photo_labeling_identity WHERE id=1`).Scan(&out.Instance, &out.Dataset, &out.UpperID)
 	return out, err
 }
@@ -215,7 +218,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		return out, ErrLabelInvalid
 	}
 	switch a.Action {
-	case "name", "assign", "detach", "ignore", "rename", "unassign", "favorite", "accept_merge", "reject_merge":
+	case "name", "assign", "detach", "ignore", "rename", "unassign", "favorite", "accept_merge", "reject_merge", "name_merge":
 	default:
 		return out, ErrLabelInvalid
 	}
@@ -226,8 +229,12 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	if (a.Action == "name" || a.Action == "rename") && name == "" || a.Action == "favorite" && a.Favorite == nil {
 		return out, ErrLabelInvalid
 	}
-	merging := a.Action == "accept_merge" || a.Action == "reject_merge"
+	merging := a.Action == "accept_merge" || a.Action == "reject_merge" || a.Action == "name_merge"
 	if merging && (a.SuggestionID <= 0 || a.TargetID <= 0 || a.TargetID == id || a.TargetRevision <= 0) {
+		return out, ErrLabelInvalid
+	}
+	if a.Action == "name_merge" && ((a.AssignID == 0 && (name == "" || a.AssignRevision != 0)) ||
+		(a.AssignID != 0 && (a.AssignID <= 0 || a.AssignID == id || a.AssignID == a.TargetID || a.AssignRevision <= 0 || name != ""))) {
 		return out, ErrLabelInvalid
 	}
 	encoded, _ := json.Marshal(struct {
@@ -236,9 +243,9 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	}{id, a})
 	sum := sha256.Sum256(encoded)
 	fingerprint := hex.EncodeToString(sum[:])
-	visibilityFilter := `p.id IN (?,?)`
-	visibilityArgs := []any{id, a.TargetID}
-	if (a.Action == "name" || a.Action == "rename") && !a.AllowDuplicate {
+	visibilityFilter := `p.id IN (?,?,?)`
+	visibilityArgs := []any{id, a.TargetID, a.AssignID}
+	if (a.Action == "name" || a.Action == "rename" || (a.Action == "name_merge" && a.AssignID == 0)) && !a.AllowDuplicate {
 		visibilityFilter += ` OR p.name=?`
 		visibilityArgs = append(visibilityArgs, name)
 	}
@@ -296,12 +303,14 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	}
 	out = LabelReceipt{OperationID: a.OperationID, Action: a.Action, SourceID: id, Faces: source.Count, Groups: 1, At: time.Now().Unix()}
 	switch a.Action {
-	case "accept_merge", "reject_merge":
+	case "accept_merge", "reject_merge", "name_merge":
 		if err = validateFaceMergeSuggestionTx(ctx, tx, id, a.TargetID, &faceMergeExpectation{a.SuggestionID, a.Revision, a.TargetRevision}); err != nil {
 			return out, err
 		}
 		out.TargetID, out.Groups = a.TargetID, 0
-		if a.Action == "reject_merge" {
+		if a.Action == "name_merge" {
+			out, err = nameMergeTx(ctx, tx, source, a, name, out)
+		} else if a.Action == "reject_merge" {
 			_, err = tx.ExecContext(ctx, `UPDATE photo_face_merge_suggestions SET rejected=1 WHERE id=?`, a.SuggestionID)
 			out.Faces = 0
 		} else {
@@ -373,7 +382,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		return out, err
 	}
 	affected := map[int64]bool{}
-	for _, pid := range []int64{id, out.TargetID, out.NewID} {
+	for _, pid := range []int64{id, a.TargetID, out.TargetID, out.NewID} {
 		if pid > 0 {
 			affected[pid] = true
 		}

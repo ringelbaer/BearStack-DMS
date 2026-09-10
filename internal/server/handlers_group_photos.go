@@ -59,6 +59,20 @@ func (s *Server) handleGroupPhotos(w http.ResponseWriter, r *http.Request) {
 		s.labelError(w, r, err)
 		return
 	}
+	if r.URL.Query().Get("format") == "strip" {
+		query := r.URL.Query()
+		if (query.Has("path") && (query.Get("path") == "" || query.Has("after") || query.Has("before"))) || (query.Has("before") && (query.Get("before") == "" || query.Has("after"))) {
+			s.labelError(w, r, photos.ErrLabelInvalid)
+			return
+		}
+		strip, err := s.photos.GroupPhotoPreviews(r.Context(), query.Get("path"), query.Get("after"), query.Get("before"), minimum)
+		if err != nil {
+			s.labelError(w, r, err)
+			return
+		}
+		_ = writeJSON(w, http.StatusOK, strip)
+		return
+	}
 	page := photos.GroupPhotosPage{Minimum: minimum}
 	if r.URL.Query().Has("path") {
 		var photo photos.GroupPhoto

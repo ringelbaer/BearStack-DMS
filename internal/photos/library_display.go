@@ -9,6 +9,9 @@ import (
 	"bearstack/internal/textmeta"
 )
 
+// MediaDisplayPath formats a relative photo path for shared UI previews.
+func MediaDisplayPath(rel string) string { return mediaDisplayPath(rel) }
+
 // mediaDisplayPath uses the gallery breadcrumb rules for every folder while
 // preserving the source filename. Never expose the host's filesystem root.
 func mediaDisplayPath(rel string) string {

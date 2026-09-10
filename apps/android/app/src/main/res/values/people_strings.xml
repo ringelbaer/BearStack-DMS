@@ -100,4 +100,10 @@
         <item quantity="one">%1$d Gruppe</item>
         <item quantity="other">%1$d Gruppen</item>
     </plurals>
+    <string name="people_merge_name">Zusammenführen und benennen/zuordnen</string>
+    <string name="people_merge_name_help">Sind beide Gruppen unbenannt, öffnet der Stift die Namenssuche. Speichern führt beide Gruppen unter einem neuen Namen oder mit einer ausgewählten Person zusammen. Abbrechen ändert nichts.</string>
+    <string name="people_face_search">Ähnliche benannte Personen suchen</string>
+    <string name="people_face_search_running">Gesicht wird mit benannten Personen verglichen …</string>
+    <string name="people_face_search_empty">Keine ähnlichen benannten Personen gefunden.</string>
+    <string name="people_face_search_unavailable">Gesichtssuche nicht verfügbar. Bitte den Server aktualisieren oder die Person neu öffnen.</string>
 </resources>

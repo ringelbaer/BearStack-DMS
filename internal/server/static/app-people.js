@@ -11,6 +11,7 @@
     var saved = { page: page, q: address.searchParams.get("q") || "", unknown: unknown, known: mode ? mode === "known" : !unknown && address.searchParams.get("known") === "1", ignored: mode ? mode === "ignored" : !unknown && address.searchParams.get("ignored") === "1" };
     try { window.localStorage.setItem(pageStorageKey, JSON.stringify(saved)); } catch (_) {}
   }
+  document.addEventListener("people-page-updated", function (event) { savePeoplePage(event.detail); });
   if (pageNavigation) {
     var address = new URL(window.location.href);
     var saved;
@@ -66,7 +67,7 @@
     document.addEventListener("click", function (event) { if (!displayMenu.contains(event.target)) displayMenu.open = false; });
   }
   var favoriteStatus = document.querySelector("[data-face-favorite-status]");
-  document.querySelectorAll("button[data-face-favorite]").forEach(function (button) {
+  document.querySelectorAll("button[data-face-favorite]:not([data-detail-favorite])").forEach(function (button) {
     button.addEventListener("click", async function (event) {
       event.preventDefault();
       if (button.disabled) return;

@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 
 let root, app, service, baseURL;
-let embeddingIndex = 0, inferenceCalls = 0;
+let embeddingIndex = 0, inferenceCalls = 0, detectionsPerPhoto = 1;
 const model = "yunet-2023mar-sface-2021dec-v1";
 test.beforeAll(async () => {
   root = await mkdtemp(path.join(os.tmpdir(), "bearstack-photo-face-info-"));
@@ -19,13 +19,15 @@ test.beforeAll(async () => {
   await writeFile(path.join(photos, "d.png"), png);
   await writeFile(path.join(photos, "e.png"), png);
   await writeFile(path.join(photos, "f.png"), png);
+  await writeFile(path.join(photos, "g.png"), png);
+  await writeFile(path.join(photos, "h.png"), png);
   service = http.createServer((request, response) => {
     request.resume();
     request.on("end", () => {
       response.setHeader("Content-Type", "application/json");
       inferenceCalls++;
       const embedding = Array(128).fill(0); embedding[embeddingIndex] = 1;
-      response.end(JSON.stringify({ model, faces: [{ x: .3, y: .05, width: .3, height: .35, confidence: .99, embedding }] }));
+      response.end(JSON.stringify({ model, faces: Array.from({length:detectionsPerPhoto},(_,i)=> { const vector=embedding.slice(); if(i){vector[embeddingIndex]=0;vector[embeddingIndex+i]=1;} return { x: detectionsPerPhoto===1 ? .3 : .1+i*.3, y: .05, width: detectionsPerPhoto===1 ? .3 : .2, height: .35, confidence: .99, embedding:vector }; }) }));
     });
   });
   await new Promise(resolve => service.listen(0, "127.0.0.1", resolve));
@@ -134,7 +136,7 @@ test("recognize one photo and name faces inside its info panel", async ({ browse
   const refresh = lightbox.getByRole("button", { name: "Gesichter aktualisieren", exact: true });
   const actions = lightbox.getByRole("group", { name: "Gesichtsfunktionen" });
   const controls = [actions.getByRole("img", { name: "Gesichter", exact: true }), analyze,
-    actions.getByRole("button", { name: "Gesicht einrahmen", exact: true }), refresh];
+    actions.getByRole("button", { name: "Gesicht einrahmen", exact: true }), actions.getByRole("button", { name: "Alle ignorierten Gesichter dieses Fotos wiederherstellen", exact:true }), refresh];
   for (const width of [320, 1024, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await actions.scrollIntoViewIfNeeded();
@@ -238,4 +240,64 @@ test("info-panel modal ignores only the selected face and handles stale revision
     expect((await response.json()).photo.faces[0].ignored).toBe(photo === "c.png");
   }
   await context.close();
+});
+
+test("info bar unignores only this photo, preserving names and handling stale or lost responses", async ({browser}) => {
+  const context=await browser.newContext({httpCredentials:{username:"editor",password:"secret"},viewport:{width:390,height:844}});
+  try {
+    detectionsPerPhoto=3;embeddingIndex=10;
+    const post=async(route,form)=>{
+      const response=await context.request.post(baseURL+route,{form,headers:{Origin:baseURL,Accept:"application/json"}});
+      expect(response.ok()).toBe(true);return response.json();
+    };
+    const get=async(path)=>(await(await context.request.get(baseURL+"/photos/faces?path="+path)).json()).photo;
+    await post("/photos/faces/analyze",{path:"g.png"});await post("/photos/faces/analyze",{path:"h.png"});
+    const g=await get("g.png"),h=await get("h.png");
+    await post(`/photos/people/${g.faces[0].person_id}/rename`,{name:"Anna"});
+    const ignore=async(id)=>post("/photos/faces/edit",{action:"ignore",face_id:String(id)});
+    await ignore(g.faces[0].id);await ignore(g.faces[1].id);await ignore(h.faces[0].id);
+    const calls=inferenceCalls;
+    const page=await context.newPage(),errors=[];page.on("pageerror",e=>errors.push(e.message));
+    await page.goto(baseURL+"/photos");await page.locator('[data-photo-path="g.png"] .photo-card-button').click();
+    const lightbox=page.locator("[data-photo-lightbox]");
+    await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    const restore=lightbox.getByRole("button",{name:"Alle ignorierten Gesichter dieses Fotos wiederherstellen",exact:true});
+    const refresh=lightbox.getByRole("button",{name:"Gesichter aktualisieren",exact:true});
+    await expect(restore).toBeEnabled();await expect(lightbox.locator(".photo-info-face")).toHaveCount(1);
+    const originalImage=await lightbox.locator("[data-photo-image]").elementHandle();
+    await lightbox.locator(".photo-face-actions").screenshot({path:"/tmp/bearstack-photo-unignore-button.png"});
+    await restore.click();
+    await expect(lightbox.locator("[data-photo-face-status]")).toHaveText("2 Gesichter wiederhergestellt.");
+    await expect(lightbox.locator(".photo-info-face")).toHaveCount(3);await expect(restore).toBeDisabled();
+    expect(await originalImage.evaluate(img=>img.isConnected)).toBe(true);
+    expect((await get("g.png")).faces[0]).toMatchObject({ignored:false,name:"Anna",person_id:g.faces[0].person_id});
+    expect((await get("h.png")).faces[0].ignored).toBe(true);
+    // A late ignore cannot be silently included in the previous snapshot.
+    await ignore(g.faces[0].id);await refresh.click();await expect(restore).toBeEnabled();
+    await ignore(g.faces[1].id);
+    await restore.click();await expect(lightbox.locator("[data-photo-face-status]")).toContainText("inzwischen geändert");
+    await expect(restore).toBeDisabled();
+    expect((await get("g.png")).faces.filter(f=>f.ignored)).toHaveLength(2);
+    await refresh.click();await expect(restore).toBeEnabled();
+    // The server committed, but the response was lost. Refresh never repeats POST.
+    let writes=0;
+    await page.route("**/photos/faces/unignore",async route=>{writes++;await route.fetch();await route.abort();});
+    await restore.click();await expect(lightbox.locator("[data-photo-face-status]")).toContainText("zuerst die Gesichter aktualisieren");
+    await expect(restore).toBeDisabled();await expect(refresh).toBeEnabled();
+    await refresh.click();await expect(lightbox.locator(".photo-info-face")).toHaveCount(3);
+    await expect(restore).toBeDisabled();expect(writes).toBe(1);
+    await page.unroute("**/photos/faces/unignore");
+    // Late responses belong to their original photo, never the next one.
+    await ignore(g.faces[0].id);await refresh.click();await expect(restore).toBeEnabled();
+    let release;const blocked=new Promise(resolve=>{release=resolve;});let posted=false;
+    await page.route("**/photos/faces/unignore",async route=>{const response=await route.fetch();posted=true;await blocked;await route.fulfill({response}).catch(()=>{});});
+    await restore.click();await expect.poll(()=>posted).toBe(true);
+    await lightbox.getByRole("button",{name:"Foto schließen",exact:true}).press("Enter");
+    await page.locator('[data-photo-path="h.png"] .photo-card-button').click();
+    if(!await lightbox.locator("[data-photo-face-tools]").isVisible()) await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await expect(restore).toBeEnabled();release();
+    await expect(lightbox.locator(".photo-info-face")).toHaveCount(2);
+    expect((await get("h.png")).faces[0].ignored).toBe(true);expect(inferenceCalls).toBe(calls);
+    expect(errors).toEqual([]);
+  } finally {detectionsPerPhoto=1;await context.close();}
 });

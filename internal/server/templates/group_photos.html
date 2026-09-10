@@ -30,9 +30,18 @@
 <p data-group-empty {{if .GroupPhotos.Photo}}hidden{{end}}>Keine weiteren passenden Gruppenbilder. Mit „Durchlauf starten“ werden auch übersprungene Fotos erneut berücksichtigt.</p>
 <button type="button" class="secondary-button" data-group-retry hidden>Ansicht erneut laden</button>
 </section>
+<nav class="group-photo-strip" data-group-strip aria-label="Gruppenbilder-Warteschlange" hidden>
+<div class="group-strip-heading"><strong>Bilderleiste</strong><span role="status" data-group-strip-status></span><button type="button" class="secondary-button" data-group-strip-current>Aktuelles Foto</button><button type="button" class="secondary-button" data-group-strip-retry hidden>Leiste erneut laden</button></div>
+<div class="group-strip-navigation">
+<button type="button" class="secondary-button" data-group-strip-previous aria-label="Frühere Gruppenbilder">‹</button>
+<div class="group-strip-rail" data-group-strip-rail tabindex="0" role="region" aria-label="Gruppenbilder horizontal durchsuchen"></div>
+<button type="button" class="secondary-button" data-group-strip-next aria-label="Spätere Gruppenbilder">›</button>
+</div>
+</nav>
 {{template "person_edit_dialog" .}}
 <noscript><p>Für Gesichtsmarkierungen, Vergrößern und den Benenn-Dialog wird JavaScript benötigt. Überspringen und Ignorieren funktionieren auch ohne JavaScript.</p></noscript>
 <script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
+<script src="{{assetURL "/static/app-group-strip.js"}}" defer></script>
 <script src="{{assetURL "/static/app-group-photos.js"}}" defer></script>
 {{template "foot" .}}
 {{end}}

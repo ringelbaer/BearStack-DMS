@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
 	"bearstack/internal/facerec"
+	"bearstack/internal/photos"
 )
 
 func (s *Server) acquireFaceAnalysis(ctx context.Context) (func(), error) {
@@ -65,4 +67,23 @@ func (s *Server) handlePhotoFaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = writeJSON(w, http.StatusOK, map[string]any{"photo": photo})
+}
+
+func (s *Server) handleUnignorePhotoFaces(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
+	if !s.parseFaceForm(w, r) {
+		return
+	}
+	path := r.PostForm.Get("path")
+	setAuditTarget(r, path)
+	count, err := s.photos.UnignorePhotoFaces(r.Context(), path, r.PostForm.Get("revision"))
+	if errors.Is(err, photos.ErrGroupPhotoChanged) {
+		_ = writeJSON(w, http.StatusConflict, map[string]string{"error": "Das Foto wurde inzwischen geändert. Bitte die Gesichter aktualisieren und erneut prüfen.", "code": "conflict"})
+		return
+	}
+	if err != nil {
+		s.labelError(w, r, err)
+		return
+	}
+	_ = writeJSON(w, http.StatusOK, map[string]any{"ok": true, "restored": count})
 }

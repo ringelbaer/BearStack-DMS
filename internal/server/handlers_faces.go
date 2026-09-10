@@ -193,16 +193,24 @@ func (s *Server) handleFacesEdit(w http.ResponseWriter, r *http.Request) {
 		target, err = faceID(raw)
 	}
 	action := r.FormValue("action")
-	if action != "move" && action != "ignore" {
+	if action != "move" && action != "ignore" && action != "restore" {
 		err = errors.New("ungültige Aktion")
 	}
 	if r.FormValue("ignored") == "1" && action == "move" && target == 0 && strings.TrimSpace(r.FormValue("name")) == "" {
 		err = errors.New("Bitte einen Namen eingeben")
 	}
 	if err == nil {
-		err = s.photos.EditFaces(r.Context(), ids, target, action == "ignore", r.FormValue("name"))
+		if action == "restore" {
+			err = s.photos.RestoreFaces(r.Context(), ids, target, r.FormValue("name"))
+		} else {
+			err = s.photos.EditFaces(r.Context(), ids, target, action == "ignore", r.FormValue("name"))
+		}
 	}
 	if err != nil {
+		if errors.Is(err, photos.ErrLabelConflict) {
+			s.labelError(w, r, err)
+			return
+		}
 		s.faceError(w, r, err)
 		return
 	}

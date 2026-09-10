@@ -11,13 +11,15 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
 data class Session(val instance: String, val dataset: String, val account: String, val upper: Long,
-    val namedPeople: Boolean = false, val namedSearch: Boolean = false, val mergeSuggestions: Boolean = false) {
+    val namedPeople: Boolean = false, val namedSearch: Boolean = false, val mergeSuggestions: Boolean = false, val mergeNaming: Boolean = false) {
     val scope: String get() = JSONObject().put("instance", instance).put("dataset", dataset).put("account", account).toString()
 }
 data class Person(val id: Long, val name: String, val revision: Long, val count: Long, val faceId: Long,
     val faces: List<Long> = emptyList(), val offset: Int = 0, val facePaths: Map<Long,String> = emptyMap(),
     val faceBounds: Map<Long,FaceBounds> = emptyMap(), val favorites: Set<Long> = emptySet(),
     val originalKeys: Map<Long,String> = emptyMap())
+data class FaceMatch(val id: Long, val name: String, val count: Long, val faceId: Long)
+
 data class Candidates(val people: List<Person>, val next: Long, val hasNext: Boolean)
 data class MergeSuggestion(val id: Long, val source: Person, val target: Person)
 data class Receipt(val operation: String, val action: String, val source: Long, val target: Long, val newId: Long,
@@ -42,6 +44,7 @@ interface LabelingService {
     suspend fun personFaces(id: Long, offset: Int, after: Long): Person = person(id,offset)
     suspend fun person(id: Long, offset: Int = 0): Person
     suspend fun suggestions(q: String, exact: Boolean = false): List<Person>
+    suspend fun faceMatches(face: Long): List<FaceMatch> = throw ApiFailure(404,"not_found",UiText(R.string.people_face_search_unavailable))
     suspend fun nextMergeSuggestion(): MergeSuggestion? = throw ApiFailure(404,"not_found",UiText(R.string.error_merge_version))
     suspend fun action(id: Long, body: String): Receipt
     suspend fun receipt(operation: String, dataset: String): Receipt
@@ -72,7 +75,7 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
     override suspend fun session(): Session {
         val o = json("session")
         requireMessage(o.getInt("protocol") == 1 && o.getBoolean("can_manage"),R.string.error_people_protocol)
-        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"))
+        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"),o.optBoolean("merge_naming"))
     }
     override suspend fun candidates(after: Long, upper: Long): Candidates {
         val o = json("candidates", mapOf("after" to "$after", "upper" to "$upper"))
@@ -90,6 +93,22 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
         mapOf("offset" to "$offset","after_face" to "$after","limit" to "40")))
     override suspend fun person(id: Long, offset: Int): Person = person(json("people/$id",mapOf("offset" to "$offset")))
     override suspend fun suggestions(q: String, exact: Boolean): List<Person> = people(json("suggestions",mapOf("q" to q,"exact" to if(exact) "1" else "0")))
+    override suspend fun faceMatches(face: Long): List<FaceMatch> {
+        require(face > 0)
+        val request = Request.Builder().url(server.resolve("photos/faces/$face/suggestions")!!)
+            .header("Accept", "application/json").build()
+        val result = client.json(request, 64 * 1024L) { status, _ -> when(status) {
+            401 -> UiText(R.string.error_auth)
+            403 -> UiText(R.string.error_people_permission)
+            404 -> UiText(R.string.people_face_search_unavailable)
+            409 -> UiText(R.string.error_group_changed)
+            else -> UiText(R.string.error_server,status)
+        } }.getJSONArray("people")
+        requireMessage(result.length() <= 20, R.string.error_response_invalid)
+        return List(result.length()) { i -> result.getJSONObject(i).let {
+            FaceMatch(it.getLong("id"), it.getString("name"), it.getLong("count"), it.getLong("face_id"))
+        } }.onEach { requireMessage(it.id > 0 && it.faceId > 0 && it.name.isNotBlank() && it.count > 0, R.string.error_response_invalid) }
+    }
     override suspend fun nextMergeSuggestion(): MergeSuggestion? = json("merge-suggestions/next").optJSONObject("suggestion")?.let {
         MergeSuggestion(it.getLong("id"),person(it.getJSONObject("source")),person(it.getJSONObject("target")))
     }

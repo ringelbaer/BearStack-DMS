@@ -293,12 +293,29 @@ internal fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Bool
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) { focus.requestFocus(); keyboard?.show() }
-    AlertDialog(onDismissRequest=vm::closeNaming,title={Text(if(state.duplicates.isNotEmpty()) text(R.string.people_name_exists) else if(state.directory) text(R.string.people_rename) else text(R.string.people_name_person))},
+    AlertDialog(onDismissRequest=vm::closeNaming,title={Text(if(state.duplicates.isNotEmpty()) text(R.string.people_name_exists) else if(state.mergeReview) text(R.string.people_merge_name) else if(state.directory) text(R.string.people_rename) else text(R.string.people_name_person))},
         properties=DialogProperties(usePlatformDefaultWidth=false),modifier=Modifier.fillMaxWidth().padding(16.dp).imePadding(),
         text={ Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(state.name,vm::nameChanged,label={Text(text(R.string.people_name))},singleLine=true,enabled=enabled,
+                trailingIcon={if(!state.directory) IconButton(onClick={keyboard?.hide();vm.findFaceMatches()},enabled=enabled && !state.faceSearching) {
+                    Icon(painterResource(R.drawable.ic_search),text(R.string.people_face_search),modifier=Modifier.size(24.dp))
+                }},
                 modifier=Modifier.fillMaxWidth().focusRequester(focus),keyboardOptions=KeyboardOptions(imeAction=ImeAction.Done),
                 keyboardActions=KeyboardActions(onDone={vm.submitName()}))
+            if(state.faceSearching) {
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+                Text(text(R.string.people_face_search_running),Modifier.semantics {liveRegion=LiveRegionMode.Polite})
+            } else if(state.faceSearchDone && state.faceMatches.isEmpty()) {
+                Text(text(R.string.people_face_search_empty),Modifier.semantics {liveRegion=LiveRegionMode.Polite})
+            }
+            state.faceMatches.forEach { match ->
+                Surface(onClick={vm.assignFaceMatch(match)},enabled=enabled,shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surfaceContainer) {
+                    Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                        vm.images?.let { AsyncImage(vm.image(match.faceId),null,imageLoader=it,modifier=Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))) }
+                        Column(Modifier.weight(1f)) { Text(match.name);Text(text(R.string.people_face_count_id,text.faces(match.count),match.id),style=MaterialTheme.typography.bodySmall) }
+                    }
+                }
+            }
             if(state.duplicates.isNotEmpty()) Text(if(state.directory) text(R.string.people_duplicate_rename) else text(R.string.people_duplicate_assign))
             (if(state.directory) emptyList() else state.duplicates.ifEmpty { state.suggestions }).forEach { person ->
                 Surface(onClick={vm.assign(person)},enabled=enabled,shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surfaceContainer) {

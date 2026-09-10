@@ -45,7 +45,7 @@ func TestIgnoredFacesFilterAndNamingHTTP(t *testing.T) {
 		if response.Code != 200 || !strings.Contains(html, "Ignorierte Gesichter") || !strings.Contains(html, fmt.Sprintf("/photos/faces/%d/thumbnail", id)) {
 			t.Fatalf("%s ignored view: %d %s", user, response.Code, html)
 		}
-		if strings.Contains(html, "Benennen und wiederherstellen") != (user != "reader") {
+		if strings.Contains(html, ">Wiederherstellen</button>") != (user != "reader") || strings.Contains(html, "data-ignored-edit") != (user != "reader") || strings.Contains(html, "data-person-dialog aria") != (user != "reader") {
 			t.Fatalf("%s restore permissions", user)
 		}
 		if !strings.Contains(html, "Seite 1 von 1") {
@@ -91,4 +91,22 @@ func TestIgnoredFacesFilterAndNamingHTTP(t *testing.T) {
 	if err != nil || restored.Ignored || restored.Name != "Petra" {
 		t.Fatalf("restore: %+v %v", restored, err)
 	}
+	if err := s.photos.EditFaces(ctx, []int64{id}, 0, true, ""); err != nil {
+		t.Fatal(err)
+	}
+	restore := url.Values{"face_id": {fmt.Sprint(id)}, "action": {"restore"}, "ignored": {"1"}, "target": {"0"}}
+	if denied := faceRequest(s, "POST", "/photos/faces/edit", "reader", restore); denied.Code != 403 {
+		t.Fatalf("reader restore: %d", denied.Code)
+	}
+	response = faceRequest(s, "POST", "/photos/faces/edit", "editor", restore)
+	restored, err = s.photos.Face(ctx, id)
+	if err != nil || response.Code != 200 || restored.Ignored || restored.Name != "" {
+		t.Fatalf("unnamed restore: %d %+v %v", response.Code, restored, err)
+	}
+	replay := faceRequest(s, "POST", "/photos/faces/edit", "editor", restore)
+	after, _ := s.photos.Face(ctx, id)
+	if replay.Code != 409 || after.PersonID != restored.PersonID {
+		t.Fatalf("stale restore moved active face: %d %+v", replay.Code, after)
+	}
+
 }

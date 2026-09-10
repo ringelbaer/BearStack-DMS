@@ -100,4 +100,10 @@
         <item quantity="one">%1$d group</item>
         <item quantity="other">%1$d groups</item>
     </plurals>
+    <string name="people_merge_name">Merge and name/assign</string>
+    <string name="people_merge_name_help">When both groups are unnamed, the pencil opens name search. Saving merges both groups under a new name or into a selected person. Cancel leaves both groups unchanged.</string>
+    <string name="people_face_search">Find similar named people</string>
+    <string name="people_face_search_running">Comparing face with named people …</string>
+    <string name="people_face_search_empty">No similar named people found.</string>
+    <string name="people_face_search_unavailable">Face search unavailable. Update the server or reopen the person.</string>
 </resources>

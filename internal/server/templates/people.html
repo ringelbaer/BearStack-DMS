@@ -1,6 +1,8 @@
 {{define "people.html"}}
 {{template "head" .}}
-<section class="page-head people-page-head"><div><h1>{{if .People.PersonID}}{{if .People.Name}}{{.People.Name}}{{else}}Unbenannt{{end}}{{else}}Personen{{end}}</h1><p>Automatisch erkannte Gesichter aus deinen Fotos.</p></div><div class="page-actions"><a class="secondary-button" href="/photos">Fotos</a>{{if and .Auth.CanPhotosEdit (not .People.PersonID)}}<a class="secondary-button" href="/photos/people/groups">Gruppenbilder</a><a class="secondary-button" href="/photos/people/merge-suggestions">Ähnliche Gruppen</a>{{end}}{{if .People.PersonID}}<a class="secondary-button" href="/photos/people">Alle Personen</a>{{end}}{{if .Auth.CanPhotosManage}}<a class="secondary-button" href="/settings/photos/faces">Gesichtserkennung</a>{{end}}</div></section>
+{{if .People.PersonID}}
+<section class="page-head person-detail-head"><div><h1 data-detail-title>{{if .People.Name}}{{.People.Name}}{{else}}Unbenannt{{end}}</h1><p data-detail-count>{{len .People.Faces}} {{if eq (len .People.Faces) 1}}Gesicht{{else}}Gesichter{{end}}{{if gt .People.TotalPages 1}} auf dieser Seite · Seite {{.People.Page}} von {{.People.TotalPages}}{{end}}</p></div><div class="page-actions"><a class="secondary-button" href="/photos/people">Alle Personen</a>{{if .Auth.CanPhotosEdit}}<button type="button" data-detail-edit-group hidden>{{template "person_pencil_icon"}} Person benennen / zuordnen</button>{{end}}<details class="person-detail-more"><summary aria-label="Weitere Personenaktionen" title="Weitere Personenaktionen">…</summary><div><a href="/photos">Fotos</a>{{if .Auth.CanPhotosEdit}}<a href="/photos/people/groups">Gruppenbilder</a><a href="/photos/people/merge-suggestions">Ähnliche Gruppen</a>{{end}}{{if .Auth.CanPhotosManage}}<a href="/settings/photos/faces">Gesichtserkennung</a>{{end}}</div></details></div></section>
+{{else}}<section class="page-head people-page-head"><div><h1>{{if .People.PersonID}}{{if .People.Name}}{{.People.Name}}{{else}}Unbenannt{{end}}{{else}}Personen{{end}}</h1><p>Automatisch erkannte Gesichter aus deinen Fotos.</p></div><div class="page-actions"><a class="secondary-button" href="/photos">Fotos</a>{{if and .Auth.CanPhotosEdit (not .People.PersonID)}}<a class="secondary-button" href="/photos/people/groups">Gruppenbilder</a><a class="secondary-button" href="/photos/people/merge-suggestions">Ähnliche Gruppen</a>{{end}}{{if .People.PersonID}}<a class="secondary-button" href="/photos/people">Alle Personen</a>{{end}}{{if .Auth.CanPhotosManage}}<a class="secondary-button" href="/settings/photos/faces">Gesichtserkennung</a>{{end}}</div></section>{{end}}
 {{if not .People.PersonID}}
 <div data-people-view data-people-user="{{.Auth.Username}}" data-size="s" data-show-count="true" data-show-folders="false">
 
@@ -12,22 +14,24 @@
 <label>Thumbnailgröße <select data-display-size><option value="s">S</option><option value="m">M</option><option value="l">L</option></select></label>
 </div></details></div></form>
 {{if .People.IgnoredOnly}}
-<p>Beim Benennen wird das Gesicht wieder sichtbar und einer neuen Person mit diesem Namen zugeordnet.</p>
-<div class="people-grid">
+<p>„Wiederherstellen“: unbenannt zurückholen. Stift: benennen oder zuordnen und wiederherstellen.</p>
+<p role="status" data-ignored-status></p><button type="button" class="secondary-button" data-ignored-retry hidden>Ansicht erneut laden</button>
+<div class="people-grid" data-ignored-faces>
 {{range .People.Faces}}
-<section class="person-card">
+<section class="person-card ignored-face-card" data-ignored-face="{{.ID}}" data-person-id="{{.PersonID}}" data-person-name="{{.Name}}" data-face-id="{{.ID}}" data-display-path="{{photoDisplayPath .Path}}" data-x="{{.X}}" data-y="{{.Y}}" data-width="{{.Width}}" data-height="{{.Height}}">
 <img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Ignoriertes Gesicht">
-<span>{{.Path}}</span>
+<span class="ignored-face-path" title="{{photoDisplayPath .Path}}">{{photoFilename .Path}}</span>
 {{if $.Auth.CanPhotosEdit}}
-<form method="post" action="/photos/faces/edit" class="ignored-face-form">
-<input type="hidden" name="face_id" value="{{.ID}}"><input type="hidden" name="target" value="0"><input type="hidden" name="action" value="move">
+<div class="ignored-face-actions"><form method="post" action="/photos/faces/edit" class="ignored-face-form">
+<input type="hidden" name="face_id" value="{{.ID}}"><input type="hidden" name="target" value="0"><input type="hidden" name="action" value="restore"><input type="hidden" name="name" value="">
 <input type="hidden" name="ignored" value="1"><input type="hidden" name="q" value="{{$.People.Query}}"><input type="hidden" name="page" value="{{$.People.Page}}">{{if $.People.KnownOnly}}<input type="hidden" name="known" value="1">{{end}}
-<label>Name <input name="name" value="{{.Name}}" maxlength="200" required></label><button>Benennen und wiederherstellen</button>
-</form>
+<button>Wiederherstellen</button>
+</form><button type="button" class="secondary-button" data-ignored-edit aria-label="Gesicht benennen und wiederherstellen" title="Benennen / zuordnen und wiederherstellen" hidden>{{template "person_pencil_icon"}}</button></div>
 {{else}}<strong>{{if .Name}}{{.Name}}{{else}}Unbenannt{{end}}</strong>{{end}}
 </section>
 {{else}}<p>Keine ignorierten Gesichter für diesen Filter gefunden.</p>{{end}}
 </div>
+{{if .Auth.CanPhotosEdit}}{{template "person_edit_dialog" .}}{{end}}
 {{else}}
 <p role="status" data-people-status></p>
 <div class="people-grid" data-people-overview data-unknown-only="{{.People.UnknownOnly}}" data-can-ignore="{{if .Auth.CanPhotosEdit}}true{{else}}false{{end}}">
@@ -45,35 +49,41 @@
 {{end}}
 </div>
 {{else}}
+<section class="person-detail" data-person-detail data-person-id="{{.People.PersonID}}" data-person-name="{{.People.Name}}" data-person-user="{{.Auth.Username}}" data-size="s" data-show-paths="false">
+<div class="person-detail-toolbar">
+{{if .Auth.CanPhotosEdit}}<button type="button" class="secondary-button" data-detail-select-all hidden>Alle auf dieser Seite auswählen</button>{{end}}
+<details class="people-display-menu" data-detail-display hidden><summary aria-label="Anzeigeeinstellungen" title="Anzeigeeinstellungen">Anzeige</summary><div class="people-display-options"><label>Thumbnailgröße <select data-detail-size aria-label="Thumbnailgröße"><option value="s">S</option><option value="m">M</option><option value="l">L</option></select></label><label><input type="checkbox" data-detail-paths> Ordnerpfad anzeigen</label></div></details>
+<details class="person-detail-help"><summary>Hilfe</summary><p>Ein Foto anklicken, um es zu öffnen. Der Stift bei einem Gesicht bearbeitet nur dieses Gesicht; „Person benennen / zuordnen“ bearbeitet die gesamte Gruppe. Markiere mehrere Gesichter für eine gemeinsame Aktion. Ein leerer Name im Auswahl-Dialog trennt sie als neue unbenannte Gruppe ab.</p><p>Mit einem Stern markierte Gesichter werden immer zum Gesichtsabgleich verwendet. Weitere Vergleichsbilder ergänzen wir möglichst aus verschiedenen Galerieordnern bis zur eingestellten Anzahl.</p></details>
+</div>
+<p role="status" data-face-favorite-status data-detail-status></p>
+<button type="button" class="secondary-button" data-detail-retry hidden>Ansicht erneut laden</button>
 {{if .Auth.CanPhotosEdit}}
-<section class="people-management"><form method="post" action="/photos/people/{{.People.PersonID}}/rename" class="filters people-form" data-person-picker data-person-create data-person-exclude="{{.People.PersonID}}">
-<div class="person-picker-field">
-  <label for="merge-person-search">Name</label>
-  <input id="merge-person-search" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="merge-person-options" autocomplete="off" data-person-search name="name" maxlength="200" value="{{.People.Name}}" placeholder="Person suchen oder neuen Namen eingeben" aria-describedby="merge-person-hint">
-  <input type="hidden" name="target" data-person-target>
-  <span id="merge-person-hint" class="person-picker-hint">Vorhandene Person auswählen zum Zusammenführen oder einen neuen Namen anlegen.</span>
-  <div class="person-picker-popup" data-person-popup hidden><div id="merge-person-options" role="listbox" aria-label="Zielpersonen" data-person-options></div><p role="status" data-person-feedback></p></div>
-</div>
-<button data-person-submit>Benennen</button></form></section>
-<form method="post" action="/photos/faces/edit" data-person-picker>
+<noscript><form method="post" action="/photos/people/{{.People.PersonID}}/rename" class="filters"><label>Name <input name="name" value="{{.People.Name}}" maxlength="200"></label><button>Benennen</button></form></noscript>
+<form method="post" action="/photos/faces/edit" id="person-face-form">
 <input type="hidden" name="person_id" value="{{.People.PersonID}}"><input type="hidden" name="page" value="{{.People.Page}}">
-<div class="filters people-form">
-<div class="person-picker-field">
-  <label for="move-person-search">Zielperson suchen</label>
-  <input id="move-person-search" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="move-person-options" aria-describedby="move-person-hint" autocomplete="off" data-person-search placeholder="Name eingeben">
-  <input type="hidden" name="target" value="0" data-person-target>
-  <span id="move-person-hint" class="person-picker-hint">Leer lassen für eine neue Person.</span>
-  <div class="person-picker-popup" data-person-popup hidden><div id="move-person-options" role="listbox" aria-label="Zielpersonen" data-person-options></div><p role="status" data-person-feedback></p></div>
+<noscript><div class="filters"><label>Name der neuen Person <input name="name" maxlength="200"></label><label>Zielpersonen-ID <input name="target" type="number" min="0" value="0"></label><button name="action" value="move">Auswahl verschieben</button><button name="action" value="ignore">Auswahl ignorieren</button></div></noscript>
+{{end}}
+<div class="people-grid person-detail-grid" data-photo-gallery>
+{{range .People.Faces}}<article class="person-card person-face-card" data-detail-face="{{.ID}}" data-person-id="{{.PersonID}}" data-person-name="{{.Name}}" data-face-id="{{.ID}}" data-display-path="{{photoDisplayPath .Path}}" data-x="{{.X}}" data-y="{{.Y}}" data-width="{{.Width}}" data-height="{{.Height}}">
+<button type="button" class="person-photo-button" data-photo-item data-photo-path="{{.Path}}" data-photo-title="{{photoDisplayPath .Path}}" data-photo-type="image" aria-label="Foto öffnen: {{.Path}}" title="{{photoDisplayPath .Path}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Gesicht"><span>{{photoFilename .Path}}</span></button>
+<span class="person-detail-path" title="{{photoDisplayPath .Path}}">{{photoDisplayPath .Path}}</span>
+<div class="person-face-actions">
+{{if $.Auth.CanPhotosEdit}}
+<label class="detail-face-select" title="Gesicht auswählen"><input type="checkbox" name="face_id" value="{{.ID}}" aria-label="Auswählen"></label>
+<button type="submit" class="face-favorite-button" data-detail-favorite data-face-favorite="{{.ID}}" data-person-id="{{.PersonID}}" formaction="/photos/faces/{{.ID}}/favorite" formmethod="post" name="favorite" value="{{if .Favorite}}0{{else}}1{{end}}" formnovalidate aria-pressed="{{.Favorite}}" aria-label="{{if .Favorite}}Favorisierung aufheben{{else}}Als Vergleichsgesicht favorisieren{{end}}" title="{{if .Favorite}}Favorisierung aufheben{{else}}Als Vergleichsgesicht favorisieren{{end}}">{{template "face_favorite_icon" .}}</button>
+<button type="button" data-detail-ignore-face aria-label="Dieses Gesicht ignorieren" title="Dieses Gesicht ignorieren" hidden>×</button>
+<button type="button" data-detail-edit-face aria-label="Dieses Gesicht benennen oder zuordnen" title="Dieses Gesicht benennen / zuordnen" hidden>{{template "person_pencil_icon" .}}</button>
+{{else if .Favorite}}<span class="face-favorite-button is-favorite" role="img" aria-label="Favorisiertes Vergleichsgesicht" title="Favorisiertes Vergleichsgesicht">{{template "face_favorite_icon" .}}</span>{{end}}
+{{if .Manual}}<span class="person-detail-manual" title="Manuell zugeordnet" aria-label="Manuell zugeordnet">✓</span>{{end}}
 </div>
-<label>Name der neuen Person <input name="name" maxlength="200"></label><button name="action" value="move">Auswahl verschieben</button><button name="action" value="ignore" formnovalidate>Auswahl ignorieren</button></div>
+</article>{{else}}<p>Keine aktiven Gesichter in dieser Gruppe.</p>{{end}}
+</div>
+{{if .Auth.CanPhotosEdit}}</form>
+<div class="person-detail-selection" data-detail-selection hidden><strong data-detail-selection-count></strong><button type="button" data-detail-edit-selection>{{template "person_pencil_icon"}} Auswahl benennen / zuordnen</button><button type="button" class="secondary-button" data-detail-ignore-selection>Auswahl ignorieren</button><button type="button" class="secondary-button" data-detail-clear aria-label="Auswahl aufheben" title="Auswahl aufheben">×</button></div>
 {{end}}
-<p>Mit einem Stern markierte Gesichter werden immer zum Gesichtsabgleich verwendet. Weitere Vergleichsbilder ergänzen wir möglichst aus verschiedenen Galerieordnern bis zur eingestellten Anzahl.</p>
-<p role="status" data-face-favorite-status></p>
-<div class="people-grid" data-photo-gallery>{{range .People.Faces}}<div class="person-card person-face-card">
-{{if $.Auth.CanPhotosEdit}}<button type="submit" class="face-favorite-button" data-face-favorite="{{.ID}}" data-person-id="{{.PersonID}}" formaction="/photos/faces/{{.ID}}/favorite" formmethod="post" name="favorite" value="{{if .Favorite}}0{{else}}1{{end}}" formnovalidate aria-pressed="{{.Favorite}}" aria-label="{{if .Favorite}}Favorisierung aufheben{{else}}Als Vergleichsgesicht favorisieren{{end}}" title="{{if .Favorite}}Favorisierung aufheben{{else}}Als Vergleichsgesicht favorisieren{{end}}">{{template "face_favorite_icon" .}}</button>{{else if .Favorite}}<span class="face-favorite-button is-favorite" role="img" aria-label="Favorisiertes Vergleichsgesicht" title="Favorisiertes Vergleichsgesicht">{{template "face_favorite_icon" .}}</span>{{end}}{{if $.Auth.CanPhotosEdit}}<label><input type="checkbox" name="face_id" value="{{.ID}}" aria-label="Auswählen"></label>{{end}}<button type="button" class="person-photo-button" data-photo-item data-photo-path="{{.Path}}" data-photo-title="{{.Path}}" data-photo-type="image" aria-label="Foto öffnen: {{.Path}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.ID}}/thumbnail" alt="Gesicht"><span>{{.Path}}</span></button>{{if .Manual}}<span>Manuell zugeordnet</span>{{end}}</div>{{end}}</div>
-{{if .Auth.CanPhotosEdit}}</form>{{end}}
+</section>
 {{end}}
-<nav class="pagination people-pagination" aria-label="Personenseiten" data-people-page="{{.People.Page}}" data-people-user="{{.Auth.Username}}">
+<nav class="pagination people-pagination" aria-label="Personenseiten" {{if and .People.PersonID (eq .People.TotalPages 1)}}hidden{{end}} data-people-page="{{.People.Page}}" data-people-user="{{.Auth.Username}}">
   {{if .People.HasPrev}}<a class="secondary-button" rel="first" href="?page=1&amp;q={{queryEscape .People.Query}}{{if .People.KnownOnly}}&amp;known=1{{end}}{{if .People.UnknownOnly}}&amp;unknown=1{{end}}{{if .People.IgnoredOnly}}&amp;ignored=1{{end}}">Erste Seite</a>{{else if gt .People.TotalPages 1}}<span class="secondary-button" aria-disabled="true">Erste Seite</span>{{end}}
   {{if .People.HasPrev}}<a class="secondary-button" rel="prev" href="?page={{prevPage .People.Page}}&amp;q={{queryEscape .People.Query}}{{if .People.KnownOnly}}&amp;known=1{{end}}{{if .People.UnknownOnly}}&amp;unknown=1{{end}}{{if .People.IgnoredOnly}}&amp;ignored=1{{end}}">Zurück</a>{{end}}
   <span class="people-pagination-current" aria-current="page">Seite {{.People.Page}} von {{.People.TotalPages}}</span>
@@ -83,6 +93,8 @@
 {{if .People.PersonID}}<div class="photo-module" data-photo-module data-photo-mode="view">{{template "photo_lightbox" .}}</div>{{end}}
 {{if not .People.PersonID}}<script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>{{end}}
 <script src="{{assetURL "/static/app-people.js"}}" defer></script>
+{{if and .People.IgnoredOnly .Auth.CanPhotosEdit}}<script src="{{assetURL "/static/app-ignored-faces.js"}}" defer></script>{{end}}
+{{if .People.PersonID}}<script src="{{assetURL "/static/app-person-detail.js"}}" defer></script>{{end}}
 {{template "foot" .}}
 {{end}}
 

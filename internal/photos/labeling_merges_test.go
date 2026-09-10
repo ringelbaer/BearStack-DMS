@@ -82,11 +82,14 @@ func TestLabelMergeDecisionAndReplay(t *testing.T) {
 
 func TestLabelMergeConflictsAndRollback(t *testing.T) {
 	ctx := context.Background()
-	for _, action := range []string{"accept_merge", "reject_merge"} {
+	for _, action := range []string{"accept_merge", "reject_merge", "name_merge"} {
 		for _, scenario := range []string{"source revision", "target revision", "suggestion", "dataset", "missing suggestion", "same group", "private source", "private target", "rollback"} {
 			t.Run(action+"/"+scenario, func(t *testing.T) {
-				l, s, a := labelMergeFixture(t, true)
+				l, s, a := labelMergeFixture(t, action != "name_merge")
 				a.Action = action
+				if action == "name_merge" {
+					a.Name = "Ada"
+				}
 				want := ErrLabelConflict
 				switch scenario {
 				case "source revision":

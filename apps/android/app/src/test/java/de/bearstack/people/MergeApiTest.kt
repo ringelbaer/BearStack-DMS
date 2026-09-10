@@ -38,6 +38,18 @@ class MergeApiTest {
         } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
     }
 
+    @Test fun mergeNamingCapabilityRequiresExplicitServerSupport() = runBlocking {
+        for(supported in listOf(false,true)) {
+            val body="""{"protocol":1,"can_manage":true,"instance":"i","dataset":"d","account":"a","upper_id":2,"merge_suggestions":true${if(supported) ",\"merge_naming\":true" else ""}}"""
+            val client=OkHttpClient.Builder().addInterceptor {chain ->
+                Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                    .body(body.toResponseBody("application/json".toMediaType())).build()
+            }.build()
+            try {assertEquals(supported,LabelingApi(client,"https://example.test/").session().mergeNaming)}
+            finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+        }
+    }
+
     @Test fun conflictRemainsTypedForFreshDecision() = runBlocking {
         val client=OkHttpClient.Builder().addInterceptor {chain ->
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(409).message("Conflict")

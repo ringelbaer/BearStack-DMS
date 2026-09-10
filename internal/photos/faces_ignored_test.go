@@ -2,6 +2,7 @@ package photos
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -121,5 +122,46 @@ func TestIgnoredFacesNeverMatchButRemainRestorable(t *testing.T) {
 	}
 	if err := l.index.db.QueryRow(`SELECT count(*) FROM photo_face_references WHERE face_id=?`, ignored.ID).Scan(&references); err != nil || references != 1 {
 		t.Fatalf("restored reference unavailable: %d %v", references, err)
+	}
+}
+
+func TestRestoreIgnoredFacesIsAtomicAndClearsTheOldName(t *testing.T) {
+	ctx := context.Background()
+	l := faceLibrary(t, "a.jpg", "b.jpg")
+	finishFace(t, l, 0)
+	finishFace(t, l, 0)
+	a, _ := l.AutomaticFaces(ctx, "a.jpg")
+	b, _ := l.AutomaticFaces(ctx, "b.jpg")
+	first, second := a[0], b[0]
+	if err := l.RenamePerson(ctx, first.PersonID, "Altname"); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.EditFaces(ctx, []int64{first.ID, second.ID}, 0, true, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.RestoreFaces(ctx, []int64{first.ID}, 0, ""); err != nil {
+		t.Fatal(err)
+	}
+	restored, _ := l.Face(ctx, first.ID)
+	ignored, _ := l.Face(ctx, second.ID)
+	if restored.Ignored || restored.Name != "" || restored.PersonID == first.PersonID || !ignored.Ignored || ignored.Name != "Altname" {
+		t.Fatalf("wrong restore scope: %+v %+v", restored, ignored)
+	}
+	if err := l.RestoreFaces(ctx, []int64{second.ID, first.ID}, 0, "Wrong"); !errors.Is(err, ErrLabelConflict) {
+		t.Fatalf("stale batch: %v", err)
+	}
+	unchanged, _ := l.Face(ctx, second.ID)
+	if !unchanged.Ignored || unchanged.PersonID != ignored.PersonID {
+		t.Fatalf("partial batch restored: %+v", unchanged)
+	}
+	if err := l.RenamePerson(ctx, restored.PersonID, "Ziel"); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.RestoreFaces(ctx, []int64{second.ID}, restored.PersonID, ""); err != nil {
+		t.Fatal(err)
+	}
+	assigned, _ := l.Face(ctx, second.ID)
+	if assigned.Ignored || assigned.Name != "Ziel" || assigned.PersonID != restored.PersonID {
+		t.Fatalf("restore assignment: %+v", assigned)
 	}
 }

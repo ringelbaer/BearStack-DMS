@@ -16,6 +16,7 @@ import de.bearstack.people.data.remote.*
 import de.bearstack.people.people.PeopleViewModel
 import de.bearstack.people.ui.PeopleApp
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -48,6 +49,65 @@ class MergeReviewTest {
             compose.onNodeWithText("Ähnliche Gruppen").performClick();idle(vm)
             test(vm,api,db)
         } finally {compose.runOnUiThread {store.clear()}}
+    }
+
+    private fun unnamed(api: FakeService) {
+        api.people[4]=api.people.getValue(4).copy(name="")
+        api.mergePairs[0]=api.mergePairs[0].copy(target=api.people.getValue(4))
+    }
+    @Test fun faceSearchUsesMergeWitnessAndAssignsBothGroups() = screen(setup=::unnamed) {vm,api,_ ->
+        api.matches=listOf(FaceMatch(6,"Person 6",1,60))
+        compose.onNodeWithContentDescription("Zusammenführen und benennen/zuordnen").performClick()
+        compose.onNodeWithContentDescription("Ähnliche benannte Personen suchen").performClick()
+        compose.waitUntil(5000) {vm.state.value.faceMatches.isNotEmpty()}
+        assertEquals(listOf(30L),api.matchedFaces)
+        assertEquals(0,api.commits)
+        compose.onNodeWithText("1 Gesicht · #6").performScrollTo().performClick();idle(vm)
+        assertEquals(1,api.commits)
+        assertEquals("name_merge",api.receipts.values.single().action)
+        assertEquals(3L,api.people.getValue(6).count)
+        assertFalse(api.people.containsKey(3));assertFalse(api.people.containsKey(4))
+    }
+    @Test fun pencilCancelAndNamePreserveQueue() = screen(2f,setup=::unnamed) {vm,api,db ->
+        val pencil=compose.onNodeWithContentDescription("Zusammenführen und benennen/zuordnen")
+        pencil.assertIsDisplayed().performClick()
+        compose.onNodeWithText("Abbrechen").performClick()
+        assertEquals(0,api.commits)
+        pencil.performClick()
+        compose.onNodeWithText("Name",substring=false).performTextInput("Ada")
+        compose.onNodeWithText("Speichern").performClick();idle(vm)
+        assertEquals("Ada",api.people.getValue(4).name)
+        assertEquals(2L,runBlocking {db.dao().statistics(api.session.scope,0).first().single {it.action=="name"}.groups})
+        assertEquals(2L,api.people.getValue(4).count)
+        assertFalse(vm.state.value.naming)
+        compose.onNodeWithText("Person 6").assertIsDisplayed()
+        pencil.assertDoesNotExist()
+        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        assertEquals(1L,vm.state.value.person!!.id)
+        assertEquals(4,vm.state.value.person!!.offset)
+    }
+    @Test fun pencilAssignLostResponseResolvesOnce() = screen(setup=::unnamed) {vm,api,db ->
+        compose.onNodeWithContentDescription("Zusammenführen und benennen/zuordnen").performClick()
+        api.loseResponse=true
+        compose.onNodeWithText("Name",substring=false).performTextInput("Person 6")
+        compose.waitUntil(5000) {vm.state.value.suggestions.any {it.id==6L}}
+        compose.onNode(hasText("Person 6") and !hasSetTextAction()).performClick();idle(vm)
+        assertEquals(1,api.commits)
+        assertTrue(vm.state.value.unresolved)
+        val pending=runBlocking {db.dao().pending(api.session.scope)}!!
+        val body=org.json.JSONObject(pending.body)
+        assertEquals("name_merge",body.getString("action"))
+        assertEquals(6L,body.getLong("assign_id"))
+        assertEquals(4L,body.getLong("target_id"))
+        compose.runOnUiThread {vm.retry()};idle(vm)
+        assertEquals(1,api.commits)
+        assertEquals(3L,api.people.getValue(6).count)
+        assertEquals(2L,runBlocking {db.dao().statistics(api.session.scope,0).first().single {it.action=="assign"}.groups})
+        assertFalse(vm.state.value.naming)
+        assertFalse(vm.state.value.unresolved)
+    }
+    @Test fun olderServerOmitsPencil() = screen(setup={unnamed(it);it.supportsMergeNaming=false}) {_,_,_ ->
+        compose.onNodeWithContentDescription("Zusammenführen und benennen/zuordnen").assertDoesNotExist()
     }
 
     @Test fun oneDecisionAtATimeButtonsVisibleWithLargeFontAndQueuePreserved() = screen(2f) {vm,api,_ ->
