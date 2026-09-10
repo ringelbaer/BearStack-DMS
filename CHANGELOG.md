@@ -6,6 +6,8 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ### BearStack 0.50.0 – in Entwicklung
 
+- Gesicht einrahmen: Namen stehen vollständig außerhalb oberhalb der Bounding Box, in kleinerer Schrift und ohne Abschneiden auf die Rahmenbreite. Desktop- und Mobilansicht durch Browserregression abgesichert; README und Website aktualisiert. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API unverändert.
+
 - Gesicht einrahmen: gemeinsame Namensvervollständigung mit Gesichtsvorschauen wie im Benennen-Dialog. Die Auswahl einer Person oder eines neuen Namenseintrags bestätigt den gezeichneten Rahmen und schließt nach erfolgreichem Speichern. Touch-Auswahl funktioniert auch nach dem Zeichnen; Scrollgesten bestätigen nichts. Alle vorhandenen Rahmen erscheinen mit kleinen Namen am Rand, einschließlich gekennzeichneter unbenannter und ignorierter Gesichter; korrekte Ausrichtung bei Fenstergrößenwechsel ohne zusätzliche Serverabfragen. Browserregressionen für Maus, Touch, Tastatur, Fehlerfälle und Bildwechsel ergänzt. README und Website aktualisiert. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.0; VERSION und API-Verträge unverändert.
 
 - Foto-Infosidebar: Die Metadaten zeigen unter „Ordner“ den normalisierten Namen des enthaltenden Fotoordners nach den Regeln der Galerie; im Hauptverzeichnis „Fotos“. Das additive JSON-Feld `folder_name` wird über die vorhandenen Metadatenanfragen ohne zusätzliche Datei- oder Datenbankzugriffe geliefert. Normalisierung, Einzel-/Batch-API, DOM, Bildwechsel und mobile Sidebar durch Tests abgesichert. README, Website und OpenAPI aktualisiert. MINOR-Erweiterung innerhalb der unveröffentlichten 0.50.0; VERSION bleibt unverändert.

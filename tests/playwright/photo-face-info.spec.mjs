@@ -178,6 +178,19 @@ test("drawing shows labeled existing regions and submits picker choices only wit
           Math.abs(actual.width - detected[0].width * side), Math.abs(actual.height - detected[0].height * side));
       }).toBeLessThan(2);
       await expect(boxes.first().locator("span")).toBeVisible();
+      const labelLayout = await boxes.first().evaluate(box => {
+        const label = box.querySelector("span"), rect = label.getBoundingClientRect();
+        return {
+          outside: rect.bottom < box.getBoundingClientRect().top,
+          fontSize: parseFloat(getComputedStyle(label).fontSize),
+          unclipped: label.scrollWidth <= label.clientWidth,
+          widerThanBox: rect.width > box.getBoundingClientRect().width
+        };
+      });
+      expect(labelLayout.outside).toBe(true);
+      expect(labelLayout.fontSize).toBeLessThan(12);
+      expect(labelLayout.unclipped).toBe(true);
+      if (viewport.width < 900) expect(labelLayout.widerThanBox).toBe(true);
       await page.screenshot({ path: `/tmp/bearstack-face-drawing-labels-${viewport.width}.png`, fullPage: true });
     }
     // Choosing before drawing cannot create a region or close the dialog.

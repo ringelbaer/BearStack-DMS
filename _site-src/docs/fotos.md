@@ -472,7 +472,8 @@ Update muss der Gesichtsdienst neu gebaut bzw. gestartet und das betroffene Foto
 einrahmen** das ausgerichtete Foto in einem nahezu fenstergroßen Dialog. Am Desktop
 stehen die Eingaben neben der großen Zeichenfläche; mobil nutzt der Dialog den
 ganzen Bildschirm mit scrollbarem Inhalt und stets erreichbaren Speicherbuttons.
-Vorhandene Gesichtsrahmen erscheinen mit kleinen Namensschildern am oberen Rand;
+Vorhandene Gesichtsrahmen zeigen die vollständigen Namen in kleiner Schrift
+außerhalb oberhalb des Rahmens, ohne Begrenzung auf dessen Breite;
 unbenannte Gesichter heißen **Unbenannt**, ignorierte Rahmen sind gestrichelt und
 entsprechend beschriftet. Die Rahmen bleiben auch beim Ändern der Fenstergröße
 am ausgerichteten Foto und behindern das Zeichnen nicht.

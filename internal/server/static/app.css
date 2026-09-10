@@ -3736,7 +3736,7 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 .face-drawing-existing { position: absolute; pointer-events: none; }
 .face-drawing-existing-box { position: absolute; border: 1px solid #fff; box-shadow: 0 0 0 1px #111; }
 .face-drawing-existing-box[data-ignored] { border-style: dashed; }
-.face-drawing-existing-box > span { position: absolute; top: 0; left: 0; max-width: 100%; padding: 1px 3px; background: rgb(0 0 0 / .8); color: #fff; font-size: 12px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.face-drawing-existing-box > span { position: absolute; bottom: calc(100% + 3px); left: -1px; width: max-content; padding: 1px 3px; background: rgb(0 0 0 / .8); color: #fff; font-size: 10px; line-height: 1.25; white-space: nowrap; }
 .face-drawing-box { position: absolute; border: 2px solid #ffe065; background: rgba(255,224,101,.15); }
 .face-drawing-box:focus-visible { outline: 3px solid white; outline-offset: 3px; }
 .face-drawing-dialog .person-picker-field { margin-top: 12px; }
