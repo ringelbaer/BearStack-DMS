@@ -255,7 +255,8 @@
         return;
       }
       if (form.hasAttribute("data-person-face-selection")) {
-        form.querySelector("[data-person-submit]").textContent = target.value && target.value !== "0" ? "Auswahl zuordnen" : input.value.trim() ? "Auswahl benennen" : "Als neue Gruppe abtrennen";
+        var subject = form.dataset.personFaceSelection === "single" ? "Gesicht" : "Auswahl";
+        form.querySelector("[data-person-submit]").textContent = target.value && target.value !== "0" ? subject + " zuordnen" : input.value.trim() ? subject + " benennen" : "Als neue Gruppe abtrennen";
         input.setCustomValidity("");
         return;
       }

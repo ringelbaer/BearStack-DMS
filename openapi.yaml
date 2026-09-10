@@ -2914,6 +2914,9 @@ paths:
         all selected faces atomically. With target=0 and no name, it creates an
         unnamed group; a name creates a named group, and an existing target assigns
         only the restored faces to that person. Other faces remain unchanged.
+        The move action likewise changes only the supplied face IDs, including
+        faces already assigned to a named person. It never renames an existing
+        source or target person or moves the other faces in their groups.
       parameters: []
       requestBody:
         required: true

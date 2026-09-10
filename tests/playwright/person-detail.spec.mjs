@@ -109,6 +109,23 @@ test("person detail keeps actions compact and scopes face editing, selection and
     await expect(lightbox.locator(".photo-info-face")).toContainText("Testgruppe");
     await expect(page.locator("[data-detail-title]")).toHaveText("Testgruppe");
     expect(renames).toBe(1);
+    // Once named, corrections from this same info panel only move this face.
+    await lightbox.locator("[data-person-edit]").click();
+    await dialog.getByRole("combobox").fill("Einzelkorrektur");
+    await dialog.getByRole("button", { name: "Gesicht benennen", exact: true }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(lightbox.locator(".photo-info-face")).toContainText("Einzelkorrektur");
+    await expect(cards).toHaveCount(1);
+    await expect(page.locator("[data-detail-title]")).toHaveText("Testgruppe");
+    expect(renames).toBe(1);
+    // Moving it back refreshes the target group's detail page without renaming it.
+    await lightbox.locator("[data-person-edit]").click();
+    await dialog.getByRole("combobox").fill("Testgruppe");
+    await dialog.getByRole("option", { name: /^Testgruppe \(#/ }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(cards).toHaveCount(2);
+    await expect(page.locator("[data-detail-title]")).toHaveText("Testgruppe");
+    expect(renames).toBe(1);
     await lightbox.getByRole("button", {name:"Foto schließen",exact:true}).press("Enter");
     const secondID = await cards.nth(1).getAttribute("data-detail-face");
     await cards.nth(1).locator("[data-detail-edit-face]").click();

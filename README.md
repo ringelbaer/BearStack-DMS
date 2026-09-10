@@ -632,8 +632,15 @@ ein konfigurierter lokaler Gesichtsdienst ist erforderlich. Der Vorgang wartet b
 Bedarf auf die gerade laufende Bildanalyse und nutzt dieselbe Erkennung und
 Zuordnung wie der Hintergrundprozess. Erkannte Gesichter erscheinen mit Vorschaubild
 und Name. Über den Stift lassen sie sich im bekannten Dialog benennen oder einer
-vorhandenen Person zuordnen, einschließlich Live-Abgleich per Lupe. Die Auswahl
-wirkt wie bisher auf die gesamte Personengruppe. Nach dem Speichern werden die
+vorhandenen Person zuordnen, einschließlich Live-Abgleich per Lupe. **Bei bereits
+benannten Personen gilt eine Korrektur hier nur für das angeklickte Gesicht im
+aktuellen Foto.** Ein neuer Name erstellt eine eigene Person für dieses Gesicht;
+die Auswahl eines vorhandenen Namens verschiebt nur dieses Gesicht dorthin.
+Andere Gesichter derselben Person – auch im selben Foto – behalten ihren Namen
+und ihre Zuordnung. Unbenannte Gruppen werden weiterhin gemeinsam benannt oder
+zugeordnet; der Dialog zeigt den jeweiligen Geltungsbereich an. Die gesamte
+benannte Person lässt sich über die Personenübersicht umbenennen.
+Nach dem Speichern werden die
 Gesichter und Namen im Infopanel aktualisiert. **Ignorieren** im Dialog blendet
 das angezeigte unbenannte Gesicht aus; andere Gesichter derselben Gruppe bleiben
 erhalten. Bei zwischenzeitlichen Änderungen wird die aktuelle Gesichtsliste

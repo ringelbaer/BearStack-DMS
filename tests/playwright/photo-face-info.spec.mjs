@@ -25,6 +25,7 @@ test.beforeAll(async () => {
   await writeFile(path.join(photos, "j.png"), png);
   await writeFile(path.join(photos, "k.png"), png);
   await writeFile(path.join(photos, "l.png"), png);
+  for (const photo of ["m.png", "n.png", "o.png"]) await writeFile(path.join(photos, photo), png);
   service = http.createServer((request, response) => {
     request.resume();
     request.on("end", () => {
@@ -324,7 +325,7 @@ test("photo face overlay follows zoom and navigation and remembers the session t
     await lightbox.locator("[data-person-edit]").first().click();
     const naming = page.locator("[data-person-dialog]");
     await naming.getByRole("combobox", { name: "Name", exact: true }).fill("Beatrix");
-    await naming.getByRole("button", { name: "Benennen", exact: true }).click();
+    await naming.getByRole("button", { name: "Gesicht benennen", exact: true }).click();
     await expect(naming).not.toBeVisible();
     await expect(boxes.first()).toHaveText("Beatrix");
     await page.screenshot({ path: "/tmp/bearstack-photo-face-overlay-desktop.png", fullPage: true });
@@ -368,6 +369,106 @@ test("photo face overlay follows zoom and navigation and remembers the session t
     await expect(boxes).toHaveCount(3);
     await open("l.png");
     await expect(boxes).toHaveCount(1);
+    expect(inferenceCalls).toBe(calls);
+    expect(errors).toEqual([]);
+  } finally { detectionsPerPhoto = 1; embeddingIndex = 0; await context.close(); }
+});
+
+test("renaming an already named face in photo info never changes its siblings", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, httpCredentials: { username: "editor", password: "secret" } });
+  try {
+    const post = async (route, form) => {
+      const response = await context.request.post(baseURL + route, { form, headers: { Origin: baseURL, Accept: "application/json" } });
+      expect(response.ok(), await response.text()).toBe(true);
+      return response.json();
+    };
+    const get = async photo => (await (await context.request.get(baseURL + "/photos/faces", { params: { path: photo } })).json()).photo;
+    detectionsPerPhoto = 3; embeddingIndex = 40;
+    for (const photo of ["m.png", "n.png", "o.png"]) await post("/photos/faces/analyze", { path: photo });
+    const original = await get("m.png");
+    const source = original.faces[0].person_id, target = original.faces[2].person_id;
+    const selected = original.faces[1].id;
+    await post(`/photos/people/${source}/rename`, { name: "Ursula" });
+    await post(`/photos/people/${target}/rename`, { name: "Vera" });
+    // Two detections of the same named person in this photo must remain distinct.
+    await post("/photos/faces/edit", { action: "move", face_id: String(selected), target: String(source) });
+    const untouched = new Map();
+    for (const photo of ["m.png", "n.png", "o.png"]) {
+      untouched.set(photo, (await get(photo)).faces.filter(face => face.id !== selected));
+    }
+    const unchangedSiblings = async () => {
+      for (const [photo, faces] of untouched) {
+        expect((await get(photo)).faces.filter(face => face.id !== selected)).toEqual(faces);
+      }
+    };
+    const calls = inferenceCalls, page = await context.newPage(), errors = [], writes = [];
+    page.on("pageerror", error => errors.push(error.message));
+    page.on("request", request => {
+      const path = new URL(request.url()).pathname;
+      if (request.method() === "POST" && /^\/photos\/(faces|people)\//.test(path)) writes.push({ path, body: new URLSearchParams(request.postData()) });
+    });
+    await page.goto(baseURL + "/photos");
+    await page.locator('[data-photo-path="m.png"] .photo-card-button').click();
+    const lightbox = page.locator("[data-photo-lightbox]"), modal = page.locator("[data-person-dialog]");
+    await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await lightbox.locator("[data-photo-face-toggle]").click();
+    const input = modal.getByRole("combobox", { name: "Name", exact: true });
+    const editSelected = () => lightbox.locator(`[data-face-id="${selected}"] [data-person-edit]`).click();
+    await editSelected();
+    await expect(modal.locator("#person-dialog-title")).toHaveText("Gesicht in diesem Foto benennen oder zuordnen");
+    await expect(modal.locator("#overview-person-hint")).toContainText("Nur dieses Gesicht");
+    await expect(modal.locator("[data-person-preview-image]")).toHaveAttribute("src", new RegExp(`/${selected}$`));
+    await expect(input).toHaveValue("Ursula");
+    // Keeping the name does not split off a duplicate person.
+    await modal.getByRole("button", { name: "Gesicht benennen", exact: true }).click();
+    await expect(modal).not.toBeVisible();
+    expect((await get("m.png")).faces.find(face => face.id === selected).person_id).toBe(source);
+    await unchangedSiblings();
+    // Failure and retry keep the single-face scope; there is no group fallback.
+    await editSelected();
+    await input.fill("Ute");
+    await page.route("**/photos/faces/edit", route => route.fulfill({ status: 503, json: { error: "Try again" } }), { times: 1 });
+    await modal.getByRole("option", { name: "Neu anlegen: „Ute“", exact: true }).click();
+    await expect(modal.locator("[data-person-dialog-status]")).toContainText("HTTP 503");
+    await unchangedSiblings();
+    await modal.getByRole("button", { name: "Gesicht benennen", exact: true }).click();
+    await expect(modal).not.toBeVisible();
+    const renamed = (await get("m.png")).faces.find(face => face.id === selected);
+    expect(renamed.name).toBe("Ute");
+    expect(renamed.person_id).not.toBe(source);
+    await unchangedSiblings();
+    await expect(lightbox.locator("[data-photo-face-overlay] .photo-face-box > span")).toHaveText(["Ursula", "Ute", "Vera"]);
+    // Choosing an existing person by keyboard also moves only the clicked face.
+    await editSelected();
+    await input.fill("Vera");
+    await expect(modal.getByRole("option", { name: /^Vera \(#/ })).toBeVisible();
+    await input.press("ArrowDown"); await input.press("Enter");
+    await expect(modal).not.toBeVisible();
+    expect((await get("m.png")).faces.find(face => face.id === selected)).toMatchObject({ name: "Vera", person_id: target });
+    await unchangedSiblings();
+    expect(writes).toHaveLength(4);
+    for (const write of writes) {
+      expect(write.path).toBe("/photos/faces/edit");
+      expect(write.body.getAll("face_id")).toEqual([String(selected)]);
+      expect(write.body.get("action")).toBe("move");
+    }
+    // Opening an unnamed group afterwards resets the dialog's scope correctly.
+    await lightbox.locator("[data-photo-close]").press("Enter");
+    await page.locator('[data-photo-path="n.png"] .photo-card-button').click();
+    await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    const unnamed = (await get("n.png")).faces[1];
+    await lightbox.locator(`[data-face-id="${unnamed.id}"] [data-person-edit]`).click();
+    await expect(modal.locator("#overview-person-hint")).toContainText("gesamte Gruppe");
+    await input.fill("Waltraud");
+    await modal.getByRole("button", { name: "Benennen", exact: true }).click();
+    await expect(modal).not.toBeVisible();
+    expect(writes.at(-1).path).toBe(`/photos/people/${unnamed.person_id}/rename`);
+    for (const photo of ["n.png", "o.png"]) {
+      const faces = (await get(photo)).faces;
+      expect(faces[0]).toMatchObject({ person_id: source, name: "Ursula" });
+      expect(faces[1]).toMatchObject({ person_id: unnamed.person_id, name: "Waltraud" });
+      expect(faces[2]).toMatchObject({ person_id: target, name: "Vera" });
+    }
     expect(inferenceCalls).toBe(calls);
     expect(errors).toEqual([]);
   } finally { detectionsPerPhoto = 1; embeddingIndex = 0; await context.close(); }

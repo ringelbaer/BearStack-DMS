@@ -12,6 +12,7 @@
       var restoreButton = section.querySelector("[data-photo-face-unignore]");
       var ignoredCount = 0, ignoredPeople = [], uncertain = false;
       var currentFaces = [];
+      var editedFace = null;
       var current, controller, generation = 0, busy = false, editing = false, displayPath = "", revision = "";
       function setBusy(value) {
         busy = value;
@@ -109,6 +110,32 @@
         isBusy: function () { return busy || uncertain; },
         onBusy: function (value) { editing = value; setBusy(busy); },
         getPreviewPath: function () { return displayPath; },
+        configureDialog: function (context) {
+          var card = context.card;
+          // Capture the clicked face, including when this person occurs twice
+          // in the photo. A named person's other faces must never be renamed.
+          editedFace = card.dataset.personName ? {
+            id: card.dataset.faceId, personId: card.dataset.personId,
+            name: card.dataset.personName, path: current.path
+          } : null;
+          if (!editedFace) return;
+          context.form.dataset.personFaceSelection = "single";
+          context.dialog.querySelector("#person-dialog-title").textContent = "Gesicht in diesem Foto benennen oder zuordnen";
+          context.dialog.querySelector("#overview-person-hint").textContent = "Nur dieses Gesicht wird geändert. Ein neuer Name erstellt eine eigene Person; die Auswahl einer vorhandenen Person ordnet nur dieses Gesicht zu. Andere Gesichter und Fotos behalten ihre Zuordnung.";
+          context.form.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: editedFace.name } }));
+        },
+        getSaveRequest: function (request) {
+          if (!editedFace) return request;
+          if (!current || current.path !== editedFace.path || !editedFace.id) return null;
+          var target = request.body.get("target"), name = request.body.get("name").trim();
+          // Saving the unchanged name does not create a duplicate person. An
+          // explicit "Neu anlegen" choice (target=0) still creates a new one.
+          if (!target && name === editedFace.name) target = editedFace.personId;
+          return { action: "/photos/faces/edit", body: new URLSearchParams({
+            action: "move", face_id: editedFace.id, target: target || "0",
+            name: target && target !== "0" ? "" : name
+          }) };
+        },
         getIgnoreRequest: function (cards) {
           var card = cards[0];
           if (!current || !revision || cards.length !== 1 || !card || card.dataset.personName || !card.dataset.faceId) return null;
@@ -116,6 +143,10 @@
         },
         onIgnoreConflict: function () { return request(false); },
         onSave: function (ids, saved) {
+          if (saved.action === "/photos/faces/edit") {
+            var target = saved.body.get("target");
+            if (target && target !== "0" && !ids.includes(target)) ids = ids.concat(target);
+          }
           document.dispatchEvent(new CustomEvent("photo-people-updated", { detail: { ids: ids, target: saved.action.endsWith("/merge") ? saved.body.get("target") : null } }));
           return request(false);
         }
