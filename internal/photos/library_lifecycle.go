@@ -104,6 +104,7 @@ func (l *Library) Close() error {
 	l.faceThumbnails.close()
 	l.faceImages.close()
 	l.photoRoutes.close()
+	l.faceSuggestions.clear()
 	return l.index.close()
 }
 

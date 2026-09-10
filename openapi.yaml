@@ -17,6 +17,10 @@ info:
     The Android app can optionally display device photo folders using Android MediaStore.
     Those folders and content URIs are local to the device and are never sent to this API;
     gallery endpoints below continue to describe the server library only.
+    Android image sharing downloads server originals through the existing media endpoint
+    and grants temporary read access to a private local copy using the system chooser.
+    Device images are shared directly through MediaStore; sharing sends no credentials
+    or server links to the receiving app and introduces no additional API endpoint.
 servers:
   - url: /
     description: Current BearStack instance
@@ -2172,6 +2176,9 @@ paths:
         modification-time fallback. Ignored faces use their own directory/date and their
         group count of distinct ignored photos. Equal keys use IDs in the same direction.
         Name ascending is the default. Sorting is ignored by suggestions and person details.
+        The HTML overview offers direct filter buttons, preserving sort and resetting page.
+        Switching to unnamed or ignored faces clears the search text and hides the name
+        search controls; existing API combinations with q remain supported.
         Cache-Control is private, no-store.'
       parameters:
       - name: page
@@ -2460,6 +2467,10 @@ paths:
         similarity and person ID for ties. A positive suggestion_margin requires the
         best candidate to beat the runner-up by that margin; only that best candidate
         is returned. With a positive margin, streaming waits for the complete ranking.
+        Comparisons use immutable snapshots of named reference groups. Unchanged groups
+        reuse cached vectors; pending reference selection is read only for named groups
+        without triggering a global rebuild. All eligible named groups are considered;
+        batches of 512 face IDs bound individual validation queries, not the search scope.
         The source group is excluded. Current source and candidate visibility is
         checked; ignored source faces return 409. No assignment is changed.
         face_id identifies the matching reference portrait, rather than the group's
@@ -2469,12 +2480,19 @@ paths:
         an empty ranking because they have no
         recognition vector. With Accept: application/x-ndjson,
         checked interim rankings are flushed while remaining named groups are
-        still being scored. Each newline-delimited frame replaces the previous
+        still being scored. The first eligible result is sent immediately after validation;
+        further interim updates are coalesced to at most one per 100 ms, and the final
+        result is always sent. This interval does not guarantee a periodic update.
+        Each newline-delimited frame replaces the previous
         ranking and contains done=false until the final done=true frame. A failure
         after streaming starts is a terminal frame with error and an empty people
         array; errors before the first frame use normal HTTP error statuses.
-        Interim candidates are selectable but their rank can change. Aborting the
-        request stops work. Proxy buffering is disabled via X-Accel-Buffering: no.
+        Interim candidates are selectable but their rank can change. Cancelling the
+        request also cancels waiting for snapshot loading. Scoring and socket writes
+        do not hold the face mutation lock. Source/group revisions, visibility and
+        settings are checked before output; conflicting changes can require a retry.
+        Running storage operations may delay cancellation. Proxy buffering is disabled
+        via X-Accel-Buffering: no.
       parameters:
       - name: id
         in: path

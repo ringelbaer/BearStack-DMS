@@ -2,6 +2,7 @@ package photos
 
 import (
 	"context"
+	"iter"
 	"math"
 	"slices"
 
@@ -25,6 +26,36 @@ type facePersonCandidate struct {
 	person int64
 	score  float64
 	face   int64 // The currently valid reference that supplies score.
+}
+
+// Vectors are immutable after decoding. A suggestion snapshot can therefore
+// validate its own references without borrowing the worker's mutable maps.
+type faceCandidateReference struct {
+	id, person, revision int64
+	vector               []float32
+}
+
+type faceCandidateReferences interface {
+	references(person int64) iter.Seq[faceCandidateReference]
+}
+
+func (rt *faceRuntime) references(person int64) iter.Seq[faceCandidateReference] {
+	return func(yield func(faceCandidateReference) bool) {
+		for _, id := range rt.nodes[person] {
+			if !yield(faceCandidateReference{id: id, person: rt.people[id], vector: rt.faceReferenceVector(id)}) {
+				return
+			}
+		}
+	}
+}
+
+func faceCandidateValidationSQL(count int) string {
+	// SQLite must start with the bounded ID set, even before ANALYZE has run.
+	return `SELECT f.id,f.person_id,f.path,p.name_source,v.revision FROM photo_faces f
+ CROSS JOIN photo_people p ON p.id=f.person_id CROSS JOIN media_index m ON m.path=f.path
+ CROSS JOIN photo_person_revisions v ON v.person_id=p.id
+ WHERE f.id IN (` + sqlutil.Placeholders(count) + `) AND f.ignored=0 AND m.admin_only=0
+ AND (f.favorite=1 OR coalesce(f.reference_eligible,1)=1)`
 }
 
 func compareFaceCandidates(a, b facePersonCandidate) int {
@@ -107,7 +138,13 @@ func (l *Library) facePersonCandidates(ctx context.Context, tx faceRowsQuery, v 
 
 // ranked contains per-person upper bounds in descending order.
 func (l *Library) validateFacePersonCandidates(ctx context.Context, tx faceRowsQuery, v []float32, ranked []facePersonCandidate, limit int) ([]facePersonCandidate, error) {
-	rt := &l.faceRuntime
+	return l.validateFaceCandidates(ctx, tx, &l.faceRuntime, v, ranked, limit)
+}
+
+func (l *Library) validateFaceCandidates(ctx context.Context, tx faceRowsQuery, refs faceCandidateReferences, v []float32, ranked []facePersonCandidate, limit int) ([]facePersonCandidate, error) {
+	if limit <= 0 {
+		return nil, ctx.Err()
+	}
 	limit = min(limit, len(ranked))
 	result := make([]facePersonCandidate, 0, limit)
 	visibility := newFaceDirectoryVisibility(l.root)
@@ -119,18 +156,16 @@ func (l *Library) validateFacePersonCandidates(ctx context.Context, tx faceRowsQ
 		// across groups (including groups with unlimited favorite references).
 		end := min(len(ranked), offset+max(1, limit-len(result)))
 		scores := make(map[int64]facePersonCandidate, end-offset)
+		witnesses := make(map[int64]faceCandidateReference, 512)
 		validate := func(batch []any) error {
-			rows, err := tx.QueryContext(ctx, `SELECT f.id,f.person_id,f.path,p.name_source FROM photo_faces f
- JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path
- WHERE f.id IN (`+sqlutil.Placeholders(len(batch))+`) AND f.ignored=0 AND m.admin_only=0
- AND (f.favorite=1 OR coalesce(f.reference_eligible,1)=1)`, batch...)
+			rows, err := tx.QueryContext(ctx, faceCandidateValidationSQL(len(batch)), batch...)
 			if err != nil {
 				return err
 			}
 			for rows.Next() {
-				var id, person int64
+				var id, person, revision int64
 				var path, nameSource string
-				if err := rows.Scan(&id, &person, &path, &nameSource); err != nil {
+				if err := rows.Scan(&id, &person, &path, &nameSource, &revision); err != nil {
 					rows.Close()
 					return err
 				}
@@ -138,11 +173,12 @@ func (l *Library) validateFacePersonCandidates(ctx context.Context, tx faceRowsQ
 					rows.Close()
 					return err
 				}
-				if person != rt.people[id] || visibility.private(parentPath(path)) ||
+				ref := witnesses[id]
+				if person != ref.person || (ref.revision != 0 && ref.revision != revision) || visibility.private(parentPath(path)) ||
 					(nameSource != "" && visibility.private(parentPath(nameSource))) {
 					continue
 				}
-				if vector := rt.faceReferenceVector(id); vector != nil {
+				if vector := ref.vector; vector != nil {
 					score := cosine(v, vector)
 					if old, ok := scores[person]; !ok || score > old.score || (score == old.score && id < old.face) {
 						scores[person] = facePersonCandidate{person: person, score: score, face: id}
@@ -151,13 +187,15 @@ func (l *Library) validateFacePersonCandidates(ctx context.Context, tx faceRowsQ
 			}
 			err = rows.Err()
 			rows.Close()
+			clear(witnesses)
 			return err
 		}
 		// Keep argument memory bounded even for a person with many favorites.
 		args := make([]any, 0, 512)
 		for _, candidate := range ranked[offset:end] {
-			for _, id := range rt.nodes[candidate.person] {
-				args = append(args, id)
+			for ref := range refs.references(candidate.person) {
+				args = append(args, ref.id)
+				witnesses[ref.id] = ref
 				if len(args) == cap(args) {
 					if err := validate(args); err != nil {
 						return nil, err

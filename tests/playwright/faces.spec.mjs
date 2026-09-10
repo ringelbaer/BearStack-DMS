@@ -77,12 +77,26 @@ test("people navigation and filters leave room for results on mobile", async ({ 
     const panel = await page.locator(".people-display-options").boundingBox();
     expect(panel.x).toBeGreaterThanOrEqual(0);
     expect(panel.x + panel.width).toBeLessThanOrEqual(width);
+    const controls = await page.locator(".people-display-options").evaluate(panel => {
+      const labels = [...panel.querySelectorAll("label")];
+      return {
+        checkboxes: [...panel.querySelectorAll('input[type="checkbox"]')].map(input => input.getBoundingClientRect().width),
+        oneLine: labels.slice(0, 2).every(label => label.getBoundingClientRect().height <= 34),
+        contained: [...panel.querySelectorAll("input, select")].every(input => input.getBoundingClientRect().right <= panel.getBoundingClientRect().right),
+      };
+    });
+    expect(controls.checkboxes).toEqual([18, 18]);
+    expect(controls.oneLine).toBe(true);
+    expect(controls.contained).toBe(true);
+    const icon = await page.locator("[data-people-display] summary svg").boundingBox();
+    const button = await page.locator("[data-people-display] summary").boundingBox();
+    expect(Math.abs(icon.y + icon.height / 2 - button.y - button.height / 2)).toBeLessThan(1);
     await page.keyboard.press("Escape");
   }
   await page.setViewportSize({ width: 390, height: 800 });
   await page.screenshot({ path: "/tmp/bearstack-people-mobile-fixed.png", fullPage: true });
-  await page.getByRole("button", { name: "Suchen", exact: true }).click();
-  await expect(page.locator('select[name="filter"]')).toHaveValue("unknown");
+  await expect(page.locator('.people-filter-tabs [aria-current="page"]')).toHaveText("Unbenannt");
+  await expect(page.locator('[data-people-filter] input[name="q"]')).toHaveCount(0);
   await context.close();
 });
 
@@ -286,12 +300,11 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
     });
     expect(result.ok(), await result.text()).toBe(true);
   }
-  const peopleFilter = page.getByRole("combobox", { name: "Personenfilter", exact: true });
+  const peopleFilter = page.locator('[data-people-filter] input[name="filter"]');
   const filterName = page.locator('[data-people-filter] input[name="q"]');
   const unknownID = await unnamedCard.getAttribute("data-person-id");
-  await expect(peopleFilter.locator("option")).toHaveCount(4);
-  await peopleFilter.selectOption("unknown");
-  await page.getByRole("button", { name: "Suchen", exact: true }).click();
+  await expect(page.getByRole("navigation", { name: "Personenfilter" }).getByRole("link")).toHaveCount(4);
+  await page.getByRole("link", { name: "Unbenannt", exact: true }).click();
   await expect(page.locator("a.person-card")).toHaveCount(1);
   await expect(peopleFilter).toHaveValue("unknown");
   await expect(namedCard).toHaveCount(0);
@@ -346,7 +359,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await displayMenu.getByLabel("Ordnername anzeigen", { exact: true }).uncheck();
   await thumbnailSize.selectOption("s");
   await displayMenu.press("Escape");
-  await peopleFilter.selectOption("known");
+  await page.getByRole("navigation", { name: "Personenfilter", exact: true }).getByRole("link", { name: "Benannt", exact: true }).click();
   await filterName.fill("Jürgen");
   await page.getByRole("button", { name: "Suchen", exact: true }).click();
   for (const width of [320, 1440]) {
@@ -367,7 +380,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(plainPage.locator("a.person-card")).toHaveCount(0);
   await plainPage.getByRole("link", { name: "Alle Filter aufheben" }).click();
   await expect(plainPage.locator("a.person-card")).toHaveCount(2);
-  await expect(plainPage.getByRole("combobox", { name: "Personenfilter", exact: true })).toHaveValue("all");
+  await expect(plainPage.locator('[data-people-filter] input[name="filter"]')).toHaveValue("all");
   await noJS.close();
   await selectPerson("Jürgen");
   const editJuergen = page.locator("[data-people-edit-button]");
@@ -402,8 +415,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await dialogName.fill("Jürgen");
   await personDialog.getByRole("button", { name: "Benennen", exact: true }).click();
   await expect(personDialog).not.toBeVisible();
-  await peopleFilter.selectOption("known");
-  await page.getByRole("button", { name: "Suchen", exact: true }).click();
+  await page.getByRole("navigation", { name: "Personenfilter", exact: true }).getByRole("link", { name: "Benannt", exact: true }).click();
   await expect(peopleFilter).toHaveValue("known");
   await expect(page.locator("a.person-card")).toHaveCount(1);
   await expect(page.locator("a.person-card")).toContainText("Jürgen");

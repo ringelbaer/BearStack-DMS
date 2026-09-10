@@ -45,14 +45,14 @@ func TestUnknownPeopleHTTPFilterAndReset(t *testing.T) {
 	w := httptest.NewRecorder()
 	s.Handler().ServeHTTP(w, request)
 	html := w.Body.String()
-	if w.Code != 200 || !strings.Contains(html, `value="unknown" selected`) || strings.Contains(html, `value="known" selected`) || strings.Contains(html, `value="ignored" selected`) || !strings.Contains(html, `href="/photos/people?page=1&amp;q=">Alle Filter aufheben`) {
+	if w.Code != 200 || !strings.Contains(html, `name="filter" value="unknown"`) || strings.Contains(html, `type="search" name="q"`) || !strings.Contains(html, `aria-current="page">Unbenannt</a>`) || strings.Contains(html, `name="filter" value="known"`) || strings.Contains(html, `name="filter" value="ignored"`) || !strings.Contains(html, `href="/photos/people?page=1&amp;q=">Alle Filter aufheben`) {
 		t.Fatalf("normalized filters/reset: %d %s", w.Code, html)
 	}
 	request = httptest.NewRequest("GET", "/photos/people?page=1&q=", nil)
 	request.SetBasicAuth("reader", "secret")
 	w = httptest.NewRecorder()
 	s.Handler().ServeHTTP(w, request)
-	if w.Code != 200 || strings.Count(w.Body.String(), `class="person-overview-card"`) != 5 || strings.Contains(w.Body.String(), `value="unknown" selected`) {
+	if w.Code != 200 || strings.Count(w.Body.String(), `class="person-overview-card"`) != 5 || strings.Contains(w.Body.String(), `name="filter" value="unknown"`) {
 		t.Fatalf("reset did not restore unfiltered active groups: %d %s", w.Code, w.Body.String())
 	}
 }

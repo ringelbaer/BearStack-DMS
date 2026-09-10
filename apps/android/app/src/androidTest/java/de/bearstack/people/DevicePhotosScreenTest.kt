@@ -115,6 +115,7 @@ class DevicePhotosScreenTest {
             compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
             compose.waitUntil(15_000) { compose.onAllNodesWithContentDescription("bearstack-device-photo.jpg").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithContentDescription("bearstack-device-photo.jpg").performClick()
+            compose.onNodeWithContentDescription(if(german) "Teilen" else "Share").assertIsDisplayed()
             // The common viewer presents its own zoom action after decoding the local content URI.
             compose.waitUntil(15_000) { compose.onAllNodesWithText(if(german) "Vergrößern" else "Zoom in").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithContentDescription(if(german) "Informationen" else "Information").performClick()

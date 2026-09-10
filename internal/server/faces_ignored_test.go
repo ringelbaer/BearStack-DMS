@@ -42,7 +42,7 @@ func TestIgnoredFacesFilterAndNamingHTTP(t *testing.T) {
 		response := httptest.NewRecorder()
 		s.Handler().ServeHTTP(response, request)
 		html := response.Body.String()
-		if response.Code != 200 || !strings.Contains(html, "Ignorierte Gesichter") || !strings.Contains(html, fmt.Sprintf("/photos/faces/%d/thumbnail", id)) {
+		if response.Code != 200 || !strings.Contains(html, `aria-current="page">Ignoriert</a>`) || strings.Contains(html, `type="search" name="q"`) || !strings.Contains(html, fmt.Sprintf("/photos/faces/%d/thumbnail", id)) {
 			t.Fatalf("%s ignored view: %d %s", user, response.Code, html)
 		}
 		if strings.Contains(html, ">Wiederherstellen</button>") != (user != "reader") || strings.Contains(html, "data-ignored-edit") != (user != "reader") || strings.Contains(html, "data-person-dialog aria") != (user != "reader") {

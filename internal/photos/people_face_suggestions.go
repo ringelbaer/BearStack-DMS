@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"slices"
+	"time"
 
 	"bearstack/internal/sqlutil"
 )
@@ -25,8 +26,6 @@ func (l *Library) suggestPeopleForFace(ctx context.Context, id int64, emit func(
 	if id <= 0 {
 		return out, ErrLabelInvalid
 	}
-	l.faceRuntime.mu.Lock()
-	defer l.faceRuntime.mu.Unlock()
 	source, err := l.Face(ctx, id)
 	if err != nil {
 		return out, err
@@ -39,67 +38,73 @@ func (l *Library) suggestPeopleForFace(ctx context.Context, id int64, emit func(
 	}
 	var encoded []byte
 	var model string
-	if err = l.index.db.QueryRowContext(ctx, `SELECT embedding,model FROM photo_faces WHERE id=? AND ignored=0`, id).Scan(&encoded, &model); err != nil {
+	var person, revision int64
+	if err = l.index.db.QueryRowContext(ctx, `SELECT f.embedding,f.model,f.person_id,v.revision FROM photo_faces f
+ CROSS JOIN photo_person_revisions v ON v.person_id=f.person_id WHERE f.id=? AND f.ignored=0`, id).Scan(&encoded, &model, &person, &revision); err != nil {
 		return out, err
+	}
+	if person != source.PersonID {
+		return out, ErrLabelConflict
 	}
 	vector := decodeVector(encoded)
 	if vector == nil {
 		return out, ErrLabelInvalid
 	}
-	if err = l.ensureFaceGraph(ctx, model); err != nil {
-		return out, err
-	}
-	// Filter before scoring: many unnamed groups must not crowd out named results.
-	excluded := make(map[int64]bool, len(l.faceRuntime.nodes))
-	for person := range l.faceRuntime.nodes {
-		excluded[person] = true
-	}
-	var named []int64
-	rows, err := l.index.db.QueryContext(ctx, `SELECT id FROM photo_people WHERE name<>'' ORDER BY id`)
+	snapshot, err := l.namedFaceReferences(ctx, model)
 	if err != nil {
 		return out, err
 	}
-	for rows.Next() {
-		var person int64
-		if err = rows.Scan(&person); err != nil {
-			rows.Close()
+	thresholds, err := l.FaceThresholds(ctx)
+	if err != nil {
+		return out, err
+	}
+	verify := func() error {
+		current, err := l.Face(ctx, id)
+		if err != nil {
+			return err
+		}
+		if current.Ignored || current.PersonID != source.PersonID {
+			return ErrLabelConflict
+		}
+		var currentRevision int64
+		var currentModel string
+		var limit int
+		if err := l.index.db.QueryRowContext(ctx, `SELECT v.revision,s.model,r.reference_limit
+ FROM photo_person_revisions v CROSS JOIN photo_face_state s CROSS JOIN photo_face_reference_settings r
+ WHERE v.person_id=? AND s.id=1 AND r.id=1`, source.PersonID).Scan(&currentRevision, &currentModel, &limit); err != nil {
+			return err
+		}
+		if currentRevision != revision || currentModel != model || limit != snapshot.key.limit {
+			return ErrLabelConflict
+		}
+		currentThresholds, err := l.FaceThresholds(ctx)
+		if err != nil {
+			return err
+		}
+		if currentThresholds != thresholds {
+			return ErrLabelConflict
+		}
+		return ctx.Err()
+	}
+	return l.rankNamedFaceSuggestions(ctx, snapshot, vector, source.PersonID, thresholds, func(ranking []facePersonCandidate) (PeopleSuggestions, error) {
+		current, err := l.faceSuggestionPeople(ctx, id, source.PersonID, ranking, thresholds)
+		if err != nil {
+			return current, err
+		}
+		if err := snapshot.checkPeople(ctx, l.index.db, current.People); err != nil {
 			return out, err
 		}
-		delete(excluded, person)
-		if person != source.PersonID {
-			named = append(named, person)
+		if err := verify(); err != nil {
+			return out, err
 		}
-	}
-	err = rows.Err()
-	rows.Close()
-	if err != nil {
-		return out, err
-	}
-	excluded[source.PersonID] = true
-	var candidates []facePersonCandidate
-	// Partial rankings cannot establish a positive lead over the runner-up.
-	if emit == nil || l.matchingThresholds().SuggestionMargin > 0 {
-		candidates, err = l.facePersonCandidates(ctx, l.index.db, vector, excluded, 20)
-	} else {
-		candidates, err = l.streamNamedFaceCandidates(ctx, vector, named, func(ranking []facePersonCandidate) error {
-			current, err := l.faceSuggestionPeople(ctx, id, source.PersonID, ranking)
-			if err != nil {
-				return err
-			}
-			return emit(current)
-		})
-	}
-	if err != nil {
-		return out, err
-	}
-	return l.faceSuggestionPeople(ctx, id, source.PersonID, candidates)
+		return current, nil
+	}, emit)
 }
 
-func (l *Library) faceSuggestionPeople(ctx context.Context, id, sourcePerson int64, candidates []facePersonCandidate) (PeopleSuggestions, error) {
+func (l *Library) faceSuggestionPeople(ctx context.Context, id, sourcePerson int64, candidates []facePersonCandidate, thresholds FaceThresholds) (PeopleSuggestions, error) {
 	out := PeopleSuggestions{People: []PersonSuggestion{}}
 	ids := []int64{}
 	args := []any{}
-	thresholds := l.matchingThresholds()
 	for index, candidate := range candidates {
 		if candidate.score < thresholds.SuggestionSimilarity {
 			break
@@ -120,7 +125,7 @@ func (l *Library) faceSuggestionPeople(ctx context.Context, id, sourcePerson int
 	}
 	rows, err := l.index.db.QueryContext(ctx, `SELECT p.id,p.name,f.id,
  (SELECT count(DISTINCT path) FROM photo_faces WHERE person_id=p.id AND ignored=0)
- FROM photo_faces f JOIN photo_people p ON p.id=f.person_id
+ FROM photo_faces f CROSS JOIN photo_people p ON p.id=f.person_id
  WHERE f.id IN (`+sqlutil.Placeholders(len(args))+`) AND f.ignored=0 AND p.name<>''`, args...)
 	if err != nil {
 		return out, err
@@ -155,54 +160,69 @@ func (l *Library) faceSuggestionPeople(ctx context.Context, id, sourcePerson int
 	return out, nil
 }
 
-// Score each group once. Before the first hit, validate immediately; afterwards
-// use small batches so interim updates do not turn every vector into a SQL call.
-func (l *Library) streamNamedFaceCandidates(ctx context.Context, vector []float32, named []int64, emit func([]facePersonCandidate) error) ([]facePersonCandidate, error) {
-	var best, batch []facePersonCandidate
-	flush := func() error {
-		if len(batch) == 0 {
-			return nil
-		}
-		slices.SortFunc(batch, compareFaceCandidates)
-		checked, err := l.validateFacePersonCandidates(ctx, l.index.db, vector, batch, 20)
-		batch = batch[:0]
+const faceSuggestionUpdateInterval = 100 * time.Millisecond
+
+// Score every eligible named reference. Keep upper bounds for all groups so
+// invalidated leading witnesses never hide a lower currently valid candidate.
+// SQL validation and serialization happen only for the first hit, timed updates
+// and the final ranking, rather than after every 32 groups.
+func (l *Library) rankNamedFaceSuggestions(ctx context.Context, snapshot *faceSuggestionSnapshot, vector []float32, source int64, thresholds FaceThresholds, assemble func([]facePersonCandidate) (PeopleSuggestions, error), emit func(PeopleSuggestions) error) (PeopleSuggestions, error) {
+	out := PeopleSuggestions{People: []PersonSuggestion{}}
+	ranked := make([]facePersonCandidate, 0, len(snapshot.groups))
+	var lastUpdate time.Time
+	var previous []PersonSuggestion
+	publish := func(ranking []facePersonCandidate, final bool) (PeopleSuggestions, error) {
+		slices.SortFunc(ranking, compareFaceCandidates)
+		checked, err := l.validateFaceCandidates(ctx, l.index.db, snapshot, vector, ranking, 20)
 		if err != nil {
-			return err
+			return out, err
 		}
-		previous := slices.Clone(best)
-		best = append(best, checked...)
-		slices.SortFunc(best, compareFaceCandidates)
-		best = best[:min(20, len(best))]
-		if !slices.Equal(previous, best) {
-			return emit(best)
+		current, err := assemble(checked)
+		if err != nil {
+			return out, err
 		}
-		return nil
+		if !final && len(current.People) > 0 && !slices.Equal(previous, current.People) {
+			if err := emit(current); err != nil {
+				return out, err
+			}
+			previous = slices.Clone(current.People)
+			lastUpdate = time.Now()
+		}
+		return current, nil
 	}
-	for index, person := range named {
+	streaming := emit != nil && thresholds.SuggestionMargin == 0
+	for _, group := range snapshot.groups {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return out, err
+		}
+		if group.id == source {
+			continue
 		}
 		score := math.Inf(-1)
-		for i, reference := range l.faceRuntime.graph.groups[person] {
+		for i, ref := range snapshot.faces[group.id] {
 			if i%256 == 0 {
 				if err := ctx.Err(); err != nil {
-					return nil, err
+					return out, err
 				}
 			}
-			score = max(score, cosine(vector, reference))
+			score = max(score, cosine(vector, ref.vector))
 		}
-		candidate := facePersonCandidate{person: person, score: score}
-		if score >= l.matchingThresholds().SuggestionSimilarity && (len(best) < 20 || compareFaceCandidates(candidate, best[len(best)-1]) < 0) {
-			batch = append(batch, candidate)
+		if math.IsInf(score, -1) || (score < thresholds.SuggestionSimilarity && thresholds.SuggestionMargin == 0) {
+			continue
 		}
-		if len(best) == 0 || (index+1)%32 == 0 {
-			if err := flush(); err != nil {
-				return nil, err
+		candidate := facePersonCandidate{person: group.id, score: score}
+		ranked = append(ranked, candidate)
+		if streaming && lastUpdate.IsZero() {
+			if _, err := publish([]facePersonCandidate{candidate}, false); err != nil {
+				return out, err
+			}
+		} else if streaming && time.Since(lastUpdate) >= faceSuggestionUpdateInterval {
+			// Mark attempts too, so unchanged rankings do not trigger repeated SQL.
+			lastUpdate = time.Now()
+			if _, err := publish(ranked, false); err != nil {
+				return out, err
 			}
 		}
 	}
-	if err := flush(); err != nil {
-		return nil, err
-	}
-	return best, nil
+	return publish(ranked, true)
 }

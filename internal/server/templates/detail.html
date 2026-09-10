@@ -10,7 +10,7 @@
     <a class="secondary-button" href="/documents/{{.Document.ID}}/download">Download</a>
     <button type="button" class="secondary-button" data-share-url="/documents/{{.Document.ID}}/view">Teilen</button>
     <details class="document-menu">
-      <summary aria-label="Dokumentaktionen öffnen">...</summary>
+      <summary aria-label="Dokumentaktionen öffnen">{{template "more_icon"}}</summary>
       <div class="document-menu-list">
         <a class="secondary-button" href="/export?ids={{.Document.ID}}&metadata=1">Export</a>
         {{if not .DocumentReadOnlyView}}

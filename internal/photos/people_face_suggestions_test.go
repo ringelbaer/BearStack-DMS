@@ -102,7 +102,7 @@ func TestSuggestPeopleForFaceLimitsNamedRanking(t *testing.T) {
 	}
 	var snapshots []PeopleSuggestions
 	streamed, err := l.SuggestPeopleForFaceStream(ctx, 1, func(update PeopleSuggestions) error { snapshots = append(snapshots, update); return nil })
-	if err != nil || !reflect.DeepEqual(streamed, got) || len(snapshots) < 2 || len(snapshots[0].People) != 1 {
+	if err != nil || !reflect.DeepEqual(streamed, got) || len(snapshots) != 1 || len(snapshots[0].People) != 1 {
 		t.Fatalf("not incremental or ranking differs: snapshots=%+v result=%+v err=%v", snapshots, streamed, err)
 	}
 	stopped := errors.New("consumer stopped")

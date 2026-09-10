@@ -83,7 +83,7 @@
     finally {
       setBusy(false);
       if (!form.isConnected) {
-        var focus = grid.querySelector("button:not([disabled])") || document.querySelector("[data-people-filter] select");
+        var focus = grid.querySelector("button:not([disabled])") || document.querySelector('.people-filter-tabs [aria-current="page"]');
         if (focus) focus.focus({ preventScroll: true });
       }
     }

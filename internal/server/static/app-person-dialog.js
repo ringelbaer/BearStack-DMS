@@ -141,7 +141,7 @@
       var candidates = opener ? [opener] : [];
       candidates = candidates.concat(Array.from(personSurface.querySelectorAll("a, button:not([disabled])")));
       var focus = candidates.find(function (control) { return control.isConnected && !control.disabled && !control.closest("[hidden]") && control.getClientRects().length; });
-      if (!focus) focus = document.querySelector("[data-people-filter] select, [data-group-unnamed]");
+      if (!focus) focus = document.querySelector('.people-filter-tabs [aria-current="page"], [data-group-unnamed]');
       if (focus) focus.focus({ preventScroll: true });
     });
     async function savePerson(ignoring) {
@@ -226,10 +226,13 @@
     var allowCreate = form.hasAttribute("data-person-create");
     var renameAction = allowCreate ? form.action : "";
     var items = [], active = -1, revision = 0, pointerPerson;
-    var timer, controller, pendingDirection;
+    var timer, controller, pendingDirection, renderFrame, pendingRender;
 
     function cancel() {
       clearTimeout(timer);
+      if (renderFrame) cancelAnimationFrame(renderFrame);
+      renderFrame = 0;
+      pendingRender = null;
       if (controller) controller.abort();
       revision++;
       matching = false;
@@ -363,6 +366,30 @@
         else if (items.length && pendingDirection) { activate(pendingDirection === "last" ? items.length - 1 : 0); pendingDirection = undefined; }
         else activate(-1);
         }
+        function renderStream(update) {
+          if (update.error) throw new Error(update.error);
+          if (!Array.isArray(update.people) || update.people.length > 20 || typeof update.done !== "boolean") throw new Error("Ungültige Antwort des Gesichtsabgleichs.");
+          if (update.done) {
+            if (renderFrame) cancelAnimationFrame(renderFrame);
+            renderFrame = 0; pendingRender = null;
+            render(update, false);
+            return;
+          }
+          // A proxy or a busy tab can deliver many frames at once. Only the
+          // newest ranking needs layout; final results and errors stay immediate.
+          pendingRender = update;
+          if (!renderFrame) renderFrame = requestAnimationFrame(function () {
+            if (request !== revision) return;
+            renderFrame = 0;
+            var latest = pendingRender; pendingRender = null;
+            if (!latest) return;
+            try { render(latest, true); }
+            catch (error) {
+              cancel(); items = []; list.replaceChildren(); activate(-1);
+              feedback.textContent = error.message;
+            }
+          });
+        }
         if (faceMatch && (response.headers.get("Content-Type") || "").includes("application/x-ndjson")) {
           var reader = response.body.getReader();
           var decoder = new TextDecoder(), buffer = "", complete = false;
@@ -376,7 +403,7 @@
                 var line = buffer.slice(0, newline); buffer = buffer.slice(newline + 1);
                 if (!line.trim()) continue;
                 var update = JSON.parse(line);
-                render(update, !update.done);
+                renderStream(update);
                 if (update.done) { complete = true; break; }
               }
               if (buffer.length > 128 * 1024) throw new Error("Ungültige Antwort des Gesichtsabgleichs.");
@@ -388,6 +415,8 @@
         }
       } catch (error) {
         if (request === revision && error.name !== "AbortError") {
+          if (renderFrame) cancelAnimationFrame(renderFrame);
+          renderFrame = 0; pendingRender = null;
           if (faceMatch) { items = []; list.replaceChildren(); activate(-1); }
           feedback.textContent = error.message;
         }

@@ -107,3 +107,65 @@ test("sorting and pagination also work without JavaScript", async ({ browser }) 
   await expect(page.getByRole("combobox", { name: "Sortieren", exact: true })).toHaveValue("count_desc");
   await context.close();
 });
+
+for (const javaScriptEnabled of [true, false]) {
+  test(`person filters switch directly and discard irrelevant search, JavaScript=${javaScriptEnabled}`, async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled }); const page = await context.newPage();
+    await login(page);
+    await page.goto(baseURL + "/photos/people?filter=all&q=Zoe&sort=count_desc");
+    await expect(page.locator("a.person-card")).toHaveCount(1);
+    const filters = page.getByRole("navigation", { name: "Personenfilter", exact: true });
+    for (const [name, value] of [["Unbenannt", "unknown"], ["Ignoriert", "ignored"], ["Benannt", "known"], ["Alle", "all"]]) {
+      await filters.getByRole("link", { name, exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`filter=${value}`));
+      await expect(filters.locator('[aria-current="page"]')).toHaveText(name);
+      await expect(page.getByRole("combobox", { name: "Sortieren", exact: true })).toHaveValue("count_desc");
+      const hasSearch = value === "known" || value === "all";
+      await expect(page.locator('[data-people-filter] input[name="q"]')).toHaveCount(hasSearch ? 1 : 0);
+      await expect(page.getByRole("button", { name: "Suchen", exact: true })).toHaveCount(hasSearch ? 1 : 0);
+      if (!hasSearch) expect(new URL(page.url()).searchParams.has("q")).toBe(false);
+      if (value === "unknown") {
+        await expect(page.locator("a.person-card")).toHaveCount(60);
+        await expect(page.locator(".people-pagination-current")).toHaveText("Seite 1 von 2");
+      }
+      if (value === "known") await expect(page.locator("a.person-card")).toHaveCount(1);
+    }
+    await page.goto(baseURL + "/photos/people?page=2&filter=unknown&sort=date_desc");
+    for (const width of [320, 390, 640, 1440]) {
+      await page.setViewportSize({ width, height: 800 });
+      const layout = await page.locator(".people-pagination").evaluate(nav => {
+        const controls = [...nav.children].map(el => el.getBoundingClientRect());
+        return { height: nav.getBoundingClientRect().height, tops: controls.map(rect => Math.round(rect.top)), widths: controls.filter((_, i) => i !== 2).map(rect => rect.width), overflow: document.documentElement.scrollWidth - innerWidth };
+      });
+      expect(layout.overflow).toBeLessThanOrEqual(1);
+      if (width <= 640) {
+        expect(layout.height).toBeLessThanOrEqual(48);
+        expect(new Set(layout.tops).size).toBe(1);
+        expect(layout.widths.every(width => width >= 44)).toBe(true);
+      }
+      await expect(page.getByRole("link", { name: "Erste Seite", exact: true })).toHaveAttribute("href", /sort=date_desc/);
+    }
+    if (javaScriptEnabled) {
+      for (const theme of ["design2", "default"]) {
+        await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
+        const colors = await filters.evaluate(nav => {
+          const active = getComputedStyle(nav.querySelector('[aria-current="page"]'));
+          const other = getComputedStyle(nav.querySelector('a:not([aria-current])'));
+          return { active: active.backgroundColor, other: other.backgroundColor };
+        });
+        expect(colors.active).not.toBe(colors.other);
+      }
+      await page.setViewportSize({ width: 390, height: 800 });
+      await page.screenshot({ path: "/tmp/bearstack-people-filters-pagination.png", fullPage: true });
+      await page.getByLabel("Anzeigeeinstellungen", { exact: true }).click();
+      await page.locator(".people-display-options").screenshot({ path: "/tmp/bearstack-people-display-menu.png" });
+      await page.keyboard.press("Escape");
+    }
+    await page.getByRole("link", { name: "Ignoriert", exact: true }).click();
+    await page.getByRole("combobox", { name: "Sortieren", exact: true }).selectOption("folder_asc");
+    if (!javaScriptEnabled) await page.getByRole("button", { name: "Sortieren", exact: true }).click();
+    await expect(page).toHaveURL(/sort=folder_asc/);
+    await expect(filters.locator('[aria-current="page"]')).toHaveText("Ignoriert");
+    await context.close();
+  });
+}

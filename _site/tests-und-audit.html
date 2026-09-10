@@ -686,6 +686,40 @@
       </span>
     </span>
   </a>
+
+    <nav class="md-nav" aria-label="Performance-Benchmarks">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#performance-des-lupen-gesichtabgleichs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Performance des Lupen-Gesichtabgleichs
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Performance des Lupen-Gesichtabgleichs">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#umgesetzte-optimierung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Umgesetzte Optimierung
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+      </ul>
+    </nav>
   
 </li>
       
@@ -822,6 +856,40 @@
       </span>
     </span>
   </a>
+
+    <nav class="md-nav" aria-label="Performance-Benchmarks">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#performance-des-lupen-gesichtabgleichs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Performance des Lupen-Gesichtabgleichs
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Performance des Lupen-Gesichtabgleichs">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#umgesetzte-optimierung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Umgesetzte Optimierung
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+      </ul>
+    </nav>
   
 </li>
       
@@ -1010,6 +1078,235 @@ vollständigem Schließen alter HTTP-Ressourcen.</p>
 </span></code></pre></div>
 <p>Die Benchmarks sind als Regressionsschutz gedacht. Absolute Zahlen hängen stark von CPU, Speicher, Dateisystem, SQLite-I/O und Go-Version ab; vergleichbar werden sie erst auf demselben System mit mehreren Wiederholungen.</p>
 <p>Die GPX-Benchmarks setzen für Messungen ohne Cache auch die LRU-Verwaltung und den Speicherzähler zurück. Reine Go-Testhelfer liegen in <code>_test.go</code>-Dateien und werden nicht in das Anwendungsbinary übernommen.</p>
+<h3 id="performance-des-lupen-gesichtabgleichs">Performance des Lupen-Gesichtabgleichs<a class="headerlink" href="#performance-des-lupen-gesichtabgleichs" title="Permanent link">&para;</a></h3>
+<p>Audit und Optimierung vom <strong>10. September 2026</strong>, Ausgangsstand <code>9dbf9d3</code> /
+BearStack 0.50.0. Geprüft wurde der Abgleich im Benenn-Modal über
+<code>/photos/faces/{id}/suggestions</code>, den WebUI und Android gemeinsam verwenden.
+Die erste Tabelle und die drei Befunde dokumentieren den <strong>Ausgangsstand</strong>;
+die anschließend umgesetzten Optimierungen und neuen Messwerte folgen darunter.</p>
+<p>Die Messung verwendet einen Ryzen 5 9600X, Go 1.26.6 und temporäre SQLite-Datenbanken
+auf Linux-tmpfs. Je Gruppe sind 30 normalisierte Referenzvektoren mit 128 Dimensionen
+und zehn Fotodatensätze vorhanden, insgesamt bis zu 1.000 echte Testverzeichnisse.
+Nur das Quellfoto ist eine echte Bilddatei. Kandidatenbilder, Netzwerk, Thumbnail-
+Dekodierung, NAS-Latenz und Hintergrundverarbeitung sind nicht Teil der Backend-Zeiten.
+Die Werte sind lokale Vergleichsmessungen, keine Zusage für Produktionsbestände.</p>
+<table>
+<thead>
+<tr>
+<th>Szenario</th>
+<th style="text-align: right;">1.000 Gruppen / 30.000 Referenzen</th>
+<th style="text-align: right;">10.000 Gruppen / 300.000 Referenzen</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Warmer Stream, frühe Treffer, ohne SQLite-Statistiken</td>
+<td style="text-align: right;">1.636 ms</td>
+<td style="text-align: right;">Abbruch erst nach 15.320 ms trotz 5-s-Deadline</td>
+</tr>
+<tr>
+<td>Erster Zwischenstand dabei</td>
+<td style="text-align: right;">0,68 ms</td>
+<td style="text-align: right;">2,69 ms</td>
+</tr>
+<tr>
+<td>Warmer Stream, frühe Treffer, nach <code>ANALYZE</code> der Testdatenbank</td>
+<td style="text-align: right;">4,34 ms</td>
+<td style="text-align: right;">50,54 ms</td>
+</tr>
+<tr>
+<td>Warmer Stream ohne Treffer</td>
+<td style="text-align: right;">2,11 ms</td>
+<td style="text-align: right;">45,98 ms</td>
+</tr>
+<tr>
+<td>Ständig bessere Treffer, Stream, nach <code>ANALYZE</code></td>
+<td style="text-align: right;">59,00 ms / 34 Antworten</td>
+<td style="text-align: right;">670,05 ms / 315 Antworten</td>
+</tr>
+<tr>
+<td>Dieselben ständig besseren Treffer, einzelnes JSON</td>
+<td style="text-align: right;">6,53 ms</td>
+<td style="text-align: right;">56,22 ms</td>
+</tr>
+<tr>
+<td>Im Referenzcache zusätzlich belegter Go-Heap</td>
+<td style="text-align: right;">19,46 MiB</td>
+<td style="text-align: right;">187,75 MiB</td>
+</tr>
+<tr>
+<td>Ausstehende Neuauswahl aller Referenzen</td>
+<td style="text-align: right;">227 ms</td>
+<td style="text-align: right;">2.646 ms</td>
+</tr>
+</tbody>
+</table>
+<p>Erfolgreiche warme Fälle enthalten drei bis zehn Wiederholungen und zeigen den
+Median; Neuauswahl und Cache-Speicher wurden einmal gemessen. Der große Aufruf ohne
+Statistiken wurde wegen des Fehlplans nach einem Versuch abgebrochen: 15.320 ms sind
+die beobachtete Rückkehr mit Fehler, keine erfolgreiche Suchzeit. Die bereits
+gesetzte 5-s-Deadline begrenzte die laufende SQLite-Operation nicht rechtzeitig.
+Die Stream-Antwortzahlen schließen den Abschluss ein. Gemessene JSON-Nutzlasten
+enthalten die Ranglisten ohne HTTP-Header und zusätzliche NDJSON-Statusfelder.</p>
+<p><strong>Befund 1 – SQL-Abfragereihenfolge, hohe Priorität:</strong>
+<code>validateFacePersonCandidates</code> in <code>internal/photos/faces_candidates.go</code> prüft
+höchstens 512 bekannte Gesicht-IDs pro Abfrage. Ohne passende Statistiken beginnt
+SQLite trotzdem bei allen öffentlichen Medien über
+<code>idx_media_index_admin_directory_random</code>, statt bei diesen IDs. Bei 1.000 Gruppen
+entfallen 1.618 ms auf diese Prüfung, rund 3,3 ms auf das Ranking und 0,4 ms auf
+die Ergebnisaufbereitung. Der CPU-Profiler bestätigt SQLite als Hauptverbraucher.
+Ein ausschließlich im Test erzwungener Start bei den Gesicht-IDs mittels
+<code>CROSS JOIN</code> liefert dieselben Kandidaten in 1,65 ms. Eine künftige Korrektur sollte
+die kleine ID-Menge zuerst abfragen und den Plan mit und ohne Statistiken absichern;
+sämtliche aktuellen Sichtbarkeits- und Zuordnungsprüfungen müssen erhalten bleiben.
+<code>ANALYZE</code> wurde hier nur als Diagnose auf der Testdatenbank ausgeführt.</p>
+<p><strong>Befund 2 – gemeinsame Sperre und verzögerter Abbruch, hohe Priorität:</strong>
+<code>suggestPeopleForFace</code> hält <code>faceRuntime.mu</code> von der Quellprüfung bis zum letzten
+Zwischenstand. Der HTTP-Handler schreibt und flusht Zwischenstände innerhalb dieses
+Bereichs. Ein langsamer Empfänger kann weitere Suchen und Gesichtsänderungen damit
+aufhalten. Das fünfsekündige Schreiblimit gilt pro Ausgabe, nicht für die gesamte
+Suche. Ein zweiter Aufruf mit 20-ms-Deadline kehrte im kontrollierten Test auch
+100 ms nach Ablauf nicht zurück, solange der erste Stream blockierte. Empfohlen
+sind abbrechbares Warten und eine Trennung von Cache-Zugriff und Netzwerkausgabe,
+unter Beibehaltung der Revisions- und Sichtbarkeitskontrollen.</p>
+<p><strong>Befund 3 – viele Zwischenstände und vollständiger Cache, mittlere Priorität:</strong>
+Das Streaming prüft bei laufend besseren Treffern viele Gruppen erneut gegen SQL
+und stellt jede geänderte Top-20-Liste neu zusammen. Bei 10.000 Gruppen waren das
+315 Antworten, etwa 396 kB Ranglisten-JSON und 52,76 MiB kumulierte Go-Allokationen
+pro Suche; das einzelne JSON benötigte 1,19 MiB. Die Allokationen sind kein dauerhaft
+belegter Speicher. Der Browser verarbeitet jeden Zwischenstand: 315 bereits
+gepufferte Antworten brauchten mit dem echten Modal-Skript rund 178 ms bei 1.440 px
+und 185 ms bei 390 px Fensterbreite, mit durchgehend höchstens 20 Optionen. Diese
+isolierte Chromium-Messung enthält keine echten Vorschaubilder und ist kein
+Android-Gerätebenchmark. Android hält bereits nur den neuesten wartenden Stand.
+Eine zeitliche Begrenzung der Zwischenstände und ein zusammengefasstes Rendern pro
+Browser-Frame können den Aufwand reduzieren, ohne den ersten Treffer zu verzögern.</p>
+<p>Der kalte Cache lädt auch Referenzen unbenannter Gruppen. Bei 90 % unbenannten
+Gruppen dauerte der erste Zwischenstand mit 300.000 Referenzen noch etwa 521 ms;
+der gesamte Aufruf allokierte rund 551 MiB, obwohl nur 10 % der Gruppen verglichen
+wurden. Ein ausstehender Referenzneuaufbau läuft vor dem ersten Treffer. Favoriten
+können die normale Zielanzahl von 30 Referenzen zusätzlich überschreiten. Weitere
+Optimierungen sollten deshalb Cache-Aufbau und Referenzvorbereitung gesondert messen.
+Ein positiver Vorschlagsabstand wartet absichtlich auf das vollständige Ranking.</p>
+<p>Reproduzieren (opt-in, ausschließlich temporäre Daten):</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nv">BEARSTACK_FACE_SUGGESTION_PERF</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/photos<span class="w"> </span>-run<span class="w"> </span><span class="s1">&#39;^TestFaceSuggestionPerformance$&#39;</span><span class="w"> </span>-count<span class="o">=</span><span class="m">1</span><span class="w"> </span>-v<span class="w"> </span>-timeout<span class="o">=</span>8m
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">BEARSTACK_FACE_SUGGESTION_PERF</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_SUGGESTION_CPU</span><span class="o">=</span>/tmp/face-suggestions.cpu<span class="w"> </span>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/photos<span class="w"> </span>-run<span class="w"> </span><span class="s1">&#39;^TestFaceSuggestionPerformanceStages$&#39;</span><span class="w"> </span>-count<span class="o">=</span><span class="m">1</span><span class="w"> </span>-v
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>go<span class="w"> </span>tool<span class="w"> </span>pprof<span class="w"> </span>-top<span class="w"> </span>/tmp/face-suggestions.cpu
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nv">BEARSTACK_FACE_SUGGESTION_PERF</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">PLAYWRIGHT_BROWSER_CHANNEL</span><span class="o">=</span>chromium<span class="w"> </span>npm<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>--<span class="w"> </span>playwright<span class="w"> </span><span class="nb">test</span><span class="w"> </span>tests/playwright/face-suggestions-performance.spec.mjs
+</span></code></pre></div>
+<p>Der Stufentest vergleicht die feste Abfragereihenfolge mit der bisherigen frei
+planbaren Variante. Die Umfangsmessung protokolliert Cache-Zustände, erste Ausgabe,
+Laufzeit, Antwortzahl, Allokationen und Abbruchverhalten. In normalen Testläufen
+werden die aufwendigen Messungen übersprungen.</p>
+<h4 id="umgesetzte-optimierung">Umgesetzte Optimierung<a class="headerlink" href="#umgesetzte-optimierung" title="Permanent link">&para;</a></h4>
+<p>Die Kandidatenprüfung startet jetzt ausdrücklich bei höchstens <strong>512 Gesicht-IDs
+pro SQL-Paket</strong>. Alle infrage kommenden benannten Gruppen bleiben im Vergleich;
+512 ist keine Obergrenze für Personen, Referenzgesichter oder den Suchbestand.
+Der Plan wird mit und ohne <code>ANALYZE</code> geprüft. Die Namen-, Medien-, Rechte- und
+Revisionsprüfungen bleiben erhalten.</p>
+<p>Ein eigener unveränderlicher Referenzstand lädt nur benannte Gruppen. Aktuelle
+Gruppenrevisionen ermöglichen die Wiederverwendung unveränderter Gruppen nach
+Bearbeitungen; Referenz-/Modelländerungen invalidieren betroffene Cache-Stände.
+Bereits verfügbare Vektoren des Hintergrundabgleichs können ohne wartende Sperre
+geteilt werden. Fehlt der globale Referenzaufbau noch, wird die Auswahl nur für die
+benötigten benannten Gruppen gelesen. Favoriten, Qualitätsregeln und Verteilung auf
+Ordner entsprechen der bestehenden globalen Auswahl. Die temporäre Sortierung kann
+auf Datenträger auslagern; die Lupe löst keinen globalen Neuaufbau aus. Der bestehende
+Hintergrundlauf bleibt für dessen Fortsetzung zuständig, sofern aktiviert.</p>
+<p>Cache-Aufbau wird zwischen Anfragen koordiniert, wartende Aufrufe sind abbrechbar.
+Vergleich und Netzwerkausgabe halten keine Schreibsperre der Gesichtsverarbeitung.
+Quellen, Gruppenrevisionen und Einstellungen werden vor Ausgaben aktuell geprüft;
+bei Konflikten muss die Suche gegebenenfalls wiederholt werden. Das Löschen der
+Gesichtsdaten und Schließen der Bibliothek leeren den Cache. Bereits laufende alte
+Ladevorgänge dürfen ihn danach nicht erneut veröffentlichen.</p>
+<p>Der erste geprüfte Treffer bleibt sofort verfügbar. Weitere Zwischenstände werden
+höchstens alle 100 ms geprüft und ausgegeben; das vollständige Endergebnis folgt
+immer. Ein positiver Vorschlagsabstand wartet weiterhin auf das gesamte Ranking,
+einschließlich eines zweitbesten Kandidaten unterhalb der Ähnlichkeitsschwelle.
+Im Browser löst nur der neueste wartende Stand pro Bildschirmaktualisierung einen
+Neuaufbau der Liste aus. Endergebnis, Fehler und Abbruch verwerfen ausstehende
+Zwischenstände sofort. Das funktioniert auch bei einem pausierten Browser-Frame.</p>
+<p>Neue Messung auf derselben Maschine und mit denselben synthetischen Beständen:</p>
+<table>
+<thead>
+<tr>
+<th>Szenario</th>
+<th style="text-align: right;">Vorher</th>
+<th style="text-align: right;">Nachher</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Warmer Stream, 1.000 Gruppen, ohne <code>ANALYZE</code></td>
+<td style="text-align: right;">1.636 ms</td>
+<td style="text-align: right;">5,01 ms</td>
+</tr>
+<tr>
+<td>Warmer Stream, 10.000 Gruppen, ohne <code>ANALYZE</code></td>
+<td style="text-align: right;">Abbruch erst nach 15.320 ms</td>
+<td style="text-align: right;">erfolgreich nach 56,07 ms</td>
+</tr>
+<tr>
+<td>Warmer Stream, 10.000 Gruppen, nach <code>ANALYZE</code></td>
+<td style="text-align: right;">50,54 ms</td>
+<td style="text-align: right;">55,64 ms</td>
+</tr>
+<tr>
+<td>Ständig bessere Treffer, 10.000 Gruppen</td>
+<td style="text-align: right;">670,05 ms / 315 Antworten</td>
+<td style="text-align: right;">57,38 ms / 2 Antworten</td>
+</tr>
+<tr>
+<td>Allokationen bei ständig besseren Treffern</td>
+<td style="text-align: right;">52,76 MiB</td>
+<td style="text-align: right;">1,48 MiB</td>
+</tr>
+<tr>
+<td>Kalter Stream, 10.000 Gruppen, davon 90 % unbenannt</td>
+<td style="text-align: right;">590,57 ms</td>
+<td style="text-align: right;">60,18 ms</td>
+</tr>
+<tr>
+<td>Erster Zwischenstand in diesem kalten Fall</td>
+<td style="text-align: right;">521,08 ms</td>
+<td style="text-align: right;">52,61 ms</td>
+</tr>
+<tr>
+<td>Allokationen in diesem kalten Fall</td>
+<td style="text-align: right;">551,24 MiB</td>
+<td style="text-align: right;">51,17 MiB</td>
+</tr>
+<tr>
+<td>Go-Heap für 300.000 benannte Referenzen</td>
+<td style="text-align: right;">187,75 MiB</td>
+<td style="text-align: right;">164,40 MiB</td>
+</tr>
+<tr>
+<td>Browser-Burst mit 315 Antworten, 1.440 px</td>
+<td style="text-align: right;">177,6 ms</td>
+<td style="text-align: right;">4,5 ms / ein Listenaufbau</td>
+</tr>
+<tr>
+<td>Derselbe Browser-Burst, 390 px</td>
+<td style="text-align: right;">184,8 ms</td>
+<td style="text-align: right;">2,1 ms / zwei Listenänderungen</td>
+</tr>
+</tbody>
+</table>
+<p>Der neue Aufwand für revisionssichere Snapshots ist bei bereits günstigem SQL-Plan
+leicht höher; bei 10.000 benannten Gruppen bleibt der warme vollständige Vergleich
+hier unter 60 ms. Mit ausstehender Referenzauswahl und 90 % unbenannten Gruppen
+dauert der neue Modal-Aufruf 142,94 ms, während die separat gemessene globale
+Neuauswahl 2.754 ms benötigt. Der kalte Aufbau für ausschließlich benannte Gruppen
+benötigt weiterhin etwa 565 ms. Ein zweiter Aufruf kann während eines blockierten
+Stream-Empfängers fertig werden; zusätzliche Tests prüfen abbrechbare Cache-Wartezeit
+und parallele Favoritenänderungen. Die Browserwerte stammen aus einem isolierten
+Chromium-Lauf ohne echte Vorschaubilder, nicht von einem Android-Gerät.</p>
+<p>Die vollständigen Go-Tests, gezielte Race-Prüfungen, JavaScript-Checks und
+Browser-Regressionen sichern den Ablauf ab. Dies ist eine PATCH-Optimierung innerhalb
+der unveröffentlichten 0.50.0; VERSION und API-Schema bleiben unverändert, eine
+Migration ist nicht erforderlich. Die OpenAPI-Beschreibung dokumentiert die
+Zwischenstände und das Verhalten bei konkurrierenden Änderungen.</p>
 <h2 id="audit-log-in-bearstack">Audit-Log in BearStack<a class="headerlink" href="#audit-log-in-bearstack" title="Permanent link">&para;</a></h2>
 <p>BearStack protokolliert schreibende Aktionen im Laufzeit-Audit-Log. Erfasst werden unter anderem Zeitpunkt, Benutzer, HTTP-Methode, Pfad, Route, Aktion, Ziel, Status, Remote-Adresse und User-Agent. Dazu gehören auch das Anlegen, Ändern, Aktivieren, Deaktivieren und Löschen von Benutzern sowie Passwortänderungen; Passwörter und Hashes werden niemals übernommen. Das Log ist über <code>/log</code> erreichbar und erfordert die Permission <code>system.audit</code>; die Rolle <code>admin</code> enthält diese Berechtigung.</p>
 <p>Das Audit-Log speichert Schreibmethoden wie <code>POST</code>, <code>PUT</code>, <code>PATCH</code> und <code>DELETE</code>. Handler können das Ziel genauer benennen, zum Beispiel ein Dokument, einen Tag, ein Feld oder einen Suchfavoriten. Einträge werden auf die letzten 30 Tage und zusätzlich auf höchstens 50.000 Datensätze begrenzt. Abgewiesene Kontoaktionen werden nur mit einem begrenzten In-Memory-Budget protokolliert, damit fehlerhafte oder anonyme Requests weder SQLite noch den Datenträger fluten können; erfolgreiche Kontoänderungen werden unabhängig davon erfasst.</p>

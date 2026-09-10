@@ -28,7 +28,7 @@ func (s *Server) handleFacePersonSuggestions(w http.ResponseWriter, r *http.Requ
 	control := http.NewResponseController(w)
 	started := false
 	send := func(people photos.PeopleSuggestions, done bool, message string) error {
-		// A stalled browser must not hold the shared reference cache indefinitely.
+		// Bound each socket write independently of snapshot loading and scoring.
 		_ = control.SetWriteDeadline(time.Now().Add(5 * time.Second))
 		if !started {
 			w.Header().Set("Content-Type", "application/x-ndjson")

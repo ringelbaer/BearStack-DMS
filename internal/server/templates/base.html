@@ -333,7 +333,7 @@
     {{range .DateYearLinks}}<a href="{{.URL}}" class="secondary-button {{if .Active}}active{{end}}">{{.Label}}</a>{{end}}
     {{if .DateOverflowYears}}
     <details class="filter-year-menu">
-      <summary class="secondary-button" aria-label="Weitere Jahre anzeigen">...</summary>
+      <summary class="secondary-button" aria-label="Weitere Jahre anzeigen">{{template "more_icon"}}</summary>
       <div>
         {{range .DateOverflowYears}}<a href="{{.URL}}" class="{{if .Active}}active{{end}}">{{.Label}}</a>{{end}}
       </div>
@@ -349,3 +349,5 @@
 </div>
 {{end}}
 {{end}}
+
+{{define "more_icon"}}<svg class="more-icon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>{{end}}

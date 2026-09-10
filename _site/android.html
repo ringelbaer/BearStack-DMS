@@ -546,6 +546,17 @@
       <ul class="md-nav__list">
 
           <li class="md-nav__item">
+  <a href="#einzelne-bilder-teilen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Einzelne Bilder teilen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#lokale-fotoordner" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -910,6 +921,17 @@
       <ul class="md-nav__list">
 
           <li class="md-nav__item">
+  <a href="#einzelne-bilder-teilen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Einzelne Bilder teilen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#lokale-fotoordner" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1145,6 +1167,25 @@ Die kompakte, abgerundete Navigation verbindet Fotos, Ordner und Suche. Das Rast
 zeigt auf breiten Displays sechs statt drei Fotos pro Reihe. Bei großer Schrift
 erhalten Ordner im Hochformat die gesamte Breite für ihre Beschriftung. Das
 adaptive App-Symbol bleibt auch beim runden Android-Beschnitt vollständig sichtbar.</p>
+<h3 id="einzelne-bilder-teilen">Einzelne Bilder teilen<a class="headerlink" href="#einzelne-bilder-teilen" title="Permanent link">&para;</a></h3>
+<p><strong>Teilen</strong> oben im Vollbildbetrachter öffnet die Android-App-Auswahl mit der
+Originaldatei des aktuell angezeigten Fotos, auch aus Karten und lokalen Fotoordnern.
+Die Diashow pausiert beim Antippen. Serverbilder werden erst dann über die bestehende
+HTTPS-Verbindung geladen. Ein Ladehinweis bietet <strong>Abbrechen</strong>; nach einem Fehler
+kannst du den Button erneut verwenden. Schließen, Bildwechsel und Wechsel in den
+Hintergrund brechen die Vorbereitung ab.</p>
+<p>Die ausgewählte App erhält vorübergehenden Lesezugriff auf genau dieses Bild,
+keine BearStack-Zugangsdaten oder Serverlinks. Originaldateien enthalten weiterhin
+ihre gespeicherten Metadaten, gegebenenfalls einschließlich GPS. Lokale Fotos werden
+direkt über ihre MediaStore-URI geteilt, ohne Kopie, Upload oder zusätzliche Berechtigung.</p>
+<p>Serveroriginale werden ohne Bilddekodierung mit dem vorhandenen 64-KiB-Übertragungspuffer
+in einem privaten, ausschließlich für das Teilen freigegebenen Cache vorbereitet.
+Pro Bild sind bis zu 256 MiB möglich; größere Originale lassen sich über <strong>Herunterladen</strong>
+speichern. Fehler und Abbruch entfernen die angefangene Datei. Erfolgreich vorbereitete
+Dateien bleiben für die Empfänger-App verfügbar; vor dem nächsten Server-Share werden
+Dateien ab 24 Stunden sowie ältere Dateien oberhalb der Grenzen bereinigt. Einschließlich
+der laufenden Vorbereitung bleiben höchstens acht Dateien und 512 MiB im Cache.
+Es werden weder weitere Fotos vorgeladen noch alle Galerieeinträge durchsucht.</p>
 <h3 id="lokale-fotoordner">Lokale Fotoordner<a class="headerlink" href="#lokale-fotoordner" title="Permanent link">&para;</a></h3>
 <p>Unter <strong>Weitere Optionen → Einstellungen → Lokale Fotoordner anzeigen</strong> lässt sich
 zusätzlich <strong>Ordner → Dieses Gerät</strong> einschalten. Die Funktion ist standardmäßig aus

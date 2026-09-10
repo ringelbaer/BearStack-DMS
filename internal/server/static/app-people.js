@@ -240,24 +240,38 @@
     updateSelection();
     var pagination = document.querySelector(".people-pagination");
     var parts = document.createDocumentFragment();
+    function pageLabel(element, label, symbol) {
+      element.setAttribute("aria-label", label);
+      var icon = document.createElement("span"); icon.className = "people-page-symbol";
+      icon.setAttribute("aria-hidden", "true"); icon.textContent = symbol;
+      var text = document.createElement("span"); text.className = "people-page-label"; text.textContent = label;
+      element.append(icon, text);
+    }
+    var pageSymbols = { first: "«", prev: "‹", next: "›", last: "»" };
     function pageLink(page, label, relation) {
       var link = document.createElement("a");
       var target = new URL(window.location.href);
       target.searchParams.delete("format"); target.searchParams.set("page", String(page));
       link.href = target.pathname + target.search;
-      link.className = "secondary-button"; link.rel = relation; link.textContent = label;
+      link.className = "secondary-button"; link.rel = relation; link.title = label;
+      pageLabel(link, label, pageSymbols[relation]);
       return link;
     }
     function boundary(page, label, relation, enabled) {
       if (enabled) return pageLink(page, label, relation);
       var disabled = document.createElement("span");
-      disabled.className = "secondary-button"; disabled.setAttribute("aria-disabled", "true"); disabled.textContent = label;
+      disabled.className = "secondary-button"; disabled.setAttribute("aria-disabled", "true");
+      pageLabel(disabled, label, pageSymbols[relation]);
       return disabled;
     }
     if (data.total_pages > 1) parts.append(boundary(1, "Erste Seite", "first", data.has_prev));
     if (data.has_prev) parts.append(pageLink(data.page - 1, "Zurück", "prev"));
     var current = document.createElement("span"); current.className = "people-pagination-current";
-    current.setAttribute("aria-current", "page"); current.textContent = "Seite " + data.page + " von " + data.total_pages; parts.append(current);
+    current.setAttribute("aria-current", "page");
+    current.setAttribute("aria-label", "Seite " + data.page + " von " + data.total_pages);
+    current.dataset.shortPage = data.page + " / " + data.total_pages;
+    var currentLabel = document.createElement("span"); currentLabel.className = "people-page-label"; currentLabel.textContent = current.getAttribute("aria-label");
+    current.append(currentLabel); parts.append(current);
     if (data.has_next) parts.append(pageLink(data.page + 1, "Weiter", "next"));
     if (data.total_pages > 1) parts.append(boundary(data.total_pages, "Letzte Seite", "last", data.has_next));
     pagination.replaceChildren(parts);

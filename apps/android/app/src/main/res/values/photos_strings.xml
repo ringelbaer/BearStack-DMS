@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="photos_share">Teilen</string>
+    <string name="photos_share_preparing">%1$s wird zum Teilen vorbereitet …</string>
+    <string name="photos_share_error">Das Bild konnte nicht zum Teilen vorbereitet werden. Bitte versuche es erneut.</string>
+    <string name="photos_share_unavailable">Auf diesem Gerät ist keine App zum Teilen verfügbar.</string>
+    <string name="photos_share_too_large">Zum Teilen werden Bilder bis 256 MiB unterstützt. Größere Originale kannst du über Herunterladen speichern.</string>
     <string name="photos_media_error">Dieses Medium konnte nicht abgespielt werden.</string>
     <string name="photos_download">Original herunterladen</string>
     <string name="photos_downloading">%1$s wird gespeichert · %2$s</string>

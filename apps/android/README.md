@@ -62,6 +62,29 @@ zeigt auf breiten Displays sechs statt drei Fotos pro Reihe. Bei großer Schrift
 erhalten Ordner im Hochformat die gesamte Breite für ihre Beschriftung. Das
 adaptive App-Symbol bleibt auch beim runden Android-Beschnitt vollständig sichtbar.
 
+### Einzelne Bilder teilen
+
+**Teilen** oben im Vollbildbetrachter öffnet die Android-App-Auswahl mit der
+Originaldatei des aktuell angezeigten Fotos, auch aus Karten und lokalen Fotoordnern.
+Die Diashow pausiert beim Antippen. Serverbilder werden erst dann über die bestehende
+HTTPS-Verbindung geladen. Ein Ladehinweis bietet **Abbrechen**; nach einem Fehler
+kannst du den Button erneut verwenden. Schließen, Bildwechsel und Wechsel in den
+Hintergrund brechen die Vorbereitung ab.
+
+Die ausgewählte App erhält vorübergehenden Lesezugriff auf genau dieses Bild,
+keine BearStack-Zugangsdaten oder Serverlinks. Originaldateien enthalten weiterhin
+ihre gespeicherten Metadaten, gegebenenfalls einschließlich GPS. Lokale Fotos werden
+direkt über ihre MediaStore-URI geteilt, ohne Kopie, Upload oder zusätzliche Berechtigung.
+
+Serveroriginale werden ohne Bilddekodierung mit dem vorhandenen 64-KiB-Übertragungspuffer
+in einem privaten, ausschließlich für das Teilen freigegebenen Cache vorbereitet.
+Pro Bild sind bis zu 256 MiB möglich; größere Originale lassen sich über **Herunterladen**
+speichern. Fehler und Abbruch entfernen die angefangene Datei. Erfolgreich vorbereitete
+Dateien bleiben für die Empfänger-App verfügbar; vor dem nächsten Server-Share werden
+Dateien ab 24 Stunden sowie ältere Dateien oberhalb der Grenzen bereinigt. Einschließlich
+der laufenden Vorbereitung bleiben höchstens acht Dateien und 512 MiB im Cache.
+Es werden weder weitere Fotos vorgeladen noch alle Galerieeinträge durchsucht.
+
 ### Lokale Fotoordner
 
 Unter **Weitere Optionen → Einstellungen → Lokale Fotoordner anzeigen** lässt sich

@@ -64,7 +64,7 @@ func TestPeopleSortHTMLPaginationAndIgnoredRestore(t *testing.T) {
 		t.Fatal(err)
 	}
 	html := out.String()
-	if strings.Count(html, "&amp;sort=date_desc") != 4 || strings.Count(html, "&amp;unknown=1") != 4 || !strings.Contains(html, `value="date_desc" selected`) {
+	if strings.Count(html, "&amp;sort=date_desc") != 8 || strings.Count(html, "&amp;unknown=1") != 4 || !strings.Contains(html, `value="date_desc" selected`) {
 		t.Fatalf("sort control/links lost: %s", html)
 	}
 	if !strings.Contains(html, `href="/photos/people?page=1&amp;q=">Alle Filter aufheben`) {

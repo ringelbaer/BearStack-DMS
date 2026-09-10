@@ -1071,11 +1071,11 @@ async function testPeopleRefreshRetainsImagesWhenCountsChange() {
   assert.equal(title.textContent, "Neu");
   assert.equal(checkbox.getAttribute("aria-label"), "Person auswählen: Neu");
   const links = document.querySelector(".people-pagination").children;
-  assert.equal(links[0].textContent, "Erste Seite");
+  assert.equal(links[0].getAttribute("aria-label"), "Erste Seite");
   assert.equal(new URL(links[0].href, "http://example.test").searchParams.get("page"), "1");
   assert.equal(new URL(links[0].href, "http://example.test").searchParams.get("unknown"), "1");
   assert.equal(new URL(links[0].href, "http://example.test").searchParams.get("sort"), "count_desc");
-  assert.equal(links[links.length - 1].textContent, "Letzte Seite");
+  assert.equal(links[links.length - 1].getAttribute("aria-label"), "Letzte Seite");
   assert.equal(new URL(links[links.length - 1].href, "http://example.test").searchParams.get("page"), "3");
   assert.equal(new URL(links[links.length - 1].href, "http://example.test").searchParams.get("unknown"), "1");
   // Refreshes can shrink the result to one page and later restore navigation.
@@ -1088,8 +1088,14 @@ async function testPeopleRefreshRetainsImagesWhenCountsChange() {
     overview.dispatchEvent({ type: "click", target: ignore });
     await new Promise((resolve) => setImmediate(resolve));
     const controls = document.querySelector(".people-pagination").children;
-    assert.deepEqual(Array.from(controls, control => control.textContent), labels);
+    assert.deepEqual(Array.from(controls, control => control.getAttribute("aria-label")), labels);
     if (total > 1) assert.equal(controls[page === 1 ? 0 : controls.length - 1].getAttribute("aria-disabled"), "true");
+    const counter = Array.from(controls).find(control => control.getAttribute("aria-current") === "page");
+    assert.equal(counter.dataset.shortPage, `${page} / ${total}`);
+    for (const control of Array.from(controls).filter(control => control !== counter)) {
+      assert.equal(control.children[0].getAttribute("aria-hidden"), "true");
+      assert.equal(control.children[1].textContent, control.getAttribute("aria-label"));
+    }
     assert.equal(imageWrites, 0);
   }
 }

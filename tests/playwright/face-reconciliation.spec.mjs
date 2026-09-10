@@ -147,7 +147,7 @@ test("stored face reconciliation works offline with responsive merge review and 
     await waitForReconciliation();
     expect((await status()).settings.reconcile_enabled).toBe(true);
 
-    for (const width of [320, 1440]) {
+    for (const width of [320, 390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `settings overflow at ${width}px`).toBeLessThanOrEqual(1);
     }
@@ -176,6 +176,19 @@ test("stored face reconciliation works offline with responsive merge review and 
       }));
       expect(layout.overflow, `merge review overflow at ${width}px`).toBeLessThanOrEqual(1);
       expect(layout.contained, `merge controls clipped at ${width}px`).toBe(true);
+      for (const card of await cards.all()) {
+        const accept = await card.locator(".face-merge-accept").boundingBox();
+        const reject = await card.locator(".face-merge-reject").boundingBox();
+        expect(accept.height).toBeGreaterThanOrEqual(44);
+        expect(reject.y).toBeGreaterThanOrEqual(accept.y + accept.height + 7);
+        expect(reject.x).toBe(accept.x);
+        if (await card.locator("[data-merge-name]").count()) {
+          const name = await card.locator("[data-merge-name]").boundingBox();
+          expect(name.y).toBe(accept.y);
+          expect(name.x).toBeGreaterThanOrEqual(accept.x + accept.width + 7);
+          expect(name.width).toBe(44);
+        }
+      }
     }
 
     await page.evaluate(() => { window.mergePageMarker = "same document"; });

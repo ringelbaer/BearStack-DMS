@@ -154,6 +154,163 @@ Die Benchmarks sind als Regressionsschutz gedacht. Absolute Zahlen hängen stark
 
 Die GPX-Benchmarks setzen für Messungen ohne Cache auch die LRU-Verwaltung und den Speicherzähler zurück. Reine Go-Testhelfer liegen in `_test.go`-Dateien und werden nicht in das Anwendungsbinary übernommen.
 
+### Performance des Lupen-Gesichtabgleichs
+
+Audit und Optimierung vom **10. September 2026**, Ausgangsstand `9dbf9d3` /
+BearStack 0.50.0. Geprüft wurde der Abgleich im Benenn-Modal über
+`/photos/faces/{id}/suggestions`, den WebUI und Android gemeinsam verwenden.
+Die erste Tabelle und die drei Befunde dokumentieren den **Ausgangsstand**;
+die anschließend umgesetzten Optimierungen und neuen Messwerte folgen darunter.
+
+Die Messung verwendet einen Ryzen 5 9600X, Go 1.26.6 und temporäre SQLite-Datenbanken
+auf Linux-tmpfs. Je Gruppe sind 30 normalisierte Referenzvektoren mit 128 Dimensionen
+und zehn Fotodatensätze vorhanden, insgesamt bis zu 1.000 echte Testverzeichnisse.
+Nur das Quellfoto ist eine echte Bilddatei. Kandidatenbilder, Netzwerk, Thumbnail-
+Dekodierung, NAS-Latenz und Hintergrundverarbeitung sind nicht Teil der Backend-Zeiten.
+Die Werte sind lokale Vergleichsmessungen, keine Zusage für Produktionsbestände.
+
+| Szenario | 1.000 Gruppen / 30.000 Referenzen | 10.000 Gruppen / 300.000 Referenzen |
+| --- | ---: | ---: |
+| Warmer Stream, frühe Treffer, ohne SQLite-Statistiken | 1.636 ms | Abbruch erst nach 15.320 ms trotz 5-s-Deadline |
+| Erster Zwischenstand dabei | 0,68 ms | 2,69 ms |
+| Warmer Stream, frühe Treffer, nach `ANALYZE` der Testdatenbank | 4,34 ms | 50,54 ms |
+| Warmer Stream ohne Treffer | 2,11 ms | 45,98 ms |
+| Ständig bessere Treffer, Stream, nach `ANALYZE` | 59,00 ms / 34 Antworten | 670,05 ms / 315 Antworten |
+| Dieselben ständig besseren Treffer, einzelnes JSON | 6,53 ms | 56,22 ms |
+| Im Referenzcache zusätzlich belegter Go-Heap | 19,46 MiB | 187,75 MiB |
+| Ausstehende Neuauswahl aller Referenzen | 227 ms | 2.646 ms |
+
+Erfolgreiche warme Fälle enthalten drei bis zehn Wiederholungen und zeigen den
+Median; Neuauswahl und Cache-Speicher wurden einmal gemessen. Der große Aufruf ohne
+Statistiken wurde wegen des Fehlplans nach einem Versuch abgebrochen: 15.320 ms sind
+die beobachtete Rückkehr mit Fehler, keine erfolgreiche Suchzeit. Die bereits
+gesetzte 5-s-Deadline begrenzte die laufende SQLite-Operation nicht rechtzeitig.
+Die Stream-Antwortzahlen schließen den Abschluss ein. Gemessene JSON-Nutzlasten
+enthalten die Ranglisten ohne HTTP-Header und zusätzliche NDJSON-Statusfelder.
+
+**Befund 1 – SQL-Abfragereihenfolge, hohe Priorität:**
+`validateFacePersonCandidates` in `internal/photos/faces_candidates.go` prüft
+höchstens 512 bekannte Gesicht-IDs pro Abfrage. Ohne passende Statistiken beginnt
+SQLite trotzdem bei allen öffentlichen Medien über
+`idx_media_index_admin_directory_random`, statt bei diesen IDs. Bei 1.000 Gruppen
+entfallen 1.618 ms auf diese Prüfung, rund 3,3 ms auf das Ranking und 0,4 ms auf
+die Ergebnisaufbereitung. Der CPU-Profiler bestätigt SQLite als Hauptverbraucher.
+Ein ausschließlich im Test erzwungener Start bei den Gesicht-IDs mittels
+`CROSS JOIN` liefert dieselben Kandidaten in 1,65 ms. Eine künftige Korrektur sollte
+die kleine ID-Menge zuerst abfragen und den Plan mit und ohne Statistiken absichern;
+sämtliche aktuellen Sichtbarkeits- und Zuordnungsprüfungen müssen erhalten bleiben.
+`ANALYZE` wurde hier nur als Diagnose auf der Testdatenbank ausgeführt.
+
+**Befund 2 – gemeinsame Sperre und verzögerter Abbruch, hohe Priorität:**
+`suggestPeopleForFace` hält `faceRuntime.mu` von der Quellprüfung bis zum letzten
+Zwischenstand. Der HTTP-Handler schreibt und flusht Zwischenstände innerhalb dieses
+Bereichs. Ein langsamer Empfänger kann weitere Suchen und Gesichtsänderungen damit
+aufhalten. Das fünfsekündige Schreiblimit gilt pro Ausgabe, nicht für die gesamte
+Suche. Ein zweiter Aufruf mit 20-ms-Deadline kehrte im kontrollierten Test auch
+100 ms nach Ablauf nicht zurück, solange der erste Stream blockierte. Empfohlen
+sind abbrechbares Warten und eine Trennung von Cache-Zugriff und Netzwerkausgabe,
+unter Beibehaltung der Revisions- und Sichtbarkeitskontrollen.
+
+**Befund 3 – viele Zwischenstände und vollständiger Cache, mittlere Priorität:**
+Das Streaming prüft bei laufend besseren Treffern viele Gruppen erneut gegen SQL
+und stellt jede geänderte Top-20-Liste neu zusammen. Bei 10.000 Gruppen waren das
+315 Antworten, etwa 396 kB Ranglisten-JSON und 52,76 MiB kumulierte Go-Allokationen
+pro Suche; das einzelne JSON benötigte 1,19 MiB. Die Allokationen sind kein dauerhaft
+belegter Speicher. Der Browser verarbeitet jeden Zwischenstand: 315 bereits
+gepufferte Antworten brauchten mit dem echten Modal-Skript rund 178 ms bei 1.440 px
+und 185 ms bei 390 px Fensterbreite, mit durchgehend höchstens 20 Optionen. Diese
+isolierte Chromium-Messung enthält keine echten Vorschaubilder und ist kein
+Android-Gerätebenchmark. Android hält bereits nur den neuesten wartenden Stand.
+Eine zeitliche Begrenzung der Zwischenstände und ein zusammengefasstes Rendern pro
+Browser-Frame können den Aufwand reduzieren, ohne den ersten Treffer zu verzögern.
+
+Der kalte Cache lädt auch Referenzen unbenannter Gruppen. Bei 90 % unbenannten
+Gruppen dauerte der erste Zwischenstand mit 300.000 Referenzen noch etwa 521 ms;
+der gesamte Aufruf allokierte rund 551 MiB, obwohl nur 10 % der Gruppen verglichen
+wurden. Ein ausstehender Referenzneuaufbau läuft vor dem ersten Treffer. Favoriten
+können die normale Zielanzahl von 30 Referenzen zusätzlich überschreiten. Weitere
+Optimierungen sollten deshalb Cache-Aufbau und Referenzvorbereitung gesondert messen.
+Ein positiver Vorschlagsabstand wartet absichtlich auf das vollständige Ranking.
+
+Reproduzieren (opt-in, ausschließlich temporäre Daten):
+
+```sh
+BEARSTACK_FACE_SUGGESTION_PERF=1 go test ./internal/photos -run '^TestFaceSuggestionPerformance$' -count=1 -v -timeout=8m
+BEARSTACK_FACE_SUGGESTION_PERF=1 BEARSTACK_FACE_SUGGESTION_CPU=/tmp/face-suggestions.cpu go test ./internal/photos -run '^TestFaceSuggestionPerformanceStages$' -count=1 -v
+go tool pprof -top /tmp/face-suggestions.cpu
+BEARSTACK_FACE_SUGGESTION_PERF=1 PLAYWRIGHT_BROWSER_CHANNEL=chromium npm exec -- playwright test tests/playwright/face-suggestions-performance.spec.mjs
+```
+
+Der Stufentest vergleicht die feste Abfragereihenfolge mit der bisherigen frei
+planbaren Variante. Die Umfangsmessung protokolliert Cache-Zustände, erste Ausgabe,
+Laufzeit, Antwortzahl, Allokationen und Abbruchverhalten. In normalen Testläufen
+werden die aufwendigen Messungen übersprungen.
+
+#### Umgesetzte Optimierung
+
+Die Kandidatenprüfung startet jetzt ausdrücklich bei höchstens **512 Gesicht-IDs
+pro SQL-Paket**. Alle infrage kommenden benannten Gruppen bleiben im Vergleich;
+512 ist keine Obergrenze für Personen, Referenzgesichter oder den Suchbestand.
+Der Plan wird mit und ohne `ANALYZE` geprüft. Die Namen-, Medien-, Rechte- und
+Revisionsprüfungen bleiben erhalten.
+
+Ein eigener unveränderlicher Referenzstand lädt nur benannte Gruppen. Aktuelle
+Gruppenrevisionen ermöglichen die Wiederverwendung unveränderter Gruppen nach
+Bearbeitungen; Referenz-/Modelländerungen invalidieren betroffene Cache-Stände.
+Bereits verfügbare Vektoren des Hintergrundabgleichs können ohne wartende Sperre
+geteilt werden. Fehlt der globale Referenzaufbau noch, wird die Auswahl nur für die
+benötigten benannten Gruppen gelesen. Favoriten, Qualitätsregeln und Verteilung auf
+Ordner entsprechen der bestehenden globalen Auswahl. Die temporäre Sortierung kann
+auf Datenträger auslagern; die Lupe löst keinen globalen Neuaufbau aus. Der bestehende
+Hintergrundlauf bleibt für dessen Fortsetzung zuständig, sofern aktiviert.
+
+Cache-Aufbau wird zwischen Anfragen koordiniert, wartende Aufrufe sind abbrechbar.
+Vergleich und Netzwerkausgabe halten keine Schreibsperre der Gesichtsverarbeitung.
+Quellen, Gruppenrevisionen und Einstellungen werden vor Ausgaben aktuell geprüft;
+bei Konflikten muss die Suche gegebenenfalls wiederholt werden. Das Löschen der
+Gesichtsdaten und Schließen der Bibliothek leeren den Cache. Bereits laufende alte
+Ladevorgänge dürfen ihn danach nicht erneut veröffentlichen.
+
+Der erste geprüfte Treffer bleibt sofort verfügbar. Weitere Zwischenstände werden
+höchstens alle 100 ms geprüft und ausgegeben; das vollständige Endergebnis folgt
+immer. Ein positiver Vorschlagsabstand wartet weiterhin auf das gesamte Ranking,
+einschließlich eines zweitbesten Kandidaten unterhalb der Ähnlichkeitsschwelle.
+Im Browser löst nur der neueste wartende Stand pro Bildschirmaktualisierung einen
+Neuaufbau der Liste aus. Endergebnis, Fehler und Abbruch verwerfen ausstehende
+Zwischenstände sofort. Das funktioniert auch bei einem pausierten Browser-Frame.
+
+Neue Messung auf derselben Maschine und mit denselben synthetischen Beständen:
+
+| Szenario | Vorher | Nachher |
+| --- | ---: | ---: |
+| Warmer Stream, 1.000 Gruppen, ohne `ANALYZE` | 1.636 ms | 5,01 ms |
+| Warmer Stream, 10.000 Gruppen, ohne `ANALYZE` | Abbruch erst nach 15.320 ms | erfolgreich nach 56,07 ms |
+| Warmer Stream, 10.000 Gruppen, nach `ANALYZE` | 50,54 ms | 55,64 ms |
+| Ständig bessere Treffer, 10.000 Gruppen | 670,05 ms / 315 Antworten | 57,38 ms / 2 Antworten |
+| Allokationen bei ständig besseren Treffern | 52,76 MiB | 1,48 MiB |
+| Kalter Stream, 10.000 Gruppen, davon 90 % unbenannt | 590,57 ms | 60,18 ms |
+| Erster Zwischenstand in diesem kalten Fall | 521,08 ms | 52,61 ms |
+| Allokationen in diesem kalten Fall | 551,24 MiB | 51,17 MiB |
+| Go-Heap für 300.000 benannte Referenzen | 187,75 MiB | 164,40 MiB |
+| Browser-Burst mit 315 Antworten, 1.440 px | 177,6 ms | 4,5 ms / ein Listenaufbau |
+| Derselbe Browser-Burst, 390 px | 184,8 ms | 2,1 ms / zwei Listenänderungen |
+
+Der neue Aufwand für revisionssichere Snapshots ist bei bereits günstigem SQL-Plan
+leicht höher; bei 10.000 benannten Gruppen bleibt der warme vollständige Vergleich
+hier unter 60 ms. Mit ausstehender Referenzauswahl und 90 % unbenannten Gruppen
+dauert der neue Modal-Aufruf 142,94 ms, während die separat gemessene globale
+Neuauswahl 2.754 ms benötigt. Der kalte Aufbau für ausschließlich benannte Gruppen
+benötigt weiterhin etwa 565 ms. Ein zweiter Aufruf kann während eines blockierten
+Stream-Empfängers fertig werden; zusätzliche Tests prüfen abbrechbare Cache-Wartezeit
+und parallele Favoritenänderungen. Die Browserwerte stammen aus einem isolierten
+Chromium-Lauf ohne echte Vorschaubilder, nicht von einem Android-Gerät.
+
+Die vollständigen Go-Tests, gezielte Race-Prüfungen, JavaScript-Checks und
+Browser-Regressionen sichern den Ablauf ab. Dies ist eine PATCH-Optimierung innerhalb
+der unveröffentlichten 0.50.0; VERSION und API-Schema bleiben unverändert, eine
+Migration ist nicht erforderlich. Die OpenAPI-Beschreibung dokumentiert die
+Zwischenstände und das Verhalten bei konkurrierenden Änderungen.
+
 ## Audit-Log in BearStack
 
 BearStack protokolliert schreibende Aktionen im Laufzeit-Audit-Log. Erfasst werden unter anderem Zeitpunkt, Benutzer, HTTP-Methode, Pfad, Route, Aktion, Ziel, Status, Remote-Adresse und User-Agent. Dazu gehören auch das Anlegen, Ändern, Aktivieren, Deaktivieren und Löschen von Benutzern sowie Passwortänderungen; Passwörter und Hashes werden niemals übernommen. Das Log ist über `/log` erreichbar und erfordert die Permission `system.audit`; die Rolle `admin` enthält diese Berechtigung.

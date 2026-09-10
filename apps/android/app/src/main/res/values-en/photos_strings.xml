@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="photos_share">Share</string>
+    <string name="photos_share_preparing">Preparing %1$s for sharing …</string>
+    <string name="photos_share_error">The image could not be prepared for sharing. Please try again.</string>
+    <string name="photos_share_unavailable">No app is available for sharing on this device.</string>
+    <string name="photos_share_too_large">Sharing supports images up to 256 MiB. You can save larger originals using Download.</string>
     <string name="photos_media_error">Could not play this media file.</string>
     <string name="photos_download">Download original</string>
     <string name="photos_downloading">Saving %1$s · %2$s</string>

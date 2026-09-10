@@ -147,6 +147,7 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                                 colors=TopAppBarDefaults.topAppBarColors(containerColor=Color.Transparent),navigationIcon={
                                     IconButton(onClick=onClose) {Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_close))}
                                 },actions={
+                                    if(current.type=="image") PhotoShareAction(current,controller.service,onShare={playing=false;controls=true})
                                     controller.downloads?.let {DownloadPhotoAction(current,it)}
                                     IconButton(onClick={infoOpen=true}) {Icon(painterResource(R.drawable.ic_info),stringResource(R.string.photos_info))}
                                     if(!standalone) IconButton(onClick={settingsOpen=true}) {Icon(painterResource(R.drawable.ic_more_horiz),stringResource(if(frame) R.string.photos_frame_settings else R.string.photos_slideshow_settings))}

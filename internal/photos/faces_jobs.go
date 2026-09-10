@@ -144,7 +144,11 @@ func (l *Library) ClearFaces(ctx context.Context) error {
 	l.faceRuntime.graph = nil
 	l.faceRuntime.people = nil
 	l.faceRuntime.nodes = nil
-	return tx.Commit()
+	err = tx.Commit()
+	if err == nil {
+		l.faceSuggestions.clear()
+	}
+	return err
 }
 
 func (l *Library) SetFaceProcessingEnabled(ctx context.Context, enabled bool) error {

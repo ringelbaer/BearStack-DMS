@@ -30,8 +30,21 @@ Ordner und Datum jeweils in beiden Richtungen. Ordner bezeichnet den Vorschauord
 Datum das neueste sichtbare Foto je Person (Aufnahmezeit, ersatzweise Dateiänderung).
 Die Reihenfolge gilt für den gesamten Trefferbestand, bleibt beim Blättern und nach
 Bearbeitungen erhalten und wird zusammen mit den Filtern pro Benutzer im Browser
-gespeichert. Ohne JavaScript übernimmt **Suchen** die Auswahl. Details stehen in der
+gespeichert. Ohne JavaScript übernimmt **Suchen**, bei unbenannten und ignorierten
+Gesichtern **Sortieren**, die Auswahl. Details stehen in der
 [Foto-Anleitung](_site-src/docs/fotos.md#personen-sortieren).
+
+Die Filterbuttons **Alle**, **Benannt**, **Unbenannt** und **Ignoriert** wechseln die
+Personenansicht mit einem Klick und erhalten die Sortierung. Bei unbenannten und
+ignorierten Gesichtern entfällt die Namenssuche; ein vorheriger Suchtext wird beim
+Wechsel verworfen. Die Seitennavigation bleibt auf schmalen Bildschirmen kompakt.
+
+Der Lupen-Gesichtabgleich verwendet unveränderliche Referenzstände benannter Gruppen
+und blockiert während Vergleich und Streaming keine Gesichtsänderungen. Erste Treffer
+erscheinen sofort, weitere Zwischenstände werden gebündelt. Alle infrage kommenden
+benannten Gruppen bleiben berücksichtigt; 512 Gesicht-IDs sind nur die Paketgröße
+der Datenbankprüfung. Der [Performance-Bericht](_site-src/docs/tests-und-audit.md#performance-des-lupen-gesichtabgleichs)
+enthält reproduzierbare Vorher-/Nachher-Messungen mit bis zu 300.000 Referenzen.
 
 ## BearStack Fotos für Android
 
@@ -47,7 +60,9 @@ Die gesamte Android-Oberfläche einschließlich Personenverwaltung, Hilfen, Stat
 
 Native Karten zeigen GPS-Aufnahmen je Ordner/Suche und in den Foto-Informationen. Über **Ebenen** lassen sich mehrere GPX-Tracks einblenden, auch in Ordnern ohne GPS-Fotos. Trackabschnitte bleiben getrennt; beim Zoomen werden passende Details nachgeladen. Die Karten-API bündelt den vollständigen indexierten Bestand pro Ausschnitt in höchstens 289 Marker; öffentliche Kartenbilder verwenden einen eigenen HTTP-Cache ohne BearStack-Zugangsdaten. Die gemeinsame Fotorouten-Gruppierung benötigt konstanten Zwischenspeicher und berücksichtigt Orte beiderseits der Datumsgrenze; **Ebenen → Fotoroute** zeigt sie als gestrichelte Linie mit höchstens 4.096 Koordinaten zusätzlich zu den GPX-Tracks. Die Route übernimmt Suche und Typfilter; neu private GPS-Ordner werden auch vor einem Rescan ausgeschlossen.
 
-Ab BearStack **0.50.0** startet **BearStack Fotos 0.10.0** mit einer nativen, lesenden Galerie. Fotos erscheinen in Datumsgruppen; Ordner zeigen zwei Vorschaubilder und ihre Beschriftung. Die Suche verwendet dieselbe Syntax wie im Browser. Vollbild, Zoom, Foto-Metadaten, Original-Download, einstellbare Diashow, Fotoframe und bedarfsgeladene Markdown-/Textbeiträge verwenden die gemeinsame HTTPS-Verbindung. Ein Konto mit `photos.read` reicht für die Galerie; die bisherigen Personenfunktionen sind für `photos.edit` über **Weitere Optionen → Personen verwalten** erreichbar. Die App-ID bleibt erhalten. Der adaptive Bär ist für den runden Icon-Beschnitt verkleinert. Die Foto-Infos zeigen die Uhrzeit samt gespeicherter Zeitzone, Bewertung, Personen und Schlagwörter. Der Frame spielt auch Videos und Audio bis zum Ende und kann einzelne Medien wiederholen.
+Ab BearStack **0.50.0** startet **BearStack Fotos 0.10.0** mit einer nativen, lesenden Galerie. Fotos erscheinen in Datumsgruppen; Ordner zeigen zwei Vorschaubilder und ihre Beschriftung. Die Suche verwendet dieselbe Syntax wie im Browser. Vollbild, Zoom, Foto-Metadaten, Teilen einzelner Originalbilder, Original-Download, einstellbare Diashow, Fotoframe und bedarfsgeladene Markdown-/Textbeiträge verwenden die gemeinsame HTTPS-Verbindung. Ein Konto mit `photos.read` reicht für die Galerie; die bisherigen Personenfunktionen sind für `photos.edit` über **Weitere Optionen → Personen verwalten** erreichbar. Die App-ID bleibt erhalten. Der adaptive Bär ist für den runden Icon-Beschnitt verkleinert. Die Foto-Infos zeigen die Uhrzeit samt gespeicherter Zeitzone, Bewertung, Personen und Schlagwörter. Der Frame spielt auch Videos und Audio bis zum Ende und kann einzelne Medien wiederholen.
+
+**Teilen** im Android-Bildbetrachter öffnet die System-App-Auswahl für das aktuelle Originalbild und pausiert die Diashow. Serverbilder werden erst beim Antippen abbrechbar in einen begrenzten privaten Cache geladen; lokale Fotos werden direkt aus MediaStore geteilt. Empfänger erhalten nur vorübergehenden Lesezugriff auf die gewählte Datei. Gespeicherte Metadaten bleiben im Original erhalten. Details und Größenlimits stehen in der [Android-Anleitung](apps/android/README.md#einzelne-bilder-teilen).
 
 Ab BearStack **0.30.0** steht unter [`apps/android/`](apps/android/README.md) eine native Android-App (Android 8.0+, App-Version 0.10.0) zur Verfügung. Sie zeigt bis zu vier Gesichtsausschnitte, unterstützt Benennen und Zuordnen mit Namensvorschlägen, Abtrennen, Ignorieren mit klickbarer Rückgängig-Meldung am oberen Bildschirmrand bei weiter bedienbarer Ansicht und lokale Statistiken. Die aktuelle App benötigt BearStack **0.35.0**: Beim Halten eines Gesichtsausschnitts zeigt sie das vollständige Originalfoto, beim Loslassen wieder das Grid. Eine dünne Bounding Box markiert das Gesicht; Herunterwischen während des Haltens zoomt zum Gesicht, Hochwischen wieder heraus. Unter Ausschnitten und Originalfoto steht der vollständige, nach Galerieregeln aufbereitete Bildpfad. Wischaktionen funktionieren auch auf dem freien Hintergrund der Bearbeitungsansicht. Rechtswischen holt die zuletzt übersprungene Person zurück und korrigiert die lokale Statistik. Erforderlich sind HTTPS und ein Konto mit Personenrechten; ab BearStack 0.36.0 reicht dafür „Fotos bearbeiten“ (`photos.edit`). Selbstsignierte Zertifikate werden vor der Anmeldung über ihren SHA-256-Fingerabdruck bestätigt. Ab App 0.5.2 bleibt der Inhalt beim Ein- und Ausblenden des Ladebalkens an derselben Position. Ab App 0.5.3 warten automatische Ignorier-Schreibvorgänge auf das Schließen eines offenen Namensdialogs; ablaufende Rückgängig-Meldungen unterbrechen dessen Texteingabe und Tastatur nicht mehr. App 0.4.1 behebt den allgemeinen Fehler beim Kontowechsel; falsche Zugangsdaten und fehlende Personenrechte werden auch im Zertifikatsdialog angezeigt.
 

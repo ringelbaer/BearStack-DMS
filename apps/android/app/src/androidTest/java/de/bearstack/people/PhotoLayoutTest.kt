@@ -55,7 +55,7 @@ class PhotoLayoutTest {
             override fun original(photo: Photo)=photoFile.toURI().toString()
         }
         lateinit var controller:PhotosController
-        compose.runOnUiThread {controller=PhotosController(owner,api,PhotoSession("visual",false,240,240,1280,2048,5,8))}
+        compose.runOnUiThread {controller=PhotosController(owner,api,PhotoSession("visual",false,240,240,1280,2048,5,8),application=app)}
         val name="${locale.language}-${if(dark) "dark" else "light"}-${if(landscape) "landscape" else "portrait"}-${scale.toInt()}"
         fun save(part: String,node: SemanticsNodeInteraction=compose.onRoot()) {
             node.captureToImage().asAndroidBitmap().let {bitmap ->
@@ -79,6 +79,9 @@ class PhotoLayoutTest {
             compose.onNodeWithText(if(german) "Fotos" else "Photos").assertIsDisplayed()
             save("grid")
             compose.onNodeWithContentDescription("Photo 1").performClick()
+            compose.onNodeWithContentDescription(if(german) "Teilen" else "Share").assertIsDisplayed()
+            compose.onNodeWithContentDescription(if(german) "Original herunterladen" else "Download original").assertIsDisplayed()
+            save("viewer",compose.onNode(isDialog()))
             compose.onNodeWithContentDescription(if(german) "Informationen" else "Information").assertIsDisplayed().performClick()
             compose.waitUntil(10_000) {compose.onAllNodesWithText("BearStack Camera",substring=true).fetchSemanticsNodes().isNotEmpty()}
             save("info",compose.onNode(isDialog() and hasAnyDescendant(hasText("BearStack Camera",substring=true))))
