@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photos_settings">Einstellungen</string>
+    <string name="photos_device">Dieses Gerät</string>
+    <string name="photos_device_summary">Lokale Fotoordner</string>
+    <string name="photos_device_enable">Lokale Fotoordner anzeigen</string>
+    <string name="photos_device_setting_help">Zeigt unter „Ordner“ dieses Gerät mit seinen Fotoordnern. Die Fotos bleiben auf dem Gerät und werden nicht hochgeladen. Standardmäßig ausgeschaltet.</string>
+    <string name="photos_device_permission">Erlaube den Fotozugriff, um lokale Fotoordner anzuzeigen. Bei abgelehntem Zugriff kannst du ihn in den Android-Einstellungen freigeben.</string>
+    <string name="photos_device_selected">Es werden nur freigegebene Fotos und deren Ordner angezeigt.</string>
+    <string name="photos_device_grant">Fotozugriff erlauben / Auswahl ändern</string>
+    <string name="photos_device_android_settings">Android-App-Einstellungen</string>
+    <string name="photos_device_error">Lokale Fotos konnten nicht geladen werden. Bitte erneut versuchen.</string>
+</resources>

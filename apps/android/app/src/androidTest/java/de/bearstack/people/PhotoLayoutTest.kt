@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Path
 import android.graphics.drawable.AdaptiveIconDrawable
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.*
@@ -63,10 +64,11 @@ class PhotoLayoutTest {
         }
         try {
             compose.setContent {
+                val registry=checkNotNull(LocalActivityResultRegistryOwner.current)
                 val base=LocalContext.current
                 val config=Configuration(LocalConfiguration.current).apply {setLocale(locale);fontScale=scale}
                 val context=base.createConfigurationContext(config)
-                CompositionLocalProvider(LocalContext provides context,LocalResources provides context.resources,
+                CompositionLocalProvider(LocalActivityResultRegistryOwner provides registry,LocalContext provides context,LocalResources provides context.resources,
                     LocalConfiguration provides config,LocalDensity provides Density(LocalDensity.current.density,scale)) {
                     BearStackTheme(dark) {PhotosScreen(controller,images,false,{fail("reader reached editing")},{})}
                 }

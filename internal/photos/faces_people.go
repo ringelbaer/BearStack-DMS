@@ -93,8 +93,15 @@ func (l *Library) AutomaticFaces(ctx context.Context, path string) ([]Recognized
 	return faces, nil
 }
 
-func (l *Library) People(ctx context.Context, id int64, page int, q string, knownOnly, unknownOnly bool) (PeoplePage, error) {
+func (l *Library) People(ctx context.Context, id int64, page int, q string, knownOnly, unknownOnly bool, sorting ...string) (PeoplePage, error) {
 	out := PeoplePage{Query: q, PersonID: id, Page: max(1, page), People: []Person{}, KnownOnly: knownOnly && !unknownOnly && id == 0, UnknownOnly: unknownOnly && id == 0}
+	var err error
+	if id == 0 {
+		out.Sort, err = peopleSortOption(sorting)
+		if err != nil {
+			return out, err
+		}
+	}
 	out.HasPrev = out.Page > 1
 	if err := l.refreshPeoplePageVisibility(ctx, id, q, out.KnownOnly, out.UnknownOnly); err != nil {
 		return out, err
@@ -113,17 +120,13 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 			return out, err
 		}
 		out.setTotal(total)
-		// Materialize the page first: portrait geometry and directory need at most
-		// 61 primary-key lookups, regardless of the number of groups or page offset.
-		rows, err := l.index.db.QueryContext(ctx, `WITH page AS MATERIALIZED (
- SELECT p.id,p.name,p.name_fold,
- (SELECT count(DISTINCT path) FROM photo_faces WHERE person_id=p.id AND ignored=0) AS photo_count,
- (SELECT min(id) FROM photo_faces WHERE person_id=p.id AND ignored=0) AS face_id
- FROM photo_people p WHERE p.name_fold LIKE ? ESCAPE '\'`+knownFilter+`
- AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=p.id AND ignored=0)
- ORDER BY p.name_fold,p.id LIMIT 61 OFFSET ?)
- SELECT p.id,p.name,p.photo_count,f.id,f.path,f.x,f.y,f.width,f.height
- FROM page p JOIN photo_faces f ON f.id=p.face_id ORDER BY p.name_fold,p.id`, pattern, (out.Page-1)*60)
+		reader, release, err := l.peopleSortReader(ctx, out.Sort)
+		if err != nil {
+			return out, err
+		}
+		defer release()
+		// Sorting precedes pagination; portrait geometry stays limited to this page.
+		rows, err := reader.QueryContext(ctx, peopleOverviewSQL(out.Sort, knownFilter), pattern, (out.Page-1)*60)
 		if err != nil {
 			return out, err
 		}
@@ -148,7 +151,7 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 		}
 		return out, rows.Err()
 	}
-	err := l.index.db.QueryRowContext(ctx, `SELECT name FROM photo_people WHERE id=? AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=? AND ignored=0)`, id, id).Scan(&out.Name)
+	err = l.index.db.QueryRowContext(ctx, `SELECT name FROM photo_people WHERE id=? AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=? AND ignored=0)`, id, id).Scan(&out.Name)
 	if err != nil {
 		return out, err
 	}
@@ -178,8 +181,13 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 
 // IgnoredFaces lists individual ignored detections, including groups with no
 // active faces. Pagination happens in SQLite, using the partial ignored index.
-func (l *Library) IgnoredFaces(ctx context.Context, page int, q string, knownOnly bool) (PeoplePage, error) {
+func (l *Library) IgnoredFaces(ctx context.Context, page int, q string, knownOnly bool, sorting ...string) (PeoplePage, error) {
 	out := PeoplePage{Query: q, Page: max(1, page), People: []Person{}, Faces: []RecognizedFace{}, KnownOnly: knownOnly, IgnoredOnly: true}
+	var err error
+	out.Sort, err = peopleSortOption(sorting)
+	if err != nil {
+		return out, err
+	}
 	out.HasPrev = out.Page > 1
 	if err := l.refreshPeoplePageVisibility(ctx, 0, q, knownOnly, false); err != nil {
 		return out, err
@@ -193,7 +201,12 @@ func (l *Library) IgnoredFaces(ctx context.Context, page int, q string, knownOnl
 		return out, err
 	}
 	out.setTotal(total)
-	rows, err := l.index.db.QueryContext(ctx, `SELECT `+faceColumns+` FROM photo_faces f JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path WHERE f.ignored=1 AND m.admin_only=0 AND p.name_fold LIKE ? ESCAPE '\'`+knownFilter+` ORDER BY f.id LIMIT 61 OFFSET ?`, searchtext.LikeContainsPattern(searchtext.GermanFold(q)), (out.Page-1)*60)
+	reader, release, err := photoFileTempConn(ctx, l.index.db)
+	if err != nil {
+		return out, err
+	}
+	defer release()
+	rows, err := reader.QueryContext(ctx, ignoredFacesSQL(out.Sort, knownFilter), searchtext.LikeContainsPattern(searchtext.GermanFold(q)), (out.Page-1)*60)
 	if err != nil {
 		return out, err
 	}

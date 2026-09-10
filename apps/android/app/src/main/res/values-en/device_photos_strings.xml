@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photos_settings">Settings</string>
+    <string name="photos_device">This device</string>
+    <string name="photos_device_summary">Local photo folders</string>
+    <string name="photos_device_enable">Show local photo folders</string>
+    <string name="photos_device_setting_help">Shows this device and its photo folders under “Folders”. Photos stay on the device and are not uploaded. Off by default.</string>
+    <string name="photos_device_permission">Allow photo access to show local photo folders. If access was denied, you can allow it in Android settings.</string>
+    <string name="photos_device_selected">Only allowed photos and their folders are shown.</string>
+    <string name="photos_device_grant">Allow photo access / change selection</string>
+    <string name="photos_device_android_settings">Android app settings</string>
+    <string name="photos_device_error">Could not load local photos. Please try again.</string>
+</resources>

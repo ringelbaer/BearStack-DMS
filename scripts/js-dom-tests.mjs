@@ -1055,7 +1055,7 @@ async function testPeopleRefreshRetainsImagesWhenCountsChange() {
     peopleSelectionControls(),
     el("div", { class: "people-pagination" }));
   const context = createContext(document);
-  context.location.href = "http://example.test/photos/people?unknown=1";
+  context.location.href = "http://example.test/photos/people?unknown=1&sort=count_desc";
   context.history = { state: null, replaceState() {} };
   let pageData = { page: 2, total_pages: 3, has_prev: true, has_next: true };
   context.fetch = async (url, options) => ({ ok: true, json: async () => options.method === "POST" ?
@@ -1074,6 +1074,7 @@ async function testPeopleRefreshRetainsImagesWhenCountsChange() {
   assert.equal(links[0].textContent, "Erste Seite");
   assert.equal(new URL(links[0].href, "http://example.test").searchParams.get("page"), "1");
   assert.equal(new URL(links[0].href, "http://example.test").searchParams.get("unknown"), "1");
+  assert.equal(new URL(links[0].href, "http://example.test").searchParams.get("sort"), "count_desc");
   assert.equal(links[links.length - 1].textContent, "Letzte Seite");
   assert.equal(new URL(links[links.length - 1].href, "http://example.test").searchParams.get("page"), "3");
   assert.equal(new URL(links[links.length - 1].href, "http://example.test").searchParams.get("unknown"), "1");
@@ -1095,7 +1096,7 @@ async function testPeopleRefreshRetainsImagesWhenCountsChange() {
 
 function testPeopleRemembersPageAndHonorsExplicitFilters() {
   const key = "bearstack.people.lastPage:manager";
-  const stored = JSON.stringify({ page: 7, q: "Petra", known: true, ignored: true });
+  const stored = JSON.stringify({ page: 7, q: "Petra", known: true, ignored: true, sort: "date_desc" });
   function setup(href, initial = stored, blocked = false) {
     const document = new TestDocument();
     document.body.append(el("nav", { "data-people-page": "2", "data-people-user": "manager" }));
@@ -1114,7 +1115,8 @@ function testPeopleRemembersPageAndHonorsExplicitFilters() {
   assert.equal(destination.searchParams.get("q"), "Petra");
   assert.equal(destination.searchParams.get("known"), "1");
   assert.equal(destination.searchParams.get("ignored"), "1");
-  for (const query of ["?page=2", "?q=", "?ignored=1", "?known=1", "?unknown=1", "?unknown=0", "?filter=all", "?filter=known", "?filter=unknown", "?filter=ignored"]) {
+  assert.equal(destination.searchParams.get("sort"), "date_desc");
+  for (const query of ["?sort=name_asc", "?sort=count_desc", "?page=2", "?q=", "?ignored=1", "?known=1", "?unknown=1", "?unknown=0", "?filter=all", "?filter=known", "?filter=unknown", "?filter=ignored"]) {
     const explicit = setup("http://example.test/photos/people" + query);
     assert.equal(explicit.context.redirect, undefined);
     assert.equal(JSON.parse(explicit.values.get(key)).page, 2);
@@ -1127,6 +1129,10 @@ function testPeopleRemembersPageAndHonorsExplicitFilters() {
   const reset = setup("http://example.test/photos/people?page=1&q=", unknownState);
   assert.equal(reset.context.redirect, undefined);
   assert.equal(JSON.parse(reset.values.get(key)).unknown, false);
+  assert.equal(JSON.parse(reset.values.get(key)).sort, "name_asc");
+  assert.equal(JSON.parse(setup("http://example.test/photos/people?sort=folder_desc").values.get(key)).sort, "folder_desc");
+  const invalidSort = new URL(setup("http://example.test/photos/people", JSON.stringify({page:1,q:"",sort:"unsafe"})).context.redirect, "http://example.test");
+  assert.equal(invalidSort.searchParams.has("sort"), false);
   const explicitUnknown = setup("http://example.test/photos/people?unknown=1&known=1&ignored=1");
   assert.equal(JSON.parse(explicitUnknown.values.get(key)).unknown, true);
   assert.equal(JSON.parse(explicitUnknown.values.get(key)).known, false);

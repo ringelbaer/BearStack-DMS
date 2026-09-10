@@ -62,6 +62,49 @@ zeigt auf breiten Displays sechs statt drei Fotos pro Reihe. Bei großer Schrift
 erhalten Ordner im Hochformat die gesamte Breite für ihre Beschriftung. Das
 adaptive App-Symbol bleibt auch beim runden Android-Beschnitt vollständig sichtbar.
 
+### Lokale Fotoordner
+
+Unter **Weitere Optionen → Einstellungen → Lokale Fotoordner anzeigen** lässt sich
+zusätzlich **Ordner → Dieses Gerät** einschalten. Die Funktion ist standardmäßig aus
+und die Einstellung bleibt auf dem Gerät gespeichert. Unter dem Hauptordner stehen
+die von Android erkannten Fotoordner, beispielsweise Camera, Screenshots und Pictures,
+mit Medienanzahl und bis zu zwei Vorschauen. Ein Ordner öffnet seine Fotos im
+fortlaufenden Raster; Vollbild, Zoom, Diashow und lokale Dateiinformationen sind verfügbar.
+Zurück führt über das Gerät wieder zur Servergalerie. Die Tabs Fotos und Suchen
+zeigen weiterhin den Serverbestand.
+
+Beim ersten Aktivieren fragt Android nach Fotozugriff. Ab Android 14 kannst du auch
+nur einzelne Fotos freigeben; dann erscheinen ausschließlich diese Fotos und ihre
+Ordner. **Fotozugriff erlauben / Auswahl ändern** in den App-Einstellungen ermöglicht
+eine neue Auswahl. Bei dauerhaft abgelehntem Zugriff führt **Android-App-Einstellungen**
+zur Freigabe. Deaktivieren blendet das Gerät aus; vorhandene Android-Berechtigungen
+können separat dort entzogen werden.
+
+Die App liest ausschließlich den lokalen Android-Medienindex (MediaStore). Es gibt
+keinen Upload und keinen Serveraufruf für lokale Fotos. Videos, private App-Dateien
+und nicht im Medienindex enthaltene Ordner gehören nicht zu dieser Ansicht.
+SD-Karten-Fotoordner erscheinen, soweit Android sie bereitstellt; gleiche Ordnernamen
+auf unterschiedlichen Datenträgern bleiben getrennt. Lokale Bilder werden nur im
+Arbeitsspeicher mit maximal 16 MiB Bildcache gehalten, ohne Disk-Cache. Beim Verlassen
+der lokalen Ansicht oder Wechsel in den Hintergrund werden Anfragen abgebrochen
+und der lokale Bildcache geleert. Nach der Rückkehr werden Fotozugriff und Medienindex
+neu geprüft; Änderungen am Medienindex aktualisieren die offene Ansicht mit kurzer
+Verzögerung und schließen gegebenenfalls den Betrachter.
+
+Die Ordnerübersicht liest einmal pro geöffnetem beziehungsweise aktualisiertem
+Katalog nur IDs und Ordner-Metadaten, hält je Ordner einen Zähler und höchstens zwei
+Vorschau-IDs und lädt Ordner in Paketen von 24 nach. Fotos laden in Paketen von 96;
+das Raster hält höchstens drei Seiten. Die Abfragen laufen abbrechbar außerhalb
+des UI-Threads. Android-Anbieter ohne native Seitengrenzen verwenden einen Cursor
+zum angefragten Ausschnitt, weiterhin ohne die komplette Fotoliste in den App-Speicher
+zu übernehmen. Bilddekodierung erfolgt erst für sichtbare Vorschauen beziehungsweise
+den Betrachter und ist auf dessen Darstellungsgröße begrenzt.
+
+Die Berechtigungen folgen [Androids Regeln für vollständigen und ausgewählten Fotozugriff](https://developer.android.com/about/versions/14/changes/partial-photo-video-access).
+Die Server-API und die benötigte BearStack-Version bleiben unverändert. Diese
+MINOR-Erweiterung gehört zur noch unveröffentlichten App 0.10.0 / BearStack 0.50.0;
+App-VERSION, versionCode und Root-VERSION behalten deshalb ihren Stand.
+
 ### Karten
 
 **Weitere Optionen → Karte** zeigt die GPS-Aufnahmen des aktuellen Ordners

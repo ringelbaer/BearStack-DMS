@@ -3,6 +3,7 @@ package de.bearstack.people
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalConfiguration
@@ -62,7 +63,9 @@ class PhotosScreenTest {
         lateinit var controller:PhotosController
         compose.runOnUiThread {controller=PhotosController(owner,api,PhotoSession("gallery-test",false,240,240,1280,2048,5,8))}
         try {
-            compose.setContent {CompositionLocalProvider(LocalContext provides context,LocalResources provides context.resources,LocalConfiguration provides context.resources.configuration) {
+            compose.setContent {
+                val registry = checkNotNull(LocalActivityResultRegistryOwner.current)
+                CompositionLocalProvider(LocalActivityResultRegistryOwner provides registry, LocalContext provides context,LocalResources provides context.resources,LocalConfiguration provides context.resources.configuration) {
                 MaterialTheme {
                     if(showMapSelection) MapPhotoSelection(controller,images,PhotoQuery(),PhotoMapMarker(52.5,13.4,2)) {}
                     else PhotosScreen(controller,images,false,{fail("reader reached people editing")},{})

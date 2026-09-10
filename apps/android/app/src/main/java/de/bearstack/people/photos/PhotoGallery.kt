@@ -18,13 +18,16 @@ import de.bearstack.people.data.remote.*
 import de.bearstack.people.text.*
 
 @Composable
-internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, state: PhotosState, modifier: Modifier = Modifier.fillMaxSize()) {
+internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, state: PhotosState, modifier: Modifier = Modifier.fillMaxSize(),
+    onDevice: (() -> Unit)? = null) {
     val configuration=LocalConfiguration.current
     val locale=configuration.locales[0]
     val columns=if(configuration.screenWidthDp>=600) 12 else 6
     val folderSpan=if(columns==6 && configuration.fontScale>=1.5f) 6 else 3
     key(state.query,state.frame) {
-        val rows=remember(state.mediaPages,state.folderPages,state.blogPages,state.pageErrors) {galleryRows(state)}
+        val rows=remember(state.mediaPages,state.folderPages,state.blogPages,state.pageErrors,onDevice!=null) {
+            (if(onDevice!=null) listOf(GalleryRow.Device) else emptyList()) + galleryRows(state)
+        }
         val latestCatalog by rememberUpdatedState(state)
         var pageAnchor by remember {mutableStateOf<GalleryPageAnchor?>(null)}
         val saved=remember {controller.gridPosition}
@@ -93,6 +96,10 @@ internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, sta
                 is GalleryRow.Failure -> "failure"; else -> "heading"
             }}) {row ->
                 when(row) {
+                    GalleryRow.Device -> ListItem(headlineContent={Text(stringResource(R.string.photos_device))},
+                        supportingContent={Text(stringResource(R.string.photos_device_summary))},
+                        leadingContent={Icon(painterResource(R.drawable.ic_folder),null)},
+                        modifier=Modifier.clickable {onDevice?.invoke()})
                     is GalleryRow.Folder -> FolderTile(row.value,controller,images) {
                         controller.open(PhotoQuery(path=row.value.path),tab=1)
                     }

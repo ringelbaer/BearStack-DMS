@@ -28,7 +28,7 @@ data class PhotosState(val query: PhotoQuery = PhotoQuery(recursive=true), val t
 // Connection-scoped state: changing a folder, search or account cancels its
 // requests. Additional section pages never overwrite another section's data.
 class PhotosController(parent: CoroutineScope, val service: PhotosService, val session: PhotoSession,
-    application: android.content.Context? = null) {
+    application: android.content.Context? = null, initialQuery: PhotoQuery = PhotoQuery(recursive=true)) {
     private val scope = CoroutineScope(parent.coroutineContext + SupervisorJob(parent.coroutineContext[Job]))
     private val mutable = MutableStateFlow(PhotosState())
     val state = mutable.asStateFlow()
@@ -50,7 +50,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     private var detail: Job? = null
     private var detailGeneration = 0L
     private val additional = mutableMapOf<String,Job>()
-    init { open(PhotoQuery(recursive=true)) }
+    init { open(initialQuery) }
     fun open(query: PhotoQuery, tab: Int = state.value.tab, frame: Boolean = false) {
         generation++
         request?.cancel(); detail?.cancel(); additional.values.forEach { it.cancel() }; additional.clear()

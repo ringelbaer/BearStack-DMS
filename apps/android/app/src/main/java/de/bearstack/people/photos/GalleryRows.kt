@@ -9,6 +9,7 @@ internal sealed interface GalleryRow {
     data class Media(val value: Photo) : GalleryRow { override val key="photo:${value.path}" }
     data class Date(val value: Photo) : GalleryRow { override val key="date:${value.path}" }
     data object Texts : GalleryRow { override val key="texts" }
+    data object Device : GalleryRow { override val key="local-device" }
     data class Failure(val section: String,val previous: Boolean) : GalleryRow {
         override val key="error-$section"
     }

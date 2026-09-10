@@ -41,12 +41,12 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PhotosScreen(controller: PhotosController, images: ImageLoader, canManage: Boolean,
-    onPeople: () -> Unit, onConnection: () -> Unit) {
+internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoader, canManage: Boolean,
+    onPeople: () -> Unit, onConnection: () -> Unit, search: String, onSearchChange: (String) -> Unit,
+    onSettings: () -> Unit, onDevice: (() -> Unit)?) {
     val text=uiStrings()
     val state by controller.state.collectAsStateWithLifecycle()
     val tab = state.tab
-    var search by rememberSaveable { mutableStateOf(state.query.query) }
     var menu by remember { mutableStateOf(false) }
     var mapOpen by rememberSaveable(state.query) {mutableStateOf(false)}
     val locale = LocalConfiguration.current.locales[0]
@@ -66,11 +66,12 @@ fun PhotosScreen(controller: PhotosController, images: ImageLoader, canManage: B
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_map))},onClick={menu=false;mapOpen=true},enabled=!state.loading)
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_frame))},onClick={menu=false;controller.startFrame()},enabled=!state.loading)
                     if(canManage) DropdownMenuItem(text={Text(stringResource(R.string.photos_people))},onClick={menu=false;onPeople()})
+                    DropdownMenuItem(text={Text(stringResource(R.string.photos_settings))},onClick={menu=false;onSettings()})
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_connection))},onClick={menu=false;onConnection()})
                 }
             })
             if(tab==2) {
-                OutlinedTextField(search,{search=it},Modifier.fillMaxWidth().padding(horizontal=16.dp),singleLine=true,
+                OutlinedTextField(search,onSearchChange,Modifier.fillMaxWidth().padding(horizontal=16.dp),singleLine=true,
                     shape=RoundedCornerShape(28.dp),placeholder={Text(stringResource(R.string.photos_search_hint))},
                     leadingIcon={Icon(painterResource(R.drawable.ic_search),null)},
                     keyboardOptions=KeyboardOptions(imeAction=ImeAction.Search),
@@ -102,7 +103,7 @@ fun PhotosScreen(controller: PhotosController, images: ImageLoader, canManage: B
                     }
                 }
             }
-            PhotoGallery(controller,images,state)
+            PhotoGallery(controller,images,state,onDevice=onDevice.takeIf { tab==1 && state.query.path.isEmpty() })
         }
     }
     state.selected?.let { path -> PhotoViewer(controller,images,state.media,path) }

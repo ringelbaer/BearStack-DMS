@@ -13,6 +13,10 @@ info:
 
     Write operations require the capabilities stated in their descriptions.
     API clients using form endpoints should send `Accept: application/json`.
+
+    The Android app can optionally display device photo folders using Android MediaStore.
+    Those folders and content URIs are local to the device and are never sent to this API;
+    gallery endpoints below continue to describe the server library only.
 servers:
   - url: /
     description: Current BearStack instance
@@ -2162,6 +2166,12 @@ paths:
         overview, served by /photos/faces/{id}/thumbnail. This mode
         applies q but ignores page, filter, known, unknown and ignored; it performs current visibility
         and imported-name-source checks without calculating total pages.
+        Since 0.50.0, sort orders the entire result before pagination by folded name,
+        distinct visible photo count, representative portrait directory (Fotos for the root),
+        or latest active photo timestamp. Dates compare UTC-normalized capture time with
+        modification-time fallback. Ignored faces use their own directory/date and their
+        group count of distinct ignored photos. Equal keys use IDs in the same direction.
+        Name ascending is the default. Sorting is ignored by suggestions and person details.
         Cache-Control is private, no-store.'
       parameters:
       - name: page
@@ -2201,6 +2211,13 @@ paths:
         schema:
           type: string
           enum: [all, known, unknown, ignored]
+      - name: sort
+        in: query
+        description: Global sort order, applied before pagination. Unsupported values return 400. Ignored by suggestions and person-detail routes.
+        schema:
+          type: string
+          enum: [name_asc, name_desc, count_asc, count_desc, folder_asc, folder_desc, date_asc, date_desc]
+          default: name_asc
       - name: format
         in: query
         schema:
@@ -2218,6 +2235,8 @@ paths:
                 anyOf:
                 - $ref: '#/components/schemas/PhotoPeoplePage'
                 - $ref: '#/components/schemas/PhotoPeopleSuggestions'
+        '400':
+          description: Invalid person filter or sort order.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -4623,6 +4642,10 @@ components:
     PhotoPeoplePage:
       type: object
       properties:
+        sort:
+          type: string
+          description: Effective overview sorting since 0.50.0; omitted for person details.
+          enum: [name_asc, name_desc, count_asc, count_desc, folder_asc, folder_desc, date_asc, date_desc]
         total_pages:
           type: integer
           minimum: 1

@@ -1,5 +1,6 @@
 (function () {
   "use strict";
+  var peopleSorts = ["name_asc", "name_desc", "count_asc", "count_desc", "folder_asc", "folder_desc", "date_asc", "date_desc"];
   var pageNavigation = document.querySelector("[data-people-page]");
   var pageStorageKey = pageNavigation ? "bearstack.people.lastPage:" + pageNavigation.dataset.peopleUser : "";
   function savePeoplePage(page) {
@@ -8,7 +9,7 @@
     if (address.pathname !== "/photos/people") return;
     var mode = address.searchParams.get("filter");
     var unknown = mode ? mode === "unknown" : address.searchParams.get("unknown") === "1";
-    var saved = { page: page, q: address.searchParams.get("q") || "", unknown: unknown, known: mode ? mode === "known" : !unknown && address.searchParams.get("known") === "1", ignored: mode ? mode === "ignored" : !unknown && address.searchParams.get("ignored") === "1" };
+    var saved = { sort: peopleSorts.includes(address.searchParams.get("sort")) ? address.searchParams.get("sort") : "name_asc", page: page, q: address.searchParams.get("q") || "", unknown: unknown, known: mode ? mode === "known" : !unknown && address.searchParams.get("known") === "1", ignored: mode ? mode === "ignored" : !unknown && address.searchParams.get("ignored") === "1" };
     try { window.localStorage.setItem(pageStorageKey, JSON.stringify(saved)); } catch (_) {}
   }
   document.addEventListener("people-page-updated", function (event) { savePeoplePage(event.detail); });
@@ -20,12 +21,13 @@
       var destination = new URL("/photos/people", address.origin);
       destination.searchParams.set("page", String(saved.page));
       destination.searchParams.set("q", saved.q);
+      if (peopleSorts.includes(saved.sort)) destination.searchParams.set("sort", saved.sort);
       if (saved.unknown === true) destination.searchParams.set("unknown", "1");
       else {
         if (saved.known === true) destination.searchParams.set("known", "1");
         if (saved.ignored === true) destination.searchParams.set("ignored", "1");
       }
-      if (address.pathname === "/photos/people" && !["page", "q", "known", "unknown", "ignored", "filter"].some(function (key) { return address.searchParams.has(key); })) {
+      if (address.pathname === "/photos/people" && !["page", "q", "known", "unknown", "ignored", "filter", "sort"].some(function (key) { return address.searchParams.has(key); })) {
         if (address.searchParams.has("notice")) destination.searchParams.set("notice", address.searchParams.get("notice"));
         window.location.replace(destination.pathname + destination.search);
         return;
@@ -36,6 +38,10 @@
     }
     savePeoplePage(Number(pageNavigation.dataset.peoplePage));
   }
+  var sortSelect = document.querySelector('[data-people-filter] select[name="sort"]');
+  if (sortSelect) sortSelect.addEventListener("change", function () {
+    sortSelect.form.requestSubmit();
+  });
   var peopleView = document.querySelector("[data-people-view]");
   if (peopleView) {
     var displayMenu = peopleView.querySelector("[data-people-display]");

@@ -211,6 +211,47 @@ Eine eigene Dienstadresse lässt sich über folgende optionale Werte setzen:
 | `face_service_url` | `BEARSTACK_PHOTOS_FACE_SERVICE_URL` | HTTP(S)-Adresse des eigenen Erkennungsdienstes. |
 | `face_service_token` | `BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN` | Gemeinsamer geheimer Token, mindestens 32 Zeichen. |
 
+#### Personen sortieren
+
+Unter **`/photos/people` → Sortieren** stehen **Name**, **Anzahl Fotos**, **Ordner** und
+**Datum** jeweils auf- und absteigend zur Verfügung. Standard ist **Name: A–Z**;
+Umlaute werden wie bei der Namenssuche behandelt. Mit JavaScript übernimmt ein
+Auswahlwechsel die Sortierung sofort und öffnet Seite 1. Ohne JavaScript übernimmt
+**Suchen** die Auswahl.
+
+**Anzahl Fotos** zählt unterschiedliche sichtbare Fotos mit aktiven Gesichtern einer
+Person, auch wenn diese mehrfach im selben Bild vorkommt. **Ordner** verwendet den
+angezeigten Ordner des Vorschaubilds; der Hauptordner heißt „Fotos“. Andere Bilder
+der Person können in weiteren Ordnern liegen. **Datum** verwendet das neueste ihrer
+aktiven Fotos: die Aufnahmezeit, ersatzweise die Dateiänderungszeit. Unterschiedliche
+Zeitzonen werden vor dem Vergleichen normalisiert. Private Fotos und ignorierte
+Gesichter beeinflussen die aktiven Gruppen nicht.
+
+Beim Filter **Ignorierte Gesichter** beziehen sich Ordner und Datum auf das jeweilige
+Foto; die Anzahl zählt unterschiedliche Fotos mit ignorierten Gesichtern derselben
+Gruppe. Die Namenssortierung verwendet deren Gruppennamen. Auch diese Ansicht
+sortiert standardmäßig nach Name und bleibt mit Namenssuche kombinierbar.
+
+Die Datenbank sortiert **vor** der Seiteneinteilung. Gleichstände werden über die ID
+stabil aufgelöst. Pro Seite werden weiterhin höchstens 60 Einträge ausgeliefert;
+Vorschaugeometrie wird nur für diese Seite ermittelt. Die Namenssortierung nutzt den
+vorhandenen Namensindex. Andere Sortierungen verwenden die vorhandenen Gesichts-
+und Medienindizes und können temporäre Sortierdaten auf Datenträger auslagern. Es
+werden keine Originalbilder gelesen und kein dauerhafter Sortiercache angelegt;
+Änderungen wirken beim nächsten Abruf ohne erneute Bilderkennung.
+
+Auswahl und Richtung bleiben beim Blättern, nach AJAX-Bearbeitungen und bei der
+Rückkehr aus Personendetails erhalten. Der Browser speichert sie zusammen mit Seite
+und Filtern pro Benutzer. Ausdrückliche URL-Parameter haben Vorrang. **Alle Filter
+aufheben** setzt auch die Sortierung auf **Name: A–Z** zurück. Personendetails und
+Namensvorschläge behalten ihre bisherige Reihenfolge.
+
+Die kompatible Erweiterung verwendet `sort=name_asc`, `name_desc`, `count_asc`,
+`count_desc`, `folder_asc`, `folder_desc`, `date_asc` oder `date_desc`; ungültige Werte
+liefern HTTP 400. HTML und JSON verwenden dieselbe Reihenfolge. Die JSON-Seite enthält
+zusätzlich `sort`. Die Änderung gehört zur unveröffentlichten MINOR-Version 0.50.0;
+es ist keine Schemaänderung oder Migration erforderlich.
+
 #### Einrichtung ohne Compose (native Installation)
 
 BearStack und der Erkennungsdienst können auf demselben Rechner direkt laufen.
@@ -729,3 +770,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
 Ab BearStack 0.30.0 lassen sich unbenannte Gruppen auch mit der [nativen Android-App](android.md) bearbeiten. Ab App 0.6.0 und BearStack 0.43.0 bietet „Menü → Personen“ zusätzlich alle benannten Personen mit Portraits, Umbenennen, einzelne Zuordnungen zurücksetzen, Favoriten, Galeriesuche im Browser und Originalfoto-Vorschau per Halten und Wischen. Die Anleitung beschreibt HTTPS-Anmeldung, Gesten, Statistik und den privaten APK-Build.
 
 Ab Android-App 0.7.0 und BearStack 0.45.0 durchsucht das Textfeld im Personenbereich alle benannten Personen. Personenliste und Portrait-Raster laden beim Scrollen automatisch nach. Das Entfernen einer Zuordnung verlangt zuvor eine Bestätigung mit Name und Bildpfad.
+
+### Lokale Fotoordner in der Android-App
+
+Die optionale Einstellung **Lokale Fotoordner anzeigen** ergänzt **Ordner → Dieses Gerät** um die freigegebenen Fotoordner des Smartphones, inklusive Vorschauen und lokalem Vollbildbetrachter. Standardmäßig deaktiviert, ohne Upload; Fotos und Suche bleiben auf den Serverbestand bezogen. Freigabe, ausgewählte Fotos ab Android 14 und Speichergrenzen beschreibt die [Android-Anleitung](android.md#lokale-fotoordner).

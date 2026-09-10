@@ -25,7 +25,17 @@ Standardwerte:
 
 Ohne aktives Config- oder SQLite-Konto ist Auth auf Loopback-Adressen wie `127.0.0.1:8080` fuer die Ersteinrichtung deaktiviert. Ein Listener auf nicht-lokalen Interfaces wie `0.0.0.0:8080` oder `:8080` startet nur mit mindestens einem aktiven Konto; dieses darf vollstaendig aus der SQLite-Datenbank stammen. Ohne Auth werden nur Anfragen von Loopback-Gegenstellen mit `localhost` oder einer Loopback-IP als HTTP-Host akzeptiert; fremde Hostnamen werden zum Schutz vor DNS-Rebinding mit `403` abgewiesen. Vor dem Zugriff ueber einen eigenen Hostnamen oder Reverse Proxy muss ein Konto eingerichtet werden.
 
+Die Personenübersicht **`/photos/people` → Sortieren** bietet Name, Anzahl Fotos,
+Ordner und Datum jeweils in beiden Richtungen. Ordner bezeichnet den Vorschauordner,
+Datum das neueste sichtbare Foto je Person (Aufnahmezeit, ersatzweise Dateiänderung).
+Die Reihenfolge gilt für den gesamten Trefferbestand, bleibt beim Blättern und nach
+Bearbeitungen erhalten und wird zusammen mit den Filtern pro Benutzer im Browser
+gespeichert. Ohne JavaScript übernimmt **Suchen** die Auswahl. Details stehen in der
+[Foto-Anleitung](_site-src/docs/fotos.md#personen-sortieren).
+
 ## BearStack Fotos für Android
+
+**Weitere Optionen → Einstellungen → Lokale Fotoordner anzeigen** ergänzt in der Android-App **Ordner → Dieses Gerät** mit den von Android freigegebenen Fotoordnern. Standardmäßig ausgeschaltet; unterstützt ausgewählte Fotos ab Android 14, lokale Vorschauen, Vollbild und Zoom ohne Upload. Metadaten laden seitenweise und der lokale Bildcache bleibt auf 16 MiB begrenzt. Details zu Freigabe und Einschränkungen stehen in der [Android-Anleitung](apps/android/README.md#lokale-fotoordner).
 
 Browserkarte und Android teilen vollständig gruppierte Fotorouten als versioniertes JSON im bestehenden Cache-Verzeichnis. Indexrevisionen invalidieren Änderungen an Fotoorten, Zeiten und Sichtbarkeit einschließlich Unterordnern; gleiche Abrufe teilen die Berechnung. Ausschnitt und Punktlimit werden erst bei der Ausgabe angewendet. Suchabfragen erhalten zunächst keinen dauerhaften Cache. Die Browserroute umfasst die gesamte indexierte Auswahl unabhängig von der Medienseite; bei mehr als 8.192 gruppierten Orten wird nur die Darstellung vereinfacht und gekennzeichnet. Der Cache bleibt vollständig.
 

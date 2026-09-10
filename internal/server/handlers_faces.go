@@ -69,9 +69,9 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 	}
 	var result photos.PeoplePage
 	if id == 0 && ignoredOnly && !unknownOnly {
-		result, err = s.photos.IgnoredFaces(r.Context(), page, r.URL.Query().Get("q"), knownOnly)
+		result, err = s.photos.IgnoredFaces(r.Context(), page, r.URL.Query().Get("q"), knownOnly, r.URL.Query().Get("sort"))
 	} else {
-		result, err = s.photos.People(r.Context(), id, page, r.URL.Query().Get("q"), knownOnly, unknownOnly)
+		result, err = s.photos.People(r.Context(), id, page, r.URL.Query().Get("q"), knownOnly, unknownOnly, r.URL.Query().Get("sort"))
 	}
 	if err != nil {
 		s.faceError(w, r, err)
@@ -224,6 +224,9 @@ func (s *Server) handleFacesEdit(w http.ResponseWriter, r *http.Request) {
 		query := url.Values{"ignored": {"1"}, "q": {r.FormValue("q")}, "page": {strconv.Itoa(boundedInt(r.FormValue("page"), 1, 1, 1000000))}}
 		if r.FormValue("known") == "1" {
 			query.Set("known", "1")
+		}
+		if sorting, err := photos.NormalizePeopleSort(r.FormValue("sort")); err == nil && r.FormValue("sort") != "" {
+			query.Set("sort", sorting)
 		}
 		destination += "?" + query.Encode()
 	}

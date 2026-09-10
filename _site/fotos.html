@@ -617,6 +617,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#personen-sortieren" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Personen sortieren
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#einrichtung-ohne-compose-native-installation" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -656,6 +667,23 @@
       </span>
     </span>
   </a>
+
+    <nav class="md-nav" aria-label="Android-Personen-App">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#lokale-fotoordner-in-der-android-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Lokale Fotoordner in der Android-App
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
   
 </li>
       
@@ -975,6 +1003,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#personen-sortieren" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Personen sortieren
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#einrichtung-ohne-compose-native-installation" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1014,6 +1053,23 @@
       </span>
     </span>
   </a>
+
+    <nav class="md-nav" aria-label="Android-Personen-App">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#lokale-fotoordner-in-der-android-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Lokale Fotoordner in der Android-App
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
   
 </li>
       
@@ -1215,6 +1271,40 @@ Eine eigene Dienstadresse lässt sich über folgende optionale Werte setzen:</p>
 </tr>
 </tbody>
 </table>
+<h4 id="personen-sortieren">Personen sortieren<a class="headerlink" href="#personen-sortieren" title="Permanent link">&para;</a></h4>
+<p>Unter <strong><code>/photos/people</code> → Sortieren</strong> stehen <strong>Name</strong>, <strong>Anzahl Fotos</strong>, <strong>Ordner</strong> und
+<strong>Datum</strong> jeweils auf- und absteigend zur Verfügung. Standard ist <strong>Name: A–Z</strong>;
+Umlaute werden wie bei der Namenssuche behandelt. Mit JavaScript übernimmt ein
+Auswahlwechsel die Sortierung sofort und öffnet Seite 1. Ohne JavaScript übernimmt
+<strong>Suchen</strong> die Auswahl.</p>
+<p><strong>Anzahl Fotos</strong> zählt unterschiedliche sichtbare Fotos mit aktiven Gesichtern einer
+Person, auch wenn diese mehrfach im selben Bild vorkommt. <strong>Ordner</strong> verwendet den
+angezeigten Ordner des Vorschaubilds; der Hauptordner heißt „Fotos“. Andere Bilder
+der Person können in weiteren Ordnern liegen. <strong>Datum</strong> verwendet das neueste ihrer
+aktiven Fotos: die Aufnahmezeit, ersatzweise die Dateiänderungszeit. Unterschiedliche
+Zeitzonen werden vor dem Vergleichen normalisiert. Private Fotos und ignorierte
+Gesichter beeinflussen die aktiven Gruppen nicht.</p>
+<p>Beim Filter <strong>Ignorierte Gesichter</strong> beziehen sich Ordner und Datum auf das jeweilige
+Foto; die Anzahl zählt unterschiedliche Fotos mit ignorierten Gesichtern derselben
+Gruppe. Die Namenssortierung verwendet deren Gruppennamen. Auch diese Ansicht
+sortiert standardmäßig nach Name und bleibt mit Namenssuche kombinierbar.</p>
+<p>Die Datenbank sortiert <strong>vor</strong> der Seiteneinteilung. Gleichstände werden über die ID
+stabil aufgelöst. Pro Seite werden weiterhin höchstens 60 Einträge ausgeliefert;
+Vorschaugeometrie wird nur für diese Seite ermittelt. Die Namenssortierung nutzt den
+vorhandenen Namensindex. Andere Sortierungen verwenden die vorhandenen Gesichts-
+und Medienindizes und können temporäre Sortierdaten auf Datenträger auslagern. Es
+werden keine Originalbilder gelesen und kein dauerhafter Sortiercache angelegt;
+Änderungen wirken beim nächsten Abruf ohne erneute Bilderkennung.</p>
+<p>Auswahl und Richtung bleiben beim Blättern, nach AJAX-Bearbeitungen und bei der
+Rückkehr aus Personendetails erhalten. Der Browser speichert sie zusammen mit Seite
+und Filtern pro Benutzer. Ausdrückliche URL-Parameter haben Vorrang. <strong>Alle Filter
+aufheben</strong> setzt auch die Sortierung auf <strong>Name: A–Z</strong> zurück. Personendetails und
+Namensvorschläge behalten ihre bisherige Reihenfolge.</p>
+<p>Die kompatible Erweiterung verwendet <code>sort=name_asc</code>, <code>name_desc</code>, <code>count_asc</code>,
+<code>count_desc</code>, <code>folder_asc</code>, <code>folder_desc</code>, <code>date_asc</code> oder <code>date_desc</code>; ungültige Werte
+liefern HTTP 400. HTML und JSON verwenden dieselbe Reihenfolge. Die JSON-Seite enthält
+zusätzlich <code>sort</code>. Die Änderung gehört zur unveröffentlichten MINOR-Version 0.50.0;
+es ist keine Schemaänderung oder Migration erforderlich.</p>
 <h4 id="einrichtung-ohne-compose-native-installation">Einrichtung ohne Compose (native Installation)<a class="headerlink" href="#einrichtung-ohne-compose-native-installation" title="Permanent link">&para;</a></h4>
 <p>BearStack und der Erkennungsdienst können auf demselben Rechner direkt laufen.
 Voraussetzungen sind ein eingerichtetes Fotomodul, die BearStack-Quelldateien passend
@@ -1690,6 +1780,8 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
 <h2 id="android-personen-app">Android-Personen-App<a class="headerlink" href="#android-personen-app" title="Permanent link">&para;</a></h2>
 <p>Ab BearStack 0.30.0 lassen sich unbenannte Gruppen auch mit der <a href="android.html">nativen Android-App</a> bearbeiten. Ab App 0.6.0 und BearStack 0.43.0 bietet „Menü → Personen“ zusätzlich alle benannten Personen mit Portraits, Umbenennen, einzelne Zuordnungen zurücksetzen, Favoriten, Galeriesuche im Browser und Originalfoto-Vorschau per Halten und Wischen. Die Anleitung beschreibt HTTPS-Anmeldung, Gesten, Statistik und den privaten APK-Build.</p>
 <p>Ab Android-App 0.7.0 und BearStack 0.45.0 durchsucht das Textfeld im Personenbereich alle benannten Personen. Personenliste und Portrait-Raster laden beim Scrollen automatisch nach. Das Entfernen einer Zuordnung verlangt zuvor eine Bestätigung mit Name und Bildpfad.</p>
+<h3 id="lokale-fotoordner-in-der-android-app">Lokale Fotoordner in der Android-App<a class="headerlink" href="#lokale-fotoordner-in-der-android-app" title="Permanent link">&para;</a></h3>
+<p>Die optionale Einstellung <strong>Lokale Fotoordner anzeigen</strong> ergänzt <strong>Ordner → Dieses Gerät</strong> um die freigegebenen Fotoordner des Smartphones, inklusive Vorschauen und lokalem Vollbildbetrachter. Standardmäßig deaktiviert, ohne Upload; Fotos und Suche bleiben auf den Serverbestand bezogen. Freigabe, ausgewählte Fotos ab Android 14 und Speichergrenzen beschreibt die <a href="android.html#lokale-fotoordner">Android-Anleitung</a>.</p>
 
 
 
