@@ -32,7 +32,8 @@ test.afterAll(async ({}, testInfo) => {
 async function adminPage(browser, options = {}) {
   const context = await browser.newContext(options);
   const page = await context.newPage();
-  await page.goto(baseURL + "/login");
+  // Other tests deliberately persist a different home page in the shared fixture.
+  await page.goto(baseURL + "/login?return=%2Fdocuments");
   await page.getByLabel("Benutzername").fill(credentials.username);
   await page.locator('input[name="password"]').fill(credentials.password);
   await page.getByRole("button", { name: "Anmelden" }).click();

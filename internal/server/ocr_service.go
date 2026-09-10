@@ -8,13 +8,10 @@ import (
 	"strings"
 
 	"bearstack/internal/document"
-	"bearstack/internal/documentocr"
 	"bearstack/internal/ocrservice"
 	"bearstack/internal/repository"
 	"bearstack/internal/storage"
 )
-
-type ocrProgressFunc = documentocr.ProgressFunc
 
 func newOCRService(repo *repository.Repository, store *storage.Store, log *slog.Logger, invalidateDocumentCountCache func(), recordAuditLog func(context.Context, document.AuditLogEntry)) *ocrservice.Service {
 	var repositoryPort ocrservice.Repository

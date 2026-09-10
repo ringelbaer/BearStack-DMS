@@ -17,6 +17,7 @@ import (
 	"bearstack/internal/config"
 	"bearstack/internal/document"
 	"bearstack/internal/mailimport"
+	"bearstack/internal/mailservice"
 	"bearstack/internal/repository"
 	"bearstack/internal/storage"
 	"bearstack/internal/uploadlimit"
@@ -62,7 +63,7 @@ func TestImportPDFsFromMailImportsPDFAttachment(t *testing.T) {
 		"",
 	}, "\r\n"))
 
-	result, err := server.importPDFsFromMail(ctx, message, "")
+	result, err := server.importMailMessage(ctx, message, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +144,7 @@ func TestImportPDFsFromMailImportsPDFAndEMLArchive(t *testing.T) {
 		"",
 	}, "\r\n"))
 
-	result, err := server.importPDFsFromMail(ctx, message, "")
+	result, err := server.importMailMessage(ctx, message, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +211,7 @@ func TestImportPDFsFromMailImportsMultipleEMLArchives(t *testing.T) {
 		"",
 	}, "\r\n"))
 
-	result, err := server.importPDFsFromMail(ctx, message, "")
+	result, err := server.importMailMessage(ctx, message, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,7 +268,7 @@ func TestImportPDFsFromMailDetectsDuplicateEMLArchiveContent(t *testing.T) {
 		"",
 	}, "\r\n"))
 
-	result, err := server.importPDFsFromMail(ctx, message, "")
+	result, err := server.importMailMessage(ctx, message, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -335,7 +336,7 @@ func TestImportPDFsFromMailReportsEMLArchiveErrorWhenPDFUniteMissing(t *testing.
 		"",
 	}, "\r\n"))
 
-	result, err := server.importPDFsFromMail(ctx, message, "")
+	result, err := server.importMailMessage(ctx, message, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -387,11 +388,11 @@ func TestImportPDFsFromMailReportsDuplicateAttachment(t *testing.T) {
 		}, "\r\n"))
 	}
 
-	first, err := server.importPDFsFromMail(ctx, message(), "")
+	first, err := server.importMailMessage(ctx, message(), "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := server.importPDFsFromMail(ctx, message(), "")
+	second, err := server.importMailMessage(ctx, message(), "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -435,7 +436,7 @@ func TestImportPDFsFromMailRejectsDisallowedSenderBeforeImport(t *testing.T) {
 		"",
 	}, "\r\n"))
 
-	result, err := server.importPDFsFromMail(ctx, message, "billing@example.com\nexample.org")
+	result, err := server.importMailMessage(ctx, message, "billing@example.com\nexample.org")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -477,7 +478,7 @@ func TestImportPDFsFromMailRejectsOversizedMessage(t *testing.T) {
 		"",
 	}, "\r\n"))
 
-	_, err := server.importPDFsFromMail(context.Background(), message, "")
+	_, err := server.importMailMessage(context.Background(), message, "")
 	if !errors.Is(err, mailimport.ErrMessageTooLarge) {
 		t.Fatalf("error = %v", err)
 	}
@@ -497,7 +498,7 @@ func TestImportPDFsFromMailRejectsMultipartWithoutBoundary(t *testing.T) {
 		"body",
 	}, "\r\n"))
 
-	_, err := server.importPDFsFromMail(context.Background(), message, "")
+	_, err := server.importMailMessage(context.Background(), message, "")
 	if err == nil || !strings.Contains(err.Error(), "Boundary") {
 		t.Fatalf("error = %v", err)
 	}
@@ -579,4 +580,10 @@ func installFakePDFUnite(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", dir)
+}
+
+// importMailMessage exercises the initialized production service without adding
+// a message-level import entry point to the HTTP server's runtime contract.
+func (s *Server) importMailMessage(ctx context.Context, r io.Reader, allowedSenders string) (mailservice.MessageResult, error) {
+	return s.mailImportService().(*mailservice.Service).ImportMessage(ctx, r, allowedSenders)
 }

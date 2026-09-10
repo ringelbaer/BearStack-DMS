@@ -6,7 +6,6 @@ import (
 	"errors"
 )
 
-const DefaultFaceReferenceLimit = 30
 const MaxFaceReferenceLimit = 100
 
 func refreshFaceReferencesTx(ctx context.Context, tx *sql.Tx, person int64) error {

@@ -3,7 +3,6 @@ package server
 
 import (
 	"context"
-	"io"
 
 	"bearstack/internal/document"
 )
@@ -21,13 +20,11 @@ type mailImportRunner interface {
 	ImportPDFs(context.Context, document.MailImportSettings) (mailImportRunResult, error)
 	CheckSettings(context.Context, document.MailImportSettings) error
 	RecordAudit(context.Context, string, string, int)
-	ImportMessage(context.Context, io.Reader, string) (mailMessageImportResult, error)
 }
 
 type ocrRunner interface {
 	RunQueue(context.Context)
 	Enqueue(int64)
-	Document(context.Context, document.Document, string, ocrProgressFunc) (string, error)
 	PrepareDocument(document.Document) (string, error)
 }
 

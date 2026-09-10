@@ -8,7 +8,6 @@ icon: lucide/shield-check
 
 BearStack wird bewusst als kleines, lokal betreibbares Archivsystem entwickelt. KI und Codex helfen dabei als Entwicklungswerkzeug: Sie beschleunigen Recherche, Refactoring, Testergänzungen und Dokumentation, ersetzen aber nicht die technischen Sicherheitsgrenzen im Projekt. Änderungen sollen aus dem vorhandenen Code heraus entstehen, klein bleiben und durch Tests, Benchmarks oder manuelle Prüfung belegbar sein.
 
-
 Die Regressionen zur Dokumentverarbeitung vergleichen SQL-Thumbnail-Kandidaten und Renderer für alle unterstützten Formate, MIME-Parameter und Dateiendungen, einschließlich Pagination, Papierkorb und bereits erzeugter Vorschauen. Ein Benchmark prüft einen Bestand von 50.000 Dokumenten mit wenigen passenden Formaten. Mail-Service-Tests verwenden ein isoliertes Postfach-Doppel und prüfen, dass Import-/Abruffehler keine Löschung auslösen. OCR-Service-Tests prüfen Textübernahme, Fehler, Abbruch, Zeitlimit, gelöschte Dokumente und begrenzte Wecksignale ohne HTTP-Server.
 
 `internal/testutil` stellt die gemeinsame Soffice-Fixture für Import-, Vorschau- und Thumbnail-Tests bereit. Jeder Test erhält ein eigenes temporäres Programmverzeichnis und einen wiederhergestellten `PATH`. Die Fixture prüft die Integration und ersetzt keine Prüfung realer LibreOffice-Konvertierungen.
@@ -34,6 +33,8 @@ Die wichtigsten Vorkehrungen entstehen direkt in der Anwendung:
 - Admin-only-Fotoordner sind für Nicht-Admins nicht sichtbar und bleiben auch über direkte Medien- und Thumbnail-URLs geschützt.
 
 ## Tests
+
+Nur von Tests benötigte Mail-Nachrichtenhelfer liegen in `_test.go`; sie erweitern die Produktionsschnittstellen nicht. Browser-Regressionen für Bildfehler fordern eine eigene Bild-URL an und prüfen die tatsächliche 404-Antwort, damit bereits dekodierte Portraits den Fehlerfall nicht verdecken. Der Login-Helfer der Einstellungs-Suite setzt ein ausdrückliches Rücksprungziel; ein zuvor gespeicherter Startseitenwert beeinflusst dadurch spätere Tests nicht.
 
 Die Standardprüfung kombiniert Go-Tests und JavaScript-Syntaxchecks:
 

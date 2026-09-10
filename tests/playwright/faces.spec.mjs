@@ -621,11 +621,17 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.unroute(matchURL);
   await expect(personDialog.getByRole("option", { name: /Veralteter Abgleich/ })).toHaveCount(0);
   // A failed image keeps the row and its keyboard selection usable.
-  await page.route("**/photos/faces/*/thumbnail", route => route.fulfill({ status: 404, body: "unavailable" }));
-  await dialogName.fill("Merge-Zie");
+  // The portrait was already decoded above. A distinct URL guarantees a new
+  // request instead of reusing the browser's in-memory image resource.
+  const failedPortraitURL = new URL(await suggestedPortrait.getAttribute("src"), baseURL);
+  failedPortraitURL.searchParams.set("test-missing-preview", "1");
+  await page.route(failedPortraitURL.href, route => route.fulfill({ status: 404, body: "unavailable" }));
+  const failedPortraitResponse = page.waitForResponse(response => response.url() === failedPortraitURL.href && response.status() === 404);
+  await suggestedPortrait.evaluate((img, url) => { img.src = url; }, failedPortraitURL.href);
+  await failedPortraitResponse;
   await expect(suggestedPortrait).toHaveCSS("visibility", "hidden");
   await expect(personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ })).toBeVisible();
-  await page.unroute("**/photos/faces/*/thumbnail");
+  await page.unroute(failedPortraitURL.href);
   await dialogName.press("ArrowDown");
   const caption = personDialog.locator("[data-person-preview-path]");
   await expect(caption).toHaveText(await page.locator('.person-overview-card[data-person-name="Dialog-Quelle"]').getAttribute("data-display-path"));

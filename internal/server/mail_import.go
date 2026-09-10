@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"io"
 	"log/slog"
 
 	"bearstack/internal/document"
@@ -12,7 +11,6 @@ import (
 )
 
 type mailImportRunResult = mailservice.RunResult
-type mailMessageImportResult = mailservice.MessageResult
 
 const (
 	httpStatusOK    = 200
@@ -33,8 +31,4 @@ func newMailImportService(maxUploadBytes int64, repo *repository.Repository, sto
 			recordAuditLog(ctx, document.AuditLogEntry{Actor: "system", Method: "IMAP", Path: "/settings/mail-import", Route: "settings/mail-import", Action: action, Target: target, Status: status})
 		}
 	})
-}
-
-func (s *Server) importPDFsFromMail(ctx context.Context, r io.Reader, allowedSenders string) (mailMessageImportResult, error) {
-	return s.mailImportService().ImportMessage(ctx, r, allowedSenders)
 }

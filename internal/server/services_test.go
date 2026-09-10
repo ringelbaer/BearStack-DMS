@@ -100,7 +100,7 @@ func TestServicesPreserveInjectedDependenciesAndImportHook(t *testing.T) {
 		t.Fatal("HTTP importer did not call the injected hook")
 	}
 	message := "From: billing@example.com\r\nSubject: hook\r\nMIME-Version: 1.0\r\nContent-Type: application/pdf; name=hook.pdf\r\nContent-Disposition: attachment; filename=hook.pdf\r\n\r\n%PDF-1.4\nmail hook test"
-	result, err := s.mailImportService().ImportMessage(context.Background(), strings.NewReader(message), "")
+	result, err := s.importMailMessage(context.Background(), strings.NewReader(message), "")
 	if err != nil || result.Uploaded != 1 {
 		t.Fatalf("mail import = %#v, %v", result, err)
 	}

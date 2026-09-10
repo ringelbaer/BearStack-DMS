@@ -8,21 +8,16 @@ import (
 )
 
 type ocrRunnerStub struct {
-	runQueueCalls int
-	enqueuedIDs   []int64
-	prepareDoc    document.Document
-	preparePath   string
-	prepareErr    error
+	enqueuedIDs []int64
+	prepareDoc  document.Document
+	preparePath string
+	prepareErr  error
 }
 
 func (s *ocrRunnerStub) RunQueue(context.Context) {}
 
 func (s *ocrRunnerStub) Enqueue(id int64) {
 	s.enqueuedIDs = append(s.enqueuedIDs, id)
-}
-
-func (s *ocrRunnerStub) Document(context.Context, document.Document, string, ocrProgressFunc) (string, error) {
-	return "", nil
 }
 
 func (s *ocrRunnerStub) PrepareDocument(doc document.Document) (string, error) {
