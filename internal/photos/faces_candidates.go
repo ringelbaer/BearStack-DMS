@@ -3,6 +3,7 @@ package photos
 import (
 	"context"
 	"iter"
+	"maps"
 	"math"
 	"slices"
 
@@ -21,6 +22,14 @@ func newFaceVectorIndex() *faceVectorIndex {
 }
 
 func (g *faceVectorIndex) Len() int { return len(g.vectors) }
+
+type facePersonScope uint8
+
+const (
+	facePersonsAll facePersonScope = iota
+	facePersonsNamed
+	facePersonsUnnamed
+)
 
 type facePersonCandidate struct {
 	person int64
@@ -86,20 +95,33 @@ func (rt *faceRuntime) faceReferenceVector(id int64) []float32 {
 // score: live transaction and filesystem checks may only remove references.
 // Caller holds faceRuntime.mu and has called ensureFaceGraph.
 func (rt *faceRuntime) rankFacePersons(ctx context.Context, v []float32, excluded map[int64]bool) ([]facePersonCandidate, error) {
+	return rt.rankFacePersonsInScope(ctx, v, excluded, nil, facePersonsAll)
+}
+
+func (rt *faceRuntime) rankFacePersonsInScope(ctx context.Context, v []float32, excluded, named map[int64]bool, scope facePersonScope) ([]facePersonCandidate, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	if rt.graph == nil {
 		return nil, nil
 	}
-	ranked := make([]facePersonCandidate, 0, len(rt.nodes))
+	capacity := len(rt.nodes)
+	persons := maps.Keys(rt.graph.groups)
+	if scope == facePersonsNamed {
+		capacity = min(capacity, len(named))
+		persons = maps.Keys(named)
+	}
+	ranked := make([]facePersonCandidate, 0, capacity)
 	checked := 0
-	for person, references := range rt.graph.groups {
-		if excluded[person] {
+	for person := range persons {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if excluded[person] || (scope == facePersonsUnnamed && named[person]) {
 			continue
 		}
 		best := math.Inf(-1)
-		for _, vector := range references {
+		for _, vector := range rt.graph.groups[person] {
 			if checked%256 == 0 {
 				if err := ctx.Err(); err != nil {
 					return nil, err
@@ -142,6 +164,10 @@ func (l *Library) validateFacePersonCandidates(ctx context.Context, tx faceRowsQ
 }
 
 func (l *Library) validateFaceCandidates(ctx context.Context, tx faceRowsQuery, refs faceCandidateReferences, v []float32, ranked []facePersonCandidate, limit int) ([]facePersonCandidate, error) {
+	return l.validateFaceCandidatesInScope(ctx, tx, refs, v, ranked, limit, facePersonsAll)
+}
+
+func (l *Library) validateFaceCandidatesInScope(ctx context.Context, tx faceRowsQuery, refs faceCandidateReferences, v []float32, ranked []facePersonCandidate, limit int, scope facePersonScope) ([]facePersonCandidate, error) {
 	if limit <= 0 {
 		return nil, ctx.Err()
 	}
@@ -158,7 +184,13 @@ func (l *Library) validateFaceCandidates(ctx context.Context, tx faceRowsQuery, 
 		scores := make(map[int64]facePersonCandidate, end-offset)
 		witnesses := make(map[int64]faceCandidateReference, 512)
 		validate := func(batch []any) error {
-			rows, err := tx.QueryContext(ctx, faceCandidateValidationSQL(len(batch)), batch...)
+			query := faceCandidateValidationSQL(len(batch))
+			if scope == facePersonsNamed {
+				query += ` AND p.name<>''`
+			} else if scope == facePersonsUnnamed {
+				query += ` AND p.name=''`
+			}
+			rows, err := tx.QueryContext(ctx, query, batch...)
 			if err != nil {
 				return err
 			}

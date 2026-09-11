@@ -288,7 +288,7 @@ func TestFaceFavoritesExactMatchingAndBatches(t *testing.T) {
 	defer tx.Rollback()
 	q := &countedFaceMatchQuery{tx: tx}
 	got, err := l.nearestPerson(ctx, q, faceDetection(2).Embedding, nil)
-	if err != nil || got != f.PersonID || q.calls != 2 {
+	if err != nil || got != f.PersonID || q.calls != 3 {
 		t.Fatalf("exact match %d, queries %d: %v", got, q.calls, err)
 	}
 	if err := os.WriteFile(filepath.Join(l.Root(), "refs/.adminonly"), nil, 0600); err != nil {

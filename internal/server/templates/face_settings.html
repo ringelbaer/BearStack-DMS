@@ -69,8 +69,9 @@
         </div>
         <details class="face-settings-expert">
           <summary>Expertenbereich: Ähnlichkeit und Mindestabstand</summary>
-          <p class="muted">Ähnlichkeit: 0,4–0,7; Mindestabstand zum besten anderen Treffer: 0,0–0,2. Höhere Werte filtern strenger. Ähnlichkeitswerte sind keine Wahrscheinlichkeiten. Menschliche Entscheidungen ändern diese Werte nicht automatisch.</p>
+          <p class="muted">Ähnlichkeit: 0,4–0,7; Mindestabstand zum besten Treffer einer anderen Gruppe: 0,0–0,2. Weitere Gesichter derselben Gruppe verringern den Abstand nicht. Höhere Werte filtern strenger. Ähnlichkeitswerte sind keine Wahrscheinlichkeiten. Menschliche Entscheidungen ändern diese Werte nicht automatisch.</p>
           <fieldset><legend>Automatische Zuordnung bei der Erkennung</legend>
+            <p class="muted">Zuerst werden nur benannte Gruppen geprüft. Erfüllt keine beide Grenzwerte, folgen unbenannte Gruppen. Der Mindestabstand gilt jeweils nur innerhalb dieser Bereiche.</p>
             <div class="face-settings-inputs">
               <label>Ähnlichkeit (Standard 0,55)<input type="number" name="assignment_similarity" min="0.4" max="0.7" step="0.01" required value="{{.FaceSettings.Settings.Thresholds.AssignmentSimilarity}}"></label>
               <label>Mindestabstand (Standard 0,08)<input type="number" name="assignment_margin" min="0" max="0.2" step="0.01" required value="{{.FaceSettings.Settings.Thresholds.AssignmentMargin}}"></label>

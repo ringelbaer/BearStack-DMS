@@ -116,21 +116,62 @@ type faceRowsQuery interface {
 }
 
 func (l *Library) nearestPerson(ctx context.Context, tx faceRowsQuery, v []float32, excluded map[int64]bool) (int64, error) {
-	candidates, err := l.facePersonCandidates(ctx, tx, v, excluded, 2)
-	if err != nil || len(candidates) == 0 {
+	named, err := faceNamedPeople(ctx, tx)
+	if err != nil {
 		return 0, err
 	}
-	// Apply the configured recognition threshold and person-level margin.
-	// An exact search establishes when no other currently visible person exists.
-	second := -1.0
-	if len(candidates) > 1 {
-		second = candidates[1].score
+	return l.nearestPersonInGroups(ctx, tx, v, excluded, named)
+}
+
+// Name changes do not invalidate the vector index. Read IDs from the partial
+// named-person index in the matching transaction, without loading embeddings.
+const faceNamedPeopleSQL = `SELECT id FROM photo_people WHERE name<>''`
+
+func faceNamedPeople(ctx context.Context, tx faceRowsQuery) (map[int64]bool, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
+	rows, err := tx.QueryContext(ctx, faceNamedPeopleSQL)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	named := make(map[int64]bool)
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		named[id] = true
+	}
+	return named, rows.Err()
+}
+
+func (l *Library) nearestPersonInGroups(ctx context.Context, tx faceRowsQuery, v []float32, excluded, named map[int64]bool) (int64, error) {
 	thresholds := l.matchingThresholds()
-	if candidates[0].score < thresholds.AssignmentSimilarity || candidates[0].score-second < thresholds.AssignmentMargin {
-		return 0, nil
+	// A named match takes priority. Only score unnamed references if no named
+	// group meets both thresholds. Each stage compares distinct groups only.
+	for _, scope := range []facePersonScope{facePersonsNamed, facePersonsUnnamed} {
+		if scope == facePersonsNamed && len(named) == 0 {
+			continue
+		}
+		ranked, err := l.faceRuntime.rankFacePersonsInScope(ctx, v, excluded, named, scope)
+		if err != nil {
+			return 0, err
+		}
+		candidates, err := l.validateFaceCandidatesInScope(ctx, tx, &l.faceRuntime, v, ranked, 2, scope)
+		if err != nil {
+			return 0, err
+		}
+		if len(candidates) > 0 && candidates[0].score >= thresholds.AssignmentSimilarity &&
+			reviewCandidateAllowed(candidates, 0, thresholds.AssignmentMargin) {
+			return candidates[0].person, nil
+		}
 	}
-	return candidates[0].person, nil
+	return 0, nil
 }
 
 func overlap(a, b Face) float64 {
@@ -227,6 +268,19 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 		return err
 	}
 	used := map[int64]bool{}
+	var named map[int64]bool
+	matchPerson := func(vector []float32) (int64, error) {
+		// Share one ID lookup across all detections in this photo. XMP names
+		// assigned below are added before processing the next detection.
+		if named == nil {
+			var err error
+			named, err = faceNamedPeople(ctx, tx)
+			if err != nil {
+				return 0, err
+			}
+		}
+		return l.nearestPersonInGroups(ctx, tx, vector, used, named)
+	}
 	var drawn []RecognizedFace
 	for _, f := range old {
 		if f.Drawn {
@@ -289,7 +343,7 @@ detections:
 						return err
 					}
 					if count == 0 {
-						candidate, matchErr := l.nearestPerson(ctx, tx, d.Embedding, used)
+						candidate, matchErr := matchPerson(d.Embedding)
 						if matchErr != nil {
 							return matchErr
 						}
@@ -305,6 +359,7 @@ detections:
 									if _, err = tx.ExecContext(ctx, `UPDATE photo_people SET name=?,name_fold=?,name_source=? WHERE id=?`, name, searchtext.GermanFold(name), j.Path, person); err != nil {
 										return err
 									}
+									named[person] = true
 								}
 							}
 						}
@@ -325,7 +380,7 @@ detections:
 			}
 		}
 		if person == 0 && !ignored && !xmpConflict {
-			person, err = l.nearestPerson(ctx, tx, d.Embedding, used)
+			person, err = matchPerson(d.Embedding)
 			if err != nil {
 				return err
 			}

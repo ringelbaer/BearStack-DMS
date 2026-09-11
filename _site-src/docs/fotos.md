@@ -672,7 +672,18 @@ zulässigen Referenzvektoren exakt. Anschließend werden die besten unterschiedl
 Personen mit aktuellen Sichtbarkeits- und Zuordnungsprüfungen ausgewählt. Viele
 ähnliche Referenzen oder bereits im Foto zugeordnete Personen verdrängen damit
 keine passenden Vergleichsgruppen. Die Standardgrenzwerte für neue Fotos
-liegen bei 0,55 Ähnlichkeit und 0,08 Abstand zur zweitbesten Person.
+liegen bei 0,55 Ähnlichkeit und 0,08 Abstand zur zweitbesten Person im jeweiligen Bereich.
+
+Ab **0.50.0** werden neu erkannte Gesichter zuerst ausschließlich mit **benannten
+Gruppen** abgeglichen. Erfüllt dort keine Gruppe beide Grenzwerte, folgt ein eigener
+Abgleich mit **unbenannten Gruppen**. Erst wenn auch dort kein eindeutiger Treffer
+vorliegt, entsteht eine neue unbenannte Gruppe. Der Mindestabstand gilt dabei nur
+zwischen unterschiedlichen Gruppen innerhalb desselben Bereichs; benannte und
+unbenannte Gruppen konkurrieren nicht miteinander. Pro Gruppe zählt das ähnlichste
+gültige Referenzgesicht, einschließlich Favoriten. Weitere Treffer derselben Gruppe
+verringern den Abstand nicht. Die benannten Gruppen werden einmal pro Foto über
+ihren vorhandenen Datenbankindex ermittelt; bei erfolgreicher benannter Zuordnung
+entfällt der Vektorvergleich mit unbenannten Gruppen.
 
 Unter **Einstellungen → Gesichtserkennung → Vorhandene Zuordnungen verbessern**
 arbeitet ein separat pausierbarer Hintergrundlauf mit gespeicherten Vektoren,
@@ -702,7 +713,9 @@ lassen sich im ausklappbaren Expertenbereich drei getrennte Wertepaare einstelle
 
 Für jede Ähnlichkeit sind **0,4 bis 0,7**, für jeden Mindestabstand **0,0 bis 0,2**
 zulässig. Höhere Werte filtern strenger; der Abstand bezeichnet die Differenz zum
-besten anderen Personentreffer. Manuelle Vorschläge umfassen **Ähnliche Gesichter**
+besten Treffer einer anderen Gruppe, niemals zu weiteren Gesichtern derselben Gruppe.
+Bei der Erstzuordnung werden benannte und unbenannte Gruppen getrennt bewertet.
+Manuelle Vorschläge umfassen **Ähnliche Gesichter**
 und die Gesichtssuche nach benannten Personen. Bei Abstand 0 dürfen mehrere
 Alternativen erscheinen; ein positiver Abstand lässt nur einen eindeutig besten
 Treffer zu. In der Gesichtssuche wird dann die vollständige begrenzte Rangliste

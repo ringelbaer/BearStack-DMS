@@ -1676,7 +1676,17 @@ zulässigen Referenzvektoren exakt. Anschließend werden die besten unterschiedl
 Personen mit aktuellen Sichtbarkeits- und Zuordnungsprüfungen ausgewählt. Viele
 ähnliche Referenzen oder bereits im Foto zugeordnete Personen verdrängen damit
 keine passenden Vergleichsgruppen. Die Standardgrenzwerte für neue Fotos
-liegen bei 0,55 Ähnlichkeit und 0,08 Abstand zur zweitbesten Person.</p>
+liegen bei 0,55 Ähnlichkeit und 0,08 Abstand zur zweitbesten Person im jeweiligen Bereich.</p>
+<p>Ab <strong>0.50.0</strong> werden neu erkannte Gesichter zuerst ausschließlich mit <strong>benannten
+Gruppen</strong> abgeglichen. Erfüllt dort keine Gruppe beide Grenzwerte, folgt ein eigener
+Abgleich mit <strong>unbenannten Gruppen</strong>. Erst wenn auch dort kein eindeutiger Treffer
+vorliegt, entsteht eine neue unbenannte Gruppe. Der Mindestabstand gilt dabei nur
+zwischen unterschiedlichen Gruppen innerhalb desselben Bereichs; benannte und
+unbenannte Gruppen konkurrieren nicht miteinander. Pro Gruppe zählt das ähnlichste
+gültige Referenzgesicht, einschließlich Favoriten. Weitere Treffer derselben Gruppe
+verringern den Abstand nicht. Die benannten Gruppen werden einmal pro Foto über
+ihren vorhandenen Datenbankindex ermittelt; bei erfolgreicher benannter Zuordnung
+entfällt der Vektorvergleich mit unbenannten Gruppen.</p>
 <p>Unter <strong>Einstellungen → Gesichtserkennung → Vorhandene Zuordnungen verbessern</strong>
 arbeitet ein separat pausierbarer Hintergrundlauf mit gespeicherten Vektoren,
 auch ohne laufenden Erkennungsdienst. Er ist standardmäßig aktiviert und wird nach
@@ -1722,7 +1732,9 @@ lassen sich im ausklappbaren Expertenbereich drei getrennte Wertepaare einstelle
 </table>
 <p>Für jede Ähnlichkeit sind <strong>0,4 bis 0,7</strong>, für jeden Mindestabstand <strong>0,0 bis 0,2</strong>
 zulässig. Höhere Werte filtern strenger; der Abstand bezeichnet die Differenz zum
-besten anderen Personentreffer. Manuelle Vorschläge umfassen <strong>Ähnliche Gesichter</strong>
+besten Treffer einer anderen Gruppe, niemals zu weiteren Gesichtern derselben Gruppe.
+Bei der Erstzuordnung werden benannte und unbenannte Gruppen getrennt bewertet.
+Manuelle Vorschläge umfassen <strong>Ähnliche Gesichter</strong>
 und die Gesichtssuche nach benannten Personen. Bei Abstand 0 dürfen mehrere
 Alternativen erscheinen; ein positiver Abstand lässt nur einen eindeutig besten
 Treffer zu. In der Gesichtssuche wird dann die vollständige begrenzte Rangliste

@@ -61,8 +61,8 @@ func TestFaceCandidatesDoNotStarveAfterExclusion(t *testing.T) {
 	if err != nil || got != 2 {
 		t.Fatalf("clear person B after excluding A: got %d, %v", got, err)
 	}
-	if q.calls != 1 {
-		t.Fatalf("%d metadata queries, want one bounded batch", q.calls)
+	if q.calls != 2 {
+		t.Fatalf("%d metadata queries, want named IDs and one bounded batch", q.calls)
 	}
 }
 
@@ -141,7 +141,7 @@ func TestFaceCandidatesExactDuplicateRecallAndTies(t *testing.T) {
 		if err != nil || got != int64(p+1) {
 			t.Fatalf("identical stored reference of person %d: got %d, %v", p+1, got, err)
 		}
-		if q.calls != 1 {
+		if q.calls != 2 {
 			t.Fatalf("queried entire corpus instead of best groups: %d queries", q.calls)
 		}
 	}
@@ -260,12 +260,21 @@ func BenchmarkFacePersonRanking(b *testing.B) {
 				rt.graph.groups[person] = append(rt.graph.groups[person], v)
 			}
 			query := faceDetection(0).Embedding
-			b.ReportAllocs()
-			b.ResetTimer()
-			for range b.N {
-				if _, err := rt.rankFacePersons(context.Background(), query, nil); err != nil {
-					b.Fatal(err)
+			named := make(map[int64]bool)
+			for person := range rt.nodes {
+				if person%10 == 0 {
+					named[person] = true
 				}
+			}
+			for _, scope := range []facePersonScope{facePersonsAll, facePersonsNamed, facePersonsUnnamed} {
+				b.Run(map[facePersonScope]string{facePersonsAll: "all", facePersonsNamed: "named_10_percent", facePersonsUnnamed: "unnamed_90_percent"}[scope], func(b *testing.B) {
+					b.ReportAllocs()
+					for range b.N {
+						if _, err := rt.rankFacePersonsInScope(context.Background(), query, nil, named, scope); err != nil {
+							b.Fatal(err)
+						}
+					}
+				})
 			}
 		})
 	}

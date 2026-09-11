@@ -3091,13 +3091,13 @@ paths:
                   minimum: 0.4
                   maximum: 0.7
                   default: 0.55
-                  description: "Minimum similarity for initial automatic recognition assignment. Omission preserves the saved value."
+                  description: "Minimum similarity for initial automatic recognition assignment. Named groups are checked first; unnamed groups are checked only if no named group meets both similarity and margin. Omission preserves the saved value."
                 assignment_margin:
                   type: number
                   minimum: 0
                   maximum: 0.2
                   default: 0.08
-                  description: "Minimum lead over the runner-up for initial automatic assignment. Omission preserves the saved value."
+                  description: "Minimum lead over the best different group within the named or unnamed stage of initial automatic assignment. Each group contributes its best valid reference score; references of the same group and groups in the other stage do not compete. Omission preserves the saved value."
                 reconcile_similarity:
                   type: number
                   minimum: 0.4
@@ -3109,7 +3109,7 @@ paths:
                   minimum: 0
                   maximum: 0.2
                   default: 0.1
-                  description: "Minimum lead over the runner-up for retrospective automatic assignment. Omission preserves the saved value."
+                  description: "Minimum lead over the best different group for retrospective automatic assignment; multiple references of the same group do not compete. Omission preserves the saved value."
                 suggestion_similarity:
                   type: number
                   minimum: 0.4
@@ -3121,7 +3121,7 @@ paths:
                   minimum: 0
                   maximum: 0.2
                   default: 0
-                  description: "Zero allows alternatives. A positive value requires a unique best candidate with this lead over the runner-up. Omission preserves the saved value."
+                  description: "Zero allows alternatives. A positive value requires a unique best group with this lead over the best different group; multiple references of the same group do not compete. Omission preserves the saved value."
                 interval_minutes:
                   type: integer
                   minimum: 1
@@ -3447,13 +3447,13 @@ components:
           minimum: 0.4
           maximum: 0.7
           default: 0.55
-          description: "Minimum similarity for initial automatic recognition assignment."
+          description: "Minimum similarity for initial automatic recognition assignment. Named groups are checked first; unnamed groups are checked only if no named group meets both similarity and margin."
         assignment_margin:
           type: number
           minimum: 0
           maximum: 0.2
           default: 0.08
-          description: "Minimum lead over the runner-up for initial automatic assignment."
+          description: "Minimum lead over the best different group within the named or unnamed stage of initial automatic assignment. Each group contributes its best valid reference score; references of the same group and groups in the other stage do not compete."
         reconcile_similarity:
           type: number
           minimum: 0.4
@@ -3465,7 +3465,7 @@ components:
           minimum: 0
           maximum: 0.2
           default: 0.1
-          description: "Minimum lead over the runner-up for retrospective automatic assignment."
+          description: "Minimum lead over the best different group for retrospective automatic assignment; multiple references of the same group do not compete."
         suggestion_similarity:
           type: number
           minimum: 0.4
@@ -3477,7 +3477,7 @@ components:
           minimum: 0
           maximum: 0.2
           default: 0
-          description: "Zero allows alternatives. A positive value requires a unique best candidate with this lead over the runner-up."
+          description: "Zero allows alternatives. A positive value requires a unique best group with this lead over the best different group; multiple references of the same group do not compete."
     PhotoCatalogError:
       type: object
       required:
