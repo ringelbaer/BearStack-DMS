@@ -16,6 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -29,6 +30,7 @@ import de.bearstack.people.people.PeopleViewModel
 internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
     val text=uiStrings()
     val suggestion=state.mergeSuggestion
+    val reviewScroll=rememberScrollState()
     var confirmMerge by remember(suggestion) { mutableStateOf(false) }
     var held by remember { mutableStateOf<Long?>(null) }
     var heldDismissed by remember { mutableStateOf(false) }
@@ -41,6 +43,7 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
     val enabled=!state.naming && !state.busy && !state.unresolved && held==null && !help && !confirmMerge
     val lifecycle=LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(suggestion) {held=null;accessible=false;zoom=0f}
+    LaunchedEffect(suggestion?.id) {reviewScroll.scrollTo(0)}
     LaunchedEffect(suggestion,lifecycle) {
         val faces=suggestion?.let {it.source.faces+it.target.faces} ?: emptyList()
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {vm.prefetchOriginals(faces)}
@@ -84,7 +87,8 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                 }
             }
         }) {padding ->
-            Column(Modifier.fillMaxSize().padding(padding).testTag("merge-review")) {
+            Column(Modifier.fillMaxSize().padding(padding).testTag("merge-review")
+                .verticalScroll(reviewScroll),horizontalAlignment=Alignment.CenterHorizontally) {
                 Box(Modifier.fillMaxWidth().height(4.dp)) {if(state.busy) LinearProgressIndicator(Modifier.fillMaxSize())}
                 state.error?.let {error ->
                     Column(Modifier.fillMaxWidth().padding(12.dp)) {
@@ -96,34 +100,59 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                     }
                 }
                 if(suggestion!=null) {
-                    Text(text(R.string.people_same_person),style=MaterialTheme.typography.titleLarge,modifier=Modifier.padding(horizontal=16.dp,vertical=8.dp))
-                    Row(Modifier.weight(1f).fillMaxWidth().padding(horizontal=12.dp,vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                        listOf(suggestion.source,suggestion.target).forEachIndexed {index,person ->
-                            Column(Modifier.weight(1f).fillMaxHeight(),horizontalAlignment=Alignment.CenterHorizontally) {
-                                Text(if(index==0) text(R.string.people_first_group) else text(R.string.people_second_group),style=MaterialTheme.typography.labelMedium)
-                                Text(person.name.ifBlank {text(R.string.people_unnamed)},maxLines=2,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.titleMedium)
-                                Text(text.faces(person.count),style=MaterialTheme.typography.bodySmall)
-                                if(state.mergeSideActions && person.name.isEmpty()) {
-                                    val result=state.mergeSideResults[person.id]
-                                    if(result!=null) Text(text(result),style=MaterialTheme.typography.bodySmall,
-                                        modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite})
-                                    else {
-                                        OutlinedButton(onClick={vm.ignoreMergeSide(person.id)},enabled=enabled,
-                                            modifier=Modifier.fillMaxWidth().semantics {contentDescription=text(if(index==0) R.string.people_merge_ignore_first else R.string.people_merge_ignore_second)}) {
-                                            Text(text(R.string.people_merge_ignore))
-                                        }
-                                        IconButton(onClick={vm.startMergeSideNaming(person.id)},enabled=enabled,
-                                            modifier=Modifier.semantics {contentDescription=text(if(index==0) R.string.people_merge_name_first else R.string.people_merge_name_second)}) {
-                                            Icon(painterResource(R.drawable.ic_edit),contentDescription=null,modifier=Modifier.size(24.dp))
-                                        }
-                                    }
+                    val people=listOf(suggestion.source,suggestion.target)
+                    Column(Modifier.widthIn(max=600.dp).fillMaxWidth().padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                        Text(text(R.string.people_same_person),style=MaterialTheme.typography.titleLarge,modifier=Modifier.padding(bottom=8.dp))
+                        // Shared rows keep both portraits and their details aligned even when
+                        // names wrap or only one group has individual actions.
+                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                            people.forEachIndexed {index,_ ->
+                                Text(text(if(index==0) R.string.people_first_group else R.string.people_second_group),
+                                    style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign=TextAlign.Center,modifier=Modifier.weight(1f))
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                            people.forEach {person ->
+                                Box(Modifier.weight(1f).aspectRatio(1f)) {
+                                    FaceGrid(person,enabled,vm.images,vm::image,onDetach={},
+                                        onHold={held=it;heldDismissed=false;zoom=0f},
+                                        onZoom={held=it;heldDismissed=false;zoom=0f;accessible=true},
+                                        onZoomDrag=drag,allowDetach=false,showPaths=false)
                                 }
-                                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(),contentAlignment=Alignment.Center) {
-                                    Box(Modifier.size(minOf(maxWidth,maxHeight))) {
-                                        FaceGrid(person,enabled,vm.images,vm::image,onDetach={},
-                                            onHold={held=it;heldDismissed=false;zoom=0f},
-                                            onZoom={held=it;heldDismissed=false;zoom=0f;accessible=true},
-                                            onZoomDrag=drag,allowDetach=false,showPaths=false)
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                            people.forEach {person ->
+                                Text(person.name.ifBlank {text(R.string.people_unnamed)},maxLines=2,overflow=TextOverflow.Ellipsis,
+                                    style=MaterialTheme.typography.titleMedium,textAlign=TextAlign.Center,modifier=Modifier.weight(1f))
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                            people.forEach {person ->
+                                Text(text.faces(person.count),style=MaterialTheme.typography.bodySmall,
+                                    color=MaterialTheme.colorScheme.onSurfaceVariant,textAlign=TextAlign.Center,modifier=Modifier.weight(1f))
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                            people.forEachIndexed {index,person ->
+                                FlowRow(Modifier.weight(1f),horizontalArrangement=Arrangement.spacedBy(4.dp,Alignment.CenterHorizontally),
+                                    verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                                    if(state.mergeSideActions && person.name.isEmpty()) {
+                                        val result=state.mergeSideResults[person.id]
+                                        if(result!=null) Text(text(result),style=MaterialTheme.typography.bodySmall,
+                                            textAlign=TextAlign.Center,modifier=Modifier.fillMaxWidth().semantics {liveRegion=LiveRegionMode.Polite})
+                                        else {
+                                            OutlinedButton(onClick={vm.ignoreMergeSide(person.id)},enabled=enabled,contentPadding=PaddingValues(horizontal=8.dp),
+                                                modifier=Modifier.heightIn(min=48.dp).semantics {contentDescription=text(if(index==0) R.string.people_merge_ignore_first else R.string.people_merge_ignore_second)}) {
+                                                Text(text(R.string.people_merge_ignore),textAlign=TextAlign.Center)
+                                            }
+                                            OutlinedIconButton(onClick={vm.startMergeSideNaming(person.id)},enabled=enabled,
+                                                border=ButtonDefaults.outlinedButtonBorder(enabled),
+                                                modifier=Modifier.size(48.dp).semantics {contentDescription=text(if(index==0) R.string.people_merge_name_first else R.string.people_merge_name_second)}) {
+                                                Icon(painterResource(R.drawable.ic_edit),contentDescription=null,modifier=Modifier.size(24.dp))
+                                            }
+                                        }
                                     }
                                 }
                             }

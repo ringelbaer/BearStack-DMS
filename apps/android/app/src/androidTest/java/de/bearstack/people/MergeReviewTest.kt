@@ -1,13 +1,22 @@
 package de.bearstack.people
 
 import android.app.Application
+import android.graphics.Bitmap
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
 import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
@@ -20,11 +29,13 @@ import kotlinx.coroutines.flow.first
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
+import java.io.File
 
 class MergeReviewTest {
     @get:Rule val compose=createComposeRule()
     private fun idle(vm: PeopleViewModel) = compose.waitUntil(10_000) {vm.state.value.connected && !vm.state.value.busy}
-    private fun screen(scale: Float=1f, setup: (FakeService)->Unit = {}, test: (PeopleViewModel,FakeService,LabelingDatabase)->Unit) {
+    private fun screen(scale: Float=1f, setup: (FakeService)->Unit = {}, viewport: DpSize?=null,
+        test: (PeopleViewModel,FakeService,LabelingDatabase)->Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as Application
         val db=Room.inMemoryDatabaseBuilder(app,LabelingDatabase::class.java).build()
         val api=FakeService().apply {
@@ -41,7 +52,9 @@ class MergeReviewTest {
         try {
             compose.setGermanContent {
                 val density=LocalDensity.current
-                CompositionLocalProvider(LocalDensity provides Density(density.density,scale)) {PeopleApp(vm)}
+                CompositionLocalProvider(LocalDensity provides Density(density.density,scale)) {
+                    Box(if(viewport==null) Modifier else Modifier.size(viewport)) {PeopleApp(vm)}
+                }
             }
             idle(vm)
             compose.runOnUiThread {vm.page(1)};idle(vm)
@@ -59,6 +72,66 @@ class MergeReviewTest {
         api.people[3]=api.people.getValue(3).copy(name="Ada")
         api.people[4]=api.people.getValue(4).copy(name="Grace")
         api.mergePairs[0]=api.mergePairs[0].copy(source=api.people.getValue(3),target=api.people.getValue(4))
+    }
+    private fun alignedPortraits() {
+        val first=compose.onNodeWithTag("face-30").assertIsDisplayed().getUnclippedBoundsInRoot()
+        val second=compose.onNodeWithTag("face-40").assertIsDisplayed().getUnclippedBoundsInRoot()
+        assertEquals(first.top.value,second.top.value,1f)
+        assertEquals(first.bottom.value,second.bottom.value,1f)
+        assertEquals(first.width.value,second.width.value,1f)
+        assertEquals(first.width.value,first.height.value,1f)
+        assertTrue(first.right<second.left)
+    }
+    private fun saveLayout(name: String) {
+        val app=InstrumentationRegistry.getInstrumentation().targetContext
+        val bitmap=compose.onRoot().captureToImage().asAndroidBitmap()
+        File(app.cacheDir,"merge-layout-$name.png").outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
+    }
+    @Test fun mixedGroupsHaveAlignedPortraitsAndCompactActions() = screen(viewport=DpSize(360.dp,760.dp)) {vm,_,_ ->
+        alignedPortraits()
+        val portrait=compose.onNodeWithTag("face-30").getUnclippedBoundsInRoot()
+        val label=compose.onNodeWithText("Erste Gruppe").getUnclippedBoundsInRoot()
+        assertTrue("Portrait follows its label without a large gap",portrait.top-label.bottom<=12.dp)
+        val ignore=compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertIsDisplayed().getUnclippedBoundsInRoot()
+        val pencil=compose.onNodeWithContentDescription("Erste Gruppe benennen/zuordnen").assertIsDisplayed().getUnclippedBoundsInRoot()
+        assertEquals(ignore.top.value,pencil.top.value,1f)
+        assertTrue(ignore.height>=48.dp && pencil.height>=48.dp && pencil.width>=48.dp)
+        assertTrue(ignore.right<=pencil.left)
+        assertTrue(ignore.top>portrait.bottom)
+        compose.onNodeWithText("Zusammenführen").assertIsDisplayed()
+        compose.onNodeWithText("Getrennt lassen").assertIsDisplayed()
+        saveLayout("mixed")
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
+        alignedPortraits()
+        compose.onNodeWithText("Weiter").assertIsDisplayed()
+    }
+    @Test fun wrappedNameKeepsPortraitsAndCountsAligned() = screen(setup={api ->
+        api.people[4]=api.people.getValue(4).copy(name="Alexandra Musterfrau mit langem Namen",count=107)
+        api.mergePairs[0]=api.mergePairs[0].copy(target=api.people.getValue(4))
+    },viewport=DpSize(320.dp,640.dp)) {_,_,_ ->
+        alignedPortraits()
+        val first=compose.onNodeWithText("1 Gesicht").getUnclippedBoundsInRoot()
+        val second=compose.onNodeWithText("107 Gesichter").getUnclippedBoundsInRoot()
+        assertEquals(first.top.value,second.top.value,1f)
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Erste Gruppe benennen/zuordnen").assertIsDisplayed()
+        saveLayout("long-name")
+    }
+    @Test fun smallScreenLargeFontScrollsDetailsAndKeepsDecisionsVisible() = screen(2f,setup=::unnamed,
+        viewport=DpSize(320.dp,480.dp)) {vm,api,_ ->
+        val merge=compose.onNodeWithText("Zusammenführen")
+        val reject=compose.onNodeWithText("Getrennt lassen")
+        val mergeBounds=merge.assertIsDisplayed().getUnclippedBoundsInRoot()
+        val rejectBounds=reject.assertIsDisplayed().getUnclippedBoundsInRoot()
+        compose.onNodeWithContentDescription("Zweite Gruppe benennen/zuordnen").performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithText("Abbrechen").performClick()
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performScrollTo().assertIsDisplayed()
+        assertEquals(mergeBounds,merge.assertIsDisplayed().getUnclippedBoundsInRoot())
+        assertEquals(rejectBounds,reject.assertIsDisplayed().getUnclippedBoundsInRoot())
+        saveLayout("large-font")
+        reject.performClick();idle(vm)
+        compose.onNodeWithTag("face-50").assertIsDisplayed()
+        assertEquals(1,api.commits)
     }
     @Test fun namedMergeRequiresConfirmationAndCancelDoesNotWrite() = screen(2f,setup=::named) {vm,api,db ->
         val before=api.people.toMap()
