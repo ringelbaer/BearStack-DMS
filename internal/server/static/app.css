@@ -3457,6 +3457,14 @@ label span {
 .face-merge-suggestions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 1rem; }
 .face-merge-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; margin-bottom: 1rem; }
 .face-merge-pair .person-card { min-width: 0; overflow-wrap: anywhere; }
+.face-merge-side { min-width: 0; }
+.face-merge-side-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.face-merge-side-actions button { min-height: 44px; min-width: 44px; padding: 8px; }
+.face-merge-side-actions [data-merge-ignore] { flex: 1 1 90px; }
+.face-merge-side-actions [data-merge-side-name] { padding: 0; }
+.face-merge-side-actions[hidden] { display: none; }
+.face-merge-dismiss { min-height: 44px; margin-top: auto; }
+.face-merge-suggestion form[hidden], .face-merge-dismiss[hidden] { display: none; }
 .face-merge-pair img { max-width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
 .face-merge-score { text-align: center; font-size: .8rem; margin: 0 0 .5rem; }
 .face-merge-suggestion { display: flex; flex-direction: column; min-width: 0; }

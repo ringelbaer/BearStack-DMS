@@ -95,12 +95,20 @@ func scanFaceMergeSuggestion(row interface{ Scan(...any) error }) (FaceMergeSugg
 
 // FaceMergeSuggestions only reads cached candidates; page views never run matching.
 func (l *Library) FaceMergeSuggestions(ctx context.Context, limit int) ([]FaceMergeSuggestion, error) {
+	return l.faceMergeSuggestions(ctx, limit, [2]int64{})
+}
+
+func (l *Library) faceMergeSuggestions(ctx context.Context, limit int, excluded [2]int64) ([]FaceMergeSuggestion, error) {
 	limit = min(max(limit, 1), 100)
 	read := func(ids []any) ([]FaceMergeSuggestion, error) {
 		filter := ""
 		args := append([]any{}, ids...)
 		if len(ids) > 0 {
 			filter = ` AND s.id IN (` + sqlutil.Placeholders(len(ids)) + `)`
+		}
+		if excluded[0] > 0 && excluded[1] > 0 {
+			filter += ` AND NOT ((s.source_id=? AND s.target_id=?) OR (s.source_id=? AND s.target_id=?))`
+			args = append(args, excluded[0], excluded[1], excluded[1], excluded[0])
 		}
 		args = append(args, limit)
 		rows, err := l.index.db.QueryContext(ctx, faceMergeSuggestionSelect+filter+` ORDER BY s.score DESC,s.id LIMIT ?`, args...)

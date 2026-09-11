@@ -15,7 +15,7 @@ import org.json.JSONObject
 
 data class Session(val instance: String, val dataset: String, val account: String, val upper: Long,
     val namedPeople: Boolean = false, val namedSearch: Boolean = false, val mergeSuggestions: Boolean = false, val mergeNaming: Boolean = false,
-    val manualMerge: Boolean = false) {
+    val manualMerge: Boolean = false, val mergeSideActions: Boolean = false) {
     val scope: String get() = JSONObject().put("instance", instance).put("dataset", dataset).put("account", account).toString()
 }
 data class Person(val id: Long, val name: String, val revision: Long, val count: Long, val faceId: Long,
@@ -51,7 +51,7 @@ interface LabelingService {
     suspend fun mergeGroups(after: Long, upper: Long, includeNamed: Boolean): Candidates =
         throw ApiFailure(404,"not_found",UiText(R.string.people_manual_merge_version))
     fun faceMatches(face: Long): Flow<List<FaceMatch>> = flow { throw ApiFailure(404,"not_found",UiText(R.string.people_face_search_unavailable)) }
-    suspend fun nextMergeSuggestion(): MergeSuggestion? = throw ApiFailure(404,"not_found",UiText(R.string.error_merge_version))
+    suspend fun nextMergeSuggestion(excluded: Pair<Long,Long>? = null): MergeSuggestion? = throw ApiFailure(404,"not_found",UiText(R.string.error_merge_version))
     suspend fun action(id: Long, body: String): Receipt
     suspend fun receipt(operation: String, dataset: String): Receipt
 }
@@ -84,7 +84,7 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
     override suspend fun session(): Session {
         val o = json("session")
         requireMessage(o.getInt("protocol") == 1 && o.getBoolean("can_manage"),R.string.error_people_protocol)
-        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"),o.optBoolean("merge_naming"),o.optBoolean("manual_merge"))
+        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"),o.optBoolean("merge_naming"),o.optBoolean("manual_merge"),o.optBoolean("merge_side_actions"))
     }
     override suspend fun candidates(after: Long, upper: Long): Candidates {
         val o = json("candidates", mapOf("after" to "$after", "upper" to "$upper"))
@@ -121,7 +121,8 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
             .header("Accept", "application/x-ndjson").build()
         return faceMatchClient.faceMatchUpdates(request)
     }
-    override suspend fun nextMergeSuggestion(): MergeSuggestion? = json("merge-suggestions/next").optJSONObject("suggestion")?.let {
+    override suspend fun nextMergeSuggestion(excluded: Pair<Long,Long>?): MergeSuggestion? = json("merge-suggestions/next",
+        excluded?.let {mapOf("exclude_source" to "${it.first}","exclude_target" to "${it.second}")} ?: emptyMap()).optJSONObject("suggestion")?.let {
         MergeSuggestion(it.getLong("id"),person(it.getJSONObject("source")),person(it.getJSONObject("target")),
             it.optDouble("score",Double.NaN).takeIf {score -> score.isFinite()})
     }

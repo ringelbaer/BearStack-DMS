@@ -55,6 +55,75 @@ class MergeReviewTest {
         api.people[4]=api.people.getValue(4).copy(name="")
         api.mergePairs[0]=api.mergePairs[0].copy(target=api.people.getValue(4))
     }
+    @Test fun individualActionsKeepBothSidesUntilNext() = screen(2f,setup=::unnamed) {vm,api,_ ->
+        val before=api.people.getValue(4)
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
+        assertFalse(api.people.containsKey(3));assertEquals(before,api.people[4])
+        assertEquals(1L,vm.state.value.mergeSuggestion!!.id)
+        compose.onNodeWithText("Weiter").assertIsDisplayed()
+        compose.onNodeWithText("Zusammenführen").assertDoesNotExist()
+        compose.onNodeWithText("Getrennt lassen").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Zweite Gruppe benennen/zuordnen").performClick()
+        compose.onNodeWithText("Name",substring=false).performTextInput("Ada")
+        compose.onNodeWithText("Speichern").performClick();idle(vm)
+        assertEquals("Ada",api.people.getValue(4).name)
+        assertEquals(setOf(3L,4L),vm.state.value.mergeSideResults.keys)
+        compose.runOnUiThread {vm.decideMerge(true);vm.decideMerge(false)};idle(vm)
+        assertEquals(2,api.commits)
+        compose.onNodeWithText("Weiter").performClick();idle(vm)
+        assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
+        assertTrue(vm.state.value.mergeSideResults.isEmpty())
+        assertEquals(setOf("ignore","name"),api.receipts.values.map {it.action}.toSet())
+    }
+    @Test fun secondSideSearchAssignsOnlySecondAndCancelDoesNothing() = screen(setup=::unnamed) {vm,api,_ ->
+        val before=api.people.getValue(3)
+        compose.onNodeWithContentDescription("Zweite Gruppe benennen/zuordnen").performClick()
+        compose.onNodeWithText("Abbrechen").performClick()
+        assertEquals(0,api.commits);assertTrue(vm.state.value.mergeSideResults.isEmpty())
+        api.matches=listOf(FaceMatch(6,"Person 6",1,60))
+        compose.onNodeWithContentDescription("Zweite Gruppe benennen/zuordnen").performClick()
+        compose.onNodeWithContentDescription("Ähnliche benannte Personen suchen").performClick()
+        compose.waitUntil(5000) {vm.state.value.faceMatches.isNotEmpty()}
+        assertEquals(listOf(40L),api.matchedFaces)
+        compose.onNodeWithText("1 Gesicht · #6").performScrollTo().performClick();idle(vm)
+        assertEquals(before,api.people[3]);assertFalse(api.people.containsKey(4))
+        assertEquals(2L,api.people.getValue(6).count)
+        assertEquals(setOf(4L),vm.state.value.mergeSideResults.keys)
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertIsEnabled()
+        assertEquals(4L,api.receipts.values.single().source)
+    }
+    @Test fun individualLostResponseResolvesWithoutAdvancingOrDoubleWrite() = screen(setup=::unnamed) {vm,api,_ ->
+        api.loseResponse=true
+        compose.onNodeWithContentDescription("Zweite Gruppe ignorieren").performClick();idle(vm)
+        assertTrue(vm.state.value.unresolved);assertEquals(1,api.commits)
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertIsNotEnabled()
+        compose.onNodeWithText("Offene Aktion prüfen").performClick();idle(vm)
+        assertFalse(vm.state.value.unresolved);assertEquals(1,api.commits)
+        assertEquals(1L,vm.state.value.mergeSuggestion!!.id)
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertIsEnabled()
+        compose.onNodeWithText("Weiter").assertIsDisplayed()
+    }
+    @Test fun nextSkipsRecreatedReversePairWithoutRejectingIt() = screen(setup=::unnamed) {vm,api,_ ->
+        compose.onNodeWithContentDescription("Erste Gruppe benennen/zuordnen").performClick()
+        compose.onNodeWithText("Name",substring=false).performTextInput("Ada")
+        compose.onNodeWithText("Speichern").performClick();idle(vm)
+        val regenerated=MergeSuggestion(99,api.people.getValue(4),api.people.getValue(3),.52)
+        api.mergePairs.add(0,regenerated)
+        compose.onNodeWithText("Weiter").performClick();idle(vm)
+        assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
+        assertTrue(regenerated in api.mergePairs);assertEquals(1,api.commits)
+    }
+    @Test fun namedSidesAndOlderServersHaveNoIndividualButtons() = screen {vm,api,_ ->
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Zweite Gruppe ignorieren").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Zweite Gruppe benennen/zuordnen").assertDoesNotExist()
+        compose.runOnUiThread {vm.ignoreMergeSide(4);vm.startMergeSideNaming(4)};idle(vm)
+        assertEquals(0,api.commits);assertFalse(vm.state.value.naming)
+        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        api.supportsMergeSideActions=false
+        compose.onNodeWithText("Menü").performClick();compose.onNodeWithText("Ähnliche Gruppen").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertDoesNotExist()
+    }
     @Test fun faceSearchUsesMergeWitnessAndAssignsBothGroups() = screen(setup=::unnamed) {vm,api,_ ->
         api.matches=listOf(FaceMatch(6,"Person 6",1,60))
         compose.onNodeWithContentDescription("Zusammenführen und benennen/zuordnen").performClick()

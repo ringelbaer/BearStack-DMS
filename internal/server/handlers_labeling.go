@@ -116,7 +116,13 @@ func (s *Server) handleLabelSuggestions(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleLabelMergeSuggestion(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "private, no-store")
-	out, err := s.photos.LabelNextMergeSuggestion(r.Context())
+	source, sourceErr := labelInt(r, "exclude_source", 1<<63-1)
+	target, targetErr := labelInt(r, "exclude_target", 1<<63-1)
+	if sourceErr != nil || targetErr != nil {
+		s.labelError(w, r, photos.ErrLabelInvalid)
+		return
+	}
+	out, err := s.photos.LabelNextMergeSuggestion(r.Context(), [2]int64{source, target})
 	if err != nil {
 		s.labelError(w, r, err)
 		return

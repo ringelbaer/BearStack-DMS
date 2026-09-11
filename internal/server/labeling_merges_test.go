@@ -22,6 +22,13 @@ func TestLabelingMergeHTTP(t *testing.T) {
 			if strings.Contains(html.Body.String(), "data-merge-name") != (action == "name_merge") {
 				t.Fatal("wrong pencil visibility")
 			}
+			sides := 1
+			if action == "name_merge" {
+				sides = 2
+			}
+			if strings.Count(html.Body.String(), "data-merge-side-name") != sides || strings.Count(html.Body.String(), "data-merge-ignore") != sides {
+				t.Fatal("only unnamed groups may have individual controls")
+			}
 			if !strings.Contains(html.Body.String(), fmt.Sprintf("Ähnlichkeit: %.2f", expected.Score)) {
 				t.Fatal("missing similarity in WebUI")
 			}
@@ -70,5 +77,27 @@ func TestLabelingMergeHTTP(t *testing.T) {
 				t.Fatalf("next: %d %s", w.Code, w.Body.String())
 			}
 		})
+	}
+}
+
+func TestLabelingMergeSkipPairHTTP(t *testing.T) {
+	s, pair := mergeSuggestionServer(t, false)
+	for _, query := range []struct {
+		value string
+		code  int
+	}{
+		{fmt.Sprintf("?exclude_source=%d&exclude_target=%d", pair.SourceID, pair.TargetID), 200},
+		{fmt.Sprintf("?exclude_source=%d&exclude_target=%d", pair.TargetID, pair.SourceID), 200},
+		{"?exclude_source=1", 400}, {"?exclude_target=1", 400},
+		{"?exclude_source=-1&exclude_target=2", 400}, {"?exclude_source=1&exclude_target=1", 400},
+		{"?exclude_source=abc&exclude_target=2", 400},
+	} {
+		w := labelRequest(s, "GET", "/api/photos/labeling/v1/merge-suggestions/next"+query.value, "editor", "")
+		if w.Code != query.code || (w.Code == 200 && !strings.Contains(w.Body.String(), `"suggestion":null`)) {
+			t.Fatalf("%s: %d %s", query.value, w.Code, w.Body.String())
+		}
+	}
+	if w := labelRequest(s, "GET", "/api/photos/labeling/v1/merge-suggestions/next", "editor", ""); w.Code != 200 || strings.Contains(w.Body.String(), `"suggestion":null`) {
+		t.Fatalf("skip must not reject or delete pair: %d %s", w.Code, w.Body.String())
 	}
 }

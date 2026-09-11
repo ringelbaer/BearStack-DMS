@@ -1238,6 +1238,22 @@ paths:
         display_path and original_key. Revisions describe the displayed groups.
         After a confirmed accept_merge/reject_merge action, read this endpoint again.
         Conflicts require a fresh read and an explicit new decision.
+        Since 0.50.0, session.merge_side_actions enables ignore/name/assign controls
+        for each unnamed side. Named groups never receive individual controls.
+        Individual actions retain the displayed pair until Next (Android) or Hide
+        (Web); after the first confirmed action there are no pair-decision controls.
+        Optional exclude_source/exclude_target skip the previous pair in either
+        orientation before the bounded candidate read, without rejecting it or
+        modifying any data. Both IDs must be distinct and positive, or both zero/omitted.
+      parameters:
+        - in: query
+          name: exclude_source
+          schema: {type: integer, format: int64, minimum: 0}
+          description: First group ID of the pair to skip on this read; use with exclude_target.
+        - in: query
+          name: exclude_target
+          schema: {type: integer, format: int64, minimum: 0}
+          description: Second group ID of the pair to skip on this read; use with exclude_source.
       responses:
         "200":
           description: One suggestion or none. Cache-Control is private, no-store.
@@ -1251,6 +1267,8 @@ paths:
                     oneOf:
                       - $ref: "#/components/schemas/LabelingMergeSuggestion"
                       - type: "null"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3900,6 +3918,7 @@ components:
       required: [protocol, instance, dataset, account, upper_id, can_manage]
       properties:
         manual_merge: {type: boolean, const: true, description: "Cursor group browsing and atomic merge_groups/name_groups since 0.50.0. Older servers omit this field."}
+        merge_side_actions: {type: boolean, const: true, description: "Individual ignore/name/assign controls only for unnamed comparison sides and read-only pair exclusion on Next since 0.50.0. Older servers omit this field."}
         merge_naming: {type: boolean, const: true, description: "Atomic name_merge for two unnamed suggested groups since 0.50.0. Older servers omit this field."}
         merge_suggestions: {type: boolean, const: true, description: "One-pair review and receipted accept_merge/reject_merge actions since 0.49.0. Older servers omit this field."}
         named_people: {type: boolean, const: true, description: "Named people list and rename/unassign/favorite receipt actions available since 0.43.0. Older servers omit this field."}

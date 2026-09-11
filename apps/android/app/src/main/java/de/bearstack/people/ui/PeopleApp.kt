@@ -305,9 +305,10 @@ internal fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Bool
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) { focus.requestFocus(); keyboard?.show() }
-    AlertDialog(onDismissRequest=vm::closeNaming,title={Text(if(state.duplicates.isNotEmpty()) text(R.string.people_name_exists) else if(state.mergeReview) text(R.string.people_merge_name) else if(state.directory) text(R.string.people_rename) else text(R.string.people_name_person))},
+    AlertDialog(onDismissRequest=vm::closeNaming,title={Text(if(state.duplicates.isNotEmpty()) text(R.string.people_name_exists) else if(state.mergeNamingSide!=null) text(R.string.people_merge_side_name) else if(state.mergeReview) text(R.string.people_merge_name) else if(state.directory) text(R.string.people_rename) else text(R.string.people_name_person))},
         properties=DialogProperties(usePlatformDefaultWidth=false),modifier=Modifier.fillMaxWidth().padding(16.dp).imePadding(),
         text={ Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            if(state.mergeNamingSide!=null) Text(text(R.string.people_merge_side_scope))
             OutlinedTextField(state.name,vm::nameChanged,label={Text(text(R.string.people_name))},singleLine=true,enabled=enabled,
                 trailingIcon={if(!state.directory) IconButton(onClick={keyboard?.hide();vm.findFaceMatches()},enabled=enabled && !state.faceSearching) {
                     Icon(painterResource(R.drawable.ic_search),text(R.string.people_face_search),modifier=Modifier.size(24.dp))

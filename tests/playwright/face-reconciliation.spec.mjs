@@ -169,6 +169,7 @@ test("stored face reconciliation works offline with responsive merge review and 
         contained: [...document.querySelectorAll(".face-merge-suggestion")].every(card => {
           const bounds = card.getBoundingClientRect();
           return [...card.querySelectorAll("button, img, a")].every(element => {
+            if (!element.getClientRects().length) return true;
             const rect = element.getBoundingClientRect();
             return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1;
           });

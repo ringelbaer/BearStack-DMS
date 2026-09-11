@@ -17,12 +17,13 @@ internal class FakeService : LabelingService {
     var upper=2L
     var supportsMerges=true
     var supportsMergeNaming=true
-    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true,mergeSuggestions=supportsMerges,mergeNaming=supportsMergeNaming,manualMerge=true)
+    var supportsMergeSideActions=true
+    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true,mergeSuggestions=supportsMerges,mergeNaming=supportsMergeNaming,manualMerge=true,mergeSideActions=supportsMergeSideActions)
     val mergePairs=mutableListOf<MergeSuggestion>()
     var failNextMerge=false
-    override suspend fun nextMergeSuggestion(): MergeSuggestion? {
+    override suspend fun nextMergeSuggestion(excluded: Pair<Long,Long>?): MergeSuggestion? {
         if(failNextMerge) throw IOException("Nächster Vorschlag nicht erreichbar")
-        return mergePairs.firstOrNull()
+        return mergePairs.firstOrNull {excluded==null || setOf(it.source.id,it.target.id)!=setOf(excluded.first,excluded.second)}
     }
     var actionDelay=0L
     val people = mutableMapOf(1L to Person(1,"",1,5,10,listOf(10,11,12,13)),2L to Person(2,"",1,1,20,listOf(20)))
@@ -155,11 +156,19 @@ internal class FakeService : LabelingService {
             if(loseResponse) {loseResponse=false;throw IOException("response lost after commit")}
             return receipt
         }
-        val receipt=Receipt(op,action,id,0,if(action=="detach") 3 else 0,if(action=="detach")1 else p.count,if(action=="detach")0 else 1,100)
+        val target=if(action=="assign") people[request.getLong("target_id")] ?: throw ApiFailure(409,"conflict","gone") else null
+        if(target!=null && (target.name.isEmpty() || target.id==id || target.revision!=request.getLong("target_revision"))) throw ApiFailure(409,"conflict","stale")
+        val receipt=Receipt(op,action,id,target?.id ?: 0,if(action=="detach") 3 else 0,if(action=="detach")1 else p.count,if(action=="detach")0 else 1,100)
         if(action=="detach") {
             people[3]=Person(3,"",1,1,request.getLong("face_id"),listOf(request.getLong("face_id")))
             people[id]=p.copy(count=p.count-1,revision=p.revision+1,faces=p.faces.filterNot { it==request.getLong("face_id") }+14L)
-        } else people.remove(id)
+        } else if(action=="name") people[id]=p.copy(name=request.getString("name"),revision=p.revision+1)
+        else {
+            if(target!=null) people[target.id]=target.copy(count=target.count+p.count,faces=target.faces+p.faces,revision=target.revision+1)
+            people.remove(id)
+        }
+        // Like the server, mutations invalidate cached suggestions for this group.
+        mergePairs.removeAll {it.source.id==id || it.target.id==id}
         commits++; receipts[op]=receipt
         if(loseResponse) {loseResponse=false;throw IOException("response lost after commit")}
         return receipt

@@ -122,4 +122,15 @@
     <string name="people_manual_combine_name">Combine and name</string>
     <string name="people_manual_help">Tap to select, hold to enlarge. More groups load as you scroll. Changing the filter clears the selection.</string>
     <string name="people_manual_empty">No matching groups available.</string>
+    <string name="people_merge_ignore">Ignore</string>
+    <string name="people_merge_ignore_first">Ignore first group</string>
+    <string name="people_merge_ignore_second">Ignore second group</string>
+    <string name="people_merge_name_first">Name/assign first group</string>
+    <string name="people_merge_name_second">Name/assign second group</string>
+    <string name="people_merge_side_name">Name/assign group</string>
+    <string name="people_merge_side_scope">This action applies only to this group.</string>
+    <string name="people_merge_side_ignored">Ignored</string>
+    <string name="people_merge_side_assigned">Assigned</string>
+    <string name="people_merge_side_named">Named: %1$s</string>
+    <string name="people_merge_side_help">Only unnamed groups have their own ignore and name/assign buttons. After an individual action, you can still edit the other side. Next opens the next pair without recording a separation.</string>
 </resources>

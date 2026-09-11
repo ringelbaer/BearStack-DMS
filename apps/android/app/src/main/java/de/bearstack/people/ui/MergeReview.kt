@@ -62,6 +62,9 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                             color=MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier=Modifier.align(Alignment.CenterHorizontally).testTag("merge-similarity"))
                     }
+                    if(state.mergeSideResults.isNotEmpty()) {
+                        Button(onClick=vm::nextMerge,enabled=enabled,modifier=Modifier.fillMaxWidth()) {Text(text(R.string.common_next))}
+                    } else {
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                         Button(onClick={vm.decideMerge(true)},enabled=enabled && suggestion!=null,modifier=Modifier.weight(1f)) {Text(text(R.string.people_merge))}
                         if(state.mergeNaming && suggestion?.source?.name=="" && suggestion.target.name.isEmpty()) {
@@ -72,6 +75,7 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                         }
                     }
                     OutlinedButton(onClick={vm.decideMerge(false)},enabled=enabled && suggestion!=null,modifier=Modifier.fillMaxWidth()) {Text(text(R.string.people_keep_separate))}
+                    }
                 }
             }
         }) {padding ->
@@ -94,6 +98,21 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                                 Text(if(index==0) text(R.string.people_first_group) else text(R.string.people_second_group),style=MaterialTheme.typography.labelMedium)
                                 Text(person.name.ifBlank {text(R.string.people_unnamed)},maxLines=2,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.titleMedium)
                                 Text(text.faces(person.count),style=MaterialTheme.typography.bodySmall)
+                                if(state.mergeSideActions && person.name.isEmpty()) {
+                                    val result=state.mergeSideResults[person.id]
+                                    if(result!=null) Text(text(result),style=MaterialTheme.typography.bodySmall,
+                                        modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite})
+                                    else {
+                                        OutlinedButton(onClick={vm.ignoreMergeSide(person.id)},enabled=enabled,
+                                            modifier=Modifier.fillMaxWidth().semantics {contentDescription=text(if(index==0) R.string.people_merge_ignore_first else R.string.people_merge_ignore_second)}) {
+                                            Text(text(R.string.people_merge_ignore))
+                                        }
+                                        IconButton(onClick={vm.startMergeSideNaming(person.id)},enabled=enabled,
+                                            modifier=Modifier.semantics {contentDescription=text(if(index==0) R.string.people_merge_name_first else R.string.people_merge_name_second)}) {
+                                            Icon(painterResource(R.drawable.ic_edit),contentDescription=null,modifier=Modifier.size(24.dp))
+                                        }
+                                    }
+                                }
                                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(),contentAlignment=Alignment.Center) {
                                     Box(Modifier.size(minOf(maxWidth,maxHeight))) {
                                         FaceGrid(person,enabled,vm.images,vm::image,onDetach={},
@@ -137,6 +156,7 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
             Text(text(R.string.people_merge_help))
             Text(text(R.string.people_merge_next_help))
             Text(text(R.string.people_merge_name_help))
+            Text(text(R.string.people_merge_side_help))
             Text(text(R.string.people_merge_preview_help))
         }},confirmButton={TextButton(onClick={help=false}) {Text(text(R.string.photos_close))}})
 }

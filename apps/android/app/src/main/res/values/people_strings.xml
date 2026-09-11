@@ -122,4 +122,15 @@
     <string name="people_manual_combine_name">Kombinieren und benennen</string>
     <string name="people_manual_help">Kurz tippen zum Auswählen, gedrückt halten zum Vergrößern. Weitere Gruppen laden beim Scrollen. Ein Filterwechsel leert die Auswahl.</string>
     <string name="people_manual_empty">Keine passenden Gruppen vorhanden.</string>
+    <string name="people_merge_ignore">Ignorieren</string>
+    <string name="people_merge_ignore_first">Erste Gruppe ignorieren</string>
+    <string name="people_merge_ignore_second">Zweite Gruppe ignorieren</string>
+    <string name="people_merge_name_first">Erste Gruppe benennen/zuordnen</string>
+    <string name="people_merge_name_second">Zweite Gruppe benennen/zuordnen</string>
+    <string name="people_merge_side_name">Gruppe benennen/zuordnen</string>
+    <string name="people_merge_side_scope">Die Aktion gilt nur für diese Gruppe.</string>
+    <string name="people_merge_side_ignored">Ignoriert</string>
+    <string name="people_merge_side_assigned">Zugeordnet</string>
+    <string name="people_merge_side_named">Benannt: %1$s</string>
+    <string name="people_merge_side_help">Nur unbenannte Gruppen haben eigene Buttons zum Ignorieren und Benennen/Zuordnen. Nach einer Einzelaktion bleibt die andere Seite bearbeitbar. Weiter öffnet das nächste Paar, ohne eine Trennung zu speichern.</string>
 </resources>

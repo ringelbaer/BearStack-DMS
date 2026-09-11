@@ -18,8 +18,15 @@ type LabelMergeSuggestion struct {
 // LabelNextMergeSuggestion reads a bounded set of cached candidates and decorates
 // only the current pair. Its portraits are the actual matching witnesses, even
 // when they are far beyond the first page of a large person group.
-func (l *Library) LabelNextMergeSuggestion(ctx context.Context) (*LabelMergeSuggestion, error) {
-	candidates, err := l.FaceMergeSuggestions(ctx, 20)
+func (l *Library) LabelNextMergeSuggestion(ctx context.Context, exclude ...[2]int64) (*LabelMergeSuggestion, error) {
+	var excluded [2]int64
+	if len(exclude) > 0 {
+		excluded = exclude[0]
+	}
+	if len(exclude) > 1 || excluded[0] < 0 || excluded[1] < 0 || (excluded[0] == 0) != (excluded[1] == 0) || (excluded[0] > 0 && excluded[0] == excluded[1]) {
+		return nil, ErrLabelInvalid
+	}
+	candidates, err := l.faceMergeSuggestions(ctx, 20, excluded)
 	if err != nil {
 		return nil, err
 	}

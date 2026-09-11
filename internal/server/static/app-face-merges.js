@@ -6,6 +6,7 @@
   var refreshButton = document.querySelector("[data-merge-refresh]");
   var hint = document.querySelector("[data-merge-hint]");
   var pending = new Set(), uncertain = new Set();
+  var sideWrites = new Map(), dismissed = new Set();
   var refreshing = false, refreshRequested = false, manualRefresh = false, revision = 0;
 
   function notify(message) {
@@ -19,7 +20,10 @@
       var id = card.dataset.mergeId;
       if (pending.has(id)) card.setAttribute("aria-busy", "true");
       else card.removeAttribute("aria-busy");
-      card.querySelectorAll("button").forEach(function (button) { button.disabled = pending.has(id) || uncertain.has(id); });
+      card.querySelectorAll("button").forEach(function (button) {
+        var side = button.closest("[data-merge-side]");
+        button.disabled = pending.has(id) || uncertain.has(id) || !!(side && side.dataset.handled);
+      });
     });
     refreshButton.disabled = refreshing || refreshRequested;
   }
@@ -36,13 +40,17 @@
   }
 
   function applySuggestions(updated) {
-    var existing = new Map();
+    var existing = new Map(), retainedPairs = new Set();
     list.querySelectorAll("[data-merge-id]").forEach(function (card) {
       existing.set(card.dataset.mergeId, card);
+      if (card.dataset.individual && !card.dataset.invalidSide) retainedPairs.add(pairKey(card));
     });
-    var children = Array.from(updated.children).map(function (card) {
+    var children = Array.from(updated.children).filter(function (card) {
+      return !dismissed.has(pairKey(card)) && !retainedPairs.has(pairKey(card));
+    }).slice(0, Math.max(0, 60 - retainedPairs.size)).map(function (card) {
       var old = existing.get(card.dataset.mergeId);
       if (old) {
+        if (old.dataset.individual && !old.dataset.invalidSide) return old;
         // Compare a copy; never briefly unlock the live card during reconciliation.
         var normalized = old.cloneNode(true);
         normalized.removeAttribute("aria-busy");
@@ -51,6 +59,10 @@
       }
       return document.importNode(card, true);
     });
+    existing.forEach(function (card) {
+      if (card.dataset.individual && !card.dataset.invalidSide && !children.includes(card)) children.unshift(card);
+    });
+    if (children.some(function (card) { return card.dataset.mergeId; })) children = children.filter(function (card) { return card.dataset.mergeId; });
     Array.from(list.children).forEach(function (card) {
       if (!children.includes(card)) card.remove();
     });
@@ -70,6 +82,7 @@
     var version = revision;
     syncBusy();
     try {
+      for (var write of sideWrites.values()) await saveSide(write, true);
       var updated = await loadSuggestions();
       if (version !== revision) { refreshRequested = true; return; }
       applySuggestions(updated);
@@ -92,12 +105,85 @@
     refresh();
   });
 
+  function pairKey(card) { return [card.dataset.sourceId, card.dataset.targetId].sort().join(":"); }
+  function operationID() { return Array.from(crypto.getRandomValues(new Uint8Array(16)), function (b) { return b.toString(16).padStart(2, "0"); }).join(""); }
+  async function getSession() {
+    var response = await fetch("/api/photos/labeling/v1/session", { credentials: "same-origin", redirect: "error", cache: "no-store" });
+    if (!response.ok) throw new Error("Die Sitzung konnte nicht geladen werden. Bitte erneut versuchen.");
+    return response.json();
+  }
+  function completeSide(write, result) {
+    if (result.operation_id !== write.body.operation_id || result.action !== write.body.action || Number(result.source_id) !== Number(write.side.dataset.mergeSide)) throw new Error("Ungültige Quittung");
+    var card = write.card, side = write.side;
+    side.dataset.handled = "true";
+    side.querySelector(".face-merge-side-actions").hidden = true;
+    if (write.body.action === "name") {
+      side.dataset.sideName = write.body.name;
+      side.querySelector("strong").textContent = write.body.name;
+    }
+    var note = side.querySelector("[data-merge-side-status]");
+    note.textContent = write.body.action === "ignore" ? "Ignoriert" : write.body.action === "assign" ? "Zugeordnet" : "Benannt: " + write.body.name;
+    note.hidden = false;
+    // Explicitly assigning to the other side also changes that destination.
+    var target = card.querySelector('[data-merge-side="' + Number(write.body.target_id) + '"]');
+    if (target) target.dataset.handled = "true";
+    card.dataset.individual = "true";
+    card.querySelector("form").hidden = true;
+    card.querySelector("[data-merge-dismiss]").hidden = false;
+    sideWrites.delete(card.dataset.mergeId);
+    uncertain.delete(card.dataset.mergeId);
+    notify("Gruppe gespeichert. Du kannst die andere Seite bearbeiten oder das Paar ausblenden.");
+  }
+  async function saveSide(write, recover) {
+    var response;
+    if (recover) {
+      response = await fetch("/api/photos/labeling/v1/actions/" + encodeURIComponent(write.body.operation_id) + "?dataset=" + encodeURIComponent(write.body.dataset), {
+        credentials: "same-origin", redirect: "error", cache: "no-store"
+      });
+    }
+    if (!response || response.status === 404) response = await fetch("/api/photos/labeling/v1/people/" + encodeURIComponent(write.side.dataset.mergeSide) + "/actions", {
+      method: "POST", credentials: "same-origin", redirect: "error", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(write.body)
+    });
+    var result = await response.json();
+    if (!response.ok) {
+      if ([400,404,409].includes(response.status)) {
+        sideWrites.delete(write.card.dataset.mergeId);
+        if (result.code !== "name_exists") write.card.dataset.invalidSide = "true";
+      }
+      var error = new Error(result.error || "Speichern nicht bestätigt"); error.code = result.code; throw error;
+    }
+    completeSide(write, result);
+  }
+  list.addEventListener("click", async function (event) {
+    var button = event.target.closest("[data-merge-ignore], [data-merge-dismiss]");
+    if (!button || button.disabled) return;
+    var card = button.closest("[data-merge-id]"), id = card.dataset.mergeId;
+    if (pending.has(id) || uncertain.has(id)) return;
+    if (button.hasAttribute("data-merge-dismiss")) {
+      if (!card.dataset.individual) return;
+      dismissed.add(pairKey(card)); card.remove(); revision++; refresh(); return;
+    }
+    var side = button.closest("[data-merge-side]");
+    if (side.dataset.handled || side.dataset.sideName) return;
+    pending.add(id); revision++; syncBusy();
+    try {
+      var session = await getSession();
+      var write = { card: card, side: side, body: { action: "ignore", operation_id: operationID(), dataset: session.dataset, revision: Number(side.dataset.sideRevision) } };
+      sideWrites.set(id, write);
+      await saveSide(write, false);
+    } catch (error) {
+      uncertain.add(id); refreshButton.hidden = false;
+      notify("Die Aktion konnte nicht bestätigt werden. Bitte Vorschläge aktualisieren, um die Aktion zu prüfen.");
+    } finally { pending.delete(id); revision++; syncBusy(); if (refreshRequested) refresh(); }
+  });
+
   list.addEventListener("submit", async function (event) {
     var form = event.target;
     if (!form.matches("form")) return;
     event.preventDefault();
     var card = form.closest("[data-merge-id]");
     if (!card) return;
+    if (card.dataset.individual) return;
     var id = card.dataset.mergeId;
     if (pending.has(id) || uncertain.has(id)) return;
     var submitter = event.submitter;
@@ -148,7 +234,7 @@
   var targetInput = namingForm.querySelector("[data-person-target]");
   var nameInput = namingForm.querySelector("[data-person-search]");
   var cancelNaming = dialog.querySelector("[data-person-dialog-cancel]");
-  var namingCard, namingOpener, namingSession, namingOperation, namingBusy = false;
+  var namingCard, namingSide, namingOpener, namingSession, namingOperation, namingBusy = false;
   namingForm.dataset.personSuggestionsUrl = "/api/photos/labeling/v1/suggestions?q=";
   dialog.querySelector("[data-person-dialog-ignore]").hidden = true;
   dialog.querySelector("[data-person-face-match]").hidden = true;
@@ -170,22 +256,25 @@
     }
   });
   list.addEventListener("click", async function (event) {
-    var button = event.target.closest("[data-merge-name]");
+    var button = event.target.closest("[data-merge-name], [data-merge-side-name]");
     if (!button || button.disabled || dialog.open) return;
     namingCard = button.closest("[data-merge-id]");
+    namingSide = button.closest("[data-merge-side]");
     namingOpener = button;
     namingSession = null;
     // An operation ID is retained until the outcome is known; uncertain writes
     // close the dialog and lock this card until suggestions have been reloaded.
-    namingOperation = Array.from(crypto.getRandomValues(new Uint8Array(16)), function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+    namingOperation = operationID();
     var operation = namingOperation;
-    dialog.querySelector("#person-dialog-title").textContent = "Zusammenführen und benennen/zuordnen";
-    dialog.querySelector("#overview-person-hint").textContent = "Beide Gruppen werden unter dem neuen Namen oder mit der ausgewählten Person zusammengeführt. Abbrechen ändert nichts.";
-    dialog.querySelector(".person-dialog-photo").replaceChildren(namingCard.querySelector(".face-merge-pair").cloneNode(true));
+    dialog.querySelector("#person-dialog-title").textContent = namingSide ? "Gruppe benennen/zuordnen" : "Zusammenführen und benennen/zuordnen";
+    dialog.querySelector("#overview-person-hint").textContent = namingSide ? "Nur diese Gruppe wird benannt oder einer vorhandenen Person zugeordnet." : "Beide Gruppen werden unter dem neuen Namen oder mit der ausgewählten Person zusammengeführt. Abbrechen ändert nichts.";
+    dialog.querySelector(".person-dialog-photo").replaceChildren((namingSide ? namingSide.querySelector(".person-card") : namingCard.querySelector(".face-merge-pair")).cloneNode(true));
+    dialog.querySelectorAll(".person-dialog-photo button, .person-dialog-photo [data-merge-side-status]").forEach(function (element) { element.remove(); });
     dialog.querySelectorAll(".person-dialog-photo a").forEach(function (link) { link.removeAttribute("href"); });
-    namingForm.dataset.personCount = "2";
+    namingForm.dataset.personCount = namingSide ? "1" : "2";
+    namingForm.dataset.personExclude = namingSide ? namingSide.dataset.mergeSide : "";
     namingForm.dataset.renameAction = "/unused/rename";
-    namingForm.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: "" } }));
+    namingForm.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: namingSide ? namingSide.dataset.sideName : "" } }));
     namingStatus.textContent = "Namenssuche wird vorbereitet …";
     namingControls(true);
     cancelNaming.disabled = false;
@@ -215,6 +304,29 @@
     var target = Number(targetInput.value) || 0;
     var name = target ? "" : nameInput.value.trim();
     if (!target && !name) return;
+    if (namingSide) {
+      if (namingSide.dataset.handled || namingSide.dataset.sideName || target === Number(namingSide.dataset.mergeSide)) return;
+      var write = { card: card, side: namingSide, body: {
+        action: target ? "assign" : "name",
+        operation_id: namingOperation, dataset: namingSession.dataset,
+        revision: Number(namingSide.dataset.sideRevision), name: name,
+        target_id: target, target_revision: target ? Number(targetInput.dataset.revision) : 0,
+        allow_duplicate: targetInput.value === "0"
+      } };
+      namingBusy = true; pending.add(id); revision++; syncBusy(); namingControls(true);
+      namingForm.dispatchEvent(new CustomEvent("person-picker-close"));
+      sideWrites.set(id, write);
+      try { await saveSide(write, false); dialog.close(); }
+      catch (error) {
+        if (error.code === "name_exists") {
+          namingStatus.textContent = "Dieser Name existiert bereits. Bitte eine vorhandene Person oder ausdrücklich einen neuen Eintrag auswählen.";
+        } else {
+          uncertain.add(id); refreshButton.hidden = false;
+          notify("Die Aktion konnte nicht bestätigt werden. Bitte Vorschläge aktualisieren, um die Aktion zu prüfen."); dialog.close();
+        }
+      } finally { namingBusy = false; namingControls(false); pending.delete(id); revision++; syncBusy(); if (refreshRequested) refresh(); }
+      return;
+    }
     var body = {
       action: "name_merge", operation_id: namingOperation, dataset: namingSession.dataset,
       suggestion_id: Number(id), revision: Number(card.querySelector('[name="source_revision"]').value),

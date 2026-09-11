@@ -12,6 +12,24 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class MergeApiTest {
+    @Test fun individualSupportAndNextExclusionAreExplicitAndReadOnly() = runBlocking {
+        val paths=mutableListOf<String>()
+        val client=OkHttpClient.Builder().addInterceptor {chain ->
+            paths+=chain.request().url.encodedPath+"?"+chain.request().url.encodedQuery.orEmpty()
+            val body=if(chain.request().url.encodedPath.endsWith("/session"))
+                """{"protocol":1,"can_manage":true,"instance":"i","dataset":"d","account":"a","upper_id":2,"merge_side_actions":true}"""
+            else """{"suggestion":null}"""
+            assertEquals("GET",chain.request().method)
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body(body.toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        try {
+            val api=LabelingApi(client,"https://example.test/")
+            assertTrue(api.session().mergeSideActions)
+            assertNull(api.nextMergeSuggestion(3L to 4L))
+            assertEquals("/api/photos/labeling/v1/merge-suggestions/next?exclude_source=3&exclude_target=4",paths.last())
+        } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+    }
     @Test fun nextPairPreservesWitnessMetadataProxyPrefixAndEmptyState() = runBlocking {
         val key="a".repeat(64)
         val responses=ArrayDeque(listOf("""{"suggestion":{"id":8,"score":0.5234,
