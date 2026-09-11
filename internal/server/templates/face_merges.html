@@ -21,9 +21,10 @@
 </div>
 </div>
 <p class="face-merge-score muted" title="Ähnlichkeit der Vergleichsgesichter, keine Wahrscheinlichkeit">Ähnlichkeit: {{printf "%.2f" .Score}}</p>
-<form method="post" action="/photos/people/merge-suggestions/{{.ID}}/accept" class="settings-actions face-merge-actions">
+<form method="post" action="/photos/people/merge-suggestions/{{.ID}}/accept" class="settings-actions face-merge-actions"{{if and .SourceName .TargetName}} data-merge-warning="{{template "face_merge_named_warning" .}}"{{end}}>
 <input type="hidden" name="source_revision" value="{{.SourceRevision}}"><input type="hidden" name="target_revision" value="{{.TargetRevision}}">
-<button type="submit" class="face-merge-accept">Zusammenführen</button>{{if and (not .SourceName) (not .TargetName)}}<button type="button" class="secondary-button" data-merge-name title="Zusammenführen und benennen/zuordnen" aria-label="Zusammenführen und benennen/zuordnen">{{template "person_pencil_icon"}}</button>{{end}}<button type="submit" class="secondary-button face-merge-reject" formaction="/photos/people/merge-suggestions/{{.ID}}/reject">Getrennt lassen</button>
+{{if and .SourceName .TargetName}}<noscript><label><input type="checkbox" required> {{template "face_merge_named_warning" .}} Ich bestätige die Zusammenführung.</label></noscript>{{end}}
+<button type="submit" class="face-merge-accept">Zusammenführen</button>{{if and (not .SourceName) (not .TargetName)}}<button type="button" class="secondary-button" data-merge-name title="Zusammenführen und benennen/zuordnen" aria-label="Zusammenführen und benennen/zuordnen">{{template "person_pencil_icon"}}</button>{{end}}<button type="submit" class="secondary-button face-merge-reject" formaction="/photos/people/merge-suggestions/{{.ID}}/reject" formnovalidate>Getrennt lassen</button>
 </form>
 <button type="button" class="secondary-button face-merge-dismiss" data-merge-dismiss hidden>Ausblenden</button>
 </section>
@@ -35,3 +36,4 @@
 <script src="{{assetURL "/static/app-face-merges.js"}}" defer></script>
 {{template "foot" .}}
 {{end}}
+{{define "face_merge_named_warning"}}Die Gruppen „{{.SourceName}}“ und „{{.TargetName}}“ sind bereits benannt. Alle Gesichter von „{{.SourceName}}“ werden „{{.TargetName}}“ zugeordnet. Der Name „{{.TargetName}}“ bleibt erhalten.{{end}}

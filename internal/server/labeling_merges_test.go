@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,6 +11,38 @@ import (
 
 	"bearstack/internal/photos"
 )
+
+func TestFaceMergeNamedConfirmationTemplate(t *testing.T) {
+	templates, err := parseTemplates()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		source, target string
+		warning        bool
+	}{
+		{"", "", false}, {"Ada", "", false}, {"", "Grace", false},
+		{"Ada", "Grace", true}, {"Alex", "Alex", true},
+	} {
+		t.Run(tc.source+"/"+tc.target, func(t *testing.T) {
+			var out bytes.Buffer
+			err := templates.ExecuteTemplate(&out, "face_merges.html", PageData{
+				FaceMergeSuggestions: []photos.FaceMergeSuggestion{{ID: 1, SourceID: 2, TargetID: 3,
+					SourceName: tc.source, TargetName: tc.target, SourceRevision: 4, TargetRevision: 5}},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			html := out.String()
+			if strings.Contains(html, "data-merge-warning=") != tc.warning || strings.Contains(html, "<noscript><label><input type=\"checkbox\" required>") != tc.warning {
+				t.Fatal("confirmation must be required exactly when both groups are named")
+			}
+			if !strings.Contains(html, `formaction="/photos/people/merge-suggestions/1/reject" formnovalidate`) {
+				t.Fatal("rejection must not require merge confirmation")
+			}
+		})
+	}
+}
 
 func TestLabelingMergeHTTP(t *testing.T) {
 	for _, action := range []string{"accept_merge", "reject_merge", "name_merge"} {

@@ -1238,6 +1238,10 @@ paths:
         display_path and original_key. Revisions describe the displayed groups.
         After a confirmed accept_merge/reject_merge action, read this endpoint again.
         Conflicts require a fresh read and an explicit new decision.
+        The Android review UI asks for additional confirmation before accept_merge
+        when both displayed groups are named, even when their names are identical.
+        It shows both names and explains that the second group's name is kept.
+        This is a local UI check using the returned names; the action contract is unchanged.
         Since 0.50.0, session.merge_side_actions enables ignore/name/assign controls
         for each unnamed side. Named groups never receive individual controls.
         Individual actions retain the displayed pair until Next (Android) or Hide
@@ -2605,6 +2609,11 @@ paths:
         suggestions ordered by score. Page views never run vector matching. Current
         visibility and group revisions are checked. Suggestions include unconfirmed
         unnamed fragments; similarity is not an identity probability.
+        When both groups are named, the WebUI asks for additional confirmation
+        before accepting, even for identical names, and shows the name kept from
+        the second group. Without JavaScript, an explicit confirmation checkbox
+        is required by the HTML form. Rejecting needs no additional confirmation.
+        These UI checks use the displayed names and do not change the action API.
         Cache-Control is private, no-store. No embeddings are returned.
       parameters:
       - name: format

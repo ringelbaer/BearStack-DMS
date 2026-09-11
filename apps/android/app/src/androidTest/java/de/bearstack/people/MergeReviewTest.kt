@@ -55,6 +55,70 @@ class MergeReviewTest {
         api.people[4]=api.people.getValue(4).copy(name="")
         api.mergePairs[0]=api.mergePairs[0].copy(target=api.people.getValue(4))
     }
+    private fun named(api: FakeService) {
+        api.people[3]=api.people.getValue(3).copy(name="Ada")
+        api.people[4]=api.people.getValue(4).copy(name="Grace")
+        api.mergePairs[0]=api.mergePairs[0].copy(source=api.people.getValue(3),target=api.people.getValue(4))
+    }
+    @Test fun namedMergeRequiresConfirmationAndCancelDoesNotWrite() = screen(2f,setup=::named) {vm,api,db ->
+        val before=api.people.toMap()
+        compose.onNodeWithText("Zusammenführen").performClick()
+        compose.onNodeWithText("Benannte Gruppen zusammenführen?").assertIsDisplayed()
+        compose.onNodeWithText("Die Gruppen „Ada“ und „Grace“ sind bereits benannt. Alle Gesichter von „Ada“ werden „Grace“ zugeordnet. Der Name „Grace“ bleibt erhalten.").assertIsDisplayed()
+        assertEquals(0,api.commits)
+        assertNull(runBlocking {db.dao().pending(api.session.scope)})
+        compose.onNodeWithText("Abbrechen").performClick()
+        assertEquals(before,api.people);assertEquals(0,api.commits)
+        assertEquals(1L,vm.state.value.mergeSuggestion!!.id)
+        compose.onNodeWithText("Zusammenführen").performClick()
+        compose.onNodeWithText("Trotzdem zusammenführen").performClick();idle(vm)
+        assertEquals(1,api.commits)
+        assertFalse(api.people.containsKey(3))
+        assertEquals("Grace",api.people.getValue(4).name)
+        assertEquals(2L,api.people.getValue(4).count)
+        assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
+    }
+    @Test fun equalNamesStillRequireConfirmationAndRejectNeedsNone() = screen(setup={api ->
+        named(api)
+        api.people[3]=api.people.getValue(3).copy(name="Grace")
+        api.mergePairs[0]=api.mergePairs[0].copy(source=api.people.getValue(3))
+    }) {vm,api,_ ->
+        compose.onNodeWithText("Zusammenführen").performClick()
+        compose.onNodeWithText("Benannte Gruppen zusammenführen?").assertIsDisplayed()
+        compose.onNodeWithText("Abbrechen").performClick()
+        compose.onNodeWithText("Getrennt lassen").performClick();idle(vm)
+        compose.onNodeWithText("Benannte Gruppen zusammenführen?").assertDoesNotExist()
+        assertEquals(1,api.commits)
+        assertEquals("reject_merge",api.receipts.values.single().action)
+        assertTrue(api.people.containsKey(3));assertEquals(1L,api.people.getValue(4).count)
+    }
+    @Test fun namedMergeConflictNeedsNewConfirmationWithCurrentNames() = screen(setup=::named) {vm,api,_ ->
+        compose.onNodeWithText("Zusammenführen").performClick()
+        api.people[4]=api.people.getValue(4).copy(revision=2,name="Grace geändert")
+        api.mergePairs[0]=api.mergePairs[0].copy(target=api.people.getValue(4))
+        compose.onNodeWithText("Trotzdem zusammenführen").performClick();idle(vm)
+        assertEquals(0,api.commits)
+        compose.onNodeWithText("Benannte Gruppen zusammenführen?").assertDoesNotExist()
+        compose.onNodeWithText("Zusammenführen").performClick()
+        compose.onNodeWithText("Die Gruppen „Ada“ und „Grace geändert“ sind bereits benannt. Alle Gesichter von „Ada“ werden „Grace geändert“ zugeordnet. Der Name „Grace geändert“ bleibt erhalten.").assertIsDisplayed()
+        compose.onNodeWithText("Trotzdem zusammenführen").performClick();idle(vm)
+        assertEquals(1,api.commits);assertEquals("Grace geändert",api.people.getValue(4).name)
+    }
+    @Test fun namedMergeLostResponseResolvesOnlyConfirmedAction() = screen(setup=::named) {vm,api,_ ->
+        api.loseResponse=true
+        compose.onNodeWithText("Zusammenführen").performClick()
+        compose.onNodeWithText("Trotzdem zusammenführen").performClick();idle(vm)
+        assertTrue(vm.state.value.unresolved);assertEquals(1,api.commits)
+        compose.onNodeWithText("Zusammenführen").assertIsNotEnabled()
+        compose.onNodeWithText("Offene Aktion prüfen").performClick();idle(vm)
+        assertFalse(vm.state.value.unresolved);assertEquals(1,api.commits)
+        assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
+    }
+    @Test fun unnamedMergeDoesNotAskForAdditionalConfirmation() = screen(setup=::unnamed) {vm,api,_ ->
+        compose.onNodeWithText("Zusammenführen").performClick();idle(vm)
+        compose.onNodeWithText("Benannte Gruppen zusammenführen?").assertDoesNotExist()
+        assertEquals(1,api.commits);assertEquals("accept_merge",api.receipts.values.single().action)
+    }
     @Test fun individualActionsKeepBothSidesUntilNext() = screen(2f,setup=::unnamed) {vm,api,_ ->
         val before=api.people.getValue(4)
         compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)

@@ -3474,6 +3474,9 @@ label span {
 .face-merge-actions:has([data-merge-name]) .face-merge-accept { grid-column: 1; }
 .face-merge-actions [data-merge-name] { grid-column: 2; grid-row: 1; padding: 0; }
 .face-merge-actions .face-merge-reject { grid-column: 1 / -1; grid-row: 2; }
+.face-merge-actions > noscript { grid-column: 1 / -1; grid-row: 1; }
+.face-merge-actions:has(noscript input) .face-merge-accept { grid-row: 2; }
+.face-merge-actions:has(noscript input) .face-merge-reject { grid-row: 3; }
 .face-favorite-button { position: absolute; top: .5rem; right: .5rem; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; min-width: 0; padding: .35rem; border: 1px solid var(--border); border-radius: 50%; background: #111820; color: #fff; z-index: 1; }
 .face-favorite-button[aria-pressed="true"], .face-favorite-button.is-favorite { color: #ffcf5c; }
 .face-favorite-button[aria-pressed="true"] svg, .face-favorite-button.is-favorite svg { fill: currentColor; }

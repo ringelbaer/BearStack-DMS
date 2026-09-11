@@ -29,6 +29,7 @@ import de.bearstack.people.people.PeopleViewModel
 internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
     val text=uiStrings()
     val suggestion=state.mergeSuggestion
+    var confirmMerge by remember(suggestion) { mutableStateOf(false) }
     var held by remember { mutableStateOf<Long?>(null) }
     var heldDismissed by remember { mutableStateOf(false) }
     var accessible by remember { mutableStateOf(false) }
@@ -37,7 +38,7 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
     val distance=with(LocalDensity.current) {240.dp.toPx()}
     val drag: (Float)->Unit={zoom=zoomAfterDrag(zoom,it,distance)}
     val dialogEnabled=!state.busy && !state.unresolved
-    val enabled=!state.naming && !state.busy && !state.unresolved && held==null && !help
+    val enabled=!state.naming && !state.busy && !state.unresolved && held==null && !help && !confirmMerge
     val lifecycle=LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(suggestion) {held=null;accessible=false;zoom=0f}
     LaunchedEffect(suggestion,lifecycle) {
@@ -45,7 +46,8 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {vm.prefetchOriginals(faces)}
     }
     BackHandler {
-        if(held!=null) {if(accessible) held=null else heldDismissed=true}
+        if(confirmMerge) confirmMerge=false
+        else if(held!=null) {if(accessible) held=null else heldDismissed=true}
         else if(help) help=false else if(state.naming) vm.closeNaming() else vm.closeMergeReview()
     }
     Box(Modifier.fillMaxSize()) {
@@ -66,7 +68,10 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                         Button(onClick=vm::nextMerge,enabled=enabled,modifier=Modifier.fillMaxWidth()) {Text(text(R.string.common_next))}
                     } else {
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                        Button(onClick={vm.decideMerge(true)},enabled=enabled && suggestion!=null,modifier=Modifier.weight(1f)) {Text(text(R.string.people_merge))}
+                        Button(onClick={
+                            if(suggestion!=null && suggestion.source.name.isNotBlank() && suggestion.target.name.isNotBlank()) confirmMerge=true
+                            else vm.decideMerge(true)
+                        },enabled=enabled && suggestion!=null,modifier=Modifier.weight(1f)) {Text(text(R.string.people_merge))}
                         if(state.mergeNaming && suggestion?.source?.name=="" && suggestion.target.name.isEmpty()) {
                             IconButton(onClick=vm::startMergeNaming,enabled=enabled,
                                 modifier=Modifier.semantics {contentDescription=text(R.string.people_merge_name)}) {
@@ -150,6 +155,15 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
             }
         }
     }
+    if(confirmMerge && suggestion!=null) AlertDialog(onDismissRequest={confirmMerge=false},
+        title={Text(text(R.string.people_merge_named_title))},
+        text={Text(text(R.string.people_merge_named_warning,suggestion.source.name,suggestion.target.name),
+            modifier=Modifier.verticalScroll(rememberScrollState()))},
+        confirmButton={TextButton(onClick={
+            confirmMerge=false
+            if(vm.state.value.mergeSuggestion==suggestion) vm.decideMerge(true)
+        },enabled=dialogEnabled) {Text(text(R.string.people_merge_named_confirm))}},
+        dismissButton={TextButton(onClick={confirmMerge=false}) {Text(text(R.string.photos_cancel))}})
     if(state.naming) NamingDialog(state.copy(directory=false),vm,dialogEnabled)
     if(help) AlertDialog(onDismissRequest={help=false},title={Text(text(R.string.people_merge_help_title))},
         text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {

@@ -67,6 +67,9 @@
     <string name="common_remove">Remove</string>
     <string name="common_help">Help</string>
     <string name="people_merge">Merge</string>
+    <string name="people_merge_named_title">Merge named groups?</string>
+    <string name="people_merge_named_warning">The groups “%1$s” and “%2$s” are already named. All faces from “%1$s” will be assigned to “%2$s”. The name “%2$s” will be kept.</string>
+    <string name="people_merge_named_confirm">Merge anyway</string>
     <string name="people_keep_separate">Keep separate</string>
     <string name="people_same_person">Same person?</string>
     <string name="people_first_group">First group</string>

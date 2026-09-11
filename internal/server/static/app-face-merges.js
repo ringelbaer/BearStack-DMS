@@ -8,6 +8,10 @@
   var pending = new Set(), uncertain = new Set();
   var sideWrites = new Map(), dismissed = new Set();
   var refreshing = false, refreshRequested = false, manualRefresh = false, revision = 0;
+  // DOMParser parses noscript children as real controls. Remove the fallback in
+  // both live and refreshed cards so its required checkbox never blocks AJAX.
+  function removeFallbacks(root) { root.querySelectorAll("noscript").forEach(function (element) { element.remove(); }); }
+  removeFallbacks(list);
 
   function notify(message) {
     status.textContent = message;
@@ -40,6 +44,7 @@
   }
 
   function applySuggestions(updated) {
+    removeFallbacks(updated);
     var existing = new Map(), retainedPairs = new Set();
     list.querySelectorAll("[data-merge-id]").forEach(function (card) {
       existing.set(card.dataset.mergeId, card);
@@ -189,11 +194,19 @@
     var submitter = event.submitter;
     var action = submitter && submitter.getAttribute("formaction") || form.action;
     var body = new URLSearchParams(new FormData(form));
-    var message = "";
+    var message = "", cancelled = false;
     pending.add(id);
     revision++;
     syncBusy();
     try {
+      // Keep this pair locked, with its displayed revisions, while confirming.
+      // Rejecting a pair never needs confirmation, even if both groups are named.
+      if (action.endsWith("/accept") && form.dataset.mergeWarning) {
+        if (!await showAppConfirm(form.dataset.mergeWarning, "Benannte Gruppen zusammenführen?")) {
+          cancelled = true;
+          return;
+        }
+      }
       var response = await fetch(action, {
         method: "POST", credentials: "same-origin", redirect: "error",
         headers: { Accept: "application/json" }, body: body
@@ -218,6 +231,9 @@
       revision++;
       syncBusy();
       if (refreshRequested) refresh();
+      if (cancelled && submitter && submitter.isConnected && !submitter.disabled) {
+        submitter.focus({ preventScroll: true });
+      }
       if (submitter && !submitter.isConnected && document.activeElement === document.body) {
         var next = list.querySelector("button:not([disabled])");
         if (next) next.focus({ preventScroll: true });

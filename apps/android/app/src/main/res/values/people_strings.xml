@@ -67,6 +67,9 @@
     <string name="common_remove">Entfernen</string>
     <string name="common_help">Hilfe</string>
     <string name="people_merge">Zusammenführen</string>
+    <string name="people_merge_named_title">Benannte Gruppen zusammenführen?</string>
+    <string name="people_merge_named_warning">Die Gruppen „%1$s“ und „%2$s“ sind bereits benannt. Alle Gesichter von „%1$s“ werden „%2$s“ zugeordnet. Der Name „%2$s“ bleibt erhalten.</string>
+    <string name="people_merge_named_confirm">Trotzdem zusammenführen</string>
     <string name="people_keep_separate">Getrennt lassen</string>
     <string name="people_same_person">Dieselbe Person?</string>
     <string name="people_first_group">Erste Gruppe</string>
