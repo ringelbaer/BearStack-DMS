@@ -1,31 +1,43 @@
 {{define "group_photos.html"}}
 {{template "head" .}}
-<section class="page-head"><div><h1>Gruppenbilder</h1><p>Personen auf Gruppenfotos benennen und verbleibende Gesichter bearbeiten.</p></div><div class="page-actions"><a class="secondary-button" href="/photos/people">← Alle Personen</a></div></section>
+<section class="page-head group-photo-head"><h1>Gruppenbilder</h1><div class="page-actions">
+<details class="group-photo-help" data-group-help>
+<summary aria-label="Hilfe zu Gruppenbildern" title="Hilfe zu Gruppenbildern"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2-2.5 4M12 16v1"></path></svg></summary>
+<div class="group-photo-help-content">
+<p>Personen auf Gruppenfotos benennen und verbleibende Gesichter bearbeiten.</p>
+<p id="group-photo-filter-help">Unbearbeitet bedeutet: weder benannt noch ignoriert. Standard: mehr als 5. Übersprungene Fotos erscheinen im nächsten Durchlauf wieder.</p>
+<p>Zeige auf ein Gesicht, um es im Foto zu markieren. Ein Klick auf die Vorschau vergrößert den Ausschnitt auf die dreifache Breite und Höhe der Gesichtsmarkierung (300 %). Ein weiterer Klick auf dieselbe Vorschau zeigt wieder das ganze Foto.</p>
+<p>Mit × ignorierst du nur dieses Gesicht im aktuellen Foto. Mit dem Stift benennst du die gesamte Personengruppe oder führst sie mit einer vorhandenen Person zusammen, auch in anderen Fotos.</p>
+</div></details>
+<a class="secondary-button" href="/photos/people">← Alle Personen</a></div></section>
+<details class="group-photo-options" data-group-options>
+<summary>Optionen</summary>
 <form method="get" action="/photos/people/groups" class="filters group-photo-filter" data-group-filter>
 <label>Mehr als <input type="number" name="min" value="{{.GroupPhotos.Minimum}}" min="0" max="255" required aria-describedby="group-photo-filter-help"> unbearbeitete Gesichter</label>
 <button>Durchlauf starten</button>
 <label data-group-unnamed-control hidden><input type="checkbox" data-group-unnamed> Nur Unbenannte anzeigen</label>
-<p id="group-photo-filter-help">Unbearbeitet bedeutet: weder benannt noch ignoriert. Standard: mehr als 5. Übersprungene Fotos erscheinen im nächsten Durchlauf wieder.</p>
 </form>
+</details>
 <section data-group-photos data-minimum="{{.GroupPhotos.Minimum}}" data-group-user="{{.Auth.Username}}" {{with .GroupPhotos.Photo}}data-path="{{.Path}}" data-revision="{{.Revision}}"{{end}}>
 <p role="status" data-people-status></p>
-<div class="group-photo-toolbar" {{if not .GroupPhotos.Photo}}hidden{{end}} data-group-toolbar>
-<div><h2 data-group-title>{{with .GroupPhotos.Photo}}{{.DisplayPath}}{{end}}</h2><p data-group-count>{{with .GroupPhotos.Photo}}{{.Remaining}} unbearbeitete von {{len .Faces}} erkannten Gesichtern{{end}}</p></div>
-<form method="post" action="/photos/people/groups/ignore" id="group-photo-ignore-form" data-group-ignore-form>
+<form method="post" action="/photos/people/groups/ignore" id="group-photo-ignore-form" data-group-ignore-form hidden>
 <input type="hidden" name="min" value="{{.GroupPhotos.Minimum}}"><input type="hidden" name="path" value="{{with .GroupPhotos.Photo}}{{.Path}}{{end}}"><input type="hidden" name="revision" value="{{with .GroupPhotos.Photo}}{{.Revision}}{{end}}">
-<button data-group-ignore {{if .GroupPhotos.Photo}}{{if not .GroupPhotos.Photo.Remaining}}disabled{{end}}{{else}}disabled{{end}}>Verbleibende ignorieren</button>
 </form>
-<a class="secondary-button" data-group-skip href="?min={{.GroupPhotos.Minimum}}&amp;after={{with .GroupPhotos.Photo}}{{queryEscape .Path}}{{end}}">Überspringen / nächstes Foto</a>
+<div class="group-photo-toolbar" {{if not .GroupPhotos.Photo}}hidden{{end}} data-group-toolbar>
+<h2 data-group-title>{{with .GroupPhotos.Photo}}{{.DisplayPath}}{{end}}</h2><p data-group-count>{{with .GroupPhotos.Photo}}{{.Remaining}} unbearbeitete von {{len .Faces}} erkannten Gesichtern{{end}}</p>
 </div>
 <div class="group-photo-layout" data-group-layout {{if not .GroupPhotos.Photo}}hidden{{end}}>
 <figure class="group-photo-stage" data-group-stage>
 <img data-group-image {{with .GroupPhotos.Photo}}{{if .ImageFaceID}}src="/photos/people/groups/image/{{.ImageFaceID}}"{{end}} alt="{{.DisplayPath}}"{{else}}alt="Gruppenfoto"{{end}}>
 <div class="group-photo-box" data-group-box hidden aria-hidden="true"></div>
 </figure>
-<div><p class="group-photo-hint">Zeige auf ein Gesicht, um es im Foto zu markieren. Ein Klick auf die Vorschau vergrößert den Ausschnitt auf die dreifache Breite und Höhe der Gesichtsmarkierung (300 %). Ein weiterer Klick auf dieselbe Vorschau zeigt wieder das ganze Foto. Mit × ignorierst du nur dieses Gesicht im aktuellen Foto. Mit dem Stift benennst du die gesamte Personengruppe oder führst sie mit einer vorhandenen Person zusammen, auch in anderen Fotos.</p>
+<div class="group-photo-editor">
+<div class="group-photo-actions" data-group-actions="top" role="group" aria-label="Aktionen oberhalb der Gesichter">{{template "group_photo_actions" .}}</div>
 <div class="group-photo-faces" data-group-grid>
 {{with .GroupPhotos.Photo}}{{range .Faces}}{{template "group_photo_face" .}}{{end}}{{end}}
-</div><p data-group-filter-empty hidden>Keine unbenannten Gesichter in diesem Foto.</p></div>
+</div><p data-group-filter-empty hidden>Keine unbenannten Gesichter in diesem Foto.</p>
+<div class="group-photo-actions" data-group-actions="bottom" role="group" aria-label="Aktionen unterhalb der Gesichter">{{template "group_photo_actions" .}}</div>
+</div>
 </div>
 <p data-group-empty {{if .GroupPhotos.Photo}}hidden{{end}}>Keine weiteren passenden Gruppenbilder. Mit „Durchlauf starten“ werden auch übersprungene Fotos erneut berücksichtigt.</p>
 <button type="button" class="secondary-button" data-group-retry hidden>Ansicht erneut laden</button>
@@ -44,6 +56,11 @@
 <script src="{{assetURL "/static/app-group-strip.js"}}" defer></script>
 <script src="{{assetURL "/static/app-group-photos.js"}}" defer></script>
 {{template "foot" .}}
+{{end}}
+
+{{define "group_photo_actions"}}
+<button type="submit" form="group-photo-ignore-form" data-group-ignore {{if .GroupPhotos.Photo}}{{if not .GroupPhotos.Photo.Remaining}}disabled{{end}}{{else}}disabled{{end}}>Verbleibende ignorieren</button>
+<a class="secondary-button" data-group-skip title="Nächstes Foto" href="?min={{.GroupPhotos.Minimum}}&amp;after={{with .GroupPhotos.Photo}}{{queryEscape .Path}}{{end}}">Überspringen</a>
 {{end}}
 
 {{define "group_photo_face"}}

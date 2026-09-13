@@ -43,6 +43,11 @@ test.afterAll(async ({}, testInfo) => {
   if (root) await rm(root, { recursive: true, force: true });
 });
 
+async function openGroupOptions(page) {
+  const options = page.locator("[data-group-options]");
+  if (!await options.evaluate(el => el.open)) await options.locator("summary").click();
+}
+
 async function expectZoom(page, card) {
   await expect(card.locator("[data-group-highlight]")).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator('[data-group-highlight][aria-pressed="true"]')).toHaveCount(1);
@@ -90,6 +95,10 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   const image = page.locator("[data-group-image]");
   const box = page.locator("[data-group-box]");
   const threshold = page.locator('[data-group-filter] input[name="min"]');
+  await expect(page.locator("[data-group-filter]")).toBeHidden();
+  await expect(page.locator(".group-photo-help-content")).toBeHidden();
+  await expect(page.locator("[data-group-ignore]")).toHaveCount(2);
+  await expect(page.locator("[data-group-skip]")).toHaveCount(2);
   await expect(threshold).toHaveValue("5");
   await expect(surface).toHaveAttribute("data-path", "b.png"); await expect(cards).toHaveCount(6);
   await expect(cards.locator("[data-group-ignore-face]")).toHaveCount(6);
@@ -113,6 +122,36 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   page.on("request", request => { if (request.url().includes("/photos/people/groups")) zoomRequests.push(request.url()); });
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
+    const help = page.locator("[data-group-help] summary");
+    const helpButtonBounds = await help.boundingBox();
+    const backBounds = await page.getByRole("link", { name: "← Alle Personen", exact: true }).boundingBox();
+    expect(Math.abs(helpButtonBounds.y - backBounds.y)).toBeLessThanOrEqual(1);
+    await help.focus(); await page.keyboard.press("Enter");
+    await expect(page.locator("#group-photo-filter-help")).toBeVisible();
+    const helpBounds = await page.locator(".group-photo-help-content").boundingBox();
+    expect(helpBounds.x).toBeGreaterThanOrEqual(0);
+    expect(helpBounds.x + helpBounds.width).toBeLessThanOrEqual(width);
+    await page.keyboard.press("Escape");
+    await expect(help).toBeFocused();
+    await expect(page.locator(".group-photo-help-content")).toBeHidden();
+    await openGroupOptions(page);
+    await expect(threshold).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+    await page.locator("[data-group-options] summary").click();
+    await expect(page.locator("[data-group-filter]")).toBeHidden();
+    const actions = await page.locator("[data-group-actions]").evaluateAll(rows => rows.map(row => {
+      const rect = row.getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right,
+        heights: [...row.children].map(el => el.getBoundingClientRect().height) };
+    }));
+    const gridBounds = await page.locator("[data-group-grid]").boundingBox();
+    expect(actions[0].bottom).toBeLessThan(gridBounds.y);
+    expect(actions[1].top).toBeGreaterThan(gridBounds.y + gridBounds.height);
+    for (const row of actions) {
+      expect(Math.abs(row.left - gridBounds.x)).toBeLessThanOrEqual(1);
+      expect(Math.abs(row.right - gridBounds.x - gridBounds.width)).toBeLessThanOrEqual(1);
+      expect(Math.min(...row.heights)).toBeGreaterThanOrEqual(44);
+    }
     await cards.first().locator("[data-group-highlight]").hover();
     await expect(box).toBeVisible();
     const result = await page.evaluate(() => {
@@ -122,7 +161,7 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
       const factor = Math.min(rect.width / image.naturalWidth, rect.height / image.naturalHeight);
       const w = factor * image.naturalWidth, h = factor * image.naturalHeight;
       const grid = document.querySelector("[data-group-grid]").getBoundingClientRect();
-      return { helpWidth: document.querySelector("#group-photo-filter-help").getBoundingClientRect().width, filterWidth: document.querySelector("[data-group-filter]").getBoundingClientRect().width, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      return { overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         dx: box.left - (rect.left + (rect.width - w) / 2 + Number(card.dataset.x) * w),
         dy: box.top - (rect.top + (rect.height - h) / 2 + Number(card.dataset.y) * h),
         dw: box.width - Number(card.dataset.width) * w, dh: box.height - Number(card.dataset.height) * h,
@@ -132,7 +171,6 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
     expect(result.overflow, `overflow at ${width}`).toBeLessThanOrEqual(1);
     for (const key of ["dx", "dy", "dw", "dh"]) expect(Math.abs(result[key]), `${key} at ${width}`).toBeLessThanOrEqual(1.5);
     expect(result.squares).toBe(true);
-    expect(result.helpWidth).toBeGreaterThan(result.filterWidth - 45);
     if (width > 900) expect(result.gridLeft).toBeGreaterThan(result.photoRight);
     else expect(result.gridTop).toBeGreaterThan(result.photoBottom);
     await page.screenshot({ path: `/tmp/bearstack-group-photos-${width}.png`, fullPage: true });
@@ -297,7 +335,7 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await singleCard.locator("[data-group-ignore-face]").click();
   await expect(page.locator("[data-people-status]")).toContainText("Gesicht gespeichert");
   await expect(singleCard.locator("[data-group-ignore-face]")).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Verbleibende ignorieren" })).toBeDisabled();
+  await expect(page.locator("[data-group-ignore]:disabled")).toHaveCount(2);
   await page.unroute("**/photos/people/groups?*", blockRefresh);
   await page.getByRole("button", { name: "Ansicht erneut laden" }).click();
   await expect(surface).toHaveAttribute("data-path", "b.png");
@@ -309,7 +347,7 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   expect(singleWrites).toHaveLength(2); // One failed write, one success; retry only reads.
   for (const body of singleWrites) expect(body.get("face_id")).toBe(singleID);
   await page.route("**/photos/people/groups/ignore", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Speichern fehlgeschlagen" }) }));
-  await page.getByRole("button", { name: "Verbleibende ignorieren" }).click();
+  await page.getByRole("button", { name: "Verbleibende ignorieren" }).last().click();
   await expect(page.locator("[data-people-status]")).toHaveText("Speichern fehlgeschlagen");
   await expect(surface).toHaveAttribute("data-path", "b.png");
   await page.unroute("**/photos/people/groups/ignore");
@@ -319,9 +357,9 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
     else await route.continue();
   };
   await page.route("**/photos/people/groups?*", blockNext);
-  await page.getByRole("button", { name: "Verbleibende ignorieren" }).click();
+  await page.getByRole("button", { name: "Verbleibende ignorieren" }).last().click();
   await expect(page.locator("[data-people-status]")).toContainText("Gesichter gespeichert");
-  await expect(page.getByRole("button", { name: "Verbleibende ignorieren" })).toBeDisabled();
+  await expect(page.locator("[data-group-ignore]:disabled")).toHaveCount(2);
   await page.unroute("**/photos/people/groups?*", blockNext);
   await page.getByRole("button", { name: "Ansicht erneut laden" }).click();
   await expect(surface).toHaveAttribute("data-path", "c.png");
@@ -335,17 +373,19 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
   await cards.first().locator("[data-group-highlight]").click();
   await expectZoom(page, cards.first());
-  await page.getByRole("link", { name: "Überspringen / nächstes Foto" }).click();
+  await page.getByRole("link", { name: "Überspringen", exact: true }).last().click();
   await expect(page.locator("[data-group-empty]")).toBeVisible();
   await expect(image).toHaveCSS("transform", "none");
+  await openGroupOptions(page);
   await page.getByRole("button", { name: "Durchlauf starten" }).click();
   await expect(surface).toHaveAttribute("data-path", "c.png");
   const c = await (await context.request.get(baseURL + "/photos/people/groups?format=json&path=c.png")).json();
   expect(c.photo.remaining).toBe(7);
   await context.request.post(baseURL + "/photos/people/" + c.photo.faces[0].person_id + "/rename", { form: { name: "Concurrent" }, headers: { Accept: "application/json", Origin: baseURL } });
-  await page.getByRole("button", { name: "Verbleibende ignorieren" }).click();
+  await page.getByRole("button", { name: "Verbleibende ignorieren" }).last().click();
   await expect(page.locator("[data-people-status]")).toContainText("inzwischen geändert");
   await expect(page.locator("[data-group-count]")).toContainText("6 unbearbeitete");
+  await openGroupOptions(page);
   await threshold.fill("4"); await page.getByRole("button", { name: "Durchlauf starten" }).click();
   await expect(surface).toHaveAttribute("data-path", "a.png");
   await page.goto(baseURL + "/photos/people/groups");
@@ -380,17 +420,26 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
 
   const noJS = await browser.newContext({ javaScriptEnabled: false, storageState: await context.storageState(), httpCredentials: { username: "manager", password: "secret" } });
   const fallback = await noJS.newPage(); await fallback.goto(baseURL + "/photos/people/groups?min=4&path=a.png");
+  await expect(fallback.locator("[data-group-filter]")).toBeHidden();
+  await openGroupOptions(fallback);
+  await expect(fallback.locator('[data-group-filter] input[name="min"]')).toBeVisible();
+  await fallback.locator("[data-group-help] summary").click();
+  await expect(fallback.locator("#group-photo-filter-help")).toBeVisible();
+  await fallback.locator("[data-group-help] summary").click();
+  await expect(fallback.locator(".group-photo-help-content")).toBeHidden();
   await fallback.locator("[data-group-ignore-face]").first().click();
   await expect(fallback.locator("[data-group-photos]")).toHaveAttribute("data-path", "a.png");
   await expect(fallback.locator('[data-group-face][data-ignored="true"]')).toHaveCount(2);
   await expect(fallback.locator("[data-group-count]")).toContainText("3 unbearbeitete");
-  await fallback.getByRole("button", { name: "Verbleibende ignorieren" }).click();
+  await fallback.getByRole("button", { name: "Verbleibende ignorieren" }).last().click();
   await expect(fallback.locator("[data-group-photos]")).toHaveAttribute("data-path", "c.png");
   await expect(fallback.locator("[data-group-unnamed-control]")).toBeHidden();
   await noJS.close();
 
   await page.goto(baseURL + "/photos/people/groups?min=5&path=b.png");
+  await openGroupOptions(page);
   const unnamedOnly = page.getByRole("checkbox", { name: "Nur Unbenannte anzeigen", exact: true });
+  await openGroupOptions(page);
   await expect(unnamedOnly).not.toBeChecked();
   await expect(cards).toHaveCount(6);
   await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
@@ -407,11 +456,14 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   expect(filterRequests).toEqual([]);
   await unnamedOnly.check();
   await page.reload();
+  await openGroupOptions(page);
   await expect(unnamedOnly).toBeChecked();
   await expect(page.locator("[data-group-face]:visible")).toHaveCount(0);
   // A fresh pass retains the filter and actions remove only processed thumbnails.
+  await openGroupOptions(page);
   await page.getByRole("button", { name: "Durchlauf starten" }).click();
   await expect(surface).toHaveAttribute("data-path", "c.png");
+  await openGroupOptions(page);
   await expect(unnamedOnly).toBeChecked();
   await expect(page.locator("[data-group-face]:visible")).toHaveCount(6);
   const visibleCards = page.locator("[data-group-face]:visible");
@@ -432,6 +484,7 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await unnamedOnly.uncheck();
   await expect(visibleCards).toHaveCount(7);
   await page.reload();
+  await openGroupOptions(page);
   await expect(unnamedOnly).not.toBeChecked();
   const staleCard = page.locator('[data-group-face][data-person-name=""][data-ignored="false"]').first();
   const stalePersonID = await staleCard.getAttribute("data-person-id");
@@ -533,13 +586,46 @@ async function recoveryPage(browser) {
       return route.fulfill({ json: { minimum: 0, photo } });
     });
     await page.goto(baseURL + "/photos/people/groups?min=0&path=b.png");
-    await page.locator("[data-group-skip]").click();
+    await page.locator("[data-group-skip]").first().click();
     await expect(page.locator("[data-group-photos]")).toHaveAttribute("data-revision", "initial");
     await expect(page.locator("[data-group-photos]")).toHaveAttribute("aria-busy", "false");
     await page.clock.install();
     return { context, page, photo, errors };
   } catch (error) { await context.close(); throw error; }
 }
+
+test("both action bars share one write and follow photo changes", async ({ browser }) => {
+  const { context, page, photo, errors } = await recoveryPage(browser);
+  let release;
+  const pending = new Promise(resolve => { release = resolve; });
+  try {
+    let writes = 0;
+    await page.route("**/photos/people/groups/ignore", async route => {
+      writes++;
+      expect(new URLSearchParams(route.request().postData()).has("face_id")).toBe(false);
+      await pending;
+      await route.fulfill({ json: { ok: true, ignored: photo.faces.length } });
+    });
+    await page.locator('[data-group-actions="top"] [data-group-ignore]').click();
+    await expect.poll(() => writes).toBe(1);
+    await expect(page.locator("[data-group-ignore]:disabled")).toHaveCount(2);
+    await expect(page.locator('[data-group-skip][aria-disabled="true"]')).toHaveCount(2);
+    await page.locator('[data-group-actions="bottom"] [data-group-ignore]').evaluate(button => button.click());
+    photo.path = "c.png"; photo.display_path = "c.png"; photo.revision = "next-photo";
+    release();
+    await expect(page.locator("[data-group-photos]")).toHaveAttribute("data-revision", "next-photo");
+    await expect(page.locator("[data-group-ignore]:enabled")).toHaveCount(2);
+    await expect(page.locator('[data-group-skip][aria-disabled="false"]')).toHaveCount(2);
+    const targets = await page.locator("[data-group-skip]").evaluateAll(links => links.map(link => new URL(link.href).searchParams.get("after")));
+    expect(targets).toEqual(["c.png", "c.png"]);
+    expect(writes).toBe(1);
+    photo.faces.forEach(face => { face.ignored = true; }); photo.remaining = 0; photo.revision = "all-processed";
+    await page.locator('[data-group-actions="bottom"] [data-group-skip]').click();
+    await expect(page.locator("[data-group-photos]")).toHaveAttribute("data-revision", "all-processed");
+    await expect(page.locator("[data-group-ignore]:disabled")).toHaveCount(2);
+    expect(errors).toEqual([]);
+  } finally { release(); await context.close(); }
+});
 
 for (const phase of ["headers", "body"]) {
   test(`ignore timeout during ${phase} releases the UI and only retries reading`, async ({ browser }) => {
@@ -570,6 +656,7 @@ for (const phase of ["headers", "body"]) {
       await expect(surface).toHaveAttribute("aria-busy", "false");
       await expect(page.locator("[data-people-status]")).toContainText("nicht bestätigt");
       await expect(page.locator("[data-group-ignore-face]").first()).toBeDisabled();
+      await expect(page.locator("[data-group-ignore]:disabled")).toHaveCount(2);
       await expect(page.locator("[data-group-filter] input[name=min]")).toBeEnabled();
       await expect(page.locator("[data-group-highlight]").first()).toBeEnabled();
       await expect(page.locator("[data-group-retry]")).toBeVisible();

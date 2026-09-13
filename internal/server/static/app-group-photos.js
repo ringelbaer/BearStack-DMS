@@ -11,9 +11,14 @@
   var box = surface.querySelector("[data-group-box]");
   var status = surface.querySelector("[data-people-status]");
   var ignoreForm = surface.querySelector("[data-group-ignore-form]");
-  var ignoreButton = surface.querySelector("[data-group-ignore]");
-  var skip = surface.querySelector("[data-group-skip]");
+  var ignoreButtons = surface.querySelectorAll("[data-group-ignore]");
+  var skips = surface.querySelectorAll("[data-group-skip]");
   var retry = surface.querySelector("[data-group-retry]");
+  var help = document.querySelector("[data-group-help]");
+  document.addEventListener("click", function (event) { if (!help.contains(event.target)) help.open = false; });
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && help.open) { help.open = false; help.querySelector("summary").focus(); }
+  });
   var minimum = Number(surface.dataset.minimum);
   var currentPath = surface.dataset.path || "";
   var remaining = grid.querySelectorAll('[data-person-name=""][data-ignored="false"]').length;
@@ -52,8 +57,8 @@
       // Looking at the photo is safe even while a write needs confirmation.
       control.disabled = !control.hasAttribute("data-group-highlight") && (value || navigationPending);
     });
-    ignoreButton.disabled = value || navigationPending || !remaining;
-    skip.setAttribute("aria-disabled", String(value));
+    ignoreButtons.forEach(function (button) { button.disabled = value || navigationPending || !remaining; });
+    skips.forEach(function (link) { link.setAttribute("aria-disabled", String(value)); });
     retry.disabled = value;
     strip.busy();
   }
@@ -189,7 +194,7 @@
     ignoreForm.elements.min.value = String(minimum);
     var nextURL = new URL("/photos/people/groups", window.location.origin);
     nextURL.searchParams.set("min", String(minimum)); nextURL.searchParams.set("after", currentPath);
-    skip.href = nextURL.pathname + nextURL.search;
+    skips.forEach(function (link) { link.href = nextURL.pathname + nextURL.search; });
     var old = new Map();
     grid.querySelectorAll("[data-group-face]").forEach(function (card) { old.set(card.dataset.groupFace, card); });
     var cards = document.createDocumentFragment();
@@ -255,18 +260,18 @@
     }
   }
 
-  skip.addEventListener("click", function (event) {
+  skips.forEach(function (link) { link.addEventListener("click", function (event) {
     event.preventDefault();
     if (busy || !currentPath) return;
     status.textContent = "";
     loadPhoto({ after: currentPath }).catch(function () {});
-  });
+  }); });
   ignoreForm.addEventListener("submit", async function (event) {
     event.preventDefault();
     if (busy || navigationPending || !remaining) return;
     var submitter = event.submitter;
-    if (!submitter || (submitter !== ignoreButton && !submitter.hasAttribute("data-group-ignore-face"))) return;
-    var single = submitter !== ignoreButton;
+    if (!submitter || (!submitter.hasAttribute("data-group-ignore") && !submitter.hasAttribute("data-group-ignore-face"))) return;
+    var single = submitter.hasAttribute("data-group-ignore-face");
     var faceID = single ? submitter.value : "";
     var focusPreview = single && document.activeElement === submitter;
     var path = currentPath;
@@ -291,7 +296,7 @@
       if (focusPreview) {
         var card = grid.querySelector('[data-group-face="' + faceID + '"]');
         if (card && !card.hidden) card.querySelector("[data-group-highlight]").focus({ preventScroll: true });
-        else unnamedFilter.focus({ preventScroll: true });
+        else skips[0].focus({ preventScroll: true });
       }
     } catch (error) {
       if (!saved && !rejected) {

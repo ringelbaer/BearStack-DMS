@@ -6,6 +6,10 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ### BearStack 0.50.1 / Android 0.10.1 – in Entwicklung
 
+- Beschriftete Gesichtsrahmen im Bildbetrachter: ignorierte Rahmen einschließlich ihrer Labels auf 20 % Deckkraft reduziert. Reine CSS-Anpassung ohne zusätzliche Abfragen; bestehender Overlay-Browsertest und Screenshots auf Desktop/Mobil geprüft. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.1; VERSION und API unverändert. README und Website aktualisiert.
+
+- Gruppenbilder: Hilfetexte hinter einem zugänglichen Fragezeichen-Icon, Optionen standardmäßig eingeklappt und „Verbleibende ignorieren“ / „Überspringen“ direkt oberhalb und unterhalb der Gesichtskarten. Gemeinsamer Formular- und Sperrzustand verhindert doppelte Schreibaktionen; beide Sprunglinks folgen jedem Foto-Wechsel. Native Klappbereiche und Formularzuordnung funktionieren ohne JavaScript. Mobile Größen, Tastaturbedienung, Fehlerzustände und beide Aktionsleisten durch Browserregressionen geprüft. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.1; VERSION unverändert. README, Website und OpenAPI-Beschreibung aktualisiert; API-Vertrag unverändert.
+
 - PATCH-Versionen: BearStack `VERSION` und OpenAPI auf **0.50.1**, Android-App auf **0.10.1** mit `versionCode` **23**. README, App-Dokumentation und Website einschließlich Versionsangabe aktualisiert. Keine API- oder Datenmigration.
 
 - Thumbnail-Erzeugung: Datenbank-Deadlock beim Ableiten fehlender kleiner Vorschauen aus größeren Cache-Bildern behoben. Die Kandidatenabfrage wird vor weiteren Cache- und Indexprüfungen geschlossen; parallele Abrufe können dadurch nicht mehr beide Verbindungen mit verschachtelten Abfragen blockieren und das Ignorieren unter `/photos/people/groups` aufhalten. Regressionen für einen gleichzeitig aktiven SQLite-Schreiber, vollständige Erzeugung mit nur einer Verbindung sowie fehlende, leere, veraltete und ältere Cache-Dateien. PATCH-Korrektur in 0.50.1. README und Website aktualisiert; API und Cache-Format unverändert.

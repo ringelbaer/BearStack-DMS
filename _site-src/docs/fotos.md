@@ -463,6 +463,8 @@ deaktiviert wird. Zoom und Verschieben bewegen Rahmen und Bild gemeinsam.
 Bereits geladene Gesichtsdaten werden wiederverwendet; bei aktivem Toggle lädt ein
 Bildwechsel die vorhandenen Gesichter auch ohne geöffnete Sidebar. Es wird keine
 neue Gesichtserkennung gestartet. Videos und Audio zeigen keine Gesichtsrahmen.
+Ignorierte Gesichtsrahmen einschließlich ihrer Labels erscheinen in diesem Modus
+mit **20 % Deckkraft** (80 % transparent), damit sie das Foto weniger verdecken.
 
 Der Button **Alle ignorierten Gesichter dieses Fotos wiederherstellen** entfernt ab
 0.50.0 den Ignoriert-Status für alle betroffenen Gesichter im geöffneten Foto.
@@ -588,10 +590,18 @@ des Modals erneut geprüft werden.
 
 **Gruppenbilder bearbeiten:** Der Button **Gruppenbilder** unter `/photos/people`
 öffnet `/photos/people/groups` für Fotobearbeiter (`photos.edit`). Die Schwelle ist
-oben einstellbar (0–255, Standard **5**) und wird pro Nutzer und Browser gemerkt.
+im standardmäßig eingeklappten Bereich **Optionen** einstellbar (0–255, Standard **5**)
+und wird pro Nutzer und Browser gemerkt. Dort steht auch **Nur Unbenannte anzeigen**.
 Es erscheinen ausschließlich Fotos mit **mehr als** dieser Anzahl unbenannter,
 nicht ignorierter Gesichter. Benannte und ignorierte Gesichter zählen nicht für die
 Auswahl, werden im geöffneten Foto aber weiterhin als Vorschauen gezeigt.
+
+Das **Fragezeichen-Icon** neben **Alle Personen** öffnet die Hilfe zu Auswahl,
+Vergrößerung und Gesichtsaktionen. **Verbleibende ignorieren** und **Überspringen**
+stehen direkt oberhalb und unterhalb der Gesichtskarten. Beide Aktionsleisten
+verwenden denselben Fotostand und dieselbe Sperre während eines laufenden Abrufs;
+ein Wechsel der Leiste löst keine doppelte Speicherung aus. Optionen, Hilfe,
+Überspringen und Ignorieren funktionieren auch ohne JavaScript.
 
 Beim Ignorieren eines einzelnen Gesichts oder aller verbleibenden Gesichter endet
 jeder Speicher- und Nachladeabruf nach spätestens **20 Sekunden**, einschließlich

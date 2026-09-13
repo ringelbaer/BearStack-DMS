@@ -2110,6 +2110,10 @@ paths:
         For strip, path, after and before are mutually exclusive. Scroll cursors
         and flags permit navigation in both directions without a total-count scan.
         Small images use the existing /photos/thumbnail?size=160&path= endpoint.
+        The HTML view places help behind an icon and starts with its options collapsed.
+        Ignore-remaining and skip controls appear above and below the face cards;
+        both use the same current photo and form state. These controls and disclosures
+        also work without JavaScript.
       parameters:
         - name: min
           in: query
