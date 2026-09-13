@@ -18,7 +18,7 @@ internal class FakeService : LabelingService {
     var supportsMerges=true
     var supportsMergeNaming=true
     var supportsMergeSideActions=true
-    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true,mergeSuggestions=supportsMerges,mergeNaming=supportsMergeNaming,manualMerge=true,mergeSideActions=supportsMergeSideActions)
+    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true,mergeSuggestions=supportsMerges,mergeNaming=supportsMergeNaming,mergeSideActions=supportsMergeSideActions)
     val mergePairs=mutableListOf<MergeSuggestion>()
     var failNextMerge=false
     override suspend fun nextMergeSuggestion(excluded: Pair<Long,Long>?): MergeSuggestion? {
@@ -33,13 +33,6 @@ internal class FakeService : LabelingService {
     var failPerson: Long? = null
     override suspend fun session() = session
     override suspend fun candidates(after: Long,upper: Long) = Candidates(people.values.filter { it.id>after && it.id<=upper && it.name.isEmpty() },upper,false)
-    val groupRequests=mutableListOf<Triple<Long,Long,Boolean>>()
-    override suspend fun mergeGroups(after:Long,upper:Long,includeNamed:Boolean):Candidates {
-        groupRequests+=Triple(after,upper,includeNamed)
-        val groups=people.values.filter {it.id>after && it.id<=upper && (includeNamed || it.name.isEmpty())}.sortedBy {it.id}.take(21)
-        val page=groups.take(20).map {it.copy(faces=listOf(it.faceId))}
-        return Candidates(page,page.lastOrNull()?.id ?: after,groups.size>20)
-    }
     override suspend fun namedPeople(after: Long,upper: Long): Candidates {
         val page=people.values.filter {it.id>after && it.id<=upper && it.name.isNotEmpty()}.sortedBy {it.id}.take(21)
         return Candidates(page.take(20),page.take(20).lastOrNull()?.id ?: after,page.size>20)
@@ -120,6 +113,8 @@ internal class FakeService : LabelingService {
             if(action=="name_merge") {
                 val assigned=request.optLong("assign_id")
                 val destination=if(assigned==0L) target.copy(name=request.getString("name")) else people.getValue(assigned)
+                if(assigned!=0L && (destination.name.isEmpty() || destination.revision!=request.getLong("assign_revision")))
+                    throw ApiFailure(409,"conflict","stale assignment")
                 people[destination.id]=destination.copy(count=p.count+target.count+(if(assigned==0L)0 else destination.count),revision=destination.revision+1)
                 people.remove(id)
                 if(assigned!=0L) people.remove(target.id)
@@ -176,13 +171,17 @@ internal class FakeService : LabelingService {
 }
 class RepositoryTest {
     private fun database() = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext,LabelingDatabase::class.java).build()
-    @Test fun manualMergePersistsWholeSelectionAndRecoversReceiptAfterRestart()=runBlocking {
+    @Test fun legacyManualMergeRecoversReceiptAfterUpgrade()=runBlocking {
         val db=database()
         try {
             val api=FakeService()
             val repo=PeopleRepository(db,api,api.session)
             repo.next();repo.skip(api.people.getValue(1));repo.next()
-            repo.prepareGroupMerge(listOf(api.people.getValue(1),api.people.getValue(2)))
+            // Persist the old app's intent directly: new versions expose no action
+            // to create it, but must still resolve an interrupted upgrade safely.
+            val operation=java.util.UUID.randomUUID().toString()
+            val legacy="""{"operation_id":"$operation","dataset":"dataset","revision":1,"action":"merge_groups","groups":[{"id":1,"revision":1},{"id":2,"revision":1}]}"""
+            db.dao().pending(de.bearstack.people.data.local.Pending(repo.scope,operation,1,legacy))
             val body=JSONObject(repo.pending()!!.body)
             assertEquals(2,body.getJSONArray("groups").length())
             api.loseResponse=true

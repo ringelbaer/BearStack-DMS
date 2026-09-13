@@ -46,7 +46,12 @@ paths:
       - Photos
       operationId: getPhotoCatalogSession
       summary: Check native gallery protocol, identity and capabilities
-      description: Requires photos.read. Available from BearStack 0.50.0. Does not modify photo content.
+      description: >-
+        Requires photos.read. Available from BearStack 0.50.0. Does not modify photo content.
+        Android restores saved connections behind a loading screen and bounds session
+        negotiation to eight seconds. Local MediaStore photos remain accessible without
+        this endpoint or a successful server login; failures preserve the saved profile
+        and certificate binding and allow an explicit retry.
       responses:
         '200':
           description: Successful response. Cache-Control is private, no-store.
@@ -1468,6 +1473,14 @@ paths:
         unchanged source file, preserving its dimensions and metadata. The path
         is resolved from the face ID; protected and ignored faces are excluded.
         Responses use Cache-Control no-store. Supports HTTP byte ranges.
+        Since BearStack 0.50.0, size=large_preview_size instead returns a WebP
+        preview of the whole photo using the current server large_preview_size
+        setting and the shared thumbnail cache. Aspect ratio is preserved and
+        smaller images are not upscaled. Android uses this mode for face-hold
+        previews and their Wi-Fi preloading; its 2048-pixel decode target limits
+        device memory independently of the transferred preview dimensions.
+        Without this parameter the original response is unchanged. Older servers
+        may ignore the parameter and return the original file.
       parameters:
         - name: id
           in: path
@@ -1476,18 +1489,23 @@ paths:
             type: integer
             format: int64
             minimum: 1
+        - name: size
+          in: query
+          required: false
+          schema: {type: string, enum: [large_preview_size]}
+          description: Request the configured large whole-photo preview instead of the original file.
         - name: Range
           in: header
           schema: {type: string}
           description: Optional byte range, for example bytes=0-1023.
       responses:
         "200":
-          description: Original photo with its source MIME type.
+          description: Original photo with its source MIME type, or image/webp for size=large_preview_size.
           content:
             "image/*":
               schema: {type: string, format: binary}
         "206":
-          description: Requested byte range of the original photo.
+          description: Requested byte range of the original photo or selected preview.
           content:
             "image/*":
               schema: {type: string, format: binary}
@@ -2539,7 +2557,16 @@ paths:
       operationId: suggestPeopleForFace
       summary: Compare the current face with named people
       description: >-
-        Used by the WebUI and Android naming dialogs. Both request NDJSON streaming
+        Used by the WebUI and Android naming dialogs. Android also starts this search
+        automatically in the similar-groups comparison only when both groups are
+        unnamed and the server supports merge_naming. Only the first group's witness
+        is searched, with one request and at most twenty shared naming suggestions.
+        Tapping a match assigns both groups atomically through name_merge, checking
+        both displayed group revisions and the selected destination revision.
+        Completed rankings are reused for the current pair; an individual group action
+        discards the shared list. Incomplete searches are cancelled when leaving the
+        screen, entering the background, or opening a naming dialog. Failures require
+        an explicit retry using the first group. These clients request NDJSON streaming
         and display interim rankings. Android also accepts a single JSON ranking
         from older servers, bounds each frame to 64 KiB, and discards interim results
         on failure or a stream ending without done=true. Android resolves the selected

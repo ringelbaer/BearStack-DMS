@@ -1,23 +1,92 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.10.0**. Die Galerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.10.0**. Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
+
+## Start und Offlinebetrieb
+
+Mit gespeicherten Verbindungsdaten startet die App mit einem Ladebildschirm im
+BearStack-Design und meldet sich automatisch an. Das Anmeldeformular erscheint erst
+bei der Einrichtung oder nach einem ausdrücklich gewählten Verbindungswechsel.
+**Lokale Fotos öffnen** führt schon während des Verbindungsaufbaus zu den Gerätefotos.
+Auch in der geöffneten Servergalerie ist dieser Einstieg jederzeit unter
+**Weitere Optionen → Lokale Fotos öffnen** erreichbar, etwa bei einem späteren Serverausfall.
+
+Die automatische Serveranmeldung wartet höchstens acht Sekunden auf die
+Sitzungsaushandlung. Bei einem nicht erreichbaren oder fehlerhaften Server öffnet
+sich **Dieses Gerät** mit einem verständlichen Verbindungsfehler und **Erneut versuchen**.
+Auch ungültige Zugangsdaten oder ein geändertes Zertifikat sperren die lokalen Fotos
+nicht. Gespeicherte Zugangsdaten und die Zertifikatsbindung bleiben erhalten; ein
+neues Zertifikat wird niemals automatisch akzeptiert. Ein erneuter Verbindungsversuch
+lässt die lokale Ansicht geöffnet. Nach erfolgreicher Anmeldung stehen die Servertabs
+wieder bereit. Es gibt keine fortlaufenden automatischen Wiederholungen.
+
+Der lokale Einstieg funktioniert auch ohne eingerichteten Server und unabhängig
+vom Schalter für die lokale Kachel in der Servergalerie. Android muss den Fotozugriff
+freigeben; bei verweigerter Berechtigung bietet die App die Freigabe an. Ordner,
+Vorschauen, Vollbild, Zoom, Informationen und Teilen verwenden ausschließlich die
+lokalen Fotos. Serverfotos stehen offline nur im bereits vorhandenen Arbeitsspeicher
+zur Verfügung; die App legt keinen dauerhaften Offlinebestand des Servers an.
+
+Die Funktion **Gruppen manuell kombinieren** wurde aus der App entfernt.
+**Ähnliche Gruppen**, Benennen und Zuordnen bleiben verfügbar. Bereits gespeicherte,
+noch unbestätigte Gruppenaktionen älterer App-Stände werden weiterhin anhand ihrer
+Aktionsquittung aufgelöst.
+
+## Große Fotovorschau beim Halten eines Gesichts
+
+Beim Halten eines Gesichts lädt die App das ganze Foto als serverseitig verkleinerte
+Vorschau gemäß **`large_preview_size`** (Standard: 3840 Pixel längste Kante).
+Das gilt für Benennen, Personenverwaltung, „Ähnliche Gruppen“ und deren WLAN-Vorladen.
+Seitenverhältnis, Gesichtsmarkierung und Zoom bleiben erhalten; auf dem Handy wird
+weiterhin mit einem Dekodierziel von 2048 Pixeln gearbeitet. Der Server verwendet
+seinen vorhandenen WebP-Thumbnail-Cache. Ein neuer Abruf berücksichtigt den aktuellen
+Serverwert; bereits im App-Cache liegende Vorschauen behalten ihre Frist von höchstens
+drei Minuten. App und Server gemeinsam aktualisieren: ältere Server ohne diesen
+Vorschaumodus liefern über denselben Endpunkt weiterhin die Originaldatei.
+
+## Direkte Zuordnung in „Ähnliche Gruppen“
+
+Sind **beide Gruppen unbenannt**, startet unter **Ignorieren** und dem **Stift**
+ein gemeinsamer Lupenabgleich mit benannten Personen. Er verwendet ausschließlich
+das Vergleichsgesicht der **ersten Gruppe**. Eine gemeinsame Liste zeigt
+**Benennungsvorschläge für beide Gruppen** mit Referenzportrait, Namen und
+Gesichtsanzahl. Antippen ordnet **beide Gruppen gemeinsam** der gewählten Person zu,
+ohne Namensdialog. Nach der bestätigten Zuordnung folgt das nächste Paar.
+Ist mindestens eine Gruppe benannt oder wurde eine Seite bereits einzeln bearbeitet,
+gibt es keinen automatischen Abgleich und keine gemeinsame Trefferliste.
+
+Zwischenstände erscheinen bereits während des Abgleichs und sind sofort auswählbar.
+Ladezustand, leere Ergebnisse und Fehler stehen im gemeinsamen Bereich.
+**Erneut abgleichen** beziehungsweise **Erneut versuchen** wiederholt den Abgleich
+anhand der ersten Gruppe. Die Entscheidungsbuttons bleiben am unteren Bildschirmrand
+erreichbar; längere Trefferlisten scrollen mit dem Vergleichsbereich.
+
+Pro Paar läuft höchstens eine Suchanfrage mit bis zu 20 Treffern.
+Der bestehende NDJSON-Transport hält nur die aktuelle Rangliste und den neuesten
+wartenden Zwischenstand; jede Nachricht bleibt auf 64 KiB begrenzt. Fertige Ergebnisse
+werden für das aktuelle Paar weiterverwendet, auch nach einem Namensdialog oder
+Hintergrundwechsel. Laufende Suchen werden bei Hintergrundwechsel, Verlassen der
+Ansicht oder während anderer Personenaktionen abgebrochen; unvollständige Treffer
+werden verworfen und beim Fortsetzen neu ermittelt. Fehler lösen keine automatischen
+Wiederholungsschleifen aus. Ein neues Paar oder eine bestätigte Einzelaktion verwirft
+die gemeinsame Liste.
+
+Die App lädt vor der Zuordnung ausschließlich die aktuelle Zielperson nach.
+Umbenannte oder entfernte Ziele und geänderte Revisionen einer der beiden Gruppen
+verlangen eine neue Entscheidung. Die vorhandene atomare Aktion `name_merge`
+prüft beide Gruppen sowie das Ziel und ordnet beide gemeinsam zu. Ihre Aktionsquittung
+sichert verlorene Antworten ab; eine Wiederholung schreibt nicht doppelt.
+Die Funktion benötigt die Server-Capability `merge_naming`.
+Der gemeinsame Stift zum Benennen beider Gruppen bleibt verfügbar.
 
 ## Gesichtssuche beim Benennen
 
 Ab App **0.10.0** startet die **Lupe neben dem Namensfeld** im Benenn-Dialog einen Gesichtsabgleich mit bereits benannten Personen. Sie verwendet das erste Gesicht der angezeigten Seite beziehungsweise das Quellgesicht im Modus „Ähnliche Gruppen“; beim Stift einer einzelnen Seite deren Vergleichsgesicht. Die Treffer erscheinen schon während des Abgleichs in Ähnlichkeitsreihenfolge mit dem passenden Referenzportrait. Weitere Zwischenstände aktualisieren die Liste; der Ladehinweis bleibt bis zum Abschluss sichtbar. Treffer lassen sich bereits während der Suche auswählen. Antippen ordnet die aktuelle Gruppe zu; beim gemeinsamen Benennen zweier Gruppen werden beide zugeordnet. Die Suche selbst verändert nichts. Ladezustand, leere Trefferliste und Fehler werden angezeigt; erneutes Antippen wiederholt die Suche. Tippen im Namensfeld, Schließen des Dialogs oder Wechsel in den Hintergrund bricht sie ab. Das separate Umbenennen einer bereits benannten Person bleibt eine Namensänderung.
 
-Der Abgleich nutzt den vorhandenen Endpunkt `GET /photos/faces/{id}/suggestions` (BearStack ab 0.50.0), benötigt keine erneute Bilderkennung und liefert höchstens 20 Treffer. Die App fordert NDJSON-Streaming an, verarbeitet höchstens 64 KiB pro Zwischenstand und hält nur die aktuelle Trefferliste sowie den neuesten noch nicht angezeigten Zwischenstand im Speicher. Ein fehlender Abschluss oder ein Übertragungsfehler leert die vorläufigen Treffer und erlaubt einen erneuten Versuch. Ältere Server mit diesem Endpunkt können weiterhin eine einzelne JSON-Antwort liefern. Bei einem positiven Mindestabstand zwischen erstem und zweitem Treffer wartet auch der Server auf den vollständigen Abgleich. Die App lädt nur bei explizitem Start und lädt die aktuelle Revision ausschließlich der ausgewählten Zielperson nach. Eine inzwischen umbenannte Zielperson erfordert eine neue Entscheidung; Zuordnungen behalten die vorhandenen Revisionsprüfungen und Aktionsquittungen. Ältere Server zeigen eine verständliche Fehlermeldung; die Namenssuche bleibt verfügbar.
-
-## Gruppen manuell kombinieren
-
-**Menü → Gruppen manuell kombinieren** öffnet ein fortlaufendes Gruppenraster. Standardmäßig erscheinen nur unbenannte Gruppen; **Auch benannte Gruppen anzeigen** nimmt benannte Gruppen hinzu. Kurz auf ein Portrait tippen wählt die Gruppe aus oder ab. Langes Drücken öffnet wie gewohnt das Originalfoto mit Gesichtsmarkierung und Vergrößerung durch Wischen. Weitere Gruppen laden automatisch beim Scrollen, auch beim Zurückscrollen.
-
-Ab zwei ausgewählten Gruppen erscheinen **Kombinieren** und **Kombinieren und benennen**. Kombinieren behält den ersten ausgewählten vorhandenen Namen; ohne benannte Auswahl bleibt die Gruppe unbenannt. Der erhaltene Name steht über den Aktionen. Kombinieren und benennen fragt vor dem Speichern nach einem Namen. Abbrechen verändert nichts. Bei einem bereits anderweitig vergebenen Namen kann eine separate gleichnamige Gruppe ausdrücklich bestätigt werden. Ein Filterwechsel oder „Aktualisieren“ leert die Auswahl. Pro Aktion sind höchstens 60 Gruppen wählbar.
-
-Die Funktion benötigt die neue Server-Capability `manual_merge` innerhalb BearStack **0.50.0**; App und Server müssen dafür aktualisiert sein. Der Server prüft die Revision aller ausgewählten Gruppen und führt die komplette Auswahl samt Aktionsquittung atomar zusammen. Eine veraltete Auswahl muss neu getroffen werden; eine verlorene Antwort kann über „Offene Aktion prüfen“ aufgelöst werden. Ignorierte Gesichter bleiben ignoriert, Favoriten und Originaldateien erhalten. Die App lädt Pakete von höchstens 20 Gruppen, hält normalerweise drei Seiten um den sichtbaren Bereich und separat die begrenzte Auswahl. Kleine ID-Marken erlauben das Nachladen früherer Seiten. Nach dem Kombinieren bleibt die Scrollposition erhalten; die betroffenen Seiten werden neu geladen.
+Der Abgleich nutzt den vorhandenen Endpunkt `GET /photos/faces/{id}/suggestions` (BearStack ab 0.50.0), benötigt keine erneute Bilderkennung und liefert höchstens 20 Treffer. Die App fordert NDJSON-Streaming an, verarbeitet höchstens 64 KiB pro Zwischenstand und hält nur die aktuelle Trefferliste sowie den neuesten noch nicht angezeigten Zwischenstand im Speicher. Ein fehlender Abschluss oder ein Übertragungsfehler leert die vorläufigen Treffer und erlaubt einen erneuten Versuch. Ältere Server mit diesem Endpunkt können weiterhin eine einzelne JSON-Antwort liefern. Bei einem positiven Mindestabstand zwischen erstem und zweitem Treffer wartet auch der Server auf den vollständigen Abgleich. Im Namensdialog startet der Abgleich nur über die Lupe; im Vergleich „Ähnliche Gruppen“ automatisch anhand der ersten Gruppe, sofern beide Gruppen unbenannt sind, als gemeinsamer Benennungsvorschlag für beide. Die App lädt die aktuelle Revision ausschließlich der ausgewählten Zielperson nach. Eine inzwischen umbenannte Zielperson erfordert eine neue Entscheidung; Zuordnungen behalten die vorhandenen Revisionsprüfungen und Aktionsquittungen. Ältere Server zeigen eine verständliche Fehlermeldung; die Namenssuche bleibt verfügbar.
 
 ## Galerie
 
@@ -124,8 +193,9 @@ und die Einstellung bleibt auf dem Gerät gespeichert. Unter dem Hauptordner ste
 die von Android erkannten Fotoordner, beispielsweise Camera, Screenshots und Pictures,
 mit Medienanzahl und bis zu zwei Vorschauen. Ein Ordner öffnet seine Fotos im
 fortlaufenden Raster; Vollbild, Zoom, Diashow und lokale Dateiinformationen sind verfügbar.
-Zurück führt über das Gerät wieder zur Servergalerie. Die Tabs Fotos und Suchen
-zeigen weiterhin den Serverbestand.
+Bei aktiver Serververbindung führt Zurück über das Gerät wieder zur Servergalerie.
+Die Tabs Fotos und Suchen zeigen dann den Serverbestand. Ohne Serververbindung
+bleibt die lokale Navigation verfügbar; die Statusleiste bietet eine erneute Anmeldung.
 
 Beim ersten Aktivieren fragt Android nach Fotozugriff. Ab Android 14 kannst du auch
 nur einzelne Fotos freigeben; dann erscheinen ausschließlich diese Fotos und ihre
@@ -338,11 +408,11 @@ Ab App **0.9.0** und **BearStack 0.49.0** öffnet **Menü → Ähnliche Gruppen*
 - Sind **beide Gruppen bereits benannt**, öffnet **Zusammenführen** eine zusätzliche Warnung mit beiden Namen, auch bei identischen Namen. Erst **Trotzdem zusammenführen** speichert; der Name der zweiten Gruppe bleibt erhalten. **Abbrechen** oder die Zurück-Taste lassen das Paar unverändert. Bei geänderten Gruppen ist eine neue Bestätigung nötig. Die Warnung benötigt keine zusätzlichen Serverabfragen.
 - **Getrennt lassen:** Die Trennung bleibt gespeichert und verhindert auch künftige automatische Zuordnungen zwischen diesen Gruppen.
 - Nach Serverbestätigung lädt automatisch das nächste Gruppenpaar. Wenn keine Vorschläge vorliegen, erscheint ein Hinweis mit „Aktualisieren“.
-- **Portrait halten und wischen:** Wie beim Benennen/Zuordnen erscheint das vollständige Original mit Gesichtsmarkierung. Herunterwischen vergrößert zum Gesicht, Hochwischen verkleinert; Loslassen oder Abbrechen schließt die Vorschau. Beide Portraits bieten die TalkBack-Aktion „Originalfoto anzeigen“. Der vollständige Galeriepfad steht in der Originalvorschau; lange Pfade lassen sich dort lesen.
+- **Portrait halten und wischen:** Wie beim Benennen/Zuordnen erscheint die große Vorschau des ganzen Fotos mit Gesichtsmarkierung. Herunterwischen vergrößert zum Gesicht, Hochwischen verkleinert; Loslassen oder Abbrechen schließt die Vorschau. Beide Portraits bieten die TalkBack-Aktion „Originalfoto anzeigen“. Der vollständige Galeriepfad steht in der Originalvorschau; lange Pfade lassen sich dort lesen.
 
 Während des Speicherns und bei einer ungeklärten Antwort sind weitere Entscheidungen gesperrt. „Offene Aktion prüfen“ klärt die dauerhaft gespeicherte Aktionsquittung, auch nach einem App-Neustart. Konflikte durch andere Bearbeitungen verlangen eine neue Prüfung. Schlägt erst das Nachladen fehl, wird ausschließlich der nächste Vorschlag neu geladen. Zurück führt zum Benennen; bei unveränderten Gruppen bleibt auch die bisherige Bildseite erhalten. Diese Entscheidungen erhöhen nicht die Statistik für erstmaliges Benennen/Zuordnen.
 
-Der Server liest höchstens 20 gespeicherte Kandidaten und liefert nur ein Paar mit je einem Vergleichsgesicht. Beim Öffnen wird keine Vektorsuche gestartet. Auch Vergleichsgesichter weit hinten in großen Gruppen werden über den Gesichts-ID-Index abgerufen. Die bestehende Originalvorschau mit maximal 2048 Pixeln, Drei-Minuten-/16-MiB-Speichercache und seriellem WLAN-Vorladen wird wiederverwendet. Auf älteren Servern zeigt die App einen Hinweis auf BearStack 0.49.0; Benennen und Personenverwaltung bleiben verfügbar.
+Der Server liest höchstens 20 gespeicherte Kandidaten und liefert nur ein Paar mit je einem Vergleichsgesicht. Der Paarabruf selbst startet keine Vektorsuche; bei zwei unbenannten Gruppen startet die App anschließend den gemeinsamen Lupenabgleich anhand der ersten Gruppe. Auch Vergleichsgesichter weit hinten in großen Gruppen werden über den Gesichts-ID-Index abgerufen. Die bestehende Originalvorschau mit maximal 2048 Pixeln, Drei-Minuten-/16-MiB-Speichercache und seriellem WLAN-Vorladen wird wiederverwendet. Auf älteren Servern zeigt die App einen Hinweis auf BearStack 0.49.0; Benennen und Personenverwaltung bleiben verfügbar.
 
 ## Personen verwalten
 
@@ -358,7 +428,7 @@ Eine Person antippen, um ihre Portraits im fortlaufenden Raster zu öffnen. Ab A
 
 Umbenennen, Entfernen und Favorisieren werden erst nach Serverbestätigung angezeigt. Offene Schreibaktionen bleiben lokal gespeichert und werden über ihre Aktionsquittung geklärt. Änderungen an Gruppenzuordnung oder Namen durch andere Clients verlangen eine neue Entscheidung. Die aktuelle unbenannte Gruppe und ihre Bildseite bleiben beim Wechsel in den Personenbereich erhalten. Verwaltungsaktionen erhöhen nicht die Zähler für erstmaliges Benennen oder Zuordnen.
 
-Die Liste verwendet ein Lazy-Layout; Portraits werden nur für sichtbare Einträge geladen. Personen-Metadaten und Sichtbarkeitsprüfungen erfolgen serverseitig in kleinen Paketen ohne Gesamtzählung. Das Raster stellt nur sichtbare Kacheln bereit. BearStack 0.45.0 liefert pro Anfrage bis zu 40 Gesichter über einen indexierten Gesichts-ID-Cursor; tiefes Scrollen benötigt keinen zunehmend großen Offset. Alte Server liefern weiterhin vier Gesichter je Anfrage, die App fügt sie ebenfalls fortlaufend an. Vor dem Anfügen werden Revision und Gesichtsanzahl geprüft; bei zwischenzeitlichen Änderungen wird neu geladen und eine Meldung angezeigt. Bestätigte Favoriten-, Namens- und Zuordnungsänderungen aktualisieren den geladenen Bestand anhand der atomaren Aktionsquittung, sodass Bilder und Scrollposition erhalten bleiben. Während eines Dialogs oder einer Originalvorschau wird nicht automatisch nachgeladen; Ladefehler lösen keine Endlosschleife aus. Ab App 0.8.0 werden Originale der angezeigten Portraits bei WLAN nacheinander vorgeladen; über Mobilfunk werden sie erst beim Öffnen der Vorschau geladen. Der vorhandene begrenzte Bildcache wird weiterverwendet. Änderungen aktualisieren den Gesichtssuchindex nur für betroffene Personen, sofern der Index aktuell ist.
+Die Liste verwendet ein Lazy-Layout; Portraits werden nur für sichtbare Einträge geladen. Personen-Metadaten und Sichtbarkeitsprüfungen erfolgen serverseitig in kleinen Paketen ohne Gesamtzählung. Das Raster stellt nur sichtbare Kacheln bereit. BearStack 0.45.0 liefert pro Anfrage bis zu 40 Gesichter über einen indexierten Gesichts-ID-Cursor; tiefes Scrollen benötigt keinen zunehmend großen Offset. Alte Server liefern weiterhin vier Gesichter je Anfrage, die App fügt sie ebenfalls fortlaufend an. Vor dem Anfügen werden Revision und Gesichtsanzahl geprüft; bei zwischenzeitlichen Änderungen wird neu geladen und eine Meldung angezeigt. Bestätigte Favoriten-, Namens- und Zuordnungsänderungen aktualisieren den geladenen Bestand anhand der atomaren Aktionsquittung, sodass Bilder und Scrollposition erhalten bleiben. Während eines Dialogs oder einer Originalvorschau wird nicht automatisch nachgeladen; Ladefehler lösen keine Endlosschleife aus. Ab App 0.8.0 werden große Fotovorschauen der angezeigten Portraits bei WLAN nacheinander vorgeladen; über Mobilfunk werden sie erst beim Öffnen der Vorschau geladen. Der vorhandene begrenzte Bildcache wird weiterverwendet. Änderungen aktualisieren den Gesichtssuchindex nur für betroffene Personen, sofern der Index aktuell ist.
 
 Ab App **0.8.3** erscheinen **…**, **?** und **Stift** in der unteren Benennen-Aktionsleiste als gleich große, vertikal mittig ausgerichtete Symbole. Der Stift hat keinen sichtbaren Schaltflächenhintergrund mehr; die unsichtbaren Touchflächen bleiben jeweils 48 dp groß. In „Personen benennen“ beginnt der Inhalt direkt mit dem Gesichtsraster; „Unbenannte Person“ und die Bildanzahlzeile entfallen.
 
@@ -373,7 +443,7 @@ Ab App **0.8.1** bleibt unten eine schlanke Aktionsleiste stehen: links **…** 
 - Das Grid zeigt bis zu vier **Gesichtsausschnitte**, keine ganzen Fotos. Bei größeren Gruppen blättern „Zurück“ und „Weiter“ durch Viererseiten. Benennen, Zuordnen und Ignorieren betreffen immer die gesamte Gruppe.
 - Wischen funktioniert auf Bildern, Zwischenräumen und dem freien Hintergrund der Bearbeitungsansicht. Links überspringt die Gruppe; rechts holt die zuletzt übersprungene Gruppe zurück; oben ignoriert sie mit Rücknahmefrist. Bei überlangem Inhalt scrollt Hochwischen zunächst zum Ende; ein weiterer Wischer nach oben ignoriert die Gruppe. Menü, Statistik, Namensdialog und Originalfoto-Vorschau lösen keine Wischaktionen aus.
 - Rechtswischen nimmt das letzte Überspringen im aktuellen Durchgang zurück, auch mehrfach und nach dem letzten Datensatz. Alternativ „Letztes Überspringen zurücknehmen“ unter … in der unteren Aktionsleiste wählen. Die bisherige Gruppe bleibt mit ihrer Bildseite zur weiteren Bearbeitung vorgemerkt. Zurückgeholte Gruppen werden erneut am Server geprüft; bereits bearbeitete oder entfernte Gruppen werden ausgelassen. Bei Verbindungsfehlern bleiben aktuelle Gruppe und Rücknahmemöglichkeit erhalten. Die zurückgenommene Überspringen-Zählung wird entfernt. Verlauf und vorgemerkte Gruppen bleiben nach einem App-Neustart erhalten; ein neuer Durchgang beginnt ohne Rücknahmeverlauf.
-- Einen Gesichtsausschnitt halten, um das vollständige Originalfoto zu sehen, aus dem er stammt. Das Foto wird mit seinem ursprünglichen Seitenverhältnis vollständig eingepasst. Loslassen oder Abbruch schließt die Vorschau. Eine feine Bounding Box markiert das ausgewählte Gesicht. Bei weiter gedrücktem Finger vergrößert Herunterwischen zum Gesicht, Hochwischen verkleinert zurück zum ganzen Foto. Dabei wird weder ignoriert noch übersprungen. Der Zoom bleibt auf maximal 12-fache Vergrößerung begrenzt; das Original wird einmal mit höchstens 2048 Pixeln je Seite dekodiert. Über die TalkBack-Aktion „Originalfoto anzeigen“ bleibt die Vorschau bis „Vorschau schließen“ geöffnet; dort stehen „Zum Gesicht vergrößern“ und „Ganzes Foto anzeigen“ als Aktionen bereit. Die Markierung benötigt die Gesichtskoordinaten aus BearStack 0.35.0; bei älteren Servern bleibt das Original ohne Markierung und Zoom sichtbar.
+- Einen Gesichtsausschnitt halten, um das ganze Foto als große Vorschau zu sehen, aus dem er stammt. Das Foto wird mit seinem ursprünglichen Seitenverhältnis vollständig eingepasst. Loslassen oder Abbruch schließt die Vorschau. Eine feine Bounding Box markiert das ausgewählte Gesicht. Bei weiter gedrücktem Finger vergrößert Herunterwischen zum Gesicht, Hochwischen verkleinert zurück zum ganzen Foto. Dabei wird weder ignoriert noch übersprungen. Der Zoom bleibt auf maximal 12-fache Vergrößerung begrenzt; die vom Server nach `large_preview_size` verkleinerte Vorschau wird einmal mit einem Dekodierziel von 2048 Pixeln geladen. Über die TalkBack-Aktion „Originalfoto anzeigen“ bleibt die Vorschau bis „Vorschau schließen“ geöffnet; dort stehen „Zum Gesicht vergrößern“ und „Ganzes Foto anzeigen“ als Aktionen bereit. Die Markierung benötigt die Gesichtskoordinaten aus BearStack 0.35.0; bei älteren Servern bleibt das Original ohne Markierung und Zoom sichtbar.
 - Der Stift öffnet das Namensfeld. Nach 250 ms Eingabepause erscheinen höchstens 20 Vorschläge. Einen Vorschlag antippen, um zuzuordnen; „Speichern“ benennt die aktuelle Gruppe. Bei einem bestehenden gleichen Namen wird zwischen Zuordnen und „Separat benennen“ unterschieden.
 - Das **×** links unten trennt genau dieses Gesicht in eine neue unbenannte Gruppe ab. Es ignoriert und löscht nichts. Die neue Gruppe folgt nach Abschluss der aktuellen Gruppe; mehrere Abtrennungen folgen ihrer Reihenfolge. Bei einem einzigen Gesicht entfällt das ×.
 - **Nach oben wischen:** die ganze Gruppe ignorieren. Die nächste Gruppe erscheint sofort. Eine klickbare Meldung am oberen Bildschirmrand bietet fünf Sekunden lang „Rückgängig“ an; die Ansicht bleibt währenddessen bedienbar. Bei mehreren rasch ignorierten Gruppen hat jede ihre eigene Frist, die Meldung nimmt jeweils die letzte noch rücknehmbare Gruppe zurück. Ab App-Version 0.5.3 wartet das Speichern nach Fristende, solange ein Namens- oder Duplikatdialog geöffnet ist. Die Meldung läuft weiterhin nach fünf Sekunden aus; Änderungen und Ausblenden der Meldung unterbrechen weder Texteingabe noch Fokus oder Tastatur. Nach dem Schließen des Dialogs werden wartende Schreibanfragen nacheinander ausgeführt. Beim Wechsel in den Hintergrund oder nach Prozessende kehren noch nicht gesendete Gruppen in die Warteschlange zurück.
@@ -400,9 +470,9 @@ Room trennt lokalen Zustand nach Instanz, Datenbestand und Konto. Gespeichert we
 
 Die Statistik zählt **Gesichter und Gruppen**, jeweils heute (lokale Zeitzone) und insgesamt: Benannt, Zugeordnet, Ignoriert, Übersprungen. Serveraktionen zählen nach Bestätigung genau einmal pro Aktions-ID. Überspringen zählt einmal je Gruppe und Durchgang. Abtrennen hat keinen eigenen Statistikzähler. Die Zahlen sind gerätelokal; sie sind kein vollständiges Server-Audit. App-Daten löschen oder Deinstallation entfernt die lokalen Zahlen.
 
-Ein Durchgang lädt Metadaten in Seiten von maximal 20 Gruppen. Jede Gruppe wird vor Anzeige erneut geprüft. Benannte, leere oder gelöschte Gruppen werden ausgelassen. Vier Bilder werden angezeigt, höchstens die nächste Viereransicht wird vorgeladen. Ab App 0.8.0 öffnet die Originalvorschau nach 250 ms Halten und schließt beim Loslassen. „Zurück“ und „Weiter“ erscheinen im Benennen-Modus nur bei mehr als vier Fotos. Originale angezeigter Portraits werden bei aktiver WLAN-Verbindung nacheinander in den vorhandenen Cache vorgeladen, mit derselben begrenzten Dekodiergröße wie die Vorschau. Beim Verlassen der Ansicht, Wechsel auf Mobilfunk oder im App-Hintergrund wird das Vorladen abgebrochen. Der Bildcache ist auf 16 MiB begrenzt und hat keinen Disk-Cache.
+Ein Durchgang lädt Metadaten in Seiten von maximal 20 Gruppen. Jede Gruppe wird vor Anzeige erneut geprüft. Benannte, leere oder gelöschte Gruppen werden ausgelassen. Vier Bilder werden angezeigt, höchstens die nächste Viereransicht wird vorgeladen. Ab App 0.8.0 öffnet die Originalvorschau nach 250 ms Halten und schließt beim Loslassen. „Zurück“ und „Weiter“ erscheinen im Benennen-Modus nur bei mehr als vier Fotos. Große Fotovorschauen angezeigter Portraits werden bei aktiver WLAN-Verbindung nacheinander in den vorhandenen Cache vorgeladen, mit derselben begrenzten Dekodiergröße wie die Vorschau. Beim Verlassen der Ansicht, Wechsel auf Mobilfunk oder im App-Hintergrund wird das Vorladen abgebrochen. Der Bildcache ist auf 16 MiB begrenzt und hat keinen Disk-Cache.
 
-Ab App **0.6.1** und BearStack **0.43.1** wird das dekodierte Originalfoto bis zu **drei Minuten ab erfolgreichem Laden** über unterschiedliche Gesichter desselben Fotos hinweg wiederverwendet, auch zwischen Zuordnungsmodus und Personenbereich. Weitere Aufrufe verlängern die Frist nicht. Die individuelle Bounding Box und der Zoom werden separat gezeichnet. Der gemeinsame LRU-Bildcache bleibt auf **16 MiB** begrenzt; bei Speicherdruck können Bilder früher verdrängt werden. Ein Verbindungswechsel leert ihn. Es gibt keinen Disk-Cache. WLAN-Vorladen ab App 0.8.0 nutzt dieselben Cache-Schlüssel und dieselbe feste Frist. Eine bereits geöffnete Vorschau bleibt nach Fristablauf sichtbar; erneutes Öffnen lädt wieder vom Server. Auf älteren Servern gilt die Frist ebenfalls, die Wiederverwendung bleibt dort auf dieselbe Gesichts-URL beschränkt.
+Ab App **0.6.1** und BearStack **0.43.1** wird das dekodierte Foto (aktuell die große Vorschau) bis zu **drei Minuten ab erfolgreichem Laden** über unterschiedliche Gesichter desselben Fotos hinweg wiederverwendet, auch zwischen Zuordnungsmodus und Personenbereich. Weitere Aufrufe verlängern die Frist nicht. Die individuelle Bounding Box und der Zoom werden separat gezeichnet. Der gemeinsame LRU-Bildcache bleibt auf **16 MiB** begrenzt; bei Speicherdruck können Bilder früher verdrängt werden. Ein Verbindungswechsel leert ihn. Es gibt keinen Disk-Cache. WLAN-Vorladen ab App 0.8.0 nutzt dieselben Cache-Schlüssel und dieselbe feste Frist. Eine bereits geöffnete Vorschau bleibt nach Fristablauf sichtbar; erneutes Öffnen lädt wieder vom Server. Auf älteren Servern gilt die Frist ebenfalls, die Wiederverwendung bleibt dort auf dieselbe Gesichts-URL beschränkt.
 
 Der Server liefert dazu je Gesicht die optionale, undurchsichtige `original_key`-Kennung aus Originalpfad und indexierten Dateimetadaten. Unterschiedliche Gesichter und Personen desselben Fotos teilen diese Kennung; erkannte Dateiänderungen erzeugen eine neue Kennung. Anzeigeformatierte Pfade werden nicht als Cache-Schlüssel verwendet. Cachetreffer benötigen weder einen erneuten Bildabruf noch eine erneute Dekodierung; ein neuer Abruf nach Ablauf durchläuft wieder die serverseitigen Zugriffsprüfungen. HTTP-Antworten bleiben `private, no-store`; wiederverwendet wird ausschließlich das dekodierte Bild im App-Arbeitsspeicher.
 

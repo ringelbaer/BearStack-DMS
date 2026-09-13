@@ -15,15 +15,26 @@ import (
 
 	"bearstack/internal/facerec"
 	"bearstack/internal/photos"
+	_ "golang.org/x/image/webp"
 )
 
 func TestLabelingOriginalPhoto(t *testing.T) {
-	for _, scenario := range []string{"original", "ignored", "protected", "deleted"} {
+	for _, scenario := range []string{"original", "ignored", "protected", "deleted", "preview", "ignored-preview", "protected-preview", "deleted-preview"} {
 		t.Run(scenario, func(t *testing.T) {
 			s := faceTestServer(t)
 			ctx := context.Background()
+			preview := strings.Contains(scenario, "preview")
+			width := 96
+			if preview {
+				width = 2400
+			}
+			settings := defaultPhotoSettings()
+			settings.LargePreviewSize = 1920
+			if err := s.savePhotoSettings(ctx, settings); err != nil {
+				t.Fatal(err)
+			}
 			var original bytes.Buffer
-			if err := jpeg.Encode(&original, image.NewRGBA(image.Rect(0, 0, 96, 48)), nil); err != nil {
+			if err := jpeg.Encode(&original, image.NewRGBA(image.Rect(0, 0, width, width/2)), nil); err != nil {
 				t.Fatal(err)
 			}
 			file := filepath.Join(s.photos.Root(), "one.jpg")
@@ -55,7 +66,10 @@ func TestLabelingOriginalPhoto(t *testing.T) {
 			}
 			face := candidates.People[0].FaceID
 			path := fmt.Sprintf("/api/photos/labeling/v1/faces/%d/original", face)
-			switch scenario {
+			if preview {
+				path += "?size=large_preview_size"
+			}
+			switch strings.TrimSuffix(scenario, "-preview") {
 			case "ignored":
 				err = s.photos.EditFaces(ctx, []int64{face}, 0, true, "")
 			case "protected":
@@ -67,16 +81,28 @@ func TestLabelingOriginalPhoto(t *testing.T) {
 				t.Fatal(err)
 			}
 			w := labelRequest(s, "GET", path, "manager", "")
-			if scenario != "original" {
+			if scenario != "original" && scenario != "preview" {
 				if w.Code != 403 && w.Code != 404 {
 					t.Fatalf("excluded source: %d %s", w.Code, w.Body.String())
 				}
 				return
 			}
-			if w.Code != 200 || !bytes.Equal(w.Body.Bytes(), original.Bytes()) {
+			expected := original.Bytes()
+			contentType := "image/jpeg"
+			if preview {
+				config, _, err := image.DecodeConfig(bytes.NewReader(w.Body.Bytes()))
+				if w.Code != 200 || err != nil || config.Width != 1920 || config.Height != 960 {
+					t.Fatalf("large preview: status=%d config=%+v err=%v", w.Code, config, err)
+				}
+				expected = append([]byte(nil), w.Body.Bytes()...)
+				contentType = "image/webp"
+				// A warm request reuses the generated preview, not the original.
+				w = labelRequest(s, "GET", path, "manager", "")
+			}
+			if w.Code != 200 || !bytes.Equal(w.Body.Bytes(), expected) {
 				t.Fatalf("expected unchanged full original: %d", w.Code)
 			}
-			if w.Header().Get("Content-Type") != "image/jpeg" || !strings.Contains(w.Header().Get("Cache-Control"), "no-store") {
+			if w.Header().Get("Content-Type") != contentType || !strings.Contains(w.Header().Get("Cache-Control"), "no-store") {
 				t.Fatalf("original headers: %v", w.Header())
 			}
 			for _, test := range []struct {
@@ -92,8 +118,23 @@ func TestLabelingOriginalPhoto(t *testing.T) {
 			r.Header.Set("Range", "bytes=0-15")
 			w = httptest.NewRecorder()
 			s.Handler().ServeHTTP(w, r)
-			if w.Code != 206 || !bytes.Equal(w.Body.Bytes(), original.Bytes()[:16]) {
+			if w.Code != 206 || !bytes.Equal(w.Body.Bytes(), expected[:16]) {
 				t.Fatalf("original range: %d", w.Code)
+			}
+			if preview {
+				settings.LargePreviewSize = 2560
+				if err := s.savePhotoSettings(ctx, settings); err != nil {
+					t.Fatal(err)
+				}
+				w = labelRequest(s, "GET", path, "manager", "")
+				config, _, err := image.DecodeConfig(bytes.NewReader(w.Body.Bytes()))
+				if w.Code != 200 || err != nil || config.Width != 2400 || config.Height != 1200 {
+					t.Fatalf("updated size without upscaling: status=%d config=%+v err=%v", w.Code, config, err)
+				}
+				invalid := strings.Replace(path, "size=large_preview_size", "size=invalid", 1)
+				if w := labelRequest(s, "GET", invalid, "manager", ""); w.Code != 400 {
+					t.Fatalf("invalid size: %d", w.Code)
+				}
 			}
 		})
 	}

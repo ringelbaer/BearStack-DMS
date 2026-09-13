@@ -50,10 +50,13 @@ fun PeopleApp(vm: PeopleViewModel) {
     BackHandler(state.connected && !state.showGallery && vm.photos!=null) { vm.openGallery() }
     BearStackTheme {
         Surface(Modifier.fillMaxSize()) {
-            if (!state.connected) ConnectionScreen(state,vm)
-            else if(state.showGallery && vm.photos!=null && vm.images!=null)
-                de.bearstack.people.photos.PhotosScreen(vm.photos!!,vm.images!!,state.canManagePeople,vm::openPeople,vm::switchConnection)
-            else if(state.manualMerge && vm.manualMerges!=null) ManualMergeScreen(state,vm,vm.manualMerges!!)
+            if (state.showDevicePhotos || (!state.connected && state.savedConnection && !state.restoring) ||
+                (state.connected && state.showGallery && vm.photos!=null && vm.images!=null))
+                de.bearstack.people.photos.PhotosScreen(vm.photos,vm.images,state.canManagePeople,vm::openPeople,vm::switchConnection,
+                    startOnDevice=state.showDevicePhotos, connecting=state.restoring,
+                    connectionError=state.error, onRetry=if(state.savedConnection && !state.connected) vm::retryConnection else null)
+            else if (state.restoring) StartupScreen(vm::openDevicePhotos)
+            else if (!state.connected) ConnectionScreen(state,vm)
             else if(state.mergeReview) MergeReviewScreen(state,vm)
             else if(state.directory) PeopleDirectoryScreen(state,vm)
             else LabelingScreen(state,vm)
@@ -89,6 +92,7 @@ private fun ConnectionScreen(state: PeopleState, vm: PeopleViewModel) {
             visualTransformation=PasswordVisualTransformation(),keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password))
         Button(onClick={vm.connect(url,username,password)},enabled=!state.busy && url.isNotBlank() && username.isNotBlank() && password.isNotEmpty(),
             modifier=Modifier.fillMaxWidth()) { Text(text(R.string.connection_connect)) }
+        TextButton(onClick=vm::openDevicePhotos,modifier=Modifier.fillMaxWidth()) { Text(text(R.string.connection_local_photos)) }
         if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         state.error?.let { Text(text(it),color=MaterialTheme.colorScheme.error,modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite }) }
     }
@@ -114,9 +118,9 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
             TextButton(onClick={menu=true}) { Text(text(R.string.common_menu)) }
             DropdownMenu(menu,{menu=false}) {
                 if(vm.photos!=null) DropdownMenuItem(text={Text(stringResource(R.string.photos_title))},onClick={vm.openGallery();menu=false},enabled=enabled)
+                DropdownMenuItem(text={Text(text(R.string.connection_local_photos))},onClick={vm.openDevicePhotos();menu=false})
                 DropdownMenuItem(text={Text(text(R.string.people_directory))},onClick={vm.openDirectory();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(text(R.string.people_similar_groups))},onClick={vm.openMergeReview();menu=false},enabled=enabled)
-                DropdownMenuItem(text={Text(text(R.string.people_manual_merge))},onClick={vm.openManualMerge();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(if(statistics) text(R.string.people_return_labeling) else text(R.string.people_statistics))},onClick={statistics=!statistics;menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(text(R.string.people_review_skipped,state.skipped))},onClick={vm.newPass(true);menu=false},enabled=enabled && state.person==null && state.skipped>0)
                 DropdownMenuItem(text={Text(text(R.string.photos_connection))},onClick={vm.switchConnection();menu=false},enabled=!state.busy)
@@ -214,8 +218,7 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
 fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Long, Boolean) -> String?,
     onDetach: (Long) -> Unit, onHold: (Long?) -> Unit, onZoom: (Long) -> Unit,
     onZoomDrag: (Float) -> Unit = {}, managing: Boolean = false, onFavorite: (Long) -> Unit = {},
-    onPrefetch: suspend (List<Long>) -> Unit = {}, allowDetach: Boolean = true, showPaths: Boolean = true,
-    onTap: ((Long) -> Unit)? = null) {
+    onPrefetch: suspend (List<Long>) -> Unit = {}, allowDetach: Boolean = true, showPaths: Boolean = true) {
     val text=uiStrings()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val prefetch by rememberUpdatedState(onPrefetch)
@@ -233,7 +236,6 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
         val active by rememberUpdatedState(enabled)
         val hold by rememberUpdatedState(onHold)
         val zoomDrag by rememberUpdatedState(onZoomDrag)
-        val tap by rememberUpdatedState(onTap)
         Column(Modifier.fillMaxWidth().testTag("face-grid"),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             person.faces.chunked(2).forEach { row ->
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -243,20 +245,12 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
                                 Box(Modifier.fillMaxWidth().testTag("face-$face").aspectRatio(1f).clip(RoundedCornerShape(16.dp))
                                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                                     .semantics { contentDescription=text(R.string.people_face_number,person.faces.indexOf(face)+person.offset+1)
-                                        if(onTap!=null) onClick(text(R.string.people_manual_select)) {if(active) {tap?.invoke(face);true} else false}
                                         customActions=listOf(CustomAccessibilityAction(text(R.string.people_show_original)) { if(active) {onZoom(face);true} else false }) }
                                     .pointerInput(face) {
                                         awaitEachGesture {
                                             val down=awaitFirstDown()
                                             if(!active) return@awaitEachGesture
-                                            val pressed=awaitLongPressOrCancellation(down.id)
-                                            if(pressed==null) {
-                                                val up=currentEvent.changes.singleOrNull {it.id==down.id}
-                                                if(active && up!=null && !up.pressed && !up.isConsumed && tap!=null) {
-                                                    up.consume();tap?.invoke(face)
-                                                }
-                                                return@awaitEachGesture
-                                            }
+                                            val pressed=awaitLongPressOrCancellation(down.id) ?: return@awaitEachGesture
                                             if(!active) return@awaitEachGesture
                                             holding=true
                                             try {

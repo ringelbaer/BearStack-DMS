@@ -67,6 +67,12 @@ class LoginTest {
                         assertEquals(username!="legacy",vm.state.value.showGallery)
                         assertEquals(username!="reader",vm.state.value.canManagePeople)
                         assertEquals(username,profile.read()!!.username)
+                        if(username=="legacy") {
+                            withContext(Dispatchers.Main) {vm.openDevicePhotos()}
+                            compose.onNodeWithText(app.getString(R.string.photos_people)).performClick()
+                            assertFalse(vm.state.value.showDevicePhotos)
+                            assertTrue(vm.state.value.connected)
+                        }
                         withContext(Dispatchers.Main) {vm.switchConnection()};idle()
                         assertNull("switch account",vm.state.value.error)
                         assertFalse(vm.state.value.connected);assertNull(profile.read())

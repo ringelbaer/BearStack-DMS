@@ -15,7 +15,7 @@ import org.json.JSONObject
 
 data class Session(val instance: String, val dataset: String, val account: String, val upper: Long,
     val namedPeople: Boolean = false, val namedSearch: Boolean = false, val mergeSuggestions: Boolean = false, val mergeNaming: Boolean = false,
-    val manualMerge: Boolean = false, val mergeSideActions: Boolean = false) {
+    val mergeSideActions: Boolean = false) {
     val scope: String get() = JSONObject().put("instance", instance).put("dataset", dataset).put("account", account).toString()
 }
 data class Person(val id: Long, val name: String, val revision: Long, val count: Long, val faceId: Long,
@@ -48,8 +48,6 @@ interface LabelingService {
     suspend fun personFaces(id: Long, offset: Int, after: Long): Person = person(id,offset)
     suspend fun person(id: Long, offset: Int = 0): Person
     suspend fun suggestions(q: String, exact: Boolean = false): List<Person>
-    suspend fun mergeGroups(after: Long, upper: Long, includeNamed: Boolean): Candidates =
-        throw ApiFailure(404,"not_found",UiText(R.string.people_manual_merge_version))
     fun faceMatches(face: Long): Flow<List<FaceMatch>> = flow { throw ApiFailure(404,"not_found",UiText(R.string.people_face_search_unavailable)) }
     suspend fun nextMergeSuggestion(excluded: Pair<Long,Long>? = null): MergeSuggestion? = throw ApiFailure(404,"not_found",UiText(R.string.error_merge_version))
     suspend fun action(id: Long, body: String): Receipt
@@ -63,7 +61,8 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
     private val base = Connections.address(address).resolve("api/photos/labeling/v1/")!!
     fun image(face: Long, large: Boolean = false): String = base.resolve("faces/$face/thumbnail")!!.newBuilder()
         .addQueryParameter("size", if (large) "640" else "160").build().toString()
-    fun original(face: Long): String = base.resolve("faces/$face/original")!!.toString()
+    fun original(face: Long): String = base.resolve("faces/$face/original")!!.newBuilder()
+        .addQueryParameter("size", "large_preview_size").build().toString()
     fun gallery(name: String): String = server.resolve("photos")!!.newBuilder()
         // The gallery tokenizer concatenates quoted segments; backslashes are literal.
         .addQueryParameter("q", "person:\"${name.replace("\"", "\"'\"'\"")}\"").build().toString()
@@ -84,24 +83,11 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
     override suspend fun session(): Session {
         val o = json("session")
         requireMessage(o.getInt("protocol") == 1 && o.getBoolean("can_manage"),R.string.error_people_protocol)
-        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"),o.optBoolean("merge_naming"),o.optBoolean("manual_merge"),o.optBoolean("merge_side_actions"))
+        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"),o.optBoolean("merge_naming"),o.optBoolean("merge_side_actions"))
     }
     override suspend fun candidates(after: Long, upper: Long): Candidates {
         val o = json("candidates", mapOf("after" to "$after", "upper" to "$upper"))
         return Candidates(people(o),o.getLong("next"),o.getBoolean("has_next"))
-    }
-    override suspend fun mergeGroups(after: Long, upper: Long, includeNamed: Boolean): Candidates {
-        val o=json("groups",mapOf("after" to "$after","upper" to "$upper","include_named" to if(includeNamed) "1" else "0"))
-        val page=Candidates(people(o),o.getLong("next"),o.getBoolean("has_next"))
-        requireMessage(page.people.size<=20 && (!page.hasNext || page.people.size==20),R.string.error_response_invalid)
-        var previous=after
-        page.people.forEach {p ->
-            requireMessage(p.id>previous && p.id<=upper && p.revision>0 && p.count>0 && p.faceId>0 &&
-                (includeNamed || p.name.isEmpty()) && p.faces.size<=1 && p.faces.all {it==p.faceId},R.string.error_response_invalid)
-            previous=p.id
-        }
-        requireMessage(page.next==previous,R.string.error_response_invalid)
-        return page
     }
     override suspend fun namedPeople(after: Long, upper: Long): Candidates {
         val o = json("people", mapOf("after" to "$after", "upper" to "$upper"))

@@ -203,6 +203,19 @@ func (s *Server) handleLabelOriginal(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if mode := r.URL.Query().Get("size"); mode != "" {
+		if mode != "large_preview_size" {
+			s.labelError(w, r, photos.ErrLabelInvalid)
+			return
+		}
+		settings, err := s.photoSettings(r.Context())
+		if err != nil {
+			s.labelError(w, r, err)
+			return
+		}
+		s.servePhotoThumbnail(w, r, face.Path, settings.LargePreviewSize, photoMediaCacheNoStore)
+		return
+	}
 	s.servePhotoMedia(w, r, face.Path, photoMediaCacheNoStore)
 }
 

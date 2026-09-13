@@ -13,29 +13,6 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ViewModelTest {
-    @Test fun manualMergeRequiresNewSelectionAfterConflictAndResolvesLostResponse()=runBlocking {
-        val api=FakeService()
-        model(api) {vm ->
-            withContext(Dispatchers.Main) {vm.openManualMerge()};idle(vm)
-            until {vm.manualMerges?.state?.value?.pages?.isNotEmpty()==true}
-            val controller=vm.manualMerges!!
-            withContext(Dispatchers.Main) {controller.state.value.pages[0]!!.forEach(controller::select)}
-            api.people[2]=api.people.getValue(2).copy(revision=2)
-            withContext(Dispatchers.Main) {vm.combineManualGroups()};idle(vm)
-            until {!controller.state.value.loading}
-            assertEquals(0,api.commits);assertTrue(controller.state.value.selected.isEmpty())
-            withContext(Dispatchers.Main) {controller.state.value.pages[0]!!.forEach(controller::select)}
-            api.loseResponse=true
-            withContext(Dispatchers.Main) {vm.combineManualGroups()};idle(vm)
-            assertTrue(vm.state.value.unresolved);assertEquals(1,api.commits)
-            withContext(Dispatchers.Main) {vm.retry()};idle(vm)
-            until {!controller.state.value.loading}
-            assertFalse(vm.state.value.unresolved);assertEquals(1,api.commits)
-            assertTrue(controller.state.value.selected.isEmpty())
-            withContext(Dispatchers.Main) {vm.closeManualMerge()};idle(vm)
-            assertFalse(vm.state.value.manualMerge);assertEquals(1L,vm.state.value.person!!.id)
-        }
-    }
     @Test fun delayedDirectorySearchDoesNotOverwriteNewQueryAndStreamingRejectsChangedRevision() = runBlocking {
         val api=FakeService().apply {
             upper=50

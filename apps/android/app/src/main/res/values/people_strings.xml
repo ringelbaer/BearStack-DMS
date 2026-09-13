@@ -112,19 +112,6 @@
     <string name="people_face_search_empty">Keine ähnlichen benannten Personen gefunden.</string>
     <string name="people_face_search_unavailable">Gesichtssuche nicht verfügbar. Bitte den Server aktualisieren oder die Person neu öffnen.</string>
     <string name="people_merge_similarity">Ähnlichkeit: %1$.2f</string>
-    <string name="people_manual_merge">Gruppen manuell kombinieren</string>
-    <string name="people_manual_merge_version">Manuelles Kombinieren benötigt eine neuere Serverversion. Bitte den Server aktualisieren.</string>
-    <string name="people_manual_select">Gruppe auswählen oder abwählen</string>
-    <string name="people_manual_include_named">Auch benannte Gruppen anzeigen</string>
-    <string name="people_manual_selected">%1$d Gruppen ausgewählt</string>
-    <string name="people_manual_clear">Auswahl leeren</string>
-    <string name="people_manual_merge_limit">Höchstens 60 Gruppen gleichzeitig auswählen.</string>
-    <string name="people_manual_stays_unnamed">Die kombinierte Gruppe bleibt unbenannt.</string>
-    <string name="people_manual_keeps_name">Name bleibt: %1$s</string>
-    <string name="people_manual_combine">Kombinieren</string>
-    <string name="people_manual_combine_name">Kombinieren und benennen</string>
-    <string name="people_manual_help">Kurz tippen zum Auswählen, gedrückt halten zum Vergrößern. Weitere Gruppen laden beim Scrollen. Ein Filterwechsel leert die Auswahl.</string>
-    <string name="people_manual_empty">Keine passenden Gruppen vorhanden.</string>
     <string name="people_merge_ignore">Ignorieren</string>
     <string name="people_merge_ignore_first">Erste Gruppe ignorieren</string>
     <string name="people_merge_ignore_second">Zweite Gruppe ignorieren</string>
@@ -136,4 +123,9 @@
     <string name="people_merge_side_assigned">Zugeordnet</string>
     <string name="people_merge_side_named">Benannt: %1$s</string>
     <string name="people_merge_side_help">Nur unbenannte Gruppen haben eigene Buttons zum Ignorieren und Benennen/Zuordnen. Nach einer Einzelaktion bleibt die andere Seite bearbeitbar. Weiter öffnet das nächste Paar, ohne eine Trennung zu speichern.</string>
+    <string name="people_merge_matches_title">Benennungsvorschläge für beide Gruppen</string>
+    <string name="people_merge_matches_loading">Abgleich läuft …</string>
+    <string name="people_merge_matches_retry">Erneut abgleichen</string>
+    <string name="people_merge_match_assign">Beide Gruppen der Person %1$s zuordnen</string>
+    <string name="people_merge_matches_help">Sind beide Gruppen unbenannt, startet ein gemeinsamer Gesichtsabgleich anhand des Vergleichsgesichts der ersten Gruppe. Tippe auf einen Treffer, um beide Gruppen dieser Person zuzuordnen. Treffer sind bereits während des Abgleichs wählbar. Erneut abgleichen aktualisiert die gemeinsame Liste.</string>
 </resources>

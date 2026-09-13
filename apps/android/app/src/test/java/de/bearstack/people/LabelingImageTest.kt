@@ -49,9 +49,9 @@ class LabelingImageTest {
         val legacy=api.person(JSONObject("""{"id":1,"name":"","revision":1,"count":1,"face_id":10,"faces":[{"id":10}]}"""))
         assertEquals("",legacy.facePaths[10])
     }
-    @Test fun originalUsesFaceSourceEndpointAndPreservesInstancePrefix() {
+    @Test fun wholePhotoPreviewUsesConfiguredLargeSizeAndPreservesInstancePrefix() {
         val api = LabelingApi(OkHttpClient(), "https://example.test/bearstack/")
-        assertEquals("https://example.test/bearstack/api/photos/labeling/v1/faces/59/original", api.original(59))
+        assertEquals("https://example.test/bearstack/api/photos/labeling/v1/faces/59/original?size=large_preview_size", api.original(59))
         assertEquals("https://example.test/bearstack/api/photos/labeling/v1/faces/59/thumbnail?size=160", api.image(59))
     }
 }

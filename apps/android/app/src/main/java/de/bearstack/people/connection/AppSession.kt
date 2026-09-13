@@ -28,9 +28,14 @@ class AppSession(private val context: Context, private val scope: CoroutineScope
         }
     }
 
-    suspend fun restore(): Boolean {
+    suspend fun restore(onProfile: () -> Unit = {}): Boolean {
         val profile = store.read() ?: return false
-        open(profile, false)
+        onProfile()
+        // Bound the complete negotiation, including both session endpoints. Slow
+        // or silent servers must not hold the local gallery behind sign-in.
+        val restored = withTimeoutOrNull(8_000) { open(profile, false); true } ?: false
+        if (!restored) throw ConnectionAttemptException(ConnectionStage.SIGN_IN,
+            java.net.SocketTimeoutException("Session restoration timed out"))
         return true
     }
 

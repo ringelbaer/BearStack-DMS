@@ -7,7 +7,6 @@ import de.bearstack.people.data.local.*
 import de.bearstack.people.data.remote.*
 import java.util.UUID
 import org.json.JSONObject
-import org.json.JSONArray
 
 internal fun String.ids(): List<Long> = split(',').mapNotNull { it.toLongOrNull() }
 internal fun List<Long>.stored(): String = joinToString(",")
@@ -17,6 +16,7 @@ internal fun String.positions(): List<GroupPosition> = if (isEmpty()) emptyList(
 }
 internal fun List<GroupPosition>.storedPositions(): String = joinToString(",") { "${it.id}:${it.page}" }
 internal fun QueueState.afterReceipt(r: Receipt, merged: Set<Long> = emptySet()): QueueState {
+    // Compatibility only: resolve intents saved before manual combining was removed.
     if(r.action=="merge_groups" || r.action=="name_groups") return copy(
         current=if(current in merged) 0 else current,page=if(current in merged) 0 else page,
         remaining=remaining.ids().filterNot {it in merged}.stored(),
@@ -115,16 +115,6 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
             if (e.status == 400 || e.status == 404 || e.status == 409) dao.clearPending(scope)
             throw e
         }
-    }
-    suspend fun prepareGroupMerge(groups: List<Person>, name: String? = null, allowDuplicate: Boolean = false) {
-        checkMessage(pending()==null,R.string.error_pending_first)
-        requireMessage(groups.size in 2..60 && groups.map {it.id}.distinct().size==groups.size,R.string.error_response_invalid)
-        val operation=UUID.randomUUID().toString()
-        val body=JSONObject().put("operation_id",operation).put("dataset",session.dataset)
-            .put("revision",groups.first().revision).put("action",if(name==null) "merge_groups" else "name_groups")
-            .put("name",name.orEmpty()).put("allow_duplicate",allowDuplicate)
-            .put("groups",JSONArray().apply {groups.forEach {put(JSONObject().put("id",it.id).put("revision",it.revision))}}).toString()
-        dao.pending(Pending(scope,operation,groups.first().id,body))
     }
     suspend fun skip(person: Person) = db.withTransaction {
         check(pending() == null)

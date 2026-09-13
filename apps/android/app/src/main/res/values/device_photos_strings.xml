@@ -10,4 +10,8 @@
     <string name="photos_device_grant">Fotozugriff erlauben / Auswahl ändern</string>
     <string name="photos_device_android_settings">Android-App-Einstellungen</string>
     <string name="photos_device_error">Lokale Fotos konnten nicht geladen werden. Bitte erneut versuchen.</string>
+    <string name="connection_loading">Deine Fotos werden vorbereitet …</string>
+    <string name="connection_local_help">Fotos auf diesem Gerät sind auch ohne Serververbindung verfügbar.</string>
+    <string name="connection_local_photos">Lokale Fotos öffnen</string>
+    <string name="connection_local_mode">Lokale Fotos · ohne Serververbindung</string>
 </resources>

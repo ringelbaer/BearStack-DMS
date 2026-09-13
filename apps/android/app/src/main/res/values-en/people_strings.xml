@@ -112,19 +112,6 @@
     <string name="people_face_search_empty">No similar named people found.</string>
     <string name="people_face_search_unavailable">Face search unavailable. Update the server or reopen the person.</string>
     <string name="people_merge_similarity">Similarity: %1$.2f</string>
-    <string name="people_manual_merge">Combine groups manually</string>
-    <string name="people_manual_merge_version">Manual combining requires a newer server version. Please update the server.</string>
-    <string name="people_manual_select">Select or deselect group</string>
-    <string name="people_manual_include_named">Include named groups</string>
-    <string name="people_manual_selected">%1$d groups selected</string>
-    <string name="people_manual_clear">Clear selection</string>
-    <string name="people_manual_merge_limit">Select up to 60 groups at a time.</string>
-    <string name="people_manual_stays_unnamed">The combined group remains unnamed.</string>
-    <string name="people_manual_keeps_name">Name retained: %1$s</string>
-    <string name="people_manual_combine">Combine</string>
-    <string name="people_manual_combine_name">Combine and name</string>
-    <string name="people_manual_help">Tap to select, hold to enlarge. More groups load as you scroll. Changing the filter clears the selection.</string>
-    <string name="people_manual_empty">No matching groups available.</string>
     <string name="people_merge_ignore">Ignore</string>
     <string name="people_merge_ignore_first">Ignore first group</string>
     <string name="people_merge_ignore_second">Ignore second group</string>
@@ -136,4 +123,9 @@
     <string name="people_merge_side_assigned">Assigned</string>
     <string name="people_merge_side_named">Named: %1$s</string>
     <string name="people_merge_side_help">Only unnamed groups have their own ignore and name/assign buttons. After an individual action, you can still edit the other side. Next opens the next pair without recording a separation.</string>
+    <string name="people_merge_matches_title">Name suggestions for both groups</string>
+    <string name="people_merge_matches_loading">Matching …</string>
+    <string name="people_merge_matches_retry">Match again</string>
+    <string name="people_merge_match_assign">Assign both groups to %1$s</string>
+    <string name="people_merge_matches_help">When both groups are unnamed, a shared face search starts using the first group’s comparison face. Tap a match to assign both groups to that person. Matches can be selected while the search is running. Match again refreshes the shared list.</string>
 </resources>

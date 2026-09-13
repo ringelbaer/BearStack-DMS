@@ -34,7 +34,7 @@ data class PeopleState(
     val mergeSideActions: Boolean = false, val mergeNamingSide: Long? = null, val mergePendingSide: Long? = null,
     val mergeSideResults: Map<Long,UiText> = emptyMap(),
     val showGallery: Boolean = false, val canManagePeople: Boolean = false,
-    val manualMerge: Boolean = false,
+    val restoring: Boolean = false, val savedConnection: Boolean = false, val showDevicePhotos: Boolean = false,
 )
 class PeopleViewModel private constructor(application: Application, private val database: Lazy<LabelingDatabase>,
     initialRepository: PeopleRepository?) : AndroidViewModel(application) {
@@ -47,11 +47,9 @@ class PeopleViewModel private constructor(application: Application, private val 
         this(application, lazyOf(database), PeopleRepository(database, service, session))
     private val originalPreloader = WifiOriginalPreloader(application, viewModelScope)
     private val session = AppSession(application, viewModelScope) { detachPeople() }
-    private val mutable = MutableStateFlow(PeopleState())
+    private val mutable = MutableStateFlow(PeopleState(restoring=initialRepository == null))
     val state = mutable.asStateFlow()
     private var repository: PeopleRepository? = null
-    var manualMerges: ManualMergeController? = null
-        private set
     private val api get() = session.active?.people
     val photos get() = session.active?.photos
     val images: ImageLoader? get() = session.active?.images
@@ -65,9 +63,11 @@ class PeopleViewModel private constructor(application: Application, private val 
     private var statsJob: Job? = null
     private val preloads = mutableListOf<coil.request.Disposable>()
     private var excludedMergePair: Pair<Long,Long>? = null
+    internal var mergeFaceSearch: MergeFaceSearch? = null
+        private set
 
     init { task {
-        if (initialRepository == null) { if (session.restore()) attachPeople() }
+        if (initialRepository == null) restoreConnection()
         else {
             repository=initialRepository
             update { it.copy(connected=true) }
@@ -86,9 +86,7 @@ class PeopleViewModel private constructor(application: Application, private val 
             catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 if (e is ApiFailure && (e.status == 409 || (e.status == 404 && state.value.mergePendingSide!=null))) {
-                    if(state.value.manualMerge) {
-                        if(e.code=="name_exists") manualMerges?.duplicateName() else manualMerges?.refresh()
-                    } else if (e.code == "name_exists") {
+                    if (e.code == "name_exists") {
                         runCatching { repository?.api?.suggestions(state.value.name, true) }.getOrNull()?.let { names ->
                             update { it.copy(naming=true,duplicates=names.filterNot { p -> it.directory && !it.mergeReview && p.id==it.selectedPerson?.id }) }
                         }
@@ -106,7 +104,7 @@ class PeopleViewModel private constructor(application: Application, private val 
                 }
                 val pending = runCatching { repository?.pending() != null }.getOrDefault(false)
                 update { it.copy(error=message(e,pending), unresolved=pending) }
-            } finally { update { it.copy(busy=false) } }
+            } finally { update { it.copy(busy=false,restoring=false) } }
         }
     }
     private fun message(e: Exception, pending: Boolean = false): UiText {
@@ -115,6 +113,15 @@ class PeopleViewModel private constructor(application: Application, private val 
         }
         return failureText(e,pending)
     }
+    private suspend fun restoreConnection() {
+        if (session.restore { update { it.copy(savedConnection=true) } }) attachPeople()
+    }
+    fun retryConnection() { if (!state.value.connected && state.value.savedConnection) task {
+        update { it.copy(restoring=true,showDevicePhotos=true) }
+        restoreConnection()
+    } }
+    // Device photos never depend on a server request or the people writer lock.
+    fun openDevicePhotos() { update { it.copy(showDevicePhotos=true) } }
     fun connect(url: String, username: String, password: String) = task {
         if (session.connect(url, username, password)) attachPeople()
         update { it.copy(certificate=session.certificate) }
@@ -127,7 +134,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     private suspend fun attachPeople() {
         val active = session.active ?: return
         repository = active.peopleSession?.let { PeopleRepository(db, active.people, it) }
-        update { it.copy(connected=true,certificate=null,showGallery=photos!=null,canManagePeople=repository!=null) }
+        update { it.copy(connected=true,restoring=false,savedConnection=true,certificate=null,showGallery=photos!=null,canManagePeople=repository!=null) }
         if (repository == null) return
         collectStatistics()
         val pending = repository!!.pending()
@@ -181,12 +188,10 @@ class PeopleViewModel private constructor(application: Application, private val 
     fun original(face: Long) = api?.original(face)
     fun originalKey(face: Long): String? {
         val current=state.value
-        val person=if(current.manualMerge) manualMerges?.state?.value?.let {s ->
-            (s.selected+s.pages.values.flatten()).firstOrNull {it.faceId==face}
-        } else if(current.mergeReview) current.mergeSuggestion?.let {
+        val person=if(current.mergeReview) current.mergeSuggestion?.let {
             if(face in it.source.faces) it.source else it.target
         } else if(current.directory) current.selectedPerson else current.person
-        return person?.originalKeys?.get(face)?.let { "${repository?.scope}:$it" }
+        return person?.originalKeys?.get(face)?.let { "${repository?.scope}:large-preview:$it" }
     }
     suspend fun prefetchOriginals(faces: List<Long>) {
         val loader = images ?: return
@@ -200,36 +205,6 @@ class PeopleViewModel private constructor(application: Application, private val 
         }
     }
     fun gallery(name: String) = api?.gallery(name)
-    fun openManualMerge() { if(editable() && !state.value.naming) task {
-        val repo=repository ?: return@task
-        search?.cancel();cancelFaceSearch();searchPreload?.cancel()
-        ignoreJobs.values.forEach {it.cancel()};ignoreJobs.clear()
-        repo.restoreIgnores()
-        manualMerges?.cancel()
-        manualMerges=ManualMergeController(viewModelScope,repo.api,repo.scope)
-        update {it.copy(manualMerge=true,undoIgnores=emptyList())}
-        manualMerges!!.reset()
-    } }
-    fun closeManualMerge() { if(editable() && manualMerges?.state?.value?.naming!=true) task {
-        manualMerges?.cancel();manualMerges=null
-        update {it.copy(manualMerge=false)}
-        loadNext()
-    } }
-    fun combineManualGroups(named: Boolean = false) {
-        val controller=manualMerges ?: return
-        val selection=controller.state.value
-        if(!editable() || !state.value.manualMerge || selection.selected.size<2 ||
-            (!named && selection.naming) || (named && (!selection.naming || selection.name.isBlank()))) return
-        controller.cancel()
-        task {
-            val repo=repository ?: return@task
-            repo.prepareGroupMerge(selection.selected,if(named) selection.name.trim() else null,named && selection.duplicateName)
-            update {it.copy(unresolved=true)}
-            repo.resolve()
-            update {it.copy(unresolved=false)}
-            controller.refresh()
-        }
-    }
     private fun editable() = state.value.connected && !state.value.busy && !state.value.unresolved
     fun openMergeReview() { if(editable() && !state.value.naming) task {
         search?.cancel(); searchPreload?.cancel()
@@ -239,12 +214,16 @@ class PeopleViewModel private constructor(application: Application, private val 
         loadMergeSuggestion()
     } }
     private suspend fun loadMergeSuggestion() {
+        mergeFaceSearch?.close(); mergeFaceSearch=null
         update { it.copy(mergeSuggestion=null,naming=false,suggestions=emptyList(),duplicates=emptyList(),mergeNamingSide=null,mergePendingSide=null,mergeSideResults=emptyMap()) }
         val repo=repository ?: return
         val session=repo.api.session()
         requireMessage(session.scope==repo.scope,R.string.error_scope_changed)
         if(!session.mergeSuggestions) throw ApiFailure(404,"not_found",UiText(R.string.error_merge_version))
         val suggestion=repo.api.nextMergeSuggestion(excludedMergePair)
+        mergeFaceSearch=if(session.mergeNaming && suggestion!=null &&
+            suggestion.source.name.isEmpty() && suggestion.target.name.isEmpty())
+            MergeFaceSearch(viewModelScope,suggestion,repo.api::faceMatches) else null
         update { it.copy(mergeSuggestion=suggestion,mergeNaming=session.mergeNaming,mergeSideActions=session.mergeSideActions) }
     }
     fun decideMerge(accept: Boolean) { if(editable() && state.value.mergeReview && !state.value.naming && state.value.mergeSideResults.isEmpty()) task {
@@ -270,6 +249,24 @@ class PeopleViewModel private constructor(application: Application, private val 
             mutateMergeSide(id,"ignore")
         }
     }
+    internal fun assignMergeFaceMatch(match: FaceMatch) {
+        val current=state.value
+        val pair=current.mergeSuggestion ?: return
+        if(!editable() || !current.mergeReview || !current.mergeNaming || current.naming ||
+            current.mergeSideResults.isNotEmpty() || pair.source.name.isNotEmpty() || pair.target.name.isNotEmpty() ||
+            match !in mergeFaceSearch?.state?.value?.matches.orEmpty()) return
+        task {
+            // Only the selected assignment needs a detail request. Both groups keep
+            // their displayed revisions; the server checks all three atomically.
+            val target=try { repository!!.api.person(match.id) } catch(e: ApiFailure) {
+                if(e.status==404) throw ApiFailure(409,"conflict",UiText(R.string.error_group_changed))
+                throw e
+            }
+            if(target.id!=match.id || target.name!=match.name || target.name.isBlank())
+                throw ApiFailure(409,"conflict",UiText(R.string.error_group_changed))
+            mutateMergePair(assignment=target)
+        }
+    }
     private suspend fun mutateMergeSide(id: Long, action: String, name: String="", target: Person?=null, allowDuplicate: Boolean=false) {
         val person=mergeSide(id) ?: return
         val repo=repository ?: return
@@ -289,6 +286,7 @@ class PeopleViewModel private constructor(application: Application, private val 
         }
         val completed=mutableMapOf(receipt.source to result)
         if(receipt.target==pair.source.id || receipt.target==pair.target.id) completed[receipt.target]=UiText(R.string.people_merge_side_assigned)
+        mergeFaceSearch?.close(); mergeFaceSearch=null
         search?.cancel();cancelFaceSearch()
         update {it.copy(mergeSideResults=it.mergeSideResults+completed,mergePendingSide=null,mergeNamingSide=null,
             naming=false,suggestions=emptyList(),duplicates=emptyList(),unresolved=false)}
@@ -299,6 +297,7 @@ class PeopleViewModel private constructor(application: Application, private val 
         loadMergeSuggestion()
     } }
     fun closeMergeReview() { if(editable() && !state.value.naming) task {
+        mergeFaceSearch?.close(); mergeFaceSearch=null
         update { it.copy(mergeReview=false,mergeSuggestion=null) }
         loadNext()
     } }
@@ -322,11 +321,15 @@ class PeopleViewModel private constructor(application: Application, private val 
             if(state.value.naming && state.value.mergeSideActions) mutateMergeSide(id,if(target==null) "name" else "assign",name,target,allowDuplicate)
             return
         }
-        val pair=state.value.mergeSuggestion ?: return
-        if(!state.value.naming || !state.value.mergeNaming || pair.source.name.isNotEmpty() || pair.target.name.isNotEmpty()) return
+        if(state.value.naming) mutateMergePair(name,target,allowDuplicate)
+    }
+    private suspend fun mutateMergePair(name: String = "", assignment: Person? = null, allowDuplicate: Boolean = false) {
+        val current=state.value
+        val pair=current.mergeSuggestion ?: return
+        if(!current.mergeNaming || current.mergeSideResults.isNotEmpty() || pair.source.name.isNotEmpty() || pair.target.name.isNotEmpty()) return
         val repo=repository ?: return
         repo.prepare(pair.source,"name_merge",name=name,target=pair.target,allowDuplicate=allowDuplicate,
-            suggestionId=pair.id,assignment=target)
+            suggestionId=pair.id,assignment=assignment)
         repo.resolve()
         loadMergeSuggestion()
     }
@@ -598,7 +601,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     fun background() {
         inBackground=true
         cancelFaceSearch()
-        manualMerges?.cancel()
+        mergeFaceSearch?.pause()
         val repo=repository ?: return
         val ids=ignoreJobs.keys.toSet()
         ignoreJobs.values.forEach {it.cancel()};ignoreJobs.clear()
@@ -625,9 +628,7 @@ class PeopleViewModel private constructor(application: Application, private val 
             repo.restoreIgnores(repo.state().stagedIgnores.positions().map {it.id}.toSet()-ignoreJobs.keys-undoRequests)
         }
         update { it.copy(unresolved=false,naming=if(receipt!=null && (receipt.source==it.person?.id || receipt.source==it.selectedPerson?.id)) false else it.naming) }
-        if(state.value.manualMerge) {
-            if(receipt!=null) manualMerges?.refresh() else manualMerges?.retry()
-        } else if(state.value.mergeReview) {
+        if(state.value.mergeReview) {
             if(receipt!=null && body!=null && state.value.mergePendingSide!=null) completeMergeSide(receipt,body)
             else if(state.value.mergeSideResults.isEmpty()) loadMergeSuggestion()
         }
@@ -637,17 +638,21 @@ class PeopleViewModel private constructor(application: Application, private val 
         } else loadNext()
     }
     fun newPass(skipped: Boolean) { if(editable()) task { repository!!.newPass(skipped); loadNext() } }
-    fun openGallery() { if(!state.value.busy && photos!=null) update { it.copy(showGallery=true) } }
-    fun openPeople() { if(!state.value.busy && repository!=null) update { it.copy(showGallery=false) } }
-    fun switchConnection() { if(!state.value.busy) task { repository?.restoreIgnores(); session.disconnect(forget=true) } }
+    fun openGallery() { if(!state.value.busy && photos!=null) update { it.copy(showGallery=true,showDevicePhotos=false) } }
+    fun openPeople() { if(!state.value.busy && repository!=null) update { it.copy(showGallery=false,showDevicePhotos=false) } }
+    fun switchConnection() { if(!state.value.busy) task {
+        repository?.restoreIgnores()
+        session.disconnect(forget=true)
+        update { PeopleState(busy=it.busy) }
+    } }
     private fun detachPeople() {
-        manualMerges?.cancel();manualMerges=null
+        mergeFaceSearch?.close(); mergeFaceSearch=null
         ignoreJobs.values.forEach {it.cancel()};ignoreJobs.clear()
         undoRequests.clear()
         search?.cancel(); cancelFaceSearch(); directorySearch?.cancel(); searchPreload?.cancel(); statsJob?.cancel()
         preloads.forEach { it.dispose() }; preloads.clear()
         repository=null
-        update { PeopleState(busy=it.busy) }
+        update { PeopleState(busy=it.busy,restoring=it.restoring,savedConnection=it.savedConnection,showDevicePhotos=it.showDevicePhotos) }
     }
     private suspend fun clearConnection() = session.disconnect()
     override fun onCleared() {

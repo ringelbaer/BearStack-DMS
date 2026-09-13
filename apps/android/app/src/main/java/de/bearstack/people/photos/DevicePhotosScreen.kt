@@ -42,6 +42,7 @@ import coil.memory.MemoryCache
 import de.bearstack.people.R
 import de.bearstack.people.data.remote.PhotoQuery
 import de.bearstack.people.text.uiStrings
+import de.bearstack.people.text.UiText
 
 internal enum class DevicePhotoAccess { NONE, SELECTED, FULL }
 // The explicit SDK argument keeps permission decisions testable across Android versions.
@@ -68,14 +69,15 @@ internal class DevicePhotoPreferences(context: Context) {
 }
 
 @Composable
-fun PhotosScreen(controller: PhotosController, images: ImageLoader, canManage: Boolean,
-    onPeople: () -> Unit, onConnection: () -> Unit) {
+fun PhotosScreen(controller: PhotosController?, images: ImageLoader?, canManage: Boolean,
+    onPeople: () -> Unit, onConnection: () -> Unit, startOnDevice: Boolean = false,
+    connecting: Boolean = false, connectionError: UiText? = null, onRetry: (() -> Unit)? = null) {
     val context = LocalContext.current
     val preferences = remember(context) { DevicePhotoPreferences(context) }
     var enabled by remember { mutableStateOf(preferences.enabled) }
-    var deviceOpen by rememberSaveable { mutableStateOf(false) }
+    var deviceOpen by rememberSaveable { mutableStateOf(startOnDevice || controller == null) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
-    var search by rememberSaveable { mutableStateOf(controller.state.value.query.query) }
+    var search by rememberSaveable { mutableStateOf(controller?.state?.value?.query?.query.orEmpty()) }
     var access by remember { mutableStateOf(devicePhotoAccess(context)) }
     var revision by remember { mutableIntStateOf(0) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -96,15 +98,19 @@ fun PhotosScreen(controller: PhotosController, images: ImageLoader, canManage: B
         onDispose { lifecycle.removeObserver(observer) }
     }
     val serverState = rememberSaveableStateHolder()
-    if(deviceOpen && enabled) {
+    if(controller == null || images == null || deviceOpen) {
         DevicePhotosScreen(access, foreground, revision, onAccess={ permission.launch(devicePhotoPermissions()) },
-            onSettings={ settingsOpen = true }, onLeave={ tab ->
+            onSettings={ settingsOpen = true }, serverAvailable=controller != null, onLeave={ tab ->
                 deviceOpen = false
-                if(tab != 1) controller.open(PhotoQuery(query=if(tab == 2) search.trim() else "", recursive=true), tab=tab)
+                if(tab != 1) controller?.open(PhotoQuery(query=if(tab == 2) search.trim() else "", recursive=true), tab=tab)
+            }, connectionStatus={
+                if(controller == null) LocalConnectionStatus(connecting, connectionError, onRetry, onConnection,
+                    onPeople=onPeople.takeIf { canManage })
             })
     } else serverState.SaveableStateProvider("server") {
         ServerPhotosScreen(controller, images, canManage, onPeople, onConnection, search, { search = it },
-            onSettings={ settingsOpen = true }, onDevice=if(enabled) ({ deviceOpen = true }) else null)
+            onSettings={ settingsOpen = true }, onDevice=if(enabled) ({ deviceOpen = true }) else null,
+            onLocal={ deviceOpen = true })
     }
     if(settingsOpen) AlertDialog(onDismissRequest={ settingsOpen = false },
         title={ Text(stringResource(R.string.photos_settings)) },
@@ -124,6 +130,27 @@ fun PhotosScreen(controller: PhotosController, images: ImageLoader, canManage: B
 }
 
 @Composable
+private fun LocalConnectionStatus(connecting: Boolean, error: UiText?, onRetry: (() -> Unit)?, onConnection: () -> Unit,
+    onPeople: (() -> Unit)?) {
+    Surface(color=MaterialTheme.colorScheme.surfaceContainer) {
+        Column(Modifier.fillMaxWidth().padding(horizontal=16.dp, vertical=8.dp)) {
+            Text(stringResource(if(connecting) R.string.connection_loading else if(onPeople != null) R.string.photos_device else R.string.connection_local_mode),
+                style=MaterialTheme.typography.titleSmall)
+            if(connecting) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top=8.dp))
+            else {
+                Text(error?.let { uiStrings()(it) } ?: stringResource(R.string.connection_local_help),
+                    style=MaterialTheme.typography.bodySmall)
+                Row {
+                    if(onRetry != null) TextButton(onClick=onRetry) { Text(stringResource(R.string.photos_retry)) }
+                    if(onPeople != null) TextButton(onClick=onPeople) { Text(stringResource(R.string.photos_people)) }
+                    TextButton(onClick=onConnection) { Text(stringResource(R.string.photos_connection)) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun DeviceAccessControls(access: DevicePhotoAccess, onAccess: () -> Unit) {
     val context = LocalContext.current
     if(access != DevicePhotoAccess.FULL) {
@@ -139,7 +166,8 @@ private fun DeviceAccessControls(access: DevicePhotoAccess, onAccess: () -> Unit
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, revision: Int,
-    onAccess: () -> Unit, onSettings: () -> Unit, onLeave: (Int) -> Unit) {
+    onAccess: () -> Unit, onSettings: () -> Unit, onLeave: (Int) -> Unit,
+    serverAvailable: Boolean = true, connectionStatus: @Composable () -> Unit = {}) {
     var path by rememberSaveable { mutableStateOf("") }
     var title by rememberSaveable { mutableStateOf("") }
     var changes by remember { mutableIntStateOf(0) }
@@ -181,16 +209,16 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
         }
     }
     fun back() { if(path.isEmpty()) onLeave(1) else { path=""; title=""; local?.open(PhotoQuery()) } }
-    BackHandler(state?.selected == null) { back() }
+    BackHandler(state?.selected == null && (path.isNotEmpty() || serverAvailable)) { back() }
     Scaffold(topBar={ TopAppBar(title={ Column {
         Text(if(path.isEmpty()) stringResource(R.string.photos_device) else title.ifBlank { stringResource(R.string.photos_folders) },
             maxLines=1, overflow=TextOverflow.Ellipsis)
         if(path.isNotEmpty()) Text(stringResource(R.string.photos_device), style=MaterialTheme.typography.labelSmall)
-    } }, navigationIcon={ IconButton(onClick={ back() }) {
+    } }, navigationIcon={ if(path.isNotEmpty() || serverAvailable) IconButton(onClick={ back() }) {
         Icon(painterResource(R.drawable.ic_back), stringResource(R.string.photos_back))
     } }, actions={ IconButton(onClick=onSettings) {
         Icon(painterResource(R.drawable.ic_more_horiz), stringResource(R.string.photos_settings))
-    } }) }, bottomBar={ NavigationBar {
+    } }) }, bottomBar={ if(serverAvailable) NavigationBar {
         listOf(R.string.photos_title to R.drawable.ic_photos, R.string.photos_folders to R.drawable.ic_folder,
             R.string.photos_search to R.drawable.ic_search).forEachIndexed { index, (label, icon) ->
             NavigationBarItem(selected=index == 1, onClick={ onLeave(index) },
@@ -198,6 +226,7 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
         }
     } }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
+            connectionStatus()
             if(access == DevicePhotoAccess.NONE) Column(Modifier.padding(24.dp)) { DeviceAccessControls(access, onAccess) }
             else if(local != null && images != null && state != null) key(local) {
                 if(access == DevicePhotoAccess.SELECTED) Text(stringResource(R.string.photos_device_selected),

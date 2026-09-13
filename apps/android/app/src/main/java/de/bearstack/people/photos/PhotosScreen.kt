@@ -43,7 +43,7 @@ import java.util.Locale
 @Composable
 internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoader, canManage: Boolean,
     onPeople: () -> Unit, onConnection: () -> Unit, search: String, onSearchChange: (String) -> Unit,
-    onSettings: () -> Unit, onDevice: (() -> Unit)?) {
+    onSettings: () -> Unit, onDevice: (() -> Unit)?, onLocal: () -> Unit) {
     val text=uiStrings()
     val state by controller.state.collectAsStateWithLifecycle()
     val tab = state.tab
@@ -67,6 +67,7 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_map))},onClick={menu=false;mapOpen=true},enabled=!state.loading)
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_frame))},onClick={menu=false;controller.startFrame()},enabled=!state.loading)
                     if(canManage) DropdownMenuItem(text={Text(stringResource(R.string.photos_people))},onClick={menu=false;onPeople()})
+                    DropdownMenuItem(text={Text(stringResource(R.string.connection_local_photos))},onClick={menu=false;onLocal()})
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_settings))},onClick={menu=false;onSettings()})
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_connection))},onClick={menu=false;onConnection()})
                 }

@@ -21,9 +21,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import de.bearstack.people.people.PeopleState
 import de.bearstack.people.people.PeopleViewModel
+import kotlinx.coroutines.awaitCancellation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +44,16 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
     val dialogEnabled=!state.busy && !state.unresolved
     val enabled=!state.naming && !state.busy && !state.unresolved && held==null && !help && !confirmMerge
     val lifecycle=LocalLifecycleOwner.current.lifecycle
+    val search=vm.mergeFaceSearch
+    val matches=search?.state?.collectAsStateWithLifecycle()?.value
+    LaunchedEffect(search,lifecycle,state.busy,state.naming,state.unresolved) {
+        if(search!=null && !state.busy && !state.naming && !state.unresolved) {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                search.resume()
+                try { awaitCancellation() } finally { search.pause() }
+            }
+        }
+    }
     LaunchedEffect(suggestion) {held=null;accessible=false;zoom=0f}
     LaunchedEffect(suggestion?.id) {reviewScroll.scrollTo(0)}
     LaunchedEffect(suggestion,lifecycle) {
@@ -157,6 +169,10 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                                 }
                             }
                         }
+                        matches?.let { result ->
+                            MergeFaceMatchList(result,enabled,vm.images,vm::image,
+                                onAssign=vm::assignMergeFaceMatch,onRetry={search?.retry()})
+                        }
                     }
                 } else if(!state.busy && state.error==null) {
                     Column(Modifier.padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
@@ -200,6 +216,7 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
             Text(text(R.string.people_merge_next_help))
             Text(text(R.string.people_merge_name_help))
             Text(text(R.string.people_merge_side_help))
+            Text(text(R.string.people_merge_matches_help))
             Text(text(R.string.people_merge_preview_help))
         }},confirmButton={TextButton(onClick={help=false}) {Text(text(R.string.photos_close))}})
 }

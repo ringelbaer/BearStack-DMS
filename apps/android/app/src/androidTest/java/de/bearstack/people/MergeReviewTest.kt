@@ -87,7 +87,150 @@ class MergeReviewTest {
         val bitmap=compose.onRoot().captureToImage().asAndroidBitmap()
         File(app.cacheDir,"merge-layout-$name.png").outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
     }
-    @Test fun mixedGroupsHaveAlignedPortraitsAndCompactActions() = screen(viewport=DpSize(360.dp,760.dp)) {vm,_,_ ->
+
+    private fun inlineMatches(api: FakeService) {
+        unnamed(api)
+        api.matches=listOf(FaceMatch(6,"Person 6",1,60))
+    }
+    private fun matchesReady(vm: PeopleViewModel) = compose.waitUntil(5000) {
+        vm.mergeFaceSearch?.state?.value?.let {it.complete || it.error!=null} == true
+    }
+    @Test fun inlineSearchUsesOnlyFirstGroupAndAssignsBothWithOneAtomicAction() = screen(setup=::inlineMatches) {vm,api,db ->
+        matchesReady(vm)
+        assertEquals(listOf(30L),api.matchedFaces)
+        assertFalse(vm.state.value.busy);assertEquals(0,api.commits)
+        val panel=compose.onNodeWithTag("merge-matches").getUnclippedBoundsInRoot()
+        for(side in listOf("Erste","Zweite")) {
+            val action=compose.onNodeWithContentDescription("$side Gruppe benennen/zuordnen").getUnclippedBoundsInRoot()
+            assertTrue(panel.top>=action.bottom)
+        }
+        compose.onNodeWithText("Benennungsvorschläge für beide Gruppen").assertIsDisplayed()
+        saveLayout("inline-matches")
+        // Fetch the current destination revision only when the user selects it.
+        api.people[6]=api.people.getValue(6).copy(revision=2)
+        compose.onNodeWithContentDescription("Beide Gruppen der Person Person 6 zuordnen").performScrollTo().performClick();idle(vm)
+        assertFalse(api.people.containsKey(3));assertFalse(api.people.containsKey(4))
+        assertEquals(3L,api.people.getValue(6).count)
+        assertEquals(1,api.commits)
+        assertEquals("name_merge",api.receipts.values.single().action)
+        assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
+        compose.onAllNodes(isDialog()).assertCountEquals(0)
+        assertEquals(2L,runBlocking {db.dao().statistics(api.session.scope,0).first().single {it.action=="assign"}.groups})
+        assertEquals(listOf(30L),api.matchedFaces)
+        assertNull(vm.mergeFaceSearch)
+    }
+    @Test fun inlineStreamingMatchAssignsBothBeforeCompletionAndCancelsSearch() = screen(setup={api ->
+        unnamed(api)
+        api.matchUpdates=listOf(listOf(FaceMatch(6,"Person 6",1,60)))
+        api.matchFinish=kotlinx.coroutines.CompletableDeferred()
+    }) {vm,api,_ ->
+        compose.waitUntil(5000) {vm.mergeFaceSearch?.state?.value?.matches?.isNotEmpty()==true}
+        assertTrue(vm.mergeFaceSearch!!.state.value!!.loading)
+        compose.onNodeWithTag("merge-match-6").performScrollTo().performClick();idle(vm)
+        assertEquals(1,api.commits);assertEquals(3L,api.people.getValue(6).count)
+        assertFalse(api.people.containsKey(3));assertFalse(api.people.containsKey(4))
+        assertEquals(1,api.cancelledMatches)
+        api.matchFinish!!.complete(Unit)
+        assertNull(vm.mergeFaceSearch);assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
+        assertEquals(listOf(30L),api.matchedFaces)
+    }
+    @Test fun inlineRenamedTargetRequiresFreshDecisionAndDeletedTargetDoesNotWrite() = screen(setup=::inlineMatches) {vm,api,db ->
+        matchesReady(vm)
+        api.people[6]=api.people.getValue(6).copy(name="Neuer Name",revision=2)
+        api.matches=listOf(FaceMatch(6,"Neuer Name",1,60))
+        compose.onNodeWithTag("merge-match-6").performScrollTo().performClick();idle(vm);matchesReady(vm)
+        assertEquals(0,api.commits);assertNotNull(vm.state.value.error)
+        assertNull(runBlocking {db.dao().pending(api.session.scope)})
+        assertEquals("Neuer Name",vm.mergeFaceSearch!!.state.value!!.matches.single().name)
+        api.people.remove(6);api.matches=emptyList()
+        compose.onNodeWithTag("merge-match-6").performScrollTo().performClick();idle(vm);matchesReady(vm)
+        assertEquals(0,api.commits);assertTrue(vm.mergeFaceSearch!!.state.value!!.matches.isEmpty())
+        assertTrue(api.people.containsKey(3));assertTrue(api.people.containsKey(4))
+    }
+    @Test fun inlineChangedSecondGroupRejectsTheEntireAssignmentAndStopsAutomaticSearch() = screen(setup=::inlineMatches) {vm,api,db ->
+        matchesReady(vm)
+        api.people[4]=api.people.getValue(4).copy(name="Inzwischen benannt",revision=2)
+        api.mergePairs[0]=api.mergePairs[0].copy(target=api.people.getValue(4))
+        compose.onNodeWithTag("merge-match-6").performScrollTo().performClick();idle(vm)
+        assertEquals(0,api.commits);assertEquals(1L,api.people.getValue(6).count)
+        assertTrue(api.people.containsKey(3));assertTrue(api.people.containsKey(4))
+        assertNotNull(vm.state.value.error);assertFalse(vm.state.value.unresolved)
+        assertNull(runBlocking {db.dao().pending(api.session.scope)})
+        assertNull(vm.mergeFaceSearch);assertEquals(listOf(30L),api.matchedFaces)
+        compose.onNodeWithTag("merge-matches").assertDoesNotExist()
+    }
+    @Test fun inlineLostResponseBlocksDoubleAssignmentAndRecoversBothGroups() = screen(setup=::inlineMatches) {vm,api,db ->
+        matchesReady(vm)
+        val match=vm.mergeFaceSearch!!.state.value!!.matches.single()
+        api.loseResponse=true
+        compose.onNodeWithTag("merge-match-6").performScrollTo().performClick();idle(vm)
+        assertTrue(vm.state.value.unresolved);assertEquals(1,api.commits)
+        compose.onNodeWithTag("merge-match-6").assertIsNotEnabled()
+        compose.runOnUiThread {vm.assignMergeFaceMatch(match);vm.assignMergeFaceMatch(match)};idle(vm)
+        assertEquals(1,api.commits)
+        val body=org.json.JSONObject(runBlocking {db.dao().pending(api.session.scope)}!!.body)
+        assertEquals("name_merge",body.getString("action"))
+        assertEquals(4L,body.getLong("target_id"));assertEquals(6L,body.getLong("assign_id"))
+        compose.onNodeWithText("Offene Aktion prüfen").performScrollTo().performClick();idle(vm)
+        assertFalse(vm.state.value.unresolved);assertEquals(1,api.commits)
+        assertEquals(3L,api.people.getValue(6).count);assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
+        assertNull(vm.mergeFaceSearch)
+    }
+    @Test fun inlineFailureAllowsManualDecisionsAndExplicitRetryUsesOnlyFirstGroup() = screen(setup={api ->
+        inlineMatches(api);api.matchFailure=true
+    }) {vm,api,_ ->
+        matchesReady(vm)
+        assertNull(vm.state.value.error);assertFalse(vm.state.value.busy)
+        assertEquals(listOf(30L),api.matchedFaces)
+        compose.onNodeWithText("Zusammenführen").assertIsEnabled()
+        api.matchFailure=false
+        compose.onNode(hasText("Erneut versuchen") and hasAnyAncestor(hasTestTag("merge-matches")))
+            .performScrollTo().performClick()
+        compose.waitUntil(5000) {vm.mergeFaceSearch!!.state.value!!.complete}
+        assertEquals(listOf(30L,30L),api.matchedFaces)
+        compose.onNodeWithTag("merge-match-6").assertIsEnabled()
+    }
+    @Test fun inlineLongRankingScrollsAtLargeFontWithoutMovingTheDecisionButtons() = screen(1.5f,setup={api ->
+        unnamed(api)
+        api.matches=(100L..119L).map {FaceMatch(it,"Ein langer Personenname $it",12,it*10)}
+    },viewport=DpSize(320.dp,640.dp)) {vm,api,_ ->
+        matchesReady(vm)
+        val merge=compose.onNodeWithText("Zusammenführen").assertIsDisplayed().getUnclippedBoundsInRoot()
+        val reject=compose.onNodeWithText("Getrennt lassen").assertIsDisplayed().getUnclippedBoundsInRoot()
+        compose.onNodeWithTag("merge-match-119").performScrollTo().assertIsDisplayed()
+        assertEquals(merge,compose.onNodeWithText("Zusammenführen").assertIsDisplayed().getUnclippedBoundsInRoot())
+        assertEquals(reject,compose.onNodeWithText("Getrennt lassen").assertIsDisplayed().getUnclippedBoundsInRoot())
+        assertEquals(listOf(30L),api.matchedFaces);assertEquals(0,api.commits)
+    }
+    @Test fun inlineSuggestionsDisappearAfterAnIndividualActionOnSecondGroup() = screen(setup=::inlineMatches) {vm,api,_ ->
+        matchesReady(vm)
+        val match=vm.mergeFaceSearch!!.state.value!!.matches.single()
+        compose.onNodeWithContentDescription("Zweite Gruppe ignorieren").performScrollTo().performClick();idle(vm)
+        compose.onNodeWithTag("merge-matches").assertDoesNotExist()
+        compose.runOnUiThread {vm.assignMergeFaceMatch(match)};idle(vm)
+        assertEquals(1,api.commits);assertEquals("ignore",api.receipts.values.single().action)
+        assertTrue(api.people.containsKey(3));assertEquals(1L,api.people.getValue(6).count)
+        assertNull(vm.mergeFaceSearch);assertEquals(listOf(30L),api.matchedFaces)
+    }
+    @Test fun namedFirstGroupDoesNotStartAutomaticSearch() = screen(setup={api ->
+        unnamed(api)
+        api.people[3]=api.people.getValue(3).copy(name="Ada")
+        api.mergePairs[0]=api.mergePairs[0].copy(source=api.people.getValue(3))
+    }) {vm,api,_ ->
+        compose.onNodeWithTag("merge-matches").assertDoesNotExist()
+        assertNull(vm.mergeFaceSearch);assertTrue(api.matchedFaces.isEmpty())
+    }
+    @Test fun inlineSuggestionsNeedSharedNamingCapabilityOnly() = screen(setup={api ->
+        inlineMatches(api);api.supportsMergeSideActions=false
+    }) {vm,api,_ ->
+        matchesReady(vm)
+        compose.onNodeWithTag("merge-match-6").performScrollTo().performClick();idle(vm)
+        assertEquals("name_merge",api.receipts.values.single().action)
+        assertEquals(3L,api.people.getValue(6).count);assertEquals(listOf(30L),api.matchedFaces)
+    }
+    @Test fun mixedGroupsHaveAlignedPortraitsAndCompactActions() = screen(viewport=DpSize(360.dp,760.dp)) {vm,api,_ ->
+        assertNull(vm.mergeFaceSearch);assertTrue(api.matchedFaces.isEmpty())
+        compose.onNodeWithTag("merge-matches").assertDoesNotExist()
         alignedPortraits()
         val portrait=compose.onNodeWithTag("face-30").getUnclippedBoundsInRoot()
         val label=compose.onNodeWithText("Erste Gruppe").getUnclippedBoundsInRoot()
@@ -134,6 +277,8 @@ class MergeReviewTest {
         assertEquals(1,api.commits)
     }
     @Test fun namedMergeRequiresConfirmationAndCancelDoesNotWrite() = screen(2f,setup=::named) {vm,api,db ->
+        assertNull(vm.mergeFaceSearch);assertTrue(api.matchedFaces.isEmpty())
+        compose.onNodeWithTag("merge-matches").assertDoesNotExist()
         val before=api.people.toMap()
         compose.onNodeWithText("Zusammenführen").performClick()
         compose.onNodeWithText("Benannte Gruppen zusammenführen?").assertIsDisplayed()
@@ -196,6 +341,8 @@ class MergeReviewTest {
         val before=api.people.getValue(4)
         compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
         assertFalse(api.people.containsKey(3));assertEquals(before,api.people[4])
+        assertNull(vm.mergeFaceSearch)
+        compose.onNodeWithTag("merge-matches").assertDoesNotExist()
         assertEquals(1L,vm.state.value.mergeSuggestion!!.id)
         compose.onNodeWithText("Weiter").assertIsDisplayed()
         compose.onNodeWithText("Zusammenführen").assertDoesNotExist()
@@ -219,10 +366,11 @@ class MergeReviewTest {
         assertEquals(0,api.commits);assertTrue(vm.state.value.mergeSideResults.isEmpty())
         api.matches=listOf(FaceMatch(6,"Person 6",1,60))
         compose.onNodeWithContentDescription("Zweite Gruppe benennen/zuordnen").performClick()
+        val beforeSearch=api.matchedFaces.size
         compose.onNodeWithContentDescription("Ähnliche benannte Personen suchen").performClick()
         compose.waitUntil(5000) {vm.state.value.faceMatches.isNotEmpty()}
-        assertEquals(listOf(40L),api.matchedFaces)
-        compose.onNodeWithText("1 Gesicht · #6").performScrollTo().performClick();idle(vm)
+        assertEquals(listOf(40L),api.matchedFaces.drop(beforeSearch))
+        compose.onNode(hasText("1 Gesicht · #6") and hasAnyAncestor(isDialog())).performScrollTo().performClick();idle(vm)
         assertEquals(before,api.people[3]);assertFalse(api.people.containsKey(4))
         assertEquals(2L,api.people.getValue(6).count)
         assertEquals(setOf(4L),vm.state.value.mergeSideResults.keys)
@@ -264,11 +412,12 @@ class MergeReviewTest {
     @Test fun faceSearchUsesMergeWitnessAndAssignsBothGroups() = screen(setup=::unnamed) {vm,api,_ ->
         api.matches=listOf(FaceMatch(6,"Person 6",1,60))
         compose.onNodeWithContentDescription("Zusammenführen und benennen/zuordnen").performClick()
+        val beforeSearch=api.matchedFaces.size
         compose.onNodeWithContentDescription("Ähnliche benannte Personen suchen").performClick()
         compose.waitUntil(5000) {vm.state.value.faceMatches.isNotEmpty()}
-        assertEquals(listOf(30L),api.matchedFaces)
+        assertEquals(listOf(30L),api.matchedFaces.drop(beforeSearch))
         assertEquals(0,api.commits)
-        compose.onNodeWithText("1 Gesicht · #6").performScrollTo().performClick();idle(vm)
+        compose.onNode(hasText("1 Gesicht · #6") and hasAnyAncestor(isDialog())).performScrollTo().performClick();idle(vm)
         assertEquals(1,api.commits)
         assertEquals("name_merge",api.receipts.values.single().action)
         assertEquals(3L,api.people.getValue(6).count)
@@ -312,7 +461,9 @@ class MergeReviewTest {
         assertFalse(vm.state.value.naming)
         assertFalse(vm.state.value.unresolved)
     }
-    @Test fun olderServerOmitsPencil() = screen(setup={unnamed(it);it.supportsMergeNaming=false}) {_,_,_ ->
+    @Test fun olderServerOmitsPencil() = screen(setup={unnamed(it);it.supportsMergeNaming=false}) {vm,api,_ ->
+        assertNull(vm.mergeFaceSearch);assertTrue(api.matchedFaces.isEmpty())
+        compose.onNodeWithTag("merge-matches").assertDoesNotExist()
         compose.onNodeWithContentDescription("Zusammenführen und benennen/zuordnen").assertDoesNotExist()
     }
 

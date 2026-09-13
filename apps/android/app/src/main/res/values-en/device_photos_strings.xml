@@ -10,4 +10,8 @@
     <string name="photos_device_grant">Allow photo access / change selection</string>
     <string name="photos_device_android_settings">Android app settings</string>
     <string name="photos_device_error">Could not load local photos. Please try again.</string>
+    <string name="connection_loading">Getting your photos ready …</string>
+    <string name="connection_local_help">Photos on this device are available even without a server connection.</string>
+    <string name="connection_local_photos">Open local photos</string>
+    <string name="connection_local_mode">Local photos · no server connection</string>
 </resources>
