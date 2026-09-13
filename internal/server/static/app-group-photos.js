@@ -21,7 +21,7 @@
   var hovered, focused, zoomed;
   var strip = window.BearStackGroupStrip.bind({
     minimum: function () { return minimum; },
-    isBusy: function () { return busy || navigationPending || document.querySelector("[data-person-dialog]").open; },
+    isBusy: function () { return busy || document.querySelector("[data-person-dialog]").open; },
     select: function (path) { status.textContent = ""; return loadPhoto({ path: path }); }
   });
   var storageKey = "bearstack.people.groupMinimum:" + surface.dataset.groupUser;
@@ -48,7 +48,10 @@
     busy = value;
     surface.setAttribute("aria-busy", String(value));
     filter.querySelectorAll("input, button").forEach(function (control) { control.disabled = value; });
-    grid.querySelectorAll("button").forEach(function (control) { control.disabled = value || navigationPending; });
+    grid.querySelectorAll("button").forEach(function (control) {
+      // Looking at the photo is safe even while a write needs confirmation.
+      control.disabled = !control.hasAttribute("data-group-highlight") && (value || navigationPending);
+    });
     ignoreButton.disabled = value || navigationPending || !remaining;
     skip.setAttribute("aria-disabled", String(value));
     retry.disabled = value;
@@ -104,7 +107,7 @@
   }
   grid.addEventListener("click", function (event) {
     var preview = event.target.closest("[data-group-highlight]");
-    if (!preview || busy || navigationPending || !image.complete || !image.naturalWidth) return;
+    if (!preview || !image.complete || !image.naturalWidth) return;
     var card = preview.closest("[data-group-face]");
     if (!faceBounds(card)) return;
     setZoom(zoomed === card ? null : card);
@@ -215,6 +218,21 @@
     strip.sync(photo);
   }
 
+  // Include body consumption: receiving headers does not finish an operation.
+  async function requestJSON(address, options, aborter) {
+    aborter = aborter || new AbortController();
+    var timedOut = false;
+    var timer = window.setTimeout(function () { timedOut = true; aborter.abort(); }, 20000);
+    try {
+      var response = await fetch(address, Object.assign({}, options, { signal: aborter.signal }));
+      var result = await response.json();
+      return { response: response, result: result };
+    } catch (error) {
+      if (timedOut) throw new Error("Zeitüberschreitung beim Serverabruf. Bitte die Ansicht erneut laden.");
+      throw error;
+    } finally { window.clearTimeout(timer); }
+  }
+
   async function loadPhoto(params) {
     var serial = ++request;
     if (controller) controller.abort();
@@ -225,8 +243,8 @@
     address.searchParams.set("format", "json"); address.searchParams.set("min", String(minimum));
     Object.keys(params).forEach(function (key) { address.searchParams.set(key, params[key]); });
     try {
-      var response = await fetch(address, { signal: controller.signal, credentials: "same-origin", redirect: "error", headers: { Accept: "application/json" } });
-      var result = await response.json();
+      var reply = await requestJSON(address, { credentials: "same-origin", redirect: "error", cache: "no-store", headers: { Accept: "application/json" } }, controller);
+      var response = reply.response, result = reply.result;
       if (!response.ok) throw new Error(result.error || "Das Gruppenbild konnte nicht geladen werden.");
       if (serial === request) render(result, params);
     } catch (error) {
@@ -254,15 +272,20 @@
     var path = currentPath;
     var body = new URLSearchParams(new FormData(ignoreForm));
     if (single) body.set("face_id", faceID);
-    setBusy(true); status.textContent = "";
+    var saved = false, rejected = false;
+    setBusy(true); status.textContent = single ? "Gesicht wird ignoriert …" : "Gesichter werden ignoriert …";
     try {
-      var response = await fetch(ignoreForm.action, { method: "POST", credentials: "same-origin", redirect: "error", headers: { Accept: "application/json" }, body: body });
-      var result = await response.json();
+      var reply = await requestJSON(ignoreForm.action, { method: "POST", credentials: "same-origin", redirect: "error", headers: { Accept: "application/json" }, body: body });
+      var response = reply.response, result = reply.result;
       if (!response.ok || result.ok !== true) {
-        if (response.status === 409) await loadPhoto({ path: path });
+        rejected = !response.ok;
+        if (response.status === 409) {
+          navigationPending = true;
+          await loadPhoto({ path: path });
+        }
         throw new Error(result.error || "Die Gesichter konnten nicht ignoriert werden.");
       }
-      navigationPending = true;
+      saved = true; navigationPending = true;
       await loadPhoto(single ? { path: path } : { after: path });
       status.textContent = single ? "Gesicht ignoriert." : result.ignored + " Gesichter ignoriert.";
       if (focusPreview) {
@@ -271,7 +294,16 @@
         else unnamedFilter.focus({ preventScroll: true });
       }
     } catch (error) {
-      status.textContent = navigationPending ? (single ? "Gesicht gespeichert. Die Ansicht konnte nicht aktualisiert werden; bitte die Ansicht erneut laden." : "Gesichter gespeichert. Das nächste Foto konnte nicht geladen werden; bitte die Ansicht erneut laden.") : error.message;
+      if (!saved && !rejected) {
+        // A lost response may hide a committed write. Only a fresh GET can
+        // unlock editing; never repeat the POST against the displayed snapshot.
+        navigationPending = true;
+        retryParams = { path: path }; retry.hidden = false;
+        status.textContent = "Speichern nicht bestätigt. Bitte die Ansicht erneut laden, um den aktuellen Stand zu prüfen. " + error.message;
+      } else if (navigationPending) {
+        retry.hidden = false;
+        status.textContent = saved ? (single ? "Gesicht gespeichert. Die Ansicht konnte nicht aktualisiert werden; bitte die Ansicht erneut laden." : "Gesichter gespeichert. Das nächste Foto konnte nicht geladen werden; bitte die Ansicht erneut laden.") : error.message;
+      } else status.textContent = error.message;
     } finally { setBusy(false); }
   });
   retry.addEventListener("click", function () {

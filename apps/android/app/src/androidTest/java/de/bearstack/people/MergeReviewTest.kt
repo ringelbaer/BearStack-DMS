@@ -234,7 +234,7 @@ class MergeReviewTest {
         alignedPortraits()
         val portrait=compose.onNodeWithTag("face-30").getUnclippedBoundsInRoot()
         val label=compose.onNodeWithText("Erste Gruppe").getUnclippedBoundsInRoot()
-        assertTrue("Portrait follows its label without a large gap",portrait.top-label.bottom<=12.dp)
+        assertTrue("Portrait follows its label without a large gap",portrait.top-label.bottom<=16.dp)
         val ignore=compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertIsDisplayed().getUnclippedBoundsInRoot()
         val pencil=compose.onNodeWithContentDescription("Erste Gruppe benennen/zuordnen").assertIsDisplayed().getUnclippedBoundsInRoot()
         assertEquals(ignore.top.value,pencil.top.value,1f)

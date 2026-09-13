@@ -4,7 +4,17 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
-### BearStack 0.50.0 – in Entwicklung
+### BearStack 0.50.1 / Android 0.10.1 – in Entwicklung
+
+- PATCH-Versionen: BearStack `VERSION` und OpenAPI auf **0.50.1**, Android-App auf **0.10.1** mit `versionCode` **23**. README, App-Dokumentation und Website einschließlich Versionsangabe aktualisiert. Keine API- oder Datenmigration.
+
+- Thumbnail-Erzeugung: Datenbank-Deadlock beim Ableiten fehlender kleiner Vorschauen aus größeren Cache-Bildern behoben. Die Kandidatenabfrage wird vor weiteren Cache- und Indexprüfungen geschlossen; parallele Abrufe können dadurch nicht mehr beide Verbindungen mit verschachtelten Abfragen blockieren und das Ignorieren unter `/photos/people/groups` aufhalten. Regressionen für einen gleichzeitig aktiven SQLite-Schreiber, vollständige Erzeugung mit nur einer Verbindung sowie fehlende, leere, veraltete und ältere Cache-Dateien. PATCH-Korrektur in 0.50.1. README und Website aktualisiert; API und Cache-Format unverändert.
+
+- Gruppenbilder: Ignorieren und anschließendes Nachladen begrenzen jeden Abruf einschließlich JSON-Antwort auf 20 Sekunden, damit ein ausbleibender Server die Bedienung nicht dauerhaft sperrt. Unbestätigte Schreibantworten und fehlgeschlagene Konflikt-Aktualisierungen erlauben weitere Änderungen erst nach frischem Lesen; „Ansicht erneut laden“ wiederholt ausschließlich GET. Fotovergrößerung bleibt nutzbar, Navigation nach Ablauf wieder verfügbar. Abbrüche geben den UI-Status frei und räumen Timer auf; keine automatischen Wiederholungen. Browser-Regressionen für ausbleibende Header, unvollständige Antwortdaten, bestätigte Speicherung und Konflikt mit hängendem Nachladen ergänzt. PATCH-Robustheitskorrektur in 0.50.1. README, Website und OpenAPI-Beschreibung aktualisiert, Serververtrag unverändert.
+
+- Android / Ähnliche Gruppen: luftigere vertikale Abstände zwischen Portraits, Details und Aktionen, deutlicher Abstand zu den gemeinsamen Benennungsvorschlägen sowie größere Trefferkarten mit mehr Innenabstand. Scrollbarer Vergleich und feste Entscheidungsbuttons bleiben erhalten. PATCH-UI-Korrektur in BearStack 0.50.1 / App 0.10.1. README und Website aktualisiert; API unverändert.
+
+### BearStack 0.50.0
 
 - Android: Vorschau beim Halten eines Gesichts und zugehöriges WLAN-Vorladen verwenden `large_preview_size` statt der vollständigen Originaldatei. Optionaler Modus `size=large_preview_size` am bestehenden Labeling-Originalendpunkt liefert das ganze Foto als WebP aus dem vorhandenen Thumbnail-Cache; ohne Parameter bleibt die Originalauslieferung unverändert. Gesichtsrechte, Seitenverhältnis, Range-Requests, 2048-Pixel-Dekodierziel und begrenzter App-Cache bleiben erhalten; eigener Cache-Schlüssel für die große Vorschau. Größenwechsel, Cache-Wiederverwendung, Zugriffsschutz und Android-URL getestet. MINOR-API-Erweiterung mit Performance-Korrektur innerhalb der unveröffentlichten BearStack 0.50.0 / App 0.10.0; VERSION und versionCode unverändert. README, Website und OpenAPI aktualisiert. App und Server gemeinsam aktualisieren; ältere Server liefern weiterhin Originale.
 

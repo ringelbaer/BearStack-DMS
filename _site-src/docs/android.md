@@ -1,6 +1,6 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.10.0**. Die Servergalerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.10.1** (`versionCode 23`). Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
@@ -62,7 +62,9 @@ Zwischenstände erscheinen bereits während des Abgleichs und sind sofort auswä
 Ladezustand, leere Ergebnisse und Fehler stehen im gemeinsamen Bereich.
 **Erneut abgleichen** beziehungsweise **Erneut versuchen** wiederholt den Abgleich
 anhand der ersten Gruppe. Die Entscheidungsbuttons bleiben am unteren Bildschirmrand
-erreichbar; längere Trefferlisten scrollen mit dem Vergleichsbereich.
+erreichbar; längere Trefferlisten scrollen mit dem Vergleichsbereich. Größere
+vertikale Abstände trennen Portraits, Gruppendetails und Aktionen; die gemeinsamen
+Benennungsvorschläge erhalten einen eigenen Abstand und großzügigere Trefferkarten.
 
 Pro Paar läuft höchstens eine Suchanfrage mit bis zu 20 Treffern.
 Der bestehende NDJSON-Transport hält nur die aktuelle Rangliste und den neuesten
@@ -148,7 +150,7 @@ nichts; auch die laufende Suche nach der Position lässt sich abbrechen. Fehler 
 sich direkt wiederholen, während der bisherige Bilderstrom erhalten bleibt. Ein Wechsel
 von Tab, Konto oder in den Hintergrund verwirft eine noch laufende Anfrage.
 
-App und Server benötigen den aktuellen Entwicklungsstand von **Android 0.10.0 /
+App und Server benötigen mindestens **Android 0.10.0 /
 BearStack 0.50.0**. Der neue lesende Endpunkt `/api/photos/v1/browse/date` gilt für den
 ungefilterten, nach Datum absteigenden Stream im Tab Fotos. Er benötigt `photos.read`
 und einen aufgebauten Fotoindex. Ältere Server zeigen einen Aktualisierungshinweis.
@@ -226,8 +228,7 @@ den Betrachter und ist auf dessen Darstellungsgröße begrenzt.
 
 Die Berechtigungen folgen [Androids Regeln für vollständigen und ausgewählten Fotozugriff](https://developer.android.com/about/versions/14/changes/partial-photo-video-access).
 Die Server-API und die benötigte BearStack-Version bleiben unverändert. Diese
-MINOR-Erweiterung gehört zur noch unveröffentlichten App 0.10.0 / BearStack 0.50.0;
-App-VERSION, versionCode und Root-VERSION behalten deshalb ihren Stand.
+MINOR-Erweiterung wurde mit App 0.10.0 / BearStack 0.50.0 eingeführt.
 
 ### Karten
 

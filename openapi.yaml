@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.50.0
+  version: 0.50.1
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -2164,7 +2164,12 @@ paths:
         A changed snapshot returns 409 without partial edits; refresh the photo
         before retrying. JSON success acknowledges only the write. Then GET the
         group photo view using after=path to advance. If this GET fails, retry only
-        navigation. HTML form success redirects to the next eligible photo.
+        navigation. The browser bounds each ignore POST and photo-refresh GET to
+        20 seconds including body consumption. A lost or unreadable write response
+        requires a fresh GET before further edits; retry never replays the POST.
+        A failed refresh after 409 likewise keeps stale editing disabled. Preview
+        zoom remains available and read-only navigation resumes after the request.
+        HTML form success redirects to the next eligible photo.
         Since 0.45.0, an optional positive face_id limits the write to that single
         unnamed, active detection in this photo, including when its person has other
         detections in the same photo. Invalid, empty, repeated or unrelated face_id

@@ -1605,7 +1605,17 @@ oben einstellbar (0–255, Standard <strong>5</strong>) und wird pro Nutzer und 
 Es erscheinen ausschließlich Fotos mit <strong>mehr als</strong> dieser Anzahl unbenannter,
 nicht ignorierter Gesichter. Benannte und ignorierte Gesichter zählen nicht für die
 Auswahl, werden im geöffneten Foto aber weiterhin als Vorschauen gezeigt.</p>
+<p>Beim Ignorieren eines einzelnen Gesichts oder aller verbleibenden Gesichter endet
+jeder Speicher- und Nachladeabruf nach spätestens <strong>20 Sekunden</strong>, einschließlich
+des Lesens der Antwortdaten. Eine nicht bestätigte Speicherung sperrt weitere
+Änderungen an der alten Ansicht, bis <strong>Ansicht erneut laden</strong> den aktuellen Stand
+abgerufen hat. Dieser Button wiederholt nur den Leseabruf, niemals die Schreibaktion.
+Dasselbe gilt, wenn die Speicherung bestätigt wurde, aber das anschließende Nachladen
+scheitert, oder nach einem Revisionskonflikt. Fotovergrößerung bleibt bedienbar;
+nach Ende des Abrufs sind auch Filter, Überspringen und die Bilderleiste wieder
+nutzbar. Es gibt keine automatischen Wiederholungsschleifen.</p>
 <p>Ab <strong>0.50.0</strong> bleibt unten eine <strong>horizontal scrollbare Bilderleiste</strong> sichtbar. Mit Wischen, Mausrad oder den Pfeiltasten der Leiste lassen sich frühere und spätere Gruppenbilder durchsuchen. Ein Klick auf eine Vorschau öffnet genau dieses Foto und setzt den Durchlauf dort fort, ohne Gesichter zu verändern. Das aktuelle Foto ist markiert; <strong>Aktuelles Foto</strong> zentriert die Leiste wieder darauf. Kleine Vorschauen werden erst in Sichtnähe geladen. Die Liste nutzt dieselbe Schwelle und Pfadsortierung wie der Durchlauf, lädt in beide Richtungen nach und hält höchstens 96 Einträge im Browser. Bereits bearbeitete Bilder verschwinden beim Nachladen aus der Auswahl; das gerade geöffnete Foto bleibt auch unterhalb der Schwelle erreichbar. Ladefehler der Leiste lassen sich getrennt wiederholen.</p>
+<p>Fehlende kleine Vorschauen werden aus passenden größeren Cache-Bildern erzeugt. Dabei gibt die Thumbnail-Suche ihre Datenbankverbindung vor der weiteren Cache-Prüfung frei, damit paralleles Nachladen weder andere Fotoabrufe noch das Ignorieren von Gesichtern durch einen Datenbank-Deadlock blockiert.</p>
 <p>Ab <strong>0.46.0</strong> blendet <strong>„Nur Unbenannte anzeigen“</strong> im Gesichtsraster benannte
 und ignorierte Vorschauen aus. Der Filter wirkt sofort ohne zusätzlichen
 Serverabruf und merkt sich die Auswahl pro Benutzer im Browser. Nach Benennen,
@@ -1900,7 +1910,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.48.1 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.50.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

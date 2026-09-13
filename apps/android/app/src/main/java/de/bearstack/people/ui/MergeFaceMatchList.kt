@@ -25,7 +25,7 @@ import de.bearstack.people.text.uiStrings
 internal fun MergeFaceMatchList(result: MergeFaceMatches, enabled: Boolean,
     images: ImageLoader?, image: (Long, Boolean) -> String?, onAssign: (FaceMatch) -> Unit, onRetry: () -> Unit) {
     val text=uiStrings()
-    Column(Modifier.fillMaxWidth().testTag("merge-matches"),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+    Column(Modifier.fillMaxWidth().testTag("merge-matches"),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             Icon(painterResource(R.drawable.ic_search),null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.primary)
             Text(text(R.string.people_merge_matches_title),style=MaterialTheme.typography.labelLarge)
@@ -47,11 +47,11 @@ internal fun MergeFaceMatchList(result: MergeFaceMatches, enabled: Boolean,
                 color=MaterialTheme.colorScheme.surfaceContainer,
                 modifier=Modifier.fillMaxWidth().testTag("merge-match-${match.id}")
                     .semantics {contentDescription=text(R.string.people_merge_match_assign,match.name)}) {
-                Row(Modifier.heightIn(min=56.dp).padding(8.dp),verticalAlignment=Alignment.CenterVertically,
-                    horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.heightIn(min=72.dp).padding(12.dp),verticalAlignment=Alignment.CenterVertically,
+                    horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                     if(images!=null) AsyncImage(image(match.faceId,false),null,imageLoader=images,
-                        contentScale=ContentScale.Crop,modifier=Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)))
-                    Column(Modifier.weight(1f)) {
+                        contentScale=ContentScale.Crop,modifier=Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)))
+                    Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                         Text(match.name,style=MaterialTheme.typography.bodyMedium,maxLines=2,overflow=TextOverflow.Ellipsis)
                         Text(text(R.string.people_face_count_id,text.faces(match.count),match.id),
                             style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant)

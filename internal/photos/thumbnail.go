@@ -608,12 +608,24 @@ func (l *Library) cachedLargerThumbnailSource(ctx context.Context, media Media, 
 	if err != nil {
 		return "", false
 	}
-	defer rows.Close()
+	var sizes []int
 	for rows.Next() {
 		var largerSize int
 		if err := rows.Scan(&largerSize); err != nil {
+			_ = rows.Close()
 			return "", false
 		}
+		sizes = append(sizes, largerSize)
+	}
+	err = rows.Err()
+	closeErr := rows.Close()
+	if err != nil || closeErr != nil {
+		return "", false
+	}
+	// Cache validation can query or repair the thumbnail index. Release the
+	// candidate cursor first: parallel missing thumbnails otherwise occupy both
+	// database connections while each waits for another one, blocking photo edits.
+	for _, largerSize := range sizes {
 		cachePath, ready := l.thumbnailReadyCachePathForMedia(ctx, media, largerSize)
 		if ready {
 			return cachePath, true

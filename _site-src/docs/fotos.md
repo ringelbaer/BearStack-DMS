@@ -593,7 +593,19 @@ Es erscheinen ausschließlich Fotos mit **mehr als** dieser Anzahl unbenannter,
 nicht ignorierter Gesichter. Benannte und ignorierte Gesichter zählen nicht für die
 Auswahl, werden im geöffneten Foto aber weiterhin als Vorschauen gezeigt.
 
+Beim Ignorieren eines einzelnen Gesichts oder aller verbleibenden Gesichter endet
+jeder Speicher- und Nachladeabruf nach spätestens **20 Sekunden**, einschließlich
+des Lesens der Antwortdaten. Eine nicht bestätigte Speicherung sperrt weitere
+Änderungen an der alten Ansicht, bis **Ansicht erneut laden** den aktuellen Stand
+abgerufen hat. Dieser Button wiederholt nur den Leseabruf, niemals die Schreibaktion.
+Dasselbe gilt, wenn die Speicherung bestätigt wurde, aber das anschließende Nachladen
+scheitert, oder nach einem Revisionskonflikt. Fotovergrößerung bleibt bedienbar;
+nach Ende des Abrufs sind auch Filter, Überspringen und die Bilderleiste wieder
+nutzbar. Es gibt keine automatischen Wiederholungsschleifen.
+
 Ab **0.50.0** bleibt unten eine **horizontal scrollbare Bilderleiste** sichtbar. Mit Wischen, Mausrad oder den Pfeiltasten der Leiste lassen sich frühere und spätere Gruppenbilder durchsuchen. Ein Klick auf eine Vorschau öffnet genau dieses Foto und setzt den Durchlauf dort fort, ohne Gesichter zu verändern. Das aktuelle Foto ist markiert; **Aktuelles Foto** zentriert die Leiste wieder darauf. Kleine Vorschauen werden erst in Sichtnähe geladen. Die Liste nutzt dieselbe Schwelle und Pfadsortierung wie der Durchlauf, lädt in beide Richtungen nach und hält höchstens 96 Einträge im Browser. Bereits bearbeitete Bilder verschwinden beim Nachladen aus der Auswahl; das gerade geöffnete Foto bleibt auch unterhalb der Schwelle erreichbar. Ladefehler der Leiste lassen sich getrennt wiederholen.
+
+Fehlende kleine Vorschauen werden aus passenden größeren Cache-Bildern erzeugt. Dabei gibt die Thumbnail-Suche ihre Datenbankverbindung vor der weiteren Cache-Prüfung frei, damit paralleles Nachladen weder andere Fotoabrufe noch das Ignorieren von Gesichtern durch einen Datenbank-Deadlock blockiert.
 
 Ab **0.46.0** blendet **„Nur Unbenannte anzeigen“** im Gesichtsraster benannte
 und ignorierte Vorschauen aus. Der Filter wirkt sofort ohne zusätzlichen

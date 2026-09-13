@@ -518,3 +518,114 @@ test("group strip lazily scrolls both ways with bounded nodes, jumps and retries
     expect(errors).toEqual([]);
   } finally { await context.close(); }
 });
+
+async function recoveryPage(browser) {
+  const context = await browser.newContext({ httpCredentials: { username: "manager", password: "secret" } });
+  try {
+    await context.request.post(baseURL + "/settings/photos/faces", { form: { enabled: "1", delay_millis: "100" }, headers: { Origin: baseURL } });
+    await expect.poll(async () => (await (await context.request.get(baseURL + "/settings/photos/faces?format=json")).json()).status.done, { timeout: 20_000 }).toBe(4);
+    const page = await context.newPage();
+    const errors = []; page.on("pageerror", error => errors.push(error.message));
+    const original = (await (await context.request.get(baseURL + "/photos/people/groups?format=json&path=b.png")).json()).photo;
+    const photo = { ...original, remaining: original.faces.length, revision: "initial", faces: original.faces.map(face => ({ ...face, name: "", ignored: false })) };
+    await page.route("**/photos/people/groups?**", route => {
+      if (route.request().isNavigationRequest() || new URL(route.request().url()).searchParams.get("format") !== "json") return route.continue();
+      return route.fulfill({ json: { minimum: 0, photo } });
+    });
+    await page.goto(baseURL + "/photos/people/groups?min=0&path=b.png");
+    await page.locator("[data-group-skip]").click();
+    await expect(page.locator("[data-group-photos]")).toHaveAttribute("data-revision", "initial");
+    await expect(page.locator("[data-group-photos]")).toHaveAttribute("aria-busy", "false");
+    await page.clock.install();
+    return { context, page, photo, errors };
+  } catch (error) { await context.close(); throw error; }
+}
+
+for (const phase of ["headers", "body"]) {
+  test(`ignore timeout during ${phase} releases the UI and only retries reading`, async ({ browser }) => {
+    const { context, page, photo, errors } = await recoveryPage(browser);
+    try {
+      // Keep a real browser fetch pending, or stall its JSON body after headers.
+      await page.evaluate(phase => {
+        const original = window.fetch;
+        window.ignoreWrites = 0; window.ignoreAborts = 0;
+        window.fetch = function (url, options) {
+          if (options?.method !== "POST" || !String(url).endsWith("/photos/people/groups/ignore")) return original(url, options);
+          window.ignoreWrites++;
+          return new Promise((resolve, reject) => {
+            let body;
+            if (phase === "body") resolve(new Response(new ReadableStream({ start(stream) { body = stream; stream.enqueue(new TextEncoder().encode('{"ok":')); } }), { headers: { "Content-Type": "application/json" } }));
+            options?.signal?.addEventListener("abort", () => {
+              window.ignoreAborts++;
+              const error = new DOMException("aborted", "AbortError");
+              if (body) body.error(error); else reject(error);
+            }, { once: true });
+          });
+        };
+      }, phase);
+      const surface = page.locator("[data-group-photos]");
+      await page.locator("[data-group-ignore-face]").first().click();
+      await expect(surface).toHaveAttribute("aria-busy", "true");
+      await page.clock.fastForward(20_100);
+      await expect(surface).toHaveAttribute("aria-busy", "false");
+      await expect(page.locator("[data-people-status]")).toContainText("nicht bestätigt");
+      await expect(page.locator("[data-group-ignore-face]").first()).toBeDisabled();
+      await expect(page.locator("[data-group-filter] input[name=min]")).toBeEnabled();
+      await expect(page.locator("[data-group-highlight]").first()).toBeEnabled();
+      await expect(page.locator("[data-group-retry]")).toBeVisible();
+      // The late server write is observed by the subsequent GET, never replayed.
+      photo.faces[0].ignored = true; photo.remaining--; photo.revision = "after-save";
+      await page.locator("[data-group-retry]").click();
+      await expect(surface).toHaveAttribute("data-revision", "after-save");
+      await expect(page.locator("[data-group-face]").first()).toHaveAttribute("data-ignored", "true");
+      await expect(page.locator("[data-group-ignore-face]").first()).toBeEnabled();
+      expect(await page.evaluate(() => [window.ignoreWrites, window.ignoreAborts])).toEqual([1, 1]);
+      expect(errors).toEqual([]);
+    } finally { await context.close(); }
+  });
+}
+
+for (const status of [200, 409]) {
+  test(`ignore ${status} followed by a stalled refresh permits safe recovery`, async ({ browser }) => {
+    const { context, page, photo, errors } = await recoveryPage(browser);
+    try {
+      await page.evaluate(status => {
+        const original = window.fetch;
+        window.recoveryWrites = 0; window.recoveryReads = 0; window.recoveryAborts = 0; window.stallRefresh = true;
+        window.fetch = function (url, options) {
+          if (options?.method === "POST" && String(url).endsWith("/photos/people/groups/ignore")) {
+            window.recoveryWrites++;
+            return Promise.resolve(Response.json(status === 200 ? { ok: true, ignored: 1 } : { error: "Gruppe geändert" }, { status }));
+          }
+          if (window.recoveryWrites && new URL(String(url), location.href).searchParams.get("format") === "json") {
+            window.recoveryReads++;
+            if (window.stallRefresh) return new Promise((_, reject) => options?.signal?.addEventListener("abort", () => {
+              window.recoveryAborts++; reject(new DOMException("aborted", "AbortError"));
+            }, { once: true }));
+          }
+          return original(url, options);
+        };
+      }, status);
+      const surface = page.locator("[data-group-photos]");
+      await page.locator("[data-group-ignore-face]").first().click();
+      await expect.poll(() => page.evaluate(() => window.recoveryReads)).toBe(1);
+      await page.clock.fastForward(20_100);
+      await expect(surface).toHaveAttribute("aria-busy", "false");
+      await expect(page.locator("[data-people-status]")).toContainText(status === 200 ? "Gesicht gespeichert" : "Zeitüberschreitung");
+      await expect(page.locator("[data-group-ignore-face]").first()).toBeDisabled();
+      await expect(page.locator("[data-group-retry]")).toBeEnabled();
+      await page.locator("[data-group-highlight]").first().click();
+      await expect(page.locator("[data-group-highlight]").first()).toHaveAttribute("aria-pressed", "true");
+      photo.revision = "recovered";
+      if (status === 200) { photo.faces[0].ignored = true; photo.remaining--; }
+      await page.evaluate(() => { window.stallRefresh = false; });
+      if (status === 200) await page.locator("[data-group-retry]").click();
+      else await page.locator('[data-group-strip] [data-path="b.png"]').click();
+      await expect(surface).toHaveAttribute("data-revision", "recovered");
+      await expect(surface).toHaveAttribute("aria-busy", "false");
+      await expect(page.locator("[data-group-ignore-face]").first()).toBeEnabled();
+      expect(await page.evaluate(() => [window.recoveryWrites, window.recoveryReads, window.recoveryAborts])).toEqual([1, 2, 1]);
+      expect(errors).toEqual([]);
+    } finally { await context.close(); }
+  });
+}

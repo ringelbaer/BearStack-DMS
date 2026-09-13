@@ -113,7 +113,7 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                 }
                 if(suggestion!=null) {
                     val people=listOf(suggestion.source,suggestion.target)
-                    Column(Modifier.widthIn(max=600.dp).fillMaxWidth().padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.widthIn(max=600.dp).fillMaxWidth().padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
                         Text(text(R.string.people_same_person),style=MaterialTheme.typography.titleLarge,modifier=Modifier.padding(bottom=8.dp))
                         // Shared rows keep both portraits and their details aligned even when
                         // names wrap or only one group has individual actions.
@@ -170,8 +170,10 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                             }
                         }
                         matches?.let { result ->
-                            MergeFaceMatchList(result,enabled,vm.images,vm::image,
-                                onAssign=vm::assignMergeFaceMatch,onRetry={search?.retry()})
+                            Box(Modifier.fillMaxWidth().padding(top=16.dp)) {
+                                MergeFaceMatchList(result,enabled,vm.images,vm::image,
+                                    onAssign=vm::assignMergeFaceMatch,onRetry={search?.retry()})
+                            }
                         }
                     }
                 } else if(!state.busy && state.error==null) {

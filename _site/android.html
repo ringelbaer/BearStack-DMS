@@ -1186,7 +1186,7 @@
 
 
 <h1 id="bearstack-fotos-fur-android">BearStack Fotos für Android<a class="headerlink" href="#bearstack-fotos-fur-android" title="Permanent link">&para;</a></h1>
-<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.10.0</strong>. Die Servergalerie benötigt
+<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.10.1</strong> (<code>versionCode 23</code>). Die Servergalerie benötigt
 <strong>BearStack 0.50.0</strong>, ein aktiviertes Fotomodul und <code>photos.read</code>. Personenverwaltung
 benötigt zusätzlich <code>photos.edit</code>; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.</p>
@@ -1238,7 +1238,9 @@ gibt es keinen automatischen Abgleich und keine gemeinsame Trefferliste.</p>
 Ladezustand, leere Ergebnisse und Fehler stehen im gemeinsamen Bereich.
 <strong>Erneut abgleichen</strong> beziehungsweise <strong>Erneut versuchen</strong> wiederholt den Abgleich
 anhand der ersten Gruppe. Die Entscheidungsbuttons bleiben am unteren Bildschirmrand
-erreichbar; längere Trefferlisten scrollen mit dem Vergleichsbereich.</p>
+erreichbar; längere Trefferlisten scrollen mit dem Vergleichsbereich. Größere
+vertikale Abstände trennen Portraits, Gruppendetails und Aktionen; die gemeinsamen
+Benennungsvorschläge erhalten einen eigenen Abstand und großzügigere Trefferkarten.</p>
 <p>Pro Paar läuft höchstens eine Suchanfrage mit bis zu 20 Treffern.
 Der bestehende NDJSON-Transport hält nur die aktuelle Rangliste und den neuesten
 wartenden Zwischenstand; jede Nachricht bleibt auf 64 KiB begrenzt. Fertige Ergebnisse
@@ -1308,7 +1310,7 @@ Zeitzone, ersatzweise der Tag der Dateiänderung. <strong>Abbrechen</strong> im 
 nichts; auch die laufende Suche nach der Position lässt sich abbrechen. Fehler lassen
 sich direkt wiederholen, während der bisherige Bilderstrom erhalten bleibt. Ein Wechsel
 von Tab, Konto oder in den Hintergrund verwirft eine noch laufende Anfrage.</p>
-<p>App und Server benötigen den aktuellen Entwicklungsstand von <strong>Android 0.10.0 /
+<p>App und Server benötigen mindestens <strong>Android 0.10.0 /
 BearStack 0.50.0</strong>. Der neue lesende Endpunkt <code>/api/photos/v1/browse/date</code> gilt für den
 ungefilterten, nach Datum absteigenden Stream im Tab Fotos. Er benötigt <code>photos.read</code>
 und einen aufgebauten Fotoindex. Ältere Server zeigen einen Aktualisierungshinweis.
@@ -1375,8 +1377,7 @@ zu übernehmen. Bilddekodierung erfolgt erst für sichtbare Vorschauen beziehung
 den Betrachter und ist auf dessen Darstellungsgröße begrenzt.</p>
 <p>Die Berechtigungen folgen <a href="https://developer.android.com/about/versions/14/changes/partial-photo-video-access">Androids Regeln für vollständigen und ausgewählten Fotozugriff</a>.
 Die Server-API und die benötigte BearStack-Version bleiben unverändert. Diese
-MINOR-Erweiterung gehört zur noch unveröffentlichten App 0.10.0 / BearStack 0.50.0;
-App-VERSION, versionCode und Root-VERSION behalten deshalb ihren Stand.</p>
+MINOR-Erweiterung wurde mit App 0.10.0 / BearStack 0.50.0 eingeführt.</p>
 <h3 id="karten">Karten<a class="headerlink" href="#karten" title="Permanent link">&para;</a></h3>
 <p><strong>Weitere Optionen → Karte</strong> zeigt die GPS-Aufnahmen des aktuellen Ordners
 inklusive Unterordnern oder der aktuellen Suche. Verschieben und Zwei-Finger-Zoom
@@ -1689,7 +1690,7 @@ Fehler werden zusätzlich anhand der XML-Ergebnisse zurückgewiesen.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.48.1 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.50.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       
