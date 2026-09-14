@@ -1,6 +1,7 @@
 package de.bearstack.people
 
 import androidx.room.Room
+import androidx.room.withTransaction
 import androidx.test.platform.app.InstrumentationRegistry
 import de.bearstack.people.data.local.*
 import de.bearstack.people.data.remote.*
@@ -191,6 +192,38 @@ internal class FakeService : LabelingService {
 }
 class RepositoryTest {
     private fun database() = Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext,LabelingDatabase::class.java).build()
+    @Test fun largeQueueRecoveryAndSkippedPassPreserveOrderAndIsolation() = runBlocking {
+        val db=database()
+        try {
+            val api=FakeService();val repo=PeopleRepository(db,api,api.session);val dao=db.dao()
+            repo.state()
+            db.withTransaction {
+                for(id in 1L..10000L) dao.entry(QueueEntry(repo.scope,QueueKind.Staged,id,id,id.toInt()%4*4))
+                dao.entry(QueueEntry("other",QueueKind.Staged,1,0,8))
+            }
+            repo.restoreIgnores(except=setOf(2L))
+            assertEquals(1,dao.entryCount(repo.scope,QueueKind.Staged))
+            assertEquals(9999,dao.entryCount(repo.scope,QueueKind.Resume))
+            assertEquals(1L,dao.firstEntry(repo.scope,QueueKind.Resume)!!.person)
+            assertEquals(10000L,dao.lastEntry(repo.scope,QueueKind.Resume)!!.person)
+            assertEquals(4,dao.firstEntry(repo.scope,QueueKind.Resume)!!.page)
+            assertEquals(1,dao.entryCount("other",QueueKind.Staged))
+            assertEquals(1L,repo.next()!!.id)
+            repo.skip(api.people.getValue(1))
+            assertTrue(repo.queueStatus().canGoBack)
+            assertEquals(1L,repo.back()!!.id)
+            assertEquals(4,repo.state().page)
+            assertEquals(0,repo.queueStatus().skipped)
+            repo.skip(api.people.getValue(1))
+            repo.newPass(true)
+            assertEquals(0,dao.entryCount(repo.scope,QueueKind.Resume))
+            assertEquals(1L,repo.next()!!.id)
+            assertEquals(0,repo.state().page)
+            assertEquals(0,repo.queueStatus().skipped)
+            assertFalse(repo.queueStatus().canGoBack)
+            assertEquals(1,dao.entryCount("other",QueueKind.Staged))
+        } finally {db.close()}
+    }
     @Test fun legacyManualMergeRecoversReceiptAfterUpgrade()=runBlocking {
         val db=database()
         try {
@@ -209,7 +242,7 @@ class RepositoryTest {
             assertNotNull(repo.pending());assertEquals(1,api.commits)
             val restored=PeopleRepository(db,api,api.session)
             assertNotNull(restored.resolve());assertNull(restored.pending());assertEquals(1,api.commits)
-            assertEquals("",restored.state().skipped)
+            assertEquals(0,restored.queueStatus().skipped)
             assertEquals(1L,restored.next()!!.id)
         } finally {db.close()}
     }
@@ -244,13 +277,13 @@ class RepositoryTest {
             assertEquals(2L,repo.next()!!.id)
             repo=PeopleRepository(db,api,api.session)
             repo.restoreIgnores()
-            assertEquals("",repo.state().stagedIgnores);assertEquals(0,api.commits)
+            assertEquals(0,db.dao().entryCount(repo.scope,de.bearstack.people.data.local.QueueKind.Staged));assertEquals(0,api.commits)
             repo.skip(repo.next()!!);assertEquals(1L,repo.next()!!.id)
             repo.stageIgnore(repo.next()!!)
             repo.newPass(false) // A new pass must not reoffer an ignore still awaiting confirmation.
             assertNull(repo.next())
             repo.prepare(ignored,"ignore");repo.resolve()
-            assertEquals("",repo.state().stagedIgnores)
+            assertEquals(0,db.dao().entryCount(repo.scope,de.bearstack.people.data.local.QueueKind.Staged))
             assertEquals(5L,repo.statistics(0).first().single {it.action=="ignore"}.faces)
         } finally {db.close()}
     }
@@ -263,7 +296,7 @@ class RepositoryTest {
             repo=PeopleRepository(db,api,api.session)
             val restored=repo.back()!!
             assertEquals(1L,restored.id);assertEquals(4,restored.offset)
-            assertEquals("",repo.state().skipped);assertTrue(repo.statistics(0).first().isEmpty())
+            assertEquals(0,repo.queueStatus().skipped);assertTrue(repo.statistics(0).first().isEmpty())
             repo.prepare(restored,"name",name="Anna");repo.resolve()
             assertEquals(2L,repo.next()!!.id);assertNull(repo.back())
             repo.skip(repo.next()!!);assertNull(repo.next())
@@ -302,7 +335,7 @@ class RepositoryTest {
             assertEquals(before,repo.state());db.dao().clearPending(repo.scope)
             api.people[1]=api.people[1]!!.copy(name="Extern benannt",revision=2)
             assertNull(repo.back());assertEquals(current.id,repo.state().current)
-            assertEquals("",repo.state().skipHistory)
+            assertFalse(repo.queueStatus().canGoBack)
             val other=PeopleRepository(db,api,api.session.copy(account="other"))
             assertNull(other.back());assertTrue(other.statistics(0).first().isEmpty())
         } finally {db.close()}
@@ -352,7 +385,7 @@ class RepositoryTest {
             repo.newPass(true);assertEquals(3L,repo.next()!!.id)
             assertEquals(2L,repo.statistics(0).first().first { it.action=="skip" }.groups)
             val other=PeopleRepository(db,api,api.session.copy(account="other"))
-            assertTrue(other.statistics(0).first().isEmpty());assertEquals("",other.state().skipped)
+            assertTrue(other.statistics(0).first().isEmpty());assertEquals(0,other.queueStatus().skipped)
         } finally {db.close()}
     }
 }

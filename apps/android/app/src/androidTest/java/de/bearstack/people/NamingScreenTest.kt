@@ -28,7 +28,7 @@ class NamingScreenTest {
     @Test fun faceSearchShowsProgressEmptyErrorsAndAssignableMatches() {
         val app=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as Application
         val db=Room.inMemoryDatabaseBuilder(app,LabelingDatabase::class.java).build()
-        val api=FakeService().apply {matchDelay=500;people[9]=Person(9,"Anna",3,1,90,listOf(90))}
+        val api=FakeService().apply {matchFinish=kotlinx.coroutines.CompletableDeferred();people[9]=Person(9,"Anna",3,1,90,listOf(90))}
         val store=ViewModelStore()
         lateinit var vm: PeopleViewModel
         compose.runOnUiThread {vm=PeopleViewModel(app,db,api,api.session);store.put("test",vm)}
@@ -40,7 +40,11 @@ class NamingScreenTest {
             search.performClick()
             compose.onNodeWithText("Gesicht wird mit benannten Personen verglichen …").assertIsDisplayed()
             search.assertIsNotEnabled()
+            // Keep the loading state observable until asserted, regardless of
+            // emulator speed or the time Compose needs to settle.
+            api.matchFinish!!.complete(Unit)
             compose.waitUntil(10_000){vm.state.value.faceSearchDone}
+            api.matchFinish=null
             compose.onNodeWithText("Keine ähnlichen benannten Personen gefunden.").assertIsDisplayed()
             assertEquals(0,api.commits)
             api.matchFailure=true

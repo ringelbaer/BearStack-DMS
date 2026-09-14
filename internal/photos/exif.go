@@ -17,6 +17,48 @@ import (
 	"unicode/utf16"
 )
 
+// Sidecars are optional metadata, never an unbounded input to the indexer.
+const maxXMPSidecarBytes = 4 << 20
+
+func xmpSidecarInfo(path string) (os.FileInfo, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() || info.Size() > maxXMPSidecarBytes {
+		return nil, errors.New("XMP sidecar must be a regular file of at most 4 MiB")
+	}
+	return info, nil
+}
+
+func readXMPSidecar(path string) ([]byte, error) {
+	before, err := xmpSidecarInfo(path)
+	if err != nil {
+		return nil, err
+	}
+	file, err := os.OpenFile(path, os.O_RDONLY|sidecarOpenFlags, 0)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() || !os.SameFile(before, info) || info.Size() > maxXMPSidecarBytes {
+		return nil, errors.New("XMP sidecar changed while opening")
+	}
+	// Limit the reader too: a regular file can grow after either stat call.
+	data, err := io.ReadAll(io.LimitReader(file, maxXMPSidecarBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > maxXMPSidecarBytes {
+		return nil, errors.New("XMP sidecar exceeds 4 MiB")
+	}
+	return data, nil
+}
+
 func readMetadata(path string) (Metadata, error) {
 	meta := Metadata{}
 	ext := strings.ToLower(filepath.Ext(path))
@@ -31,7 +73,7 @@ func readMetadata(path string) (Metadata, error) {
 		}
 	}
 	for _, sidecarPath := range xmpSidecarPaths(path) {
-		sidecar, err := os.ReadFile(sidecarPath)
+		sidecar, err := readXMPSidecar(sidecarPath)
 		if err != nil {
 			continue
 		}
@@ -77,8 +119,8 @@ func xmpSidecarPaths(path string) []string {
 func xmpSidecarFingerprint(path string) string {
 	var b strings.Builder
 	for i, candidate := range xmpSidecarPaths(path) {
-		info, err := os.Stat(candidate)
-		if err != nil || info.IsDir() {
+		info, err := xmpSidecarInfo(candidate)
+		if err != nil {
 			continue
 		}
 		fmt.Fprintf(&b, "%d:%d:%d;", i, info.Size(), info.ModTime().UnixNano())

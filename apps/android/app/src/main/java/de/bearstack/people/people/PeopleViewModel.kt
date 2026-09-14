@@ -163,8 +163,8 @@ class PeopleViewModel private constructor(application: Application, private val 
         val repo = repository ?: return
         // The queue may already have advanced after a confirmed mutation or local skip.
         // Never leave its previous card actionable when loading the next one fails.
-        val queue=repo.state()
-        update { it.copy(person=null,skipped=queue.skipped.ids().size,canGoBack=queue.skipHistory.isNotEmpty()) }
+        val queue=repo.queueStatus()
+        update { it.copy(person=null,skipped=queue.skipped,canGoBack=queue.canGoBack) }
         val person = repo.next()
         update { it.copy(person=person) }
         preload(person)
@@ -681,9 +681,9 @@ class PeopleViewModel private constructor(application: Application, private val 
     fun back() { if(editable() && !state.value.naming && state.value.canGoBack) task {
         val repo=repository ?: return@task
         val person=repo.back()
-        val queue=repo.state()
-        update { it.copy(person=person ?: it.person,skipped=queue.skipped.ids().size,
-            canGoBack=queue.skipHistory.isNotEmpty(),
+        val queue=repo.queueStatus()
+        update { it.copy(person=person ?: it.person,skipped=queue.skipped,
+            canGoBack=queue.canGoBack,
             error=if(person==null) UiText(R.string.error_skipped_unavailable) else null) }
         if(person!=null) preload(person)
     } }
@@ -691,7 +691,7 @@ class PeopleViewModel private constructor(application: Application, private val 
         val body=repository?.pending()?.body?.let {JSONObject(it)}
         val receipt = repository?.resolve()
         repository?.let { repo ->
-            repo.restoreIgnores(repo.state().stagedIgnores.positions().map {it.id}.toSet()-ignoreJobs.keys-undoRequests)
+            repo.restoreIgnores(except=ignoreJobs.keys+undoRequests)
         }
         update { it.copy(unresolved=false,naming=if(receipt!=null && (receipt.source==it.person?.id || receipt.source==it.selectedPerson?.id)) false else it.naming) }
         if(state.value.mergeReview) {

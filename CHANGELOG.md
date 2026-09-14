@@ -4,6 +4,17 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.52.0 / Android 0.12.0 – in Entwicklung
+
+- XMP-Sidecars auf reguläre Dateien bis 4 MiB begrenzt; Symlinks, Spezialdateien, Dateiaustausch und Wachstum werden abgefangen. Ungültige optionale Metadaten verhindern keinen Fotoabruf. Grenzwert- und Unix-FIFO-Regressionen.
+- Gemeinsame Cursorpagination für unbenannte, benannte und zusammenzuführende Personen mit kleinen Sichtbarkeitsblöcken. Importierte Namensquellen bleiben berücksichtigt; Schema 31 ergänzt einen partiellen Kandidatenindex ohne Änderung der Gesichtsidentitäten. Regressionen für entfernte Verzeichnisse, neue Schutzmarkierungen, Abbruch und SQL-Plan mit 20.000 Personen.
+- Android: indizierte Room-Warteschlangeneinträge ersetzen serialisierte Listen. Transaktionale Migration 3→4 erhält Reihenfolge, Kartenpositionen, offene Aktionen und Statistik; Migrationen ab Schema 1, Kontentrennung und 10.000 Einträge sind durch Gerätetests abgedeckt. Einzelabrufe und begrenzte Wiederherstellungsblöcke vermeiden das fortlaufende Lesen und Schreiben vollständiger Listen.
+- Automatische OpenAPI-3.1-Validierung beider Verträge samt JSON-Schemas und lokalen Referenzen in `go test ./...` / `make test`; eigener `make test-openapi`. Reale HTTP-Erfolgs- und Fehlerantworten sowie Negativtests. Fehlerhafte YAML-Flussnotation einer Konfliktbeschreibung korrigiert. Validatoren ausschließlich in Tests, offizielles Prüfschema samt Lizenz lokal gespeichert.
+- UI-Test des Suchfortschritts mit expliziter Freigabe des Testdienstes statt eines flüchtigen 500-ms-Fensters stabilisiert; alle Ladezustandsprüfungen bleiben erhalten.
+- Android-HTTPS-Testfixture auf 30 Minuten begrenzt, damit vollständige Gerätesuiten einschließlich Gradle-Vorbereitung den Testserver nicht vorzeitig verlieren.
+- Validierung: vollständige Go-Suite, gezielte Race-Prüfungen, JavaScript-DOM-Tests, Android-Unit-Tests, Lint und Release-Build. Alle zehn Queue-Repositorytests und drei Migrationstests bestehen im Emulator. Die bestehenden UI-Tests `smallScreenLargeFontScrollsDetailsAndKeepsDecisionsVisible` und `batchSelectionConfirmCancelAndIgnoreAtLargeFont` scheitern auch im separat gebauten Ausgangsstand `91810e5`; ihre Oberfläche ist von diesem Änderungspaket nicht betroffen.
+- MINOR gemäß Projektregeln für kompatible automatische Migrationen: BearStack **0.52.0**, Android **0.12.0**, `versionCode` **25**. README, Website und OpenAPI aktualisiert.
+
 ### BearStack 0.51.0 / Android 0.11.0 – in Entwicklung
 
 - Android, Ähnliche Gruppen: automatisch zur nächsten Kombination wechseln, sobald beide Gruppen bestätigt ignoriert wurden. Der Wechsel wartet bei verlorenen Antworten auf die Quittungsprüfung; Ladefehler und leere Vorschlagslisten werden ohne doppelte Schreibaktionen behandelt. Compose-Regressionen für beide Reihenfolgen, verlorene Antwort, erneuten Abruf und letzte Kombination. README, Website und API-Beschreibung aktualisiert. PATCH-Bedienkorrektur innerhalb der laufenden unveröffentlichten BearStack 0.51.0 / App 0.11.0; Versionen und API-Vertrag bleiben unverändert.

@@ -17,7 +17,7 @@ cleanup() {
   rm -rf -- "$fixture_dir"
 }
 trap cleanup EXIT
-BEARSTACK_ANDROID_FIXTURE_STOP="$fixture_dir/stop" go test -v ./internal/server -run '^TestAndroidLabelingFixture$' -count=1 >"$fixture_dir/server.log" 2>&1 &
+BEARSTACK_ANDROID_FIXTURE_STOP="$fixture_dir/stop" go test -v ./internal/server -run '^TestAndroidLabelingFixture$' -count=1 -timeout=31m >"$fixture_dir/server.log" 2>&1 &
 fixture_pid=$!
 for ((attempt=0;attempt<120;attempt++)); do
   if rg -q 'HTTPS fixture ready' "$fixture_dir/server.log"; then break; fi

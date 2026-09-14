@@ -498,7 +498,7 @@
   
     <nav class="md-nav" aria-label="Aktivierung">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#serverseitiger-fotorouten-cache" class="md-nav__link">
     <span class="md-ellipsis">
@@ -507,12 +507,12 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
-
+  
 </li>
       
         <li class="md-nav__item">
@@ -624,9 +624,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#einrichtung-ohne-compose-native-installation" class="md-nav__link">
     <span class="md-ellipsis">
@@ -667,10 +667,10 @@
       </span>
     </span>
   </a>
-
+  
     <nav class="md-nav" aria-label="Android-Personen-App">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#lokale-fotoordner-in-der-android-app" class="md-nav__link">
     <span class="md-ellipsis">
@@ -679,9 +679,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
   
@@ -884,7 +884,7 @@
   
     <nav class="md-nav" aria-label="Aktivierung">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#serverseitiger-fotorouten-cache" class="md-nav__link">
     <span class="md-ellipsis">
@@ -893,12 +893,12 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
-
+  
 </li>
       
         <li class="md-nav__item">
@@ -1010,9 +1010,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#einrichtung-ohne-compose-native-installation" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1053,10 +1053,10 @@
       </span>
     </span>
   </a>
-
+  
     <nav class="md-nav" aria-label="Android-Personen-App">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#lokale-fotoordner-in-der-android-app" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1065,9 +1065,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
   
@@ -1168,6 +1168,8 @@ Vorschauen weiter. Auch kurze Suchbegriffe und ODER-Suchen behalten alle Treffer
 <p>Der Zufallsendpunkt <code>/photos/random</code> liefert standardmäßig das Original direkt aus. Mit <code>size=original</code> bleibt es beim Original; mit <code>size=ordner</code>, <code>size=galerie</code>, <code>size=gross</code>, <code>size=groß</code> oder <code>size=hd</code> wird stattdessen die jeweilige konfigurierte Thumbnailgröße ausgeliefert.</p>
 <p>Zusätzlich liefert der Endpunkt Metadaten als Response-Header: <code>X-BearStack-Photo-Title</code>, <code>X-BearStack-Photo-Path</code>, <code>X-BearStack-Photo-Folder-Path</code>, <code>X-BearStack-Photo-Folder-URL</code>, <code>X-BearStack-Photo-Folder-Title</code> sowie <code>Link: &lt;https://.../photos?...&gt;; rel="up"</code> als standardisierter Parent-Link.</p>
 <h2 id="gesichter-und-xmp">Gesichter und XMP<a class="headerlink" href="#gesichter-und-xmp" title="Permanent link">&para;</a></h2>
+<p>Ab 0.52.0 werden nur reguläre XMP-Sidecars bis <strong>4 MiB</strong> gelesen. Symlinks, Spezialdateien, zu große oder während des Öffnens ausgetauschte Dateien werden übersprungen; auch beim Lesen gilt die feste Grenze. Das Foto bleibt ohne diese optionalen Metadaten verfügbar.</p>
+<p>Die Labeling-API verwendet für unbenannte, benannte und zusammenzuführende Gruppen dieselbe Cursorpagination mit Sichtbarkeitsprüfungen in kleinen Blöcken. Neue Schutzmarkierungen und dadurch entfallende importierte Namen werden berücksichtigt, ohne den gesamten restlichen ID-Bereich vor jeder Seite zu prüfen. Foto-Schema <strong>31</strong> ergänzt den dazugehörigen partiellen Kandidatenindex automatisch; Gesichtsidentitäten bleiben erhalten.</p>
 <p>Gesichtsdaten werden aus eingebettetem JPEG-XMP sowie XMP-Sidecars gelesen: <code>photo.jpg.xmp</code>, <code>photo.jpg.XMP</code>, <code>photo.xmp</code> und <code>photo.XMP</code>. BearStack speichert Namen und normalisierte Gesichtsboxen im Fotoindex und liefert sie in der Foto-JSON-API aus. Sie bleiben eigene Metadaten: Gesichtsnamen werden nicht automatisch zu Foto-Tags, erscheinen nicht in Tag-Listen und sind gezielt über <code>person:</code> oder <code>face:</code> suchbar.</p>
 <p>In der Vollansicht zeigt die Info-Seitenleiste den vollständigen Aufnahmezeitpunkt mit Datum und Uhrzeit an.</p>
 <h2 id="index-und-worker">Index und Worker<a class="headerlink" href="#index-und-worker" title="Permanent link">&para;</a></h2>
@@ -1919,7 +1921,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.51.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.52.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

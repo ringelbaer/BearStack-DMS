@@ -1,25 +1,28 @@
 package bearstack
 
 import (
-	"fmt"
-	"strings"
+	"os"
 	"testing"
+
+	"bearstack/internal/testutil/apicontract"
 )
 
 func TestOpenAPISpecMatchesApplicationVersion(t *testing.T) {
-	spec := OpenAPISpec()
-	if strings.TrimSpace(spec) == "" {
-		t.Fatal("OpenAPISpec() is empty")
+	spec, err := apicontract.Load([]byte(OpenAPISpec()))
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, want := range []string{
-		"openapi: 3.1.0",
-		fmt.Sprintf("  version: %s", Version()),
-		"  /api/openapi.yaml:",
-		"  /api/documents:",
-		"  /api/upload:",
-	} {
-		if !strings.Contains(spec, want) {
-			t.Fatalf("OpenAPI description is missing %q", want)
-		}
+	if got := spec.Data["info"].(map[string]any)["version"]; got != Version() {
+		t.Fatalf("OpenAPI version %v, application %s", got, Version())
+	}
+}
+
+func TestFaceServiceOpenAPISpec(t *testing.T) {
+	data, err := os.ReadFile("services/faces/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := apicontract.Load(data); err != nil {
+		t.Fatal(err)
 	}
 }

@@ -19,11 +19,11 @@ type LabelGroupRef struct {
 // LabelMergeGroups scans the ID index in small batches. Only the returned page
 // receives portrait metadata; browsing never loads all faces of a large group.
 func (l *Library) LabelMergeGroups(ctx context.Context, after, upper int64, includeNamed bool) (LabelCandidates, error) {
-	names := `p.name=''`
+	scope := labelPeopleUnnamed
 	if includeNamed {
-		names = `1=1`
+		scope = labelPeopleAll
 	}
-	out, err := l.labelPeopleList(ctx, after, upper, names, "", nil)
+	out, err := l.labelPeopleList(ctx, after, upper, scope, "", nil)
 	if err != nil || len(out.People) == 0 {
 		return out, err
 	}

@@ -4,12 +4,15 @@ NPM ?= npm
 PYTHON ?= python3
 FUZZTIME ?= 10s
 
-.PHONY: test test-go test-js test-playwright build
+.PHONY: test test-go test-openapi test-js test-playwright build
 
 test: test-go test-js
 
 test-go:
 	$(GO) test ./...
+
+test-openapi:
+	$(GO) test . ./internal/testutil/apicontract ./internal/server -run 'Test(OpenAPI|FaceServiceOpenAPI|InvalidSpecifications|Responses|ExampleAndConstantReferences)'
 
 test-js:
 	NODE="$(NODE)" ./scripts/check-js.sh

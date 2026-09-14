@@ -116,6 +116,10 @@ Zusätzlich liefert der Endpunkt Metadaten als Response-Header: `X-BearStack-Pho
 
 ## Gesichter und XMP
 
+Ab 0.52.0 werden nur reguläre XMP-Sidecars bis **4 MiB** gelesen. Symlinks, Spezialdateien, zu große oder während des Öffnens ausgetauschte Dateien werden übersprungen; auch beim Lesen gilt die feste Grenze. Das Foto bleibt ohne diese optionalen Metadaten verfügbar.
+
+Die Labeling-API verwendet für unbenannte, benannte und zusammenzuführende Gruppen dieselbe Cursorpagination mit Sichtbarkeitsprüfungen in kleinen Blöcken. Neue Schutzmarkierungen und dadurch entfallende importierte Namen werden berücksichtigt, ohne den gesamten restlichen ID-Bereich vor jeder Seite zu prüfen. Foto-Schema **31** ergänzt den dazugehörigen partiellen Kandidatenindex automatisch; Gesichtsidentitäten bleiben erhalten.
+
 Gesichtsdaten werden aus eingebettetem JPEG-XMP sowie XMP-Sidecars gelesen: `photo.jpg.xmp`, `photo.jpg.XMP`, `photo.xmp` und `photo.XMP`. BearStack speichert Namen und normalisierte Gesichtsboxen im Fotoindex und liefert sie in der Foto-JSON-API aus. Sie bleiben eigene Metadaten: Gesichtsnamen werden nicht automatisch zu Foto-Tags, erscheinen nicht in Tag-Listen und sind gezielt über `person:` oder `face:` suchbar.
 
 In der Vollansicht zeigt die Info-Seitenleiste den vollständigen Aufnahmezeitpunkt mit Datum und Uhrzeit an.

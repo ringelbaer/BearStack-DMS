@@ -104,30 +104,7 @@ func scanLabel(row interface{ Scan(...any) error }) (LabelPerson, error) {
 	return p, err
 }
 func (l *Library) LabelCandidates(ctx context.Context, after, upper int64) (LabelCandidates, error) {
-	out := LabelCandidates{People: []LabelPerson{}, Next: after}
-	if err := l.refreshPeopleVisibility(ctx, `p.id>? AND p.id<=?`, after, upper); err != nil {
-		return out, err
-	}
-	rows, err := l.index.db.QueryContext(ctx, `SELECT `+labelColumns+labelFrom+` WHERE p.name='' AND p.id>? AND p.id<=? AND `+labelExists+` ORDER BY p.id LIMIT 21`, after, upper)
-	if err != nil {
-		return out, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		p, e := scanLabel(rows)
-		if e != nil {
-			return out, e
-		}
-		out.People = append(out.People, p)
-	}
-	if len(out.People) > 20 {
-		out.HasNext = true
-		out.People = out.People[:20]
-	}
-	if len(out.People) > 0 {
-		out.Next = out.People[len(out.People)-1].ID
-	}
-	return out, rows.Err()
+	return l.labelPeopleList(ctx, after, upper, labelPeopleUnnamed, "", nil)
 }
 func (l *Library) LabelPerson(ctx context.Context, id int64, offset int, limits ...int) (LabelPerson, error) {
 	limit := 4

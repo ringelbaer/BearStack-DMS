@@ -80,7 +80,8 @@ func TestAndroidLabelingFixture(t *testing.T) {
 	server.StartTLS()
 	defer server.Close()
 	t.Log("HTTPS fixture ready on https://127.0.0.1:18787; account manager, password secret")
-	deadline := time.NewTimer(10 * time.Minute)
+	// A full device suite plus Gradle setup can exceed ten minutes on CI.
+	deadline := time.NewTimer(30 * time.Minute)
 	defer deadline.Stop()
 	tick := time.NewTicker(200 * time.Millisecond)
 	defer tick.Stop()

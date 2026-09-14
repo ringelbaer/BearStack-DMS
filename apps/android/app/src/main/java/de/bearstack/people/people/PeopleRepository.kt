@@ -9,75 +9,78 @@ import java.util.UUID
 import org.json.JSONObject
 import org.json.JSONArray
 
-internal fun String.ids(): List<Long> = split(',').mapNotNull { it.toLongOrNull() }
-internal fun List<Long>.stored(): String = joinToString(",")
-internal data class GroupPosition(val id: Long, val page: Int)
-internal fun String.positions(): List<GroupPosition> = if (isEmpty()) emptyList() else split(',').map {
-    val parts=it.split(':'); GroupPosition(parts[0].toLong(),parts[1].toInt())
-}
-internal fun List<GroupPosition>.storedPositions(): String = joinToString(",") { "${it.id}:${it.page}" }
 internal fun QueueState.afterReceipt(r: Receipt, merged: Set<Long> = emptySet()): QueueState {
-    // Compatibility only: resolve intents saved before manual combining was removed.
-    if(r.action=="merge_groups" || r.action=="name_groups") return copy(
-        current=if(current in merged) 0 else current,page=if(current in merged) 0 else page,
-        remaining=remaining.ids().filterNot {it in merged}.stored(),
-        detached=(detached.ids().filterNot {it in merged}+if(r.action=="merge_groups") listOf(r.target) else emptyList()).distinct().stored(),
-        skipped=skipped.ids().filterNot {it in merged}.stored(),
-        skipHistory=skipHistory.positions().filterNot {it.id in merged}.storedPositions(),
-        resume=resume.positions().filterNot {it.id in merged}.storedPositions(),
-        stagedIgnores=stagedIgnores.positions().filterNot {it.id in merged}.storedPositions())
-    val next = if (r.action == "detach" || r.action == "unassign" || r.action == "unassign_faces") copy(detached=(detached.ids()+r.newId).distinct().stored())
-        else if (r.action == "rename" || r.action == "favorite" || r.action == "reject_merge" || r.action.endsWith("_faces")) this
-        else if (current==r.source) copy(current=0,page=0) else this
-    return if(r.action=="ignore") next.copy(stagedIgnores=next.stagedIgnores.positions().filterNot {it.id==r.source}.storedPositions()) else next
+    val clear = if(r.action=="merge_groups" || r.action=="name_groups") current in merged
+        else r.action !in setOf("detach","unassign","favorite","rename","reject_merge") && !r.action.endsWith("_faces") && current==r.source
+    return if(clear) copy(current=0,page=0) else this
 }
 
 class PeopleRepository(private val db: LabelingDatabase, val api: LabelingService, val session: Session) {
     val scope = session.scope
     private val dao = db.dao()
-    suspend fun state(): QueueState = dao.state(scope) ?: QueueState(scope, session.upper, UUID.randomUUID().toString()).also { dao.state(it) }
+    suspend fun state(): QueueState = dao.state(scope) ?: run {
+        dao.initialize(QueueState(scope,session.upper,UUID.randomUUID().toString()))
+        checkNotNull(dao.state(scope))
+    }
     suspend fun pending(): Pending? = dao.pending(scope)
+    suspend fun queueStatus(): QueueStatus = dao.queueStatus(scope)
+    private suspend fun save(value: QueueState) = dao.state(value.copy(revision=value.revision+1))
+    private suspend fun append(kind: String, person: Long, page: Int = 0) {
+        if(dao.entry(scope,kind,person)!=null) return
+        dao.entry(QueueEntry(scope,kind,person,(dao.lastEntry(scope,kind)?.position ?: -1)+1,page))
+    }
+    private suspend fun prepend(kind: String, person: Long, page: Int = 0) {
+        dao.removeEntry(scope,kind,person)
+        dao.entry(QueueEntry(scope,kind,person,(dao.firstEntry(scope,kind)?.position ?: 1)-1,page))
+    }
+    private suspend fun checkUnchanged(before: QueueState) {
+        checkMessage(pending()==null && state()==before,R.string.error_queue_changed)
+    }
     suspend fun next(): Person? {
-        checkMessage(pending() == null,R.string.error_pending_first)
-        var state = state()
-        while (true) {
-            if (state.current != 0L) {
-                try {
-                    var person = api.person(state.current, state.page)
-                    if (person.name.isEmpty() && person.count > 0) {
-                        if (person.faces.isEmpty()) {
-                            person = api.person(state.current, ((person.count - 1) / 4 * 4).toInt())
-                            state = state.copy(page=person.offset); dao.state(state)
-                        }
-                        return person
+        while(true) {
+            checkMessage(pending()==null,R.string.error_pending_first)
+            val before=state()
+            if(before.current!=0L) {
+                var person=try { api.person(before.current,before.page) }
+                    catch(e: ApiFailure) { if(e.status!=404) throw e; null }
+                if(person!=null && person.name.isEmpty() && person.count>0) {
+                    if(person.faces.isEmpty()) person=api.person(before.current,((person.count-1)/4*4).toInt())
+                    db.withTransaction {
+                        checkUnchanged(before)
+                        if(person.offset!=before.page) save(before.copy(page=person.offset))
                     }
-                } catch (e: ApiFailure) { if (e.status != 404) throw e }
-                state = state.copy(current=0,page=0); dao.state(state)
+                    return person
+                }
+                db.withTransaction { checkUnchanged(before);save(before.copy(current=0,page=0)) }
+                continue
             }
-            val detached = state.detached.ids()
-            val remaining = state.remaining.ids()
-            val resume = state.resume.positions()
-            if (detached.isNotEmpty()) {
-                state = state.copy(current=detached.first(), detached=detached.drop(1).stored())
-            } else if (resume.isNotEmpty()) {
-                state = state.copy(current=resume.first().id, page=resume.first().page, resume=resume.drop(1).storedPositions())
-            } else if (remaining.isNotEmpty()) {
-                state = state.copy(current=remaining.first(), remaining=remaining.drop(1).stored())
-            } else if (state.exhausted) return null
-            else {
-                val page = api.candidates(state.cursor, state.upper)
-                val excluded=(state.skipped.ids()+state.stagedIgnores.positions().map {it.id}).toSet()
-                state = state.copy(remaining=page.people.map { it.id }.filterNot { it in excluded }.stored(),
-                    cursor=page.next, exhausted=!page.hasNext)
+            val selected=db.withTransaction {
+                checkUnchanged(before)
+                val entry=dao.firstEntry(scope,QueueKind.Detached) ?: dao.firstEntry(scope,QueueKind.Resume)
+                    ?: dao.firstEntry(scope,QueueKind.Remaining)
+                if(entry!=null) {
+                    dao.removeEntry(scope,entry.kind,entry.person)
+                    save(before.copy(current=entry.person,page=entry.page))
+                }
+                entry!=null
             }
-            dao.state(state)
+            if(selected) continue
+            if(before.exhausted) return null
+            val page=api.candidates(before.cursor,before.upper)
+            checkMessage(!page.hasNext || page.next>before.cursor,R.string.error_queue_changed)
+            db.withTransaction {
+                checkUnchanged(before)
+                val excluded=dao.excludedPeople(scope,page.people.map {it.id}).toSet()
+                page.people.filterNot {it.id in excluded}.forEach {append(QueueKind.Remaining,it.id)}
+                save(before.copy(cursor=page.next,exhausted=!page.hasNext))
+            }
         }
     }
     suspend fun page(offset: Int): Person {
-        val state = state()
-        val p = api.person(state.current, offset)
-        dao.state(state.copy(page=offset))
-        return p
+        val before=state()
+        val person=api.person(before.current,offset)
+        db.withTransaction {checkUnchanged(before);save(before.copy(page=offset))}
+        return person
     }
     suspend fun prepare(person: Person, action: String, name: String = "", target: Person? = null, face: Long = 0,
         allowDuplicate: Boolean = false, favorite: Boolean? = null, suggestionId: Long? = null, assignment: Person? = null, faces: Set<Long> = emptySet()) {
@@ -111,7 +114,7 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
                 val inserted = dao.event(Event(scope,receipt.operation,eventAction,receipt.faces,receipt.groups,receipt.at))
                 val groups=JSONObject(pending.body).optJSONArray("groups")
                 val merged=if(groups==null) emptySet() else (0 until groups.length()).map {groups.getJSONObject(it).getLong("id")}.toSet()
-                if (inserted != -1L) dao.state(state().afterReceipt(receipt,merged))
+                if (inserted != -1L) applyReceipt(receipt,merged)
                 dao.clearPending(scope)
             }
             return receipt
@@ -121,70 +124,98 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
             throw e
         }
     }
+    private suspend fun applyReceipt(receipt: Receipt, merged: Set<Long>) {
+        val before=state()
+        if(receipt.action=="merge_groups" || receipt.action=="name_groups") {
+            dao.removePeople(scope,merged.toList())
+            if(receipt.action=="merge_groups") append(QueueKind.Detached,receipt.target)
+        } else if(receipt.action in setOf("detach","unassign","unassign_faces")) {
+            append(QueueKind.Detached,receipt.newId)
+        }
+        if(receipt.action=="ignore") dao.removeEntry(scope,QueueKind.Staged,receipt.source)
+        save(before.afterReceipt(receipt,merged))
+    }
     suspend fun skip(person: Person) = db.withTransaction {
-        check(pending() == null)
-        val state = state()
-        checkMessage(state.current == person.id,R.string.error_group_changed)
-        dao.event(Event(scope,"skip:${state.pass}:${person.id}","skip",person.count,1,System.currentTimeMillis()/1000))
-        dao.state(state.copy(current=0,page=0,skipped=(state.skipped.ids()+person.id).distinct().stored(),
-            skipHistory=(state.skipHistory.positions().filterNot { it.id==person.id }+GroupPosition(person.id,state.page)).storedPositions()))
+        check(pending()==null)
+        val before=state()
+        checkMessage(before.current==person.id,R.string.error_group_changed)
+        dao.event(Event(scope,"skip:${before.pass}:${person.id}","skip",person.count,1,System.currentTimeMillis()/1000))
+        append(QueueKind.Skipped,person.id)
+        dao.removeEntry(scope,QueueKind.History,person.id)
+        append(QueueKind.History,person.id,before.page)
+        save(before.copy(current=0,page=0))
     }
     suspend fun stageIgnore(person: Person) = db.withTransaction {
         check(pending()==null)
         val before=state()
         check(before.current==person.id)
-        dao.state(before.copy(current=0,page=0,
-            stagedIgnores=(before.stagedIgnores.positions()+GroupPosition(person.id,before.page)).distinctBy {it.id}.storedPositions()))
+        append(QueueKind.Staged,person.id,before.page)
+        save(before.copy(current=0,page=0))
     }
     /** Unsent ignores are returned to the queue, never replayed after process death. */
-    suspend fun restoreIgnores(ids: Set<Long>? = null, show: Long? = null) = db.withTransaction {
+    suspend fun restoreIgnores(ids: Set<Long>? = null, show: Long? = null, except: Set<Long> = emptySet()) = db.withTransaction {
         val before=state()
         val pendingSource=pending()?.source
-        val restored=before.stagedIgnores.positions().filter {it.id!=pendingSource && (ids==null || it.id in ids)}
-        val selected=restored.firstOrNull {it.id==show}
-        val paused=if(selected!=null && before.current!=0L) listOf(GroupPosition(before.current,before.page)) else emptyList()
-        dao.state(before.copy(current=selected?.id ?: before.current,page=selected?.page ?: before.page,
-            stagedIgnores=before.stagedIgnores.positions().filterNot {it in restored}.storedPositions(),
-            resume=(restored.filterNot {it==selected}+paused+before.resume.positions()).distinctBy {it.id}.storedPositions()))
+        fun eligible(entry: QueueEntry) = entry.person!=pendingSource && entry.person !in except && (ids==null || entry.person in ids)
+        val selected=show?.let {dao.entry(scope,QueueKind.Staged,it)}?.takeIf {eligible(it)}
+        if(selected!=null) {
+            dao.removeEntry(scope,QueueKind.Staged,selected.person)
+            if(before.current!=0L) prepend(QueueKind.Resume,before.current,before.page)
+        }
+        // Walk backwards in bounded batches; prepending preserves the original order.
+        var cursor=Long.MAX_VALUE
+        while(true) {
+            val batch=dao.reverseEntries(scope,QueueKind.Staged,cursor)
+            if(batch.isEmpty()) break
+            batch.filter {eligible(it)}.forEach {
+                dao.removeEntry(scope,QueueKind.Staged,it.person)
+                prepend(QueueKind.Resume,it.person,it.page)
+            }
+            cursor=batch.last().position
+        }
+        save(before.copy(current=selected?.person ?: before.current,page=selected?.page ?: before.page))
     }
     suspend fun back(): Person? {
-        checkMessage(pending() == null,R.string.error_pending_first)
-        while (true) {
+        checkMessage(pending()==null,R.string.error_pending_first)
+        while(true) {
             val before=state()
-            val history=before.skipHistory.positions()
-            val previous=history.lastOrNull() ?: return null
-            // Validate remotely before changing local queue or statistics. A network
-            // failure leaves both the current card and the undo opportunity intact.
-            var person=try { api.person(previous.id,previous.page) }
-                catch(e: ApiFailure) { if(e.status!=404) throw e; null }
+            val previous=dao.lastEntry(scope,QueueKind.History) ?: return null
+            // Validate remotely before changing queue or statistics.
+            var person=try {api.person(previous.person,previous.page)}
+                catch(e: ApiFailure) {if(e.status!=404) throw e;null}
             if(person!=null && person.name.isEmpty() && person.count>0 && person.faces.isEmpty()) {
-                person=api.person(previous.id,((person.count-1)/4*4).toInt())
+                person=api.person(previous.person,((person.count-1)/4*4).toInt())
             }
             val usable=person!=null && person.name.isEmpty() && person.count>0
             db.withTransaction {
-                checkMessage(pending()==null && state()==before,R.string.error_queue_changed)
-                val trimmed=before.copy(skipHistory=history.dropLast(1).storedPositions())
+                checkUnchanged(before)
+                dao.removeEntry(scope,QueueKind.History,previous.person)
                 if(usable) {
-                    val resume=(if(before.current!=0L && before.current!=previous.id) listOf(GroupPosition(before.current,before.page)) else emptyList()) + before.resume.positions()
-                    dao.state(trimmed.copy(current=previous.id,page=person!!.offset,
-                        resume=resume.filterNot { it.id==previous.id }.distinctBy { it.id }.storedPositions(),
-                        remaining=before.remaining.ids().filterNot { it==previous.id }.stored(),
-                        detached=before.detached.ids().filterNot { it==previous.id }.stored(),
-                        skipped=before.skipped.ids().filterNot { it==previous.id }.stored()))
-                    dao.undoSkipEvent(scope,"skip:${before.pass}:${previous.id}")
-                } else dao.state(trimmed)
+                    if(before.current!=0L && before.current!=previous.person) prepend(QueueKind.Resume,before.current,before.page)
+                    for(kind in listOf(QueueKind.Resume,QueueKind.Remaining,QueueKind.Detached,QueueKind.Skipped)) {
+                        dao.removeEntry(scope,kind,previous.person)
+                    }
+                    save(before.copy(current=previous.person,page=person!!.offset))
+                    dao.undoSkipEvent(scope,"skip:${before.pass}:${previous.person}")
+                } else save(before)
             }
             if(usable) return person
         }
     }
     suspend fun newPass(skippedOnly: Boolean) {
-        check(pending() == null)
-        val old = state()
-        val fresh = api.session()
-        requireMessage(fresh.scope == scope,R.string.error_scope_changed)
-        dao.state(QueueState(scope,fresh.upper,UUID.randomUUID().toString(),
-            remaining=if(skippedOnly) old.skipped else "", exhausted=skippedOnly,
-            detached=old.detached,skipped=if(skippedOnly) "" else old.skipped,stagedIgnores=old.stagedIgnores))
+        check(pending()==null)
+        val before=state()
+        val fresh=api.session()
+        requireMessage(fresh.scope==scope,R.string.error_scope_changed)
+        db.withTransaction {
+            checkUnchanged(before)
+            for(kind in listOf(QueueKind.Remaining,QueueKind.History,QueueKind.Resume)) dao.clearEntries(scope,kind)
+            if(skippedOnly) {
+                dao.copyEntries(scope,QueueKind.Skipped,QueueKind.Remaining)
+                dao.clearEntries(scope,QueueKind.Skipped)
+            }
+            save(before.copy(upper=fresh.upper,pass=UUID.randomUUID().toString(),current=0,page=0,cursor=0,exhausted=skippedOnly))
+        }
     }
     fun statistics(today: Long) = dao.statistics(scope,today)
 }

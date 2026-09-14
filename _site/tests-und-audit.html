@@ -655,7 +655,7 @@
   </a>
   
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#testmatrix" class="md-nav__link">
     <span class="md-ellipsis">
@@ -664,7 +664,7 @@
       </span>
     </span>
   </a>
-
+  
 </li>
       
         <li class="md-nav__item">
@@ -686,10 +686,10 @@
       </span>
     </span>
   </a>
-
+  
     <nav class="md-nav" aria-label="Performance-Benchmarks">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#performance-des-lupen-gesichtabgleichs" class="md-nav__link">
     <span class="md-ellipsis">
@@ -698,10 +698,10 @@
       </span>
     </span>
   </a>
-
+  
     <nav class="md-nav" aria-label="Performance des Lupen-Gesichtabgleichs">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#umgesetzte-optimierung" class="md-nav__link">
     <span class="md-ellipsis">
@@ -710,14 +710,14 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
-
+  
 </li>
-
+        
       </ul>
     </nav>
   
@@ -825,7 +825,7 @@
   </a>
   
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#testmatrix" class="md-nav__link">
     <span class="md-ellipsis">
@@ -834,7 +834,7 @@
       </span>
     </span>
   </a>
-
+  
 </li>
       
         <li class="md-nav__item">
@@ -856,10 +856,10 @@
       </span>
     </span>
   </a>
-
+  
     <nav class="md-nav" aria-label="Performance-Benchmarks">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#performance-des-lupen-gesichtabgleichs" class="md-nav__link">
     <span class="md-ellipsis">
@@ -868,10 +868,10 @@
       </span>
     </span>
   </a>
-
+  
     <nav class="md-nav" aria-label="Performance des Lupen-Gesichtabgleichs">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#umgesetzte-optimierung" class="md-nav__link">
     <span class="md-ellipsis">
@@ -880,14 +880,14 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
-
+  
 </li>
-
+        
       </ul>
     </nav>
   
@@ -960,11 +960,14 @@
 </span></code></pre></div>
 <p>Nach den Syntaxchecks führt <code>make test-js</code> auch die DOM-Regressionen aus. Die Personen-Fixtures verwenden eine gemeinsame vollständige Auswahlleiste, damit ein neuer Bedienknopf den restlichen Testlauf nicht durch veraltete Fixtures blockiert.</p>
 <p>Regressionen prüfen atomare Einstellungen bei Schreibfehlern, konsistente Datenbank-Snapshots und konkurrierende Cache-Ladevorgänge. Fototests sichern die Beschränkung auf betroffene Personen, importierte Namensquellen, neue Schutzmarkierungen, wartende Prüfungen und eine gebündelte Referenzabfrage ab. Gemeinsame MIME-Fixtures decken Transferdecoder sowie UTF-8-, Windows-1252- und RFC-2231-Anhangsnamen ab. Bildtests prüfen proportionale Gesichtsausschnitte in quadratischen Vorschauen für Hochformat, Querformat, quadratische Regionen und Randbeschnitt bei 160 und 640 Pixeln. Weitere Regressionen sichern den bedarfsweisen Ersatz gestreckter Cachebilder, Fehlerwiederholungen und dieselbe Auslieferung über Web- und Android-/Labeling-Endpunkte ab; Browser-Tests prüfen Hintergrund und quadratische Kacheln auf Desktop und Mobilgeräten.</p>
+<p><code>make test-openapi</code> prüft beide ausgelieferten OpenAPI-3.1-Dateien gegen das lokal gespeicherte offizielle Dokumentschema, kompiliert JSON-Schemas und löst Vertragsreferenzen ohne Netzabrufe auf. Reale HTTP-Testantworten der Galerie und Personenverwaltung prüfen Status, Medientyp und JSON-Inhalt einschließlich Fehlerfällen. YAML-Fehler, fehlende Referenzen, ungültige Schematypen und vertragswidrige Antworten besitzen Negativtests. Die YAML- und JSON-Schema-Validatoren werden ausschließlich von Tests importiert.</p>
+<p>Android-Migrationstests öffnen frühere Room-Schemas mit erhaltenen Quittungen und Statistiken. Große Warteschlangen mit 10.000 Einträgen prüfen Reihenfolge, Kartenpositionen, Wiederherstellung und Kontentrennung; vorhandene Repositorytests sichern Zurückgehen, verlorene Antworten und Wiederaufnahme ab. XMP-Tests decken die 4-MiB-Grenze, Symlinks und unter Unix FIFOs ab; Personenpagination prüft neue Schutzmarkierungen, Abbruch und den SQL-Plan mit 20.000 weiteren Personen.</p>
 <p>Einzeln:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./...
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>make<span class="w"> </span>test-go
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>make<span class="w"> </span>test-js
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>make<span class="w"> </span>test-playwright
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>make<span class="w"> </span>test-openapi
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>make<span class="w"> </span>test-js
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>make<span class="w"> </span>test-playwright
 </span></code></pre></div>
 <p>Die Go-Tests decken Repository-Migrationen, Suche, Tags, benutzerdefinierte Felder, Suchfavoriten, Uploads, Auth, Berechtigungen, Audit-Logs, Dokumentverarbeitung, Fotoindex, Thumbnails, Worker und viele HTTP-Handler ab. JavaScript wird per <code>node --check</code> geprüft. Playwright-Smokes starten BearStack mit temporärer Konfiguration und prüfen zentrale Browser-Flows wie Dokumenten-Upload und Foto-Galerie.</p>
 <p>Reine Testhelfer bleiben in <code>_test.go</code>-Dateien. Ab 0.41.2 liegen auch die Helfer zum Vorbelegen der Einstellungs-Caches in <code>internal/server/test_helpers_test.go</code>. Mailimport-Tests rufen die gemeinsamen Anhangsfunktionen direkt auf; die ausschließlich in Tests genutzten PDF-Weiterleitungen sind entfernt. Absenderfilter, Größenlimit, Decodierung und sichere Dateinamen bleiben durch dieselben Prüfungen abgedeckt.</p>
@@ -1371,7 +1374,7 @@ Zwischenstände und das Verhalten bei konkurrierenden Änderungen.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.51.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.52.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

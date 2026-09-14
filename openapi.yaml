@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.51.0
+  version: 0.52.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -992,6 +992,8 @@ paths:
         Requires photos.edit. Clients must use HTTPS. Protocol 1 is available from
         BearStack 0.30.0. Persist queue state under instance + dataset + account.
         upper_id freezes the next candidate pass. Clearing face data rotates dataset.
+        Candidate, named-person and group pages share bounded visibility checks;
+        a page does not refresh the complete remaining ID range.
       responses:
         "200":
           description: Successful response. Cache-Control is private, no-store.
@@ -2489,7 +2491,7 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
-        '409': {description: Stale source, missing target, overlapping region or face limit reached.}
+        '409': {description: 'Stale source, missing target, overlapping region or face limit reached.'}
   /photos/faces/unignore:
     post:
       tags: [Photos]

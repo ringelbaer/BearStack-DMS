@@ -7,26 +7,15 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class QueueAndGestureTest {
-    @Test fun manualMergeRemovesAllSelectedQueueEntriesAndReoffersCombinedGroup() {
-        val before=QueueState("scope",100,"pass",current=2,page=4,remaining="1,3,4",detached="2,5",
-            skipped="1,6",skipHistory="1:0,6:4",resume="2:0,7:0",stagedIgnores="3:0,8:0")
-        val receipt=Receipt("op","merge_groups",1,1,0,10,0,0)
-        val after=before.afterReceipt(receipt,setOf(1,2,3))
-        assertEquals(0L,after.current);assertEquals(0,after.page)
-        assertEquals("4",after.remaining);assertEquals("5,1",after.detached)
-        assertEquals("6",after.skipped);assertEquals("6:4",after.skipHistory)
-        assertEquals("7:0",after.resume);assertEquals("8:0",after.stagedIgnores)
-        assertEquals("5",before.afterReceipt(receipt.copy(action="name_groups"),setOf(1,2,3)).detached)
-    }
-    @Test fun detachedGroupsKeepOrderAndCurrentGroupUntilCompletion() {
-        var state = QueueState("scope",100,"pass",current=7,page=4)
-        for(id in listOf(101L,102L,103L)) state=state.afterReceipt(Receipt("$id","detach",7,0,id,1,0,0))
-        assertEquals(7L,state.current)
-        assertEquals(listOf(101L,102L,103L),state.detached.ids())
-        state=state.afterReceipt(Receipt("name","name",7,0,0,8,1,0))
-        assertEquals(0L,state.current)
-        assertEquals(0,state.page)
-        assertEquals(listOf(101L,102L,103L),state.detached.ids())
+    @Test fun receiptsPreserveCurrentUntilItsGroupIsCompleted() {
+        val before=QueueState("scope",100,"pass",current=7,page=4)
+        for(action in listOf("detach","unassign_faces","rename","favorite","reject_merge")) {
+            assertEquals(before,before.afterReceipt(Receipt("op",action,7,0,101,1,0,0)))
+        }
+        val receipt=Receipt("op","name",7,0,0,1,0,0)
+        assertEquals(before.copy(current=0,page=0),before.afterReceipt(receipt))
+        assertEquals(before,before.afterReceipt(receipt.copy(source=8)))
+        assertEquals(before.copy(current=0,page=0),before.afterReceipt(receipt.copy(action="merge_groups"),setOf(7,8)))
     }
     @Test fun swipeRejectsTapShortReverseDiagonalAndChangedDirection() {
         assertNull(swipeAction(-20f,0f,true,96f))

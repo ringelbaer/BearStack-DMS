@@ -46,11 +46,16 @@ Nach den Syntaxchecks führt `make test-js` auch die DOM-Regressionen aus. Die P
 
 Regressionen prüfen atomare Einstellungen bei Schreibfehlern, konsistente Datenbank-Snapshots und konkurrierende Cache-Ladevorgänge. Fototests sichern die Beschränkung auf betroffene Personen, importierte Namensquellen, neue Schutzmarkierungen, wartende Prüfungen und eine gebündelte Referenzabfrage ab. Gemeinsame MIME-Fixtures decken Transferdecoder sowie UTF-8-, Windows-1252- und RFC-2231-Anhangsnamen ab. Bildtests prüfen proportionale Gesichtsausschnitte in quadratischen Vorschauen für Hochformat, Querformat, quadratische Regionen und Randbeschnitt bei 160 und 640 Pixeln. Weitere Regressionen sichern den bedarfsweisen Ersatz gestreckter Cachebilder, Fehlerwiederholungen und dieselbe Auslieferung über Web- und Android-/Labeling-Endpunkte ab; Browser-Tests prüfen Hintergrund und quadratische Kacheln auf Desktop und Mobilgeräten.
 
+`make test-openapi` prüft beide ausgelieferten OpenAPI-3.1-Dateien gegen das lokal gespeicherte offizielle Dokumentschema, kompiliert JSON-Schemas und löst Vertragsreferenzen ohne Netzabrufe auf. Reale HTTP-Testantworten der Galerie und Personenverwaltung prüfen Status, Medientyp und JSON-Inhalt einschließlich Fehlerfällen. YAML-Fehler, fehlende Referenzen, ungültige Schematypen und vertragswidrige Antworten besitzen Negativtests. Die YAML- und JSON-Schema-Validatoren werden ausschließlich von Tests importiert.
+
+Android-Migrationstests öffnen frühere Room-Schemas mit erhaltenen Quittungen und Statistiken. Große Warteschlangen mit 10.000 Einträgen prüfen Reihenfolge, Kartenpositionen, Wiederherstellung und Kontentrennung; vorhandene Repositorytests sichern Zurückgehen, verlorene Antworten und Wiederaufnahme ab. XMP-Tests decken die 4-MiB-Grenze, Symlinks und unter Unix FIFOs ab; Personenpagination prüft neue Schutzmarkierungen, Abbruch und den SQL-Plan mit 20.000 weiteren Personen.
+
 Einzeln:
 
 ```sh
 go test ./...
 make test-go
+make test-openapi
 make test-js
 make test-playwright
 ```
