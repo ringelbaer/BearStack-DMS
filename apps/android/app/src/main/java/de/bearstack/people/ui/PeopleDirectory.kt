@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import de.bearstack.people.people.PeopleState
 import de.bearstack.people.people.PeopleViewModel
@@ -35,6 +36,7 @@ import de.bearstack.people.people.PeopleViewModel
 internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
     val text=uiStrings()
     val person=state.selectedPerson
+    var help by remember {mutableStateOf(false)}
     var held by remember { mutableStateOf<Long?>(null) }
     var heldDismissed by remember { mutableStateOf(false) }
     var accessible by remember { mutableStateOf(false) }
@@ -44,7 +46,7 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
     val zoomDistance=with(LocalDensity.current) { 240.dp.toPx() }
     val zoomDrag: (Float) -> Unit = { zoom=zoomAfterDrag(zoom,it,zoomDistance) }
     val enabled=!state.busy && !state.unresolved && held==null
-    val browsing=enabled && !state.naming && state.removeFace==null && state.batchConfirmation==null
+    val browsing=enabled && !help && !state.naming && state.removeFace==null && state.batchConfirmation==null
     val listState=rememberLazyListState()
     val gridState=rememberLazyGridState()
     LaunchedEffect(state.namedQuery) {listState.scrollToItem(0)}
@@ -64,6 +66,7 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
     LaunchedEffect(person?.id,person?.revision,person?.offset) { held=null;accessible=false }
     BackHandler {
         if(held!=null) { if(accessible) held=null else heldDismissed=true }
+        else if(help) help=false
         else if(state.removeFace!=null) vm.cancelUnassign()
         else if(state.batchConfirmation!=null) vm.cancelFaceBatch()
         else if(state.naming) vm.closeNaming()
@@ -71,9 +74,10 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
         else if(person!=null) vm.closePerson() else vm.closeDirectory()
     }
     Box(Modifier.fillMaxSize()) {
-        Scaffold(topBar={ TopAppBar(title={Text(text(R.string.people_directory))},navigationIcon={
+        Scaffold(topBar={ TopAppBar(title={Text(text(R.string.people_directory),maxLines=1,overflow=TextOverflow.Ellipsis)},navigationIcon={
             TextButton(onClick={if(state.selectedFaces.isNotEmpty()) vm.clearFaceSelection() else if(person!=null) vm.closePerson() else vm.closeDirectory()},enabled=browsing) { Text(text(R.string.photos_back)) }
         },actions={
+            TextButton(onClick={help=true},enabled=held==null && !state.naming && state.removeFace==null && state.batchConfirmation==null) {Text(text(R.string.common_help))}
             if(state.error!=null) TextButton(onClick=vm::switchConnection,enabled=!state.busy && held==null) { Text(text(R.string.connection_title)) }
         }) },bottomBar={
             if(person!=null && state.selectedFaces.isNotEmpty()) FaceBatchBar(state,browsing,vm)
@@ -94,7 +98,6 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
                     OutlinedTextField(state.namedQuery,vm::namedQueryChanged,label={Text(text(R.string.people_search))},singleLine=true,
                         enabled=state.namedSearch && !state.unresolved,modifier=Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=8.dp),
                         trailingIcon={if(state.namedQuery.isNotEmpty()) TextButton(onClick={vm.namedQueryChanged("")}) {Text(text(R.string.common_clear))}})
-                    if(!state.namedSearch && !state.busy) Text(text(R.string.people_search_version),Modifier.padding(horizontal=16.dp),style=MaterialTheme.typography.bodySmall)
                     LazyColumn(state=listState,modifier=Modifier.fillMaxSize().testTag("named-people"),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
                         item {
                             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
@@ -137,8 +140,6 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
                                     }
                                 },enabled=browsing) { Text(text(R.string.people_browser_search)) }
                                 browserError?.let { Text(text(it),color=MaterialTheme.colorScheme.error) }
-                                Text(text(R.string.people_manage_help),style=MaterialTheme.typography.bodySmall)
-                                Text(text(if(state.batchFaces) R.string.people_batch_help else R.string.people_batch_version),style=MaterialTheme.typography.bodySmall)
                             }
                         }
                         itemsIndexed(person.faces,key={_,face -> face}) {index,face ->
@@ -171,6 +172,12 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
             }
         }
     }
+    if(help) AlertDialog(onDismissRequest={help=false},title={Text(text(R.string.common_help))},
+        text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            Text(text(R.string.people_manage_help))
+            Text(text(if(state.batchFaces) R.string.people_batch_help else R.string.people_batch_version))
+            if(!state.namedSearch) Text(text(R.string.people_search_version))
+        }},confirmButton={TextButton(onClick={help=false}) {Text(text(R.string.photos_close))}})
     if(state.naming) NamingDialog(state,vm,enabled)
     state.batchConfirmation?.let { action ->
         FaceBatchConfirmation(action,state.selectedFaces.size,enabled,!state.busy && !state.unresolved,

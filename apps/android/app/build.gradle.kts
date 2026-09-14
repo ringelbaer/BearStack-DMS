@@ -17,7 +17,7 @@ android {
         minSdk = 26
         targetSdk = 36
         resourceConfigurations += listOf("de","en")
-        versionCode = 25
+        versionCode = 26
         versionName = rootProject.file("VERSION").readText().trim()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

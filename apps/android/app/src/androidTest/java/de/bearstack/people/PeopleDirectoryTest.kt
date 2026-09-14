@@ -45,6 +45,25 @@ class PeopleDirectoryTest {
     }
     private fun idle(vm: PeopleViewModel) = compose.waitUntil(10_000) {vm.state.value.connected && !vm.state.value.busy}
 
+    @Test fun helpIsAvailableInDirectoryAndClosesWithoutNavigation() = screen(openDetail=false) {vm,api ->
+        compose.onNodeWithText("×: Zuordnung",substring=true).assertDoesNotExist()
+        compose.onNodeWithText("Hilfe").performClick()
+        compose.onNodeWithText("×: Zuordnung",substring=true).assertIsDisplayed()
+        compose.onNodeWithText("Schließen").performClick()
+        assertTrue(vm.state.value.directory);assertNull(vm.state.value.selectedPerson)
+        compose.onNodeWithText("Anna").assertIsDisplayed();assertEquals(0,api.commits)
+    }
+    @Test fun scrollableHelpPreservesFaceSelectionAtLargeFont() = screen(2f) {vm,api ->
+        compose.onNodeWithText("×: Zuordnung",substring=true).assertDoesNotExist()
+        compose.onNodeWithText("Über die Checkboxen",substring=true).assertDoesNotExist()
+        compose.onNodeWithTag("select-face-30").performScrollTo().performClick()
+        compose.onNodeWithText("Hilfe").performClick()
+        compose.onNodeWithText("Über die Checkboxen",substring=true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Schließen").assertIsDisplayed().performClick()
+        assertEquals(setOf(30L),vm.state.value.selectedFaces);assertEquals(3L,vm.state.value.selectedPerson!!.id)
+        compose.onNodeWithText("Aktionen").assertIsEnabled();assertEquals(0,api.commits)
+    }
+
     @Test fun listRenameFavoriteAndRemoveLastFace() = screen(2f) {vm,api ->
         compose.onNodeWithText("Person umbenennen").performScrollTo().performClick()
         compose.onNodeWithText("Name").performTextReplacement("Anna Neu")

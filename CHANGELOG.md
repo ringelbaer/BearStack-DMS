@@ -4,6 +4,10 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.52.2 / Android 0.12.1 – in Entwicklung
+
+- Android, Personen: Bedienhinweise zu Einzelaktionen, Vorschau, Mehrfachauswahl und Serverkompatibilität unter **Hilfe** in einem scrollbaren Dialog gesammelt, entsprechend „Ähnliche Gruppen“. In Personenliste und Detailansicht erreichbar; Schließen erhält Ansicht und Auswahl. Keine zusätzlichen Serveranfragen oder API-Änderungen. UI-Regressionen für Liste, große Schrift und Auswahl; README und Website aktualisiert. PATCH: BearStack **0.52.2**, App **0.12.1**, `versionCode` **26**; OpenAPI-Versionsangabe aktualisiert.
+
 ### BearStack 0.52.1 – in Entwicklung
 
 - Zentrale Labeling-SQL-Abfragen, konsistente Detail-Lesesnapshots und vollständige Aktions-Transaktionen in den `photoIndexStore` verschoben. Die Bibliothek behält Validierung, Sichtbarkeitsprüfungen und die Sperre über Commit und Cacheabgleich. Transaktionen melden Cachearbeit ausschließlich nach erfolgreichem Commit; Quittungswiederholungen bleiben ohne erneute Mutation. Gemeinsame Aufbereitung von Gesichtspfaden und Originalschlüsseln nach dem Schließen der Datenbankabfrage; finale Personenabfragen laden nur die noch fehlenden Seiteneinträge.
