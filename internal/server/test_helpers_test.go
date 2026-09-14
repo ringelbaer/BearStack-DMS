@@ -49,3 +49,10 @@ func (svc settingsService) CacheRenderSettings(settings renderSettingsSnapshot) 
 	}
 	svc.app.mu.Unlock()
 }
+
+func normalizeRenderSettingsSnapshot(settings renderSettingsSnapshot) renderSettingsSnapshot {
+	settings.TagDisplayMode = normalizeTagDisplayMode(settings.TagDisplayMode)
+	settings.ThemeMode = normalizeThemeMode(settings.ThemeMode)
+	settings.HomePage = normalizeHomePage(settings.HomePage)
+	return settings
+}

@@ -115,14 +115,6 @@ type faceRowsQuery interface {
 	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
 }
 
-func (l *Library) nearestPerson(ctx context.Context, tx faceRowsQuery, v []float32, excluded map[int64]bool) (int64, error) {
-	named, err := faceNamedPeople(ctx, tx)
-	if err != nil {
-		return 0, err
-	}
-	return l.nearestPersonInGroups(ctx, tx, v, excluded, named)
-}
-
 // Name changes do not invalidate the vector index. Read IDs from the partial
 // named-person index in the matching transaction, without loading embeddings.
 const faceNamedPeopleSQL = `SELECT id FROM photo_people WHERE name<>''`

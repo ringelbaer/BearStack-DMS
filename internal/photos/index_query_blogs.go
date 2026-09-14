@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"bearstack/internal/photos/blogcontent"
 	"bearstack/internal/searchtext"
 )
 
@@ -146,7 +147,7 @@ func (l *Library) indexBlogsPage(ctx context.Context, rel, query string, include
 			if summaries {
 				post.Text = ""
 			} else {
-				_, post.HTML = blogContent(post.Name, []byte(post.Text))
+				_, post.HTML = blogcontent.Render(post.Name, []byte(post.Text))
 			}
 			blogs = append(blogs, post)
 			if len(blogs) >= limit {

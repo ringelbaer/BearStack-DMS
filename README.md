@@ -1,8 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.52.0** · Android-App: **0.12.0**.
+Aktuelle Version: **0.52.1** · Android-App: **0.12.0**.
 
-XMP-Sidecars sind auf reguläre Dateien bis 4 MiB begrenzt. Die Personenpagination prüft die Sichtbarkeit in kleinen Blöcken; Foto-Schema 31 ergänzt automatisch einen Kandidatenindex. Android migriert bestehende Warteschlangen in indizierte Room-Einträge und erhält Reihenfolge, Kartenpositionen, offene Aktionen und Statistiken. `make test` validiert beide OpenAPI-Dateien einschließlich lokaler Referenzen und JSON-Schemas sowie ausgewählte echte HTTP-Antworten; `make test-openapi` führt diese Prüfung separat aus.
+XMP-Sidecars sind auf reguläre Dateien bis 4 MiB begrenzt. Die Personenpagination prüft die Sichtbarkeit in kleinen Blöcken; Foto-Schema 31 ergänzt automatisch einen Kandidatenindex. Android migriert bestehende Warteschlangen in indizierte Room-Einträge und erhält Reihenfolge, Kartenpositionen, offene Aktionen und Statistiken. `make test` validiert beide OpenAPI-Dateien einschließlich lokaler Referenzen und JSON-Schemas sowie ausgewählte echte HTTP-Antworten; `make test-openapi` führt diese Prüfung separat aus. Ab 0.52.1 liegen die zentralen Labeling-Abfragen und Aktions-Transaktionen im Fotoindex-Store; die Bibliothek koordiniert Rechteprüfung und Cachepflege. Blogdarstellung ist als reines Paket abgegrenzt, ausschließlich von Tests verwendete Helfer liegen in `_test.go`.
 
 BearStack ist eine Go-Webanwendung zur Ablage und Verwaltung von Dokumenten. Die Daten liegen lokal in SQLite und im Dateisystem. Der Betrieb ist fuer kleine Server wie einen Raspberry Pi ausgelegt.
 

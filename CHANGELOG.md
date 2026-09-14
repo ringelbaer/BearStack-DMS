@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.52.1 – in Entwicklung
+
+- Zentrale Labeling-SQL-Abfragen, konsistente Detail-Lesesnapshots und vollständige Aktions-Transaktionen in den `photoIndexStore` verschoben. Die Bibliothek behält Validierung, Sichtbarkeitsprüfungen und die Sperre über Commit und Cacheabgleich. Transaktionen melden Cachearbeit ausschließlich nach erfolgreichem Commit; Quittungswiederholungen bleiben ohne erneute Mutation. Gemeinsame Aufbereitung von Gesichtspfaden und Originalschlüsseln nach dem Schließen der Datenbankabfrage; finale Personenabfragen laden nur die noch fehlenden Seiteneinträge.
+- Reines Paket `internal/photos/blogcontent` für Suchtext, Datum und maskiertes HTML. Dateilesen und Blogcache-Zuordnung aus dem Index-Orchestrator in `library_blog.go` verschoben; HTML- und Textsicherheit durch gezielte Regressionen abgesichert.
+- Ausschließlich von Tests aufgerufene Helfer `nearestPerson`, `decodeGPX` und `normalizeRenderSettingsSnapshot` unverändert in `_test.go` verschoben.
+- Validierung: vollständige Go-Suite, gezielte Race-Tests für Labeling/Blogs/HTTP, separater Produktionsbuild, alle drei Android-Serverintegrationstests und Website-Build erfolgreich.
+- PATCH-Refactor ohne neue API oder Migration: BearStack **0.52.1**, Android weiterhin **0.12.0**. README, Architektur-/Testdokumentation, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.52.0 / Android 0.12.0 – in Entwicklung
 
 - XMP-Sidecars auf reguläre Dateien bis 4 MiB begrenzt; Symlinks, Spezialdateien, Dateiaustausch und Wachstum werden abgefangen. Ungültige optionale Metadaten verhindern keinen Fotoabruf. Grenzwert- und Unix-FIFO-Regressionen.

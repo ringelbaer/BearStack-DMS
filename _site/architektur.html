@@ -631,6 +631,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#zustandigkeiten-im-fotomodul" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Zuständigkeiten im Fotomodul
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#performance" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -783,6 +794,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Abfragen und Darstellung
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zustandigkeiten-im-fotomodul" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Zuständigkeiten im Fotomodul
       </span>
     </span>
   </a>
@@ -950,6 +972,43 @@
 <p>Mailimport und EML-Archivierung teilen MIME-Helfer für Transfer-Encoding, Content-Type, Anhangsnamen und Zeichensätze. Welche Anhänge verarbeitet werden, ihre Größenlimits und die Archivdarstellung bleiben Aufgaben der jeweiligen Module.</p>
 <p>Das Browsermodul <code>app-photos-media.js</code> stellt die gemeinsam verwendeten Medien-Helfer bereit, darunter die Übernahme von Fotometadaten und die Auswahl einer passenden Bildauflösung. Galerie und Fotoframe verwenden diese Helfer; der Fotoframe kann unabhängig vom Galerie-Script arbeiten. Das gemeinsame Modul wird vor seinen Verbrauchern geladen.</p>
 <p>Die Lightbox mit Zoom, Touch-Gesten, Vollbild, Diashow und Video-/Audiowiedergabe liegt in <code>app-photos-lightbox.js</code>. Die Galerie startet sie über <code>BearStack.photos.lightbox.init</code> und übergibt Bearbeitungsmodus, gebündeltes Metadaten-Nachladen und Kartenhelfer explizit. Der Dialogzustand bleibt innerhalb des Lightbox-Moduls; Galerie-Layout, Auswahl und Scroll-Wiederherstellung bleiben im Galerie-Modul. Die Asset-Liste lädt das neue Modul vor der Galerie. Ein Browser-Test prüft die Lightbox ohne Galerie-Script mit separat übergebenen Funktionen.</p>
+<h2 id="zustandigkeiten-im-fotomodul">Zuständigkeiten im Fotomodul<a class="headerlink" href="#zustandigkeiten-im-fotomodul" title="Permanent link">&para;</a></h2>
+<p>Ab 0.52.1 sind die zentralen Labeling- und Blogwege klarer aufgeteilt:</p>
+<table>
+<thead>
+<tr>
+<th>Bereich</th>
+<th>Zuständigkeit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>labeling.go</code>, <code>labeling_people.go</code></td>
+<td>Aktionen validieren, aktuelle Verzeichnissichtbarkeit prüfen, Cursorablauf steuern und Gesichts-Caches synchronisieren</td>
+</tr>
+<tr>
+<td><code>index_labeling_query.go</code></td>
+<td>Gebundene Kandidatenblöcke, Personendetails in einer Lesetransaktion, Portraitdaten und Aktionsquittungen lesen</td>
+</tr>
+<tr>
+<td><code>index_labeling_actions.go</code></td>
+<td>SQLite-Schreiber reservieren, Revisionen prüfen, Änderungen und Quittung atomar speichern; Cachearbeit erst nach erfolgreichem Commit melden</td>
+</tr>
+<tr>
+<td><code>labeling_types.go</code></td>
+<td>Gemeinsame Labeling-Daten- und Antworttypen</td>
+</tr>
+<tr>
+<td><code>library_blog.go</code></td>
+<td>Zugriffsprüfung, Pfadauflösung, begrenztes Dateilesen und Zuordnung zum Blogindex</td>
+</tr>
+<tr>
+<td><code>internal/photos/blogcontent</code></td>
+<td>Suchtext, Datumsannotation und HTML mit maskierten Benutzereingaben erzeugen; kein Datei-, Datenbank- oder Bibliothekszugriff</td>
+</tr>
+</tbody>
+</table>
+<p>Die Bibliothek hält die bestehende Gesichtssperre über Datenbank-Commit und Cacheabgleich hinweg. Wiederholte Quittungen lösen keine erneute Cachemutation aus. SQL-Lesetransaktionen werden vor der Aufbereitung öffentlicher Bildpfade beendet. Die finalen Personenabfragen laden höchstens die noch fehlenden Einträge eines 21er-Blocks. API-Formate, Revisionsprüfungen und Gesichtsidentitäten bleiben erhalten; dieser Refactor benötigt keine weitere Migration.</p>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
 <p>BearStack trennt Dokumente und Fotodaten, nutzt Caches für aufwendige Medienarbeit und führt OCR sowie Vorschau-Erzeugung im Hintergrund aus. Das ist besonders wichtig, wenn Archive über die Zeit wachsen oder viele Bilder in einem bestehenden Fotoverzeichnis liegen.</p>
 <p>Ab 0.42.0 verwendet WebDAV <code>ListDocumentFiles</code> für schlanke Dateimetadaten ohne nachgeladene Tags, eigene Felder, Duplikat- und Verknüpfungszähler. Filter und Sortierung stammen aus demselben Abfrageaufbau wie normale Dokumentlisten; die bestehende Namensvergabe und HTTP-Metadaten bleiben erhalten. Beim Auflösen von Zwischenordnern werden ausschließlich Ordnerkandidaten geladen.</p>
@@ -1063,7 +1122,7 @@ der Personenübersicht noch von der Navigation durch Gruppenbilder ab.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.52.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.52.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

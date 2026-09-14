@@ -23,37 +23,24 @@ func (l *Library) LabelMergeGroups(ctx context.Context, after, upper int64, incl
 	if includeNamed {
 		scope = labelPeopleAll
 	}
-	out, err := l.labelPeopleList(ctx, after, upper, scope, "", nil)
+	out, err := l.labelPeopleList(ctx, after, upper, scope, "")
 	if err != nil || len(out.People) == 0 {
 		return out, err
 	}
-	args := make([]any, len(out.People))
-	positions := make(map[int64]int, len(out.People))
-	for i, p := range out.People {
-		args[i] = p.FaceID
-		positions[p.ID] = i
-	}
-	rows, err := l.index.db.QueryContext(ctx, `SELECT f.person_id,f.id,f.path,f.x,f.y,f.width,f.height,f.favorite,m.size_bytes,m.mod_time_unix_nano
-        FROM photo_faces f JOIN media_index m ON m.path=f.path
-        WHERE f.id IN (`+sqlutil.Placeholders(len(args))+`) AND f.ignored=0 AND m.admin_only=0`, args...)
+	faces, err := l.index.labelPortraits(ctx, out.People)
 	if err != nil {
 		return out, err
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var person, size, modified int64
-		var source string
-		var face LabelFace
-		if err := rows.Scan(&person, &face.ID, &source, &face.Bounds.X, &face.Bounds.Y, &face.Bounds.Width, &face.Bounds.Height, &face.Favorite, &size, &modified); err != nil {
-			return out, err
-		}
-		if i, ok := positions[person]; ok && out.People[i].FaceID == face.ID {
-			face.DisplayPath = mediaDisplayPath(source)
-			face.OriginalKey = labelOriginalKey(source, size, modified)
-			out.People[i].Faces = []LabelFace{face}
+	positions := make(map[int64]int, len(out.People))
+	for i, person := range out.People {
+		positions[person.ID] = i
+	}
+	for _, row := range faces {
+		if i, ok := positions[row.PersonID]; ok && out.People[i].FaceID == row.Face.ID {
+			out.People[i].Faces = []LabelFace{presentLabelFace(row)}
 		}
 	}
-	return out, rows.Err()
+	return out, nil
 }
 
 func validateLabelGroupSelection(id int64, a LabelAction, name string) error {

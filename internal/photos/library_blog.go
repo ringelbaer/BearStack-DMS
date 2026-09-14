@@ -3,12 +3,13 @@ package photos
 
 import (
 	"context"
-	"html"
-	"html/template"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"bearstack/internal/photos/blogcontent"
 )
 
 // Blog reads supported text content using the same renderer and size limit as
@@ -67,104 +68,52 @@ func (l *Library) blogFromPathData(rel string) (BlogPost, error) {
 	return post, nil
 }
 
-func markdownDate(raw []byte) *time.Time {
-	lines := strings.Split(string(raw), "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if !strings.HasPrefix(line, "<!-- @pg-date ") || !strings.HasSuffix(line, " -->") {
-			continue
-		}
-		value := strings.TrimSuffix(strings.TrimPrefix(line, "<!-- @pg-date "), " -->")
-		if parsed, err := time.Parse("2006-01-02", strings.TrimSpace(value)); err == nil {
-			return &parsed
-		}
+func (l *Library) blogFromPathInfo(rel, abs string, info os.FileInfo, cache map[string]cachedBlogRow, adminOnly bool) (BlogPost, bool, error) {
+	if !info.Mode().IsRegular() {
+		return BlogPost{}, false, os.ErrNotExist
 	}
-	return nil
+	if row, ok := cache[rel]; ok && row.ModTimeUnixNano == info.ModTime().UnixNano() && (row.AdminOnly != 0) == adminOnly {
+		return blogFromCachedRow(row, info.ModTime()), false, nil
+	}
+	file, err := os.Open(abs)
+	if err != nil {
+		return BlogPost{}, false, err
+	}
+	defer file.Close()
+	raw, err := io.ReadAll(io.LimitReader(file, maxBlogBytes))
+	if err != nil {
+		return BlogPost{}, false, err
+	}
+	post := BlogPost{
+		Name:      filepath.Base(filepath.FromSlash(rel)),
+		Path:      rel,
+		AdminOnly: adminOnly,
+		Date:      blogcontent.Date(raw),
+		ModTime:   info.ModTime(),
+	}
+	post.Text, post.HTML = blogcontent.Render(rel, raw)
+	if row, ok := cache[rel]; ok {
+		post.Tags = tagsFromJSON(row.Tags)
+	} else if tags, ok := l.blogTags(rel); ok {
+		post.Tags = tags
+	}
+	return post, true, nil
 }
 
-func blogContent(name string, raw []byte) (string, template.HTML) {
-	if strings.EqualFold(filepath.Ext(name), ".txt") {
-		return string(raw), template.HTML("<pre>" + html.EscapeString(string(raw)) + "</pre>")
+func blogFromCachedRow(row cachedBlogRow, modTime time.Time) BlogPost {
+	post := BlogPost{
+		Name:      row.Name,
+		Path:      row.Path,
+		Tags:      tagsFromJSON(row.Tags),
+		AdminOnly: row.AdminOnly != 0,
+		Text:      row.Text,
+		ModTime:   modTime,
 	}
-	return markdownText(raw), renderMarkdown(raw)
-}
-
-func renderMarkdown(raw []byte) template.HTML {
-	var b strings.Builder
-	inList := false
-	lines := strings.Split(string(raw), "\n")
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "<!-- @pg-date ") {
-			continue
-		}
-		if trimmed == "" {
-			if inList {
-				b.WriteString("</ul>")
-				inList = false
-			}
-			continue
-		}
-		if strings.HasPrefix(trimmed, "### ") {
-			if inList {
-				b.WriteString("</ul>")
-				inList = false
-			}
-			b.WriteString("<h4>" + html.EscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "### "))) + "</h4>")
-			continue
-		}
-		if strings.HasPrefix(trimmed, "## ") {
-			if inList {
-				b.WriteString("</ul>")
-				inList = false
-			}
-			b.WriteString("<h3>" + html.EscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "## "))) + "</h3>")
-			continue
-		}
-		if strings.HasPrefix(trimmed, "# ") {
-			if inList {
-				b.WriteString("</ul>")
-				inList = false
-			}
-			b.WriteString("<h2>" + html.EscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "# "))) + "</h2>")
-			continue
-		}
-		if strings.HasPrefix(trimmed, "- ") || strings.HasPrefix(trimmed, "* ") {
-			if !inList {
-				b.WriteString("<ul>")
-				inList = true
-			}
-			b.WriteString("<li>" + html.EscapeString(strings.TrimSpace(trimmed[2:])) + "</li>")
-			continue
-		}
-		if inList {
-			b.WriteString("</ul>")
-			inList = false
-		}
-		b.WriteString("<p>" + html.EscapeString(trimmed) + "</p>")
-	}
-	if inList {
-		b.WriteString("</ul>")
-	}
-	return template.HTML(b.String())
-}
-
-func markdownText(raw []byte) string {
-	lines := strings.Split(string(raw), "\n")
-	out := make([]string, 0, len(lines))
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "<!-- @pg-date ") {
-			continue
-		}
-		line = strings.TrimPrefix(line, "### ")
-		line = strings.TrimPrefix(line, "## ")
-		line = strings.TrimPrefix(line, "# ")
-		line = strings.TrimPrefix(line, "- ")
-		line = strings.TrimPrefix(line, "* ")
-		if line != "" {
-			out = append(out, line)
+	_, post.HTML = blogcontent.Render(row.Name, []byte(row.Text))
+	if row.Date != "" {
+		if parsed, err := time.Parse("2006-01-02", row.Date); err == nil {
+			post.Date = &parsed
 		}
 	}
-	return strings.Join(out, "\n")
+	return post
 }

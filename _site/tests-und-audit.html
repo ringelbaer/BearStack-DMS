@@ -970,7 +970,7 @@
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>make<span class="w"> </span>test-playwright
 </span></code></pre></div>
 <p>Die Go-Tests decken Repository-Migrationen, Suche, Tags, benutzerdefinierte Felder, Suchfavoriten, Uploads, Auth, Berechtigungen, Audit-Logs, Dokumentverarbeitung, Fotoindex, Thumbnails, Worker und viele HTTP-Handler ab. JavaScript wird per <code>node --check</code> geprüft. Playwright-Smokes starten BearStack mit temporärer Konfiguration und prüfen zentrale Browser-Flows wie Dokumenten-Upload und Foto-Galerie.</p>
-<p>Reine Testhelfer bleiben in <code>_test.go</code>-Dateien. Ab 0.41.2 liegen auch die Helfer zum Vorbelegen der Einstellungs-Caches in <code>internal/server/test_helpers_test.go</code>. Mailimport-Tests rufen die gemeinsamen Anhangsfunktionen direkt auf; die ausschließlich in Tests genutzten PDF-Weiterleitungen sind entfernt. Absenderfilter, Größenlimit, Decodierung und sichere Dateinamen bleiben durch dieselben Prüfungen abgedeckt.</p>
+<p>Reine Testhelfer bleiben in <code>_test.go</code>-Dateien. Ab 0.52.1 gilt das auch für <code>nearestPerson</code>, <code>decodeGPX</code> und <code>normalizeRenderSettingsSnapshot</code>; ihre bestehenden Aufrufer und Regressionen bleiben erhalten. Das getrennte Blogdarstellungspaket prüft zusätzlich, dass HTML-Eingaben maskiert werden, Textdateien ihre Leerzeichen behalten und ungültige Datumsangaben entfallen. Ab 0.41.2 liegen auch die Helfer zum Vorbelegen der Einstellungs-Caches in <code>internal/server/test_helpers_test.go</code>. Mailimport-Tests rufen die gemeinsamen Anhangsfunktionen direkt auf; die ausschließlich in Tests genutzten PDF-Weiterleitungen sind entfernt. Absenderfilter, Größenlimit, Decodierung und sichere Dateinamen bleiben durch dieselben Prüfungen abgedeckt.</p>
 <h2 id="testmatrix">Testmatrix<a class="headerlink" href="#testmatrix" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1374,7 +1374,7 @@ Zwischenstände und das Verhalten bei konkurrierenden Änderungen.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.52.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.52.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

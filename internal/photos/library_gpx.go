@@ -118,11 +118,6 @@ func (r gpxContextReader) Read(p []byte) (int, error) {
 	return r.reader.Read(p)
 }
 
-func decodeGPX(ctx context.Context, input io.Reader, maxBytes int64, maxPoints int) ([]GPXPoint, error) {
-	points, _, err := decodeGPXSegments(ctx, input, maxBytes, maxPoints)
-	return points, err
-}
-
 func decodeGPXSegments(ctx context.Context, input io.Reader, maxBytes int64, maxPoints int) ([]GPXPoint, [][]GPXPoint, error) {
 	limited := &io.LimitedReader{R: input, N: maxBytes + 1}
 	decoder := xml.NewDecoder(gpxContextReader{ctx, limited})

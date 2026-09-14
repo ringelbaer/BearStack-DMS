@@ -97,6 +97,21 @@ Das Browsermodul `app-photos-media.js` stellt die gemeinsam verwendeten Medien-H
 
 Die Lightbox mit Zoom, Touch-Gesten, Vollbild, Diashow und Video-/Audiowiedergabe liegt in `app-photos-lightbox.js`. Die Galerie startet sie über `BearStack.photos.lightbox.init` und übergibt Bearbeitungsmodus, gebündeltes Metadaten-Nachladen und Kartenhelfer explizit. Der Dialogzustand bleibt innerhalb des Lightbox-Moduls; Galerie-Layout, Auswahl und Scroll-Wiederherstellung bleiben im Galerie-Modul. Die Asset-Liste lädt das neue Modul vor der Galerie. Ein Browser-Test prüft die Lightbox ohne Galerie-Script mit separat übergebenen Funktionen.
 
+## Zuständigkeiten im Fotomodul
+
+Ab 0.52.1 sind die zentralen Labeling- und Blogwege klarer aufgeteilt:
+
+| Bereich | Zuständigkeit |
+| --- | --- |
+| `labeling.go`, `labeling_people.go` | Aktionen validieren, aktuelle Verzeichnissichtbarkeit prüfen, Cursorablauf steuern und Gesichts-Caches synchronisieren |
+| `index_labeling_query.go` | Gebundene Kandidatenblöcke, Personendetails in einer Lesetransaktion, Portraitdaten und Aktionsquittungen lesen |
+| `index_labeling_actions.go` | SQLite-Schreiber reservieren, Revisionen prüfen, Änderungen und Quittung atomar speichern; Cachearbeit erst nach erfolgreichem Commit melden |
+| `labeling_types.go` | Gemeinsame Labeling-Daten- und Antworttypen |
+| `library_blog.go` | Zugriffsprüfung, Pfadauflösung, begrenztes Dateilesen und Zuordnung zum Blogindex |
+| `internal/photos/blogcontent` | Suchtext, Datumsannotation und HTML mit maskierten Benutzereingaben erzeugen; kein Datei-, Datenbank- oder Bibliothekszugriff |
+
+Die Bibliothek hält die bestehende Gesichtssperre über Datenbank-Commit und Cacheabgleich hinweg. Wiederholte Quittungen lösen keine erneute Cachemutation aus. SQL-Lesetransaktionen werden vor der Aufbereitung öffentlicher Bildpfade beendet. Die finalen Personenabfragen laden höchstens die noch fehlenden Einträge eines 21er-Blocks. API-Formate, Revisionsprüfungen und Gesichtsidentitäten bleiben erhalten; dieser Refactor benötigt keine weitere Migration.
+
 ## Performance
 
 BearStack trennt Dokumente und Fotodaten, nutzt Caches für aufwendige Medienarbeit und führt OCR sowie Vorschau-Erzeugung im Hintergrund aus. Das ist besonders wichtig, wenn Archive über die Zeit wachsen oder viele Bilder in einem bestehenden Fotoverzeichnis liegen.

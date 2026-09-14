@@ -486,13 +486,6 @@ func defaultRenderSettingsSnapshot() renderSettingsSnapshot {
 	}
 }
 
-func normalizeRenderSettingsSnapshot(settings renderSettingsSnapshot) renderSettingsSnapshot {
-	settings.TagDisplayMode = normalizeTagDisplayMode(settings.TagDisplayMode)
-	settings.ThemeMode = normalizeThemeMode(settings.ThemeMode)
-	settings.HomePage = normalizeHomePage(settings.HomePage)
-	return settings
-}
-
 func documentCloudEnabled(ctx context.Context, settings settingReader) (bool, error) {
 	return boolSetting(ctx, settings, documentCloudEnabledSettingKey, false)
 }

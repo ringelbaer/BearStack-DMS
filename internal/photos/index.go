@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
-	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -561,56 +560,6 @@ func (l *Library) directoryBlogCache(ctx context.Context, rel string) (map[strin
 		return nil, nil
 	}
 	return l.index.directoryBlogCache(ctx, rel)
-}
-
-func (l *Library) blogFromPathInfo(rel, abs string, info os.FileInfo, cache map[string]cachedBlogRow, adminOnly bool) (BlogPost, bool, error) {
-	if !info.Mode().IsRegular() {
-		return BlogPost{}, false, os.ErrNotExist
-	}
-	if row, ok := cache[rel]; ok && row.ModTimeUnixNano == info.ModTime().UnixNano() && (row.AdminOnly != 0) == adminOnly {
-		return blogFromCachedRow(row, info.ModTime()), false, nil
-	}
-	file, err := os.Open(abs)
-	if err != nil {
-		return BlogPost{}, false, err
-	}
-	defer file.Close()
-	raw, err := io.ReadAll(io.LimitReader(file, maxBlogBytes))
-	if err != nil {
-		return BlogPost{}, false, err
-	}
-	post := BlogPost{
-		Name:      filepath.Base(filepath.FromSlash(rel)),
-		Path:      rel,
-		AdminOnly: adminOnly,
-		Date:      markdownDate(raw),
-		ModTime:   info.ModTime(),
-	}
-	post.Text, post.HTML = blogContent(rel, raw)
-	if row, ok := cache[rel]; ok {
-		post.Tags = tagsFromJSON(row.Tags)
-	} else if tags, ok := l.blogTags(rel); ok {
-		post.Tags = tags
-	}
-	return post, true, nil
-}
-
-func blogFromCachedRow(row cachedBlogRow, modTime time.Time) BlogPost {
-	post := BlogPost{
-		Name:      row.Name,
-		Path:      row.Path,
-		Tags:      tagsFromJSON(row.Tags),
-		AdminOnly: row.AdminOnly != 0,
-		Text:      row.Text,
-		ModTime:   modTime,
-	}
-	_, post.HTML = blogContent(row.Name, []byte(row.Text))
-	if row.Date != "" {
-		if parsed, err := time.Parse("2006-01-02", row.Date); err == nil {
-			post.Date = &parsed
-		}
-	}
-	return post
 }
 
 func (l *Library) saveScannedFolder(ctx context.Context, rel string, modTime time.Time, mediaCount, blogCount, dirCount int, adminOnly bool, orderMode string) error {
