@@ -15,7 +15,7 @@ import org.json.JSONObject
 
 data class Session(val instance: String, val dataset: String, val account: String, val upper: Long,
     val namedPeople: Boolean = false, val namedSearch: Boolean = false, val mergeSuggestions: Boolean = false, val mergeNaming: Boolean = false,
-    val mergeSideActions: Boolean = false) {
+    val mergeSideActions: Boolean = false, val namedFaceBatch: Boolean = false) {
     val scope: String get() = JSONObject().put("instance", instance).put("dataset", dataset).put("account", account).toString()
 }
 data class Person(val id: Long, val name: String, val revision: Long, val count: Long, val faceId: Long,
@@ -83,7 +83,7 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
     override suspend fun session(): Session {
         val o = json("session")
         requireMessage(o.getInt("protocol") == 1 && o.getBoolean("can_manage"),R.string.error_people_protocol)
-        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"),o.optBoolean("merge_naming"),o.optBoolean("merge_side_actions"))
+        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"),o.optBoolean("merge_naming"),o.optBoolean("merge_side_actions"),o.optBoolean("named_face_batch"))
     }
     override suspend fun candidates(after: Long, upper: Long): Candidates {
         val o = json("candidates", mapOf("after" to "$after", "upper" to "$upper"))

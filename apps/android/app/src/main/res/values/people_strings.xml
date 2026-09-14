@@ -122,10 +122,25 @@
     <string name="people_merge_side_ignored">Ignoriert</string>
     <string name="people_merge_side_assigned">Zugeordnet</string>
     <string name="people_merge_side_named">Benannt: %1$s</string>
-    <string name="people_merge_side_help">Nur unbenannte Gruppen haben eigene Buttons zum Ignorieren und Benennen/Zuordnen. Nach einer Einzelaktion bleibt die andere Seite bearbeitbar. Weiter öffnet das nächste Paar, ohne eine Trennung zu speichern.</string>
+    <string name="people_merge_side_help">Nur unbenannte Gruppen haben eigene Buttons zum Ignorieren und Benennen/Zuordnen. Nach einer Einzelaktion bleibt die andere Seite bearbeitbar. Weiter öffnet das nächste Paar, ohne eine Trennung zu speichern. Sind beide Gruppen bestätigt ignoriert, öffnet sich automatisch das nächste Paar; bei verlorener Antwort erst nach Prüfung der offenen Aktion.</string>
     <string name="people_merge_matches_title">Benennungsvorschläge für beide Gruppen</string>
     <string name="people_merge_matches_loading">Abgleich läuft …</string>
     <string name="people_merge_matches_retry">Erneut abgleichen</string>
     <string name="people_merge_match_assign">Beide Gruppen der Person %1$s zuordnen</string>
     <string name="people_merge_matches_help">Sind beide Gruppen unbenannt, startet ein gemeinsamer Gesichtsabgleich anhand des Vergleichsgesichts der ersten Gruppe. Tippe auf einen Treffer, um beide Gruppen dieser Person zuzuordnen. Treffer sind bereits während des Abgleichs wählbar. Erneut abgleichen aktualisiert die gemeinsame Liste.</string>
+    <string name="people_batch_limit">Du kannst höchstens 500 Gesichter auf einmal auswählen.</string>
+    <string name="people_select_face">Gesicht %1$d auswählen</string>
+    <string name="people_batch_assign">Gruppe zuordnen</string>
+    <string name="people_batch_scope">Nur die %1$d ausgewählten Gesichter werden zugeordnet. Gib einen neuen Namen ein oder wähle eine vorhandene Person.</string>
+    <string name="people_batch_help">Über die Checkboxen kannst du bis zu 500 Gesichter auswählen, auch beim Weiterscrollen. Unter Aktionen kannst du sie gemeinsam auf unbenannt zurücksetzen, einer Gruppe zuordnen oder ignorieren.</string>
+    <string name="people_batch_version">Mehrfachauswahl benötigt BearStack 0.51.0 oder neuer.</string>
+    <string name="people_batch_selected">%1$d ausgewählt</string>
+    <string name="people_batch_clear">Aufheben</string>
+    <string name="people_batch_actions">Aktionen</string>
+    <string name="people_batch_reset">Auf unbenannt zurücksetzen</string>
+    <string name="people_batch_ignore">Ignorieren</string>
+    <string name="people_batch_ignore_title">Ausgewählte Gesichter ignorieren?</string>
+    <string name="people_batch_reset_title">Ausgewählte Gesichter zurücksetzen?</string>
+    <string name="people_batch_ignore_confirmation">Die %1$d ausgewählten Gesichter werden ignoriert und aus dieser Ansicht ausgeblendet. Die Fotos bleiben erhalten. Du kannst die Gesichter im Browser unter „Ignoriert“ wiederherstellen.</string>
+    <string name="people_batch_reset_confirmation">Die %1$d ausgewählten Gesichter werden gemeinsam in eine neue unbenannte Gruppe verschoben. Ihre Vergleichsfavoriten werden aufgehoben. Die Fotos bleiben erhalten.</string>
 </resources>

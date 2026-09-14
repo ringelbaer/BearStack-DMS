@@ -122,10 +122,25 @@
     <string name="people_merge_side_ignored">Ignored</string>
     <string name="people_merge_side_assigned">Assigned</string>
     <string name="people_merge_side_named">Named: %1$s</string>
-    <string name="people_merge_side_help">Only unnamed groups have their own ignore and name/assign buttons. After an individual action, you can still edit the other side. Next opens the next pair without recording a separation.</string>
+    <string name="people_merge_side_help">Only unnamed groups have their own ignore and name/assign buttons. After an individual action, you can still edit the other side. Next opens the next pair without recording a separation. Once both groups are confirmed ignored, the next pair opens automatically; after a lost response, check the pending action first.</string>
     <string name="people_merge_matches_title">Name suggestions for both groups</string>
     <string name="people_merge_matches_loading">Matching …</string>
     <string name="people_merge_matches_retry">Match again</string>
     <string name="people_merge_match_assign">Assign both groups to %1$s</string>
     <string name="people_merge_matches_help">When both groups are unnamed, a shared face search starts using the first group’s comparison face. Tap a match to assign both groups to that person. Matches can be selected while the search is running. Match again refreshes the shared list.</string>
+    <string name="people_batch_limit">You can select up to 500 faces at a time.</string>
+    <string name="people_select_face">Select face %1$d</string>
+    <string name="people_batch_assign">Assign to group</string>
+    <string name="people_batch_scope">Only the %1$d selected faces will be assigned. Enter a new name or choose an existing person.</string>
+    <string name="people_batch_help">Use the checkboxes to select up to 500 faces, including while scrolling. Under Actions you can reset them to unnamed, assign them to a group or ignore them together.</string>
+    <string name="people_batch_version">Multiple selection requires BearStack 0.51.0 or later.</string>
+    <string name="people_batch_selected">%1$d selected</string>
+    <string name="people_batch_clear">Clear</string>
+    <string name="people_batch_actions">Actions</string>
+    <string name="people_batch_reset">Reset to unnamed</string>
+    <string name="people_batch_ignore">Ignore</string>
+    <string name="people_batch_ignore_title">Ignore selected faces?</string>
+    <string name="people_batch_reset_title">Reset selected faces?</string>
+    <string name="people_batch_ignore_confirmation">The %1$d selected faces will be ignored and hidden from this view. Photos are kept. You can restore the faces under “Ignored” in the browser.</string>
+    <string name="people_batch_reset_confirmation">The %1$d selected faces will be moved together into a new unnamed group. Their reference favorites will be cleared. Photos are kept.</string>
 </resources>

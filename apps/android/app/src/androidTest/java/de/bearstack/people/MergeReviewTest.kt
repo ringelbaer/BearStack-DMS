@@ -337,6 +337,48 @@ class MergeReviewTest {
         compose.onNodeWithText("Benannte Gruppen zusammenführen?").assertDoesNotExist()
         assertEquals(1,api.commits);assertEquals("accept_merge",api.receipts.values.single().action)
     }
+    @Test fun ignoringBothSidesAutomaticallyLoadsNextPair() = screen(setup=::unnamed) {vm,api,_ ->
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
+        assertEquals(1L,vm.state.value.mergeSuggestion!!.id)
+        compose.onNodeWithText("Weiter").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Zweite Gruppe ignorieren").performClick();idle(vm)
+        assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
+        assertTrue(vm.state.value.mergeSideResults.isEmpty());assertTrue(vm.state.value.mergeIgnoredSides.isEmpty())
+        assertEquals(2,api.commits);assertEquals(setOf(3L,4L),api.receipts.values.map {it.source}.toSet())
+        assertTrue(api.receipts.values.all {it.action=="ignore"})
+        compose.onNodeWithText("Weiter").assertDoesNotExist()
+        compose.onNodeWithText("Zusammenführen").assertIsEnabled()
+    }
+    @Test fun secondIgnoreLostResponseAdvancesOnlyAfterReceiptAndNeverWritesTwice() = screen(setup=::unnamed) {vm,api,_ ->
+        compose.onNodeWithContentDescription("Zweite Gruppe ignorieren").performClick();idle(vm)
+        api.loseResponse=true
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
+        assertTrue(vm.state.value.unresolved);assertEquals(1L,vm.state.value.mergeSuggestion!!.id)
+        assertEquals(setOf(4L),vm.state.value.mergeIgnoredSides);assertEquals(2,api.commits)
+        compose.onNodeWithText("Weiter").assertIsNotEnabled()
+        compose.onNodeWithText("Offene Aktion prüfen").performClick();idle(vm)
+        assertFalse(vm.state.value.unresolved);assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
+        assertEquals(2,api.commits);assertTrue(vm.state.value.mergeIgnoredSides.isEmpty())
+    }
+    @Test fun automaticNextLoadFailureCanRetryWithoutRepeatingIgnores() = screen(setup=::unnamed) {vm,api,_ ->
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
+        api.failNextMerge=true
+        compose.onNodeWithContentDescription("Zweite Gruppe ignorieren").performClick();idle(vm)
+        assertEquals(2,api.commits);assertNull(vm.state.value.mergeSuggestion)
+        assertNotNull(vm.state.value.error);assertFalse(vm.state.value.unresolved)
+        assertTrue(vm.state.value.mergeIgnoredSides.isEmpty())
+        api.failNextMerge=false
+        compose.onNodeWithText("Erneut versuchen").performClick();idle(vm)
+        assertEquals(2L,vm.state.value.mergeSuggestion!!.id);assertEquals(2,api.commits)
+    }
+    @Test fun ignoringLastPairShowsEmptyStateWithoutExtraDecision() = screen(setup=::unnamed) {vm,api,_ ->
+        api.mergePairs.removeAt(1)
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Zweite Gruppe ignorieren").performClick();idle(vm)
+        assertNull(vm.state.value.mergeSuggestion);assertNull(vm.state.value.error)
+        assertEquals(2,api.commits);assertTrue(vm.state.value.mergeSideResults.isEmpty())
+        compose.onNodeWithText("Weiter").assertDoesNotExist()
+    }
     @Test fun individualActionsKeepBothSidesUntilNext() = screen(2f,setup=::unnamed) {vm,api,_ ->
         val before=api.people.getValue(4)
         compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)

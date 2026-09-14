@@ -218,7 +218,8 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
 fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Long, Boolean) -> String?,
     onDetach: (Long) -> Unit, onHold: (Long?) -> Unit, onZoom: (Long) -> Unit,
     onZoomDrag: (Float) -> Unit = {}, managing: Boolean = false, onFavorite: (Long) -> Unit = {},
-    onPrefetch: suspend (List<Long>) -> Unit = {}, allowDetach: Boolean = true, showPaths: Boolean = true) {
+    onPrefetch: suspend (List<Long>) -> Unit = {}, allowDetach: Boolean = true, showPaths: Boolean = true,
+    selected: Boolean = false, onSelect: ((Long) -> Unit)? = null, selectionActive: Boolean = false) {
     val text=uiStrings()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val prefetch by rememberUpdatedState(onPrefetch)
@@ -270,11 +271,15 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
                                     }) {
                                     if(images!=null) AsyncImage(image(face,false),null,imageLoader=images,
                                         modifier=Modifier.fillMaxSize(),contentScale=ContentScale.Crop)
-                                    if(allowDetach && (managing || person.count>1)) FilledTonalIconButton(onClick={onDetach(face)},enabled=enabled && !holding,
+                                    if(allowDetach && (managing || person.count>1)) FilledTonalIconButton(onClick={onDetach(face)},enabled=enabled && !holding && !selectionActive,
                                         modifier=Modifier.align(Alignment.BottomStart).padding(4.dp).size(48.dp)
                                             .padding(if(managing) 8.dp else 0.dp)
                                             .semantics { contentDescription=if(managing) text(R.string.people_unassign) else text(R.string.people_name_face) }) { Text("×",style=if(managing) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineMedium) }
-                                    if(managing) IconButton(onClick={onFavorite(face)},enabled=enabled && !holding,
+                                    if(onSelect!=null) Checkbox(checked=selected,onCheckedChange={onSelect(face)},enabled=enabled && !holding,
+                                        modifier=Modifier.align(Alignment.TopStart).testTag("select-face-$face").semantics {
+                                            contentDescription=text(R.string.people_select_face,person.faces.indexOf(face)+person.offset+1)
+                                        })
+                                    if(managing) IconButton(onClick={onFavorite(face)},enabled=enabled && !holding && !selectionActive,
                                         modifier=Modifier.align(Alignment.BottomEnd).padding(4.dp).size(48.dp).semantics {
                                             contentDescription=if(face in person.favorites) text(R.string.people_unfavorite) else text(R.string.people_favorite)
                                             stateDescription=if(face in person.favorites) text(R.string.people_favorited) else text(R.string.people_not_favorited)
@@ -299,12 +304,13 @@ internal fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Bool
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) { focus.requestFocus(); keyboard?.show() }
-    AlertDialog(onDismissRequest=vm::closeNaming,title={Text(if(state.duplicates.isNotEmpty()) text(R.string.people_name_exists) else if(state.mergeNamingSide!=null) text(R.string.people_merge_side_name) else if(state.mergeReview) text(R.string.people_merge_name) else if(state.directory) text(R.string.people_rename) else text(R.string.people_name_person))},
+    AlertDialog(onDismissRequest=vm::closeNaming,title={Text(if(state.duplicates.isNotEmpty()) text(R.string.people_name_exists) else if(state.mergeNamingSide!=null) text(R.string.people_merge_side_name) else if(state.mergeReview) text(R.string.people_merge_name) else if(state.batchNaming) text(R.string.people_batch_assign) else if(state.directory) text(R.string.people_rename) else text(R.string.people_name_person))},
         properties=DialogProperties(usePlatformDefaultWidth=false),modifier=Modifier.fillMaxWidth().padding(16.dp).imePadding(),
         text={ Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            if(state.batchNaming) Text(text(R.string.people_batch_scope,state.selectedFaces.size))
             if(state.mergeNamingSide!=null) Text(text(R.string.people_merge_side_scope))
             OutlinedTextField(state.name,vm::nameChanged,label={Text(text(R.string.people_name))},singleLine=true,enabled=enabled,
-                trailingIcon={if(!state.directory) IconButton(onClick={keyboard?.hide();vm.findFaceMatches()},enabled=enabled && !state.faceSearching) {
+                trailingIcon={if(!state.directory || state.batchNaming) IconButton(onClick={keyboard?.hide();vm.findFaceMatches()},enabled=enabled && !state.faceSearching) {
                     Icon(painterResource(R.drawable.ic_search),text(R.string.people_face_search),modifier=Modifier.size(24.dp))
                 }},
                 modifier=Modifier.fillMaxWidth().focusRequester(focus),keyboardOptions=KeyboardOptions(imeAction=ImeAction.Done),
@@ -326,9 +332,9 @@ internal fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Bool
                     }
                 }
             }
-            if(state.duplicates.isNotEmpty()) Text(if(state.directory) text(R.string.people_duplicate_rename) else text(R.string.people_duplicate_assign))
-            (if(state.directory) emptyList() else state.duplicates.ifEmpty { state.suggestions }).forEach { person ->
-                Surface(onClick={vm.assign(person)},enabled=enabled,shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surfaceContainer) {
+            if(state.duplicates.isNotEmpty()) Text(if(state.directory && !state.batchNaming) text(R.string.people_duplicate_rename) else text(R.string.people_duplicate_assign))
+            (if(state.directory && !state.batchNaming) emptyList() else state.duplicates.ifEmpty { state.suggestions }).forEach { person ->
+                Surface(onClick={vm.assign(person)},enabled=enabled && (!state.batchNaming || person.id!=state.selectedPerson?.id),shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surfaceContainer) {
                     Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                         vm.images?.let { AsyncImage(vm.image(person.faceId),null,imageLoader=it,modifier=Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))) }
                         Column(Modifier.weight(1f)) { Text(person.name);Text(text(R.string.people_face_count_id,text.faces(person.count),person.id),style=MaterialTheme.typography.bodySmall) }

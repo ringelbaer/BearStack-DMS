@@ -512,6 +512,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#mehrfachauswahl-in-benannte-personen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Mehrfachauswahl in „Benannte Personen“
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
   <a href="#start-und-offlinebetrieb" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -920,6 +931,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#mehrfachauswahl-in-benannte-personen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Mehrfachauswahl in „Benannte Personen“
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
   <a href="#start-und-offlinebetrieb" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1186,10 +1208,40 @@
 
 
 <h1 id="bearstack-fotos-fur-android">BearStack Fotos für Android<a class="headerlink" href="#bearstack-fotos-fur-android" title="Permanent link">&para;</a></h1>
-<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.10.1</strong> (<code>versionCode 23</code>). Die Servergalerie benötigt
+<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.11.0</strong> (<code>versionCode 24</code>). Die Servergalerie benötigt
 <strong>BearStack 0.50.0</strong>, ein aktiviertes Fotomodul und <code>photos.read</code>. Personenverwaltung
 benötigt zusätzlich <code>photos.edit</code>; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.</p>
+<h2 id="mehrfachauswahl-in-benannte-personen">Mehrfachauswahl in „Benannte Personen“<a class="headerlink" href="#mehrfachauswahl-in-benannte-personen" title="Permanent link">&para;</a></h2>
+<p>Ab App <strong>0.11.0</strong> und BearStack <strong>0.51.0</strong> kannst du in einer geöffneten Person
+über die Checkbox oben links mehrere Gesichter auswählen. Die Auswahl bleibt beim
+Weiterscrollen und Nachladen erhalten; bis zu <strong>500 Gesichter pro Aktion</strong> sind möglich.
+Die feste Leiste zeigt die Auswahlanzahl, <strong>Aufheben</strong> und <strong>Aktionen</strong>.</p>
+<ul>
+<li><strong>Auf unbenannt zurücksetzen</strong> verschiebt die ausgewählten Gesichter nach Bestätigung
+  gemeinsam in eine neue unbenannte Gruppe und entfernt ihre Vergleichsfavoriten.</li>
+<li><strong>Gruppe zuordnen</strong> öffnet den vorhandenen Namensdialog. Ein neuer Name erstellt
+  eine Gruppe; ein Namensvorschlag ordnet die Auswahl einer vorhandenen Person zu.
+  Die Lupe gleicht das erste ausgewählte Gesicht mit benannten Personen ab.
+  Gleichnamige Personen lassen sich nach der vorhandenen Duplikatprüfung getrennt anlegen.</li>
+<li><strong>Ignorieren</strong> zeigt einen Bestätigungsdialog mit der Anzahl. Bestätigte Gesichter
+  verschwinden aus der Personenansicht und lassen sich im Browser unter <strong>Ignoriert</strong> wiederherstellen.</li>
+</ul>
+<p>Das <strong>×</strong> am Bild entfernt weiterhin nach Bestätigung <strong>ein Gesicht aus seiner
+Personenzuordnung</strong> und legt dafür eine neue unbenannte Gruppe an. Es ignoriert das
+Gesicht nicht. Keine dieser Aktionen löscht Fotos. Während einer Mehrfachauswahl
+sind ×, Vergleichsstern und das Umbenennen der ganzen Person gesperrt.
+Abbrechen eines Dialogs erhält die Auswahl; Zurück hebt zunächst die Auswahl auf.</p>
+<p>Die App sendet die ausgewählten IDs in einer einzigen atomaren Aktion mit
+Quellrevision und gegebenenfalls Zielrevision. Bei Konflikten wird die Auswahl
+verworfen und die Person aktualisiert; es ist eine neue Entscheidung erforderlich.
+Eine lokal gespeicherte Aktions-ID und die Serverquittung sichern verlorene Antworten
+und Prozessneustarts ab. <strong>Offene Aktion prüfen</strong> klärt den Ausgang, bevor weitere
+Änderungen möglich sind. Das Zurücksetzen merkt die neue Gruppe für das Benennen vor.
+Metadaten laden weiter in Paketen von 40; die Auswahl lädt keine zusätzlichen Bilder
+oder vollständigen Gruppen. Bestehende Rechte- und Sichtbarkeitsprüfungen gelten.
+Die Capability <code>named_face_batch</code> blendet die Funktion nur auf passenden Servern ein;
+ältere Server behalten die bisherige Einzelverwaltung. Keine Datenmigration.</p>
 <h2 id="start-und-offlinebetrieb">Start und Offlinebetrieb<a class="headerlink" href="#start-und-offlinebetrieb" title="Permanent link">&para;</a></h2>
 <p>Mit gespeicherten Verbindungsdaten startet die App mit einem Ladebildschirm im
 BearStack-Design und meldet sich automatisch an. Das Anmeldeformular erscheint erst
@@ -1510,7 +1562,7 @@ adaptiven Icon liegt jetzt innerhalb des runden Beschnitts.</p>
 <h2 id="ahnliche-gruppen">Ähnliche Gruppen<a class="headerlink" href="#ahnliche-gruppen" title="Permanent link">&para;</a></h2>
 <p>Die Android-Vergleichsansicht zeigt beide Portraits gleich groß und auf derselben Höhe direkt unter den Gruppenüberschriften. Namen und Gesichtsanzahlen stehen in gemeinsamen Zeilen darunter; lange Namen oder Einzelaktionen verschieben die Bilder nicht. <strong>Ignorieren</strong> und <strong>Benennen/Zuordnen</strong> stehen kompakt nebeneinander unter der jeweiligen unbenannten Gruppe, mit mindestens 48 dp großen Touchflächen. Bei großer Schrift dürfen die Einzelaktionen umbrechen; bei wenig Platz lässt sich der Vergleichsbereich scrollen. Die gemeinsamen Entscheidungsbuttons bleiben unten sichtbar.</p>
 <p>Ab App <strong>0.10.0</strong> und BearStack <strong>0.50.0</strong> steht der Ähnlichkeitswert des aktuellen Paars klein und mittig über den Entscheidungsbuttons. Zwei Nachkommastellen, keine Prozentwahrscheinlichkeit; bei älteren Servern ohne Wert bleibt die Zeile ausgeblendet.</p>
-<p>Ab <strong>BearStack 0.50.0 / Android-App 0.10.0</strong> erhalten ausschließlich <strong>unbenannte Gruppen</strong> auf jeder Vergleichsseite eigene Buttons <strong>Ignorieren</strong> und <strong>Benennen/Zuordnen</strong> (Stift). Jede Aktion betrifft alle aktiven Gesichter dieser einen Gruppe, nicht nur das angezeigte Portrait. Benannte Gruppen haben keine Einzelseitenbuttons. Nach einer bestätigten Einzelaktion bleibt das Paar sichtbar; eine weitere unbenannte Seite lässt sich noch bearbeiten. Unten ersetzt dann ausschließlich <strong>Weiter</strong> (App) beziehungsweise <strong>Ausblenden</strong> (Web) die gemeinsamen Entscheidungsbuttons samt gemeinsamem Stift. Abbrechen im Namensdialog verändert nichts.</p>
+<p>Ab <strong>BearStack 0.50.0 / Android-App 0.10.0</strong> erhalten ausschließlich <strong>unbenannte Gruppen</strong> auf jeder Vergleichsseite eigene Buttons <strong>Ignorieren</strong> und <strong>Benennen/Zuordnen</strong> (Stift). Jede Aktion betrifft alle aktiven Gesichter dieser einen Gruppe, nicht nur das angezeigte Portrait. Benannte Gruppen haben keine Einzelseitenbuttons. Nach einer bestätigten Einzelaktion bleibt das Paar sichtbar; eine weitere unbenannte Seite lässt sich noch bearbeiten. Sind in der Android-App <strong>beide Gruppen bestätigt ignoriert</strong>, erscheint automatisch das nächste Paar. Bei verlorener Antwort erfolgt der Wechsel erst nach Klärung der Aktionsquittung. Scheitert das Laden des nächsten Paars, wiederholt <strong>Erneut versuchen</strong> nur den Abruf; die Ignorierungen werden nicht erneut geschrieben. Unten ersetzt dann ausschließlich <strong>Weiter</strong> (App) beziehungsweise <strong>Ausblenden</strong> (Web) die gemeinsamen Entscheidungsbuttons samt gemeinsamem Stift. Abbrechen im Namensdialog verändert nichts.</p>
 <p><strong>Weiter</strong> lädt das nächste Paar und überspringt das gerade bearbeitete Paar in beiden Richtungen. <strong>Ausblenden</strong> entfernt es aus der aktuellen Webansicht. Beides speichert keine Trennung und verbietet keinen späteren automatischen Abgleich. Einzelaktionen verwenden die bestehenden revisionsgeprüften Aktionen <code>ignore</code>, <code>name</code> und <code>assign</code>. Bei verlorener Antwort bleibt das Paar bis zur Klärung der Aktionsquittung gesperrt; anschließend kann die andere Seite bearbeitet werden. Die App zeigt die zusätzlichen Buttons nur bei Servern mit <code>merge_side_actions</code>. Die Vorschauen und der bestehende Cache werden weiterverwendet; es erfolgt keine neue Gesichtserkennung.</p>
 <p>Sind beide Gruppen unbenannt, erscheint in App und WebUI der <strong>Stift – Zusammenführen und benennen/zuordnen</strong>. Er öffnet die Namenssuche: einen neuen Namen speichern oder eine vorhandene Person auswählen, um beide Gruppen in einem Schritt zusammenzuführen und zu benennen beziehungsweise zuzuordnen. <strong>Abbrechen</strong> verändert nichts. Veränderte Gruppen oder Zielpersonen müssen erneut geprüft werden. Die App zeigt den Stift nur bei Servern mit <code>merge_naming</code> (ab BearStack 0.50.0); nach bestätigtem Speichern folgt das nächste Paar.</p>
 <p>Ab App <strong>0.9.0</strong> und <strong>BearStack 0.49.0</strong> öffnet <strong>Menü → Ähnliche Gruppen</strong> jeweils eine einzelne Entscheidung. Zwei Portraits zeigen die tatsächlichen Vergleichsgesichter der Gruppen mit Namen und Gesichtsanzahl. Es gibt keine scrollbare Vorschlagsliste; die Portraits passen sich der verfügbaren Breite an. Bei wenig Platz oder großer Schrift scrollt nur der aktuelle Vergleich, während die beiden Entscheidungsbuttons unten sichtbar bleiben.</p>
@@ -1690,7 +1742,7 @@ Fehler werden zusätzlich anhand der XML-Ergebnisse zurückgewiesen.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.50.1 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.51.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

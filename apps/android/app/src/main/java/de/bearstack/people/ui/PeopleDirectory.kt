@@ -44,7 +44,7 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
     val zoomDistance=with(LocalDensity.current) { 240.dp.toPx() }
     val zoomDrag: (Float) -> Unit = { zoom=zoomAfterDrag(zoom,it,zoomDistance) }
     val enabled=!state.busy && !state.unresolved && held==null
-    val browsing=enabled && !state.naming && state.removeFace==null
+    val browsing=enabled && !state.naming && state.removeFace==null && state.batchConfirmation==null
     val listState=rememberLazyListState()
     val gridState=rememberLazyGridState()
     LaunchedEffect(state.namedQuery) {listState.scrollToItem(0)}
@@ -65,15 +65,19 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
     BackHandler {
         if(held!=null) { if(accessible) held=null else heldDismissed=true }
         else if(state.removeFace!=null) vm.cancelUnassign()
+        else if(state.batchConfirmation!=null) vm.cancelFaceBatch()
         else if(state.naming) vm.closeNaming()
+        else if(state.selectedFaces.isNotEmpty()) vm.clearFaceSelection()
         else if(person!=null) vm.closePerson() else vm.closeDirectory()
     }
     Box(Modifier.fillMaxSize()) {
         Scaffold(topBar={ TopAppBar(title={Text(text(R.string.people_directory))},navigationIcon={
-            TextButton(onClick={if(person!=null) vm.closePerson() else vm.closeDirectory()},enabled=enabled) { Text(text(R.string.photos_back)) }
+            TextButton(onClick={if(state.selectedFaces.isNotEmpty()) vm.clearFaceSelection() else if(person!=null) vm.closePerson() else vm.closeDirectory()},enabled=browsing) { Text(text(R.string.photos_back)) }
         },actions={
             if(state.error!=null) TextButton(onClick=vm::switchConnection,enabled=!state.busy && held==null) { Text(text(R.string.connection_title)) }
-        }) }) { padding ->
+        }) },bottomBar={
+            if(person!=null && state.selectedFaces.isNotEmpty()) FaceBatchBar(state,browsing,vm)
+        }) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).imePadding()) {
                 Box(Modifier.fillMaxWidth().height(4.dp)) { if(state.busy) LinearProgressIndicator(Modifier.fillMaxSize()) }
                 state.error?.let { error ->
@@ -123,7 +127,7 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
                             Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
                                 Text(person.name,style=MaterialTheme.typography.headlineSmall)
                                 Text(text.faces(person.count))
-                                OutlinedButton(onClick=vm::startNaming,enabled=browsing) { Text(text(R.string.people_rename)) }
+                                OutlinedButton(onClick=vm::startNaming,enabled=browsing && state.selectedFaces.isEmpty()) { Text(text(R.string.people_rename)) }
                                 OutlinedButton(onClick={
                                     vm.gallery(person.name)?.let { url ->
                                         try {
@@ -134,13 +138,16 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
                                 },enabled=browsing) { Text(text(R.string.people_browser_search)) }
                                 browserError?.let { Text(text(it),color=MaterialTheme.colorScheme.error) }
                                 Text(text(R.string.people_manage_help),style=MaterialTheme.typography.bodySmall)
+                                Text(text(if(state.batchFaces) R.string.people_batch_help else R.string.people_batch_version),style=MaterialTheme.typography.bodySmall)
                             }
                         }
                         itemsIndexed(person.faces,key={_,face -> face}) {index,face ->
                             FaceGrid(person.copy(faces=listOf(face),offset=index),browsing,vm.images,vm::image,onDetach=vm::requestUnassign,
                                 onHold={held=it;heldDismissed=false;zoom=0f},
                                 onZoom={held=it;heldDismissed=false;zoom=0f;accessible=true},
-                                onZoomDrag=zoomDrag,managing=true,onFavorite=vm::favorite,onPrefetch=vm::prefetchOriginals)
+                                onZoomDrag=zoomDrag,managing=true,onFavorite=vm::favorite,onPrefetch=vm::prefetchOriginals,
+                                selected=face in state.selectedFaces,onSelect=if(state.batchFaces) vm::toggleFace else null,
+                                selectionActive=state.selectedFaces.isNotEmpty())
                         }
                         item(key="footer",span={GridItemSpan(maxLineSpan)}) {
                             Text(if(person.faces.size<person.count) text(R.string.people_more_photos) else text(R.string.people_all_photos),
@@ -165,6 +172,10 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
         }
     }
     if(state.naming) NamingDialog(state,vm,enabled)
+    state.batchConfirmation?.let { action ->
+        FaceBatchConfirmation(action,state.selectedFaces.size,enabled,!state.busy && !state.unresolved,
+            vm::confirmFaceBatch,vm::cancelFaceBatch)
+    }
     state.removeFace?.let {face ->
         AlertDialog(onDismissRequest=vm::cancelUnassign,title={Text(text(R.string.people_unassign_title))},
             text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -173,4 +184,43 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
             }},confirmButton={TextButton(onClick=vm::confirmUnassign,enabled=enabled) {Text(text(R.string.common_remove))}},
             dismissButton={TextButton(onClick=vm::cancelUnassign,enabled=!state.busy) {Text(text(R.string.photos_cancel))}})
     }
+}
+
+@Composable
+private fun FaceBatchBar(state: PeopleState, enabled: Boolean, vm: PeopleViewModel) {
+    val text=uiStrings()
+    var actions by remember {mutableStateOf(false)}
+    Surface(tonalElevation=3.dp) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal=12.dp,vertical=8.dp)) {
+            Text(text(R.string.people_batch_selected,state.selectedFaces.size),style=MaterialTheme.typography.titleSmall)
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
+                TextButton(onClick=vm::clearFaceSelection,enabled=enabled) {Text(text(R.string.people_batch_clear))}
+                Box {
+                    FilledTonalButton(onClick={actions=true},enabled=enabled) {Text(text(R.string.people_batch_actions))}
+                    DropdownMenu(expanded=actions,onDismissRequest={actions=false}) {
+                        DropdownMenuItem(text={Text(text(R.string.people_batch_reset))},enabled=enabled,
+                            onClick={actions=false;vm.requestFaceBatch("unassign_faces")})
+                        DropdownMenuItem(text={Text(text(R.string.people_batch_assign))},enabled=enabled,
+                            onClick={actions=false;vm.startBatchNaming()})
+                        DropdownMenuItem(text={Text(text(R.string.people_batch_ignore))},enabled=enabled,
+                            onClick={actions=false;vm.requestFaceBatch("ignore_faces")})
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun FaceBatchConfirmation(action: String, count: Int, enabled: Boolean, dismissEnabled: Boolean,
+    onConfirm: () -> Unit, onCancel: () -> Unit) {
+    val text=uiStrings()
+    val ignoring=action=="ignore_faces"
+    AlertDialog(onDismissRequest={if(dismissEnabled) onCancel()},
+        title={Text(text(if(ignoring) R.string.people_batch_ignore_title else R.string.people_batch_reset_title))},
+        text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            Text(text(if(ignoring) R.string.people_batch_ignore_confirmation else R.string.people_batch_reset_confirmation,count))
+        }},confirmButton={TextButton(onClick=onConfirm,enabled=enabled) {
+            Text(text(if(ignoring) R.string.people_batch_ignore else R.string.people_batch_reset))
+        }},dismissButton={TextButton(onClick=onCancel,enabled=dismissEnabled) {Text(text(R.string.photos_cancel))}})
 }

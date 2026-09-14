@@ -152,6 +152,75 @@ class ViewModelTest {
             assertFalse(vm.state.value.naming)
         }
     }
+    @Test fun batchSelectionSurvivesPagingAndLostResponseAndQueuesResetGroup() = runBlocking {
+        val api=FakeService().apply {upper=3;people[3]=Person(3,"Anna",1,85,30,(30L..114L).toList())}
+        model(api) {vm ->
+            withContext(Dispatchers.Main) {vm.openDirectory()};idle(vm)
+            withContext(Dispatchers.Main) {vm.openPerson(api.people.getValue(3))};idle(vm)
+            withContext(Dispatchers.Main) {vm.toggleFace(30);vm.morePersonFaces()};idle(vm)
+            withContext(Dispatchers.Main) {vm.toggleFace(90);vm.requestFaceBatch("unassign_faces");vm.toggleFace(31)}
+            assertEquals(setOf(30L,90L),vm.state.value.selectedFaces)
+            withContext(Dispatchers.Main) {vm.cancelFaceBatch()}
+            assertEquals(0,api.commits)
+            api.loseResponse=true
+            withContext(Dispatchers.Main) {vm.requestFaceBatch("unassign_faces");vm.confirmFaceBatch()};idle(vm)
+            assertTrue(vm.state.value.unresolved);assertNull(vm.state.value.batchConfirmation);assertEquals(1,api.commits)
+            withContext(Dispatchers.Main) {vm.toggleFace(31);vm.confirmFaceBatch();vm.closePerson()}
+            assertEquals(setOf(30L,90L),vm.state.value.selectedFaces)
+            withContext(Dispatchers.Main) {vm.retry()};idle(vm)
+            assertFalse(vm.state.value.unresolved);assertTrue(vm.state.value.selectedFaces.isEmpty())
+            assertEquals(83L,vm.state.value.selectedPerson!!.count);assertEquals(78,vm.state.value.selectedPerson!!.faces.size)
+            assertEquals(listOf(30L,90L),api.people.getValue(4).faces);assertEquals(1,api.commits)
+            withContext(Dispatchers.Main) {vm.closeDirectory();};idle(vm)
+            assertEquals(1L,vm.state.value.person!!.id)
+            withContext(Dispatchers.Main) {vm.skip()};idle(vm)
+            assertEquals(4L,vm.state.value.person!!.id)
+        }
+    }
+    @Test fun batchNamingUsesSelectedFacesAndRejectsStaleTargets() = runBlocking {
+        val api=FakeService().apply {
+            upper=4;people[3]=Person(3,"Anna",1,3,30,listOf(30,31,32));people[4]=Person(4,"Berta",1,1,40,listOf(40))
+            matches=listOf(FaceMatch(4,"Berta",1,40))
+        }
+        model(api) {vm ->
+            withContext(Dispatchers.Main) {vm.openDirectory()};idle(vm)
+            withContext(Dispatchers.Main) {vm.openPerson(api.people.getValue(3))};idle(vm)
+            withContext(Dispatchers.Main) {vm.toggleFace(31);vm.toggleFace(32);vm.startBatchNaming();vm.findFaceMatches()}
+            until {vm.state.value.faceSearchDone}
+            assertEquals(listOf(31L),api.matchedFaces)
+            withContext(Dispatchers.Main) {vm.assignFaceMatch(api.matches.single())};idle(vm)
+            assertEquals(listOf(30L),vm.state.value.selectedPerson!!.faces)
+            assertEquals(listOf(40L,31L,32L),api.people.getValue(4).faces)
+            withContext(Dispatchers.Main) {vm.toggleFace(30);vm.startBatchNaming()}
+            val old=api.people.getValue(4)
+            api.people[4]=old.copy(revision=3)
+            withContext(Dispatchers.Main) {vm.assign(old)};idle(vm)
+            assertEquals(1,api.commits);assertFalse(vm.state.value.naming);assertTrue(vm.state.value.selectedFaces.isEmpty())
+            withContext(Dispatchers.Main) {vm.toggleFace(30);vm.startBatchNaming();vm.nameChanged("Anna");vm.submitName()};idle(vm)
+            assertEquals(listOf(3L),vm.state.value.duplicates.map {it.id});assertEquals(1,api.commits)
+            withContext(Dispatchers.Main) {vm.submitName(true)};idle(vm)
+            assertNull(vm.state.value.selectedPerson);assertEquals("Anna",api.people.getValue(5).name)
+        }
+    }
+    @Test fun batchIgnoreLastFacesAndCapabilityAndSelectionLimit() = runBlocking {
+        val api=FakeService().apply {upper=3;supportsBatch=false;people[3]=Person(3,"Anna",1,501,30,(30L..530L).toList())}
+        model(api) {vm ->
+            withContext(Dispatchers.Main) {vm.openDirectory()};idle(vm)
+            withContext(Dispatchers.Main) {vm.openPerson(api.people.getValue(3));};idle(vm)
+            withContext(Dispatchers.Main) {vm.toggleFace(30)}
+            assertTrue(vm.state.value.selectedFaces.isEmpty())
+            api.supportsBatch=true
+            withContext(Dispatchers.Main) {vm.closePerson();vm.openDirectory()};idle(vm)
+            withContext(Dispatchers.Main) {vm.openPerson(api.people.getValue(3))};idle(vm)
+            while(vm.state.value.selectedPerson!!.faces.size<501) {withContext(Dispatchers.Main) {vm.morePersonFaces()};idle(vm)}
+            withContext(Dispatchers.Main) {(30L..530L).forEach(vm::toggleFace)}
+            assertEquals(500,vm.state.value.selectedFaces.size)
+            withContext(Dispatchers.Main) {vm.requestFaceBatch("ignore_faces");vm.confirmFaceBatch()};idle(vm)
+            assertEquals(listOf(530L),vm.state.value.selectedPerson!!.faces)
+            withContext(Dispatchers.Main) {vm.toggleFace(530);vm.requestFaceBatch("ignore_faces");vm.confirmFaceBatch()};idle(vm)
+            assertNull(vm.state.value.selectedPerson);assertEquals(2,api.commits)
+        }
+    }
     private suspend fun model(api: FakeService, test: suspend (PeopleViewModel) -> Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as Application
         val db=Room.inMemoryDatabaseBuilder(app,LabelingDatabase::class.java).build()

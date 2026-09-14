@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.50.1
+  version: 0.51.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -1247,6 +1247,9 @@ paths:
         when both displayed groups are named, even when their names are identical.
         It shows both names and explains that the second group's name is kept.
         This is a local UI check using the returned names; the action contract is unchanged.
+        The Android app automatically requests the next pair once both individual
+        ignore actions are confirmed, including confirmation recovered by receipt.
+        A failed next-pair read is retried without repeating the ignore writes.
         Since 0.50.0, session.merge_side_actions enables ignore/name/assign controls
         for each unnamed side. Named groups never receive individual controls.
         Individual actions retain the displayed pair until Next (Android) or Hide
@@ -1309,6 +1312,22 @@ paths:
         groups=0 for merge_groups or the selected group count for name_groups.
         A stale or missing group rejects the entire action with 409. Retrying the
         same operation_id and payload replays the original receipt.
+        Since 0.51.0, session.named_face_batch enables unassign_faces, assign_faces,
+        name_faces and ignore_faces for a named source. Each action accepts 1–500
+        unique active source face_ids and validates all IDs and the source revision
+        before writing. assign_faces requires an active named target_id and its
+        target_revision; name_faces requires a nonblank name and honors allow_duplicate.
+        unassign_faces moves the selection together to one new manually unnamed group
+        and clears its favorites. name_faces creates one named group; assign_faces
+        moves only the selection to the target without renaming either person.
+        ignore_faces marks only the selection ignored; favorites remain stored.
+        Other faces and original photos remain unchanged. Batch receipts count selected
+        faces and zero groups, return the destination in target_id for name/assign,
+        and new_id for unassign. All changes and the receipt commit atomically;
+        stale/moved/ignored/private faces or stale targets reject the whole action.
+        Missing target fields or invalid/duplicate/over-limit face IDs return 400.
+        No schema migration. Clients persist the operation before sending, resolve
+        uncertain outcomes through its receipt and require a fresh decision after 409.
         name, assign, detach and ignore require an unnamed source.
         Since 0.43.0, rename, unassign and favorite require a named source
         (advertised by session.named_people). rename changes the name without merging.
@@ -3966,6 +3985,7 @@ components:
         merge_side_actions: {type: boolean, const: true, description: "Individual ignore/name/assign controls only for unnamed comparison sides and read-only pair exclusion on Next since 0.50.0. Older servers omit this field."}
         merge_naming: {type: boolean, const: true, description: "Atomic name_merge for two unnamed suggested groups since 0.50.0. Older servers omit this field."}
         merge_suggestions: {type: boolean, const: true, description: "One-pair review and receipted accept_merge/reject_merge actions since 0.49.0. Older servers omit this field."}
+        named_face_batch: {type: boolean, const: true, description: "Atomic selected-face management for named sources since 0.51.0; older servers omit this capability."}
         named_people: {type: boolean, const: true, description: "Named people list and rename/unassign/favorite receipt actions available since 0.43.0. Older servers omit this field."}
         named_search: {type: boolean, const: true, description: "Name search, 40-face cursor pages and receipt source_revision available since 0.45.0. Older servers omit this field."}
         face_favorites: {type: boolean, const: true, description: "Favorite API available since 0.40.0. Older servers omit this field."}
@@ -4079,14 +4099,15 @@ components:
         operation_id: {type: string, minLength: 16, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$'}
         dataset: {type: string}
         revision: {type: integer, format: int64, minimum: 1}
-        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge, name_merge, merge_groups, name_groups]}
+        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge, name_merge, merge_groups, name_groups, unassign_faces, assign_faces, name_faces, ignore_faces]}
         assign_id: {type: integer, format: int64, minimum: 0, description: "Optional named destination for name_merge. Must differ from both reviewed groups. Requires assign_revision and an empty name."}
         assign_revision: {type: integer, format: int64, minimum: 0, description: "Expected named destination revision for name_merge with assign_id; otherwise zero or omitted."}
         suggestion_id: {type: integer, format: int64, minimum: 1, description: Required cached suggestion ID for accept_merge/reject_merge (0.49.0) or name_merge (0.50.0).}
-        name: {type: string, maxLength: 200, description: Required and nonempty for name, rename or name_groups, or name_merge without assign_id; whitespace normalized.}
+        name: {type: string, maxLength: 200, description: Required and nonempty for name, rename, name_faces or name_groups, or name_merge without assign_id; whitespace normalized.}
         allow_duplicate: {type: boolean, default: false, description: Explicitly allow a separate group with the same name.}
-        target_id: {type: integer, format: int64, description: Named target for assign; displayed target for accept_merge/reject_merge/name_merge.}
-        target_revision: {type: integer, format: int64, description: Expected target revision for assign or accept_merge/reject_merge/name_merge.}
+        target_id: {type: integer, format: int64, description: Named target for assign/assign_faces; displayed target for accept_merge/reject_merge/name_merge.}
+        target_revision: {type: integer, format: int64, description: Expected target revision for assign/assign_faces or accept_merge/reject_merge/name_merge.}
+        face_ids: {type: array, minItems: 1, maxItems: 500, uniqueItems: true, items: {type: integer, format: int64, minimum: 1}, description: "Required only for unassign_faces, assign_faces, name_faces and ignore_faces. All IDs must be active faces in the named source; face_id must be zero or omitted."}
         face_id: {type: integer, format: int64, description: One active source face for detach/unassign/favorite; only detach requires at least two faces.}
         favorite: {type: boolean, description: Required explicit desired state for the favorite action.}
     LabelingReceipt:
@@ -4095,12 +4116,12 @@ components:
       properties:
         source_revision: {type: integer, format: int64, minimum: 0, description: "Optional since 0.45.0. Source revision at commit (zero if absent). Preserved on replay; use for local updates, never as proof of the latest server state."}
         operation_id: {type: string}
-        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge, name_merge, merge_groups, name_groups]}
+        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge, name_merge, merge_groups, name_groups, unassign_faces, assign_faces, name_faces, ignore_faces]}
         source_id: {type: integer, format: int64}
-        target_id: {type: integer, format: int64, description: Assignment or merge-decision target; otherwise zero.}
-        new_id: {type: integer, format: int64, description: New unnamed group for detach/unassign or zero.}
+        target_id: {type: integer, format: int64, description: Assignment, name_faces destination or merge-decision target; otherwise zero.}
+        new_id: {type: integer, format: int64, description: New unnamed group for detach/unassign/unassign_faces or zero.}
         faces: {type: integer, format: int64, minimum: 0, description: Actually affected active face count; zero for reject_merge.}
-        groups: {type: integer, minimum: 0, maximum: 60, description: Zero for detach/rename/unassign/favorite/accept_merge/reject_merge/merge_groups; one for name/assign/ignore; two for name_merge; selected group count for name_groups.}
+        groups: {type: integer, minimum: 0, maximum: 60, description: Zero for selected-face batch actions and detach/rename/unassign/favorite/accept_merge/reject_merge/merge_groups; one for name/assign/ignore; two for name_merge; selected group count for name_groups.}
         at: {type: integer, format: int64, description: Server confirmation time in Unix seconds.}
 
     Error:

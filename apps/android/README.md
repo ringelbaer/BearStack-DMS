@@ -1,9 +1,42 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.10.1** (`versionCode 23`). Die Servergalerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.11.0** (`versionCode 24`). Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
+
+## Mehrfachauswahl in „Benannte Personen“
+
+Ab App **0.11.0** und BearStack **0.51.0** kannst du in einer geöffneten Person
+über die Checkbox oben links mehrere Gesichter auswählen. Die Auswahl bleibt beim
+Weiterscrollen und Nachladen erhalten; bis zu **500 Gesichter pro Aktion** sind möglich.
+Die feste Leiste zeigt die Auswahlanzahl, **Aufheben** und **Aktionen**.
+
+- **Auf unbenannt zurücksetzen** verschiebt die ausgewählten Gesichter nach Bestätigung
+  gemeinsam in eine neue unbenannte Gruppe und entfernt ihre Vergleichsfavoriten.
+- **Gruppe zuordnen** öffnet den vorhandenen Namensdialog. Ein neuer Name erstellt
+  eine Gruppe; ein Namensvorschlag ordnet die Auswahl einer vorhandenen Person zu.
+  Die Lupe gleicht das erste ausgewählte Gesicht mit benannten Personen ab.
+  Gleichnamige Personen lassen sich nach der vorhandenen Duplikatprüfung getrennt anlegen.
+- **Ignorieren** zeigt einen Bestätigungsdialog mit der Anzahl. Bestätigte Gesichter
+  verschwinden aus der Personenansicht und lassen sich im Browser unter **Ignoriert** wiederherstellen.
+
+Das **×** am Bild entfernt weiterhin nach Bestätigung **ein Gesicht aus seiner
+Personenzuordnung** und legt dafür eine neue unbenannte Gruppe an. Es ignoriert das
+Gesicht nicht. Keine dieser Aktionen löscht Fotos. Während einer Mehrfachauswahl
+sind ×, Vergleichsstern und das Umbenennen der ganzen Person gesperrt.
+Abbrechen eines Dialogs erhält die Auswahl; Zurück hebt zunächst die Auswahl auf.
+
+Die App sendet die ausgewählten IDs in einer einzigen atomaren Aktion mit
+Quellrevision und gegebenenfalls Zielrevision. Bei Konflikten wird die Auswahl
+verworfen und die Person aktualisiert; es ist eine neue Entscheidung erforderlich.
+Eine lokal gespeicherte Aktions-ID und die Serverquittung sichern verlorene Antworten
+und Prozessneustarts ab. **Offene Aktion prüfen** klärt den Ausgang, bevor weitere
+Änderungen möglich sind. Das Zurücksetzen merkt die neue Gruppe für das Benennen vor.
+Metadaten laden weiter in Paketen von 40; die Auswahl lädt keine zusätzlichen Bilder
+oder vollständigen Gruppen. Bestehende Rechte- und Sichtbarkeitsprüfungen gelten.
+Die Capability `named_face_batch` blendet die Funktion nur auf passenden Servern ein;
+ältere Server behalten die bisherige Einzelverwaltung. Keine Datenmigration.
 
 ## Start und Offlinebetrieb
 
@@ -397,7 +430,7 @@ Die Android-Vergleichsansicht zeigt beide Portraits gleich groß und auf derselb
 
 Ab App **0.10.0** und BearStack **0.50.0** steht der Ähnlichkeitswert des aktuellen Paars klein und mittig über den Entscheidungsbuttons. Zwei Nachkommastellen, keine Prozentwahrscheinlichkeit; bei älteren Servern ohne Wert bleibt die Zeile ausgeblendet.
 
-Ab **BearStack 0.50.0 / Android-App 0.10.0** erhalten ausschließlich **unbenannte Gruppen** auf jeder Vergleichsseite eigene Buttons **Ignorieren** und **Benennen/Zuordnen** (Stift). Jede Aktion betrifft alle aktiven Gesichter dieser einen Gruppe, nicht nur das angezeigte Portrait. Benannte Gruppen haben keine Einzelseitenbuttons. Nach einer bestätigten Einzelaktion bleibt das Paar sichtbar; eine weitere unbenannte Seite lässt sich noch bearbeiten. Unten ersetzt dann ausschließlich **Weiter** (App) beziehungsweise **Ausblenden** (Web) die gemeinsamen Entscheidungsbuttons samt gemeinsamem Stift. Abbrechen im Namensdialog verändert nichts.
+Ab **BearStack 0.50.0 / Android-App 0.10.0** erhalten ausschließlich **unbenannte Gruppen** auf jeder Vergleichsseite eigene Buttons **Ignorieren** und **Benennen/Zuordnen** (Stift). Jede Aktion betrifft alle aktiven Gesichter dieser einen Gruppe, nicht nur das angezeigte Portrait. Benannte Gruppen haben keine Einzelseitenbuttons. Nach einer bestätigten Einzelaktion bleibt das Paar sichtbar; eine weitere unbenannte Seite lässt sich noch bearbeiten. Sind in der Android-App **beide Gruppen bestätigt ignoriert**, erscheint automatisch das nächste Paar. Bei verlorener Antwort erfolgt der Wechsel erst nach Klärung der Aktionsquittung. Scheitert das Laden des nächsten Paars, wiederholt **Erneut versuchen** nur den Abruf; die Ignorierungen werden nicht erneut geschrieben. Unten ersetzt dann ausschließlich **Weiter** (App) beziehungsweise **Ausblenden** (Web) die gemeinsamen Entscheidungsbuttons samt gemeinsamem Stift. Abbrechen im Namensdialog verändert nichts.
 
 **Weiter** lädt das nächste Paar und überspringt das gerade bearbeitete Paar in beiden Richtungen. **Ausblenden** entfernt es aus der aktuellen Webansicht. Beides speichert keine Trennung und verbietet keinen späteren automatischen Abgleich. Einzelaktionen verwenden die bestehenden revisionsgeprüften Aktionen `ignore`, `name` und `assign`. Bei verlorener Antwort bleibt das Paar bis zur Klärung der Aktionsquittung gesperrt; anschließend kann die andere Seite bearbeitet werden. Die App zeigt die zusätzlichen Buttons nur bei Servern mit `merge_side_actions`. Die Vorschauen und der bestehende Cache werden weiterverwendet; es erfolgt keine neue Gesichtserkennung.
 

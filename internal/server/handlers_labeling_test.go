@@ -231,6 +231,34 @@ func TestLabelingHTTPContractPermissionsAndImages(t *testing.T) {
 	if w.Code != 400 {
 		t.Fatalf("trailing JSON %d", w.Code)
 	}
+	named, err := s.photos.LabelPerson(ctx, p.ID, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	batch := photos.LabelAction{OperationID: "http-face-batch-12345", Dataset: session.Dataset, Revision: named.Revision, Action: "ignore_faces", FaceIDs: []int64{named.FaceID}}
+	batchBody, _ := json.Marshal(batch)
+	for _, denied := range []struct {
+		user   string
+		status int
+	}{{"", 401}, {"reader", 403}} {
+		deniedResponse := labelRequest(s, "POST", path, denied.user, string(batchBody))
+		if deniedResponse.Code != denied.status {
+			t.Fatalf("batch permissions: %d", deniedResponse.Code)
+		}
+	}
+	w = labelRequest(s, "POST", path, "editor", string(batchBody))
+	if w.Code != 200 {
+		t.Fatalf("batch: %d %s", w.Code, w.Body.String())
+	}
+	batchReceipt := w.Body.String()
+	w = labelRequest(s, "POST", path, "editor", string(batchBody))
+	if w.Code != 200 || w.Body.String() != batchReceipt {
+		t.Fatalf("batch replay: %d %s", w.Code, w.Body.String())
+	}
+	w = labelRequest(s, "GET", base+"/actions/"+batch.OperationID+"?dataset="+session.Dataset, "manager", "")
+	if w.Code != 404 {
+		t.Fatalf("cross-actor batch receipt: %d", w.Code)
+	}
 	audit, err := s.repo.ListAuditLogs(ctx, 20, 0)
 	if err != nil {
 		t.Fatal(err)

@@ -74,7 +74,7 @@ class ServerIntegrationTest {
                     withContext(Dispatchers.IO) {
                         for(url in listOf(api.image(person.faceId),api.original(person.faceId))) {
                             client.newCall(Request.Builder().url(url).build()).execute().use {
-                                assertEquals(200,it.code);assertEquals("image/jpeg",it.header("Content-Type"))
+                                assertEquals(200,it.code);assertEquals(if(url==api.original(person.faceId)) "image/webp" else "image/jpeg",it.header("Content-Type"))
                                 assertTrue(it.body!!.bytes().isNotEmpty())
                             }
                         }
@@ -111,7 +111,7 @@ class ServerIntegrationTest {
             }}
             assertTrue(image.size>100)
             val original=withContext(Dispatchers.IO) {client.newCall(Request.Builder().url(api.original(first.faces[0])).build()).execute().use {
-                assertEquals(200,it.code);assertEquals("image/jpeg",it.header("Content-Type"));it.body!!.bytes()
+                assertEquals(200,it.code);assertEquals("image/webp",it.header("Content-Type"));it.body!!.bytes()
             }}
             val dimensions=BitmapFactory.Options().apply {inJustDecodeBounds=true}
             BitmapFactory.decodeByteArray(original,0,original.size,dimensions)
@@ -155,6 +155,28 @@ class ServerIntegrationTest {
             val unnamed=repo.next()!!
             assertEquals(unassigned.newId,unnamed.id);assertEquals("",unnamed.name)
             assertTrue(unnamed.favorites.isEmpty());assertEquals(4L,api.person(named.id).count)
+            assertTrue(api.session().namedFaceBatch)
+            named=api.personFaces(named.id,0,0)
+            val selection=named.faces.take(2).toSet()
+            repo.prepare(named,"unassign_faces",faces=selection)
+            val batchPending=repo.pending()!!
+            val reset=repo.resolve()!!
+            assertEquals(2L,reset.faces)
+            assertEquals(reset,api.action(batchPending.source,batchPending.body))
+            assertEquals(reset,api.receipt(batchPending.operation,session.dataset))
+            val resetGroup=api.person(reset.newId)
+            assertEquals(selection,resetGroup.faces.toSet());assertEquals("",resetGroup.name)
+            repo.prepare(resetGroup,"name",name="Batch Target");repo.resolve()
+            named=api.person(named.id)
+            repo.prepare(named,"name_faces",name="Batch New",faces=setOf(named.faces.first()))
+            val created=repo.resolve()!!
+            assertEquals("Batch New",api.person(created.target).name)
+            named=api.person(named.id)
+            repo.prepare(named,"assign_faces",target=api.person(reset.newId),faces=named.faces.toSet());repo.resolve()
+            val assigned=api.person(reset.newId)
+            assertEquals(3L,assigned.count)
+            repo.prepare(assigned,"ignore_faces",faces=selection);repo.resolve()
+            assertEquals(1L,api.person(assigned.id).count)
             val changedPin=Connections.client(Profile(address,"manager","secret","not-the-server-certificate"))
             try {LabelingApi(changedPin,address).session();fail("changed pin accepted")}catch(_:javax.net.ssl.SSLException){}
             finally {changedPin.dispatcher.executorService.shutdown();changedPin.connectionPool.evictAll()}

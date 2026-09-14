@@ -7,6 +7,7 @@ import de.bearstack.people.data.local.*
 import de.bearstack.people.data.remote.*
 import java.util.UUID
 import org.json.JSONObject
+import org.json.JSONArray
 
 internal fun String.ids(): List<Long> = split(',').mapNotNull { it.toLongOrNull() }
 internal fun List<Long>.stored(): String = joinToString(",")
@@ -25,8 +26,8 @@ internal fun QueueState.afterReceipt(r: Receipt, merged: Set<Long> = emptySet())
         skipHistory=skipHistory.positions().filterNot {it.id in merged}.storedPositions(),
         resume=resume.positions().filterNot {it.id in merged}.storedPositions(),
         stagedIgnores=stagedIgnores.positions().filterNot {it.id in merged}.storedPositions())
-    val next = if (r.action == "detach" || r.action == "unassign") copy(detached=(detached.ids()+r.newId).distinct().stored())
-        else if (r.action == "rename" || r.action == "favorite" || r.action == "reject_merge") this
+    val next = if (r.action == "detach" || r.action == "unassign" || r.action == "unassign_faces") copy(detached=(detached.ids()+r.newId).distinct().stored())
+        else if (r.action == "rename" || r.action == "favorite" || r.action == "reject_merge" || r.action.endsWith("_faces")) this
         else if (current==r.source) copy(current=0,page=0) else this
     return if(r.action=="ignore") next.copy(stagedIgnores=next.stagedIgnores.positions().filterNot {it.id==r.source}.storedPositions()) else next
 }
@@ -79,13 +80,14 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
         return p
     }
     suspend fun prepare(person: Person, action: String, name: String = "", target: Person? = null, face: Long = 0,
-        allowDuplicate: Boolean = false, favorite: Boolean? = null, suggestionId: Long? = null, assignment: Person? = null) {
+        allowDuplicate: Boolean = false, favorite: Boolean? = null, suggestionId: Long? = null, assignment: Person? = null, faces: Set<Long> = emptySet()) {
         checkMessage(pending() == null,R.string.error_pending_first)
         val operation = UUID.randomUUID().toString()
         val body = JSONObject().put("operation_id",operation).put("dataset",session.dataset).put("revision",person.revision)
             .put("action",action).put("name",name).put("allow_duplicate",allowDuplicate).put("face_id",face)
             .put("target_id",target?.id ?: 0).put("target_revision",target?.revision ?: 0)
             .apply {
+                if(faces.isNotEmpty()) put("face_ids",JSONArray(faces.sorted()))
                 if(favorite!=null) put("favorite",favorite)
                 if(suggestionId!=null) put("suggestion_id",suggestionId)
                 if(assignment!=null) { put("assign_id",assignment.id); put("assign_revision",assignment.revision) }
@@ -102,7 +104,10 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
             db.withTransaction {
                 val eventAction=if(receipt.action=="name_groups") "name" else if(receipt.action=="name_merge") {
                     if(JSONObject(pending.body).optLong("assign_id")!=0L) "assign" else "name"
-                } else receipt.action
+                } else when(receipt.action) {
+                    "name_faces" -> "name"; "assign_faces" -> "assign"; "ignore_faces" -> "ignore"
+                    else -> receipt.action
+                }
                 val inserted = dao.event(Event(scope,receipt.operation,eventAction,receipt.faces,receipt.groups,receipt.at))
                 val groups=JSONObject(pending.body).optJSONArray("groups")
                 val merged=if(groups==null) emptySet() else (0 until groups.length()).map {groups.getJSONObject(it).getLong("id")}.toSet()

@@ -15,10 +15,11 @@ import java.io.IOException
 
 internal class FakeService : LabelingService {
     var upper=2L
+    var supportsBatch=true
     var supportsMerges=true
     var supportsMergeNaming=true
     var supportsMergeSideActions=true
-    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true,mergeSuggestions=supportsMerges,mergeNaming=supportsMergeNaming,mergeSideActions=supportsMergeSideActions)
+    val session get() = Session("instance","dataset","account",upper,namedPeople=true,namedSearch=true,mergeSuggestions=supportsMerges,mergeNaming=supportsMergeNaming,mergeSideActions=supportsMergeSideActions,namedFaceBatch=supportsBatch)
     val mergePairs=mutableListOf<MergeSuggestion>()
     var failNextMerge=false
     override suspend fun nextMergeSuggestion(excluded: Pair<Long,Long>?): MergeSuggestion? {
@@ -130,6 +131,25 @@ internal class FakeService : LabelingService {
                 mergePairs.removeAll {it.source.id in listOf(id,target.id) || it.target.id in listOf(id,target.id)}
             } else mergePairs.remove(pair)
             val receipt=Receipt(op,action,id,target.id,0,if(action=="accept_merge")p.count else 0,0,100,if(action=="accept_merge")0 else p.revision)
+            commits++;receipts[op]=receipt
+            if(loseResponse) {loseResponse=false;throw IOException("response lost after commit")}
+            return receipt
+        }
+        if(action in listOf("unassign_faces","name_faces","assign_faces","ignore_faces")) {
+            val ids=request.getJSONArray("face_ids").let {a -> (0 until a.length()).map {a.getLong(it)}.toSet()}
+            if(p.name.isEmpty() || ids.isEmpty() || ids.any {it !in p.faces}) throw ApiFailure(409,"conflict","selection changed")
+            val targetId=request.optLong("target_id")
+            val target=if(action=="assign_faces") people[targetId] ?: throw ApiFailure(409,"conflict","target gone") else null
+            if(target!=null && target.revision!=request.getLong("target_revision")) throw ApiFailure(409,"conflict","target changed")
+            val name=request.optString("name")
+            if(action=="name_faces" && !request.optBoolean("allow_duplicate") && people.values.any {it.name==name}) throw ApiFailure(409,"name_exists","duplicate")
+            val newId=if(action in listOf("unassign_faces","name_faces")) (people.keys.maxOrNull() ?: 0)+1 else 0
+            val remaining=p.faces.filterNot {it in ids}
+            if(remaining.isEmpty()) people.remove(id) else people[id]=p.copy(count=p.count-ids.size,faces=remaining,revision=p.revision+1)
+            if(newId>0) people[newId]=Person(newId,name,1,ids.size.toLong(),ids.first(),ids.toList())
+            if(target!=null) people[targetId]=target.copy(count=target.count+ids.size,faces=target.faces+ids,revision=target.revision+1)
+            val receipt=Receipt(op,action,id,if(action=="name_faces") newId else targetId,
+                if(action=="unassign_faces")newId else 0,ids.size.toLong(),0,100,if(remaining.isEmpty())0 else p.revision+1)
             commits++;receipts[op]=receipt
             if(loseResponse) {loseResponse=false;throw IOException("response lost after commit")}
             return receipt

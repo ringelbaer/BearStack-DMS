@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.51.0 / Android 0.11.0 – in Entwicklung
+
+- Android, Ähnliche Gruppen: automatisch zur nächsten Kombination wechseln, sobald beide Gruppen bestätigt ignoriert wurden. Der Wechsel wartet bei verlorenen Antworten auf die Quittungsprüfung; Ladefehler und leere Vorschlagslisten werden ohne doppelte Schreibaktionen behandelt. Compose-Regressionen für beide Reihenfolgen, verlorene Antwort, erneuten Abruf und letzte Kombination. README, Website und API-Beschreibung aktualisiert. PATCH-Bedienkorrektur innerhalb der laufenden unveröffentlichten BearStack 0.51.0 / App 0.11.0; Versionen und API-Vertrag bleiben unverändert.
+
+- Android, Benannte Personen: Mehrfachauswahl über nachgeladene Gesichtseiten, feste Auswahlleiste und Sammelaktionen für Zurücksetzen in eine neue unbenannte Gruppe, Zuordnen zu einer neuen/vorhandenen Person über den bestehenden Namensdialog einschließlich Lupenabgleich und Ignorieren mit Bestätigungsdialog. Bis zu 500 Gesichter; keine Fotolöschung. Das × behält die bestätigte Einzelentfernung der Zuordnung. Atomare, revisionsgeprüfte Serveraktionen mit dauerhaften Quittungen, Wiederherstellung nach verlorenen Antworten und Erhalt der Benennungswarteschlange. Neue Capability `named_face_batch`; ältere Server behalten die Einzelverwaltung. Server-, Repository-/ViewModel- und Compose-Regressionen für Auswahl, Grenzen, Konflikte, Rechte, Abbruch, verlorene Antworten und letzte Gesichter. MINOR-Erweiterung: VERSION **0.51.0**, App **0.11.0**, `versionCode` **24**. Keine Migration; README, Website und OpenAPI aktualisiert.
+
 ### BearStack 0.50.1 / Android 0.10.1 – in Entwicklung
 
 - Beschriftete Gesichtsrahmen im Bildbetrachter: ignorierte Rahmen einschließlich ihrer Labels auf 20 % Deckkraft reduziert. Reine CSS-Anpassung ohne zusätzliche Abfragen; bestehender Overlay-Browsertest und Screenshots auf Desktop/Mobil geprüft. PATCH-UI-Korrektur innerhalb der unveröffentlichten 0.50.1; VERSION und API unverändert. README und Website aktualisiert.

@@ -69,6 +69,43 @@ class PeopleDirectoryTest {
         assertEquals(1L,vm.state.value.person!!.id)
     }
 
+    @Test fun batchSelectionConfirmCancelAndIgnoreAtLargeFont() = screen(2f,setup={api ->
+        api.people[3]=api.people.getValue(3).copy(count=3,faces=listOf(30,31,32))
+    }) {vm,api ->
+        compose.onNodeWithTag("select-face-30").performScrollTo().performClick()
+        compose.onNodeWithTag("select-face-30").assertIsOn()
+        compose.onNodeWithTag("select-face-31").performScrollTo().performClick()
+        compose.onNodeWithText("2 ausgewählt").assertIsDisplayed()
+        compose.onAllNodesWithContentDescription("Zuordnung entfernen")[0].assertIsNotEnabled()
+        compose.onNodeWithText("Aktionen").performClick()
+        compose.onNodeWithText("Ignorieren").performClick()
+        compose.onNodeWithText("Ausgewählte Gesichter ignorieren?").assertIsDisplayed()
+        compose.onNodeWithText("Abbrechen").performClick()
+        assertEquals(0,api.commits);assertEquals(setOf(30L,31L),vm.state.value.selectedFaces)
+        compose.onNodeWithText("Aktionen").performClick()
+        compose.onNodeWithText("Ignorieren").performClick()
+        compose.onNodeWithText("Ignorieren").performClick();idle(vm)
+        assertEquals(1,api.commits);assertEquals(listOf(32L),vm.state.value.selectedPerson!!.faces)
+        compose.onNodeWithText("Aktionen").assertDoesNotExist()
+    }
+
+    @Test fun batchUsesExistingNamingDialogAndExistingPerson() = screen(setup={api ->
+        api.upper=4
+        api.people[3]=api.people.getValue(3).copy(count=3,faces=listOf(30,31,32))
+        api.people[4]=Person(4,"Berta",1,1,40,listOf(40))
+    }) {vm,api ->
+        compose.onNodeWithTag("select-face-30").performScrollTo().performClick()
+        compose.onNodeWithTag("select-face-31").performScrollTo().performClick()
+        compose.onNodeWithText("Aktionen").performClick()
+        compose.onNodeWithText("Gruppe zuordnen").performClick()
+        compose.onNodeWithText("Name").performTextInput("Bert")
+        compose.waitUntil(10000) {vm.state.value.suggestions.isNotEmpty()}
+        compose.onNodeWithText("Berta").performClick();idle(vm)
+        assertFalse(vm.state.value.naming);assertEquals(1,api.commits)
+        assertEquals(listOf(32L),vm.state.value.selectedPerson!!.faces)
+        assertEquals(listOf(40L,30L,31L),api.people.getValue(4).faces)
+    }
+
     @Test fun searchFindsPeopleBeyondLoadedListAndCanBeCleared() = screen(openDetail=false,setup={api ->
         api.upper=100
         for(id in 4L..80L) api.people[id]=Person(id,"Person $id",1,1,id*10,listOf(id*10))

@@ -18,6 +18,7 @@ var ErrLabelInvalid = errors.New("ungültige Benennungsaktion")
 var ErrLabelNameExists = errors.New("Name bereits vorhanden")
 
 type LabelSession struct {
+	NamedFaceBatch   bool   `json:"named_face_batch"`
 	MergeSideActions bool   `json:"merge_side_actions"`
 	ManualMerge      bool   `json:"manual_merge"`
 	MergeNaming      bool   `json:"merge_naming"`
@@ -60,6 +61,7 @@ type LabelCandidates struct {
 	HasNext bool          `json:"has_next"`
 }
 type LabelAction struct {
+	FaceIDs        []int64         `json:"face_ids,omitempty"`
 	Groups         []LabelGroupRef `json:"groups,omitempty"`
 	AssignID       int64           `json:"assign_id,omitempty"`
 	AssignRevision int64           `json:"assign_revision,omitempty"`
@@ -92,7 +94,7 @@ const labelFrom = ` FROM photo_people p JOIN photo_person_revisions r ON r.perso
 const labelExists = ` EXISTS(SELECT 1 FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0) `
 
 func (l *Library) LabelSession(ctx context.Context) (LabelSession, error) {
-	out := LabelSession{Protocol: 1, FaceFavorites: true, NamedPeople: true, NamedSearch: true, MergeSuggestions: true, MergeNaming: true, ManualMerge: true, MergeSideActions: true}
+	out := LabelSession{Protocol: 1, FaceFavorites: true, NamedPeople: true, NamedSearch: true, MergeSuggestions: true, MergeNaming: true, ManualMerge: true, MergeSideActions: true, NamedFaceBatch: true}
 	err := l.index.db.QueryRowContext(ctx, `SELECT instance,dataset,(SELECT coalesce(max(id),0) FROM photo_people) FROM photo_labeling_identity WHERE id=1`).Scan(&out.Instance, &out.Dataset, &out.UpperID)
 	return out, err
 }
@@ -219,7 +221,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		return out, ErrLabelInvalid
 	}
 	switch a.Action {
-	case "name", "assign", "detach", "ignore", "rename", "unassign", "favorite", "accept_merge", "reject_merge", "name_merge", "merge_groups", "name_groups":
+	case "name", "assign", "detach", "ignore", "rename", "unassign", "favorite", "accept_merge", "reject_merge", "name_merge", "merge_groups", "name_groups", "unassign_faces", "assign_faces", "name_faces", "ignore_faces":
 	default:
 		return out, ErrLabelInvalid
 	}
@@ -228,6 +230,10 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		return out, ErrLabelInvalid
 	}
 	manualMerge := a.Action == "merge_groups" || a.Action == "name_groups"
+	batch := isLabelFaceBatch(a.Action)
+	if err := validateLabelFaceBatch(id, a, name); err != nil {
+		return out, err
+	}
 	if err := validateLabelGroupSelection(id, a, name); err != nil {
 		return out, err
 	}
@@ -256,7 +262,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 			visibilityArgs = append(visibilityArgs, group.ID)
 		}
 	}
-	if (a.Action == "name" || a.Action == "rename" || a.Action == "name_groups" || (a.Action == "name_merge" && a.AssignID == 0)) && !a.AllowDuplicate {
+	if (a.Action == "name" || a.Action == "rename" || a.Action == "name_faces" || a.Action == "name_groups" || (a.Action == "name_merge" && a.AssignID == 0)) && !a.AllowDuplicate {
 		visibilityFilter += ` OR p.name=?`
 		visibilityArgs = append(visibilityArgs, name)
 	}
@@ -302,7 +308,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	if err != nil {
 		return out, err
 	}
-	managing := a.Action == "rename" || a.Action == "unassign" || a.Action == "favorite"
+	managing := a.Action == "rename" || a.Action == "unassign" || a.Action == "favorite" || batch
 	if source.Revision != a.Revision || (!merging && !manualMerge && (source.Name != "") != managing) {
 		return out, ErrLabelConflict
 	}
@@ -314,6 +320,8 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	}
 	out = LabelReceipt{OperationID: a.OperationID, Action: a.Action, SourceID: id, Faces: source.Count, Groups: 1, At: time.Now().Unix()}
 	switch a.Action {
+	case "unassign_faces", "assign_faces", "name_faces", "ignore_faces":
+		out, err = labelFaceBatchTx(ctx, tx, a, name, out)
 	case "merge_groups", "name_groups":
 		out, err = mergeLabelGroupsTx(ctx, tx, a, name, out)
 	case "accept_merge", "reject_merge", "name_merge":
