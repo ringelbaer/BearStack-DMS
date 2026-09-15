@@ -138,9 +138,14 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                                 }
                             }
                         }
-                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=Alignment.CenterVertically) {
                             people.forEach {person ->
-                                Text(person.name.ifBlank {text(R.string.people_unnamed)},maxLines=2,overflow=TextOverflow.Ellipsis,
+                                val named=state.mergeSidePeople[person.id] ?: person
+                                if(named.name.isNotBlank()) TextButton(onClick={vm.openMergePerson(person.id)},enabled=enabled,
+                                    modifier=Modifier.weight(1f).heightIn(min=48.dp).testTag("merge-person-${person.id}")) {
+                                    Text(named.name,maxLines=2,overflow=TextOverflow.Ellipsis,
+                                        style=MaterialTheme.typography.titleMedium,textAlign=TextAlign.Center)
+                                } else Text(text(R.string.people_unnamed),maxLines=2,overflow=TextOverflow.Ellipsis,
                                     style=MaterialTheme.typography.titleMedium,textAlign=TextAlign.Center,modifier=Modifier.weight(1f))
                             }
                         }
@@ -156,9 +161,13 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                                     verticalArrangement=Arrangement.spacedBy(4.dp)) {
                                     if(state.mergeSideActions && person.name.isEmpty()) {
                                         val result=state.mergeSideResults[person.id]
-                                        if(result!=null) Text(text(result),style=MaterialTheme.typography.bodySmall,
-                                            textAlign=TextAlign.Center,modifier=Modifier.fillMaxWidth().semantics {liveRegion=LiveRegionMode.Polite})
-                                        else {
+                                        if(result!=null) {
+                                            if(person.id in state.mergeSidePeople) TextButton(onClick={vm.openMergePerson(person.id)},enabled=enabled,
+                                                modifier=Modifier.fillMaxWidth().heightIn(min=48.dp).semantics {liveRegion=LiveRegionMode.Polite}) {
+                                                Text(text(result),style=MaterialTheme.typography.bodySmall,textAlign=TextAlign.Center)
+                                            } else Text(text(result),style=MaterialTheme.typography.bodySmall,
+                                                textAlign=TextAlign.Center,modifier=Modifier.fillMaxWidth().semantics {liveRegion=LiveRegionMode.Polite})
+                                        } else {
                                             OutlinedButton(onClick={vm.ignoreMergeSide(person.id)},enabled=enabled,contentPadding=PaddingValues(horizontal=8.dp),
                                                 modifier=Modifier.heightIn(min=48.dp).semantics {contentDescription=text(if(index==0) R.string.people_merge_ignore_first else R.string.people_merge_ignore_second)}) {
                                                 Text(text(R.string.people_merge_ignore),textAlign=TextAlign.Center)

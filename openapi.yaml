@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.52.4
+  version: 0.52.5
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -1249,13 +1249,16 @@ paths:
         when both displayed groups are named, even when their names are identical.
         It shows both names and explains that the second group's name is kept.
         This is a local UI check using the returned names; the action contract is unchanged.
-        The Android app automatically requests the next pair once both individual
-        ignore actions are confirmed, including confirmation recovered by receipt.
-        A failed next-pair read is retried without repeating the ignore writes.
+        After a confirmed individual action, Android requests the next pair when
+        each side is already named or has a confirmed ignore/name/assign result,
+        including confirmation recovered by receipt. A failed next-pair read is
+        retried without repeating writes. Person names link to the named person's
+        details; assignment results include the selected target name.
         Since 0.50.0, session.merge_side_actions enables ignore/name/assign controls
         for each unnamed side. Named groups never receive individual controls.
-        Individual actions retain the displayed pair until Next (Android) or Hide
-        (Web); after the first confirmed action there are no pair-decision controls.
+        Android retains a pair while another unnamed, unprocessed side remains,
+        with Next available; Web retains it until Hide. After the first confirmed
+        action there are no pair-decision controls.
         Optional exclude_source/exclude_target skip the previous pair in either
         orientation before the bounded candidate read, without rejecting it or
         modifying any data. Both IDs must be distinct and positive, or both zero/omitted.

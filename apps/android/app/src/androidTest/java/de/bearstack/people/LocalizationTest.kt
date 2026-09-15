@@ -99,7 +99,7 @@ class LocalizationTest {
         compose.onNodeWithText("Similar groups").performClick();idle(vm)
         compose.onNodeWithText("Same person?").assertIsDisplayed()
         compose.onNodeWithText("First group").assertIsDisplayed()
-        compose.onNodeWithText("Second group").assertIsDisplayed()
+        compose.onNodeWithTag("merge-folder-1").assertIsDisplayed().assertTextEquals("Urlaub")
         val preview=compose.onNodeWithTag("face-20").fetchSemanticsNode().config[SemanticsActions.CustomActions]
             .single {it.label=="Show original photo"}
         compose.runOnIdle {assertTrue(preview.action())}
@@ -123,6 +123,8 @@ class LocalizationTest {
             val displayed=text(error)
             assertTrue(displayed.startsWith(prefix))
             for(secret in listOf("password","private.invalid","secret")) assertFalse(displayed.contains(secret))
+            assertEquals(if(locale==Locale.GERMAN)"Zugeordnet: Ada" else "Assigned: Ada",
+                text(UiText(R.string.people_merge_side_assigned,"Ada")))
             assertEquals(if(locale==Locale.GERMAN)"1 Gesicht" else "1 face",text.faces(1))
             assertEquals(if(locale==Locale.GERMAN)"2 Gesichter" else "2 faces",text.faces(2))
             assertEquals(if(locale==Locale.GERMAN)"1 Gruppe" else "1 group",text.groups(1))

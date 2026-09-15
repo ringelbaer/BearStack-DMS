@@ -280,8 +280,9 @@ class MergeReviewTest {
         compose.onNodeWithText("Getrennt lassen").assertIsDisplayed()
         saveLayout("mixed")
         compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
-        alignedPortraits()
-        compose.onNodeWithText("Weiter").assertIsDisplayed()
+        assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
+        compose.onNodeWithTag("face-50").assertIsDisplayed()
+        compose.onNodeWithText("Weiter").assertDoesNotExist()
     }
     @Test fun wrappedNameKeepsPortraitsAndCountsAligned() = screen(setup={api ->
         api.people[4]=api.people.getValue(4).copy(name="Alexandra Musterfrau mit langem Namen",count=107)
@@ -372,13 +373,90 @@ class MergeReviewTest {
         compose.onNodeWithText("Benannte Gruppen zusammenführen?").assertDoesNotExist()
         assertEquals(1,api.commits);assertEquals("accept_merge",api.receipts.values.single().action)
     }
+    @Test fun namedLinkOpensPersonAndBackLoadsDirectoryWithoutChangingQueue() = screen {vm,api,db ->
+        val before=runBlocking {db.dao().state(api.session.scope)}!!
+        compose.onNodeWithTag("merge-person-4").performScrollTo().performClick();idle(vm)
+        assertTrue(vm.state.value.directory);assertFalse(vm.state.value.mergeReview)
+        assertEquals(4L,vm.state.value.selectedPerson!!.id)
+        assertEquals(listOf(40L),vm.state.value.selectedPerson!!.faces)
+        assertTrue(vm.state.value.batchFaces)
+        assertTrue(api.directoryQueries.isEmpty())
+        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        assertNull(vm.state.value.selectedPerson)
+        assertEquals(setOf(4L,6L),vm.state.value.namedPeople.map {it.id}.toSet())
+        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        assertFalse(vm.state.value.directory)
+        val after=runBlocking {db.dao().state(api.session.scope)}!!
+        assertEquals(before.current,after.current);assertEquals(before.page,after.page)
+        assertEquals(0,api.commits)
+    }
+    @Test fun personLinkLoadFailureRetriesOnlyDetails() = screen {vm,api,_ ->
+        api.failPerson=4
+        compose.onNodeWithTag("merge-person-4").performClick();idle(vm)
+        assertTrue(vm.state.value.directory);assertNotNull(vm.state.value.error)
+        api.failPerson=null
+        compose.runOnUiThread {vm.retry()};idle(vm)
+        assertEquals(listOf(40L),vm.state.value.selectedPerson!!.faces)
+        assertEquals(0,api.commits)
+    }
+    @Test fun removedPersonLinkFallsBackToFreshDirectory() = screen {vm,api,_ ->
+        api.people.remove(4)
+        compose.onNodeWithTag("merge-person-4").performClick();idle(vm)
+        assertTrue(vm.state.value.directory);assertNull(vm.state.value.selectedPerson)
+        assertEquals(listOf(6L),vm.state.value.namedPeople.map {it.id})
+        assertNull(vm.state.value.error);assertEquals(0,api.commits)
+    }
+    @Test fun namedTargetAndIgnoredSourceAdvanceAutomatically() = screen {vm,api,_ ->
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
+        assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
+        assertEquals(1,api.commits)
+    }
+    @Test fun namedSourceAndNamedOtherSideAdvanceAutomatically() = screen(setup={api ->
+        named(api)
+        api.people[4]=api.people.getValue(4).copy(name="")
+        api.mergePairs[0]=api.mergePairs[0].copy(target=api.people.getValue(4))
+    }) {vm,api,_ ->
+        compose.onNodeWithContentDescription("Zweite Gruppe benennen/zuordnen").performClick()
+        compose.onNodeWithText("Name",substring=false).performTextInput("Grace")
+        compose.onNodeWithText("Speichern").performClick();idle(vm)
+        assertEquals("Grace",api.people.getValue(4).name)
+        assertEquals(2L,vm.state.value.mergeSuggestion!!.id);assertEquals(1,api.commits)
+    }
+    @Test fun assignedTargetNameSurvivesLostResponseAndLinkIsBlockedUntilResolved() = screen(setup=::unnamed) {vm,api,_ ->
+        api.loseResponse=true
+        compose.runOnUiThread {vm.startMergeSideNaming(3);vm.assign(api.people.getValue(6))};idle(vm)
+        assertTrue(vm.state.value.unresolved);assertEquals(1L,vm.state.value.mergeSuggestion!!.id)
+        compose.runOnUiThread {vm.openMergePerson(3)};idle(vm)
+        assertFalse(vm.state.value.directory)
+        compose.runOnUiThread {vm.retry()};idle(vm)
+        compose.onNodeWithText("Zugeordnet: Person 6").performScrollTo().performClick();idle(vm)
+        assertEquals(6L,vm.state.value.selectedPerson!!.id);assertEquals(1,api.commits)
+    }
+    @Test fun namedSideAndAssignmentAdvanceAfterReceiptWithoutDoubleWrite() = screen {vm,api,_ ->
+        api.loseResponse=true
+        compose.runOnUiThread {vm.startMergeSideNaming(3);vm.assign(api.people.getValue(4))};idle(vm)
+        assertTrue(vm.state.value.unresolved);assertEquals(1L,vm.state.value.mergeSuggestion!!.id)
+        compose.runOnUiThread {vm.openMergePerson(4)};idle(vm)
+        assertFalse(vm.state.value.directory)
+        compose.runOnUiThread {vm.retry()};idle(vm)
+        assertEquals(2L,vm.state.value.mergeSuggestion!!.id);assertEquals(1,api.commits)
+    }
+    @Test fun newlyNamedSideLinksToPersonWhileOtherSideRemainsEditable() = screen(setup=::unnamed) {vm,api,_ ->
+        compose.onNodeWithContentDescription("Erste Gruppe benennen/zuordnen").performClick()
+        compose.onNodeWithText("Name",substring=false).performTextInput("Ada")
+        compose.onNodeWithText("Speichern").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Zweite Gruppe ignorieren").assertIsEnabled()
+        compose.onNodeWithTag("merge-person-3").performClick();idle(vm)
+        assertEquals(3L,vm.state.value.selectedPerson!!.id)
+        assertEquals("Ada",vm.state.value.selectedPerson!!.name);assertEquals(1,api.commits)
+    }
     @Test fun ignoringBothSidesAutomaticallyLoadsNextPair() = screen(setup=::unnamed) {vm,api,_ ->
         compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
         assertEquals(1L,vm.state.value.mergeSuggestion!!.id)
         compose.onNodeWithText("Weiter").assertIsDisplayed()
         compose.onNodeWithContentDescription("Zweite Gruppe ignorieren").performClick();idle(vm)
         assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
-        assertTrue(vm.state.value.mergeSideResults.isEmpty());assertTrue(vm.state.value.mergeIgnoredSides.isEmpty())
+        assertTrue(vm.state.value.mergeSideResults.isEmpty());assertTrue(vm.state.value.mergeSidePeople.isEmpty())
         assertEquals(2,api.commits);assertEquals(setOf(3L,4L),api.receipts.values.map {it.source}.toSet())
         assertTrue(api.receipts.values.all {it.action=="ignore"})
         compose.onNodeWithText("Weiter").assertDoesNotExist()
@@ -389,11 +467,11 @@ class MergeReviewTest {
         api.loseResponse=true
         compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
         assertTrue(vm.state.value.unresolved);assertEquals(1L,vm.state.value.mergeSuggestion!!.id)
-        assertEquals(setOf(4L),vm.state.value.mergeIgnoredSides);assertEquals(2,api.commits)
+        assertEquals(setOf(4L),vm.state.value.mergeSideResults.keys);assertEquals(2,api.commits)
         compose.onNodeWithText("Weiter").assertIsNotEnabled()
         compose.onNodeWithText("Offene Aktion prüfen").performClick();idle(vm)
         assertFalse(vm.state.value.unresolved);assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
-        assertEquals(2,api.commits);assertTrue(vm.state.value.mergeIgnoredSides.isEmpty())
+        assertEquals(2,api.commits);assertTrue(vm.state.value.mergeSideResults.keys.isEmpty())
     }
     @Test fun automaticNextLoadFailureCanRetryWithoutRepeatingIgnores() = screen(setup=::unnamed) {vm,api,_ ->
         compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
@@ -401,7 +479,7 @@ class MergeReviewTest {
         compose.onNodeWithContentDescription("Zweite Gruppe ignorieren").performClick();idle(vm)
         assertEquals(2,api.commits);assertNull(vm.state.value.mergeSuggestion)
         assertNotNull(vm.state.value.error);assertFalse(vm.state.value.unresolved)
-        assertTrue(vm.state.value.mergeIgnoredSides.isEmpty())
+        assertTrue(vm.state.value.mergeSideResults.keys.isEmpty())
         api.failNextMerge=false
         compose.onNodeWithText("Erneut versuchen").performClick();idle(vm)
         assertEquals(2L,vm.state.value.mergeSuggestion!!.id);assertEquals(2,api.commits)
@@ -414,7 +492,7 @@ class MergeReviewTest {
         assertEquals(2,api.commits);assertTrue(vm.state.value.mergeSideResults.isEmpty())
         compose.onNodeWithText("Weiter").assertDoesNotExist()
     }
-    @Test fun individualActionsKeepBothSidesUntilNext() = screen(2f,setup=::unnamed) {vm,api,_ ->
+    @Test fun individualActionsAdvanceOnceBothSidesAreProcessed() = screen(2f,setup=::unnamed) {vm,api,_ ->
         val before=api.people.getValue(4)
         compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performClick();idle(vm)
         assertFalse(api.people.containsKey(3));assertEquals(before,api.people[4])
@@ -428,10 +506,7 @@ class MergeReviewTest {
         compose.onNodeWithText("Name",substring=false).performTextInput("Ada")
         compose.onNodeWithText("Speichern").performClick();idle(vm)
         assertEquals("Ada",api.people.getValue(4).name)
-        assertEquals(setOf(3L,4L),vm.state.value.mergeSideResults.keys)
-        compose.runOnUiThread {vm.decideMerge(true);vm.decideMerge(false)};idle(vm)
         assertEquals(2,api.commits)
-        compose.onNodeWithText("Weiter").performClick();idle(vm)
         assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
         assertTrue(vm.state.value.mergeSideResults.isEmpty())
         assertEquals(setOf("ignore","name"),api.receipts.values.map {it.action}.toSet())
@@ -453,6 +528,12 @@ class MergeReviewTest {
         assertEquals(setOf(4L),vm.state.value.mergeSideResults.keys)
         compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertIsEnabled()
         assertEquals(4L,api.receipts.values.single().source)
+        compose.onNodeWithText("Zugeordnet: Person 6").assertIsDisplayed()
+        compose.onNodeWithTag("merge-person-4").performScrollTo().performClick();idle(vm)
+        assertTrue(vm.state.value.directory);assertFalse(vm.state.value.mergeReview)
+        assertEquals(6L,vm.state.value.selectedPerson!!.id)
+        assertEquals(setOf(40L,60L),vm.state.value.selectedPerson!!.faces.toSet())
+        assertEquals(1,api.commits)
     }
     @Test fun individualLostResponseResolvesWithoutAdvancingOrDoubleWrite() = screen(setup=::unnamed) {vm,api,_ ->
         api.loseResponse=true
@@ -469,9 +550,13 @@ class MergeReviewTest {
         compose.onNodeWithContentDescription("Erste Gruppe benennen/zuordnen").performClick()
         compose.onNodeWithText("Name",substring=false).performTextInput("Ada")
         compose.onNodeWithText("Speichern").performClick();idle(vm)
+        assertEquals("Ada",api.people.getValue(3).name)
+        assertEquals(1,api.commits)
         val regenerated=MergeSuggestion(99,api.people.getValue(4),api.people.getValue(3),.52)
         api.mergePairs.add(0,regenerated)
-        compose.onNodeWithText("Weiter").performClick();idle(vm)
+        // The closing keyboard can still move the bottom bar. Invoke its
+        // accessible click action to test pair exclusion independently of that animation.
+        compose.onNodeWithText("Weiter").assertIsEnabled().performSemanticsAction(SemanticsActions.OnClick) {assertTrue(it())};idle(vm)
         assertEquals(2L,vm.state.value.mergeSuggestion!!.id)
         assertTrue(regenerated in api.mergePairs);assertEquals(1,api.commits)
     }

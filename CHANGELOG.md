@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.52.5 / Android 0.12.3 – in Entwicklung
+
+- Android / Ähnliche Gruppen: Personennamen öffnen die zugehörige Detailansicht unter Benannte Personen, einschließlich neu benannter oder zugeordneter Seiten. Zuordnungen zeigen „Zugeordnet: Name“ mit der gewählten Zielperson; der Name bleibt bei Quittungsprüfung nach verlorener Antwort erhalten. Details laden erst beim Antippen seitenweise; die Benennungswarteschlange bleibt erhalten.
+- Nach einer bestätigten Einzelaktion automatisch zur nächsten Kombination wechseln, sobald jede Seite bereits benannt oder durch Benennen, Zuordnen oder Ignorieren erledigt ist. Eine verbleibende unbenannte Seite bleibt bearbeitbar. Verlorene Antworten, erneuter Abruf und Konflikte behalten die bestehenden Quittungs- und Revisionsprüfungen.
+- Validierung: 59 Emulatorprüfungen (47 Gruppen-, 8 Personen- und 4 Sprachtests), 84 JVM-Tests jeweils für Debug und Release, Lint, Debug-/minimierter Release-Build, OpenAPI-Prüfungen und Website-Build erfolgreich. Veraltete Testerwartungen für automatisches Weitergehen und Ordnerüberschriften angepasst; den Test des Paarausschlusses von der Tastaturanimation entkoppelt.
+- PATCH-Bedienkorrektur: BearStack **0.52.5**, Android **0.12.3**, `versionCode` **28**. README, Android-Anleitung, deutsche/englische Hilfe, Website und OpenAPI-Beschreibung aktualisiert; keine API-Vertragsänderung oder Migration.
+
 ### BearStack 0.52.4 – in Entwicklung
 
 - Personen-Übersicht und Benennen-Dialog in WebUI und Android: Gruppen mit sichtbaren aktiven Stern-Favoriten verwenden ausschließlich diese als Vorschau, stabil nach kleinster Gesichts-ID. Gilt auch für Lupentreffer und Favoriten außerhalb der geladenen Detailseite. Ohne Favoriten bleibt die bisherige Bildauswahl erhalten. Darstellung und Vergleichsgesichter sind getrennt; Erkennung, Referenzauswahl, Such-Ausgangsgesichter und Trefferrangfolge bleiben unverändert. Vorhandener partieller Favoritenindex, keine neue Datenmigration. PATCH: BearStack **0.52.4**, Android weiterhin **0.12.2**; Serverupdate genügt. README, Website und OpenAPI aktualisiert.

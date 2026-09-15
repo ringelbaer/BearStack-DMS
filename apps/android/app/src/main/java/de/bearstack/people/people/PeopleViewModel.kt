@@ -35,7 +35,7 @@ data class PeopleState(
     val mergeNaming: Boolean = false, val mergeReview: Boolean = false, val mergeSuggestion: MergeSuggestion? = null,
     val mergeSideActions: Boolean = false, val mergeNamingSide: Long? = null, val mergePendingSide: Long? = null,
     val mergeSideResults: Map<Long,UiText> = emptyMap(),
-    val mergeIgnoredSides: Set<Long> = emptySet(),
+    val mergeSidePeople: Map<Long,Person> = emptyMap(), val mergePendingTarget: Person? = null,
     val showGallery: Boolean = false, val canManagePeople: Boolean = false,
     val restoring: Boolean = false, val savedConnection: Boolean = false, val showDevicePhotos: Boolean = false,
 )
@@ -218,7 +218,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     } }
     private suspend fun loadMergeSuggestion() {
         mergeFaceSearch?.close(); mergeFaceSearch=null
-        update { it.copy(mergeSuggestion=null,naming=false,suggestions=emptyList(),duplicates=emptyList(),mergeNamingSide=null,mergePendingSide=null,mergeSideResults=emptyMap(),mergeIgnoredSides=emptySet()) }
+        update { it.copy(mergeSuggestion=null,naming=false,suggestions=emptyList(),duplicates=emptyList(),mergeNamingSide=null,mergePendingSide=null,mergeSideResults=emptyMap(),mergeSidePeople=emptyMap(),mergePendingTarget=null) }
         val repo=repository ?: return
         val session=repo.api.session()
         requireMessage(session.scope==repo.scope,R.string.error_scope_changed)
@@ -227,7 +227,8 @@ class PeopleViewModel private constructor(application: Application, private val 
         mergeFaceSearch=if(session.mergeNaming && suggestion!=null &&
             suggestion.source.name.isEmpty() && suggestion.target.name.isEmpty())
             MergeFaceSearch(viewModelScope,suggestion,repo.api::faceMatches) else null
-        update { it.copy(mergeSuggestion=suggestion,mergeNaming=session.mergeNaming,mergeSideActions=session.mergeSideActions) }
+        update { it.copy(mergeSuggestion=suggestion,mergeNaming=session.mergeNaming,mergeSideActions=session.mergeSideActions,
+            namedSearch=session.namedSearch,batchFaces=session.namedFaceBatch) }
     }
     fun decideMerge(accept: Boolean) { if(editable() && state.value.mergeReview && !state.value.naming && state.value.mergeSideResults.isEmpty()) task {
         val suggestion=state.value.mergeSuggestion ?: return@task
@@ -273,7 +274,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     private suspend fun mutateMergeSide(id: Long, action: String, name: String="", target: Person?=null, allowDuplicate: Boolean=false) {
         val person=mergeSide(id) ?: return
         val repo=repository ?: return
-        update {it.copy(mergePendingSide=id)}
+        update {it.copy(mergePendingSide=id,mergePendingTarget=target)}
         repo.prepare(person,action,name=name,target=target,allowDuplicate=allowDuplicate)
         val body=JSONObject(repo.pending()!!.body)
         val receipt=repo.resolve() ?: return
@@ -282,19 +283,27 @@ class PeopleViewModel private constructor(application: Application, private val 
     private suspend fun completeMergeSide(receipt: Receipt, body: JSONObject) {
         val pair=state.value.mergeSuggestion ?: return
         requireMessage(receipt.source==state.value.mergePendingSide && receipt.action==body.getString("action"),R.string.error_receipt)
+        // Retain the selected target across receipt recovery; no extra lookup is
+        // needed just to render the confirmed assignment's name.
+        val destination=when(receipt.action) {
+            "assign" -> state.value.mergePendingTarget?.takeIf {it.id==receipt.target}
+            "name" -> listOf(pair.source,pair.target).first {it.id==receipt.source}.copy(name=body.optString("name"))
+            else -> null
+        }
         val result=when(receipt.action) {
             "ignore" -> UiText(R.string.people_merge_side_ignored)
-            "assign" -> UiText(R.string.people_merge_side_assigned)
+            "assign" -> UiText(R.string.people_merge_side_assigned,destination?.name.orEmpty())
             else -> UiText(R.string.people_merge_side_named,body.optString("name"))
         }
         val completed=mutableMapOf(receipt.source to result)
-        if(receipt.target==pair.source.id || receipt.target==pair.target.id) completed[receipt.target]=UiText(R.string.people_merge_side_assigned)
-        val ignored=state.value.mergeIgnoredSides+if(receipt.action=="ignore") setOf(receipt.source) else emptySet()
+        if(receipt.target==pair.source.id || receipt.target==pair.target.id) completed[receipt.target]=result
         mergeFaceSearch?.close(); mergeFaceSearch=null
         search?.cancel();cancelFaceSearch()
-        update {it.copy(mergeSideResults=it.mergeSideResults+completed,mergeIgnoredSides=ignored,mergePendingSide=null,mergeNamingSide=null,
+        update {it.copy(mergeSideResults=it.mergeSideResults+completed,
+            mergeSidePeople=it.mergeSidePeople+(destination?.let {p -> mapOf(receipt.source to p)} ?: emptyMap()),
+            mergePendingSide=null,mergePendingTarget=null,mergeNamingSide=null,
             naming=false,suggestions=emptyList(),duplicates=emptyList(),unresolved=false)}
-        if(pair.source.id in ignored && pair.target.id in ignored) {
+        if(listOf(pair.source,pair.target).all {it.name.isNotBlank() || it.id in state.value.mergeSideResults}) {
             excludedMergePair=pair.source.id to pair.target.id
             loadMergeSuggestion()
         }
@@ -304,6 +313,25 @@ class PeopleViewModel private constructor(application: Application, private val 
         excludedMergePair=pair.source.id to pair.target.id
         loadMergeSuggestion()
     } }
+    fun openMergePerson(id: Long) {
+        val current=state.value
+        val pair=current.mergeSuggestion ?: return
+        val person=current.mergeSidePeople[id]
+            ?: listOf(pair.source,pair.target).firstOrNull {it.id==id && it.name.isNotBlank()} ?: return
+        if(!editable() || !current.mergeReview || current.naming) return
+        task {
+            val repo=repository ?: return@task
+            requireMessage(repo.session.namedPeople,R.string.error_people_version)
+            mergeFaceSearch?.close();mergeFaceSearch=null
+            directorySearch?.cancel();search?.cancel();cancelFaceSearch()
+            update {it.copy(mergeReview=false,mergeSuggestion=null,mergeSideResults=emptyMap(),mergeSidePeople=emptyMap(),
+                directory=true,selectedPerson=person.copy(faces=emptyList(),offset=0),removeFace=null,
+                selectedFaces=emptySet(),batchNaming=false,batchConfirmation=null,
+                namedPeople=emptyList(),namedHasNext=false,namedDirty=true,namedQuery="",loadedNamedQuery="")}
+            refreshSelectedPerson()
+            if(state.value.selectedPerson==null) loadNamedPeople(true)
+        }
+    }
     fun closeMergeReview() { if(editable() && !state.value.naming) task {
         mergeFaceSearch?.close(); mergeFaceSearch=null
         update { it.copy(mergeReview=false,mergeSuggestion=null) }

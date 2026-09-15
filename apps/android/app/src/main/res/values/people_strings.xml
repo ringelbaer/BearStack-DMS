@@ -120,9 +120,9 @@
     <string name="people_merge_side_name">Gruppe benennen/zuordnen</string>
     <string name="people_merge_side_scope">Die Aktion gilt nur für diese Gruppe.</string>
     <string name="people_merge_side_ignored">Ignoriert</string>
-    <string name="people_merge_side_assigned">Zugeordnet</string>
+    <string name="people_merge_side_assigned">Zugeordnet: %1$s</string>
     <string name="people_merge_side_named">Benannt: %1$s</string>
-    <string name="people_merge_side_help">Nur unbenannte Gruppen haben eigene Buttons zum Ignorieren und Benennen/Zuordnen. Nach einer Einzelaktion bleibt die andere Seite bearbeitbar. Weiter öffnet das nächste Paar, ohne eine Trennung zu speichern. Sind beide Gruppen bestätigt ignoriert, öffnet sich automatisch das nächste Paar; bei verlorener Antwort erst nach Prüfung der offenen Aktion.</string>
+    <string name="people_merge_side_help">Nur unbenannte Gruppen haben eigene Buttons zum Ignorieren und Benennen/Zuordnen. Nach einer Einzelaktion bleibt die andere Seite bearbeitbar. Weiter öffnet das nächste Paar, ohne eine Trennung zu speichern. Personennamen öffnen die zugehörige Personenansicht. Sobald keine unbenannte, unbearbeitete Seite mehr übrig ist, öffnet sich automatisch das nächste Paar; bei verlorener Antwort erst nach Prüfung der offenen Aktion.</string>
     <string name="people_merge_matches_title">Benennungsvorschläge für beide Gruppen</string>
     <string name="people_merge_matches_loading">Abgleich läuft …</string>
     <string name="people_merge_matches_retry">Erneut abgleichen</string>
