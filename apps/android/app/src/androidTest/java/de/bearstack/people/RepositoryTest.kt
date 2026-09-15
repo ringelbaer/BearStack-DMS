@@ -58,6 +58,7 @@ internal class FakeService : LabelingService {
         return if(offset==4 && person.count==5L) person.copy(offset=4,faces=listOf(14)) else person
     }
     var matches: List<FaceMatch> = emptyList()
+    var matchesByFace: Map<Long,List<FaceMatch>> = emptyMap()
     var matchUpdates: List<List<FaceMatch>> = emptyList()
     var matchFinish: kotlinx.coroutines.CompletableDeferred<Unit>? = null
     var matchDelay=0L
@@ -72,7 +73,7 @@ internal class FakeService : LabelingService {
         }
         catch(e: kotlinx.coroutines.CancellationException) { cancelledMatches++;throw e }
         if(matchFailure) throw IOException("face search unavailable")
-        emit(matches)
+        emit(matchesByFace[face] ?: matches)
     }
     val queries = mutableListOf<String>()
     var slowQuery: String? = null

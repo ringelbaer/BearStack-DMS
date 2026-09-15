@@ -217,7 +217,9 @@ Eine eigene Dienstadresse lässt sich über folgende optionale Werte setzen:
 | `face_service_url` | `BEARSTACK_PHOTOS_FACE_SERVICE_URL` | HTTP(S)-Adresse des eigenen Erkennungsdienstes. |
 | `face_service_token` | `BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN` | Gemeinsamer geheimer Token, mindestens 32 Zeichen. |
 
-#### Personen sortieren
+##Ab BearStack **0.52.4** verwenden Personen-Übersichtskarten und die Treffer-Thumbnails im Benennen-Dialog in WebUI und Android ausschließlich sichtbare, aktive **Stern-Favoriten**, sofern die Gruppe welche besitzt. Bei mehreren Favoriten wird stabil der mit der kleinsten Gesichts-ID gezeigt. Ohne Favoriten bleibt die bisherige Bildauswahl erhalten. Das gilt auch für die Portraits der Lupentreffer; Personenerkennung, Vergleichsreferenzen, Such-Ausgangsgesichter und Trefferreihenfolge bleiben unverändert. Die Auswahl erfolgt serverseitig über den vorhandenen Favoritenindex, ohne zusätzliche Bildabrufe oder Datenmigration. Die Android-App erhält die korrigierten Portraits nach dem Serverupdate über die bestehenden Antworten.
+
+## Personen sortieren
 
 Personenübersicht und Personendetailseite verwenden dieselbe Kacheldarstellung mit
 einheitlichen Größen S/M/L, Bildflächen, Abständen, Rahmen und Aktionspositionen.

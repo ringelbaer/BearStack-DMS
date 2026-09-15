@@ -20,13 +20,14 @@ type RecognizedFace struct {
 	Favorite              bool    `json:"favorite"`
 }
 type Person struct {
-	DisplayPath string      `json:"display_path"`
-	ID          int64       `json:"id"`
-	Name        string      `json:"name"`
-	Count       int         `json:"count"`
-	FaceID      int64       `json:"face_id"`
-	Directory   string      `json:"directory,omitempty"`
-	Portrait    *FaceRegion `json:"portrait,omitempty"`
+	DisplayPath  string      `json:"display_path"`
+	ID           int64       `json:"id"`
+	Name         string      `json:"name"`
+	Count        int         `json:"count"`
+	FaceID       int64       `json:"face_id"`
+	SearchFaceID int64       `json:"search_face_id,omitempty"`
+	Directory    string      `json:"directory,omitempty"`
+	Portrait     *FaceRegion `json:"portrait,omitempty"`
 }
 type FaceRegion struct {
 	X      float64 `json:"x"`

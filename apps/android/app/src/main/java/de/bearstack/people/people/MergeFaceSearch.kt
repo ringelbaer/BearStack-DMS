@@ -10,13 +10,15 @@ import kotlinx.coroutines.flow.*
 internal data class MergeFaceMatches(val matches: List<FaceMatch> = emptyList(), val loading: Boolean = false,
     val complete: Boolean = false, val error: UiText? = null)
 
-/** One shared ranking for an unnamed pair, using only the first group's witness.
+/** One shared ranking for an unnamed pair, trying the second witness only after an empty result.
  * Owned by the ViewModel; all operations and state publication run on Main.
  */
 internal class MergeFaceSearch(private val scope: CoroutineScope, pair: MergeSuggestion,
     private val search: (Long) -> Flow<List<FaceMatch>>) {
     private val face = (pair.source.faces.firstOrNull() ?: pair.source.faceId)
         .takeIf { it > 0 && pair.source.name.isEmpty() && pair.target.name.isEmpty() }
+    private val fallbackFace = (pair.target.faces.firstOrNull() ?: pair.target.faceId)
+        .takeIf { it > 0 && it != face }
     private val excluded = setOf(pair.source.id, pair.target.id)
     private val mutable = MutableStateFlow(face?.let { MergeFaceMatches() })
     val state = mutable.asStateFlow()
@@ -53,9 +55,15 @@ internal class MergeFaceSearch(private val scope: CoroutineScope, pair: MergeSug
         // Install the job before executing a possibly synchronous cached flow.
         val next = scope.launch(start=CoroutineStart.LAZY) {
             try {
-                search(witness).collect { matches ->
-                    if(current()) mutable.value = MergeFaceMatches(matches=matches.asSequence()
-                        .filter { it.id !in excluded && it.name.isNotBlank() }.take(20).toList(), loading=true)
+                for(candidate in listOfNotNull(witness,fallbackFace)) {
+                    if(!current()) return@launch
+                    var ranking = emptyList<FaceMatch>()
+                    search(candidate).collect { matches ->
+                        ranking = matches.asSequence()
+                            .filter { it.id !in excluded && it.name.isNotBlank() }.take(20).toList()
+                        if(current()) mutable.value = MergeFaceMatches(matches=ranking, loading=true)
+                    }
+                    if(ranking.isNotEmpty()) break
                 }
                 if(current()) mutable.update { it?.copy(loading=false, complete=true) }
             } catch(e: CancellationException) { throw e }

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.52.2
+  version: 0.52.4
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -2589,14 +2589,16 @@ paths:
       description: >-
         Used by the WebUI and Android naming dialogs. Android also starts this search
         automatically in the similar-groups comparison only when both groups are
-        unnamed and the server supports merge_naming. Only the first group's witness
-        is searched, with one request and at most twenty shared naming suggestions.
+        unnamed and the server supports merge_naming. The first group's witness
+        is searched first. Android 0.12.2 also searches the second group's witness if
+        the first search completes successfully with no eligible matches. There are
+        at most two sequential requests and twenty shared naming suggestions.
         Tapping a match assigns both groups atomically through name_merge, checking
         both displayed group revisions and the selected destination revision.
         Completed rankings are reused for the current pair; an individual group action
         discards the shared list. Incomplete searches are cancelled when leaving the
         screen, entering the background, or opening a naming dialog. Failures require
-        an explicit retry using the first group. These clients request NDJSON streaming
+        an explicit retry starting with the first group. These clients request NDJSON streaming
         and display interim rankings. Android also accepts a single JSON ranking
         from older servers, bounds each frame to 64 KiB, and discards interim results
         on failure or a stream ending without done=true. Android resolves the selected
@@ -2615,8 +2617,9 @@ paths:
         batches of 512 face IDs bound individual validation queries, not the search scope.
         The source group is excluded. Current source and candidate visibility is
         checked; ignored source faces return 409. No assignment is changed.
-        face_id identifies the matching reference portrait, rather than the group's
-        usual overview portrait. has_next is always false; this is a bounded ranking,
+        face_id identifies a visible active favorite portrait when the target group
+        has favorites; otherwise it identifies the matching reference. This presentation
+        choice does not affect reference selection, scores, thresholds or ranking. has_next is always false; this is a bounded ranking,
         not a paginated list. Cache-Control is private, no-store. No embeddings or
         identity probabilities are returned. Hand-drawn source regions return
         an empty ranking because they have no
@@ -4005,7 +4008,7 @@ components:
         name: {type: string}
         revision: {type: integer, format: int64, minimum: 1}
         count: {type: integer, format: int64, minimum: 1}
-        face_id: {type: integer, format: int64, description: Representative active face for suggestions.}
+        face_id: {type: integer, format: int64, description: Representative active face. Named lists and name suggestions prefer the lowest-ID active favorite when available; detail pages and the unnamed queue retain their source face.}
         offset: {type: integer, minimum: 0}
         faces:
           type: array
@@ -4746,6 +4749,11 @@ components:
           type: integer
           format: int64
           minimum: 1
+        search_face_id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Original active source face for the overview naming dialog's face search. Independent of favorite portrait selection; clients fall back to face_id when absent.
         display_path:
           type: string
           description: Gallery-formatted path of the representative face's source image, including readable folder dates and the unchanged filename; never contains the server filesystem root.
@@ -4806,7 +4814,7 @@ components:
                 type: integer
                 format: int64
                 minimum: 1
-                description: Since 0.43.0, representative active face matching the people overview; load /photos/faces/{id}/thumbnail for its portrait. Visibility is checked again on image access.
+                description: Representative active portrait; prefers the lowest-ID visible active favorite when available. Without favorites name suggestions use the overview portrait and face suggestions use their matching reference. Load /photos/faces/{id}/thumbnail; visibility is checked again on image access.
         has_next:
           type: boolean
           description: More named groups match; narrow q to find them. No total count is calculated.

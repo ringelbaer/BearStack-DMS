@@ -171,3 +171,31 @@ for (const javaScriptEnabled of [true, false]) {
     await context.close();
   });
 }
+
+test("favorite portraits appear in overview and naming choices without changing the search source", async ({ browser }) => {
+  const context = await browser.newContext(); const page = await context.newPage();
+  await login(page);
+  const named = (await (await context.request.get(baseURL + "/photos/people?format=json&filter=known&q=Zoe")).json()).people[0];
+  const detail = (await (await context.request.get(baseURL + `/photos/people/${named.id}?format=json`)).json()).faces;
+  const favorite = detail.find(face => face.id !== named.face_id).id;
+  const response = await context.request.post(baseURL + `/photos/faces/${favorite}/favorite`, {
+    form: { person_id: String(named.id), favorite: "1" }, headers: { Origin: baseURL, Accept: "application/json" }
+  });
+  expect(response.ok()).toBe(true);
+  await page.goto(baseURL + "/photos/people?filter=known&q=Zoe");
+  const card = page.locator(`.person-overview-card[data-person-id="${named.id}"]`);
+  await expect(card.locator("img")).toHaveAttribute("src", `/photos/faces/${favorite}/thumbnail`);
+  await expect(card).toHaveAttribute("data-search-face-id", String(named.face_id));
+  await card.locator("[data-person-select]").check();
+  await page.locator("[data-people-edit-button]").click();
+  const dialog = page.locator("[data-person-dialog]");
+  const search = page.waitForRequest(request => request.url().endsWith(`/photos/faces/${named.face_id}/suggestions`));
+  await dialog.getByRole("button", { name: "Ähnliche benannte Personen suchen" }).click(); await search;
+  await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
+  await page.goto(baseURL + "/photos/people?filter=unknown");
+  await page.locator(".person-overview-card [data-person-edit]").first().click();
+  await dialog.getByRole("combobox").fill("Zoe");
+  await expect(dialog.getByRole("option", { name: /^Zoe/ }).locator("img")).toHaveAttribute("src", `/photos/faces/${favorite}/thumbnail`);
+  await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
+  await context.close();
+});

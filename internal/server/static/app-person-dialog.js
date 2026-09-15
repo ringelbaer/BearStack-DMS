@@ -103,7 +103,7 @@
       ignoreButton.hidden = false;
       dialogForm.querySelector("[data-person-face-match]").hidden = false;
       dialogForm.dataset.personModal = "";
-      dialogForm.dataset.personFaceId = faceCard.dataset.groupFace || faceCard.dataset.faceId || "";
+      dialogForm.dataset.personFaceId = faceCard.dataset.searchFaceId || faceCard.dataset.groupFace || faceCard.dataset.faceId || "";
       dialogForm.dataset.personExclude = ids.length === 1 ? ids[0] : "";
       dialogForm.dataset.personCount = String(ids.length);
       dialogForm.dataset.renameAction = "/photos/people/" + encodeURIComponent(ids[0]) + "/rename";

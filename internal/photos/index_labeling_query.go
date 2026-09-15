@@ -10,6 +10,7 @@ import (
 )
 
 const labelColumns = `p.id,p.name,r.revision,(SELECT count(*) FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0),(SELECT min(id) FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0)`
+const labelPreviewColumns = `p.id,p.name,r.revision,(SELECT count(*) FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0),` + personPortraitSQL
 const labelFrom = ` FROM photo_people p JOIN photo_person_revisions r ON r.person_id=p.id `
 const labelExists = ` EXISTS(SELECT 1 FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0) `
 
@@ -71,7 +72,7 @@ func labelSuggestionFilter(q string, exact bool) (string, string) {
 
 func (s *photoIndexStore) labelSuggestions(ctx context.Context, q string, exact bool) ([]LabelPerson, error) {
 	filter, arg := labelSuggestionFilter(q, exact)
-	rows, err := s.db.QueryContext(ctx, `SELECT `+labelColumns+labelFrom+` WHERE p.name<>'' AND `+filter+` AND `+labelExists+` ORDER BY p.name_fold,p.id LIMIT 20`, arg)
+	rows, err := s.db.QueryContext(ctx, `SELECT `+labelPreviewColumns+labelFrom+` WHERE p.name<>'' AND `+filter+` AND `+labelExists+` ORDER BY p.name_fold,p.id LIMIT 20`, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +155,12 @@ func (s *photoIndexStore) labelPeople(ctx context.Context, ids []int64, scope la
 	}
 	args = append(args, queryArgs...)
 	args = append(args, limit)
-	rows, err := s.db.QueryContext(ctx, `SELECT `+labelColumns+labelFrom+` WHERE p.id IN (`+sqlutil.Placeholders(len(ids))+`) AND `+names+` AND `+labelExists+filter+` ORDER BY p.id LIMIT ?`, args...)
+	columns := labelPreviewColumns
+	if scope == labelPeopleUnnamed {
+		// Queue identities also seed naming searches; do not change their source face.
+		columns = labelColumns
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT `+columns+labelFrom+` WHERE p.id IN (`+sqlutil.Placeholders(len(ids))+`) AND `+names+` AND `+labelExists+filter+` ORDER BY p.id LIMIT ?`, args...)
 	if err != nil {
 		return nil, err
 	}

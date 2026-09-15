@@ -127,7 +127,7 @@
     <string name="people_merge_matches_loading">Abgleich läuft …</string>
     <string name="people_merge_matches_retry">Erneut abgleichen</string>
     <string name="people_merge_match_assign">Beide Gruppen der Person %1$s zuordnen</string>
-    <string name="people_merge_matches_help">Sind beide Gruppen unbenannt, startet ein gemeinsamer Gesichtsabgleich anhand des Vergleichsgesichts der ersten Gruppe. Tippe auf einen Treffer, um beide Gruppen dieser Person zuzuordnen. Treffer sind bereits während des Abgleichs wählbar. Erneut abgleichen aktualisiert die gemeinsame Liste.</string>
+    <string name="people_merge_matches_help">Sind beide Gruppen unbenannt, startet ein gemeinsamer Gesichtsabgleich anhand des Vergleichsgesichts der ersten Gruppe. Bleibt der abgeschlossene Abgleich ohne Treffer, wird anschließend die zweite Gruppe geprüft. Tippe auf einen Treffer, um beide Gruppen dieser Person zuzuordnen. Treffer sind bereits während des Abgleichs wählbar. Erneut abgleichen aktualisiert die gemeinsame Liste.</string>
     <string name="people_batch_limit">Du kannst höchstens 500 Gesichter auf einmal auswählen.</string>
     <string name="people_select_face">Gesicht %1$d auswählen</string>
     <string name="people_batch_assign">Gruppe zuordnen</string>

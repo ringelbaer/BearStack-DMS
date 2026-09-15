@@ -1,6 +1,6 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.12.1** (`versionCode 26`). Die Servergalerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.12.2** (`versionCode 27`). Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
@@ -91,11 +91,15 @@ Serverwert; bereits im App-Cache liegende Vorschauen behalten ihre Frist von hö
 drei Minuten. App und Server gemeinsam aktualisieren: ältere Server ohne diesen
 Vorschaumodus liefern über denselben Endpunkt weiterhin die Originaldatei.
 
+Ab BearStack **0.52.4** verwenden Personen-Übersichtskarten und die Treffer-Thumbnails im Benennen-Dialog in WebUI und Android ausschließlich sichtbare, aktive **Stern-Favoriten**, sofern die Gruppe welche besitzt. Bei mehreren Favoriten wird stabil der mit der kleinsten Gesichts-ID gezeigt. Ohne Favoriten bleibt die bisherige Bildauswahl erhalten. Das gilt auch für die Portraits der Lupentreffer; Personenerkennung, Vergleichsreferenzen, Such-Ausgangsgesichter und Trefferreihenfolge bleiben unverändert. Die Auswahl erfolgt serverseitig über den vorhandenen Favoritenindex, ohne zusätzliche Bildabrufe oder Datenmigration. Die Android-App erhält die korrigierten Portraits nach dem Serverupdate über die bestehenden Antworten.
+
 ## Direkte Zuordnung in „Ähnliche Gruppen“
 
 Sind **beide Gruppen unbenannt**, startet unter **Ignorieren** und dem **Stift**
-ein gemeinsamer Lupenabgleich mit benannten Personen. Er verwendet ausschließlich
-das Vergleichsgesicht der **ersten Gruppe**. Eine gemeinsame Liste zeigt
+ein gemeinsamer Lupenabgleich mit benannten Personen. Er verwendet zuerst
+das Vergleichsgesicht der **ersten Gruppe**. Bleibt deren vollständig abgeschlossener
+Abgleich ohne Treffer, folgt automatisch das Vergleichsgesicht der **zweiten Gruppe**.
+Eine gemeinsame Liste zeigt
 **Benennungsvorschläge für beide Gruppen** mit Referenzportrait, Namen und
 Gesichtsanzahl. Antippen ordnet **beide Gruppen gemeinsam** der gewählten Person zu,
 ohne Namensdialog. Nach der bestätigten Zuordnung folgt das nächste Paar.
@@ -105,12 +109,13 @@ gibt es keinen automatischen Abgleich und keine gemeinsame Trefferliste.
 Zwischenstände erscheinen bereits während des Abgleichs und sind sofort auswählbar.
 Ladezustand, leere Ergebnisse und Fehler stehen im gemeinsamen Bereich.
 **Erneut abgleichen** beziehungsweise **Erneut versuchen** wiederholt den Abgleich
-anhand der ersten Gruppe. Die Entscheidungsbuttons bleiben am unteren Bildschirmrand
+beginnend mit der ersten Gruppe, bei leerem Ergebnis anschließend mit der zweiten. Die Entscheidungsbuttons bleiben am unteren Bildschirmrand
 erreichbar; längere Trefferlisten scrollen mit dem Vergleichsbereich. Größere
 vertikale Abstände trennen Portraits, Gruppendetails und Aktionen; die gemeinsamen
 Benennungsvorschläge erhalten einen eigenen Abstand und großzügigere Trefferkarten.
 
-Pro Paar läuft höchstens eine Suchanfrage mit bis zu 20 Treffern.
+Pro Durchlauf laufen höchstens zwei Suchanfragen nacheinander mit bis zu 20 Treffern;
+bei einem Treffer der ersten Gruppe entfällt die zweite Anfrage.
 Der bestehende NDJSON-Transport hält nur die aktuelle Rangliste und den neuesten
 wartenden Zwischenstand; jede Nachricht bleibt auf 64 KiB begrenzt. Fertige Ergebnisse
 werden für das aktuelle Paar weiterverwendet, auch nach einem Namensdialog oder
@@ -130,9 +135,9 @@ Der gemeinsame Stift zum Benennen beider Gruppen bleibt verfügbar.
 
 ## Gesichtssuche beim Benennen
 
-Ab App **0.10.0** startet die **Lupe neben dem Namensfeld** im Benenn-Dialog einen Gesichtsabgleich mit bereits benannten Personen. Sie verwendet das erste Gesicht der angezeigten Seite beziehungsweise das Quellgesicht im Modus „Ähnliche Gruppen“; beim Stift einer einzelnen Seite deren Vergleichsgesicht. Die Treffer erscheinen schon während des Abgleichs in Ähnlichkeitsreihenfolge mit dem passenden Referenzportrait. Weitere Zwischenstände aktualisieren die Liste; der Ladehinweis bleibt bis zum Abschluss sichtbar. Treffer lassen sich bereits während der Suche auswählen. Antippen ordnet die aktuelle Gruppe zu; beim gemeinsamen Benennen zweier Gruppen werden beide zugeordnet. Die Suche selbst verändert nichts. Ladezustand, leere Trefferliste und Fehler werden angezeigt; erneutes Antippen wiederholt die Suche. Tippen im Namensfeld, Schließen des Dialogs oder Wechsel in den Hintergrund bricht sie ab. Das separate Umbenennen einer bereits benannten Person bleibt eine Namensänderung.
+Ab App **0.10.0** startet die **Lupe neben dem Namensfeld** im Benenn-Dialog einen Gesichtsabgleich mit bereits benannten Personen. Sie verwendet das erste Gesicht der angezeigten Seite beziehungsweise das Quellgesicht im Modus „Ähnliche Gruppen“; beim Stift einer einzelnen Seite deren Vergleichsgesicht. Die Treffer erscheinen schon während des Abgleichs in Ähnlichkeitsreihenfolge mit einem Stern-Favoriten als Portrait, falls vorhanden, sonst mit dem passenden Referenzportrait. Weitere Zwischenstände aktualisieren die Liste; der Ladehinweis bleibt bis zum Abschluss sichtbar. Treffer lassen sich bereits während der Suche auswählen. Antippen ordnet die aktuelle Gruppe zu; beim gemeinsamen Benennen zweier Gruppen werden beide zugeordnet. Die Suche selbst verändert nichts. Ladezustand, leere Trefferliste und Fehler werden angezeigt; erneutes Antippen wiederholt die Suche. Tippen im Namensfeld, Schließen des Dialogs oder Wechsel in den Hintergrund bricht sie ab. Das separate Umbenennen einer bereits benannten Person bleibt eine Namensänderung.
 
-Der Abgleich nutzt den vorhandenen Endpunkt `GET /photos/faces/{id}/suggestions` (BearStack ab 0.50.0), benötigt keine erneute Bilderkennung und liefert höchstens 20 Treffer. Die App fordert NDJSON-Streaming an, verarbeitet höchstens 64 KiB pro Zwischenstand und hält nur die aktuelle Trefferliste sowie den neuesten noch nicht angezeigten Zwischenstand im Speicher. Ein fehlender Abschluss oder ein Übertragungsfehler leert die vorläufigen Treffer und erlaubt einen erneuten Versuch. Ältere Server mit diesem Endpunkt können weiterhin eine einzelne JSON-Antwort liefern. Bei einem positiven Mindestabstand zwischen erstem und zweitem Treffer wartet auch der Server auf den vollständigen Abgleich. Im Namensdialog startet der Abgleich nur über die Lupe; im Vergleich „Ähnliche Gruppen“ automatisch anhand der ersten Gruppe, sofern beide Gruppen unbenannt sind, als gemeinsamer Benennungsvorschlag für beide. Die App lädt die aktuelle Revision ausschließlich der ausgewählten Zielperson nach. Eine inzwischen umbenannte Zielperson erfordert eine neue Entscheidung; Zuordnungen behalten die vorhandenen Revisionsprüfungen und Aktionsquittungen. Ältere Server zeigen eine verständliche Fehlermeldung; die Namenssuche bleibt verfügbar.
+Der Abgleich nutzt den vorhandenen Endpunkt `GET /photos/faces/{id}/suggestions` (BearStack ab 0.50.0), benötigt keine erneute Bilderkennung und liefert höchstens 20 Treffer. Die App fordert NDJSON-Streaming an, verarbeitet höchstens 64 KiB pro Zwischenstand und hält nur die aktuelle Trefferliste sowie den neuesten noch nicht angezeigten Zwischenstand im Speicher. Ein fehlender Abschluss oder ein Übertragungsfehler leert die vorläufigen Treffer und erlaubt einen erneuten Versuch. Ältere Server mit diesem Endpunkt können weiterhin eine einzelne JSON-Antwort liefern. Bei einem positiven Mindestabstand zwischen erstem und zweitem Treffer wartet auch der Server auf den vollständigen Abgleich. Im Namensdialog startet der Abgleich nur über die Lupe; im Vergleich „Ähnliche Gruppen“ automatisch zuerst anhand der ersten Gruppe und bei leerem Endergebnis anschließend der zweiten, sofern beide Gruppen unbenannt sind, als gemeinsamer Benennungsvorschlag für beide. Die App lädt die aktuelle Revision ausschließlich der ausgewählten Zielperson nach. Eine inzwischen umbenannte Zielperson erfordert eine neue Entscheidung; Zuordnungen behalten die vorhandenen Revisionsprüfungen und Aktionsquittungen. Ältere Server zeigen eine verständliche Fehlermeldung; die Namenssuche bleibt verfügbar.
 
 ## Galerie
 
@@ -447,7 +452,7 @@ Ab **BearStack 0.50.0 / Android-App 0.10.0** erhalten ausschließlich **unbenann
 
 Sind beide Gruppen unbenannt, erscheint in App und WebUI der **Stift – Zusammenführen und benennen/zuordnen**. Er öffnet die Namenssuche: einen neuen Namen speichern oder eine vorhandene Person auswählen, um beide Gruppen in einem Schritt zusammenzuführen und zu benennen beziehungsweise zuzuordnen. **Abbrechen** verändert nichts. Veränderte Gruppen oder Zielpersonen müssen erneut geprüft werden. Die App zeigt den Stift nur bei Servern mit `merge_naming` (ab BearStack 0.50.0); nach bestätigtem Speichern folgt das nächste Paar.
 
-Ab App **0.9.0** und **BearStack 0.49.0** öffnet **Menü → Ähnliche Gruppen** jeweils eine einzelne Entscheidung. Zwei Portraits zeigen die tatsächlichen Vergleichsgesichter der Gruppen mit Namen und Gesichtsanzahl. Es gibt keine scrollbare Vorschlagsliste; die Portraits passen sich der verfügbaren Breite an. Bei wenig Platz oder großer Schrift scrollt nur der aktuelle Vergleich, während die beiden Entscheidungsbuttons unten sichtbar bleiben.
+Ab App **0.9.0** und **BearStack 0.49.0** öffnet **Menü → Ähnliche Gruppen** jeweils eine einzelne Entscheidung. Zwei Portraits zeigen die tatsächlichen Vergleichsgesichter der Gruppen mit Namen und Gesichtsanzahl. Ab App **0.12.2** steht über jedem Portrait der enthaltende Ordner des Vergleichsfotos statt „Erste Gruppe“ oder „Zweite Gruppe“. Der Name stammt aus dem bereits geladenen, nach Galerieregeln aufbereiteten Bildpfad; fehlt dieser, bleibt die bisherige Gruppenbeschriftung. Es gibt keine scrollbare Vorschlagsliste; die Portraits passen sich der verfügbaren Breite an. Bei wenig Platz oder großer Schrift scrollt nur der aktuelle Vergleich, während die beiden Entscheidungsbuttons unten sichtbar bleiben.
 
 - **Zusammenführen:** Alle Gesichter der ersten Gruppe werden der zweiten zugeordnet. Favoriten bleiben erhalten. Ist die zweite Gruppe unbenannt, wird ein vorhandener Name der ersten übernommen.
 - Sind **beide Gruppen bereits benannt**, öffnet **Zusammenführen** eine zusätzliche Warnung mit beiden Namen, auch bei identischen Namen. Erst **Trotzdem zusammenführen** speichert; der Name der zweiten Gruppe bleibt erhalten. **Abbrechen** oder die Zurück-Taste lassen das Paar unverändert. Bei geänderten Gruppen ist eine neue Bestätigung nötig. Die Warnung benötigt keine zusätzlichen Serverabfragen.
@@ -457,7 +462,7 @@ Ab App **0.9.0** und **BearStack 0.49.0** öffnet **Menü → Ähnliche Gruppen*
 
 Während des Speicherns und bei einer ungeklärten Antwort sind weitere Entscheidungen gesperrt. „Offene Aktion prüfen“ klärt die dauerhaft gespeicherte Aktionsquittung, auch nach einem App-Neustart. Konflikte durch andere Bearbeitungen verlangen eine neue Prüfung. Schlägt erst das Nachladen fehl, wird ausschließlich der nächste Vorschlag neu geladen. Zurück führt zum Benennen; bei unveränderten Gruppen bleibt auch die bisherige Bildseite erhalten. Diese Entscheidungen erhöhen nicht die Statistik für erstmaliges Benennen/Zuordnen.
 
-Der Server liest höchstens 20 gespeicherte Kandidaten und liefert nur ein Paar mit je einem Vergleichsgesicht. Der Paarabruf selbst startet keine Vektorsuche; bei zwei unbenannten Gruppen startet die App anschließend den gemeinsamen Lupenabgleich anhand der ersten Gruppe. Auch Vergleichsgesichter weit hinten in großen Gruppen werden über den Gesichts-ID-Index abgerufen. Die bestehende Originalvorschau mit maximal 2048 Pixeln, Drei-Minuten-/16-MiB-Speichercache und seriellem WLAN-Vorladen wird wiederverwendet. Auf älteren Servern zeigt die App einen Hinweis auf BearStack 0.49.0; Benennen und Personenverwaltung bleiben verfügbar.
+Der Server liest höchstens 20 gespeicherte Kandidaten und liefert nur ein Paar mit je einem Vergleichsgesicht. Der Paarabruf selbst startet keine Vektorsuche; bei zwei unbenannten Gruppen startet die App anschließend den gemeinsamen Lupenabgleich zuerst anhand der ersten Gruppe und bei leerem Endergebnis anschließend der zweiten. Auch Vergleichsgesichter weit hinten in großen Gruppen werden über den Gesichts-ID-Index abgerufen. Die bestehende Originalvorschau mit maximal 2048 Pixeln, Drei-Minuten-/16-MiB-Speichercache und seriellem WLAN-Vorladen wird wiederverwendet. Auf älteren Servern zeigt die App einen Hinweis auf BearStack 0.49.0; Benennen und Personenverwaltung bleiben verfügbar.
 
 ## Personen verwalten
 

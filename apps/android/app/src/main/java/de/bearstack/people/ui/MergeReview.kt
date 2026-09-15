@@ -118,10 +118,14 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                         // Shared rows keep both portraits and their details aligned even when
                         // names wrap or only one group has individual actions.
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                            people.forEachIndexed {index,_ ->
-                                Text(text(if(index==0) R.string.people_first_group else R.string.people_second_group),
+                            people.forEachIndexed {index,person ->
+                                val face=person.faces.firstOrNull() ?: person.faceId
+                                val path=person.facePaths[face].orEmpty()
+                                val folder=text.photoPath(path).substringBeforeLast(" / ", "").substringAfterLast(" / ")
+                                Text(folder.ifBlank {text(if(index==0) R.string.people_first_group else R.string.people_second_group)},
                                     style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign=TextAlign.Center,modifier=Modifier.weight(1f))
+                                    maxLines=2,overflow=TextOverflow.Ellipsis,
+                                    textAlign=TextAlign.Center,modifier=Modifier.weight(1f).testTag("merge-folder-$index"))
                             }
                         }
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {

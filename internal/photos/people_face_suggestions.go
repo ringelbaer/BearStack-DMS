@@ -123,21 +123,26 @@ func (l *Library) faceSuggestionPeople(ctx context.Context, id, sourcePerson int
 	if err := l.refreshPersonIDsVisibility(ctx, ids...); err != nil {
 		return out, err
 	}
-	rows, err := l.index.db.QueryContext(ctx, `SELECT p.id,p.name,f.id,
+	rows, err := l.index.db.QueryContext(ctx, `SELECT p.id,p.name,f.id,coalesce(`+personFavoritePortraitSQL+`,f.id),
  (SELECT count(DISTINCT path) FROM photo_faces WHERE person_id=p.id AND ignored=0)
  FROM photo_faces f CROSS JOIN photo_people p ON p.id=f.person_id
  WHERE f.id IN (`+sqlutil.Placeholders(len(args))+`) AND f.ignored=0 AND p.name<>''`, args...)
 	if err != nil {
 		return out, err
 	}
-	people := map[int64]PersonSuggestion{}
+	type preview struct {
+		person  PersonSuggestion
+		witness int64
+	}
+	people := map[int64]preview{}
 	for rows.Next() {
 		var p PersonSuggestion
-		if err = rows.Scan(&p.ID, &p.Name, &p.FaceID, &p.Count); err != nil {
+		var witness int64
+		if err = rows.Scan(&p.ID, &p.Name, &witness, &p.FaceID, &p.Count); err != nil {
 			rows.Close()
 			return out, err
 		}
-		people[p.ID] = p
+		people[p.ID] = preview{person: p, witness: witness}
 	}
 	err = rows.Err()
 	rows.Close()
@@ -153,8 +158,8 @@ func (l *Library) faceSuggestionPeople(ctx context.Context, id, sourcePerson int
 		return out, ErrLabelConflict
 	}
 	for _, candidate := range candidates {
-		if p, ok := people[candidate.person]; ok && p.FaceID == candidate.face {
-			out.People = append(out.People, p)
+		if p, ok := people[candidate.person]; ok && p.witness == candidate.face {
+			out.People = append(out.People, p.person)
 		}
 	}
 	return out, nil

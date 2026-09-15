@@ -135,7 +135,7 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 			var p Person
 			var source string
 			p.Portrait = &FaceRegion{}
-			if err = rows.Scan(&p.ID, &p.Name, &p.Count, &p.FaceID, &source, &p.Portrait.X, &p.Portrait.Y, &p.Portrait.Width, &p.Portrait.Height); err != nil {
+			if err = rows.Scan(&p.ID, &p.Name, &p.Count, &p.FaceID, &source, &p.Portrait.X, &p.Portrait.Y, &p.Portrait.Width, &p.Portrait.Height, &p.SearchFaceID); err != nil {
 				return out, err
 			}
 			p.DisplayPath = mediaDisplayPath(source)

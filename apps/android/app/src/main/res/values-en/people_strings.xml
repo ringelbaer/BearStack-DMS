@@ -127,7 +127,7 @@
     <string name="people_merge_matches_loading">Matching …</string>
     <string name="people_merge_matches_retry">Match again</string>
     <string name="people_merge_match_assign">Assign both groups to %1$s</string>
-    <string name="people_merge_matches_help">When both groups are unnamed, a shared face search starts using the first group’s comparison face. Tap a match to assign both groups to that person. Matches can be selected while the search is running. Match again refreshes the shared list.</string>
+    <string name="people_merge_matches_help">When both groups are unnamed, a shared face search starts using the first group’s comparison face. If the completed search has no matches, the second group is checked next. Tap a match to assign both groups to that person. Matches can be selected while the search is running. Match again refreshes the shared list.</string>
     <string name="people_batch_limit">You can select up to 500 faces at a time.</string>
     <string name="people_select_face">Select face %1$d</string>
     <string name="people_batch_assign">Assign to group</string>

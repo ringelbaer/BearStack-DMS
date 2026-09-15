@@ -28,7 +28,13 @@ func peopleSortOption(options []string) (string, error) {
 }
 
 const personPhotoCountSQL = `(SELECT count(DISTINCT path) FROM photo_faces WHERE person_id=p.id AND ignored=0)`
-const personPortraitSQL = `(SELECT min(id) FROM photo_faces WHERE person_id=p.id AND ignored=0)`
+const personSearchFaceSQL = `(SELECT min(id) FROM photo_faces WHERE person_id=p.id AND ignored=0)`
+
+// Presentation only: keep matching witnesses and reference selection independent.
+// The partial index visits only active favorites, including favorites beyond any
+// detail page. Without favorites the established oldest-face portrait remains.
+const personFavoritePortraitSQL = `(SELECT min(pf.id) FROM photo_faces pf INDEXED BY idx_face_favorites WHERE pf.person_id=p.id AND pf.favorite=1 AND pf.ignored=0)`
+const personPortraitSQL = `coalesce(` + personFavoritePortraitSQL + `,` + personSearchFaceSQL + `)`
 
 func peopleOverviewSQL(sorting, filter string) string {
 	key, count := "p.name_fold", personPhotoCountSQL
@@ -54,7 +60,7 @@ func peopleOverviewSQL(sorting, filter string) string {
  WHERE p.name_fold LIKE ? ESCAPE '\'` + filter + `
  AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=p.id AND ignored=0)),
  page AS MATERIALIZED (SELECT * FROM candidates ORDER BY sort_key` + direction + `,id` + direction + ` LIMIT 61 OFFSET ?)
- SELECT p.id,p.name,` + count + `,f.id,f.path,f.x,f.y,f.width,f.height
+ SELECT p.id,p.name,` + count + `,f.id,f.path,f.x,f.y,f.width,f.height,` + personSearchFaceSQL + `
  FROM page p JOIN photo_faces f ON f.id=` + personPortraitSQL + `
  ORDER BY p.sort_key` + direction + `,p.id` + direction
 }

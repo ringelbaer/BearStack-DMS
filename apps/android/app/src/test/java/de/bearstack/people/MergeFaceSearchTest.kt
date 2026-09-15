@@ -16,7 +16,7 @@ class MergeFaceSearchTest {
     private val pair=MergeSuggestion(7,first,second,.7)
     private val anna=FaceMatch(9,"Anna",3,90)
 
-    @Test fun onlyTwoUnnamedGroupsEnableTheSearchAndNeverUseTheSecondWitness()=runTest {
+    @Test fun onlyTwoUnnamedGroupsEnableTheSearchAndFirstMatchesSkipTheSecondWitness()=runTest {
         val calls=mutableListOf<Long>()
         for(candidate in listOf(pair.copy(source=first.copy(name="Named")),
             pair.copy(target=second.copy(name="Named")),
@@ -35,6 +35,86 @@ class MergeFaceSearchTest {
         assertEquals(listOf(11L),calls)
         search.retry();runCurrent();assertEquals(listOf(11L,11L),calls)
         search.close()
+    }
+
+    @Test fun emptyCompletedFirstSearchTriesSecondWitnessAndReusesItsMatches()=runTest {
+        val calls=mutableListOf<Long>()
+        val gate=CompletableDeferred<Unit>()
+        val search=MergeFaceSearch(this,pair.copy(target=second.copy(faces=listOf(21)))) {face -> flow {
+            calls+=face
+            if(face==11L) {emit(emptyList());gate.await()}
+            else emit(listOf(anna))
+        } }
+        search.resume();runCurrent()
+        assertEquals(listOf(11L),calls);assertTrue(search.state.value!!.loading)
+        gate.complete(Unit);runCurrent()
+        assertEquals(listOf(11L,21L),calls)
+        assertEquals(listOf(anna),search.state.value!!.matches)
+        assertTrue(search.state.value!!.complete);assertFalse(search.state.value!!.loading)
+        search.pause();search.resume();runCurrent()
+        assertEquals(listOf(11L,21L),calls)
+        search.close()
+    }
+
+    @Test fun finalEmptyRankingTriggersFallbackEvenAfterPreliminaryMatches()=runTest {
+        val calls=mutableListOf<Long>()
+        val search=MergeFaceSearch(this,pair) {face -> flow {
+            calls+=face
+            emit(listOf(anna))
+            emit(listOf(FaceMatch(first.id,"Excluded",1,10),FaceMatch(second.id,"Excluded",1,20),
+                FaceMatch(99,"   ",1,990)))
+        } }
+        search.resume();runCurrent()
+        assertEquals(listOf(11L,20L),calls)
+        assertTrue(search.state.value!!.complete);assertTrue(search.state.value!!.matches.isEmpty())
+        search.close()
+    }
+
+    @Test fun invalidOrDuplicateSecondWitnessDoesNotStartAnotherRequest()=runTest {
+        for(face in listOf(0L,11L)) {
+            val calls=mutableListOf<Long>()
+            val search=MergeFaceSearch(this,pair.copy(target=second.copy(faceId=face))) {id -> flow {
+                calls+=id;emit(emptyList())
+            } }
+            search.resume();runCurrent()
+            assertEquals(listOf(11L),calls);assertTrue(search.state.value!!.complete)
+            search.close()
+        }
+    }
+
+    @Test fun fallbackFailureClearsMatchesAndRetryStartsWithFirstGroup()=runTest {
+        val calls=mutableListOf<Long>();var failing=true
+        val search=MergeFaceSearch(this,pair) {face -> flow {
+            calls+=face
+            if(face==11L) emit(emptyList()) else {
+                emit(listOf(anna))
+                if(failing) throw IOException("failed fallback")
+            }
+        } }
+        search.resume();runCurrent()
+        assertEquals(listOf(11L,20L),calls)
+        assertTrue(search.state.value!!.matches.isEmpty());assertNotNull(search.state.value!!.error)
+        search.pause();search.resume();runCurrent();assertEquals(2,calls.size)
+        failing=false;search.retry();runCurrent()
+        assertEquals(listOf(11L,20L,11L,20L),calls)
+        assertEquals(listOf(anna),search.state.value!!.matches);assertTrue(search.state.value!!.complete)
+        search.close()
+    }
+
+    @Test fun pauseDuringFallbackCancelsItAndResumeRestartsThePair()=runTest {
+        val calls=mutableListOf<Long>();var cancelled=0
+        val search=MergeFaceSearch(this,pair) {face -> flow {
+            calls+=face
+            if(face==11L) emit(emptyList()) else {
+                emit(listOf(anna))
+                try {awaitCancellation()} finally {cancelled++}
+            }
+        } }
+        search.resume();runCurrent();search.pause();runCurrent()
+        assertEquals(1,cancelled);assertTrue(search.state.value!!.matches.isEmpty())
+        search.resume();runCurrent()
+        assertEquals(listOf(11L,20L,11L,20L),calls)
+        search.close();runCurrent();assertEquals(2,cancelled);assertNull(search.state.value)
     }
 
     @Test fun oneStreamReplacesTheSharedRankingAndKeepsMemoryBounded()=runTest {

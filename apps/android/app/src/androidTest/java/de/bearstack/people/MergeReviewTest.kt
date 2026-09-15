@@ -95,6 +95,41 @@ class MergeReviewTest {
     private fun matchesReady(vm: PeopleViewModel) = compose.waitUntil(5000) {
         vm.mergeFaceSearch?.state?.value?.let {it.complete || it.error!=null} == true
     }
+    @Test fun folderHeadingsUseEachComparisonPhotosContainingFolder() = screen(setup={api ->
+        val pair=api.mergePairs[0]
+        api.mergePairs[0]=pair.copy(
+            source=pair.source.copy(facePaths=mapOf(30L to "Fotos / Reisen / Sommerurlaub / Bild.jpg")),
+            target=pair.target.copy(facePaths=mapOf(40L to "Fotos / Familie / Geburtstag / Bild.jpg")))
+    }) {_,_,_ ->
+        compose.onNodeWithTag("merge-folder-0").assertTextEquals("Sommerurlaub")
+        compose.onNodeWithTag("merge-folder-1").assertTextEquals("Geburtstag")
+        compose.onNodeWithText("Erste Gruppe").assertDoesNotExist()
+        compose.onNodeWithText("Zweite Gruppe").assertDoesNotExist()
+        alignedPortraits()
+    }
+
+    @Test fun rootFolderAndMissingPathHaveReadableHeadings() = screen(setup={api ->
+        val pair=api.mergePairs[0]
+        api.mergePairs[0]=pair.copy(
+            source=pair.source.copy(facePaths=mapOf(30L to "Fotos / Bild.jpg")),
+            target=pair.target.copy(facePaths=emptyMap()))
+    }) {_,_,_ ->
+        compose.onNodeWithTag("merge-folder-0").assertTextEquals("Fotos")
+        compose.onNodeWithTag("merge-folder-1").assertTextEquals("Zweite Gruppe")
+    }
+
+    @Test fun fallbackMatchesAssignBothGroupsWithOneAtomicAction() = screen(setup={api ->
+        unnamed(api)
+        api.matchesByFace=mapOf(40L to listOf(FaceMatch(6,"Person 6",1,60)))
+    }) {vm,api,_ ->
+        matchesReady(vm)
+        assertEquals(listOf(30L,40L),api.matchedFaces)
+        compose.onNodeWithTag("merge-match-6").performScrollTo().performClick();idle(vm)
+        assertEquals(1,api.commits)
+        assertFalse(api.people.containsKey(3));assertFalse(api.people.containsKey(4))
+        assertEquals(3L,api.people.getValue(6).count)
+    }
+
     @Test fun inlineSearchUsesOnlyFirstGroupAndAssignsBothWithOneAtomicAction() = screen(setup=::inlineMatches) {vm,api,db ->
         matchesReady(vm)
         assertEquals(listOf(30L),api.matchedFaces)
@@ -233,7 +268,7 @@ class MergeReviewTest {
         compose.onNodeWithTag("merge-matches").assertDoesNotExist()
         alignedPortraits()
         val portrait=compose.onNodeWithTag("face-30").getUnclippedBoundsInRoot()
-        val label=compose.onNodeWithText("Erste Gruppe").getUnclippedBoundsInRoot()
+        val label=compose.onNodeWithTag("merge-folder-0").getUnclippedBoundsInRoot()
         assertTrue("Portrait follows its label without a large gap",portrait.top-label.bottom<=16.dp)
         val ignore=compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertIsDisplayed().getUnclippedBoundsInRoot()
         val pencil=compose.onNodeWithContentDescription("Erste Gruppe benennen/zuordnen").assertIsDisplayed().getUnclippedBoundsInRoot()

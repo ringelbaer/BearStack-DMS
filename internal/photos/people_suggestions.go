@@ -28,7 +28,7 @@ func (l *Library) SuggestPeople(ctx context.Context, q string) (PeopleSuggestion
 	}
 	rows, err := l.index.db.QueryContext(ctx, `SELECT p.id,p.name,
  (SELECT count(DISTINCT path) FROM photo_faces WHERE person_id=p.id AND ignored=0),
- (SELECT min(id) FROM photo_faces WHERE person_id=p.id AND ignored=0)
+ `+personPortraitSQL+`
  FROM photo_people p WHERE p.name<>'' AND p.name_fold LIKE ? ESCAPE '\'
  AND EXISTS(SELECT 1 FROM photo_faces WHERE person_id=p.id AND ignored=0)
  ORDER BY p.name_fold,p.id LIMIT 61`, searchtext.LikeContainsPattern(searchtext.GermanFold(q)))

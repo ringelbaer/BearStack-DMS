@@ -4,6 +4,16 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.52.4 – in Entwicklung
+
+- Personen-Übersicht und Benennen-Dialog in WebUI und Android: Gruppen mit sichtbaren aktiven Stern-Favoriten verwenden ausschließlich diese als Vorschau, stabil nach kleinster Gesichts-ID. Gilt auch für Lupentreffer und Favoriten außerhalb der geladenen Detailseite. Ohne Favoriten bleibt die bisherige Bildauswahl erhalten. Darstellung und Vergleichsgesichter sind getrennt; Erkennung, Referenzauswahl, Such-Ausgangsgesichter und Trefferrangfolge bleiben unverändert. Vorhandener partieller Favoritenindex, keine neue Datenmigration. PATCH: BearStack **0.52.4**, Android weiterhin **0.12.2**; Serverupdate genügt. README, Website und OpenAPI aktualisiert.
+
+- Validierung: vollständige Go-Suite, gezielte Race-Tests, sechs Browserregressionen und alle drei Android-Serverintegrationstests erfolgreich. Große Gruppen mit 20.003 Gesichtern, mehrere/entfernte/ignorierte/geschützte Favoriten, Vorschaumetadaten, Streaming und unveränderte Abgleichreferenzen geprüft; Website-Build erfolgreich.
+
+### BearStack 0.52.3 / Android 0.12.2 – in Entwicklung
+
+- Android / Ähnliche Gruppen: Über den Portraits steht der enthaltende Ordner des jeweiligen Vergleichsfotos aus dem bereits geladenen Bildpfad. Ohne Bildpfad bleibt die bisherige Gruppenbeschriftung. Bei zwei unbenannten Gruppen prüft der automatische Personenabgleich nach einem erfolgreich abgeschlossenen leeren Ergebnis auch das Vergleichsgesicht der zweiten Gruppe. Höchstens zwei aufeinanderfolgende Anfragen; Treffer der ersten Gruppe ersparen die zweite. Gemeinsame Zuordnung, Streaming-Grenzen, Abbruch und explizite Wiederholung nach Fehlern bleiben erhalten. Controller- und UI-Regressionen ergänzt; README, Website, Hilfe und OpenAPI-Beschreibung aktualisiert. PATCH: BearStack **0.52.3**, App **0.12.2**, `versionCode` **27**; keine API-Vertragsänderung oder Migration.
+
 ### BearStack 0.52.2 / Android 0.12.1 – in Entwicklung
 
 - Android, Personen: Bedienhinweise zu Einzelaktionen, Vorschau, Mehrfachauswahl und Serverkompatibilität unter **Hilfe** in einem scrollbaren Dialog gesammelt, entsprechend „Ähnliche Gruppen“. In Personenliste und Detailansicht erreichbar; Schließen erhält Ansicht und Auswahl. Keine zusätzlichen Serveranfragen oder API-Änderungen. UI-Regressionen für Liste, große Schrift und Auswahl; README und Website aktualisiert. PATCH: BearStack **0.52.2**, App **0.12.1**, `versionCode` **26**; OpenAPI-Versionsangabe aktualisiert.
