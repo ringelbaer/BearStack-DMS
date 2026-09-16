@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.59.0** · Android-App: **0.15.0**.
+Aktuelle Version: **0.60.0** · Android-App: **0.15.0**.
+
+Ab **0.60.0** öffnet **⋯ → Stammdaten** in der Detailansicht einer benannten Person einen Dialog für **Geburtsdatum**, **Sterbedatum**, mehrere **Geschwister** und mehrere **Ehen** mit **Ehepartner**, **Hochzeitsdatum** und optionalem **Scheidungsdatum**. Geschwister und Ehen erscheinen bei beiden Personen. Datumsfelder dürfen unbekannt bleiben; Speichern prüft zwischenzeitliche Änderungen. Lesen benötigt `photos.read`, Bearbeiten `photos.edit`. Foto-Schema **35** migriert die Stammdaten automatisch ohne erneute Bilderkennung.
 
 Ab **0.59.0** ergänzt **Personen-Tags ergänzen** unter `/photos/people` gemeinsame Tags bei den markierten Personen. Der bekannte Tag-Dialog bietet vorhandene und neue Tags; bisherige Personen-Tags bleiben erhalten, Foto-Tags bleiben unverändert. Die Auswahl wird atomar gespeichert und benötigt **Fotos bearbeiten**.
 

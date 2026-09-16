@@ -456,6 +456,8 @@ func auditActionTarget(r *http.Request) (string, string) {
 		return "Tags für Fotopersonen ergänzen", ""
 	case "POST /photos/people/{id}/tags":
 		return "Fotoperson taggen", idAuditTarget("Person", r.PathValue("id"))
+	case "PUT /photos/people/{id}/details":
+		return "Personenstammdaten bearbeiten", idAuditTarget("Person", r.PathValue("id"))
 	case "POST /photos/people/{id}/parents":
 		return "Eltern einer Fotoperson zuordnen", idAuditTarget("Person", r.PathValue("id"))
 	case "POST /photos/people/{id}/rename":

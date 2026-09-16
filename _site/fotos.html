@@ -511,6 +511,17 @@
 </li>
 
           <li class="md-nav__item">
+  <a href="#personenstammdaten" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Personenstammdaten
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#mutter-und-vater-zuordnen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -969,6 +980,17 @@
 </li>
 
           <li class="md-nav__item">
+  <a href="#personenstammdaten" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Personenstammdaten
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#mutter-und-vater-zuordnen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1291,6 +1313,33 @@ entfernt, ignoriert oder geschützt, wird nichts hinzugefügt. Bei einem Fehler 
 der Dialog für einen erneuten Versuch offen; wiederholtes Ergänzen erzeugt keine
 Duplikate. Erfordert <code>photos.edit</code>; höchstens 500 Personen pro Anfrage und 100 Tags
 pro Person. Keine neue Datenbankmigration.</p>
+<h3 id="personenstammdaten">Personenstammdaten<a class="headerlink" href="#personenstammdaten" title="Permanent link">&para;</a></h3>
+<p>Ab <strong>0.60.0</strong> öffnet <strong>⋯ → Stammdaten</strong> in der Detailansicht einer benannten Person
+einen Dialog mit Geburts- und Sterbedatum, mehreren Geschwistern und mehreren Ehen.
+Zu jeder Ehe gehören eine benannte Person als Ehepartner sowie Hochzeits- und
+optional Scheidungsdatum. Auch mehrere Ehen mit derselben Person sind möglich,
+sofern die Datumsangaben die Einträge unterscheiden. Geschwister und Ehen werden
+bei beiden Personen angezeigt; Änderungen und Entfernen gelten für beide Seiten.
+Die Elternzuordnung bleibt über <strong>Eltern</strong> erreichbar; Geschwister werden ausdrücklich
+zugeordnet und nicht automatisch aus gemeinsamen Eltern abgeleitet.</p>
+<p>Personen über die vorhandene Namenssuche auswählen. Unbekannte Datumsfelder dürfen
+leer bleiben. Vollständige Kalenderdaten werden ohne Uhrzeit gespeichert; Sterbedatum
+vor Geburtsdatum und Scheidung vor Hochzeit werden abgewiesen. <strong>Abbrechen</strong> verwirft
+alle Änderungen. Ein veralteter Dialog überschreibt keine zwischenzeitliche Änderung,
+auch wenn die Beziehung auf der anderen Personenseite bearbeitet wurde.
+<strong>Stammdaten neu laden</strong> lädt den aktuellen Stand und verwirft den offenen Entwurf.</p>
+<p>Lesen benötigt <code>photos.read</code>, Bearbeiten <code>photos.edit</code>. Nur benannte aktive sichtbare
+Personen sind auswählbar; verborgene Angehörige und deren Ehedaten erscheinen nicht.
+Bearbeiten sichtbarer Angaben erhält vorhandene verborgene Beziehungen. Pro Person
+sind bis zu 100 Geschwister und 100 Ehen möglich. Die Daten gehören zur Personengruppe,
+nicht zu einzelnen Bildern; beim Löschen der Gruppe werden ihre Beziehungen entfernt.</p>
+<p>Beim Zusammenführen werden passende Stammdaten und Beziehungen übernommen;
+identische Beziehungen werden zusammengefasst. Widersprüchliche Geburts-/Sterbedaten
+oder entstehende Selbstbeziehungen verhindern die Zusammenführung atomar.
+Automatische Abgleiche überspringen solche Konflikte. Foto-Schema <strong>35</strong> ergänzt
+indizierte Tabellen und Aufräumregeln ohne Neuindexierung oder Bilderkennung.
+Die Daten laden erst beim Öffnen des Dialogs. Die API dokumentiert
+<code>GET/PUT /photos/people/{id}/details</code> einschließlich Versionsprüfung und Schreibgrenzen.</p>
 <h3 id="mutter-und-vater-zuordnen">Mutter und Vater zuordnen<a class="headerlink" href="#mutter-und-vater-zuordnen" title="Permanent link">&para;</a></h3>
 <p>Ab <strong>0.54.0</strong> öffnet <strong>Eltern</strong> in der Detailansicht einer benannten Person die
 Zuordnung von Mutter und Vater. Tippe einen Namen und wähle eine vorhandene benannte
@@ -2209,7 +2258,7 @@ Die Funktion benötigt keine neue Datenbankmigration.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.59.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.60.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

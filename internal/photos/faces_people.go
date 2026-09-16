@@ -430,7 +430,7 @@ func (l *Library) mergePeopleChecked(ctx context.Context, source, target int64, 
 // Shared by web merges and receipted labeling decisions. The caller validates
 // revisions, refreshes affected references and commits the complete transaction.
 func mergePersonTx(ctx context.Context, tx *sql.Tx, source, target int64) error {
-	if err := mergePersonParentsTx(ctx, tx, source, target); err != nil {
+	if err := mergePersonFamilyTx(ctx, tx, source, target); err != nil {
 		return err
 	}
 	// Preserve the union of photo tags when groups are merged.

@@ -112,6 +112,16 @@ func TestOpenAPIHTTPResponses(t *testing.T) {
 	check("POST", path+"/actions", base+"/people/{id}/actions", "editor", string(body), 200)
 	check("POST", fmt.Sprintf("/photos/people/%d/parents", person.ID), "/photos/people/{id}/parents", "editor", "mother_id=0&father_id=0", 200)
 	check("GET", fmt.Sprintf("/photos/people/%d/parents", person.ID), "/photos/people/{id}/parents", "reader", "", 200)
+	profilePath := fmt.Sprintf("/photos/people/%d/details", person.ID)
+	profile := check("GET", profilePath, "/photos/people/{id}/details", "reader", "", 200)
+	var details photos.PersonDetails
+	if err := json.Unmarshal(profile.Body.Bytes(), &details); err != nil {
+		t.Fatal(err)
+	}
+	profileBody, _ := json.Marshal(photos.PersonDetailsInput{Revision: details.Revision, BirthDate: "2000-02-29"})
+	check("PUT", profilePath, "/photos/people/{id}/details", "editor", string(profileBody), 200)
+	check("PUT", profilePath, "/photos/people/{id}/details", "editor", string(profileBody), 409)
+	check("GET", profilePath, "/photos/people/{id}/details", "reader", "", 200)
 	check("GET", base+"/actions/contract-operation-12345?dataset="+session.Dataset, base+"/actions/{operation}", "editor", "", 200)
 	check("POST", path+"/actions", base+"/people/{id}/actions", "editor", "{}", 400)
 	check("GET", fmt.Sprintf("%s/people?upper=%d", base, session.UpperID), base+"/people", "editor", "", 200)

@@ -76,6 +76,38 @@ der Dialog für einen erneuten Versuch offen; wiederholtes Ergänzen erzeugt kei
 Duplikate. Erfordert `photos.edit`; höchstens 500 Personen pro Anfrage und 100 Tags
 pro Person. Keine neue Datenbankmigration.
 
+### Personenstammdaten
+
+Ab **0.60.0** öffnet **⋯ → Stammdaten** in der Detailansicht einer benannten Person
+einen Dialog mit Geburts- und Sterbedatum, mehreren Geschwistern und mehreren Ehen.
+Zu jeder Ehe gehören eine benannte Person als Ehepartner sowie Hochzeits- und
+optional Scheidungsdatum. Auch mehrere Ehen mit derselben Person sind möglich,
+sofern die Datumsangaben die Einträge unterscheiden. Geschwister und Ehen werden
+bei beiden Personen angezeigt; Änderungen und Entfernen gelten für beide Seiten.
+Die Elternzuordnung bleibt über **Eltern** erreichbar; Geschwister werden ausdrücklich
+zugeordnet und nicht automatisch aus gemeinsamen Eltern abgeleitet.
+
+Personen über die vorhandene Namenssuche auswählen. Unbekannte Datumsfelder dürfen
+leer bleiben. Vollständige Kalenderdaten werden ohne Uhrzeit gespeichert; Sterbedatum
+vor Geburtsdatum und Scheidung vor Hochzeit werden abgewiesen. **Abbrechen** verwirft
+alle Änderungen. Ein veralteter Dialog überschreibt keine zwischenzeitliche Änderung,
+auch wenn die Beziehung auf der anderen Personenseite bearbeitet wurde.
+**Stammdaten neu laden** lädt den aktuellen Stand und verwirft den offenen Entwurf.
+
+Lesen benötigt `photos.read`, Bearbeiten `photos.edit`. Nur benannte aktive sichtbare
+Personen sind auswählbar; verborgene Angehörige und deren Ehedaten erscheinen nicht.
+Bearbeiten sichtbarer Angaben erhält vorhandene verborgene Beziehungen. Pro Person
+sind bis zu 100 Geschwister und 100 Ehen möglich. Die Daten gehören zur Personengruppe,
+nicht zu einzelnen Bildern; beim Löschen der Gruppe werden ihre Beziehungen entfernt.
+
+Beim Zusammenführen werden passende Stammdaten und Beziehungen übernommen;
+identische Beziehungen werden zusammengefasst. Widersprüchliche Geburts-/Sterbedaten
+oder entstehende Selbstbeziehungen verhindern die Zusammenführung atomar.
+Automatische Abgleiche überspringen solche Konflikte. Foto-Schema **35** ergänzt
+indizierte Tabellen und Aufräumregeln ohne Neuindexierung oder Bilderkennung.
+Die Daten laden erst beim Öffnen des Dialogs. Die API dokumentiert
+`GET/PUT /photos/people/{id}/details` einschließlich Versionsprüfung und Schreibgrenzen.
+
 ### Mutter und Vater zuordnen
 
 Ab **0.54.0** öffnet **Eltern** in der Detailansicht einer benannten Person die

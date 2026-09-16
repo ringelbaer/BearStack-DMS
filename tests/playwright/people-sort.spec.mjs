@@ -35,7 +35,7 @@ test.beforeAll(async ({ browser }) => {
   await new Promise(resolve => service.listen(0, "127.0.0.1", resolve));
   const port = await freePort(); baseURL = `http://127.0.0.1:${port}`;
   const configPath = path.join(root, "config.json");
-  await writeFile(configPath, JSON.stringify({ addr: `127.0.0.1:${port}`, data_dir: path.join(root, "data"), auth: { credentials: [{ username: "manager", password: "secret", role: "photos_manager" }] }, photos: { enabled: true, root_dir: photos, face_service_url: `http://127.0.0.1:${service.address().port}`, face_service_token: token } }));
+  await writeFile(configPath, JSON.stringify({ addr: `127.0.0.1:${port}`, data_dir: path.join(root, "data"), auth: { credentials: [{ username: "manager", password: "secret", role: "photos_manager" }, { username: "reader", password: "secret", role: "photos_read" }] }, photos: { enabled: true, root_dir: photos, face_service_url: `http://127.0.0.1:${service.address().port}`, face_service_token: token } }));
   app = await startBearStack({ configPath, baseURL }, { username: "manager", password: "secret" });
   const context = await browser.newContext({ httpCredentials: { username: "manager", password: "secret" } });
   const enabled = await context.request.post(baseURL + "/settings/photos/faces", { form: { enabled: "1", delay_millis: "100" }, headers: { Origin: baseURL } });
@@ -52,9 +52,9 @@ test.afterAll(async ({}, info) => {
   if (service) await new Promise(resolve => service.close(resolve));
   if (root) await rm(root, { recursive: true, force: true });
 });
-async function login(page) {
+async function login(page, username = "manager") {
   await page.goto(baseURL + "/login?next=%2Fphotos%2Fpeople%3Fpage%3D1");
-  await page.getByLabel("Benutzername").fill("manager");
+  await page.getByLabel("Benutzername").fill(username);
   await page.locator('input[name="password"]').fill("secret");
   await page.getByRole("button", { name: "Anmelden" }).click();
 }
@@ -371,6 +371,61 @@ test("selected people receive additive tags through the batch dialog with cancel
       const form=new URLSearchParams();originals[i].forEach(tag=>form.append("tags",tag));
       await context.request.post(baseURL+`/photos/people/${ids[i]}/tags`,{data:form.toString(),headers:{"Content-Type":"application/x-www-form-urlencoded",Origin:baseURL}}).catch(()=>{});
     }
+    await context.close();
+  }
+});
+
+test("person records support multiple relatives, reciprocal marriages, cancellation and concurrent edits", async ({ browser }) => {
+  const context=await browser.newContext();const page=await context.newPage();await login(page);
+  const errors=[];page.on("pageerror",error=>errors.push(error.message));
+  const persons=(await (await context.request.get(baseURL+"/photos/people?format=json&sort=count_desc")).json()).people.slice(0,5);
+  const names=["Profil Alpha","Profil Beta","Profil Gamma","Profil Delta","Profil Epsilon"];
+  for(let i=0;i<5;i++) expect((await context.request.post(baseURL+`/photos/people/${persons[i].id}/rename`,{form:{name:names[i]},headers:{Origin:baseURL,Accept:"application/json"}})).ok()).toBe(true);
+  const endpoint=baseURL+`/photos/people/${persons[0].id}/details`;
+  const details=async id=>(await (await context.request.get(baseURL+`/photos/people/${id}/details`)).json());
+  const open=async()=>{await page.getByLabel("Weitere Personenaktionen",{exact:true}).click();await page.getByRole("button",{name:"Stammdaten",exact:true}).click();await expect(page.locator("[data-person-details-fields]")).toBeVisible();};
+  const dialog=page.locator("[data-person-details-dialog]");
+  const choose=async(row,name)=>{await row.locator("[data-person-search]").fill(name);await row.getByRole("option").filter({hasText:name}).click();};
+  try {
+    await page.goto(baseURL+`/photos/people/${persons[0].id}`);await open();
+    await dialog.getByLabel("Geburtsdatum",{exact:true}).fill("1960-02-29");
+    await dialog.getByLabel("Sterbedatum",{exact:true}).fill("2020-01-01");
+    for(const name of names.slice(1,3)) {await dialog.getByRole("button",{name:"Geschwister hinzufügen",exact:true}).click();await choose(dialog.locator('[data-relation="sibling"]').last(),name);}
+    for(const [index,name] of names.slice(3).entries()) {
+      await dialog.getByRole("button",{name:"Ehe hinzufügen",exact:true}).click();const row=dialog.locator('[data-relation="marriage"]').last();await choose(row,name);
+      await row.getByLabel("Hochzeitsdatum",{exact:true}).fill(index===0?"1980-06-15":"2000-07-20");
+      if(index===0) await row.getByLabel("Scheidungsdatum",{exact:true}).fill("1995-02-01");
+    }
+    for(const width of [320,390,1440]) {
+      await page.setViewportSize({width,height:900});
+      const box=await dialog.boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(width);
+      expect(await dialog.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(1);
+    }
+    await page.screenshot({path:"/tmp/bearstack-person-records.png",fullPage:true});
+    await dialog.getByRole("button",{name:"Stammdaten speichern",exact:true}).click();await expect(dialog).not.toBeVisible();
+    let saved=await details(persons[0].id);expect(saved.birth_date).toBe("1960-02-29");expect(saved.death_date).toBe("2020-01-01");expect(saved.siblings).toHaveLength(2);expect(saved.marriages).toHaveLength(2);
+    expect((await details(persons[1].id)).siblings[0].id).toBe(persons[0].id);expect((await details(persons[3].id)).marriages[0].spouse.id).toBe(persons[0].id);
+    await open();await dialog.getByLabel("Geburtsdatum",{exact:true}).fill("1961-01-01");await page.keyboard.press("Escape");expect((await details(persons[0].id)).birth_date).toBe("1960-02-29");
+    await expect(page.getByLabel("Weitere Personenaktionen",{exact:true})).toBeFocused();
+    await open();
+    const change={revision:saved.revision,birth_date:"1962-01-01",death_date:saved.death_date,sibling_ids:saved.siblings.map(p=>p.id),marriages:saved.marriages.map(m=>({id:m.id,spouse_id:m.spouse.id,wedding_date:m.wedding_date,divorce_date:m.divorce_date}))};
+    expect((await context.request.put(endpoint,{data:change,headers:{Origin:baseURL}})).ok()).toBe(true);
+    await dialog.getByRole("button",{name:"Stammdaten speichern",exact:true}).click();await expect(dialog.locator("[data-person-details-status]")).toContainText("zwischenzeitlich geändert");
+    await dialog.getByRole("button",{name:"Stammdaten neu laden",exact:true}).click();await expect(dialog.getByLabel("Geburtsdatum",{exact:true})).toHaveValue("1962-01-01");
+    const removedSibling=Number(await dialog.locator('[data-relation="sibling"] [data-person-target]').first().inputValue());
+    await dialog.getByRole("button",{name:"Geschwisterzuordnung entfernen",exact:true}).first().click();
+    await dialog.getByRole("button",{name:"Ehe entfernen",exact:true}).first().click();
+    await dialog.getByRole("button",{name:"Stammdaten speichern",exact:true}).click();await expect(dialog).not.toBeVisible();
+    expect((await details(removedSibling)).siblings).toHaveLength(0);expect((await details(persons[3].id)).marriages).toHaveLength(0);
+    const reader=await browser.newContext({httpCredentials:{username:"reader",password:"secret"}});const readerPage=await reader.newPage();
+    await login(readerPage,"reader");
+    await readerPage.goto(baseURL+`/photos/people/${persons[0].id}`);await readerPage.getByLabel("Weitere Personenaktionen",{exact:true}).click();await readerPage.getByRole("button",{name:"Stammdaten",exact:true}).click();
+    await expect(readerPage.getByLabel("Geburtsdatum",{exact:true})).toHaveValue("1962-01-01");await expect(readerPage.locator("[data-person-details-save]")).toHaveCount(0);await expect(readerPage.getByRole("link",{name:"Profil Epsilon",exact:true})).toBeVisible();await reader.close();
+    expect(errors).toEqual([]);
+  } finally {
+    const current=await details(persons[0].id).catch(()=>null);
+    if(current) await context.request.put(endpoint,{data:{revision:current.revision,birth_date:"",death_date:"",sibling_ids:[],marriages:[]},headers:{Origin:baseURL}}).catch(()=>{});
+    for(const person of persons) await context.request.post(baseURL+`/photos/people/${person.id}/rename`,{form:{name:person.name||""},headers:{Origin:baseURL,Accept:"application/json"}}).catch(()=>{});
     await context.close();
   }
 });

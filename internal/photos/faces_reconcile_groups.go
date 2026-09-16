@@ -155,8 +155,8 @@ func mergeAutomaticFaceGroupTx(ctx context.Context, tx *sql.Tx, source, target i
 	if _, err := tx.ExecContext(ctx, `SAVEPOINT automatic_face_group`); err != nil {
 		return 0, err
 	}
-	if err := mergePersonParentsTx(ctx, tx, source, target); err != nil {
-		if !errors.Is(err, ErrParentMerge) {
+	if err := mergePersonFamilyTx(ctx, tx, source, target); err != nil {
+		if !errors.Is(err, ErrParentMerge) && !errors.Is(err, ErrPersonDetailsMerge) {
 			return 0, err
 		}
 		_, rollbackErr := tx.ExecContext(ctx, `ROLLBACK TO automatic_face_group; RELEASE automatic_face_group`)

@@ -3918,3 +3918,20 @@ body.has-person-selection { padding-bottom: 150px; }
 .ignored-face-actions .ignored-face-form { flex: 1; }
 .ignored-face-actions .ignored-face-form button { padding-inline: .4rem; font-size: .85rem; white-space: nowrap; }
 .ignored-face-actions [data-ignored-edit] { display: grid; place-items: center; flex: 0 0 44px; height: 44px; padding: 0; }
+
+/* Lazily loaded person records keep the gallery toolbar compact. */
+.person-detail-menu [data-person-details-open] { width: 100%; text-align: left; border: 0; background: transparent; color: var(--text); }
+.app-dialog.person-details-dialog { width: min(720px, calc(100vw - 32px)); max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow: hidden; background: var(--surface); color: var(--text); }
+.person-details-dialog header h2 { margin: 0; font-size: 1.15rem; overflow-wrap: anywhere; }
+.person-details-dialog[open] { display: flex; flex-direction: column; }
+.person-details-dialog form { margin: 0; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.person-details-dialog .app-dialog-body { overflow-y: auto; min-height: 0; }
+.person-details-dialog header, .person-details-dialog footer { flex-shrink: 0; }
+.person-details-dialog footer { display: flex; flex-wrap: wrap; gap: 8px; }
+.person-details-dialog fieldset { min-width: 0; padding: 12px; margin: 0 0 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.person-details-dialog fieldset > * + * { margin-top: 10px; }
+.person-details-dialog label { display: flex; flex-direction: column; min-width: 0; gap: 4px; }
+.person-details-dialog input { width: 100%; min-width: 0; box-sizing: border-box; }
+.person-details-dialog .person-picker-popup { position: static; max-height: 240px; }
+.person-details-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 480px) { .person-details-dates { grid-template-columns: minmax(0, 1fr); } }

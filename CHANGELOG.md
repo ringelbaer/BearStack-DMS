@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.60.0 – in Entwicklung
+
+- Personen: Dialog **Stammdaten** mit Geburts-/Sterbedatum, mehreren Geschwistern und mehreren Ehen einschließlich Ehepartner, Hochzeits- und optionalem Scheidungsdatum. Benannte Personen über die bekannte Suche wählen; unbekannte Daten bleiben leer. Eltern bleiben separat erreichbar.
+- Geschwister und Ehen sind beidseitige Beziehungen. Atomare Speicherung mit Versionsprüfung, Schutz vor veralteten Änderungen, Datums- und Duplikatprüfung. Leserechte sehen ausschließlich sichtbare Angehörige; verborgene Beziehungen bleiben beim Bearbeiten erhalten.
+- Zusammenführungen übernehmen passende Daten und Beziehungen; widersprüchliche Lebensdaten und Selbstbeziehungen verhindern den gesamten Vorgang. Automatische Gruppenzuordnungen überspringen Konflikte. Datensätze werden beim Löschen einer Person aufgeräumt.
+- MINOR **0.60.0**, Foto-Schema **35** mit automatischer kompatibler Migration. Stammdaten laden erst bei Bedarf; indizierte Abfragen und maximal 100 Geschwister/100 Ehen je Person. GET/PUT-Endpunkt mit `photos.read`/`photos.edit`, Same-Origin-Schutz und Audit. README, Website und OpenAPI aktualisiert; Android-Version unverändert.
+- Validierung: vollständige Go-Suite einschließlich HTTP-/API-Vertrag, zusätzliche Regressionen für beidseitige Speicherung, Mehrfachehen, Sichtbarkeit, Datenübernahme, atomaren Rollback, Versionskonflikte und Migration. JavaScript-/DOM-Prüfungen, dreizehn Chromium-Browserszenarien und Website-Build erfolgreich; Stammdatendialog bei 320, 390 und 1440 Pixeln geprüft.
+
 ### BearStack 0.59.0 – in Entwicklung
 
 - Personenübersicht: **Personen-Tags ergänzen** für markierte Personen in der vorhandenen Auswahlleiste. Gemeinsamer Tag-Dialog mit Suche, vorhandenen und neuen Tags; Ergänzen erhält bestehende Personen-Tags und verändert keine Foto-Tags. Abbrechen ohne Änderung, Wiederholen nach Fehler möglich.

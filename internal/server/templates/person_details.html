@@ -1,0 +1,21 @@
+{{define "person_details"}}
+<dialog class="app-dialog person-details-dialog" data-person-details-dialog data-can-edit="{{.Auth.CanPhotosEdit}}" aria-labelledby="person-details-title">
+  <header><h2 id="person-details-title">Stammdaten</h2><button type="button" class="icon-button" data-person-details-close aria-label="Stammdaten schließen">×</button></header>
+  <form data-person-details-form>
+    <div class="app-dialog-body">
+      <p role="status" data-person-details-status></p>
+      <button type="button" class="secondary-button" data-person-details-reload hidden>Stammdaten neu laden</button>
+      <div data-person-details-fields hidden>
+        <div class="person-details-dates"><label>Geburtsdatum<input type="date" name="birth_date" min="0001-01-01" max="9999-12-31" {{if not .Auth.CanPhotosEdit}}readonly{{end}}></label><label>Sterbedatum<input type="date" name="death_date" min="0001-01-01" max="9999-12-31" {{if not .Auth.CanPhotosEdit}}readonly{{end}}></label></div>
+        <h3>Geschwister</h3><div data-person-details-siblings></div>
+        {{if .Auth.CanPhotosEdit}}<button type="button" class="secondary-button" data-person-details-add="sibling">Geschwister hinzufügen</button>{{end}}
+        <h3>Ehen</h3><div data-person-details-marriages></div>
+        {{if .Auth.CanPhotosEdit}}<button type="button" class="secondary-button" data-person-details-add="marriage">Ehe hinzufügen</button>
+        <p class="muted">Benannte Personen aus den Vorschlägen wählen. Geschwister und Ehen erscheinen bei beiden Personen. Unbekannte Datumsfelder dürfen leer bleiben.</p>{{end}}
+      </div>
+    </div>
+    <footer><button type="button" class="secondary-button" data-person-details-close>{{if .Auth.CanPhotosEdit}}Abbrechen{{else}}Schließen{{end}}</button>{{if .Auth.CanPhotosEdit}}<button data-person-details-save disabled>Stammdaten speichern</button>{{end}}</footer>
+  </form>
+  <template data-person-details-picker><div class="person-picker-field" data-person-picker><label></label><input role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" data-person-search placeholder="Benannte Person suchen" required><input type="hidden" data-person-target><div class="person-picker-popup" data-person-popup hidden><div role="listbox" data-person-options></div><p role="status" data-person-feedback></p></div></div></template>
+</dialog>
+{{end}}

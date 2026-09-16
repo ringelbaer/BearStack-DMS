@@ -64,12 +64,13 @@
 </div>
 {{else}}
 <section class="person-detail" data-person-detail data-person-id="{{.People.PersonID}}" data-person-name="{{.People.Name}}" data-person-user="{{.Auth.Username}}" data-size="s" data-show-paths="false">
+{{template "person_details" .}}
 <div class="person-detail-toolbar" role="group" aria-label="Personenaktionen">
 <a class="secondary-button" href="/photos/people">← Alle Personen</a>{{if .Auth.CanPhotosEdit}}<button type="button" data-detail-edit-group aria-label="Person benennen / zuordnen" title="Person benennen / zuordnen" hidden>{{template "person_pencil_icon"}}<span{{if .People.Name}} hidden{{end}}>Person benennen / zuordnen</span></button>{{end}}
 <a class="secondary-button" data-detail-gallery href="/photos?path=.people%2Fall%2F{{.People.PersonID}}">Fotos ansehen</a>
 {{if .Auth.CanPhotosEdit}}<button type="button" class="secondary-button" data-detail-select-all title="Alle Gesichter auf dieser Seite auswählen" hidden>Alle auswählen</button>{{end}}
 <details class="person-detail-more"><summary aria-label="Weitere Personenaktionen" title="Weitere Personenaktionen">{{template "more_icon"}}</summary><div class="person-detail-menu">
-<div class="person-tags-tools" data-person-tags-tools>{{if .Auth.CanPhotosEdit}}<div class="tag-select" data-tag-select data-create-tag-mode="local" data-selected-tags="{{joinTags .People.Tags}}" data-update-url="/photos/people/{{.People.PersonID}}/tags" data-empty-label="Personen-Tags"><button type="button" class="tag-select-trigger" data-tag-select-trigger aria-label="Personen-Tags bearbeiten"><span class="tag-select-summary" data-tag-select-summary></span></button><div hidden data-tag-select-inputs></div></div>{{else}}{{range .People.Tags}}<span class="tag">{{.}}</span>{{end}}{{end}}{{if .People.Name}}{{template "person_parents" .}}{{end}}</div>
+<div class="person-tags-tools" data-person-tags-tools>{{if .Auth.CanPhotosEdit}}<div class="tag-select" data-tag-select data-create-tag-mode="local" data-selected-tags="{{joinTags .People.Tags}}" data-update-url="/photos/people/{{.People.PersonID}}/tags" data-empty-label="Personen-Tags"><button type="button" class="tag-select-trigger" data-tag-select-trigger aria-label="Personen-Tags bearbeiten"><span class="tag-select-summary" data-tag-select-summary></span></button><div hidden data-tag-select-inputs></div></div>{{else}}{{range .People.Tags}}<span class="tag">{{.}}</span>{{end}}{{end}}{{if .People.Name}}<button type="button" class="secondary-button" data-person-details-open>Stammdaten</button>{{template "person_parents" .}}{{end}}</div>
 <details class="people-display-menu" data-detail-display hidden><summary aria-label="Anzeigeeinstellungen" title="Anzeigeeinstellungen">Anzeige</summary><div class="people-display-options"><label>Thumbnailgröße <select data-detail-size aria-label="Thumbnailgröße"><option value="s">S</option><option value="m">M</option><option value="l">L</option></select></label><label><input type="checkbox" data-detail-paths> Ordnerpfad anzeigen</label></div></details>
 <button type="button" class="secondary-button person-detail-help-button" data-detail-help-open hidden>Hilfe</button>
 <nav aria-label="Weitere Ansichten"><a href="/photos">← Fotos</a>{{if .Auth.CanPhotosEdit}}<a href="/photos/people/groups">Gruppenbilder</a><a href="/photos/people/merge-suggestions">Ähnliche Gesichter</a><a href="/photos/people/chains">Gesichtsketten prüfen</a>{{end}}{{if .Auth.CanPhotosManage}}<a href="/settings/photos/faces">Gesichtserkennung</a>{{end}}</nav>
@@ -115,7 +116,7 @@
 {{if not .People.PersonID}}<script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>{{end}}
 <script src="{{assetURL "/static/app-people.js"}}" defer></script>
 {{if and .People.IgnoredOnly .Auth.CanPhotosEdit}}<script src="{{assetURL "/static/app-ignored-faces.js"}}" defer></script>{{end}}
-{{if .People.PersonID}}<script src="{{assetURL "/static/app-person-detail.js"}}" defer></script>{{end}}
+{{if .People.PersonID}}<script src="{{assetURL "/static/app-person-detail.js"}}" defer></script><script src="{{assetURL "/static/app-person-details.js"}}" defer></script>{{end}}
 {{template "foot" .}}
 {{end}}
 
