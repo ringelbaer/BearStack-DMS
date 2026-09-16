@@ -117,10 +117,21 @@ test("stored face reconciliation works offline with responsive merge review and 
     await page.goto(settingsURL);
     // Seed four independent groups before allowing stored-vector reconciliation.
     await page.locator('select[name="reconcile_enabled"]').selectOption("0");
+    await page.locator(".face-settings-expert summary").click();
+    const automaticGroups = page.getByRole("checkbox", { name: "Unbenannte Gruppen automatisch zusammenführen", exact: true });
+    await expect(automaticGroups).not.toBeChecked();
+    await automaticGroups.check();
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    expect((await status()).settings.thresholds.reconcile_unnamed_groups).toBe(true);
+    expect((await status()).settings.reconcile_enabled).toBe(false);
+    await page.locator(".face-settings-expert summary").click();
+    await expect(automaticGroups).toBeChecked();
+    await automaticGroups.uncheck();
     await page.getByRole("checkbox", { name: /^Gesichtserkennung aktivieren/ }).check();
     await page.getByRole("spinbutton", { name: /^Pause zwischen Bildern/ }).fill("100");
     await page.getByRole("button", { name: "Speichern", exact: true }).click();
     await expect.poll(async () => (await status()).status.done, { timeout: 20_000 }).toBe(4);
+    expect((await status()).settings.thresholds.reconcile_unnamed_groups).toBe(false);
     await page.reload();
     await page.getByRole("checkbox", { name: /^Gesichtserkennung aktivieren/ }).uncheck();
     await page.getByRole("button", { name: "Speichern", exact: true }).click();

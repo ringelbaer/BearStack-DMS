@@ -26,7 +26,7 @@ var (
 const (
 	indexSchemaSetupTimeout = 30 * time.Second
 	photoSchemaComponent    = "photos"
-	photoSchemaVersion      = 33
+	photoSchemaVersion      = 34
 )
 
 type photoSchemaMigration struct {
@@ -72,6 +72,7 @@ var photoSchemaMigrations = []photoSchemaMigration{
 	{Version: 31, Name: "bounded unnamed and imported people cursor"},
 	{Version: 32, Name: "person photo tags"},
 	{Version: 33, Name: "person parents"},
+	{Version: 34, Name: "optional automatic unnamed group reconciliation", Table: "photo_face_thresholds", Column: "reconcile_unnamed_groups", SQL: `ALTER TABLE photo_face_thresholds ADD COLUMN reconcile_unnamed_groups INTEGER NOT NULL DEFAULT 0 CHECK(reconcile_unnamed_groups IN (0,1))`},
 }
 
 func openIndexDB(path string) (*sql.DB, string, error) {

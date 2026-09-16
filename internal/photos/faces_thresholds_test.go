@@ -27,7 +27,7 @@ func TestFaceThresholdsPersistenceAndValidation(t *testing.T) {
 			t.Fatalf("accepted margin %v", invalid)
 		}
 	}
-	v := FaceThresholds{.4, 0, .7, .2, .6, .1}
+	v := FaceThresholds{AssignmentSimilarity: .4, ReconcileSimilarity: .7, ReconcileMargin: .2, SuggestionSimilarity: .6, SuggestionMargin: .1, ReconcileUnnamedGroups: true}
 	if err := l.SetFaceThresholds(ctx, v); err != nil {
 		t.Fatal(err)
 	}
@@ -224,5 +224,56 @@ func TestFaceThresholdsNamedSearchMarginAndStreaming(t *testing.T) {
 		if err != nil || len(streamed.People) != tc.count {
 			t.Fatalf("stream %+v: %+v %v", tc, streamed, err)
 		}
+	}
+}
+
+func TestFaceThresholdsUnnamedGroupMigrationAndScheduling(t *testing.T) {
+	ctx := context.Background()
+	l, source, _ := reconciliationFixture(t, .52, false)
+	v := DefaultFaceThresholds()
+	v.ReconcileSimilarity = .68
+	if err := l.SetFaceThresholds(ctx, v); err != nil {
+		t.Fatal(err)
+	}
+	completeReconciliation(t, l)
+	if _, err := l.index.db.Exec(`ALTER TABLE photo_face_thresholds DROP COLUMN reconcile_unnamed_groups; UPDATE schema_migrations SET version=33 WHERE component='photos'`); err != nil {
+		t.Fatal(err)
+	}
+	root, cache, db := l.Root(), l.CacheDir(), l.DBPath()
+	if err := l.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := New(root, cache, db, 60)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	if got, err := reopened.FaceThresholds(ctx); err != nil || got != v {
+		t.Fatalf("migration: %+v %v", got, err)
+	}
+	if face, err := reopened.Face(ctx, source.ID); err != nil || face.PersonID != source.PersonID {
+		t.Fatalf("migration reassigned face: %+v %v", face, err)
+	}
+	rows, err := reopened.FaceMergeSuggestions(ctx, 10)
+	if err != nil || len(rows) != 1 {
+		t.Fatalf("migration lost suggestions: %+v %v", rows, err)
+	}
+	v.ReconcileUnnamedGroups = true
+	if err := reopened.SetFaceThresholds(ctx, v); err != nil {
+		t.Fatal(err)
+	}
+	if rows, err := reopened.FaceMergeSuggestions(ctx, 10); err != nil || len(rows) != 0 {
+		t.Fatalf("toggle retained stale suggestions: %+v %v", rows, err)
+	}
+	state, err := reopened.FaceReconciliationStatus(ctx)
+	if err != nil || !state.Pending || state.Cursor != 0 {
+		t.Fatalf("toggle failed to schedule: %+v %v", state, err)
+	}
+	completeReconciliation(t, reopened)
+	if err := reopened.SetFaceThresholds(ctx, v); err != nil {
+		t.Fatal(err)
+	}
+	if state, err := reopened.FaceReconciliationStatus(ctx); err != nil || state.Pending {
+		t.Fatalf("unchanged option rescheduled: %+v %v", state, err)
 	}
 }

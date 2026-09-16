@@ -1876,6 +1876,26 @@ eine bereits im selben Foto vorhandene Zielperson ist ausgeschlossen. Schlechte
 Aufnahmen mit gemessener unzureichender Qualität treiben keinen automatischen
 Nachabgleich an. Die Zähler zeigen geprüfte Datensätze, neue Zuordnungen und im
 aktuellen Lauf erzeugte Vorschläge.</p>
+<p>Ab <strong>0.56.0</strong> bietet der Expertenbereich unter <strong>Automatische Zuordnung im Hintergrund</strong>
+die standardmäßig ausgeschaltete Checkbox <strong>Unbenannte Gruppen automatisch zusammenführen</strong>.
+Aktiviert führt ein eindeutiger Treffer die <strong>gesamte unbenannte Quellgruppe</strong> atomar zusammen.
+Zuerst werden bestätigte benannte Personen geprüft; nur ohne passenden Treffer folgen
+unbenannte Gruppen. Für beide Schritte gelten <strong>Hintergrund-Ähnlichkeit und -Mindestabstand</strong>
+(Standard 0,62 / 0,10), jeweils gegenüber anderen Gruppen desselben Bereichs.
+Der Gruppenwert ist der beste Vergleich zwischen den gespeicherten Referenzgesichtern
+beider Gruppen. Ein benannter Treffer hat Vorrang, auch wenn eine unbenannte Gruppe ähnlicher ist.</p>
+<p>Eine Quellgruppe mit manuellen Zuordnungen, Favoriten, ignorierten oder gezeichneten
+Gesichtern, ungeeigneten/alten Gesichtsmerkmalen, geschützten Mitgliedern oder
+widersprechenden XMP-Namen wird nicht automatisch als Ganzes verschoben.
+Manuell getrennte Gruppen, abgelehnte Paare und Gruppen mit aktiven Gesichtern im selben
+Foto werden nicht automatisch verbunden. Tags und Familienbeziehungen bleiben erhalten;
+Familienkonflikte erfordern manuelle Prüfung. Ablehnungen gegenüber weiteren Gruppen
+werden auf die verbleibende Gruppe übertragen. Automatisch verschobene Gesichter bleiben
+unbestätigt. Ohne die Option bleibt der bisherige Einzelgesichtsabgleich erhalten.
+Die automatische Migration auf <strong>Foto-Schema 34</strong> ergänzt nur die ausgeschaltete Option.
+Umschalten verwirft offene Vorschläge und plant einen neuen Abgleich; ein pausierter Lauf
+bleibt pausiert. Gespeicherte Referenzen, begrenzte Arbeitspakete und indizierte
+Gruppenabfragen werden wiederverwendet; es erfolgt keine erneute Bildanalyse.</p>
 <p><strong>Expertenbereich (ab 0.50.0):</strong> Unter <strong>Einstellungen → Gesichtserkennung</strong>
 lassen sich im ausklappbaren Expertenbereich drei getrennte Wertepaare einstellen:</p>
 <table>
@@ -2074,7 +2094,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.55.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.56.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

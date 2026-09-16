@@ -280,6 +280,7 @@ Der erste geprüfte Treffer bleibt sofort verfügbar. Weitere Zwischenstände we
 höchstens alle 100 ms geprüft und ausgegeben; das vollständige Endergebnis folgt
 immer. Ein positiver Vorschlagsabstand wartet weiterhin auf das gesamte Ranking,
 einschließlich eines zweitbesten Kandidaten unterhalb der Ähnlichkeitsschwelle.
+
 Im Browser löst nur der neueste wartende Stand pro Bildschirmaktualisierung einen
 Neuaufbau der Liste aus. Endergebnis, Fehler und Abbruch verwerfen ausstehende
 Zwischenstände sofort. Das funktioniert auch bei einem pausierten Browser-Frame.
@@ -315,6 +316,20 @@ Browser-Regressionen sichern den Ablauf ab. Dies ist eine PATCH-Optimierung inne
 der unveröffentlichten 0.50.0; VERSION und API-Schema bleiben unverändert, eine
 Migration ist nicht erforderlich. Die OpenAPI-Beschreibung dokumentiert die
 Zwischenstände und das Verhalten bei konkurrierenden Änderungen.
+
+## Automatische Gruppenzusammenführung
+
+Die optionale automatische Gruppenzusammenführung (0.56.0) ist durch Regressionen
+für benannten Vorrang, unbenannten Fallback, beide strengen Grenzwerte, gruppierte
+Referenzwerte und ungeeignete Zielgruppen abgesichert. Weitere Fälle prüfen
+geschützte Gruppenmitglieder, gemeinsame Fotos, XMP-Konflikte, ersetzte/fehlende
+Originale, geänderte Sidecars, dauerhafte Ablehnungen, Tag-Übernahme und Wiederaufnahme
+nach Neustart. Ein injizierter Schreibfehler in einer Gruppe mit 2.000 Gesichtern
+prüft, dass weder Teilzuordnungen, Tags noch Fortschritt gespeichert werden.
+Ein Familienkonflikt prüft den Rollback bereits begonnener Beziehungsübernahmen.
+Die Migration von Foto-Schema 33 auf 34, ausgeschalteter Standard, Persistenz,
+ältere Formulare, ungültige/mehrfache Werte, Rechte und Checkbox-Speicherung im
+Browser sind abgedeckt.
 
 ## Audit-Log in BearStack
 

@@ -793,6 +793,28 @@ Aufnahmen mit gemessener unzureichender Qualität treiben keinen automatischen
 Nachabgleich an. Die Zähler zeigen geprüfte Datensätze, neue Zuordnungen und im
 aktuellen Lauf erzeugte Vorschläge.
 
+Ab **0.56.0** bietet der Expertenbereich unter **Automatische Zuordnung im Hintergrund**
+die standardmäßig ausgeschaltete Checkbox **Unbenannte Gruppen automatisch zusammenführen**.
+Aktiviert führt ein eindeutiger Treffer die **gesamte unbenannte Quellgruppe** atomar zusammen.
+Zuerst werden bestätigte benannte Personen geprüft; nur ohne passenden Treffer folgen
+unbenannte Gruppen. Für beide Schritte gelten **Hintergrund-Ähnlichkeit und -Mindestabstand**
+(Standard 0,62 / 0,10), jeweils gegenüber anderen Gruppen desselben Bereichs.
+Der Gruppenwert ist der beste Vergleich zwischen den gespeicherten Referenzgesichtern
+beider Gruppen. Ein benannter Treffer hat Vorrang, auch wenn eine unbenannte Gruppe ähnlicher ist.
+
+Eine Quellgruppe mit manuellen Zuordnungen, Favoriten, ignorierten oder gezeichneten
+Gesichtern, ungeeigneten/alten Gesichtsmerkmalen, geschützten Mitgliedern oder
+widersprechenden XMP-Namen wird nicht automatisch als Ganzes verschoben.
+Manuell getrennte Gruppen, abgelehnte Paare und Gruppen mit aktiven Gesichtern im selben
+Foto werden nicht automatisch verbunden. Tags und Familienbeziehungen bleiben erhalten;
+Familienkonflikte erfordern manuelle Prüfung. Ablehnungen gegenüber weiteren Gruppen
+werden auf die verbleibende Gruppe übertragen. Automatisch verschobene Gesichter bleiben
+unbestätigt. Ohne die Option bleibt der bisherige Einzelgesichtsabgleich erhalten.
+Die automatische Migration auf **Foto-Schema 34** ergänzt nur die ausgeschaltete Option.
+Umschalten verwirft offene Vorschläge und plant einen neuen Abgleich; ein pausierter Lauf
+bleibt pausiert. Gespeicherte Referenzen, begrenzte Arbeitspakete und indizierte
+Gruppenabfragen werden wiederverwendet; es erfolgt keine erneute Bildanalyse.
+
 **Expertenbereich (ab 0.50.0):** Unter **Einstellungen → Gesichtserkennung**
 lassen sich im ausklappbaren Expertenbereich drei getrennte Wertepaare einstellen:
 

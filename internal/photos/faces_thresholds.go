@@ -9,16 +9,17 @@ import (
 
 // FaceThresholds keeps recognition, retrospective moves and manual review independent.
 type FaceThresholds struct {
-	AssignmentSimilarity float64 `json:"assignment_similarity"`
-	AssignmentMargin     float64 `json:"assignment_margin"`
-	ReconcileSimilarity  float64 `json:"reconcile_similarity"`
-	ReconcileMargin      float64 `json:"reconcile_margin"`
-	SuggestionSimilarity float64 `json:"suggestion_similarity"`
-	SuggestionMargin     float64 `json:"suggestion_margin"`
+	AssignmentSimilarity   float64 `json:"assignment_similarity"`
+	AssignmentMargin       float64 `json:"assignment_margin"`
+	ReconcileSimilarity    float64 `json:"reconcile_similarity"`
+	ReconcileMargin        float64 `json:"reconcile_margin"`
+	SuggestionSimilarity   float64 `json:"suggestion_similarity"`
+	SuggestionMargin       float64 `json:"suggestion_margin"`
+	ReconcileUnnamedGroups bool    `json:"reconcile_unnamed_groups"`
 }
 
 func DefaultFaceThresholds() FaceThresholds {
-	return FaceThresholds{0.55, 0.08, 0.62, 0.10, 0.45, 0}
+	return FaceThresholds{AssignmentSimilarity: .55, AssignmentMargin: .08, ReconcileSimilarity: .62, ReconcileMargin: .10, SuggestionSimilarity: .45}
 }
 
 func (v FaceThresholds) Validate() error {
@@ -50,7 +51,7 @@ func setupFaceThresholds(ctx context.Context, db *sql.DB) error {
 
 func (l *Library) FaceThresholds(ctx context.Context) (FaceThresholds, error) {
 	var v FaceThresholds
-	err := l.index.db.QueryRowContext(ctx, `SELECT assignment_similarity,assignment_margin,reconcile_similarity,reconcile_margin,suggestion_similarity,suggestion_margin FROM photo_face_thresholds WHERE id=1`).Scan(&v.AssignmentSimilarity, &v.AssignmentMargin, &v.ReconcileSimilarity, &v.ReconcileMargin, &v.SuggestionSimilarity, &v.SuggestionMargin)
+	err := l.index.db.QueryRowContext(ctx, `SELECT assignment_similarity,assignment_margin,reconcile_similarity,reconcile_margin,suggestion_similarity,suggestion_margin,reconcile_unnamed_groups FROM photo_face_thresholds WHERE id=1`).Scan(&v.AssignmentSimilarity, &v.AssignmentMargin, &v.ReconcileSimilarity, &v.ReconcileMargin, &v.SuggestionSimilarity, &v.SuggestionMargin, &v.ReconcileUnnamedGroups)
 	return v, err
 }
 
@@ -67,7 +68,7 @@ func (l *Library) SetFaceThresholds(ctx context.Context, v FaceThresholds) error
 		return err
 	}
 	defer tx.Rollback()
-	result, err := tx.ExecContext(ctx, `UPDATE photo_face_thresholds SET assignment_similarity=?,assignment_margin=?,reconcile_similarity=?,reconcile_margin=?,suggestion_similarity=?,suggestion_margin=? WHERE id=1 AND (assignment_similarity<>? OR assignment_margin<>? OR reconcile_similarity<>? OR reconcile_margin<>? OR suggestion_similarity<>? OR suggestion_margin<>?)`, v.AssignmentSimilarity, v.AssignmentMargin, v.ReconcileSimilarity, v.ReconcileMargin, v.SuggestionSimilarity, v.SuggestionMargin, v.AssignmentSimilarity, v.AssignmentMargin, v.ReconcileSimilarity, v.ReconcileMargin, v.SuggestionSimilarity, v.SuggestionMargin)
+	result, err := tx.ExecContext(ctx, `UPDATE photo_face_thresholds SET assignment_similarity=?,assignment_margin=?,reconcile_similarity=?,reconcile_margin=?,suggestion_similarity=?,suggestion_margin=?,reconcile_unnamed_groups=? WHERE id=1 AND (assignment_similarity<>? OR assignment_margin<>? OR reconcile_similarity<>? OR reconcile_margin<>? OR suggestion_similarity<>? OR suggestion_margin<>? OR reconcile_unnamed_groups<>?)`, v.AssignmentSimilarity, v.AssignmentMargin, v.ReconcileSimilarity, v.ReconcileMargin, v.SuggestionSimilarity, v.SuggestionMargin, v.ReconcileUnnamedGroups, v.AssignmentSimilarity, v.AssignmentMargin, v.ReconcileSimilarity, v.ReconcileMargin, v.SuggestionSimilarity, v.SuggestionMargin, v.ReconcileUnnamedGroups)
 	if err != nil {
 		return err
 	}

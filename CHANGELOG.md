@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.56.0 – in Entwicklung
+
+- Experteneinstellungen: neue, standardmäßig ausgeschaltete Checkbox „Unbenannte Gruppen automatisch zusammenführen“. Aktiviert führt der Hintergrundabgleich ganze unbenannte Quellgruppen atomar zusammen. Bestätigte benannte Personen haben Vorrang; ohne passenden benannten Treffer folgen unbenannte Gruppen. Beide Schritte verwenden die strengen Hintergrundgrenzwerte und den Abstand innerhalb ihres jeweiligen Bereichs.
+- Vergleich über gespeicherte Gruppenreferenzen, ohne erneute Bildanalyse. Geschützte Gruppenmitglieder, manuelle Trennungen, abgelehnte Paare und gemeinsames Auftreten im Foto verhindern unerlaubte automatische Zusammenführungen. Tags, Familienbeziehungen und Ablehnungen gegenüber weiteren Gruppen bleiben erhalten; automatisch verschobene Gesichter werden nicht als manuell bestätigt markiert. Ohne Option bleibt der bisherige Einzelgesichtsabgleich erhalten.
+- Kompatible Migration auf Foto-Schema 34, additives API-Feld `reconcile_unnamed_groups`, README und Website aktualisiert. MINOR **0.56.0**; Android bleibt **0.14.0**.
+- Validierung: vollständige Go-Suite einschließlich OpenAPI, gezielte Race-Prüfungen, drei Browserregressionen und Website-Build erfolgreich. Zusätzliche Regressionen prüfen eine ganze Gruppe mit 2.000 Gesichtern, atomaren Rollback bei Schreib- und Familienkonflikten, Quelldateiänderungen sowie erhaltene Ablehnungen nach Neustart.
+
 ### BearStack 0.55.0 / Android 0.14.0 – in Entwicklung
 
 - Normale Fotoordner bieten im Fotoaktionen-Menü eine Personenübersicht einschließlich ihrer Unterordner, im Web und in Android. Personen, unterschiedliche Fotoanzahlen, Stern-Porträts und anschließende Fotogalerien bleiben auf diesen Bereich beschränkt. Navigation zurück zum ursprünglichen Ordner, Namenssuche, Sortierung und Blättern bleiben verfügbar.

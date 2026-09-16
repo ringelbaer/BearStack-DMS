@@ -29,6 +29,8 @@ const (
 	facePersonsAll facePersonScope = iota
 	facePersonsNamed
 	facePersonsUnnamed
+	facePersonsConfirmedNamed
+	facePersonsUnconfirmedUnnamed
 )
 
 type facePersonCandidate struct {
@@ -107,7 +109,7 @@ func (rt *faceRuntime) rankFacePersonsInScope(ctx context.Context, v []float32, 
 	}
 	capacity := len(rt.nodes)
 	persons := maps.Keys(rt.graph.groups)
-	if scope == facePersonsNamed {
+	if scope == facePersonsNamed || scope == facePersonsConfirmedNamed {
 		capacity = min(capacity, len(named))
 		persons = maps.Keys(named)
 	}
@@ -117,7 +119,7 @@ func (rt *faceRuntime) rankFacePersonsInScope(ctx context.Context, v []float32, 
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if excluded[person] || (scope == facePersonsUnnamed && named[person]) {
+		if excluded[person] || ((scope == facePersonsUnnamed || scope == facePersonsUnconfirmedUnnamed) && named[person]) {
 			continue
 		}
 		best := math.Inf(-1)
@@ -189,6 +191,10 @@ func (l *Library) validateFaceCandidatesInScope(ctx context.Context, tx faceRows
 				query += ` AND p.name<>''`
 			} else if scope == facePersonsUnnamed {
 				query += ` AND p.name=''`
+			} else if scope == facePersonsConfirmedNamed {
+				query += ` AND p.name<>'' AND p.manual_name=1`
+			} else if scope == facePersonsUnconfirmedUnnamed {
+				query += ` AND p.name='' AND p.manual_name=0`
 			}
 			rows, err := tx.QueryContext(ctx, query, batch...)
 			if err != nil {

@@ -141,6 +141,14 @@ func (l *Library) ReconcileFacesBatch(ctx context.Context, batchSize int) (FaceR
 		return state, ErrLabelConflict
 	}
 	affected := map[int64]bool{}
+	thresholds := l.matchingThresholds()
+	var named map[int64]bool
+	if haveCandidates && thresholds.ReconcileUnnamedGroups {
+		named, err = faceNamedPeople(ctx, tx)
+		if err != nil {
+			return state, err
+		}
+	}
 	var evidence []faceSuggestionEvidence
 	var reassigned int64
 	processed := 0
@@ -188,6 +196,20 @@ func (l *Library) ReconcileFacesBatch(ctx context.Context, batchSize int) (FaceR
 		if vector == nil {
 			continue
 		}
+		if thresholds.ReconcileUnnamedGroups {
+			target, moved, err := l.reconcileFaceGroup(ctx, tx, person, f.id, model, named)
+			if err != nil {
+				return state, err
+			}
+			if moved > 0 {
+				affected[person], affected[target] = true, true
+				reassigned += moved
+				// Publish refreshed group references before the next comparison.
+				// The scheduled pass regenerates any earlier, now stale evidence.
+				evidence = nil
+				break
+			}
+		}
 		excluded, err := faceReconcileExclusions(ctx, tx, f.path, person)
 		if err != nil {
 			return state, err
@@ -211,8 +233,7 @@ func (l *Library) ReconcileFacesBatch(ctx context.Context, batchSize int) (FaceR
 		if err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM photo_face_merge_suggestions WHERE rejected=1 AND ((source_id=? AND target_id=?) OR (source_id=? AND target_id=?)))`, person, best.person, best.person, person).Scan(&rejected); err != nil {
 			return state, err
 		}
-		thresholds := l.matchingThresholds()
-		if trusted && !rejected && best.score >= thresholds.ReconcileSimilarity && margin >= thresholds.ReconcileMargin {
+		if !thresholds.ReconcileUnnamedGroups && trusted && !rejected && best.score >= thresholds.ReconcileSimilarity && margin >= thresholds.ReconcileMargin {
 			if _, err = tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=? WHERE id=?`, best.person, f.id); err != nil {
 				return state, err
 			}

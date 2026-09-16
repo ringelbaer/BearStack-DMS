@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.55.0
+  version: 0.56.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -3261,6 +3261,10 @@ paths:
         open merge suggestions and schedule a new stored-vector pass; rejected pairs
         remain intact. Paused reconciliation remains paused. No image inference is
         needed, and existing assignments are not undone. Defaults preserve prior behavior.
+        Since 0.56.0, reconcile_unnamed_groups optionally enables atomic whole-group
+        reconciliation, preferring confirmed named people before unnamed groups.
+        Both stages use the strict reconciliation thresholds. Toggling this option
+        also invalidates open suggestions and schedules a pass without resuming a paused worker.
       parameters: []
       requestBody:
         required: true
@@ -3318,13 +3322,31 @@ paths:
                   minimum: 0.4
                   maximum: 0.7
                   default: 0.62
-                  description: "Minimum similarity for retrospective automatic assignment to a confirmed named person. Omission preserves the saved value."
+                  description: "Minimum similarity for retrospective automatic assignment, also used for whole-group merging when reconcile_unnamed_groups is enabled. Omission preserves the saved value."
                 reconcile_margin:
                   type: number
                   minimum: 0
                   maximum: 0.2
                   default: 0.1
-                  description: "Minimum lead over the best different group for retrospective automatic assignment; multiple references of the same group do not compete. Omission preserves the saved value."
+                  description: "Minimum lead over the best different group for retrospective automatic assignment; multiple references of the same group do not compete. With reconcile_unnamed_groups, named and unnamed stages are evaluated separately. Omission preserves the saved value."
+                reconcile_unnamed_groups:
+                  type: string
+                  enum: ['0', '1']
+                  description: >-
+                    Since 0.56.0. Default off. Enable atomic merging of an entire
+                    eligible unnamed source group, first into a confirmed named
+                    person, otherwise into an unnamed group. Both stages use
+                    reconcile_similarity and reconcile_margin; each target scores
+                    the best reference pair across the source and target groups.
+                    Omission preserves the saved value. The native checkbox also
+                    accepts exactly two values in order, 0 then 1; other duplicate
+                    or invalid values return 400 without saving. Protected source
+                    members, manual separations, rejected pairs and active faces
+                    sharing a photo prevent automatic merges. Tags, family links
+                    and rejections against third parties are preserved; family
+                    conflicts require manual review. Automatic merges do not mark
+                    faces as manually confirmed. Disabling retains previous
+                    per-face reconciliation behavior and does not undo merges.
                 suggestion_similarity:
                   type: number
                   minimum: 0.4
@@ -3674,13 +3696,17 @@ components:
           minimum: 0.4
           maximum: 0.7
           default: 0.62
-          description: "Minimum similarity for retrospective automatic assignment to a confirmed named person."
+          description: "Minimum similarity for retrospective automatic assignment, also used for whole-group merging when reconcile_unnamed_groups is enabled."
         reconcile_margin:
           type: number
           minimum: 0
           maximum: 0.2
           default: 0.1
-          description: "Minimum lead over the best different group for retrospective automatic assignment; multiple references of the same group do not compete."
+          description: "Minimum lead over the best different group for retrospective automatic assignment; multiple references of the same group do not compete. With reconcile_unnamed_groups, named and unnamed stages are evaluated separately."
+        reconcile_unnamed_groups:
+          type: boolean
+          default: false
+          description: "Since 0.56.0. Enable whole unnamed-group reconciliation, preferring confirmed named groups before unnamed groups, using the strict reconciliation thresholds in each stage. Without it, only individual eligible faces can move to confirmed named people. Older servers omit this field."
         suggestion_similarity:
           type: number
           minimum: 0.4

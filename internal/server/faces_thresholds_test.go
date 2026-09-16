@@ -79,3 +79,48 @@ func TestFaceThresholdSettings(t *testing.T) {
 		}
 	}
 }
+
+func TestFaceUnnamedGroupSettings(t *testing.T) {
+	s := faceTestServer(t)
+	ctx := context.Background()
+	for _, tc := range []struct {
+		values url.Values
+		status int
+		want   bool
+	}{
+		{url.Values{"reconcile_unnamed_groups": {"0", "1"}, "reconcile_enabled": {"0"}}, 303, true},
+		{url.Values{"batch_size": {"20"}}, 303, true}, // Older forms preserve the option.
+		{url.Values{"reconcile_unnamed_groups": {"true"}, "reconcile_similarity": {"0.7"}}, 400, true},
+		{url.Values{"reconcile_unnamed_groups": {"1", "1"}}, 400, true},
+		{url.Values{"reconcile_unnamed_groups": {"1", "0"}}, 400, true},
+		{url.Values{"reconcile_unnamed_groups": {"0", "1", "1"}}, 400, true},
+		{url.Values{"reconcile_unnamed_groups": {""}}, 400, true},
+		{url.Values{"reconcile_unnamed_groups": {"0"}}, 303, false},
+		{url.Values{"reconcile_unnamed_groups": {"1"}}, 303, true},
+	} {
+		w := faceRequest(s, "POST", "/settings/photos/faces", "manager", tc.values)
+		if w.Code != tc.status {
+			t.Fatalf("form %v: %d %s", tc.values, w.Code, w.Body.String())
+		}
+		settings, err := s.faceSettings(ctx)
+		if err != nil || settings.Thresholds.ReconcileUnnamedGroups != tc.want || settings.Thresholds.ReconcileSimilarity != .62 || settings.ReconcileEnabled {
+			t.Fatalf("settings for %v: %+v %v", tc.values, settings, err)
+		}
+		w = faceRequest(s, "GET", "/settings/photos/faces?format=json", "manager", nil)
+		var view FaceSettingsView
+		if err := json.Unmarshal(w.Body.Bytes(), &view); err != nil || view.Settings.Thresholds.ReconcileUnnamedGroups != tc.want {
+			t.Fatalf("JSON: %+v %v", view, err)
+		}
+		w = faceRequest(s, "GET", "/settings/photos/faces", "manager", nil)
+		checked := strings.Contains(w.Body.String(), `name="reconcile_unnamed_groups" value="1" checked`)
+		if checked != tc.want {
+			t.Fatalf("checkbox checked=%v want=%v", checked, tc.want)
+		}
+	}
+	for _, role := range []string{"reader", "editor"} {
+		w := faceRequest(s, "POST", "/settings/photos/faces", role, url.Values{"reconcile_unnamed_groups": {"0"}})
+		if w.Code != http.StatusForbidden {
+			t.Fatalf("permissions %s: %d", role, w.Code)
+		}
+	}
+}

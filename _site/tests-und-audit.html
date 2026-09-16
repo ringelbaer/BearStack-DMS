@@ -724,6 +724,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#automatische-gruppenzusammenfuhrung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Automatische Gruppenzusammenführung
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
   <a href="#audit-log-in-bearstack" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -890,6 +901,17 @@
         
       </ul>
     </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#automatische-gruppenzusammenfuhrung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Automatische Gruppenzusammenführung
+      </span>
+    </span>
+  </a>
   
 </li>
       
@@ -1225,8 +1247,8 @@ Ladevorgänge dürfen ihn danach nicht erneut veröffentlichen.</p>
 <p>Der erste geprüfte Treffer bleibt sofort verfügbar. Weitere Zwischenstände werden
 höchstens alle 100 ms geprüft und ausgegeben; das vollständige Endergebnis folgt
 immer. Ein positiver Vorschlagsabstand wartet weiterhin auf das gesamte Ranking,
-einschließlich eines zweitbesten Kandidaten unterhalb der Ähnlichkeitsschwelle.
-Im Browser löst nur der neueste wartende Stand pro Bildschirmaktualisierung einen
+einschließlich eines zweitbesten Kandidaten unterhalb der Ähnlichkeitsschwelle.</p>
+<p>Im Browser löst nur der neueste wartende Stand pro Bildschirmaktualisierung einen
 Neuaufbau der Liste aus. Endergebnis, Fehler und Abbruch verwerfen ausstehende
 Zwischenstände sofort. Das funktioniert auch bei einem pausierten Browser-Frame.</p>
 <p>Neue Messung auf derselben Maschine und mit denselben synthetischen Beständen:</p>
@@ -1310,6 +1332,18 @@ Browser-Regressionen sichern den Ablauf ab. Dies ist eine PATCH-Optimierung inne
 der unveröffentlichten 0.50.0; VERSION und API-Schema bleiben unverändert, eine
 Migration ist nicht erforderlich. Die OpenAPI-Beschreibung dokumentiert die
 Zwischenstände und das Verhalten bei konkurrierenden Änderungen.</p>
+<h2 id="automatische-gruppenzusammenfuhrung">Automatische Gruppenzusammenführung<a class="headerlink" href="#automatische-gruppenzusammenfuhrung" title="Permanent link">&para;</a></h2>
+<p>Die optionale automatische Gruppenzusammenführung (0.56.0) ist durch Regressionen
+für benannten Vorrang, unbenannten Fallback, beide strengen Grenzwerte, gruppierte
+Referenzwerte und ungeeignete Zielgruppen abgesichert. Weitere Fälle prüfen
+geschützte Gruppenmitglieder, gemeinsame Fotos, XMP-Konflikte, ersetzte/fehlende
+Originale, geänderte Sidecars, dauerhafte Ablehnungen, Tag-Übernahme und Wiederaufnahme
+nach Neustart. Ein injizierter Schreibfehler in einer Gruppe mit 2.000 Gesichtern
+prüft, dass weder Teilzuordnungen, Tags noch Fortschritt gespeichert werden.
+Ein Familienkonflikt prüft den Rollback bereits begonnener Beziehungsübernahmen.
+Die Migration von Foto-Schema 33 auf 34, ausgeschalteter Standard, Persistenz,
+ältere Formulare, ungültige/mehrfache Werte, Rechte und Checkbox-Speicherung im
+Browser sind abgedeckt.</p>
 <h2 id="audit-log-in-bearstack">Audit-Log in BearStack<a class="headerlink" href="#audit-log-in-bearstack" title="Permanent link">&para;</a></h2>
 <p>BearStack protokolliert schreibende Aktionen im Laufzeit-Audit-Log. Erfasst werden unter anderem Zeitpunkt, Benutzer, HTTP-Methode, Pfad, Route, Aktion, Ziel, Status, Remote-Adresse und User-Agent. Dazu gehören auch das Anlegen, Ändern, Aktivieren, Deaktivieren und Löschen von Benutzern sowie Passwortänderungen; Passwörter und Hashes werden niemals übernommen. Das Log ist über <code>/log</code> erreichbar und erfordert die Permission <code>system.audit</code>; die Rolle <code>admin</code> enthält diese Berechtigung.</p>
 <p>Das Audit-Log speichert Schreibmethoden wie <code>POST</code>, <code>PUT</code>, <code>PATCH</code> und <code>DELETE</code>. Handler können das Ziel genauer benennen, zum Beispiel ein Dokument, einen Tag, ein Feld oder einen Suchfavoriten. Einträge werden auf die letzten 30 Tage und zusätzlich auf höchstens 50.000 Datensätze begrenzt. Abgewiesene Kontoaktionen werden nur mit einem begrenzten In-Memory-Budget protokolliert, damit fehlerhafte oder anonyme Requests weder SQLite noch den Datenträger fluten können; erfolgreiche Kontoänderungen werden unabhängig davon erfasst.</p>
@@ -1374,7 +1408,7 @@ Zwischenstände und das Verhalten bei konkurrierenden Änderungen.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.55.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.56.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

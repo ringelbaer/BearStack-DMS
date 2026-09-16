@@ -297,6 +297,17 @@ func (s *Server) handleSaveFaceSettings(w http.ResponseWriter, r *http.Request) 
 			*field.value = value
 		}
 	}
+	if values, present := r.PostForm["reconcile_unnamed_groups"]; present {
+		// A native checkbox submits the hidden zero followed by the checked one.
+		if len(values) == 1 && (values[0] == "0" || values[0] == "1") {
+			settings.Thresholds.ReconcileUnnamedGroups = values[0] == "1"
+		} else if len(values) == 2 && values[0] == "0" && values[1] == "1" {
+			settings.Thresholds.ReconcileUnnamedGroups = true
+		} else {
+			s.faceError(w, r, errors.New("ungültige Einstellung für automatische Gruppenzusammenführungen"))
+			return
+		}
+	}
 	if err := settings.Thresholds.Validate(); err != nil {
 		s.faceError(w, r, err)
 		return
