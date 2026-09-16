@@ -25,6 +25,7 @@
       if (pending.has(id)) card.setAttribute("aria-busy", "true");
       else card.removeAttribute("aria-busy");
       card.querySelectorAll("button").forEach(function (button) {
+        if (button.hasAttribute("data-photo-item")) return;
         var side = button.closest("[data-merge-side]");
         button.disabled = pending.has(id) || uncertain.has(id) || !!(side && side.dataset.handled);
       });
@@ -42,6 +43,8 @@
     if (!updated) throw new Error("Vorschläge konnten nicht aktualisiert werden. Bitte prüfe deine Anmeldung.");
     return updated;
   }
+
+  function galleryChanged() { list.dispatchEvent(new Event("photo-gallery-updated")); }
 
   function applySuggestions(updated) {
     removeFallbacks(updated);
@@ -76,6 +79,7 @@
     });
     hint.hidden = !list.querySelector("[data-merge-id]");
     refreshButton.hidden = true;
+    galleryChanged();
   }
 
   async function refresh() {
@@ -166,7 +170,7 @@
     if (pending.has(id) || uncertain.has(id)) return;
     if (button.hasAttribute("data-merge-dismiss")) {
       if (!card.dataset.individual) return;
-      dismissed.add(pairKey(card)); card.remove(); revision++; refresh(); return;
+      dismissed.add(pairKey(card)); card.remove(); galleryChanged(); revision++; refresh(); return;
     }
     var side = button.closest("[data-merge-side]");
     if (side.dataset.handled || side.dataset.sideName) return;
@@ -218,7 +222,7 @@
         var result = await response.json();
         if (!response.ok || result.ok !== true) throw new Error(result.error || "Die Entscheidung konnte nicht gespeichert werden.");
         message = action.endsWith("/reject") ? "Die Gruppen bleiben getrennt." : "Personengruppen zusammengeführt.";
-        card.remove();
+        card.remove(); galleryChanged();
       }
       notify(message);
       refreshRequested = true;
@@ -379,7 +383,7 @@
         throw new Error("Speichern nicht bestätigt");
       }
       if (result.operation_id !== namingOperation || result.action !== "name_merge") throw new Error("Ungültige Quittung");
-      card.remove(); refreshRequested = true;
+      card.remove(); galleryChanged(); refreshRequested = true;
       notify("Personengruppen zusammengeführt und benannt/zugeordnet.");
       dialog.close();
     } catch (_) {

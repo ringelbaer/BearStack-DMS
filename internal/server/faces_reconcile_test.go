@@ -74,6 +74,15 @@ func mergeSuggestionServer(t *testing.T, named ...bool) (*Server, photos.FaceMer
 	if err != nil || len(suggestions) != 1 {
 		t.Fatalf("suggestions %+v %v", suggestions, err)
 	}
+	for _, item := range []struct {
+		id   int64
+		path string
+	}{{suggestions[0].SourceFaceID, suggestions[0].SourcePath}, {suggestions[0].TargetFaceID, suggestions[0].TargetPath}} {
+		face, err := s.photos.Face(ctx, item.id)
+		if err != nil || face.Path != item.path || item.path == "" {
+			t.Fatalf("suggestion photo path: %+v %v", item, err)
+		}
+	}
 	return s, suggestions[0]
 }
 
@@ -90,7 +99,7 @@ func TestFaceMergeSuggestionsHTTP(t *testing.T) {
 				if w.Code != want {
 					t.Fatalf("list %s: %d %s", user, w.Code, w.Body.String())
 				}
-				if want == 200 && (w.Header().Get("Cache-Control") != "private, no-store" || !strings.Contains(w.Body.String(), `"source_revision"`) || strings.Contains(w.Body.String(), "embedding")) {
+				if want == 200 && (w.Header().Get("Cache-Control") != "private, no-store" || !strings.Contains(w.Body.String(), `"source_revision"`) || strings.Contains(w.Body.String(), "embedding") || strings.Contains(w.Body.String(), "source_path")) {
 					t.Fatalf("list contract %s", w.Body.String())
 				}
 			}
@@ -100,6 +109,9 @@ func TestFaceMergeSuggestionsHTTP(t *testing.T) {
 			s.Handler().ServeHTTP(w, r)
 			if w.Code != 200 || !strings.Contains(w.Body.String(), "Getrennt lassen") || !strings.Contains(w.Body.String(), "Zusammenführen") {
 				t.Fatalf("HTML %d %s", w.Code, w.Body.String())
+			}
+			if !strings.Contains(w.Body.String(), `data-photo-path="`+suggestion.SourcePath+`"`) || !strings.Contains(w.Body.String(), `data-photo-path="`+suggestion.TargetPath+`"`) || !strings.Contains(w.Body.String(), `data-photo-lightbox`) || !strings.Contains(w.Body.String(), `>Fotos</span>`) {
+				t.Fatal("missing merge photo paths, folder captions or lightbox")
 			}
 			form := url.Values{"source_revision": {fmt.Sprint(suggestion.SourceRevision)}, "target_revision": {fmt.Sprint(suggestion.TargetRevision)}}
 			action, user, want := "accept", "editor", 200

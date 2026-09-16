@@ -23,7 +23,8 @@ test.beforeAll(async () => {
   root = await mkdtemp(path.join(os.tmpdir(), "bearstack-reconciliation-e2e-"));
   const photos = path.join(root, "photos");
   await mkdir(photos);
-  for (const name of ["a", "b", "c", "d"]) await writeFile(path.join(photos, `${name}.png`), portrait);
+  await mkdir(path.join(photos,"Urlaub & Familie"));
+  for (const name of ["Urlaub & Familie/a", "b", "c", "d"]) await writeFile(path.join(photos, `${name}.png`), portrait);
   service = http.createServer((request, response) => {
     if (request.headers.authorization !== `Bearer ${token}`) {
       response.writeHead(401).end();
@@ -106,10 +107,33 @@ test("individual actions affect only unnamed sides and retain the pair until hid
     await page.goto(baseURL + "/photos/people/merge-suggestions");
     const cards = page.locator(".face-merge-suggestion");
     await expect(cards).toHaveCount(2);
+    const lightbox=page.locator("[data-photo-lightbox]");
+    async function openPhoto(button) {
+      const photoPath=await button.getAttribute("data-photo-path");
+      await button.locator("img").click();
+      await expect(lightbox).toBeVisible();
+      await expect(page).toHaveURL(baseURL+"/photos/people/merge-suggestions");
+      await expect.poll(async()=>{
+        const src=await lightbox.locator("[data-photo-image]").getAttribute("src");
+        return src ? new URL(src,baseURL).searchParams.get("path") : null;
+      }).toBe(photoPath);
+      await expect.poll(()=>lightbox.locator("[data-photo-image]").evaluate(img=>img.complete && img.naturalWidth>0)).toBe(true);
+      await page.mouse.move(20,2);
+      await expect(lightbox).toHaveClass(/controls-visible/);
+      await lightbox.locator("[data-photo-close]").click();
+      await expect(button).toBeFocused();
+    }
+    await expect(cards.locator(".face-merge-folder").filter({hasText:"Urlaub & Familie"})).toHaveCount(1);
+    await expect(cards.locator(".face-merge-folder").filter({hasText:/^Fotos$/})).toHaveCount(3);
+    await openPhoto(cards.locator("[data-photo-item]").first());
+    const nameLink=cards.locator(".person-card > a").first();
+    const personHref=await nameLink.getAttribute("href");
+    await nameLink.click();await expect(page).toHaveURL(baseURL+personHref);
+    await page.goBack();await expect(cards).toHaveCount(2);
     const first=cards.filter({ hasNotText: "Existing" }), second=cards.filter({ hasText: "Existing" });
     await expect(first.locator("[data-merge-ignore]")).toHaveCount(2);
     await expect(second.locator("[data-merge-ignore]")).toHaveCount(1);
-    await expect(second.locator('[data-side-name="Existing"] button')).toHaveCount(0);
+    await expect(second.locator('[data-side-name="Existing"] .face-merge-side-actions button')).toHaveCount(0);
     for (const width of [320,390,1440]) {
       await page.setViewportSize({ width, height: 900 });
       for (const button of await cards.locator("button:visible").all()) {
@@ -169,6 +193,7 @@ test("individual actions affect only unnamed sides and retain the pair until hid
     await expect(otherSide.locator("[data-merge-side-name]")).toBeHidden();
     await first.getByRole("button", {name:"Ausblenden",exact:true}).click();
     await expect(cards).toHaveCount(1);
+    await openPhoto(second.locator("[data-photo-item]").last());
     const remaining=second.locator('[data-side-name=""]');
     await remaining.locator("[data-merge-side-name]").click();
     await dialog.getByRole("combobox").fill("Ada");

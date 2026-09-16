@@ -33,8 +33,15 @@ func parseTemplates() (*template.Template, error) {
 		return nil, err
 	}
 	funcs := template.FuncMap{
-		"photoDisplayPath":       photos.MediaDisplayPath,
-		"photoFilename":          path.Base,
+		"photoDisplayPath": photos.MediaDisplayPath,
+		"photoFilename":    path.Base,
+		"photoParentName": func(value string) string {
+			parent := path.Dir(value)
+			if parent == "." {
+				return "Fotos"
+			}
+			return path.Base(parent)
+		},
 		"prevPage":               func(p int) int { return max(1, p-1) },
 		"nextPage":               func(p int) int { return p + 1 },
 		"formatBytes":            formatBytes,

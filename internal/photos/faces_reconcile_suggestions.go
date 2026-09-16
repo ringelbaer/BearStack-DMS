@@ -11,6 +11,8 @@ import (
 
 // Score describes the best reference match for the group, not a probability.
 type FaceMergeSuggestion struct {
+	SourcePath     string  `json:"-"`
+	TargetPath     string  `json:"-"`
 	ID             int64   `json:"id"`
 	SourceID       int64   `json:"source_id"`
 	TargetID       int64   `json:"target_id"`
@@ -78,7 +80,7 @@ func cacheFaceMergeSuggestion(ctx context.Context, tx *sql.Tx, item faceSuggesti
 	return !exists && err == nil, err
 }
 
-const faceMergeSuggestionSelect = `SELECT s.id,s.source_id,s.target_id,s.source_revision,s.target_revision,s.source_face_id,s.target_face_id,sp.name,tp.name,s.score
+const faceMergeSuggestionSelect = `SELECT s.id,s.source_id,s.target_id,s.source_revision,s.target_revision,s.source_face_id,s.target_face_id,sp.name,tp.name,s.score,sf.path,tf.path
  FROM photo_face_merge_suggestions s JOIN photo_people sp ON sp.id=s.source_id JOIN photo_people tp ON tp.id=s.target_id
  JOIN photo_person_revisions sr ON sr.person_id=s.source_id AND sr.revision=s.source_revision
  JOIN photo_person_revisions tr ON tr.person_id=s.target_id AND tr.revision=s.target_revision
@@ -89,7 +91,7 @@ const faceMergeSuggestionSelect = `SELECT s.id,s.source_id,s.target_id,s.source_
 
 func scanFaceMergeSuggestion(row interface{ Scan(...any) error }) (FaceMergeSuggestion, error) {
 	var s FaceMergeSuggestion
-	err := row.Scan(&s.ID, &s.SourceID, &s.TargetID, &s.SourceRevision, &s.TargetRevision, &s.SourceFaceID, &s.TargetFaceID, &s.SourceName, &s.TargetName, &s.Score)
+	err := row.Scan(&s.ID, &s.SourceID, &s.TargetID, &s.SourceRevision, &s.TargetRevision, &s.SourceFaceID, &s.TargetFaceID, &s.SourceName, &s.TargetName, &s.Score, &s.SourcePath, &s.TargetPath)
 	return s, err
 }
 

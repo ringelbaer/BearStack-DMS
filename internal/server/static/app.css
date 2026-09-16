@@ -3469,6 +3469,8 @@ label span {
 .face-merge-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; margin-bottom: 1rem; }
 .face-merge-pair .person-card { min-width: 0; overflow-wrap: anywhere; }
 .face-merge-side { min-width: 0; }
+.face-merge-folder { max-width: 100%; overflow-wrap: anywhere; font-size: .8rem; }
+.face-merge-pair .person-photo-button { width: 100%; min-height: 44px; padding: 0; }
 .face-merge-side-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 .face-merge-side-actions button { min-height: 44px; min-width: 44px; padding: 8px; }
 .face-merge-side-actions [data-merge-ignore] { flex: 1 1 90px; }

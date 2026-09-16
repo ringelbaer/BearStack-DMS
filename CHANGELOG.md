@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.61.2 – in Entwicklung
+
+- Web-Zusammenführungsvorschläge zeigen den Ordnernamen unter jedem Vergleichsbild. Bilder öffnen die bestehende Foto-Lightbox; ausschließlich der Personenname führt zur Personengruppe. Die Lightbox berücksichtigt auch nachgeladene oder entfernte Vorschläge.
+- Validierung: vollständige Go-Suite, JavaScript-/DOM-Prüfungen, vier Chromium-Browserszenarien und Website-Build erfolgreich. Regressionen prüfen Foto-/Namensklicks, Ordnernamen mit Sonderzeichen, Fokus-Rückkehr, aktualisierte Vorschläge und Darstellung bei 320, 390 und 1440 Pixeln.
+- Bildpfade werden aus den bereits verknüpften Gesichtseinträgen mitgelesen, ohne zusätzliche Abfrage je Bild. Bestehende Sichtbarkeitsprüfung bleibt erhalten. PATCH **0.61.2**, keine API-/Schemaänderung, Android unverändert; README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.61.1 / Android 0.15.1 – in Entwicklung
 
 - Android: Ein Tipp auf das geöffnete Foto blendet Bedienelemente und Systemleisten aus, der nächste wieder ein. Das Foto behält Größe und Position; Wischen und Pinch-Zoom bleiben unabhängig davon nutzbar. Der sichtbare Umschalter „Vergrößern / Ganzes Foto“ entfällt, zugängliche Zoom-Aktionen bleiben erhalten.

@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.61.1** · Android-App: **0.15.1**.
+Aktuelle Version: **0.61.2** · Android-App: **0.15.1**.
+
+Unter **Ähnliche Gesichter** zeigt ab **0.61.2** jedes Vergleichsbild seinen Ordnernamen. Ein Klick aufs Bild öffnet das vollständige Foto in der Lightbox; nur der Personenname öffnet die Personengruppe.
 
 Android **0.15.1** blendet im geöffneten Foto mit einem Tipp alle Bedienelemente aus und mit dem nächsten wieder ein. Zoomen erfolgt per Zwei-Finger-Geste; der zusätzliche Zoom-Umschalter entfällt. Personen-, Kategorie- und Ordnernamen bleiben bereits während des Ladens im Titel sichtbar, statt kurz interne Pfade anzuzeigen.
 
