@@ -58,7 +58,7 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
     }
     Scaffold(topBar={
         Column {
-            TopAppBar(title={ Text(if(state.query.path.isBlank()) stringResource(R.string.app_name) else state.name.ifBlank { state.query.path.substringAfterLast('/') },
+            TopAppBar(title={ Text(if(state.query.path.isBlank()) stringResource(R.string.app_name) else state.name.ifBlank { text(photoFolderTitle(state.query.path)) },
                 maxLines=1,overflow=TextOverflow.Ellipsis) },navigationIcon={
                 if(state.query.path.isNotBlank()) IconButton(onClick={controller.open(state.query.copy(path=state.parent))}) {
                     Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_back))
@@ -203,3 +203,13 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
 internal fun photoDateLabel(date: String, locale: Locale): String = runCatching {
     OffsetDateTime.parse(date).toLocalDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale))
 }.getOrDefault(date.take(10))
+
+// Virtual paths are routing keys, never user-facing labels. A name from the
+// tapped tile or a previous visit wins; deep links use translated placeholders.
+internal fun photoFolderTitle(path: String): UiText = when {
+    path == ".people" -> UiText(R.string.photos_people_folder)
+    path == ".people/all" -> UiText(R.string.photos_all_people)
+    path.startsWith(".people/f-") && path.count {it=='/'} == 1 -> UiText(R.string.photos_directory_people)
+    path.startsWith(".people/") -> UiText(R.string.photos_loading)
+    else -> UiText(R.string.photos_folder_name, path.substringAfterLast('/'))
+}

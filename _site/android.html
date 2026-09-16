@@ -612,6 +612,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#foto-ohne-bedienelemente-ansehen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Foto ohne Bedienelemente ansehen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#zu-einem-datum-springen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1064,6 +1075,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#foto-ohne-bedienelemente-ansehen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Foto ohne Bedienelemente ansehen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#zu-einem-datum-springen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1274,7 +1296,7 @@
 
 
 <h1 id="bearstack-fotos-fur-android">BearStack Fotos für Android<a class="headerlink" href="#bearstack-fotos-fur-android" title="Permanent link">&para;</a></h1>
-<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.15.0</strong> (<code>versionCode 31</code>). Die Servergalerie benötigt
+<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.15.1</strong> (<code>versionCode 32</code>). Die Servergalerie benötigt
 <strong>BearStack 0.50.0</strong>, ein aktiviertes Fotomodul und <code>photos.read</code>. Personenverwaltung
 benötigt zusätzlich <code>photos.edit</code>; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.</p>
@@ -1283,7 +1305,11 @@ beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich 
 <p>Ab App <strong>0.13.0</strong> mit BearStack <strong>0.53.0</strong> erscheint unter <strong>Ordner</strong> die virtuelle
 Kachel <strong>Personen</strong>. <strong>Alle</strong> und die belegten Foto-Tags führen zu Personengruppen,
 eine Person zu ihren nach Datum gruppierten Fotos. Zurück führt zum jeweiligen
-übergeordneten Ordner; verständliche Personen- und Tagnamen stehen im Titel.</p>
+übergeordneten Ordner; verständliche Personen- und Tagnamen stehen im Titel.
+Ab App <strong>0.15.1</strong> steht der bekannte Name schon während des Ladens dort, auch nach
+Sortierwechseln und beim Zurückgehen. Unbekannte virtuelle Ziele zeigen eine
+verständliche Ladebeschriftung statt <code>.people</code>, <code>all</code>, kodierten Tags oder Personen-IDs.
+Die App merkt sich höchstens 256 Titel je Verbindung; zusätzliche Anfragen entfallen.</p>
 <p>Ab App <strong>0.15.0</strong> öffnet das separate Symbol <strong>Sortieren</strong> neben <strong>Weitere Optionen</strong>
 ein eigenes Menü mit markierter aktiver Sortierung. Im Fotostream <strong>Fotos</strong> und in
 Personengalerien stehen nur Datumssortierungen zur Wahl; normale Fotoordner bieten
@@ -1454,6 +1480,15 @@ Die kompakte, abgerundete Navigation verbindet Fotos, Ordner und Suche. Das Rast
 zeigt auf breiten Displays sechs statt drei Fotos pro Reihe. Bei großer Schrift
 erhalten Ordner im Hochformat die gesamte Breite für ihre Beschriftung. Das
 adaptive App-Symbol bleibt auch beim runden Android-Beschnitt vollständig sichtbar.</p>
+<h3 id="foto-ohne-bedienelemente-ansehen">Foto ohne Bedienelemente ansehen<a class="headerlink" href="#foto-ohne-bedienelemente-ansehen" title="Permanent link">&para;</a></h3>
+<p>Ab App <strong>0.15.1</strong> blendet ein Tipp auf ein geöffnetes Foto die oberen und unteren
+Bedienleisten sowie die Systemleisten aus. Ein weiterer Tipp blendet sie wieder ein.
+Das Bild behält dabei seine Größe und Position. Wischen wechselt weiterhin das Foto;
+ausgeblendete Leisten bleiben auch beim Bildwechsel verborgen. Zwei Finger vergrößern
+oder verkleinern das Foto; Verschieben im vergrößerten Bild schaltet keine Leisten um.
+Der bisherige Button <strong>Vergrößern / Ganzes Foto</strong> entfällt. TalkBack bietet weiterhin
+Zoom-/Zurücksetzen-Aktionen sowie Ein-/Ausblenden der Bedienelemente am Foto.
+Das gilt für Serverfotos, lokale Bilder und Fotos aus der Kartenauswahl.</p>
 <h3 id="zu-einem-datum-springen">Zu einem Datum springen<a class="headerlink" href="#zu-einem-datum-springen" title="Permanent link">&para;</a></h3>
 <p>Im Tab <strong>Fotos</strong> öffnet das <strong>Kalendersymbol links neben dem Dreipunkt-Menü</strong> einen
 Datumswähler. Er startet beim gerade sichtbaren Datum. Du kannst einen Tag im Kalender
@@ -1682,7 +1717,7 @@ adaptiven Icon liegt jetzt innerhalb des runden Beschnitts.</p>
 <p>Während des Speicherns und bei einer ungeklärten Antwort sind weitere Entscheidungen gesperrt. „Offene Aktion prüfen“ klärt die dauerhaft gespeicherte Aktionsquittung, auch nach einem App-Neustart. Konflikte durch andere Bearbeitungen verlangen eine neue Prüfung. Schlägt erst das Nachladen fehl, wird ausschließlich der nächste Vorschlag neu geladen. Zurück führt zum Benennen; bei unveränderten Gruppen bleibt auch die bisherige Bildseite erhalten. Diese Entscheidungen erhöhen nicht die Statistik für erstmaliges Benennen/Zuordnen.</p>
 <p>Der Server liest höchstens 20 gespeicherte Kandidaten und liefert nur ein Paar mit je einem Vergleichsgesicht. Der Paarabruf selbst startet keine Vektorsuche; bei zwei unbenannten Gruppen startet die App anschließend den gemeinsamen Lupenabgleich zuerst anhand der ersten Gruppe und bei leerem Endergebnis anschließend der zweiten. Auch Vergleichsgesichter weit hinten in großen Gruppen werden über den Gesichts-ID-Index abgerufen. Die bestehende Originalvorschau mit maximal 2048 Pixeln, Drei-Minuten-/16-MiB-Speichercache und seriellem WLAN-Vorladen wird wiederverwendet. Auf älteren Servern zeigt die App einen Hinweis auf BearStack 0.49.0; Benennen und Personenverwaltung bleiben verfügbar.</p>
 <h2 id="personen-verwalten">Personen verwalten<a class="headerlink" href="#personen-verwalten" title="Permanent link">&para;</a></h2>
-<p>Ab App-Version <strong>0.6.0</strong> öffnet <strong>Menü → Personen</strong> die Liste aller benannten Personen mit Portrait und Gesichtsanzahl. Dieser Bereich benötigt <strong>BearStack 0.43.0</strong>; auf älteren Servern bleibt das bisherige Benennen verfügbar. Die Liste lädt jeweils höchstens 20 Personen in stabiler ID-Reihenfolge. Ab App <strong>0.7.0</strong> lädt die Liste beim Scrollen automatisch weitere Personen nach; „Aktualisieren“ übernimmt neu hinzugekommene Personen. Das Suchfeld durchsucht nach 250 ms Eingabepause den gesamten Serverbestand nach Namen, unabhängig von bereits geladenen Einträgen. Groß-/Kleinschreibung und deutsche Umlautschreibweisen werden tolerant behandelt. Ein Suchwechsel beginnt eine neue Trefferliste; verspätete Antworten ersetzen keine neuere Suche. Die Textsuche benötigt <strong>BearStack 0.45.0</strong>; ältere Server zeigen einen entsprechenden Hinweis.</p>
+<p>Ab App-Version <strong>0.6.0</strong> öffnet <strong>Menü → Personen verwalten</strong> die Liste aller benannten Personen mit Portrait und Gesichtsanzahl. Dieser Bereich benötigt <strong>BearStack 0.43.0</strong>; auf älteren Servern bleibt das bisherige Benennen verfügbar. Die Liste lädt jeweils höchstens 20 Personen in stabiler ID-Reihenfolge. Ab App <strong>0.7.0</strong> lädt die Liste beim Scrollen automatisch weitere Personen nach; „Aktualisieren“ übernimmt neu hinzugekommene Personen. Das Suchfeld durchsucht nach 250 ms Eingabepause den gesamten Serverbestand nach Namen, unabhängig von bereits geladenen Einträgen. Groß-/Kleinschreibung und deutsche Umlautschreibweisen werden tolerant behandelt. Ein Suchwechsel beginnt eine neue Trefferliste; verspätete Antworten ersetzen keine neuere Suche. Die Textsuche benötigt <strong>BearStack 0.45.0</strong>; ältere Server zeigen einen entsprechenden Hinweis.</p>
 <p>Eine Person antippen, um ihre Portraits im fortlaufenden Raster zu öffnen. Ab App <strong>0.7.1</strong> ist das „×“ zum Entfernen einer Zuordnung im Personenbereich kleiner; die Touchfläche bleibt mindestens 48 dp groß. Ab App 0.7.0 werden beim Scrollen automatisch weitere Bilder ergänzt; Seitenknöpfe entfallen im Personenbereich:</p>
 <ul>
 <li><strong>Person umbenennen:</strong> Der neue Name gilt für die ganze Person. Existiert er bereits, muss das separate Speichern ausdrücklich bestätigt werden; Personen werden dadurch nicht zusammengeführt.</li>
@@ -1848,7 +1883,7 @@ Fehler werden zusätzlich anhand der XML-Ergebnisse zurückgewiesen.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.61.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.61.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

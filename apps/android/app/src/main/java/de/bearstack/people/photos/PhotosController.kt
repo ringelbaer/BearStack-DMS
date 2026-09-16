@@ -46,6 +46,15 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
         val prefix=when(section) {"media" -> "photo:"; "folders" -> "folder:"; else -> "blog:"}
         return visibleKeys.filter {it.startsWith(prefix)}.mapTo(HashSet()) {it.removePrefix(prefix)}
     }
+    // Keep just recently seen titles, scoped to this connection. No additional
+    // requests are needed for a forward tap, sorting, retry or back navigation.
+    private val folderNames = object : LinkedHashMap<String,String>(256, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String,String>?): Boolean = size > 256
+    }
+    private fun rememberNames(page: PhotoPage) {
+        page.folders.forEach { if(it.name.isNotBlank()) folderNames[it.path]=it.name }
+        if(page.name.isNotBlank()) folderNames[page.path]=page.name
+    }
     private var generation = 0L
     private var request: Job? = null
     private var dateRequest: Job? = null
@@ -55,20 +64,27 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     init { open(initialQuery) }
     fun open(query: PhotoQuery, tab: Int = state.value.tab, frame: Boolean = false) {
         val resolvedQuery = normalizePhotoSort(query, tab, session.peopleCountSort)
+        val current = state.value
+        val name = current.name.takeIf {current.query.path==resolvedQuery.path && it.isNotBlank()}
+            ?: current.folders.firstOrNull {it.path==resolvedQuery.path}?.name
+            ?: folderNames[resolvedQuery.path].orEmpty()
         generation++
         request?.cancel(); dateRequest?.cancel(); detail?.cancel(); additional.values.forEach { it.cancel() }; additional.clear()
         gridPosition=null;visibleKeys=emptySet()
-        mutable.value = PhotosState(query=resolvedQuery,tab=tab,frame=frame,loading=true,parent=resolvedQuery.path.substringBeforeLast('/',""))
+        mutable.value = PhotosState(query=resolvedQuery,tab=tab,frame=frame,loading=true,name=name,parent=resolvedQuery.path.substringBeforeLast('/',""))
         val expected = generation
         request = scope.launch {
             try {
                 val page = service.browse(resolvedQuery)
                 validate(page,1)
-                if(generation == expected) mutable.value = PhotosState(query=resolvedQuery,tab=tab,frame=frame,
+                if(generation == expected) {
+                    rememberNames(page)
+                    mutable.value = PhotosState(query=resolvedQuery,tab=tab,frame=frame,
                     selected=if(frame) page.media.firstOrNull()?.path else null,
                     mediaPages=PhotoPages.media().add(1,page.media,page.hasNext),
                     folderPages=PhotoPages.folders().add(1,page.folders,page.folderHasNext),
-                    blogPages=PhotoPages.blogs().add(1,page.blogs,page.blogHasNext),total=page.total,name=page.name,parent=page.parent,peoplePath=page.peoplePath)
+                    blogPages=PhotoPages.blogs().add(1,page.blogs,page.blogHasNext),total=page.total,name=page.name.ifBlank {name},parent=page.parent,peoplePath=page.peoplePath)
+                }
             } catch(e: CancellationException) { throw e }
             catch(e: Exception) { if(generation==expected) mutable.update { it.copy(loading=false,error=failureText(e)) } }
         }
@@ -131,6 +147,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
                 val page = service.browse(current.query,pageNumber,section)
                 validate(page,pageNumber)
                 if(generation!=expected) return@launch
+                rememberNames(page)
                 mutable.update {
                     when(section) {
                         "media" -> it.copy(mediaPages=it.mediaPages.add(pageNumber,page.media,page.hasNext,reset,protectedKeys(it,section)),total=page.total)
@@ -213,6 +230,6 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     }
     fun close() {
         generation++;scope.cancel();additional.clear();request=null;detail=null
-        frameReturn=null;gridPosition=null;visibleKeys=emptySet();mutable.value=PhotosState()
+        frameReturn=null;gridPosition=null;visibleKeys=emptySet();folderNames.clear();mutable.value=PhotosState()
     }
 }

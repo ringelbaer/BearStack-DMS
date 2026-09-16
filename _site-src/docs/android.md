@@ -1,6 +1,6 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.15.0** (`versionCode 31`). Die Servergalerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.15.1** (`versionCode 32`). Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
@@ -14,6 +14,10 @@ Ab App **0.13.0** mit BearStack **0.53.0** erscheint unter **Ordner** die virtue
 Kachel **Personen**. **Alle** und die belegten Foto-Tags führen zu Personengruppen,
 eine Person zu ihren nach Datum gruppierten Fotos. Zurück führt zum jeweiligen
 übergeordneten Ordner; verständliche Personen- und Tagnamen stehen im Titel.
+Ab App **0.15.1** steht der bekannte Name schon während des Ladens dort, auch nach
+Sortierwechseln und beim Zurückgehen. Unbekannte virtuelle Ziele zeigen eine
+verständliche Ladebeschriftung statt `.people`, `all`, kodierten Tags oder Personen-IDs.
+Die App merkt sich höchstens 256 Titel je Verbindung; zusätzliche Anfragen entfallen.
 
 Ab App **0.15.0** öffnet das separate Symbol **Sortieren** neben **Weitere Optionen**
 ein eigenes Menü mit markierter aktiver Sortierung. Im Fotostream **Fotos** und in
@@ -217,6 +221,17 @@ Die kompakte, abgerundete Navigation verbindet Fotos, Ordner und Suche. Das Rast
 zeigt auf breiten Displays sechs statt drei Fotos pro Reihe. Bei großer Schrift
 erhalten Ordner im Hochformat die gesamte Breite für ihre Beschriftung. Das
 adaptive App-Symbol bleibt auch beim runden Android-Beschnitt vollständig sichtbar.
+
+### Foto ohne Bedienelemente ansehen
+
+Ab App **0.15.1** blendet ein Tipp auf ein geöffnetes Foto die oberen und unteren
+Bedienleisten sowie die Systemleisten aus. Ein weiterer Tipp blendet sie wieder ein.
+Das Bild behält dabei seine Größe und Position. Wischen wechselt weiterhin das Foto;
+ausgeblendete Leisten bleiben auch beim Bildwechsel verborgen. Zwei Finger vergrößern
+oder verkleinern das Foto; Verschieben im vergrößerten Bild schaltet keine Leisten um.
+Der bisherige Button **Vergrößern / Ganzes Foto** entfällt. TalkBack bietet weiterhin
+Zoom-/Zurücksetzen-Aktionen sowie Ein-/Ausblenden der Bedienelemente am Foto.
+Das gilt für Serverfotos, lokale Bilder und Fotos aus der Kartenauswahl.
 
 ### Zu einem Datum springen
 
@@ -502,7 +517,7 @@ Der Server liest höchstens 20 gespeicherte Kandidaten und liefert nur ein Paar 
 
 ## Personen verwalten
 
-Ab App-Version **0.6.0** öffnet **Menü → Personen** die Liste aller benannten Personen mit Portrait und Gesichtsanzahl. Dieser Bereich benötigt **BearStack 0.43.0**; auf älteren Servern bleibt das bisherige Benennen verfügbar. Die Liste lädt jeweils höchstens 20 Personen in stabiler ID-Reihenfolge. Ab App **0.7.0** lädt die Liste beim Scrollen automatisch weitere Personen nach; „Aktualisieren“ übernimmt neu hinzugekommene Personen. Das Suchfeld durchsucht nach 250 ms Eingabepause den gesamten Serverbestand nach Namen, unabhängig von bereits geladenen Einträgen. Groß-/Kleinschreibung und deutsche Umlautschreibweisen werden tolerant behandelt. Ein Suchwechsel beginnt eine neue Trefferliste; verspätete Antworten ersetzen keine neuere Suche. Die Textsuche benötigt **BearStack 0.45.0**; ältere Server zeigen einen entsprechenden Hinweis.
+Ab App-Version **0.6.0** öffnet **Menü → Personen verwalten** die Liste aller benannten Personen mit Portrait und Gesichtsanzahl. Dieser Bereich benötigt **BearStack 0.43.0**; auf älteren Servern bleibt das bisherige Benennen verfügbar. Die Liste lädt jeweils höchstens 20 Personen in stabiler ID-Reihenfolge. Ab App **0.7.0** lädt die Liste beim Scrollen automatisch weitere Personen nach; „Aktualisieren“ übernimmt neu hinzugekommene Personen. Das Suchfeld durchsucht nach 250 ms Eingabepause den gesamten Serverbestand nach Namen, unabhängig von bereits geladenen Einträgen. Groß-/Kleinschreibung und deutsche Umlautschreibweisen werden tolerant behandelt. Ein Suchwechsel beginnt eine neue Trefferliste; verspätete Antworten ersetzen keine neuere Suche. Die Textsuche benötigt **BearStack 0.45.0**; ältere Server zeigen einen entsprechenden Hinweis.
 
 Eine Person antippen, um ihre Portraits im fortlaufenden Raster zu öffnen. Ab App **0.7.1** ist das „×“ zum Entfernen einer Zuordnung im Personenbereich kleiner; die Touchfläche bleibt mindestens 48 dp groß. Ab App 0.7.0 werden beim Scrollen automatisch weitere Bilder ergänzt; Seitenknöpfe entfallen im Personenbereich:
 

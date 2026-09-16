@@ -11,6 +11,8 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
 import coil.ImageLoader
@@ -25,7 +27,7 @@ import java.util.Locale
 
 class PhotosScreenTest {
     @get:Rule val compose=createComposeRule()
-    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, directoryPeople: Boolean = false, peopleCountSort: Boolean = true, test: (PhotosController,PhotosService)->Unit) {
+    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, directoryPeople: Boolean = false, peopleCountSort: Boolean = true, beforeBrowse: suspend (PhotoQuery)->Unit = {}, test: (PhotosController,PhotosService)->Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext
         val context=app.createConfigurationContext(Configuration(app.resources.configuration).apply {setLocale(locale)})
         val file=File(app.cacheDir,"gallery-test.jpg")
@@ -39,6 +41,7 @@ class PhotosScreenTest {
             var infoAttempts=0
             override suspend fun session()=PhotoSession("gallery-test",false,240,240,1280,2048,5,8,peopleCountSort)
             override suspend fun browse(query: PhotoQuery,page: Int,section: String): PhotoPage {
+                beforeBrowse(query)
                 if(directoryPeople && query.path.startsWith(".people/f-")) {
                     val leaf=query.path.endsWith("/1")
                     val folders=if(leaf) emptyList() else listOf(PhotoFolder(".people/f-SG9saWRheQ/1","Ada",null,1,false,0,listOf(photos[0].copy(faceId=1)),true))
@@ -50,10 +53,10 @@ class PhotosScreenTest {
                     val folders=when(query.path) {
                         "" -> listOf(PhotoFolder(".people","Personen",null,0,false,8,portraits,true))
                         ".people" -> listOf(PhotoFolder(".people/all","Alle",null,0,false,8,portraits,true),PhotoFolder(".people/t-ZmFtaWxpZQ","Familie",null,0,false,1,portraits.take(1),true))
-                        ".people/t-ZmFtaWxpZQ" -> listOf(PhotoFolder(".people/t-ZmFtaWxpZQ/1","Zoe",null,2,false,0,portraits.take(1),true))
+                        ".people/all", ".people/t-ZmFtaWxpZQ" -> listOf(PhotoFolder("${query.path}/1","Zoe",null,2,false,0,portraits.take(1),true))
                         else -> emptyList()
                     }
-                    val name=when(query.path) {".people" -> "Personen"; ".people/t-ZmFtaWxpZQ" -> "Familie"; else -> "Zoe"}
+                    val name=when(query.path) {".people" -> "Personen"; ".people/all" -> "Alle"; ".people/t-ZmFtaWxpZQ" -> "Familie"; else -> "Zoe"}
                     return PhotoPage(query.path,query.path.substringBeforeLast('/',""),1,if(folders.isEmpty()) 2 else 0,false,folders.size,false,false,
                         if(folders.isEmpty()) if(query.sort=="ascending_date") photos else photos.reversed() else emptyList(),folders,emptyList(),name)
                 }
@@ -92,6 +95,61 @@ class PhotosScreenTest {
             compose.waitUntil(10_000) {!controller.state.value.loading}
             test(controller,api)
         } finally {compose.runOnUiThread {controller.close();owner.cancel();images.shutdown()};file.delete()}
+    }
+    @Test fun peopleTitlesStayReadableThroughoutSlowForwardBackAndSortRequests() {
+        var gate=CompletableDeferred<Unit>()
+        screen(Locale.GERMAN,peopleFolders=true,beforeBrowse={if(it.path.isNotEmpty()) gate.await()}) {controller,_ ->
+            compose.onNodeWithText("Ordner").performClick()
+            fun loadingTitle(title: String, raw: String) {
+                compose.waitUntil {controller.state.value.loading}
+                compose.onNodeWithText(title).assertIsDisplayed()
+                compose.onNodeWithText(raw).assertDoesNotExist()
+                gate.complete(Unit)
+                compose.waitUntil { !controller.state.value.loading }
+                gate=CompletableDeferred()
+            }
+            compose.onNodeWithText("Personen").performClick();loadingTitle("Personen",".people")
+            compose.onNodeWithText("Alle").performClick();loadingTitle("Alle","all")
+            compose.onNodeWithText("Zoe").performClick();loadingTitle("Zoe","1")
+            compose.onNodeWithContentDescription("Sortieren").performClick()
+            compose.onNodeWithText("Datum: Älteste zuerst").performClick();loadingTitle("Zoe","1")
+            compose.onNodeWithContentDescription("Zurück").performClick();loadingTitle("Alle","all")
+            compose.onNodeWithContentDescription("Zurück").performClick();loadingTitle("Personen",".people")
+        }
+    }
+    @Test fun photoTapTogglesAllControlsWithoutInterferingWithZoomOrPaging()=screen(Locale.ENGLISH) {controller,_ ->
+        compose.onNodeWithContentDescription("first.jpg").performClick()
+        val photo=compose.onNodeWithTag("photo-viewer-image")
+        compose.waitUntil {photo.fetchSemanticsNode().config.getOrElse(SemanticsActions.CustomActions) {emptyList()}.isNotEmpty()}
+        compose.onNodeWithText("Zoom in").assertDoesNotExist()
+        compose.onNodeWithText("Fit photo").assertDoesNotExist()
+        val initialBounds=photo.fetchSemanticsNode().boundsInRoot
+        photo.performTouchInput {click(center)}
+        compose.onNodeWithContentDescription("Close").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Share").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Information").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Next photo").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Start slideshow").assertDoesNotExist()
+        assertEquals(initialBounds,photo.fetchSemanticsNode().boundsInRoot)
+        photo.performTouchInput {swipeLeft()}
+        compose.waitUntil {controller.state.value.selected=="second.jpg"}
+        compose.onNodeWithContentDescription("Close").assertDoesNotExist()
+        photo.performTouchInput {click(center)}
+        compose.onNodeWithContentDescription("Close").assertIsDisplayed()
+        compose.onNodeWithText("2 of 2").assertIsDisplayed()
+        photo.performTouchInput {pinch(start0=center-Offset(40f,0f),end0=center-Offset(120f,0f),start1=center+Offset(40f,0f),end1=center+Offset(120f,0f))}
+        compose.onNodeWithContentDescription("Close").assertIsDisplayed()
+        val actions=photo.fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        assertEquals("Fit photo",actions.single().label)
+        photo.performTouchInput {swipeRight()}
+        assertEquals("second.jpg",controller.state.value.selected)
+        // TalkBack keeps a zoom/reset action without an extra visible button.
+        compose.runOnIdle {assertTrue(actions.single().action())}
+        photo.performClick()
+        compose.onNodeWithContentDescription("Close").assertDoesNotExist()
+        photo.performClick()
+        compose.onNodeWithContentDescription("Close").assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription("second.jpg").assertIsDisplayed()
     }
     @Test fun sortingHasItsOwnMenuAndAdaptsToTheCurrentFolder()=screen(Locale.GERMAN,peopleFolders=true) {controller,_ ->
         compose.onNodeWithContentDescription("Weitere Optionen").performClick()

@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.61.1 / Android 0.15.1 – in Entwicklung
+
+- Android: Ein Tipp auf das geöffnete Foto blendet Bedienelemente und Systemleisten aus, der nächste wieder ein. Das Foto behält Größe und Position; Wischen und Pinch-Zoom bleiben unabhängig davon nutzbar. Der sichtbare Umschalter „Vergrößern / Ganzes Foto“ entfällt, zugängliche Zoom-Aktionen bleiben erhalten.
+- Android: Titel von Personen, Kategorien und Ordnern stehen bereits während des Ladens bereit, einschließlich Sortieren, Fehlerwiederholung und Zurücknavigation. Maximal 256 Namen je Verbindung, keine zusätzlichen Serveranfragen. Unbekannte virtuelle Ziele zeigen verständliche Platzhalter statt interner Pfade oder IDs.
+- Validierung: 93 JVM-Tests und 34 Emulatorprüfungen erfolgreich, darunter Tippen, Pinch-Zoom, Wischen, langsame Vor-/Zurücknavigation, lokale Fotos, Personenverwaltung, Nachladen und Videowiedergabe. Android-Lint, Debug-/Test-APK, OpenAPI-/Versionstests und Website-Build erfolgreich.
+- Personenmenü: Bezeichnung „Personen verwalten“ übernommen. PATCH **0.61.1**, Android **0.15.1** (`versionCode 32`); keine API- oder Schemaänderung. README und Website aktualisiert, OpenAPI-Version synchronisiert.
+
 ### BearStack 0.61.0 – in Entwicklung
 
 - Personenstammdaten enthalten jetzt auch Mutter und Vater. Ein gemeinsamer Speichervorgang mit Versionsprüfung umfasst Eltern, Lebensdaten, Geschwister und Ehen. Der separate Elternbereich im Mehr-Menü entfällt.

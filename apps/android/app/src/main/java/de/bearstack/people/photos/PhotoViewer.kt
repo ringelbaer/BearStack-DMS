@@ -3,6 +3,10 @@ package de.bearstack.people.photos
 import de.bearstack.people.text.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
@@ -22,6 +26,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
@@ -122,14 +127,14 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
     }
     Dialog(onDismissRequest=onClose,properties=DialogProperties(usePlatformDefaultWidth=false,decorFitsSystemWindows=false)) {
         de.bearstack.people.ui.BearStackTheme(dark=true) {
-            PlaybackWindow(frame,foreground && (playing || mediaPlayingPath==current.path))
+            PlaybackWindow(frame || !controls,foreground && (playing || mediaPlayingPath==current.path))
             Surface(Modifier.fillMaxSize(),color=Color.Black) {
-                Box(Modifier.fillMaxSize().then(if(frame) Modifier.clickable {controls=!controls} else Modifier.safeDrawingPadding())) {
+                Box(Modifier.fillMaxSize()) {
                     HorizontalPager(pager,key={photos[it].path},userScrollEnabled=!zoomed,
-                        modifier=Modifier.fillMaxSize().then(if(frame) Modifier else Modifier.padding(top=64.dp,bottom=64.dp))) { index ->
+                        modifier=Modifier.fillMaxSize()) { index ->
                         val photo=photos[index]
                         if(photo.type=="image") ZoomablePhoto(photo,controller,images,index==pager.currentPage,frame && settings.frameFill,
-                            showZoom=!frame,onReady={if(index==pager.currentPage) readyPath=if(it) photo.path else null}) {
+                            controlsVisible=controls,onTap={controls=!controls},onReady={if(index==pager.currentPage) readyPath=if(it) photo.path else null}) {
                                 if(index==pager.currentPage) zoomed=it
                             }
                         else if(index==pager.currentPage) {
@@ -141,7 +146,7 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                         } else PhotoThumbnail(photo,controller,images,controller.session.thumbnailSize,Modifier.fillMaxSize())
                     }
                     if(controls) {
-                        Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().then(if(frame) Modifier.safeDrawingPadding() else Modifier)
+                        Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().safeDrawingPadding()
                             .background(Color.Black.copy(alpha=.8f))) {
                             TopAppBar(title={Text(photoDateLabel(current.date,locale),style=MaterialTheme.typography.titleSmall,maxLines=2,overflow=TextOverflow.Ellipsis)},
                                 colors=TopAppBarDefaults.topAppBarColors(containerColor=Color.Transparent),navigationIcon={
@@ -161,7 +166,7 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                                 }
                             }
                         }
-                        Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().then(if(frame) Modifier.safeDrawingPadding() else Modifier)
+                        Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().safeDrawingPadding()
                             .background(Color.Black.copy(alpha=.8f)).padding(horizontal=12.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween,
                             verticalAlignment=Alignment.CenterVertically) {
                             IconButton(onClick={scope.launch {move(-1)}},enabled=!moving && pendingPath==null && !pager.isScrollInProgress && (currentIndex>0 || (!standalone && catalog.mediaPages.hasPrevious))) {
@@ -175,7 +180,7 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                                 Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_next),Modifier.rotate(180f))
                             }
                         }
-                    } else if(settings.frameCaptions) {
+                    } else if(frame && settings.frameCaptions) {
                         Surface(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(20.dp),color=Color.Black.copy(alpha=.6f)) {
                             Column(Modifier.padding(horizontal=16.dp,vertical=8.dp),horizontalAlignment=Alignment.CenterHorizontally) {
                                 Text(current.name,maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.titleSmall)
@@ -192,22 +197,25 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
     }
 }
 
-@Composable private fun PlaybackWindow(frame: Boolean, awake: Boolean) {
+@Composable private fun PlaybackWindow(fullscreen: Boolean, awake: Boolean) {
     val view=LocalView.current
     val window=(view.parent as? DialogWindowProvider)?.window
-    DisposableEffect(view,window,frame,awake) {
+    DisposableEffect(view,awake) {
         val previous=view.keepScreenOn
         view.keepScreenOn=awake
+        onDispose {view.keepScreenOn=previous}
+    }
+    DisposableEffect(view,window,fullscreen) {
         val insets=window?.let {WindowCompat.getInsetsController(it,view)}
-        if(frame) {
+        if(fullscreen) {
             insets?.systemBarsBehavior=WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             insets?.hide(WindowInsetsCompat.Type.systemBars())
         }
-        onDispose {view.keepScreenOn=previous;if(frame) insets?.show(WindowInsetsCompat.Type.systemBars())}
+        onDispose {if(fullscreen) insets?.show(WindowInsetsCompat.Type.systemBars())}
     }
 }
 
-@Composable private fun ZoomablePhoto(photo: Photo, controller: PhotosController, images: ImageLoader, active: Boolean, fill: Boolean, showZoom: Boolean, onReady: (Boolean)->Unit, onZoomed: (Boolean) -> Unit) {
+@Composable private fun ZoomablePhoto(photo: Photo, controller: PhotosController, images: ImageLoader, active: Boolean, fill: Boolean, controlsVisible: Boolean, onTap: () -> Unit, onReady: (Boolean)->Unit, onZoomed: (Boolean) -> Unit) {
     var zoom by remember(photo.path) { mutableFloatStateOf(1f) }
     var pan by remember(photo.path) { mutableStateOf(Offset.Zero) }
     var size by remember { mutableStateOf(IntSize.Zero) }
@@ -224,7 +232,13 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
     }
     val context=LocalContext.current
     val request=remember(photo.path,photo.version,attempt,controller,context) {photoPreviewRequest(context,photo,controller.service,controller.session)}
-    Box(Modifier.fillMaxSize().clipToBounds().onSizeChanged {size=it}.transformable(transform,canPan={zoom>1f}),contentAlignment=Alignment.Center) {
+    val zoomLabel=stringResource(if(zoom==1f) R.string.photos_zoom else R.string.photos_zoom_reset)
+    Box(Modifier.fillMaxSize().then(if(active) Modifier.testTag("photo-viewer-image") else Modifier).clipToBounds().onSizeChanged {size=it}.transformable(transform,canPan={zoom>1f})
+        .clickable(interactionSource=remember {MutableInteractionSource()},indication=null,
+            onClickLabel=stringResource(if(controlsVisible) R.string.photos_hide_controls else R.string.photos_show_controls),onClick=onTap)
+        .semantics {customActions=if(loading || failed) emptyList() else listOf(CustomAccessibilityAction(zoomLabel) {
+            zoom=if(zoom==1f) 2f else 1f;pan=Offset.Zero;onZoomed(zoom>1f);true
+        })},contentAlignment=Alignment.Center) {
         AsyncImage(request,stringResource(R.string.photos_original),imageLoader=images,contentScale=if(fill) ContentScale.Crop else ContentScale.Fit,
             onLoading={loading=true;failed=false},onSuccess={loading=false},onError={loading=false;failed=true},
             modifier=Modifier.fillMaxSize().graphicsLayer {scaleX=zoom;scaleY=zoom;translationX=pan.x;translationY=pan.y})
@@ -232,10 +246,6 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
         if(failed) Column(horizontalAlignment=Alignment.CenterHorizontally) {
             Text(stringResource(R.string.photos_image_error))
             TextButton(onClick={attempt++}) {Text(stringResource(R.string.photos_retry))}
-        }
-        if(showZoom && !loading && !failed) TextButton(onClick={zoom=if(zoom==1f) 2f else 1f;pan=Offset.Zero;onZoomed(zoom>1f)},
-            modifier=Modifier.align(Alignment.BottomCenter).background(Color.Black.copy(alpha=.55f))) {
-            Text(stringResource(if(zoom==1f) R.string.photos_zoom else R.string.photos_zoom_reset))
         }
     }
 }

@@ -28,6 +28,36 @@ class PhotosControllerTest {
         override fun thumbnail(photo: Photo,size: Int)="https://example.test/thumbnail"
         override fun original(photo: Photo)="https://example.test/media"
     }
+    @Test fun knownFolderTitlesSurviveLoadingSortingFailureAndBackNavigation()=runTest {
+        val child=".people/all/7"
+        val fake=Fake().apply {handler={q,p,_ ->
+            delay(100)
+            page(q,p).copy(name=if(q.path==child) "Ada" else "Alle", folders=if(q.path==child) emptyList() else
+                listOf(PhotoFolder(child,"Ada",null,1,false,0,emptyList(),true)))
+        }}
+        val controller=PhotosController(this,fake,session,initialQuery=PhotoQuery(path=".people/all"))
+        advanceUntilIdle()
+        controller.open(PhotoQuery(path=child),tab=1)
+        assertTrue(controller.state.value.loading);assertEquals("Ada",controller.state.value.name)
+        advanceUntilIdle()
+        controller.open(controller.state.value.query.copy(sort="ascending_date"))
+        assertEquals("Ada",controller.state.value.name);advanceUntilIdle()
+        fake.handler={_,_,_ -> throw java.io.IOException("offline")}
+        controller.open(PhotoQuery(path=".people/all"))
+        assertEquals("Alle",controller.state.value.name);advanceUntilIdle()
+        assertNotNull(controller.state.value.error);assertEquals("Alle",controller.state.value.name)
+        assertEquals(4,fake.requests.size)
+        controller.close();assertEquals("",controller.state.value.name)
+    }
+    @Test fun virtualFolderFallbacksNeverExposeRouteKeys() {
+        assertEquals(R.string.photos_people_folder,de.bearstack.people.photos.photoFolderTitle(".people").resource)
+        assertEquals(R.string.photos_all_people,de.bearstack.people.photos.photoFolderTitle(".people/all").resource)
+        assertEquals(R.string.photos_directory_people,de.bearstack.people.photos.photoFolderTitle(".people/f-SG9saWRheQ").resource)
+        for(path in listOf(".people/all/7325",".people/t-RmFtaWxpZQ",".people/f-SG9saWRheQ/7325")) {
+            assertEquals(R.string.photos_loading,de.bearstack.people.photos.photoFolderTitle(path).resource)
+        }
+        assertEquals(listOf("Urlaub"),de.bearstack.people.photos.photoFolderTitle("2026/Urlaub").arguments)
+    }
     @Test fun countSortSurvivesPagingAndResetsWhenLeavingPeople()=runTest {
         val fake=Fake().apply {handler={q,p,_ -> page(q,p).copy(folderHasNext=p==1,
             folders=listOf(PhotoFolder("${q.path}/$p","Person $p",null,5-p,false,0,emptyList(),true)))}}

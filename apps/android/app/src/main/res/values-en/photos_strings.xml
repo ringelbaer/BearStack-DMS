@@ -122,4 +122,9 @@
     <string name="photos_sort">Sort</string>
     <string name="photos_sort_count_desc">Photo count: Descending</string>
     <string name="photos_sort_count_asc">Photo count: Ascending</string>
+    <string name="photos_hide_controls">Hide controls</string>
+    <string name="photos_show_controls">Show controls</string>
+    <string name="photos_people_folder">People</string>
+    <string name="photos_all_people">All</string>
+    <string name="photos_folder_name">%1$s</string>
 </resources>

@@ -116,8 +116,10 @@ class DevicePhotosScreenTest {
             compose.waitUntil(15_000) { compose.onAllNodesWithContentDescription("bearstack-device-photo.jpg").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithContentDescription("bearstack-device-photo.jpg").performClick()
             compose.onNodeWithContentDescription(if(german) "Teilen" else "Share").assertIsDisplayed()
-            // The common viewer presents its own zoom action after decoding the local content URI.
-            compose.waitUntil(15_000) { compose.onAllNodesWithText(if(german) "Vergrößern" else "Zoom in").fetchSemanticsNodes().isNotEmpty() }
+            // Zoom remains available as an accessibility action after the local image decodes.
+            compose.waitUntil(15_000) { compose.onAllNodesWithTag("photo-viewer-image").fetchSemanticsNodes().any {
+                it.config.getOrElse(androidx.compose.ui.semantics.SemanticsActions.CustomActions) {emptyList()}.isNotEmpty()
+            } }
             compose.onNodeWithContentDescription(if(german) "Informationen" else "Information").performClick()
             compose.waitUntil(10_000) { compose.onAllNodesWithText("bearstack-device-photo.jpg").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("bearstack-device-photo.jpg").assertIsDisplayed()

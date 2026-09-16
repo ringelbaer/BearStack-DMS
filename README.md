@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.61.0** · Android-App: **0.15.0**.
+Aktuelle Version: **0.61.1** · Android-App: **0.15.1**.
+
+Android **0.15.1** blendet im geöffneten Foto mit einem Tipp alle Bedienelemente aus und mit dem nächsten wieder ein. Zoomen erfolgt per Zwei-Finger-Geste; der zusätzliche Zoom-Umschalter entfällt. Personen-, Kategorie- und Ordnernamen bleiben bereits während des Ladens im Titel sichtbar, statt kurz interne Pfade anzuzeigen.
 
 Ab **0.61.0** enthält **⋯ → Stammdaten** auch **Mutter und Vater** und speichert alle Angaben gemeinsam. Geschwister und Ehepartner stehen in kompakten Eingabezeilen mit **×** zum Entfernen. Leere **Sterbe- und Scheidungsdaten** erscheinen erst nach Klick auf das kleine **+**; gespeicherte Daten bleiben sichtbar.
 

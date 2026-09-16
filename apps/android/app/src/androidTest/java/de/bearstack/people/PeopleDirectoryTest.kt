@@ -37,7 +37,7 @@ class PeopleDirectoryTest {
             }
             idle(vm)
             compose.onNodeWithText("Menü").performClick()
-            compose.onNodeWithText("Personen").performClick()
+            compose.onNodeWithText("Personen verwalten").performClick()
             idle(vm)
             if(openDetail) {compose.onNodeWithText("Anna").performClick();idle(vm)}
             test(vm,service)
