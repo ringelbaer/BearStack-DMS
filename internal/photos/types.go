@@ -82,6 +82,7 @@ type IndexOptions struct {
 }
 
 type ListOptions struct {
+	IncludePeopleFolders     bool
 	Path                     string
 	Query                    string
 	MediaType                string
@@ -148,6 +149,7 @@ type Crumb struct {
 }
 
 type Folder struct {
+	Virtual               bool
 	Name                  string
 	Path                  string
 	DisplayName           string
@@ -164,6 +166,7 @@ type Folder struct {
 }
 
 type Media struct {
+	FaceID         int64 // Nonzero only for cached face previews of virtual folders.
 	Name           string
 	Path           string
 	Directory      string

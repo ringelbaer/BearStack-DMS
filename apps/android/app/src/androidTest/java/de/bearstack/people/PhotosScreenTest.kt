@@ -25,7 +25,7 @@ import java.util.Locale
 
 class PhotosScreenTest {
     @get:Rule val compose=createComposeRule()
-    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, test: (PhotosController,PhotosService)->Unit) {
+    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, test: (PhotosController,PhotosService)->Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext
         val context=app.createConfigurationContext(Configuration(app.resources.configuration).apply {setLocale(locale)})
         val file=File(app.cacheDir,"gallery-test.jpg")
@@ -39,6 +39,18 @@ class PhotosScreenTest {
             var infoAttempts=0
             override suspend fun session()=PhotoSession("gallery-test",false,240,240,1280,2048,5,8)
             override suspend fun browse(query: PhotoQuery,page: Int,section: String): PhotoPage {
+                if(peopleFolders && !query.recursive) {
+                    val portraits=List(8) { photos[0].copy(name="Gesicht $it",faceId=it+1L) }
+                    val folders=when(query.path) {
+                        "" -> listOf(PhotoFolder(".people","Personen",null,0,false,8,portraits,true))
+                        ".people" -> listOf(PhotoFolder(".people/all","Alle",null,0,false,8,portraits,true),PhotoFolder(".people/t-ZmFtaWxpZQ","Familie",null,0,false,1,portraits.take(1),true))
+                        ".people/t-ZmFtaWxpZQ" -> listOf(PhotoFolder(".people/t-ZmFtaWxpZQ/1","Zoe",null,2,false,0,portraits.take(1),true))
+                        else -> emptyList()
+                    }
+                    val name=when(query.path) {".people" -> "Personen"; ".people/t-ZmFtaWxpZQ" -> "Familie"; else -> "Zoe"}
+                    return PhotoPage(query.path,query.path.substringBeforeLast('/',""),1,if(folders.isEmpty()) 2 else 0,false,folders.size,false,false,
+                        if(folders.isEmpty()) if(query.sort=="ascending_name") photos else photos.reversed() else emptyList(),folders,emptyList(),name)
+                }
                 val folders=if(!query.recursive && query.path.isEmpty()) listOf(PhotoFolder("Holiday","Holiday",null,2,false,0,photos)) else emptyList()
                 val blogs=if(query.path=="Holiday") listOf(PhotoBlog("Holiday/story.md","story.md",null,"2026-09-09T10:00:00Z")) else emptyList()
                 return PhotoPage(query.path,"",1,2,false,folders.size,false,false,
@@ -74,6 +86,26 @@ class PhotosScreenTest {
             compose.waitUntil(10_000) {!controller.state.value.loading}
             test(controller,api)
         } finally {compose.runOnUiThread {controller.close();owner.cancel();images.shutdown()};file.delete()}
+    }
+    @Test fun readerBrowsesPeopleTagsAndPhotosAndReturnsThroughParents()=screen(Locale.GERMAN,peopleFolders=true) {controller,_ ->
+        compose.onNodeWithText("Ordner").performClick()
+        compose.onNodeWithText("Personen").assertIsDisplayed()
+        for(i in 0..7) compose.onNodeWithContentDescription("Gesicht $i",useUnmergedTree=true).assertExists()
+        compose.onNodeWithText("Personen").performClick()
+        compose.onNodeWithText("Alle").assertIsDisplayed()
+        compose.onNodeWithText("Familie").performClick()
+        compose.onNodeWithText("Zoe").performClick()
+        compose.onNodeWithContentDescription("first.jpg").assertIsDisplayed()
+        compose.onNodeWithContentDescription("second.jpg").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
+        compose.onNodeWithText("Name: A–Z").performClick()
+        compose.waitUntil(10_000) {!controller.state.value.loading && controller.state.value.query.sort=="ascending_name"}
+        assertEquals("first.jpg",controller.state.value.media.first().path)
+        compose.onNodeWithContentDescription("Zurück").performClick()
+        compose.waitUntil(10_000) {controller.state.value.name=="Familie"}
+        compose.onNodeWithContentDescription("Zurück").performClick()
+        compose.waitUntil(10_000) {controller.state.value.name=="Personen"}
+        compose.onNodeWithText("Alle").assertIsDisplayed()
     }
     @Test fun photoInfoRetriesAndShowsSourceTimeAndMetadataInEnglish()=infoRetry(Locale.ENGLISH)
     @Test fun photoInfoRetriesAndShowsSourceTimeAndMetadataInGerman()=infoRetry(Locale.GERMAN)

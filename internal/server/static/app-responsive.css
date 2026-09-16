@@ -936,6 +936,17 @@
     width: auto;
   }
 
+  .photo-page > .page-head .photo-people-manage {
+    width: 42px;
+    height: 38px;
+    min-height: 38px;
+    padding: 0;
+    justify-content: center;
+    flex: 0 0 42px;
+  }
+
+  .photo-people-manage span { display: none; }
+
   .photo-folder-grid,
   .photo-gallery-grid {
     padding-left: 6px;
@@ -1147,7 +1158,7 @@
 
 @media (max-width: 640px) {
   .filters.people-search-fields {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }
 
@@ -1200,6 +1211,10 @@
 }
 
 @media (max-width: 380px) {
+  .photo-page > .page-head {
+    grid-template-areas: "title title" "actions actions" "breadcrumbs breadcrumbs";
+  }
+  .photo-page > .page-head .page-actions { justify-self: start; }
   .people-filter-tabs { grid-template-columns: minmax(0, 1fr); }
   .people-filter-tabs > a { justify-self: start; }
   .people-pagination { gap: 4px; }

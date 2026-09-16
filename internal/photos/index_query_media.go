@@ -284,7 +284,7 @@ func indexMediaFrom(opts indexMediaOptions, joinSearch bool) string {
 }
 
 func (opts indexMediaOptions) useGlobalGPSDateIndex() bool {
-	if !opts.IncludeAdminOnly || opts.Directory != "" || opts.MediaType != "" || opts.ExactDir {
+	if opts.Plan.ExpressionSQL != "" || !opts.IncludeAdminOnly || opts.Directory != "" || opts.MediaType != "" || opts.ExactDir {
 		return false
 	}
 	if opts.GPSOnly {

@@ -16,8 +16,8 @@
     </nav>
   </div>
   <div class="page-actions">
- <a class="button" href="/photos/people">Personen</a>
-    {{if and .Auth.CanPhotosEdit (not .PhotoFilter.MapView)}}
+    <a class="secondary-button photo-people-manage" href="/photos/people" aria-label="Personen verwalten" title="Personen verwalten"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"></circle><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m3 11v-3a6 6 0 0 0-2-4.5"></path></svg><span>Personen verwalten</span></a>
+    {{if and .Auth.CanPhotosEdit (not .PhotoFilter.MapView) (not .Photos.PeopleDirectory)}}
     <button type="button" class="photo-mode-toggle" data-photo-mode-toggle aria-pressed="false" aria-label="Bearbeiten einschalten" title="Bearbeiten einschalten">
       <span class="photo-mode-icon photo-mode-view" aria-hidden="true">
         <svg viewBox="0 0 24 24" focusable="false">
@@ -94,7 +94,7 @@
       </nav>
     </details>
     {{end}}
-    <details class="photo-actions-menu">
+    {{if not .Photos.Virtual}}<details class="photo-actions-menu">
       <summary aria-label="Weitere Fotoaktionen" title="Weitere Fotoaktionen">
         <span aria-hidden="true"></span>
         <span aria-hidden="true"></span>
@@ -106,6 +106,7 @@
         {{if .PhotoFilter.MapView}}<a href="{{.PhotoFilter.GalleryURL}}">Galerie</a>{{else if .PhotoFilter.MapAvailable}}<a href="{{.PhotoFilter.MapURL}}">Karte</a>{{end}}
       </nav>
     </details>
+    {{end}}
   </div>
 </section>
 
@@ -153,7 +154,7 @@
   {{range .Photos.Folders}}
   <article class="photo-folder-tile">
     <a href="{{.URL}}" class="photo-folder-link">
-      <span class="photo-folder-preview" aria-hidden="true">
+      <span class="photo-folder-preview{{if .Virtual}} photo-people-preview{{end}}" aria-hidden="true">
         {{range .Previews}}
         <span class="photo-folder-preview-cell {{if or (eq .Type "audio") (and (eq .Type "video") (not .ThumbURL))}}is-loaded{{end}}">
           <span class="photo-thumb-loader" aria-hidden="true"></span>
@@ -186,7 +187,7 @@
         <span title="{{.MediaCountTitle}}">{{if and .DisplayDate .DisplayName}}{{formatDate .DisplayDate}} · {{end}}{{.MediaCountLabel}}</span>
       </span>
     </a>
-    {{if $.Auth.CanPhotosEdit}}
+    {{if and $.Auth.CanPhotosEdit (not .Virtual)}}
     <div class="tag-select photo-tag-select photo-folder-tag-select photo-edit-only" data-photo-tag-select-deferred data-create-tag-mode="local" data-selected-tags="{{joinTags .Tags}}" data-update-url="/photos/tags?kind=folder&amp;path={{queryEscape .Path}}" data-empty-label="Tags"></div>
     {{end}}
   </article>
@@ -265,7 +266,7 @@
 {{else}}
 <form class="photo-bulk-form" data-photo-bulk-form method="post">
   <input type="hidden" name="return" value="{{.ReturnURL}}">
-  {{if .Auth.CanPhotosEdit}}
+  {{if and .Auth.CanPhotosEdit (not .Photos.PeopleDirectory)}}
   <div class="photo-edit-toolbar photo-edit-only">
     <label class="checkbox-line"><input type="checkbox" data-select-all> Alle auswählen</label>
     <div class="selection-actions hidden" data-selection-actions>
@@ -343,7 +344,7 @@
     {{end}}
     {{if .PhotoFilter.NextURL}}<a class="secondary-button" href="{{.PhotoFilter.NextURL}}">Weiter</a>{{else}}<span></span>{{end}}
   </div>
-  <div class="pagination-summary">{{if gt .Photos.Total 0}}{{len .Photos.Media}} von {{.Photos.Total}} Medien{{else}}0 Medien{{end}}</div>
+  <div class="pagination-summary">{{if gt .Photos.Total 0}}{{if .Photos.PeopleDirectory}}{{len .Photos.Folders}} von {{.Photos.Total}} Ordner{{else}}{{len .Photos.Media}} von {{.Photos.Total}} Medien{{end}}{{else}}0 Medien{{end}}</div>
 </nav>
 {{end}}
 

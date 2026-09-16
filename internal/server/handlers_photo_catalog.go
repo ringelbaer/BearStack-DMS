@@ -15,6 +15,7 @@ import (
 // The native API carries source values rather than localized browser labels.
 // Paths are library-relative; clients build URLs under their configured base.
 type photoCatalogMedia struct {
+	FaceID         int64                   `json:"face_id,omitempty"`
 	Path           string                  `json:"path"`
 	Name           string                  `json:"name"`
 	Type           string                  `json:"type"`
@@ -37,7 +38,7 @@ type photoCatalogMedia struct {
 }
 
 func catalogMedia(media photos.Media) photoCatalogMedia {
-	return photoCatalogMedia{Path: media.Path, Name: media.Name, Type: media.Type, MIME: media.MIMEType,
+	return photoCatalogMedia{FaceID: media.FaceID, Path: media.Path, Name: media.Name, Type: media.Type, MIME: media.MIMEType,
 		Version: strconv.FormatInt(media.ModTime.UnixNano(), 10), Modified: media.ModTime, Captured: media.CapturedAt,
 		Bytes: media.SizeBytes, Width: media.Width, Height: media.Height, Camera: media.Camera, Lens: media.Lens,
 		Latitude: media.Latitude, Longitude: media.Longitude, Rating: media.Rating, Tags: media.Tags,
@@ -45,6 +46,7 @@ func catalogMedia(media photos.Media) photoCatalogMedia {
 }
 
 type photoCatalogFolder struct {
+	Virtual     bool                `json:"virtual,omitempty"`
 	Path        string              `json:"path"`
 	Name        string              `json:"name"`
 	Date        *time.Time          `json:"date,omitempty"`
@@ -67,6 +69,7 @@ func catalogBlog(post photos.BlogPost) photoCatalogBlog {
 }
 
 type photoCatalogPage struct {
+	Name          string               `json:"name,omitempty"`
 	Path          string               `json:"path"`
 	Parent        string               `json:"parent"`
 	Page          int                  `json:"page"`
@@ -150,29 +153,41 @@ func (s *Server) handlePhotoCatalog(w http.ResponseWriter, r *http.Request) {
 		_ = writeJSON(w, 400, map[string]string{"code": "invalid_type"})
 		return
 	}
-	for _, flag := range []string{"recursive", "gps"} {
+	for _, flag := range []string{"recursive", "gps", "people"} {
 		if value := q.Get(flag); value != "" && value != "0" && value != "1" {
 			_ = writeJSON(w, 400, map[string]string{"code": "invalid_filter"})
 			return
 		}
 	}
-	opts := photos.ListOptions{Path: q.Get("path"), Query: strings.TrimSpace(q.Get("q")), Sort: sort, Page: page,
+	previews := 2
+	if q.Get("people") == "1" {
+		previews = 0
+	}
+	opts := photos.ListOptions{IncludePeopleFolders: q.Get("people") == "1", Path: q.Get("path"), Query: strings.TrimSpace(q.Get("q")), Sort: sort, Page: page,
 		MediaType: mediaType, Recursive: q.Get("recursive") == "1", GPSOnly: q.Get("gps") == "1",
 		FolderPageSize: 24, BlogPageSize: 20, BlogSummaries: true,
 		SkipFolders: section != "" && section != "folders", SkipBlogs: section != "" && section != "blogs", SkipMedia: section != "" && section != "media"}
-	listing, _, err := s.photoService().Listing(r.Context(), photoListingRequest{Options: opts, PageSize: 96, FolderPreviews: 2, OmitPeople: true})
+	listing, _, err := s.photoService().Listing(r.Context(), photoListingRequest{Options: opts, PageSize: 96, FolderPreviews: previews, OmitPeople: true})
 	if err != nil {
 		s.catalogError(w, err)
 		return
 	}
-	out := photoCatalogPage{Path: listing.Path, Parent: listing.ParentPath, Page: listing.Page, Total: listing.Total, HasNext: listing.HasNext,
+	name := "Fotos"
+	if len(listing.Breadcrumbs) > 0 {
+		crumb := listing.Breadcrumbs[len(listing.Breadcrumbs)-1]
+		name = crumb.DisplayName
+		if name == "" {
+			name = crumb.Name
+		}
+	}
+	out := photoCatalogPage{Name: name, Path: listing.Path, Parent: listing.ParentPath, Page: listing.Page, Total: listing.Total, HasNext: listing.HasNext,
 		FolderTotal: listing.FolderTotal, FolderHasNext: listing.FolderHasNext, BlogHasNext: listing.BlogHasNext,
 		Media: []photoCatalogMedia{}, Folders: []photoCatalogFolder{}, Blogs: []photoCatalogBlog{}}
 	for _, item := range listing.Media {
 		out.Media = append(out.Media, catalogMedia(item))
 	}
 	for _, folder := range listing.Folders {
-		item := photoCatalogFolder{Path: folder.Path, Name: folder.DisplayName, Date: folder.DisplayDate,
+		item := photoCatalogFolder{Virtual: folder.Virtual, Path: folder.Path, Name: folder.DisplayName, Date: folder.DisplayDate,
 			MediaCount: folder.MediaCount, Approximate: folder.MediaCountApproximate, FolderCount: folder.DirCount, Previews: []photoCatalogMedia{}}
 		for _, preview := range folder.Previews {
 			item.Previews = append(item.Previews, catalogMedia(preview))

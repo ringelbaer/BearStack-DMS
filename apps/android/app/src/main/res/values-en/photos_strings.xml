@@ -113,4 +113,9 @@
     <string name="photos_route_help">Connects the GPS locations of your photos in chronological order. The photo route uses a dashed line.</string>
     <string name="photos_route_error">The photo route could not be loaded.</string>
     <string name="photos_route_summary">%1$d items · places grouped within %2$d m</string>
+    <string name="photos_sort_newest">Date: Newest first</string>
+    <string name="photos_sort_oldest">Date: Oldest first</string>
+    <string name="photos_sort_name_asc">Name: A–Z</string>
+    <string name="photos_sort_name_desc">Name: Z–A</string>
+    <plurals name="photos_person_count"><item quantity="one">%d person</item><item quantity="other">%d people</item></plurals>
 </resources>

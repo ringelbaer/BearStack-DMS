@@ -35,7 +35,7 @@ func (l *Library) populateFolderPreviews(ctx context.Context, folders []Folder, 
 		missing := make([]Folder, 0)
 		missingPaths := make([]string, 0)
 		for _, folder := range folders {
-			if len(previews[folder.Path]) > 0 || folder.MediaCount == 0 {
+			if folder.Virtual || len(previews[folder.Path]) > 0 || folder.MediaCount == 0 {
 				continue
 			}
 			missing = append(missing, folder)
@@ -66,6 +66,9 @@ func (l *Library) populateFolderPreviews(ctx context.Context, folders []Folder, 
 		if err := ctx.Err(); err != nil {
 			finishAssign(ListTraceString("error", err.Error()))
 			return err
+		}
+		if folders[i].Virtual {
+			continue
 		}
 		if folders[i].previewScanned {
 			folders[i].Previews = limitFolderPreviewMedia(folders[i].Previews, previewLimit)

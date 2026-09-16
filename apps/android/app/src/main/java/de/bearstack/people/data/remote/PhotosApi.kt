@@ -18,18 +18,18 @@ data class Photo(val path: String, val name: String, val type: String, val mime:
     val modified: String, val captured: String?, val bytes: Long, val width: Int, val height: Int,
     val camera: String = "", val lens: String = "", val latitude: Double? = null, val longitude: Double? = null,
     val rating: Double? = null, val tags: List<String> = emptyList(), val keywords: List<String> = emptyList(),
-    val people: List<String> = emptyList()) {
+    val people: List<String> = emptyList(), val faceId: Long = 0) {
     val date: String get() = captured ?: modified
 }
 data class PhotoFolder(val path: String, val name: String, val date: String?, val count: Int,
-    val approximate: Boolean, val folders: Int, val previews: List<Photo>)
+    val approximate: Boolean, val folders: Int, val previews: List<Photo>, val virtual: Boolean = false)
 data class PhotoBlog(val path: String, val name: String, val date: String?, val modified: String,
     val text: String = "", val html: String = "")
 data class PhotoQuery(val path: String = "", val query: String = "", val recursive: Boolean = false,
     val gps: Boolean = false, val sort: String = "descending_date", val type: String = "")
 data class PhotoPage(val path: String, val parent: String, val page: Int, val total: Int, val hasNext: Boolean,
     val folderTotal: Int, val folderHasNext: Boolean, val blogHasNext: Boolean,
-    val media: List<Photo>, val folders: List<PhotoFolder>, val blogs: List<PhotoBlog>)
+    val media: List<Photo>, val folders: List<PhotoFolder>, val blogs: List<PhotoBlog>, val name: String = "")
 data class PhotoMapBounds(val south: Double, val west: Double, val north: Double, val east: Double)
 data class PhotoMapMarker(val latitude: Double, val longitude: Double, val count: Int, val path: String = "",val bounds: PhotoMapBounds? = null)
 data class PhotoMapData(val total: Int, val bounds: PhotoMapBounds?, val markers: List<PhotoMapMarker>)
@@ -94,7 +94,7 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
             settings.getInt("frame_seconds").coerceIn(3,300))
     }
     override suspend fun browse(query: PhotoQuery, page: Int, section: String): PhotoPage {
-        val o = json("browse",mapOf("path" to query.path,"q" to query.query,"page" to "$page","section" to section,
+        val o = json("browse",mapOf("people" to "1","path" to query.path,"q" to query.query,"page" to "$page","section" to section,
             "recursive" to if(query.recursive) "1" else "0","gps" to if(query.gps) "1" else "0",
             "sort" to query.sort,"type" to query.type))
         return PhotoPage(o.getString("path"),o.getString("parent"),o.getInt("page"),o.getInt("total"),o.getBoolean("has_next"),
@@ -102,8 +102,8 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
             o.getJSONArray("media").objects(::photo),o.getJSONArray("folders").objects { folder ->
                 PhotoFolder(folder.getString("path"),folder.getString("name"),folder.optionalString("date"),
                     folder.getInt("media_count"),folder.getBoolean("approximate"),folder.getInt("folder_count"),
-                    folder.getJSONArray("previews").objects(::photo))
-            },o.getJSONArray("blogs").objects(::post))
+                    folder.getJSONArray("previews").objects(::photo),folder.optBoolean("virtual"))
+            },o.getJSONArray("blogs").objects(::post),o.optString("name"))
     }
     override suspend fun info(path: String) = photo(json("media/info",mapOf("path" to path)).getJSONObject("media"))
     override suspend fun locateDate(date: String): PhotoDatePosition {
@@ -176,7 +176,7 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
     }
     // One MiB of source text can expand through HTML and JSON escaping.
     override suspend fun blog(path: String) = post(json("blog",mapOf("path" to path),20 * 1024 * 1024L).getJSONObject("blog"))
-    override fun thumbnail(photo: Photo, size: Int) = url("thumbnail",mapOf("path" to photo.path,"size" to "$size","v" to photo.version)).toString()
+    override fun thumbnail(photo: Photo, size: Int) = if(photo.faceId>0) url("faces/${photo.faceId}/thumbnail",emptyMap()).toString() else url("thumbnail",mapOf("path" to photo.path,"size" to "$size","v" to photo.version)).toString()
     override fun original(photo: Photo) = url("media",mapOf("path" to photo.path,"v" to photo.version)).toString()
     override suspend fun download(photo: Photo, destination: () -> OutputStream, progress: (Long,Long) -> Unit): Long {
         // Shares TLS policy, authentication, pool and dispatcher. Large originals
@@ -215,7 +215,7 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
         o.optString("camera"),o.optString("lens"),o.optionalDouble("latitude"),o.optionalDouble("longitude"),
         o.optionalDouble("rating"),o.stringList("tags"),o.stringList("keywords"),
         ((o.optJSONArray("faces")?.objects {it.optString("Name")} ?: emptyList()) +
-            (o.optJSONArray("automatic_faces")?.objects {it.optString("name")} ?: emptyList())).distinct())
+            (o.optJSONArray("automatic_faces")?.objects {it.optString("name")} ?: emptyList())).distinct(),o.optLong("face_id"))
     private fun post(o: JSONObject) = PhotoBlog(o.getString("path"),o.getString("name"),o.optionalString("date"),o.getString("modified"),o.optString("text"),o.optString("html"))
 }
 private fun JSONObject.optionalString(key: String): String? = if(isNull(key)) null else optString(key).takeIf { it.isNotBlank() }

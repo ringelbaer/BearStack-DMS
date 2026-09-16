@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.*
 data class PhotosState(val query: PhotoQuery = PhotoQuery(recursive=true), val tab: Int = 0, val loading: Boolean = false,
     val error: UiText? = null, val mediaPages: PhotoPages<Photo> = PhotoPages.media(),
     val folderPages: PhotoPages<PhotoFolder> = PhotoPages.folders(), val blogPages: PhotoPages<PhotoBlog> = PhotoPages.blogs(),
-    val total: Int = 0, val loadingSections: Set<String> = emptySet(),
+    val name: String = "", val parent: String = "", val total: Int = 0, val loadingSections: Set<String> = emptySet(),
     val pageErrors: Map<String,PhotoPageFailure> = emptyMap(), val selected: String? = null, val blog: PhotoBlog? = null,
     val frame: Boolean = false, val blogLoading: Boolean = false, val blogError: UiText? = null,
     val scrollToKey: String? = null, val dateLoading: Boolean = false, val jumpDate: String? = null,
@@ -57,7 +57,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
         generation++
         request?.cancel(); dateRequest?.cancel(); detail?.cancel(); additional.values.forEach { it.cancel() }; additional.clear()
         gridPosition=null;visibleKeys=emptySet()
-        mutable.value = PhotosState(query=query,tab=tab,frame=frame,loading=true)
+        mutable.value = PhotosState(query=query,tab=tab,frame=frame,loading=true,parent=query.path.substringBeforeLast('/',""))
         val expected = generation
         request = scope.launch {
             try {
@@ -67,14 +67,14 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
                     selected=if(frame) page.media.firstOrNull()?.path else null,
                     mediaPages=PhotoPages.media().add(1,page.media,page.hasNext),
                     folderPages=PhotoPages.folders().add(1,page.folders,page.folderHasNext),
-                    blogPages=PhotoPages.blogs().add(1,page.blogs,page.blogHasNext),total=page.total)
+                    blogPages=PhotoPages.blogs().add(1,page.blogs,page.blogHasNext),total=page.total,name=page.name,parent=page.parent)
             } catch(e: CancellationException) { throw e }
             catch(e: Exception) { if(generation==expected) mutable.update { it.copy(loading=false,error=failureText(e)) } }
         }
     }
     private fun validate(page: PhotoPage, number: Int) {
         requireMessage(page.page==number && page.media.size<=96 && page.folders.size<=24 && page.blogs.size<=20 &&
-            page.folders.all {it.previews.size<=2},de.bearstack.people.R.string.error_response_invalid)
+            page.folders.all {it.previews.size<=if(it.virtual) 8 else 4},de.bearstack.people.R.string.error_response_invalid)
     }
     fun jumpToDate(date: java.time.LocalDate) {
         val current = state.value

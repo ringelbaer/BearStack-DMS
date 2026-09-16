@@ -1080,6 +1080,9 @@ label span {
   width: 100%;
 }
 
+.photo-people-manage { display: inline-flex; align-items: center; gap: 8px; }
+.photo-people-manage svg { width: 20px; height: 20px; flex: 0 0 20px; }
+
 .photo-map-body {
   display: flex;
   flex-direction: column;
@@ -1796,6 +1799,14 @@ label span {
   gap: 2px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   overflow: hidden;
+}
+
+.photo-people-preview {
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.photo-people-preview:has(> :nth-child(5)) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .photo-folder-preview-cell,
@@ -3533,6 +3544,12 @@ label span {
   grid-template-columns: minmax(0, 1fr) auto;
   margin: 8px 0 0;
 }
+.person-tags-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.person-tags-tools .tag-select { min-width: 0; max-width: 100%; }
+.person-tags-tools .tag-select-trigger { max-width: 100%; }
+.people-search-input { display: flex; align-items: center; gap: 6px; min-width: 0; margin: 0; text-transform: none; }
+.people-search-input input { flex: 1; }
+.people-search-reset { flex: 0 0 44px; min-height: 44px; padding: 8px; font-size: 1.25rem; text-align: center; }
 .people-search-fields > label {
   display: grid;
   gap: 6px;

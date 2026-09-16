@@ -15,13 +15,15 @@ func (s *photoIndexStore) listTags(ctx context.Context, includeRestricted bool) 
 	manualTags := `SELECT name AS tag, 0 AS count FROM photo_tags`
 	mediaTags := `SELECT tag, COUNT(DISTINCT media_path) AS count FROM media_tag_index GROUP BY tag`
 	folderTags := `SELECT tag, COUNT(DISTINCT folder_path) AS count FROM folder_tag_index GROUP BY tag`
+	personTags := `SELECT pt.tag, count(*) AS count FROM person_tag_index pt WHERE EXISTS(SELECT 1 FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=pt.person_id AND f.ignored=0 AND m.admin_only=0) GROUP BY pt.tag`
 	blogTags := `SELECT tag, COUNT(DISTINCT blog_path) AS count FROM blog_tag_index GROUP BY tag`
 	if !includeRestricted {
 		manualTags = `SELECT pt.name AS tag, 0 AS count
 			FROM photo_tags pt
 			WHERE NOT EXISTS (SELECT 1 FROM media_tag_index mti WHERE mti.tag = pt.name)
 				AND NOT EXISTS (SELECT 1 FROM folder_tag_index fti WHERE fti.tag = pt.name)
-				AND NOT EXISTS (SELECT 1 FROM blog_tag_index bti WHERE bti.tag = pt.name)`
+				AND NOT EXISTS (SELECT 1 FROM blog_tag_index bti WHERE bti.tag = pt.name)
+				AND NOT EXISTS (SELECT 1 FROM person_tag_index pti WHERE pti.tag = pt.name)`
 		mediaTags = `SELECT mti.tag, COUNT(DISTINCT mti.media_path) AS count
 			FROM media_tag_index mti
 			JOIN media_index mi ON mi.path = mti.media_path
@@ -49,6 +51,8 @@ func (s *photoIndexStore) listTags(ctx context.Context, includeRestricted bool) 
 			`+folderTags+`
 			UNION ALL
 			`+blogTags+`
+			UNION ALL
+			`+personTags+`
 			)
 			GROUP BY tag
 		)
@@ -121,13 +125,15 @@ func getPhotoTag(ctx context.Context, query interface {
 			SELECT tag, COUNT(DISTINCT folder_path) AS count FROM folder_tag_index WHERE tag = ? GROUP BY tag
 			UNION ALL
 			SELECT tag, COUNT(DISTINCT blog_path) AS count FROM blog_tag_index WHERE tag = ? GROUP BY tag
+			UNION ALL
+			SELECT tag, COUNT(*) AS count FROM person_tag_index WHERE tag = ? GROUP BY tag
 			)
 			GROUP BY tag
 		)
 		SELECT tag_counts.tag, COALESCE(photo_tags.color, ?), tag_counts.count
 		FROM tag_counts
 		LEFT JOIN photo_tags ON photo_tags.name = tag_counts.tag`,
-		name, name, name, name, defaultPhotoTagColor,
+		name, name, name, name, name, defaultPhotoTagColor,
 	).Scan(&tag.Name, &tag.Color, &tag.Count)
 	if err != nil {
 		return Tag{}, err
@@ -198,6 +204,7 @@ func (s *photoIndexStore) renameTag(ctx context.Context, oldName, newName, color
 		{"media_tag_index", "media_path"},
 		{"folder_tag_index", "folder_path"},
 		{"blog_tag_index", "blog_path"},
+		{"person_tag_index", "person_id"},
 	} {
 		if err := renamePhotoTagIndexTx(ctx, tx, index.table, index.pathColumn, oldName, newName); err != nil {
 			return Tag{}, err
@@ -251,6 +258,7 @@ func (s *photoIndexStore) deleteTag(ctx context.Context, name string) (Tag, erro
 		{"media_tag_index"},
 		{"folder_tag_index"},
 		{"blog_tag_index"},
+		{"person_tag_index"},
 	} {
 		if _, err := tx.ExecContext(ctx, "DELETE FROM "+index.table+" WHERE tag = ?", name); err != nil {
 			return Tag{}, err

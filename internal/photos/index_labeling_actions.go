@@ -118,6 +118,9 @@ func (s *photoIndexStore) applyLabelAction(ctx context.Context, actor string, id
 		if a.TargetID == id || target.Name == "" || target.Revision != a.TargetRevision {
 			return out, labelMutation{}, ErrLabelConflict
 		}
+		if err = mergePersonTagsTx(ctx, tx, id, a.TargetID); err != nil {
+			return out, labelMutation{}, err
+		}
 		_, err = tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=?,manual=1 WHERE person_id=? AND ignored=0`, a.TargetID, id)
 		out.TargetID = a.TargetID
 	case "ignore":

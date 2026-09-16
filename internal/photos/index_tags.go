@@ -34,6 +34,9 @@ func (l *Library) ListTags(ctx context.Context, includeAdminOnly ...bool) ([]Tag
 	if l == nil {
 		return nil, nil
 	}
+	if err := l.refreshPeopleVisibility(ctx, `p.id IN (SELECT person_id FROM person_tag_index)`); err != nil {
+		return nil, err
+	}
 	includeRestricted := len(includeAdminOnly) > 0 && includeAdminOnly[0]
 	return l.index.listTags(ctx, includeRestricted)
 }

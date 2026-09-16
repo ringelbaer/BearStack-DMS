@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.52.5
+  version: 0.53.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -487,7 +487,7 @@ paths:
       - Photos
       operationId: browsePhotoCatalog
       summary: Read a bounded native gallery page
-      description: Requires photos.read. Pages contain at most 96 media, 24 folders with two previews each, and 20 blog summaries. Folder search totals and sorting include all matching visible folders; results are not truncated to 50. Folder previews are fetched only after slicing the folder page. Blog bodies load on demand. Native listings exclude admin-only content. Existing sorting, search, index and visibility rules are shared with the browser. Page numbers refer to the live library; clients should deduplicate paths if indexing occurs during browsing.
+      description: Requires photos.read. Pages contain at most 96 media, 24 folders, and 20 blog summaries. Folder search totals and sorting include all matching visible folders; results are not truncated to 50. Folder previews are fetched only after slicing the folder page. Blog bodies load on demand. Native listings exclude admin-only content. Existing sorting, search, index and visibility rules are shared with the browser. Since 0.53.0, people=1 adds the virtual Personen folder at the nonrecursive root and uses the configured preview count (1–4) for ordinary folders. Personen and its All/tag folders contain twice that many cached face previews (2–8), ordered by distinct visible photo count, with favorite portraits preferred. Tags form a single level; only tags assigned to visible active people appear. All includes named and unnamed active people. Person folders contain distinct ordinary photos with the existing sorting and date metadata. Opaque virtual paths must be followed unchanged; responses provide their display name and parent. Without people=1, existing clients retain two ordinary previews and no virtual root entry. Page numbers refer to the live library; clients should deduplicate paths if indexing occurs during browsing.
       responses:
         '200':
           description: Successful response. Cache-Control is private, no-store.
@@ -533,7 +533,7 @@ paths:
       - name: q
         in: query
         required: false
-        description: Uses the browser photo-search syntax and searches globally; nonempty q resets path.
+        description: Uses the browser photo-search syntax and searches globally; nonempty q resets physical paths. Within virtual person galleries q remains scoped to that person; within All/tag folders it filters person names.
         schema:
           type: string
           maxLength: 800
@@ -581,6 +581,10 @@ paths:
           - image
           - video
           - audio
+      - name: people
+        in: query
+        description: Opt in to virtual person folders and configured preview counts (since 0.53.0).
+        schema: {type: string, enum: ['0', '1'], default: '0'}
       - name: recursive
         in: query
         required: false
@@ -2821,6 +2825,76 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/photos/v1/faces/{id}/thumbnail:
+    get:
+      tags:
+      - Photos
+      operationId: getCatalogFaceThumbnail
+      summary: Get a face crop
+      description: Requires photos.read. Checks current filesystem visibility; generated
+        crops use private browser caching with mandatory revalidation and ETags.
+        Matching If-None-Match returns 304 only after authentication and visibility
+        checks. Encoded crops are cached in the configured photo cache.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        '200':
+          description: 160 x 160 JPEG face preview.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '304':
+          description: Cached face preview is unchanged; no response body.
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /photos/people/{id}/tags:
+    post:
+      tags: [Photos]
+      operationId: setPhotoPersonTags
+      summary: Replace the photo tags of a person group
+      description: Requires photos.edit and same-origin protection. Tags apply to the group independently of its photos. Empty tags clears the selection. Names are normalized like photo tags; new tags are created atomically. Merges preserve the union of group tags. Global tag rename and deletion update assignments. Private and inactive groups are not writable. Photo schema 32 adds indexed assignments automatically.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  maxItems: 100
+                  items: {type: string, maxLength: 4096}
+      responses:
+        '200':
+          description: Saved tags. Cache-Control is no-store.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tags]
+                properties:
+                  tags:
+                    type: array
+                    items: {type: string}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
   /photos/people/{id}/rename:
     post:
       tags:
@@ -3588,6 +3662,11 @@ components:
       - width
       - height
       properties:
+        face_id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Present only on virtual folder previews. Load faces/{face_id}/thumbnail under the native API base; path and ordinary source metadata are not used for these portraits.
         path:
           type: string
         name:
@@ -3682,6 +3761,9 @@ components:
       - folder_count
       - previews
       properties:
+        virtual:
+          type: boolean
+          description: Virtual person navigation folder. Follow path unchanged; it is not a filesystem path.
         path:
           type: string
         name:
@@ -3701,7 +3783,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PhotoCatalogMedia'
-          maxItems: 2
+          maxItems: 8
     PhotoCatalogSession:
       type: object
       required:
@@ -3887,6 +3969,9 @@ components:
       - folders
       - blogs
       properties:
+        name:
+          type: string
+          description: Display name of the current folder, including virtual person and tag folders.
         path:
           type: string
         parent:
@@ -4824,6 +4909,10 @@ components:
     PhotoPeoplePage:
       type: object
       properties:
+        tags:
+          type: array
+          description: Photo tags assigned to the person group, returned on person details.
+          items: {type: string}
         sort:
           type: string
           description: Effective overview sorting since 0.50.0; omitted for person details.

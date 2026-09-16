@@ -9,6 +9,24 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PhotosApiTest {
+    @Test fun virtualPeopleFoldersUseCachedFacesAndKeepProxyPrefix()=runBlocking {
+        var request:Request?=null
+        val portrait="""{"path":"","name":"Zoe","type":"image","mime":"image/jpeg","version":"0","modified":"2026-09-16T00:00:00Z","bytes":0,"width":0,"height":0,"face_id":42}"""
+        val client=OkHttpClient.Builder().addInterceptor {chain ->
+            request=chain.request()
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body("""{"path":".people","parent":"","name":"Personen","page":1,"total":0,"has_next":false,"folder_total":1,"folder_has_next":false,"blog_has_next":false,"media":[],"blogs":[],"folders":[{"path":".people/all","name":"Alle","media_count":0,"folder_count":8,"approximate":false,"virtual":true,"previews":[${List(8){portrait}.joinToString(",")}]}]}""".toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        try {
+            val api=PhotosApi(client,"https://example.test/proxy/")
+            val page=api.browse(PhotoQuery(path=".people"))
+            assertEquals("1",request!!.url.queryParameter("people"))
+            assertEquals("Personen",page.name);assertEquals("",page.parent)
+            assertTrue(page.folders.single().virtual);assertEquals(8,page.folders.single().previews.size)
+            assertEquals("https://example.test/proxy/api/photos/v1/faces/42/thumbnail",api.thumbnail(page.folders.single().previews.first(),320))
+        } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+    }
+
     @Test fun datePositionKeepsProxyPrefixAndUsesABoundedValidatedResponse()=runBlocking {
         var request:Request?=null
         var body="""{"path":"album/a.jpg","date":"2026-06-12","page":321}"""

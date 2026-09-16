@@ -155,6 +155,10 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 	if err != nil {
 		return out, err
 	}
+	out.Tags, err = l.personTags(ctx, id)
+	if err != nil {
+		return out, err
+	}
 	var total int
 	if err := l.index.db.QueryRowContext(ctx, `SELECT count(*) FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.ignored=0 AND m.admin_only=0`, id).Scan(&total); err != nil {
 		return out, err
@@ -422,6 +426,10 @@ func (l *Library) mergePeopleChecked(ctx context.Context, source, target int64, 
 // Shared by web merges and receipted labeling decisions. The caller validates
 // revisions, refreshes affected references and commits the complete transaction.
 func mergePersonTx(ctx context.Context, tx *sql.Tx, source, target int64) error {
+	// Preserve the union of photo tags when groups are merged.
+	if err := mergePersonTagsTx(ctx, tx, source, target); err != nil {
+		return err
+	}
 	// Preserve a source name and its provenance when the target is unnamed.
 	if _, err := tx.ExecContext(ctx, `UPDATE photo_people SET (name,name_fold,manual_name,name_source)=(SELECT name,name_fold,manual_name,name_source FROM photo_people WHERE id=?) WHERE id=? AND name='' AND EXISTS(SELECT 1 FROM photo_people WHERE id=? AND name<>'')`, source, target, source); err != nil {
 		return err

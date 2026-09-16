@@ -36,6 +36,7 @@ type FaceRegion struct {
 	Height float64 `json:"height"`
 }
 type PeoplePage struct {
+	Tags        []string         `json:"tags,omitempty"`
 	Sort        string           `json:"sort,omitempty"`
 	TotalPages  int              `json:"total_pages"`
 	IgnoredOnly bool             `json:"ignored_only"`

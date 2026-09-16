@@ -7,7 +7,7 @@ icon: lucide/images
 # Fotos
 
 Ab BearStack **0.50.0** steht die lesende Galerie auch nativ in **BearStack Fotos für
-Android** zur Verfügung: Datumsgruppen, Ordner mit zwei Vorschauen, Suche,
+Android** zur Verfügung: Datumsgruppen, Ordner mit konfigurierbaren Vorschauen, Suche,
 Vollbild/Zoom, Foto-Informationen sowie Markdown- und Textbeiträge. Die App nutzt
 denselben Fotoindex und dieselben Zugriffsregeln. Die gesamte App-Oberfläche, Hilfen und Fehlermeldungen sind deutsch/englisch. Details zum laufenden Ausbau
 stehen in der [Android-Anleitung](android.md).
@@ -19,6 +19,37 @@ eine aktivierte Wiederholung funktioniert auch bei nur einer Mediendatei.
 Die native Galerie hält höchstens drei Metadatenseiten je Bereich. Beim Zurückscrollen lädt sie ältere Seiten erneut; Vollbild und Diashow behalten die Fotoreihenfolge, und Ladefehler sind direkt im betroffenen Bereich wiederholbar.
 
 Das Fotomodul ist optional und nutzt einen directory-first Ansatz: BearStack importiert Fotos nicht in die Dokumentenablage, sondern rendert ein vorhandenes, read-only Fotoverzeichnis als Galerie. Die Mediendateien bleiben unverändert; BearStack legt Index, Tags, Vorschaubilder und Einstellungen getrennt davon ab.
+
+## Personen ansehen und taggen
+
+Ab BearStack **0.53.0** öffnet die virtuelle Kachel **Personen** unter **Fotos** eine
+Ansicht zum Durchstöbern. **Alle** enthält alle aktiven benannten und unbenannten
+Personengruppen. Daneben stehen ausschließlich Foto-Tags, denen sichtbare Personen
+zugeordnet sind. Es gibt genau eine Tag-Ebene; auch Tags mit einem Schrägstrich
+bleiben eine einzelne Kachel. Im Tag-Ordner stehen alle zugeordneten Personen.
+
+Eine Person öffnet ihre vollständigen Fotos in der normalen Galerie, mit
+Datumsgruppen, Sortierung und seitenweisem Laden. Mehrere Erkennungen derselben
+Person in einem Foto erzeugen nur einen Bildeintrag. Die Suche innerhalb dieser
+Galerie bleibt auf die Person begrenzt.
+
+Die Personen-Kachel sowie **Alle** und die Tag-Kacheln zeigen bis zur doppelten
+konfigurierten Anzahl der Ordner-Vorschaubilder (2–8). Die Auswahl bevorzugt
+Personen mit den meisten unterschiedlichen sichtbaren Fotos. Pro Person erscheint
+das gewohnte Porträt: ein aktiver Stern-Favorit, bei mehreren der mit der kleinsten
+Gesichts-ID, sonst das bisherige Übersichtsbild. Die bestehenden Gesichtsthumbnails
+und deren Cache werden wiederverwendet. Listen laden keine Originalbilder.
+Ignorierte und geschützte Gesichter bleiben ausgeschlossen, auch bei Admin-Konten.
+
+**Personen verwalten** führt weiterhin nach `/photos/people`. Bei der Namenssuche
+leert **Zurücksetzen** mit einem Klick den Suchtext und springt zur ersten Seite;
+der gewählte Personenfilter und die Sortierung bleiben erhalten. In der geöffneten
+Personengruppe vergibt **Personen-Tags** bestehende oder neue Foto-Tags. **Keine
+Tags → Übernehmen** entfernt die Auswahl. Dafür ist `photos.edit` erforderlich,
+zum Ansehen genügt `photos.read`. Die Tags gehören der Gruppe und werden nicht auf
+die einzelnen Fotos übertragen. Beim Zusammenführen werden die Tags vereinigt;
+globales Umbenennen und Löschen eines Foto-Tags aktualisiert auch Personengruppen.
+Foto-Schema **32** ergänzt automatisch einen indizierten Zuordnungsspeicher.
 
 ## Aktivierung
 
@@ -76,8 +107,8 @@ aus dem Dateisystem verfügbar.
 
 Die Ordnersuche berücksichtigt alle passenden sichtbaren Ordner statt nur der
 ersten 50. Gesamtzahl und Sortierung gelten für die vollständige Trefferliste;
-die Android-App lädt sie in Paketen von höchstens 24 Ordnern mit je zwei
-Vorschauen weiter. Auch kurze Suchbegriffe und ODER-Suchen behalten alle Treffer.
+die Android-App lädt sie in Paketen von höchstens 24 Ordnern mit bis zu vier
+Vorschauen (virtuelle Personenordner bis zu acht) weiter. Auch kurze Suchbegriffe und ODER-Suchen behalten alle Treffer.
 
 Die native Android-Galerie lässt sich endlos durchscrollen. Fotos, Ordner, Texte und die Fotoauswahl auf der Karte laden automatisch nach, ohne Seitenwechsel oder Ladebuttons. Die Scrollposition bleibt beim Nachladen und bei der Rückkehr aus dem Vollbild erhalten.
 

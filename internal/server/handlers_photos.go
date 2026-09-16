@@ -251,16 +251,17 @@ func photoListOptionsFromRequest(r *http.Request) photos.ListOptions {
 	}
 	path := q.Get("path")
 	query := q.Get("q")
-	if strings.TrimSpace(query) != "" {
+	if strings.TrimSpace(query) != "" && !photos.IsPeopleFolder(path) {
 		path = ""
 	}
 	return photos.ListOptions{
-		Path:      path,
-		Query:     query,
-		MediaType: q.Get("type"),
-		GPSOnly:   truthy(q.Get("gps")),
-		Sort:      sortValue,
-		Page:      parsePositiveInt(q.Get("page"), 1),
+		IncludePeopleFolders: true,
+		Path:                 path,
+		Query:                query,
+		MediaType:            q.Get("type"),
+		GPSOnly:              truthy(q.Get("gps")),
+		Sort:                 sortValue,
+		Page:                 parsePositiveInt(q.Get("page"), 1),
 	}
 }
 

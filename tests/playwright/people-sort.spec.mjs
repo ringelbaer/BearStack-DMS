@@ -199,3 +199,65 @@ test("favorite portraits appear in overview and naming choices without changing 
   await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
   await context.close();
 });
+
+for (const javaScriptEnabled of [true, false]) {
+  test(`search reset clears the query and preserves named filter, JavaScript=${javaScriptEnabled}`, async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled }); const page = await context.newPage();
+    await login(page);
+    await page.goto(baseURL + "/photos/people?known=1&q=missing&page=2&sort=count_desc");
+    await expect(page.locator("a.person-card")).toHaveCount(0);
+    await page.getByRole("link", { name: "Personensuche zurücksetzen" }).click();
+    await expect(page.locator('input[name="q"]')).toHaveValue("");
+    await expect(page.locator('input[name="filter"]')).toHaveValue("known");
+    await expect(page.locator("a.person-card")).toHaveCount(1);
+    await expect(page.getByRole("combobox", { name: "Sortieren", exact: true })).toHaveValue("count_desc");
+    await context.close();
+  });
+}
+
+test("tag a person and browse the virtual folders into the dated photo gallery", async ({ browser }) => {
+  const context = await browser.newContext(); const page = await context.newPage();
+  async function checkPhotoHead() {
+    for (const width of [320, 390, 480, 640, 1440]) {
+      await page.setViewportSize({ width, height: 800 });
+      const geometry = await page.evaluate(() => {
+        const heading = document.querySelector(".photo-page > .page-head h1");
+        const boxes = [...document.querySelectorAll(".photo-page > .page-head h1, .photo-page > .page-head .page-actions > *")].map(el => el.getBoundingClientRect()).filter(r => r.width && r.height);
+        return { overflow: document.documentElement.scrollWidth - innerWidth,
+          titleClipped: heading.scrollWidth - heading.clientWidth,
+          overlaps: boxes.some((a,i) => boxes.slice(i+1).some(b => a.x < b.right && a.right > b.x && a.y < b.bottom && a.bottom > b.y)) };
+      });
+      expect(geometry.overflow).toBeLessThanOrEqual(1);
+      expect(geometry.titleClipped).toBeLessThanOrEqual(1);
+      expect(geometry.overlaps).toBe(false);
+    }
+  }
+  await login(page);
+  await page.goto(baseURL + "/photos/people?known=1&q=Zoe");
+  await page.locator("a.person-card").click();
+  await page.getByRole("button", { name: "Personen-Tags bearbeiten" }).click();
+  const dialog = page.locator("[data-tag-select-modal]");
+  await dialog.locator("[data-tag-select-search]").fill("familie");
+  await dialog.getByRole("button", { name: "Tag anlegen", exact: true }).click();
+  await dialog.getByRole("button", { name: "Übernehmen", exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByRole("button", { name: "Personen-Tags bearbeiten" })).toContainText("familie");
+  await page.goto(baseURL + "/photos");
+  await checkPhotoHead();
+  const people = page.locator(".photo-folder-link").filter({ hasText: "Personen" }).first();
+  await expect(people.locator("img")).toHaveCount(8);
+  await people.click();
+  await expect(page.getByRole("link", { name: /^Alle \d+ Personen/ })).toHaveCount(1);
+  await page.locator(".photo-folder-link").filter({ hasText: "familie" }).click();
+  await expect(page.locator(".photo-folder-link")).toHaveCount(1);
+  await page.locator(".photo-folder-link").filter({ hasText: "Zoe" }).click();
+  await expect(page.locator(".photo-card")).toHaveCount(2);
+  await expect(page.locator(".photo-date-group")).toHaveCount(2);
+  await page.locator("[data-photo-sort-menu] summary").click();
+  await page.getByRole("link", { name: "Datum absteigend", exact: true }).click();
+  await expect(page.locator(".photo-card").first()).toHaveAttribute("data-photo-path", "B/photo.png");
+  await checkPhotoHead();
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.screenshot({ path: "/tmp/bearstack-people-gallery-mobile.png", fullPage: true });
+  await context.close();
+});

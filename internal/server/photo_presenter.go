@@ -15,6 +15,8 @@ import (
 )
 
 type PhotoListingView struct {
+	Virtual          bool
+	PeopleDirectory  bool
 	Path             string
 	ParentPath       string
 	Breadcrumbs      []photos.Crumb
@@ -62,6 +64,8 @@ type PhotoMediaGroup struct {
 func newPhotoListingView(ctx context.Context, library *photos.Library, listing photos.Listing, settings PhotoSettings) PhotoListingView {
 	settings = normalizePhotoPresentationSettings(settings)
 	view := PhotoListingView{
+		Virtual:          photos.IsPeopleFolder(listing.Path),
+		PeopleDirectory:  photos.IsPeopleFolder(listing.Path) && strings.Count(listing.Path, "/") < 2,
 		Path:             listing.Path,
 		ParentPath:       listing.ParentPath,
 		Breadcrumbs:      listing.Breadcrumbs,
@@ -98,6 +102,10 @@ func newPhotoListingView(ctx context.Context, library *photos.Library, listing p
 			viewFolder.Previews = make([]PhotoMediaView, len(folder.Previews))
 		}
 		for j, item := range folder.Previews {
+			if item.FaceID > 0 {
+				viewFolder.Previews[j] = PhotoMediaView{Media: item, ThumbURL: fmt.Sprintf("/photos/faces/%d/thumbnail", item.FaceID), ThumbReady: true}
+				continue
+			}
 			preview := photoFolderPreviewView(item, settings)
 			viewFolder.Previews[j] = preview
 			if preview.ThumbURL != "" {
@@ -133,6 +141,12 @@ func newPhotoListingView(ctx context.Context, library *photos.Library, listing p
 }
 
 func photoFolderMediaCountLabel(folder photos.Folder) string {
+	if folder.Virtual && (len(folder.Previews) == 0 || folder.Path == photos.PeopleFolderPath || strings.Count(folder.Path, "/") == 1) {
+		if folder.DirCount == 1 {
+			return "1 Person"
+		}
+		return fmt.Sprintf("%d Personen", folder.DirCount)
+	}
 	count := fmt.Sprintf("%d", folder.MediaCount)
 	if folder.MediaCountApproximate {
 		count += "+"
@@ -149,7 +163,7 @@ func photoFolderMediaCountLabel(folder photos.Folder) string {
 }
 
 func photoFolderMediaCountTitle(folder photos.Folder) string {
-	if folder.DirCount == 0 {
+	if folder.Virtual || folder.DirCount == 0 {
 		return photoFolderMediaCountLabel(folder)
 	}
 	count := fmt.Sprintf("%d", folder.MediaCount)
@@ -568,7 +582,7 @@ func photoSortOptions(base url.Values, activeSort string) ([]PhotoSortOption, st
 }
 
 func photoMapAvailable(path string) bool {
-	return photoFolderDepth(path) >= 2
+	return !photos.IsPeopleFolder(path) && photoFolderDepth(path) >= 2
 }
 
 func photoFolderDepth(path string) int {

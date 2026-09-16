@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"testing"
 )
@@ -75,6 +76,11 @@ func TestLabelingDetachNameAssignAndReceipts(t *testing.T) {
 	a = labelAction(p, s, "assign")
 	a.TargetID = target.ID
 	a.TargetRevision = target.Revision
+	for i, id := range []int64{p.ID, target.ID} {
+		if _, err := l.SetPersonTags(ctx, id, []string{"shared", fmt.Sprintf("tag%d", i)}); err != nil {
+			t.Fatal(err)
+		}
+	}
 	assigned, err := l.ApplyLabelAction(ctx, "manager", p.ID, a)
 	if err != nil || assigned.Faces != 2 || assigned.TargetID != target.ID {
 		t.Fatalf("%+v %v", assigned, err)
@@ -85,6 +91,9 @@ func TestLabelingDetachNameAssignAndReceipts(t *testing.T) {
 	}
 	if _, err = l.ApplyLabelAction(ctx, "manager", p.ID, a); err != nil {
 		t.Fatal(err)
+	}
+	if tags, err := l.personTags(ctx, target.ID); err != nil || !reflect.DeepEqual(tags, []string{"shared", "tag0", "tag1"}) {
+		t.Fatalf("assigned group tags: %v %v", tags, err)
 	}
 	found, err := l.LabelSuggestions(ctx, "rik", false)
 	if err != nil || len(found) != 1 {

@@ -51,21 +51,25 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
     var mapOpen by rememberSaveable(state.query) {mutableStateOf(false)}
     val locale = LocalConfiguration.current.locales[0]
     BackHandler(state.query.path.isNotEmpty() && state.selected==null && state.blog==null) {
-        controller.open(state.query.copy(path=state.query.path.substringBeforeLast('/',"")))
+        controller.open(state.query.copy(path=state.parent))
     }
     Scaffold(topBar={
         Column {
-            TopAppBar(title={ Text(if(state.query.path.isBlank()) stringResource(R.string.app_name) else state.query.path.substringAfterLast('/'),
+            TopAppBar(title={ Text(if(state.query.path.isBlank()) stringResource(R.string.app_name) else state.name.ifBlank { state.query.path.substringAfterLast('/') },
                 maxLines=1,overflow=TextOverflow.Ellipsis) },navigationIcon={
-                if(state.query.path.isNotBlank()) IconButton(onClick={controller.open(state.query.copy(path=state.query.path.substringBeforeLast('/',"")))}) {
+                if(state.query.path.isNotBlank()) IconButton(onClick={controller.open(state.query.copy(path=state.parent))}) {
                     Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_back))
                 }
             },actions={
                 if(tab==0) PhotoDateAction(controller,state)
                 IconButton(onClick={menu=true}) { Icon(painterResource(R.drawable.ic_more_horiz),stringResource(R.string.photos_menu)) }
                 DropdownMenu(menu,{menu=false}) {
-                    DropdownMenuItem(text={Text(stringResource(R.string.photos_map))},onClick={menu=false;mapOpen=true},enabled=!state.loading)
-                    DropdownMenuItem(text={Text(stringResource(R.string.photos_frame))},onClick={menu=false;controller.startFrame()},enabled=!state.loading)
+                    DropdownMenuItem(text={Text(stringResource(R.string.photos_map))},onClick={menu=false;mapOpen=true},enabled=!state.loading && !state.query.path.startsWith(".people"))
+                    DropdownMenuItem(text={Text(stringResource(R.string.photos_frame))},onClick={menu=false;controller.startFrame()},enabled=!state.loading && (!state.query.path.startsWith(".people") || state.query.path.count {it=='/'}==2))
+                    listOf("descending_date" to R.string.photos_sort_newest,"ascending_date" to R.string.photos_sort_oldest,
+                        "ascending_name" to R.string.photos_sort_name_asc,"descending_name" to R.string.photos_sort_name_desc).forEach { (sort,label) ->
+                        DropdownMenuItem(text={Text(stringResource(label))},onClick={menu=false;controller.open(state.query.copy(sort=sort))})
+                    }
                     if(canManage) DropdownMenuItem(text={Text(stringResource(R.string.photos_people))},onClick={menu=false;onPeople()})
                     DropdownMenuItem(text={Text(stringResource(R.string.connection_local_photos))},onClick={menu=false;onLocal()})
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_settings))},onClick={menu=false;onSettings()})
@@ -154,25 +158,32 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
 @Composable internal fun FolderTile(folder: PhotoFolder, controller: PhotosController, images: ImageLoader, onClick: () -> Unit) {
     Column(Modifier.padding(6.dp).clip(RoundedCornerShape(20.dp)).clickable(onClick=onClick)
         .background(MaterialTheme.colorScheme.surfaceContainerLow)) {
-        Row(Modifier.fillMaxWidth().height(104.dp),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
-            repeat(2) { index ->
-                val photo=folder.previews.getOrNull(index)
-                if(photo!=null) PhotoThumbnail(photo,controller,images,controller.session.folderThumbnailSize,Modifier.weight(1f).fillMaxHeight())
-                else Box(Modifier.weight(1f).fillMaxHeight().background(MaterialTheme.colorScheme.surfaceContainerHighest),contentAlignment=Alignment.Center) {
-                    Icon(painterResource(R.drawable.ic_folder),null,tint=MaterialTheme.colorScheme.outline)
+        val cells=folder.previews.size.coerceIn(1,8)
+        val columns=if(cells>4) 4 else if(cells>1) 2 else 1
+        val rows=(cells+columns-1)/columns
+        Column(Modifier.fillMaxWidth().height(104.dp),verticalArrangement=Arrangement.spacedBy(2.dp)) {
+            repeat(rows) { row ->
+                Row(Modifier.fillMaxWidth().weight(1f),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+                    repeat(columns) { column ->
+                        val photo=folder.previews.getOrNull(row*columns+column)
+                        if(photo!=null) PhotoThumbnail(photo,controller,images,controller.session.folderThumbnailSize,Modifier.weight(1f).fillMaxHeight())
+                        else Box(Modifier.weight(1f).fillMaxHeight().background(MaterialTheme.colorScheme.surfaceContainerHighest),contentAlignment=Alignment.Center) {
+                            Icon(painterResource(R.drawable.ic_folder),null,tint=MaterialTheme.colorScheme.outline)
+                        }
+                    }
                 }
             }
         }
         Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
             Text(folder.name,style=MaterialTheme.typography.titleSmall,maxLines=2,overflow=TextOverflow.Ellipsis)
-            Text(pluralStringResource(if(folder.approximate) R.plurals.photos_count_approximate else R.plurals.photos_count,folder.count,folder.count),
+            Text(if(folder.virtual && folder.path.count {it=='/'}<2) pluralStringResource(R.plurals.photos_person_count,folder.folders,folder.folders) else pluralStringResource(if(folder.approximate) R.plurals.photos_count_approximate else R.plurals.photos_count,folder.count,folder.count),
                 style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 @Composable internal fun PhotoThumbnail(photo: Photo, controller: PhotosController, images: ImageLoader, size: Int, modifier: Modifier) {
     val context=LocalContext.current
-    val request=remember(photo.path,photo.version,size,controller) { ImageRequest.Builder(context).data(controller.service.thumbnail(photo,size)).size(size).build() }
+    val request=remember(photo.path,photo.version,photo.faceId,size,controller) { ImageRequest.Builder(context).data(controller.service.thumbnail(photo,size)).size(size).build() }
     AsyncImage(request,photo.name,imageLoader=images,contentScale=ContentScale.Crop,
         modifier=modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest))
 }

@@ -5,6 +5,7 @@
   var grid = root.querySelector("[data-photo-gallery]");
   var status = root.querySelector("[data-detail-status]");
   var retry = root.querySelector("[data-detail-retry]");
+  var tagTools = document.querySelector("[data-person-tags-tools]");
   var groupButton = document.querySelector("[data-detail-edit-group]");
   var selection = root.querySelector("[data-detail-selection]");
   var selectAll = root.querySelector("[data-detail-select-all]");
@@ -21,6 +22,7 @@
     root.querySelectorAll("button, input, select").forEach(function (control) {
       if (!control.closest("dialog")) control.disabled = blocked;
     });
+    if (tagTools) tagTools.querySelectorAll("button").forEach(function (button) { button.disabled = blocked; });
     retry.disabled = busy;
     if (groupButton) groupButton.disabled = blocked || !cards().length;
     if (selection) {
@@ -54,6 +56,7 @@
     if (response.status === 404 && !target) {
       // A completely moved/ignored group no longer has an active detail page.
       grid.replaceChildren(); groupButton.disabled = true;
+      if (tagTools) tagTools.hidden = true;
       document.querySelector("[data-detail-count]").textContent = "Keine aktiven Gesichter mehr";
       document.querySelector(".people-pagination").hidden = true;
       grid.dispatchEvent(new CustomEvent("photo-gallery-updated"));
@@ -73,6 +76,12 @@
       return existing;
     });
     grid.replaceChildren.apply(grid, next);
+    var updatedTagTools = view.querySelector("[data-person-tags-tools]");
+    if (tagTools && updatedTagTools) {
+      var nextTagTools = document.importNode(updatedTagTools, true);
+      tagTools.replaceWith(nextTagTools); tagTools = nextTagTools;
+      if (window.initializeTagSelects) window.initializeTagSelects(tagTools);
+    }
     root.dataset.personId = updated.dataset.personId; root.dataset.personName = updated.dataset.personName;
     document.querySelector("[data-detail-title]").textContent = updated.dataset.personName || "Unbenannt";
     document.querySelector("[data-detail-count]").textContent = view.querySelector("[data-detail-count]").textContent;

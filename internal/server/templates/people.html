@@ -26,7 +26,7 @@
 <label>Thumbnailgröße <select data-display-size><option value="s">S</option><option value="m">M</option><option value="l">L</option></select></label>
 </div></details></div>
 </div>
-{{if not (or .People.UnknownOnly .People.IgnoredOnly)}}<div class="filters people-search-fields"><label>Name <input type="search" name="q" value="{{.People.Query}}" placeholder="Person suchen"></label><button>Suchen</button></div>{{end}}
+{{if not (or .People.UnknownOnly .People.IgnoredOnly)}}<div class="filters people-search-fields"><label>Name <span class="people-search-input"><input type="search" name="q" value="{{.People.Query}}" placeholder="Person suchen"><a class="secondary-button people-search-reset" aria-label="Personensuche zurücksetzen" href="/photos/people?filter={{if .People.KnownOnly}}known{{else}}all{{end}}&amp;sort={{.People.Sort}}&amp;q=" title="Suche zurücksetzen">×</a></span></label><button>Suchen</button></div>{{end}}
 </form>
 {{if .People.IgnoredOnly}}
 <p>„Wiederherstellen“: unbenannt zurückholen. Stift: benennen oder zuordnen und wiederherstellen.</p>
@@ -64,6 +64,7 @@
 {{end}}
 </div>
 {{else}}
+<div class="person-tags-tools" data-person-tags-tools><a class="secondary-button" href="/photos?path=.people%2Fall%2F{{.People.PersonID}}">Fotos ansehen</a>{{if .Auth.CanPhotosEdit}}<div class="tag-select" data-tag-select data-create-tag-mode="local" data-selected-tags="{{joinTags .People.Tags}}" data-update-url="/photos/people/{{.People.PersonID}}/tags" data-empty-label="Personen-Tags"><button type="button" class="tag-select-trigger" data-tag-select-trigger aria-label="Personen-Tags bearbeiten"><span class="tag-select-summary" data-tag-select-summary></span></button><div hidden data-tag-select-inputs></div></div>{{else}}{{range .People.Tags}}<span class="tag">{{.}}</span>{{end}}{{end}}</div>
 <section class="person-detail" data-person-detail data-person-id="{{.People.PersonID}}" data-person-name="{{.People.Name}}" data-person-user="{{.Auth.Username}}" data-size="s" data-show-paths="false">
 <div class="person-detail-toolbar">
 {{if .Auth.CanPhotosEdit}}<button type="button" class="secondary-button" data-detail-select-all title="Alle Gesichter auf dieser Seite auswählen" hidden>Alle auswählen</button>{{end}}

@@ -28,6 +28,18 @@ class PhotosControllerTest {
         override fun thumbnail(photo: Photo,size: Int)="https://example.test/thumbnail"
         override fun original(photo: Photo)="https://example.test/media"
     }
+    @Test fun virtualFoldersKeepNamesParentsAndBoundPortraitCounts()=runTest {
+        val fake=Fake().apply {handler={q,p,_ -> page(q,p).copy(name="Familie",parent=".people",
+            folders=listOf(PhotoFolder(".people/all/1","Zoe",null,10,false,0,List(8){photo("face-$it").copy(faceId=it+1L)},true)))}}
+        val controller=PhotosController(this,fake,session,initialQuery=PhotoQuery(path=".people/t-ZmFtaWxpZQ"));runCurrent()
+        assertNull(controller.state.value.error)
+        assertEquals("Familie",controller.state.value.name);assertEquals(".people",controller.state.value.parent)
+        assertEquals(8,controller.state.value.folders.single().previews.size)
+        fake.handler={q,p,_ -> page(q,p).copy(folders=listOf(PhotoFolder("bad","bad",null,0,false,0,List(9){photo("face-$it")},true)))}
+        controller.open(PhotoQuery(path=".people"));runCurrent()
+        assertNotNull(controller.state.value.error);assertTrue(controller.state.value.folders.isEmpty())
+        controller.close()
+    }
     @Test fun dateJumpLoadsOnlyTargetPageAndKeepsBothScrollDirections()=runTest {
         val fake=Fake().apply {handler={q,p,_ -> page(q,p,listOf(photo(if(p==10) "target" else "page-$p")),true)}}
         val controller=PhotosController(this,fake,session);runCurrent()

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 
@@ -26,7 +27,16 @@ func TestOpenAPIHTTPResponses(t *testing.T) {
 	const base = "/api/photos/labeling/v1"
 	check := func(method, path, canonical, user, body string, status int) *httptest.ResponseRecorder {
 		t.Helper()
-		w := labelRequest(s, method, path, user, body)
+		var w *httptest.ResponseRecorder
+		if canonical == "/photos/people/{id}/tags" {
+			form, err := url.ParseQuery(body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			w = faceRequest(s, method, path, user, form)
+		} else {
+			w = labelRequest(s, method, path, user, body)
+		}
 		if w.Code != status {
 			t.Fatalf("%s %s: status %d, want %d: %s", method, path, w.Code, status, w.Body.String())
 		}
@@ -81,6 +91,17 @@ func TestOpenAPIHTTPResponses(t *testing.T) {
 		t.Fatalf("candidates: %s %v", w.Body.String(), err)
 	}
 	person := candidates.People[0]
+	check("POST", fmt.Sprintf("/photos/people/%d/tags", person.ID), "/photos/people/{id}/tags", "editor", "tags=family", 200)
+	check("GET", "/api/photos/v1/browse?people=1", "/api/photos/v1/browse", "reader", "", 200)
+	check("GET", "/api/photos/v1/browse?people=1&path=.people", "/api/photos/v1/browse", "reader", "", 200)
+	check("GET", "/api/photos/v1/browse?people=1&path=.people/all", "/api/photos/v1/browse", "reader", "", 200)
+	check("GET", fmt.Sprintf("/api/photos/v1/browse?people=1&path=.people/all/%d", person.ID), "/api/photos/v1/browse", "reader", "", 200)
+	faces, err := s.photos.AutomaticFaces(ctx, job.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check("GET", fmt.Sprintf("/api/photos/v1/faces/%d/thumbnail", faces[0].ID), "/api/photos/v1/faces/{id}/thumbnail", "reader", "", 200)
+
 	path := fmt.Sprintf("%s/people/%d", base, person.ID)
 	check("GET", path, base+"/people/{id}", "editor", "", 200)
 	check("GET", fmt.Sprintf("%s/groups?upper=%d", base, session.UpperID), base+"/groups", "editor", "", 200)

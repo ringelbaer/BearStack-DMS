@@ -543,9 +543,9 @@ function initializeSearchFavoriteYearFields(root = document) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  if (!document.querySelector("[data-photo-module]")) {
-    initializeTagSelects(document);
-  }
+  // Photo-card pickers stay deferred until edit mode; standalone person tags
+  // are ready immediately, even when the page also has a photo lightbox.
+  initializeTagSelects(document);
   initializeSearchFavoriteYearFields(document);
 });
 

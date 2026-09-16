@@ -82,7 +82,7 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 		_ = writeJSON(w, http.StatusOK, result)
 		return
 	}
-	data := PageData{Title: "Personen", Active: "photos", Assets: photoPageAssets(false), People: result, Notice: r.URL.Query().Get("notice")}
+	data := PageData{Title: "Personen", Active: "photos", Assets: photoPageAssets(id != 0 && s.requestHasCapabilities(r, authCapPhotosEdit)), People: result, Notice: r.URL.Query().Get("notice")}
 	if id != 0 {
 		data.PhotoSettings, err = s.photoSettings(r.Context())
 		if err != nil {

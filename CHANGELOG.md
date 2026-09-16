@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.53.0 / Android 0.13.0 – in Entwicklung
+
+- Neuer virtueller Personenordner unter Fotos und in Android unter Ordner: Alle sowie eine Ebene belegter Foto-Tags führen zu Personengruppen und deren normaler, datumsgruppierter, sortierbarer Fotogalerie. Doppelte Erkennungen im selben Bild werden dedupliziert.
+- Personen- und Tag-Kacheln zeigen doppelt so viele Gesichtsthumbnails wie normale Ordner nach der Einstellung (höchstens acht): Personen nach unterschiedlicher sichtbarer Fotoanzahl, Porträts mit bestehender Stern-Priorität und Gesichtscache. Abfragen und Bildabrufe bleiben seitenweise begrenzt; keine Originaldekodierung für Listen.
+- Personengruppen lassen sich in der Web-Detailansicht mit bestehenden oder neuen Foto-Tags versehen. Zusammenführungen erhalten die Vereinigungsmenge; Tag-Umbenennung und -Löschung aktualisieren Zuordnungen atomar. Automatische kompatible Migration auf Foto-Schema 32.
+- Namenssuche in der Personenverwaltung per Klick zurücksetzen; Filter und Sortierung bleiben erhalten. Ansehen benötigt nur Fotoleserechte, Tagging Fotobearbeitungsrechte. Private und ignorierte Gesichter bleiben ausgeschlossen.
+- Native API mit optionalem `people=1`, virtuellen Ordnernamen und Gesichtsvorschau-IDs; ältere Apps behalten die bisherige Ordnerantwort. Android ergänzt variable Vorschaukacheln und Galerie-Sortierung. MINOR: BearStack **0.53.0**, Android **0.13.0**, `versionCode` **29**. README, Website und OpenAPI aktualisiert.
+- Geprüft mit vollständiger Go-Suite einschließlich API-Verträgen, gezielten Race-Detector-Tests, JavaScript-Prüfungen, neun Browserregressionen sowie Android-JVM-Tests, Lint, Debug-Build und acht UI-Tests auf dem Emulator.
+
 ### BearStack 0.52.5 / Android 0.12.3 – in Entwicklung
 
 - Android / Ähnliche Gruppen: Personennamen öffnen die zugehörige Detailansicht unter Benannte Personen, einschließlich neu benannter oder zugeordneter Seiten. Zuordnungen zeigen „Zugeordnet: Name“ mit der gewählten Zielperson; der Name bleibt bei Quittungsprüfung nach verlorener Antwort erhalten. Details laden erst beim Antippen seitenweise; die Benennungswarteschlange bleibt erhalten.

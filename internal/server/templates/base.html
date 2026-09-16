@@ -134,10 +134,10 @@
     </div>
   </dialog>
   {{if pageTagAssets .}}
-    <div hidden data-tag-options {{if .PhotoPage}}data-tag-options-url="/photos/tags/options"{{end}}>
+    <div hidden data-tag-options {{if or .PhotoPage (eq .Active "photos")}}data-tag-options-url="/photos/tags/options"{{end}}>
       {{range .Tags}}<span data-tag-option data-name="{{.Name}}" data-display-name="{{formatTag $.TagDisplayMode .Name}}" data-description="{{.Description}}" data-list-hidden="{{.ListHidden}}" data-delete-protected="{{.DeleteProtected}}" style="{{tagStyle .Color}}"></span>{{end}}
     </div>
-    <dialog class="tag-select-modal" data-tag-select-modal {{if .PhotoPage}}data-tag-options-url="/photos/tags/options"{{end}}>
+    <dialog class="tag-select-modal" data-tag-select-modal {{if or .PhotoPage (eq .Active "photos")}}data-tag-options-url="/photos/tags/options"{{end}}>
       <header>
         <strong>Tags auswählen</strong>
         <button type="button" class="icon-button" data-tag-select-close aria-label="Tags schließen">×</button>

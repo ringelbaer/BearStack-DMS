@@ -65,7 +65,11 @@ test("person detail keeps actions compact and scopes face editing, selection and
       await page.setViewportSize({width,height:900});
       await page.screenshot({path:`/tmp/bearstack-person-detail-${width}.png`,fullPage:true});
       const geometry = await cards.first().boundingBox();
-      expect(geometry.y).toBeLessThan(width <= 640 ? 290 : 360); expect(geometry.height).toBeLessThan(260);
+      const tagTools = await page.locator("[data-person-tags-tools]").boundingBox();
+      // The new gallery/tag actions add exactly one compact row to the existing layout.
+      expect(tagTools.height).toBeLessThanOrEqual(44);
+      expect(geometry.y - tagTools.height - 8).toBeLessThan(width <= 640 ? 290 : 360);
+      expect(geometry.height).toBeLessThan(260);
       expect(await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     }
     for (const width of [320,390]) {
@@ -116,6 +120,8 @@ test("person detail keeps actions compact and scopes face editing, selection and
     await expect(dialog).not.toBeVisible();
     await expect(lightbox.locator(".photo-info-face")).toContainText("Einzelkorrektur");
     await expect(cards).toHaveCount(1);
+    await expect(page.locator('[data-person-tags-tools] [data-tag-select]')).toHaveAttribute("data-update-url",`/photos/people/${person.id}/tags`);
+    await expect(page.getByRole("link",{name:"Fotos ansehen",exact:true})).toHaveAttribute("href",`/photos?path=.people%2Fall%2F${person.id}`);
     await expect(page.locator("[data-detail-title]")).toHaveText("Testgruppe");
     expect(renames).toBe(1);
     // Moving it back refreshes the target group's detail page without renaming it.

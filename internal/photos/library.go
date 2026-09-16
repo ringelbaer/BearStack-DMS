@@ -47,7 +47,7 @@ func (l *Library) List(ctx context.Context, opts ListOptions) (Listing, error) {
 	opts.MediaType = normalizeMediaType(opts.MediaType)
 	opts.Sort = normalizeSort(opts.Sort)
 	opts.Query = strings.TrimSpace(opts.Query)
-	if opts.Query != "" {
+	if opts.Query != "" && !IsPeopleFolder(rel) {
 		rel = ""
 		opts.Path = ""
 	}
@@ -62,6 +62,9 @@ func (l *Library) List(ctx context.Context, opts ListOptions) (Listing, error) {
 		ListTraceInt("page_size", opts.PageSize),
 	)
 
+	if IsPeopleFolder(rel) {
+		return l.listPeopleFolders(ctx, rel, opts)
+	}
 	listing := newListing(rel, opts)
 	// Map markers must use the same fresh permissions as the grouped route.
 	// Refresh before reading media: filtering only the route leaves stale marker
@@ -247,9 +250,21 @@ func (l *Library) finishListing(ctx context.Context, opts ListOptions, listing *
 	finishFolderSort := StartListTraceStep(ctx, "photos.library.sort_folders", ListTraceInt("count", len(listing.Folders)), ListTraceString("order", listing.Order), ListTraceString("sort", opts.Sort))
 	sortFolders(listing.Folders, listing.Order, opts.Sort)
 	finishFolderSort()
+	if opts.IncludePeopleFolders && listing.Path == "" && opts.Query == "" && !opts.Recursive && !opts.SkipFolders && l.index.available() {
+		listing.Folders = append([]Folder{{Name: "Personen", DisplayName: "Personen", Path: PeopleFolderPath, Virtual: true}}, listing.Folders...)
+	}
 	listing.FolderTotal = len(listing.Folders)
 	if opts.FolderPageSize > 0 {
 		listing.Folders, listing.FolderHasNext = listingPage(listing.Folders, opts.Page, opts.FolderPageSize)
+	}
+	for i, folder := range listing.Folders {
+		if folder.Virtual && folder.Path == PeopleFolderPath {
+			populated, err := l.peopleRootFolder(ctx, 2*opts.FolderPreviewSize)
+			if err != nil {
+				return err
+			}
+			listing.Folders[i] = populated
+		}
 	}
 	if opts.BlogPageSize > 0 && !source.blogsPaged {
 		listing.Blogs, listing.BlogHasNext = listingPage(listing.Blogs, opts.Page, opts.BlogPageSize)

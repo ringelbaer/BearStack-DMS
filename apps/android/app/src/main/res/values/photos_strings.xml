@@ -113,4 +113,9 @@
     <string name="photos_route_help">Verbindet die GPS-Orte deiner Fotos in zeitlicher Reihenfolge. Die Fotoroute ist gestrichelt.</string>
     <string name="photos_route_error">Die Fotoroute konnte nicht geladen werden.</string>
     <string name="photos_route_summary">%1$d Medien · Ortsgruppen innerhalb von %2$d m</string>
+    <string name="photos_sort_newest">Datum: Neueste zuerst</string>
+    <string name="photos_sort_oldest">Datum: Älteste zuerst</string>
+    <string name="photos_sort_name_asc">Name: A–Z</string>
+    <string name="photos_sort_name_desc">Name: Z–A</string>
+    <plurals name="photos_person_count"><item quantity="one">%d Person</item><item quantity="other">%d Personen</item></plurals>
 </resources>

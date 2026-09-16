@@ -1,11 +1,29 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.12.3** (`versionCode 28`). Die Servergalerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.13.0** (`versionCode 29`). Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
 
 Ab App **0.12.0** liegen die Warteschlangen als einzelne, indizierte Room-Einträge vor. Das Upgrade auf Datenbankschema 4 übernimmt automatisch die bisherigen Listen einschließlich Reihenfolge, Kartenpositionen, übersprungener Gruppen und noch nicht gesendeter Ignorieraktionen. Offene Aktionsquittungen und Statistiken bleiben erhalten. Normales Weiterblättern und Zurückgehen lesen einzelne Einträge; die Wiederherstellung nach einem Neustart verarbeitet höchstens 256 Einträge je Leseblock. Die Daten bleiben nach Server, Datensatz und Konto getrennt.
+
+
+## Personen unter Ordner ansehen
+
+Ab App **0.13.0** mit BearStack **0.53.0** erscheint unter **Ordner** die virtuelle
+Kachel **Personen**. **Alle** und die belegten Foto-Tags führen zu Personengruppen,
+eine Person zu ihren nach Datum gruppierten Fotos. **Weitere Optionen** bietet die
+Sortierung nach Datum oder Name in beiden Richtungen. Zurück führt zum jeweiligen
+übergeordneten Ordner; verständliche Personen- und Tagnamen stehen im Titel.
+
+Normale Ordner berücksichtigen nun die serverseitige Einstellung für die Zahl der
+Vorschaubilder. Personen- und Tag-Kacheln zeigen doppelt so viele Gesichtsthumbnails
+(maximal acht), nach Fotoanzahl und mit Stern-Priorität. Die Anzeige nutzt den
+vorhandenen Bildcache. Ordnerseiten bleiben auf 24, Fotoseiten auf 96 Einträge
+begrenzt. `photos.read` genügt. Tags werden in der Web-Personenverwaltung vergeben.
+Auf älteren Servern bleibt die vorhandene Ordneransicht verfügbar; ältere Apps
+behalten auch nach dem Serverupdate ihre bisherigen Antworten mit zwei Vorschauen.
+
 
 ## Hilfe unter Personen
 
@@ -142,7 +160,7 @@ Der Abgleich nutzt den vorhandenen Endpunkt `GET /photos/faces/{id}/suggestions`
 ## Galerie
 
 **Fotos** zeigt den gesamten Fotobestand nach Datum. Unter **Ordner** öffnest du die
-bekannte Verzeichnisstruktur; jede Kachel enthält zwei Vorschauen und die Medienanzahl.
+bekannte Verzeichnisstruktur; jede Kachel enthält die konfigurierte Zahl der Vorschauen und die Medienanzahl.
 **Suchen** nutzt die Browsersyntax, zum Beispiel `person:Anna` oder `tag:Urlaub`.
 Die Suche wird mit der Suchen-Taste der Tastatur gestartet.
 
@@ -242,7 +260,7 @@ Unter **Weitere Optionen → Einstellungen → Lokale Fotoordner anzeigen** läs
 zusätzlich **Ordner → Dieses Gerät** einschalten. Die Funktion ist standardmäßig aus
 und die Einstellung bleibt auf dem Gerät gespeichert. Unter dem Hauptordner stehen
 die von Android erkannten Fotoordner, beispielsweise Camera, Screenshots und Pictures,
-mit Medienanzahl und bis zu zwei Vorschauen. Ein Ordner öffnet seine Fotos im
+mit Medienanzahl und bis zu vier Vorschauen (virtuelle Personenordner bis zu acht). Ein Ordner öffnet seine Fotos im
 fortlaufenden Raster; Vollbild, Zoom, Diashow und lokale Dateiinformationen sind verfügbar.
 Bei aktiver Serververbindung führt Zurück über das Gerät wieder zur Servergalerie.
 Die Tabs Fotos und Suchen zeigen dann den Serverbestand. Ohne Serververbindung
@@ -395,11 +413,11 @@ gestartete Medien. Die Einstellungen bleiben bei großer Schrift scrollbar.
 
 Die API `/api/photos/v1/` verwendet dieselben Foto-Dienste, Suchregeln und
 Zugriffskontrollen wie der Browser. Seiten enthalten bis zu 96 Medien, 24 Ordner
-mit jeweils zwei Vorschauen und 20 Textzusammenfassungen. Fotos und Texte werden
+mit bis zu vier Vorschauen (virtuelle Personenordner bis zu acht) und 20 Textzusammenfassungen. Fotos und Texte werden
 bei Bedarf geladen; ein Ansichts- oder Kontowechsel bricht veraltete Anfragen ab.
 Die Übertragung erfolgt intern in begrenzten Datenpaketen, ohne sichtbare Seitengrenzen.
 Eine Galerieansicht hält pro Bereich höchstens 288 Medien,
-72 Ordner mit bis zu zwei Vorschauen und 60 Textzusammenfassungen. Für die Rückkehr
+72 Ordner mit bis zu vier Vorschauen (virtuelle Personenordner bis zu acht) und 60 Textzusammenfassungen. Für die Rückkehr
 aus dem Fotoframe bleibt zusätzlich die vorherige Galerie mit denselben Grenzen
 erhalten. Entfernte Metadaten werden beim Zurückscrollen automatisch erneut geladen. Das sichtbare Element behält seine
 Position; Vollbild und Diashow wechseln auch über Seitengrenzen zum richtigen Foto.
