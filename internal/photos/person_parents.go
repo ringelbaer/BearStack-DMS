@@ -97,6 +97,16 @@ func (l *Library) SetPersonParents(ctx context.Context, id, mother, father int64
 			return ErrPersonParents
 		}
 	}
+	if err := writePersonParentsTx(ctx, tx, id, mother, father); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func writePersonParentsTx(ctx context.Context, tx *sql.Tx, id, mother, father int64) error {
+	if id <= 0 || mother < 0 || father < 0 || mother == id || father == id || (mother > 0 && mother == father) {
+		return ErrPersonParents
+	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM person_parents WHERE person_id=?`, id); err != nil {
 		return err
 	}
@@ -113,7 +123,7 @@ func (l *Library) SetPersonParents(ctx context.Context, id, mother, father int64
 	if err := validateParentGraphTx(ctx, tx, id); err != nil {
 		return err
 	}
-	return tx.Commit()
+	return nil
 }
 
 // Merge metadata in the same transaction as the faces. Conflicting families are

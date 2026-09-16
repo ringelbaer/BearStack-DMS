@@ -275,22 +275,29 @@ test("named groups can choose, follow and clear existing parents", async ({ brow
   }
   await page.goto(`${baseURL}/photos/people/${child.id}`);
   await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
-  await page.locator(".person-parents summary").click();
+  await page.getByRole("button",{name:"Stammdaten",exact:true}).click();
+  await expect(page.locator("[data-person-details-fields]")).toBeVisible();
   await page.getByRole("combobox",{name:"Mutter",exact:true}).fill("Mutter Beispiel");
   await page.getByRole("option",{name:/^Mutter Beispiel/}).click();
   await page.getByRole("combobox",{name:"Vater",exact:true}).fill("Vater Beispiel");
   await page.getByRole("option",{name:/^Vater Beispiel/}).click();
-  await page.getByRole("button",{name:"Eltern speichern",exact:true}).click();
-  await expect(page.locator(".notice")).toContainText("Eltern gespeichert");
+  await page.getByRole("button",{name:"Stammdaten speichern",exact:true}).click();
+  await expect(page.locator("[data-person-details-dialog]")).not.toBeVisible();
+  await expect(page.locator("[data-detail-status]")).toContainText("Stammdaten gespeichert");
   await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
-  await page.locator(".person-parents summary").click();
-  await expect(page.locator(".person-parents").getByRole("link",{name:"Mutter Beispiel",exact:true})).toHaveAttribute("href",`/photos/people/${parents[0].id}`);
+  await page.getByRole("button",{name:"Stammdaten",exact:true}).click();
+  await expect(page.locator("[data-person-details-fields]")).toBeVisible();
+  await expect(page.getByRole("combobox",{name:"Mutter",exact:true})).toHaveValue(`Mutter Beispiel (#${parents[0].id})`);
   await page.setViewportSize({width:390,height:800});
-  const box = await page.locator(".person-parents-panel").boundingBox();
+  const box = await page.locator("[data-person-details-dialog]").boundingBox();
   expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x+box.width).toBeLessThanOrEqual(390);
-  await page.getByRole("combobox",{name:"Mutter",exact:true}).fill("");
-  await page.getByRole("combobox",{name:"Vater",exact:true}).fill("");
-  await page.getByRole("button",{name:"Eltern speichern",exact:true}).click();
+  await page.getByRole("button",{name:"Mutter entfernen",exact:true}).click();
+  await expect(page.getByRole("combobox",{name:"Mutter",exact:true})).toHaveValue("");
+  await expect(page.getByRole("combobox",{name:"Mutter",exact:true})).toHaveAttribute("aria-expanded","false");
+  await page.getByRole("button",{name:"Vater entfernen",exact:true}).click();
+  await expect(page.getByRole("combobox",{name:"Vater",exact:true})).toHaveValue("");
+  await page.getByRole("button",{name:"Stammdaten speichern",exact:true}).click();
+  await expect(page.locator("[data-person-details-dialog]")).not.toBeVisible();
   const result = await (await context.request.get(`${baseURL}/photos/people/${child.id}/parents`)).json();
   expect(result).toEqual({});
   await context.close();
@@ -389,23 +396,42 @@ test("person records support multiple relatives, reciprocal marriages, cancellat
   try {
     await page.goto(baseURL+`/photos/people/${persons[0].id}`);await open();
     await dialog.getByLabel("Geburtsdatum",{exact:true}).fill("1960-02-29");
+    await expect(dialog.getByLabel("Sterbedatum",{exact:true})).toBeHidden();
+    await dialog.getByRole("button",{name:"Sterbedatum ergänzen",exact:true}).click();
+    await expect(dialog.getByLabel("Sterbedatum",{exact:true})).toBeFocused();
     await dialog.getByLabel("Sterbedatum",{exact:true}).fill("2020-01-01");
     for(const name of names.slice(1,3)) {await dialog.getByRole("button",{name:"Geschwister hinzufügen",exact:true}).click();await choose(dialog.locator('[data-relation="sibling"]').last(),name);}
     for(const [index,name] of names.slice(3).entries()) {
       await dialog.getByRole("button",{name:"Ehe hinzufügen",exact:true}).click();const row=dialog.locator('[data-relation="marriage"]').last();await choose(row,name);
       await row.getByLabel("Hochzeitsdatum",{exact:true}).fill(index===0?"1980-06-15":"2000-07-20");
-      if(index===0) await row.getByLabel("Scheidungsdatum",{exact:true}).fill("1995-02-01");
+      await expect(row.getByLabel("Scheidungsdatum",{exact:true})).toBeHidden();
+      if(index===0) {
+        await row.getByRole("button",{name:"Scheidungsdatum ergänzen",exact:true}).click();
+        await row.getByLabel("Scheidungsdatum",{exact:true}).fill("1995-02-01");
+      }
     }
+    await expect(dialog.getByRole("heading",{name:"Geschwister",exact:true})).toHaveCount(1);
+    await expect(dialog.locator("legend")).toHaveCount(0);
     for(const width of [320,390,1440]) {
       await page.setViewportSize({width,height:900});
       const box=await dialog.boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(width);
       expect(await dialog.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(1);
+      const row=dialog.locator('[data-relation="sibling"]').first();
+      const input=await row.locator('[data-person-search]').boundingBox(), remove=await row.getByRole('button',{name:'Geschwisterzuordnung entfernen'}).boundingBox();
+      expect(Math.abs(input.y-remove.y)).toBeLessThanOrEqual(1);expect(input.height).toBe(remove.height);
+      const marriage=dialog.locator('[data-relation="marriage"]').last();
+      const wedding=await marriage.getByLabel('Hochzeitsdatum',{exact:true}).boundingBox(), plus=await marriage.getByRole('button',{name:'Scheidungsdatum ergänzen'}).boundingBox();
+      expect(Math.abs(wedding.y+wedding.height-plus.y-plus.height)).toBeLessThanOrEqual(1);
     }
     await page.screenshot({path:"/tmp/bearstack-person-records.png",fullPage:true});
     await dialog.getByRole("button",{name:"Stammdaten speichern",exact:true}).click();await expect(dialog).not.toBeVisible();
     let saved=await details(persons[0].id);expect(saved.birth_date).toBe("1960-02-29");expect(saved.death_date).toBe("2020-01-01");expect(saved.siblings).toHaveLength(2);expect(saved.marriages).toHaveLength(2);
     expect((await details(persons[1].id)).siblings[0].id).toBe(persons[0].id);expect((await details(persons[3].id)).marriages[0].spouse.id).toBe(persons[0].id);
-    await open();await dialog.getByLabel("Geburtsdatum",{exact:true}).fill("1961-01-01");await page.keyboard.press("Escape");expect((await details(persons[0].id)).birth_date).toBe("1960-02-29");
+    await open();
+    await expect(dialog.getByLabel("Sterbedatum",{exact:true})).toBeVisible();
+    await expect(dialog.locator('[data-relation="marriage"]').first().getByLabel("Scheidungsdatum",{exact:true})).toBeVisible();
+    await expect(dialog.locator('[data-relation="marriage"]').last().getByLabel("Scheidungsdatum",{exact:true})).toBeHidden();
+    await dialog.getByLabel("Geburtsdatum",{exact:true}).fill("1961-01-01");await page.keyboard.press("Escape");expect((await details(persons[0].id)).birth_date).toBe("1960-02-29");
     await expect(page.getByLabel("Weitere Personenaktionen",{exact:true})).toBeFocused();
     await open();
     const change={revision:saved.revision,birth_date:"1962-01-01",death_date:saved.death_date,sibling_ids:saved.siblings.map(p=>p.id),marriages:saved.marriages.map(m=>({id:m.id,spouse_id:m.spouse.id,wedding_date:m.wedding_date,divorce_date:m.divorce_date}))};
@@ -420,7 +446,10 @@ test("person records support multiple relatives, reciprocal marriages, cancellat
     const reader=await browser.newContext({httpCredentials:{username:"reader",password:"secret"}});const readerPage=await reader.newPage();
     await login(readerPage,"reader");
     await readerPage.goto(baseURL+`/photos/people/${persons[0].id}`);await readerPage.getByLabel("Weitere Personenaktionen",{exact:true}).click();await readerPage.getByRole("button",{name:"Stammdaten",exact:true}).click();
-    await expect(readerPage.getByLabel("Geburtsdatum",{exact:true})).toHaveValue("1962-01-01");await expect(readerPage.locator("[data-person-details-save]")).toHaveCount(0);await expect(readerPage.getByRole("link",{name:"Profil Epsilon",exact:true})).toBeVisible();await reader.close();
+    await expect(readerPage.getByLabel("Geburtsdatum",{exact:true})).toHaveValue("1962-01-01");await expect(readerPage.locator("[data-person-details-save]")).toHaveCount(0);
+    await expect(readerPage.getByLabel("Sterbedatum",{exact:true})).toHaveValue("2020-01-01");
+    await expect(readerPage.getByLabel("Scheidungsdatum",{exact:true})).toBeHidden();
+    await expect(readerPage.getByRole("button",{name:"Scheidungsdatum ergänzen",exact:true})).toHaveCount(0);await expect(readerPage.getByRole("link",{name:"Profil Epsilon",exact:true})).toBeVisible();await reader.close();
     expect(errors).toEqual([]);
   } finally {
     const current=await details(persons[0].id).catch(()=>null);

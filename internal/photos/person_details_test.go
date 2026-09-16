@@ -233,6 +233,7 @@ func TestPersonDetailsMigrationAndTransactionRollback(t *testing.T) {
 	}
 	before := detailsInput(t, l, ids[0])
 	in := before
+	in.MotherID = &ids[3]
 	in.BirthDate = "2000-01-01"
 	in.SiblingIDs = []int64{ids[1]}
 	in.Marriages = []PersonMarriageInput{{SpouseID: ids[2]}}
@@ -244,6 +245,9 @@ func TestPersonDetailsMigrationAndTransactionRollback(t *testing.T) {
 	}
 	if after := detailsInput(t, l, ids[0]); !reflect.DeepEqual(after, before) {
 		t.Fatalf("rollback: %+v", after)
+	}
+	if parents, err := l.PersonParents(ctx, ids[0]); err != nil || parents.Mother != nil {
+		t.Fatalf("parent rollback: %+v %v", parents, err)
 	}
 	if reverse := detailsInput(t, l, ids[1]); len(reverse.SiblingIDs) != 0 {
 		t.Fatalf("reverse rollback: %+v", reverse)
@@ -326,5 +330,87 @@ func TestPersonDetailsRelationshipLimitOnBothSides(t *testing.T) {
 	}
 	if got := detailsInput(t, l, ids[2]); len(got.Marriages) != 0 {
 		t.Fatalf("marriage limit partially saved: %+v", got)
+	}
+}
+
+func TestPersonDetailsParentsAtomicAndCompatible(t *testing.T) {
+	ctx := context.Background()
+	l, ids := parentFixture(t)
+	in := detailsInput(t, l, ids[0])
+	in.MotherID, in.FatherID = &ids[1], &ids[2]
+	in.BirthDate = "1970-01-01"
+	saveDetails(t, l, ids[0], in)
+	got, err := l.PersonDetails(ctx, ids[0])
+	if err != nil || got.Parents.Mother == nil || got.Parents.Mother.ID != ids[1] || got.Parents.Father == nil || got.Parents.Father.ID != ids[2] {
+		t.Fatalf("parents: %+v %v", got, err)
+	}
+	// Older clients omit parents and must preserve them.
+	in = detailsInput(t, l, ids[0])
+	in.BirthDate = "1971-01-01"
+	saveDetails(t, l, ids[0], in)
+	got, _ = l.PersonDetails(ctx, ids[0])
+	if got.Parents.Mother == nil || got.Parents.Father == nil {
+		t.Fatal("omitted parents removed")
+	}
+	// Legacy parent editing also invalidates the open profile.
+	stale := detailsInput(t, l, ids[0])
+	if err := l.SetPersonParents(ctx, ids[0], ids[1], ids[3]); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.SetPersonDetails(ctx, ids[0], stale); !errors.Is(err, ErrPersonDetailsConflict) {
+		t.Fatalf("stale parents: %v", err)
+	}
+	// A cycle cannot commit any life date or other relationship change.
+	in = detailsInput(t, l, ids[1])
+	in.MotherID = &ids[0]
+	in.BirthDate = "1940-01-01"
+	in.SiblingIDs = []int64{ids[4]}
+	if err := l.SetPersonDetails(ctx, ids[1], in); !errors.Is(err, ErrPersonParents) {
+		t.Fatalf("cycle: %v", err)
+	}
+	got, _ = l.PersonDetails(ctx, ids[1])
+	if got.BirthDate != "" || got.Parents.Mother != nil || len(got.Siblings) != 0 {
+		t.Fatalf("partial save: %+v", got)
+	}
+	in = detailsInput(t, l, ids[0])
+	in.MotherID = &ids[3]
+	if err := l.SetPersonDetails(ctx, ids[0], in); !errors.Is(err, ErrPersonParents) {
+		t.Fatalf("same parents: %v", err)
+	}
+	zero := int64(0)
+	in.MotherID, in.FatherID = &zero, &zero
+	saveDetails(t, l, ids[0], in)
+	got, _ = l.PersonDetails(ctx, ids[0])
+	if got.Parents.Mother != nil || got.Parents.Father != nil {
+		t.Fatal("parents not cleared")
+	}
+}
+
+func TestPersonDetailsHiddenParentPreserved(t *testing.T) {
+	ctx := context.Background()
+	l, ids := parentFixture(t)
+	in := detailsInput(t, l, ids[0])
+	in.MotherID = &ids[1]
+	saveDetails(t, l, ids[0], in)
+	if err := os.WriteFile(filepath.Join(l.root, "b", ".adminonly"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := l.PersonDetails(ctx, ids[0])
+	if err != nil || got.Parents.Mother != nil {
+		t.Fatalf("hidden parent disclosed: %+v %v", got, err)
+	}
+	zero := int64(0)
+	in = detailsInput(t, l, ids[0])
+	in.MotherID = &zero
+	in.BirthDate = "1970-01-01"
+	saveDetails(t, l, ids[0], in)
+	raw, err := readPersonDetails(ctx, l.index.db, ids[0])
+	if err != nil || *raw.MotherID != ids[1] {
+		t.Fatalf("hidden parent removed: %+v %v", raw, err)
+	}
+	in = detailsInput(t, l, ids[0])
+	in.MotherID = &ids[1]
+	if err := l.SetPersonDetails(ctx, ids[0], in); !errors.Is(err, ErrPersonDetails) {
+		t.Fatalf("hidden parent selectable: %v", err)
 	}
 }

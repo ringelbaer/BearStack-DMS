@@ -3928,10 +3928,20 @@ body.has-person-selection { padding-bottom: 150px; }
 .person-details-dialog .app-dialog-body { overflow-y: auto; min-height: 0; }
 .person-details-dialog header, .person-details-dialog footer { flex-shrink: 0; }
 .person-details-dialog footer { display: flex; flex-wrap: wrap; gap: 8px; }
-.person-details-dialog fieldset { min-width: 0; padding: 12px; margin: 0 0 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
-.person-details-dialog fieldset > * + * { margin-top: 10px; }
+.person-details-dialog [hidden] { display: none !important; }
+.person-details-dialog [data-relation] { min-width: 0; margin-bottom: 10px; }
+.person-details-dialog [data-relation="marriage"] { padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.person-details-dialog [data-relation="marriage"] .person-details-dates { margin-top: 8px; }
+.person-details-relation-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px; }
+.person-details-relation-line .person-picker-field { min-width: 0; }
+.person-details-dialog .person-details-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; min-height: 44px; padding: 0; flex-shrink: 0; }
+.person-details-dialog .person-details-relation-line input:not([type="hidden"]) { height: 44px; margin: 0; }
+.person-details-parents { display: grid; gap: 10px; }
+.person-details-date { min-width: 0; align-self: end; }
 .person-details-dialog label { display: flex; flex-direction: column; min-width: 0; gap: 4px; }
 .person-details-dialog input { width: 100%; min-width: 0; box-sizing: border-box; }
 .person-details-dialog .person-picker-popup { position: static; max-height: 240px; }
 .person-details-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 480px) { .person-details-dates { grid-template-columns: minmax(0, 1fr); } }
+
+.person-details-dates:has(.person-details-date > .person-details-icon:not([hidden])) { grid-template-columns: minmax(0, 1fr) 44px; }

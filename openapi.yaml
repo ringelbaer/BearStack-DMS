@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.60.0
+  version: 0.61.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -3054,8 +3054,8 @@ paths:
     get:
       tags: [Photos]
       operationId: getPhotoPersonDetails
-      summary: Read life dates, siblings and marriages of a named person
-      description: Requires photos.read and an active visible named person. Relationships are symmetric. Only active visible named relatives and their marriage dates are returned. No birth or death dates of relatives are included. Dates are calendar dates without time zones. Profiles are loaded on demand without scanning photos. Cache-Control is private, no-store.
+      summary: Read life dates, parents, siblings and marriages of a named person
+      description: Requires photos.read and an active visible named person. Sibling and marriage relationships are symmetric. Only active visible named relatives and their marriage dates are returned. No birth or death dates of relatives are included. Dates are calendar dates without time zones. Profiles are loaded on demand without scanning photos. Cache-Control is private, no-store.
       responses:
         '200':
           description: Current person record and opaque revision.
@@ -3073,8 +3073,13 @@ paths:
       description: >-
         Requires photos.edit and same-origin protection. Send the revision from GET;
         changes by either relative invalidate a stale profile and return 409.
-        Missing or empty fields clear dates and visible relationships; hidden
-        relatives are preserved. Siblings and spouses must be active visible named
+        Missing or empty date, sibling and marriage fields clear those visible values;
+        hidden relatives are preserved. Optional mother_id and father_id (since 0.61.0)
+        preserve the respective parent when omitted or null; 0 clears a visible parent,
+        a positive ID selects a visible named parent. Hidden parents survive blank fields.
+        Parents are saved in the same transaction; self-parenting, identical parents
+        and ancestry cycles are rejected. Changes through the legacy parents endpoint
+        also invalidate the profile revision. Siblings and spouses must be active visible named
         people. Self-links and duplicate siblings or identical marriages are rejected.
         Existing marriages use their returned id; 0 creates a new marriage. IDs from
         another person's relationships cannot be edited. Multiple marriages to the
@@ -5401,8 +5406,9 @@ components:
         divorce_date: {$ref: '#/components/schemas/PhotoPersonDate'}
     PhotoPersonDetails:
       type: object
-      required: [revision, birth_date, death_date, siblings, marriages]
+      required: [revision, birth_date, death_date, parents, siblings, marriages]
       properties:
+        parents: {$ref: '#/components/schemas/PhotoPersonParents'}
         revision: {type: string, pattern: '^[0-9a-f]{64}$'}
         birth_date: {$ref: '#/components/schemas/PhotoPersonDate'}
         death_date: {$ref: '#/components/schemas/PhotoPersonDate'}
@@ -5419,6 +5425,16 @@ components:
       additionalProperties: false
       required: [revision]
       properties:
+        mother_id:
+          type: [integer, 'null']
+          format: int64
+          minimum: 0
+          description: Omitted or null preserves mother; 0 clears a visible mother, positive ID selects one.
+        father_id:
+          type: [integer, 'null']
+          format: int64
+          minimum: 0
+          description: Omitted or null preserves father; 0 clears a visible father, positive ID selects one.
         revision: {type: string, pattern: '^[0-9a-f]{64}$'}
         birth_date: {$ref: '#/components/schemas/PhotoPersonDate'}
         death_date: {$ref: '#/components/schemas/PhotoPersonDate'}

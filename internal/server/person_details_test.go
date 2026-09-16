@@ -25,7 +25,7 @@ func TestPersonDetailsHTTPPermissionsConflictAndValidation(t *testing.T) {
 	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &details) != nil || len(details.Revision) != 64 || !strings.Contains(w.Header().Get("Cache-Control"), "no-store") {
 		t.Fatalf("read: %d %s", w.Code, w.Body.String())
 	}
-	input := photos.PersonDetailsInput{Revision: details.Revision, BirthDate: "1970-01-01", SiblingIDs: []int64{other}, Marriages: []photos.PersonMarriageInput{{SpouseID: other, WeddingDate: "2000-01-01"}}}
+	input := photos.PersonDetailsInput{Revision: details.Revision, BirthDate: "1970-01-01", MotherID: &other, SiblingIDs: []int64{other}, Marriages: []photos.PersonMarriageInput{{SpouseID: other, WeddingDate: "2000-01-01"}}}
 	body, _ := json.Marshal(input)
 	for _, tc := range []struct {
 		user string
@@ -35,6 +35,10 @@ func TestPersonDetailsHTTPPermissionsConflictAndValidation(t *testing.T) {
 		if w.Code != tc.code {
 			t.Fatalf("%s: %d %s", tc.user, w.Code, w.Body.String())
 		}
+	}
+	w = labelRequest(s, "GET", endpoint, "reader", "")
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &details) != nil || details.Parents.Mother == nil || details.Parents.Mother.ID != other {
+		t.Fatalf("parent response: %d %s", w.Code, w.Body.String())
 	}
 	w = labelRequest(s, "PUT", endpoint, "editor", string(body))
 	if w.Code != 409 {

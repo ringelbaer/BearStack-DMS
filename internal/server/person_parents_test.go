@@ -34,7 +34,7 @@ func TestPersonParentsHTTP(t *testing.T) {
 	r.SetBasicAuth("reader", "secret")
 	w := httptest.NewRecorder()
 	s.Handler().ServeHTTP(w, r)
-	if w.Code != 200 || !strings.Contains(w.Body.String(), fmt.Sprintf(`href="/photos/people/%d">Mutter`, mother)) || strings.Contains(w.Body.String(), "Eltern speichern") {
+	if w.Code != 200 || !strings.Contains(w.Body.String(), "data-person-details-parents") || strings.Contains(w.Body.String(), "Eltern speichern") {
 		t.Fatalf("read-only detail: %d %s", w.Code, w.Body.String())
 	}
 	w = faceRequest(s, "POST", endpoint, "editor", url.Values{"mother_id": {fmt.Sprint(child)}, "father_id": {"0"}})

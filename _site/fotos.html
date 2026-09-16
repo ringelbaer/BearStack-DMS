@@ -1320,8 +1320,14 @@ Zu jeder Ehe gehören eine benannte Person als Ehepartner sowie Hochzeits- und
 optional Scheidungsdatum. Auch mehrere Ehen mit derselben Person sind möglich,
 sofern die Datumsangaben die Einträge unterscheiden. Geschwister und Ehen werden
 bei beiden Personen angezeigt; Änderungen und Entfernen gelten für beide Seiten.
-Die Elternzuordnung bleibt über <strong>Eltern</strong> erreichbar; Geschwister werden ausdrücklich
-zugeordnet und nicht automatisch aus gemeinsamen Eltern abgeleitet.</p>
+Ab <strong>0.61.0</strong> gehören <strong>Mutter und Vater</strong> zum selben Stammdatendialog und werden
+mit den übrigen Angaben gemeinsam gespeichert. Geschwister und Ehepartner erscheinen
+als kompakte Eingabezeilen mit <strong>×</strong> zum Entfernen, ohne wiederholte Überschriften.
+Leere <strong>Sterbe- und Scheidungsdaten</strong> bleiben zunächst ausgeblendet. Ein kleines <strong>+</strong>
+mit der Beschriftung „Sterbedatum ergänzen“ beziehungsweise „Scheidungsdatum ergänzen“
+öffnet das jeweilige Feld. Gespeicherte Daten bleiben beim erneuten Öffnen sichtbar.
+Geschwister werden ausdrücklich zugeordnet und nicht automatisch aus gemeinsamen
+Eltern abgeleitet.</p>
 <p>Personen über die vorhandene Namenssuche auswählen. Unbekannte Datumsfelder dürfen
 leer bleiben. Vollständige Kalenderdaten werden ohne Uhrzeit gespeichert; Sterbedatum
 vor Geburtsdatum und Scheidung vor Hochzeit werden abgewiesen. <strong>Abbrechen</strong> verwirft
@@ -1341,10 +1347,10 @@ indizierte Tabellen und Aufräumregeln ohne Neuindexierung oder Bilderkennung.
 Die Daten laden erst beim Öffnen des Dialogs. Die API dokumentiert
 <code>GET/PUT /photos/people/{id}/details</code> einschließlich Versionsprüfung und Schreibgrenzen.</p>
 <h3 id="mutter-und-vater-zuordnen">Mutter und Vater zuordnen<a class="headerlink" href="#mutter-und-vater-zuordnen" title="Permanent link">&para;</a></h3>
-<p>Ab <strong>0.54.0</strong> öffnet <strong>Eltern</strong> in der Detailansicht einer benannten Person die
-Zuordnung von Mutter und Vater. Tippe einen Namen und wähle eine vorhandene benannte
-Gruppe aus den Vorschlägen; danach <strong>Eltern speichern</strong>. Ein leeres Feld entfernt
-die jeweilige Zuordnung. Die verknüpften Namen öffnen die zugehörige Person.
+<p>Unter <strong>⋯ → Stammdaten → Eltern</strong> lassen sich Mutter und Vater zuordnen.
+Tippe einen Namen und wähle eine vorhandene benannte Gruppe aus den Vorschlägen;
+danach <strong>Stammdaten speichern</strong>. Ein leeres Feld oder <strong>×</strong> entfernt die sichtbare
+Zuordnung. In der Leseansicht öffnen die verknüpften Namen die zugehörige Person.
 Die Bearbeitung ist zunächst im Web verfügbar und benötigt <code>photos.edit</code>.
 Leseberechtigte sehen die zugeordneten, sichtbaren benannten Personen.</p>
 <p>Stabile IDs erhalten Beziehungen beim Umbenennen. Selbstzuordnungen, dieselbe
@@ -1705,7 +1711,7 @@ Auf schmalen Bildschirmen bricht diese Leiste platzsparend um. Bei benannten
 Personen zeigt der Gruppenbutton nur das Stiftsymbol; Tooltip und
 Screenreader-Beschriftung bleiben verfügbar. <strong>Alle auswählen</strong> markiert nur die
 Gesichter der aktuellen Seite.</p>
-<p>Das <strong>Mehr-Menü (⋯)</strong> bündelt <strong>Personen-Tags</strong>, <strong>Eltern</strong>, <strong>Anzeige</strong>, <strong>Hilfe</strong> und
+<p>Das <strong>Mehr-Menü (⋯)</strong> bündelt <strong>Personen-Tags</strong>, <strong>Stammdaten</strong>, <strong>Anzeige</strong>, <strong>Hilfe</strong> und
 weitere Navigation. Es öffnet über der Galerie, ohne Gesichtskarten zu verschieben.
 <strong>Hilfe</strong> öffnet einen Dialog; <strong>Schließen</strong> oder Escape schließt ihn und setzt den
 Tastaturfokus zurück auf den Mehr-Menü-Button. Thumbnailgröße und Ordnerpfade bleiben
@@ -2258,7 +2264,7 @@ Die Funktion benötigt keine neue Datenbankmigration.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.60.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.61.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

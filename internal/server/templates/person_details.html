@@ -6,7 +6,8 @@
       <p role="status" data-person-details-status></p>
       <button type="button" class="secondary-button" data-person-details-reload hidden>Stammdaten neu laden</button>
       <div data-person-details-fields hidden>
-        <div class="person-details-dates"><label>Geburtsdatum<input type="date" name="birth_date" min="0001-01-01" max="9999-12-31" {{if not .Auth.CanPhotosEdit}}readonly{{end}}></label><label>Sterbedatum<input type="date" name="death_date" min="0001-01-01" max="9999-12-31" {{if not .Auth.CanPhotosEdit}}readonly{{end}}></label></div>
+        <div class="person-details-dates" data-person-details-dates></div>
+        <h3>Eltern</h3><div class="person-details-parents" data-person-details-parents></div>
         <h3>Geschwister</h3><div data-person-details-siblings></div>
         {{if .Auth.CanPhotosEdit}}<button type="button" class="secondary-button" data-person-details-add="sibling">Geschwister hinzufügen</button>{{end}}
         <h3>Ehen</h3><div data-person-details-marriages></div>

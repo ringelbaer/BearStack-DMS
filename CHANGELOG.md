@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.61.0 – in Entwicklung
+
+- Personenstammdaten enthalten jetzt auch Mutter und Vater. Ein gemeinsamer Speichervorgang mit Versionsprüfung umfasst Eltern, Lebensdaten, Geschwister und Ehen. Der separate Elternbereich im Mehr-Menü entfällt.
+- Kompakte Geschwister- und Ehepartnerzeilen mit Platzhaltern und ×-Buttons statt wiederholter Überschriften und langer Entfernen-Buttons. Leere Sterbe- und Scheidungsdaten bleiben hinter einem kleinen + verborgen; gespeicherte Daten sind dauerhaft sichtbar.
+- Validierung: vollständige Go-Suite, JavaScript-/DOM-Prüfungen und Website-Build erfolgreich. Chromium prüft Elternauswahl, gemeinsames Speichern, Entfernen, ausgeblendete optionale Daten, Leserechte und kompakte Zeilen bei 320, 390 und 1440 Pixeln. Backendtests sichern Kompatibilität, versteckte Eltern, Versionskonflikte und atomaren Rollback ab.
+- MINOR **0.61.0** wegen der kompatiblen API-Erweiterung: optionale `mother_id`/`father_id` im Stammdaten-Endpunkt, bestehende Clients erhalten Eltern unverändert. Verborgene Eltern bleiben geschützt; ungültige Abstammungen verhindern den gesamten Speichervorgang. Keine Migration, Android-Version unverändert. README, Website und OpenAPI aktualisiert.
+
 ### BearStack 0.60.0 – in Entwicklung
 
 - Personen: Dialog **Stammdaten** mit Geburts-/Sterbedatum, mehreren Geschwistern und mehreren Ehen einschließlich Ehepartner, Hochzeits- und optionalem Scheidungsdatum. Benannte Personen über die bekannte Suche wählen; unbekannte Daten bleiben leer. Eltern bleiben separat erreichbar.

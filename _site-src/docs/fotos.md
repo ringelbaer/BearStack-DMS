@@ -84,8 +84,14 @@ Zu jeder Ehe gehören eine benannte Person als Ehepartner sowie Hochzeits- und
 optional Scheidungsdatum. Auch mehrere Ehen mit derselben Person sind möglich,
 sofern die Datumsangaben die Einträge unterscheiden. Geschwister und Ehen werden
 bei beiden Personen angezeigt; Änderungen und Entfernen gelten für beide Seiten.
-Die Elternzuordnung bleibt über **Eltern** erreichbar; Geschwister werden ausdrücklich
-zugeordnet und nicht automatisch aus gemeinsamen Eltern abgeleitet.
+Ab **0.61.0** gehören **Mutter und Vater** zum selben Stammdatendialog und werden
+mit den übrigen Angaben gemeinsam gespeichert. Geschwister und Ehepartner erscheinen
+als kompakte Eingabezeilen mit **×** zum Entfernen, ohne wiederholte Überschriften.
+Leere **Sterbe- und Scheidungsdaten** bleiben zunächst ausgeblendet. Ein kleines **+**
+mit der Beschriftung „Sterbedatum ergänzen“ beziehungsweise „Scheidungsdatum ergänzen“
+öffnet das jeweilige Feld. Gespeicherte Daten bleiben beim erneuten Öffnen sichtbar.
+Geschwister werden ausdrücklich zugeordnet und nicht automatisch aus gemeinsamen
+Eltern abgeleitet.
 
 Personen über die vorhandene Namenssuche auswählen. Unbekannte Datumsfelder dürfen
 leer bleiben. Vollständige Kalenderdaten werden ohne Uhrzeit gespeichert; Sterbedatum
@@ -110,10 +116,10 @@ Die Daten laden erst beim Öffnen des Dialogs. Die API dokumentiert
 
 ### Mutter und Vater zuordnen
 
-Ab **0.54.0** öffnet **Eltern** in der Detailansicht einer benannten Person die
-Zuordnung von Mutter und Vater. Tippe einen Namen und wähle eine vorhandene benannte
-Gruppe aus den Vorschlägen; danach **Eltern speichern**. Ein leeres Feld entfernt
-die jeweilige Zuordnung. Die verknüpften Namen öffnen die zugehörige Person.
+Unter **⋯ → Stammdaten → Eltern** lassen sich Mutter und Vater zuordnen.
+Tippe einen Namen und wähle eine vorhandene benannte Gruppe aus den Vorschlägen;
+danach **Stammdaten speichern**. Ein leeres Feld oder **×** entfernt die sichtbare
+Zuordnung. In der Leseansicht öffnen die verknüpften Namen die zugehörige Person.
 Die Bearbeitung ist zunächst im Web verfügbar und benötigt `photos.edit`.
 Leseberechtigte sehen die zugeordneten, sichtbaren benannten Personen.
 
@@ -538,7 +544,7 @@ Personen zeigt der Gruppenbutton nur das Stiftsymbol; Tooltip und
 Screenreader-Beschriftung bleiben verfügbar. **Alle auswählen** markiert nur die
 Gesichter der aktuellen Seite.
 
-Das **Mehr-Menü (⋯)** bündelt **Personen-Tags**, **Eltern**, **Anzeige**, **Hilfe** und
+Das **Mehr-Menü (⋯)** bündelt **Personen-Tags**, **Stammdaten**, **Anzeige**, **Hilfe** und
 weitere Navigation. Es öffnet über der Galerie, ohne Gesichtskarten zu verschieben.
 **Hilfe** öffnet einen Dialog; **Schließen** oder Escape schließt ihn und setzt den
 Tastaturfokus zurück auf den Mehr-Menü-Button. Thumbnailgröße und Ordnerpfade bleiben

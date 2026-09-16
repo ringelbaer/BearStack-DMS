@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.60.0** · Android-App: **0.15.0**.
+Aktuelle Version: **0.61.0** · Android-App: **0.15.0**.
+
+Ab **0.61.0** enthält **⋯ → Stammdaten** auch **Mutter und Vater** und speichert alle Angaben gemeinsam. Geschwister und Ehepartner stehen in kompakten Eingabezeilen mit **×** zum Entfernen. Leere **Sterbe- und Scheidungsdaten** erscheinen erst nach Klick auf das kleine **+**; gespeicherte Daten bleiben sichtbar.
 
 Ab **0.60.0** öffnet **⋯ → Stammdaten** in der Detailansicht einer benannten Person einen Dialog für **Geburtsdatum**, **Sterbedatum**, mehrere **Geschwister** und mehrere **Ehen** mit **Ehepartner**, **Hochzeitsdatum** und optionalem **Scheidungsdatum**. Geschwister und Ehen erscheinen bei beiden Personen. Datumsfelder dürfen unbekannt bleiben; Speichern prüft zwischenzeitliche Änderungen. Lesen benötigt `photos.read`, Bearbeiten `photos.edit`. Foto-Schema **35** migriert die Stammdaten automatisch ohne erneute Bilderkennung.
 
@@ -12,7 +14,7 @@ Ab **0.57.0** öffnet **Ähnliche Gesichter → Gesichtsketten prüfen** die gem
 
 Unter **Fotos → Personen** und in Android unter **Ordner → Personen** lassen sich Personen bequem ansehen: **Alle** oder einen zugewiesenen Foto-Tag öffnen, danach die Person. Ab **0.57.1** zeigt **Alle** (`/photos?path=.people%2Fall`) ausschließlich benannte Personen; Anzahl, Seitenaufteilung und Vorschauen berücksichtigen denselben Filter. Ihre Fotos erscheinen in der normalen, nach Datum gruppierten und sortierbaren Galerie. Mit der Berechtigung **Fotos bearbeiten** führt **Person bearbeiten** aus der Personengalerie direkt zur Bearbeitungsansicht dieser Person. Ab **0.57.3** berücksichtigt auch die Hauptkachel **Personen** bei Anzahl und Vorschauen ausschließlich benannte aktive Personen. Die Personen- und Tag-Kacheln zeigen doppelt so viele Gesichtsvorschauen wie normale Ordner, zuerst Personen mit den meisten unterschiedlichen sichtbaren Bildern; Stern-Favoriten bestimmen das Porträt. **Personen verwalten** bleibt unter `/photos/people`: Die Suche lässt sich mit dem zum Suchfeld gleich hohen **×-Button** zurücksetzen, und in der Personendetailansicht lassen sich **Personen-Tags** vergeben. Die Tags gelten für die Gruppe, unabhängig von den Tags ihrer Bilder. Beim Zusammenführen bleiben alle Tags erhalten. Foto-Schema 32 migriert die Zuordnungen automatisch.
 
-In der Web-Personenverwaltung können benannte Gruppen unter **Eltern** eine Mutter und einen Vater aus den benannten Personen erhalten. Die Suche lädt begrenzte Vorschläge; leere Felder entfernen die Zuordnung. Personen bleiben beim Umbenennen verknüpft. Selbstzuordnungen und Kreise werden verhindert, widersprüchliche Beziehungen beim Zusammenführen gemeldet. Foto-Schema 33 migriert automatisch.
+In der Web-Personenverwaltung können benannte Gruppen unter **Stammdaten → Eltern** eine Mutter und einen Vater aus den benannten Personen erhalten. Die Suche lädt begrenzte Vorschläge; leere Felder entfernen die Zuordnung. Personen bleiben beim Umbenennen verknüpft. Selbstzuordnungen und Kreise werden verhindert, widersprüchliche Beziehungen beim Zusammenführen gemeldet. Foto-Schema 33 migriert automatisch.
 
 In normalen Fotoordnern öffnet **Weitere Fotoaktionen → Personen im Ordner** eine Übersicht ausschließlich benannter Personen für den Ordner einschließlich Unterordnern. In Android steht sie unter **Weitere Optionen → Personen im Ordner**. Vorschauen, Fotoanzahlen und die beim Öffnen einer Person angezeigten Fotos bleiben auf diesen Bereich begrenzt. Zurück führt wieder zum Fotoordner.
 

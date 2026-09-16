@@ -26,6 +26,7 @@ type PersonMarriage struct {
 	DivorceDate string       `json:"divorce_date"`
 }
 type PersonDetails struct {
+	Parents   PersonParents    `json:"parents"`
 	Revision  string           `json:"revision"`
 	BirthDate string           `json:"birth_date"`
 	DeathDate string           `json:"death_date"`
@@ -39,6 +40,8 @@ type PersonMarriageInput struct {
 	DivorceDate string `json:"divorce_date"`
 }
 type PersonDetailsInput struct {
+	MotherID   *int64                `json:"mother_id,omitempty"`
+	FatherID   *int64                `json:"father_id,omitempty"`
 	Revision   string                `json:"revision"`
 	BirthDate  string                `json:"birth_date"`
 	DeathDate  string                `json:"death_date"`
@@ -80,7 +83,8 @@ func validPersonDates(first, last string) bool {
 func (l *Library) refreshPersonDetailsVisibility(ctx context.Context, id int64) error {
 	return l.refreshPeopleVisibility(ctx, `p.id=? OR p.id IN (
  SELECT person_b FROM person_siblings WHERE person_a=? UNION SELECT person_a FROM person_siblings WHERE person_b=?
- UNION SELECT person_b FROM person_marriages WHERE person_a=? UNION SELECT person_a FROM person_marriages WHERE person_b=?)`, id, id, id, id, id)
+ UNION SELECT person_b FROM person_marriages WHERE person_a=? UNION SELECT person_a FROM person_marriages WHERE person_b=?
+ UNION SELECT parent_id FROM person_parents WHERE person_id=?)`, id, id, id, id, id, id)
 }
 
 type personDetailsReader interface {
@@ -91,7 +95,7 @@ type personDetailsReader interface {
 // The revision covers stored relationships, including temporarily hidden ones.
 // Reads are bounded by per-person limits and indexed in both directions.
 func readPersonDetails(ctx context.Context, db personDetailsReader, id int64) (PersonDetailsInput, error) {
-	out := PersonDetailsInput{SiblingIDs: []int64{}, Marriages: []PersonMarriageInput{}}
+	out := PersonDetailsInput{MotherID: new(int64), FatherID: new(int64), SiblingIDs: []int64{}, Marriages: []PersonMarriageInput{}}
 	err := db.QueryRowContext(ctx, `SELECT birth_date,death_date FROM person_details WHERE person_id=?`, id).Scan(&out.BirthDate, &out.DeathDate)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return out, err
@@ -132,6 +136,11 @@ func readPersonDetails(ctx context.Context, db personDetailsReader, id int64) (P
 	if err != nil {
 		return out, err
 	}
+	if err := db.QueryRowContext(ctx, `SELECT
+ COALESCE((SELECT parent_id FROM person_parents WHERE person_id=? AND role='mother'),0),
+ COALESCE((SELECT parent_id FROM person_parents WHERE person_id=? AND role='father'),0)`, id, id).Scan(out.MotherID, out.FatherID); err != nil {
+		return out, err
+	}
 	encoded, err := json.Marshal(out)
 	if err != nil {
 		return out, err
@@ -143,6 +152,11 @@ func readPersonDetails(ctx context.Context, db personDetailsReader, id int64) (P
 
 func detailPersonNames(ctx context.Context, db personDetailsReader, id int64, raw PersonDetailsInput) (map[int64]string, error) {
 	args := []any{id}
+	for _, parent := range []*int64{raw.MotherID, raw.FatherID} {
+		if parent != nil && *parent > 0 {
+			args = append(args, *parent)
+		}
+	}
 	for _, other := range raw.SiblingIDs {
 		args = append(args, other)
 	}
@@ -190,6 +204,12 @@ func (l *Library) PersonDetails(ctx context.Context, id int64) (PersonDetails, e
 	if names[id] == "" {
 		return out, sql.ErrNoRows
 	}
+	if name := names[*raw.MotherID]; name != "" {
+		out.Parents.Mother = &PersonParent{ID: *raw.MotherID, Name: name}
+	}
+	if name := names[*raw.FatherID]; name != "" {
+		out.Parents.Father = &PersonParent{ID: *raw.FatherID, Name: name}
+	}
 	out.Revision, out.BirthDate, out.DeathDate = raw.Revision, raw.BirthDate, raw.DeathDate
 	for _, other := range raw.SiblingIDs {
 		if name := names[other]; name != "" {
@@ -207,6 +227,11 @@ func (l *Library) PersonDetails(ctx context.Context, id int64) (PersonDetails, e
 func validatePersonDetailsInput(id int64, in PersonDetailsInput) error {
 	if id <= 0 || len(in.SiblingIDs) > personRelationLimit || len(in.Marriages) > personRelationLimit || !validPersonDates(in.BirthDate, in.DeathDate) {
 		return ErrPersonDetails
+	}
+	for _, parent := range []*int64{in.MotherID, in.FatherID} {
+		if parent != nil && (*parent < 0 || *parent == id) {
+			return ErrPersonParents
+		}
 	}
 	siblings := map[int64]bool{}
 	marriages := map[string]bool{}
@@ -242,6 +267,11 @@ func (l *Library) SetPersonDetails(ctx context.Context, id int64, in PersonDetai
 		return err
 	}
 	refs := append([]int64{id}, in.SiblingIDs...)
+	for _, parent := range []*int64{in.MotherID, in.FatherID} {
+		if parent != nil && *parent > 0 {
+			refs = append(refs, *parent)
+		}
+	}
 	for _, m := range in.Marriages {
 		refs = append(refs, m.SpouseID)
 	}
@@ -272,6 +302,22 @@ func (l *Library) SetPersonDetails(ctx context.Context, id int64, in PersonDetai
 	oldNames, err := detailPersonNames(ctx, tx, id, old)
 	if err != nil {
 		return err
+	}
+	if in.MotherID != nil || in.FatherID != nil {
+		// Omitted fields preserve existing parents. A blank field cannot remove
+		// an undisclosed parent; explicit visible replacements remain possible.
+		resolve := func(next *int64, previous int64) int64 {
+			if next == nil || (*next == 0 && previous > 0 && oldNames[previous] == "") {
+				return previous
+			}
+			return *next
+		}
+		mother, father := resolve(in.MotherID, *old.MotherID), resolve(in.FatherID, *old.FatherID)
+		if mother != *old.MotherID || father != *old.FatherID {
+			if err := writePersonParentsTx(ctx, tx, id, mother, father); err != nil {
+				return err
+			}
+		}
 	}
 	// Only visible rows are replaceable; hidden relatives are neither disclosed nor removed.
 	for _, other := range old.SiblingIDs {
