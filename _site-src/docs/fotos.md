@@ -51,6 +51,22 @@ die einzelnen Fotos übertragen. Beim Zusammenführen werden die Tags vereinigt;
 globales Umbenennen und Löschen eines Foto-Tags aktualisiert auch Personengruppen.
 Foto-Schema **32** ergänzt automatisch einen indizierten Zuordnungsspeicher.
 
+### Mutter und Vater zuordnen
+
+Ab **0.54.0** öffnet **Eltern** in der Detailansicht einer benannten Person die
+Zuordnung von Mutter und Vater. Tippe einen Namen und wähle eine vorhandene benannte
+Gruppe aus den Vorschlägen; danach **Eltern speichern**. Ein leeres Feld entfernt
+die jeweilige Zuordnung. Die verknüpften Namen öffnen die zugehörige Person.
+Die Bearbeitung ist zunächst im Web verfügbar und benötigt `photos.edit`.
+Leseberechtigte sehen die zugeordneten, sichtbaren benannten Personen.
+
+Stabile IDs erhalten Beziehungen beim Umbenennen. Selbstzuordnungen, dieselbe
+Person in beiden Elternrollen und Kreise in der Abstammung sind ausgeschlossen.
+Zusammenführen übernimmt Eltern und Verweise auf die Quellperson atomar; bei
+widersprüchlichen Eltern muss zuerst die Zuordnung korrigiert werden. Geschützte,
+inaktive oder unbenannte Eltern werden nicht angezeigt. Foto-Schema **33** wird
+automatisch angelegt. Die Namenssuche lädt höchstens 60 Vorschläge pro Anfrage.
+
 ## Aktivierung
 
 Minimal in `.env`:

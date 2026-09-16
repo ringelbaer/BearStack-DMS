@@ -215,7 +215,10 @@
 
   window.BearStackPersonDialog = { bind: bind, createEditButton: createEditButton };
 
-  document.querySelectorAll("[data-person-picker]").forEach(function (form) {
+  function initializePersonPickers(root) {
+  root.querySelectorAll("[data-person-picker]").forEach(function (form) {
+    if (form.dataset.personPickerReady) return;
+    form.dataset.personPickerReady = "1";
     var input = form.querySelector("[data-person-search]");
     var target = form.querySelector("[data-person-target]");
     var list = form.querySelector("[data-person-options]");
@@ -505,4 +508,7 @@
     input.addEventListener("blur", close);
     validate();
   });
+  }
+  window.initializePersonPickers = initializePersonPickers;
+  initializePersonPickers(document);
 }());

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.53.0
+  version: 0.54.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -2857,6 +2857,57 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /photos/people/{id}/parents:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: {type: integer, format: int64, minimum: 1}
+    get:
+      tags: [Photos]
+      operationId: getPhotoPersonParents
+      summary: Read the visible named parents of a person
+      description: Requires photos.read. Hidden, inactive or unnamed parents are omitted. Cache-Control is private, no-store.
+      responses:
+        '200':
+          description: Current parents.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhotoPersonParents'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    post:
+      tags: [Photos]
+      operationId: setPhotoPersonParents
+      summary: Assign or clear mother and father from named person groups
+      description: Requires photos.edit and same-origin protection. Both values replace the complete assignment atomically; empty or zero clears a role. Child and selected parents must be named and visible. Self-links, identical parents and ancestry cycles are rejected. Conflicting parent links prevent group merges. Schema 33 migrates automatically. Form writes redirect; Accept application/json returns an OK object.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [mother_id, father_id]
+              properties:
+                mother_id: {type: integer, format: int64, minimum: 0}
+                father_id: {type: integer, format: int64, minimum: 0}
+      responses:
+        '200':
+          description: Assignment saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok: {type: boolean}
+        '303':
+          description: Redirect to the person detail with a saved notice.
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
   /photos/people/{id}/tags:
     post:
       tags: [Photos]
@@ -4906,9 +4957,21 @@ components:
         has_next:
           type: boolean
           description: More named groups match; narrow q to find them. No total count is calculated.
+    PhotoPersonParent:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        name: {type: string}
+    PhotoPersonParents:
+      type: object
+      properties:
+        mother: {$ref: '#/components/schemas/PhotoPersonParent'}
+        father: {$ref: '#/components/schemas/PhotoPersonParent'}
     PhotoPeoplePage:
       type: object
       properties:
+        parents: {$ref: '#/components/schemas/PhotoPersonParents'}
         tags:
           type: array
           description: Photo tags assigned to the person group, returned on person details.

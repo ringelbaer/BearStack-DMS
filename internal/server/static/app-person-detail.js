@@ -22,7 +22,7 @@
     root.querySelectorAll("button, input, select").forEach(function (control) {
       if (!control.closest("dialog")) control.disabled = blocked;
     });
-    if (tagTools) tagTools.querySelectorAll("button").forEach(function (button) { button.disabled = blocked; });
+    if (tagTools) tagTools.querySelectorAll("button, input, select").forEach(function (button) { button.disabled = blocked; });
     retry.disabled = busy;
     if (groupButton) groupButton.disabled = blocked || !cards().length;
     if (selection) {
@@ -81,6 +81,7 @@
       var nextTagTools = document.importNode(updatedTagTools, true);
       tagTools.replaceWith(nextTagTools); tagTools = nextTagTools;
       if (window.initializeTagSelects) window.initializeTagSelects(tagTools);
+      if (window.initializePersonPickers) window.initializePersonPickers(tagTools);
     }
     root.dataset.personId = updated.dataset.personId; root.dataset.personName = updated.dataset.personName;
     document.querySelector("[data-detail-title]").textContent = updated.dataset.personName || "Unbenannt";

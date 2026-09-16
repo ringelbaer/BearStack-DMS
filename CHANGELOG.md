@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.54.0 – in Entwicklung
+
+- Web: Mutter und Vater für benannte Personengruppen aus der vorhandenen Namenssuche wählen, entfernen und als verlinkte Personen ansehen. Keine neuen Gruppen durch die Elternauswahl; Bearbeitung mit `photos.edit`, Ansicht mit `photos.read`.
+- Indizierte, atomare Elternzuordnungen und automatische Migration auf Foto-Schema 33. Selbstverweise, identische Eltern und Abstammungskreise werden verhindert. Umbenennungen bleiben verknüpft; Zusammenführungen übernehmen Beziehungen oder scheitern atomar bei widersprüchlichen Familien.
+- Begrenzte Suchvorschläge, aktuelle Sichtbarkeitsprüfung und Wiederverwendung des bestehenden Personenwählers. README, Website und OpenAPI aktualisiert. MINOR **0.54.0**; Android bleibt **0.13.0**. Vollständige Go-Suite, gezielte Race-Tests, JavaScript-Prüfungen, zehn Browserregressionen und Website-Build erfolgreich.
+
 ### BearStack 0.53.0 / Android 0.13.0 – in Entwicklung
 
 - Neuer virtueller Personenordner unter Fotos und in Android unter Ordner: Alle sowie eine Ebene belegter Foto-Tags führen zu Personengruppen und deren normaler, datumsgruppierter, sortierbarer Fotogalerie. Doppelte Erkennungen im selben Bild werden dedupliziert.

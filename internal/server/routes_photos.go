@@ -46,6 +46,8 @@ var photoRouteSpecs = []routeSpec{
 	{pattern: "GET /photos/people/{id}", capabilities: authCapPhotosRead, handler: (*Server).handlePeople},
 	{pattern: "GET /photos/faces/{id}/thumbnail", capabilities: authCapPhotosRead, handler: (*Server).handleFaceThumbnail},
 	{pattern: "POST /photos/people/{id}/tags", capabilities: authCapPhotosEdit, handler: (*Server).handlePersonTags},
+	{pattern: "GET /photos/people/{id}/parents", capabilities: authCapPhotosRead, handler: (*Server).handlePersonParents},
+	{pattern: "POST /photos/people/{id}/parents", capabilities: authCapPhotosEdit, handler: (*Server).handlePersonParents},
 	{pattern: "POST /photos/people/{id}/rename", capabilities: authCapPhotosEdit, handler: (*Server).handlePersonRename},
 	{pattern: "POST /photos/people/{id}/merge", capabilities: authCapPhotosEdit, handler: (*Server).handlePersonMerge},
 	{pattern: "POST /photos/faces/edit", capabilities: authCapPhotosEdit, handler: (*Server).handleFacesEdit},

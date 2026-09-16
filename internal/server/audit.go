@@ -454,6 +454,8 @@ func auditActionTarget(r *http.Request) (string, string) {
 		return "Vergleichsgesicht favorisieren", idAuditTarget("Gesicht", r.PathValue("id"))
 	case "POST /photos/people/{id}/tags":
 		return "Fotoperson taggen", idAuditTarget("Person", r.PathValue("id"))
+	case "POST /photos/people/{id}/parents":
+		return "Eltern einer Fotoperson zuordnen", idAuditTarget("Person", r.PathValue("id"))
 	case "POST /photos/people/{id}/rename":
 		return "Fotoperson benennen", idAuditTarget("Person", r.PathValue("id"))
 	case "POST /photos/people/{id}/merge":

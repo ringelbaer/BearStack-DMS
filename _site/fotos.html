@@ -496,6 +496,23 @@
     </span>
   </a>
 
+    <nav class="md-nav" aria-label="Personen ansehen und taggen">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#mutter-und-vater-zuordnen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Mutter und Vater zuordnen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
 </li>
 
         <li class="md-nav__item">
@@ -904,6 +921,23 @@
     </span>
   </a>
 
+    <nav class="md-nav" aria-label="Personen ansehen und taggen">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#mutter-und-vater-zuordnen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Mutter und Vater zuordnen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
 </li>
 
         <li class="md-nav__item">
@@ -1172,6 +1206,19 @@ zum Ansehen genügt <code>photos.read</code>. Die Tags gehören der Gruppe und w
 die einzelnen Fotos übertragen. Beim Zusammenführen werden die Tags vereinigt;
 globales Umbenennen und Löschen eines Foto-Tags aktualisiert auch Personengruppen.
 Foto-Schema <strong>32</strong> ergänzt automatisch einen indizierten Zuordnungsspeicher.</p>
+<h3 id="mutter-und-vater-zuordnen">Mutter und Vater zuordnen<a class="headerlink" href="#mutter-und-vater-zuordnen" title="Permanent link">&para;</a></h3>
+<p>Ab <strong>0.54.0</strong> öffnet <strong>Eltern</strong> in der Detailansicht einer benannten Person die
+Zuordnung von Mutter und Vater. Tippe einen Namen und wähle eine vorhandene benannte
+Gruppe aus den Vorschlägen; danach <strong>Eltern speichern</strong>. Ein leeres Feld entfernt
+die jeweilige Zuordnung. Die verknüpften Namen öffnen die zugehörige Person.
+Die Bearbeitung ist zunächst im Web verfügbar und benötigt <code>photos.edit</code>.
+Leseberechtigte sehen die zugeordneten, sichtbaren benannten Personen.</p>
+<p>Stabile IDs erhalten Beziehungen beim Umbenennen. Selbstzuordnungen, dieselbe
+Person in beiden Elternrollen und Kreise in der Abstammung sind ausgeschlossen.
+Zusammenführen übernimmt Eltern und Verweise auf die Quellperson atomar; bei
+widersprüchlichen Eltern muss zuerst die Zuordnung korrigiert werden. Geschützte,
+inaktive oder unbenannte Eltern werden nicht angezeigt. Foto-Schema <strong>33</strong> wird
+automatisch angelegt. Die Namenssuche lädt höchstens 60 Vorschläge pro Anfrage.</p>
 <h2 id="aktivierung">Aktivierung<a class="headerlink" href="#aktivierung" title="Permanent link">&para;</a></h2>
 <p>Minimal in <code>.env</code>:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>BEARSTACK_PHOTOS_ENABLED=true
@@ -1992,7 +2039,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.53.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.54.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

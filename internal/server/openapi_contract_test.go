@@ -28,7 +28,7 @@ func TestOpenAPIHTTPResponses(t *testing.T) {
 	check := func(method, path, canonical, user, body string, status int) *httptest.ResponseRecorder {
 		t.Helper()
 		var w *httptest.ResponseRecorder
-		if canonical == "/photos/people/{id}/tags" {
+		if canonical == "/photos/people/{id}/tags" || canonical == "/photos/people/{id}/parents" {
 			form, err := url.ParseQuery(body)
 			if err != nil {
 				t.Fatal(err)
@@ -107,6 +107,8 @@ func TestOpenAPIHTTPResponses(t *testing.T) {
 	check("GET", fmt.Sprintf("%s/groups?upper=%d", base, session.UpperID), base+"/groups", "editor", "", 200)
 	body, _ := json.Marshal(photos.LabelAction{OperationID: "contract-operation-12345", Dataset: session.Dataset, Revision: person.Revision, Action: "name", Name: "Contract Person"})
 	check("POST", path+"/actions", base+"/people/{id}/actions", "editor", string(body), 200)
+	check("POST", fmt.Sprintf("/photos/people/%d/parents", person.ID), "/photos/people/{id}/parents", "editor", "mother_id=0&father_id=0", 200)
+	check("GET", fmt.Sprintf("/photos/people/%d/parents", person.ID), "/photos/people/{id}/parents", "reader", "", 200)
 	check("GET", base+"/actions/contract-operation-12345?dataset="+session.Dataset, base+"/actions/{operation}", "editor", "", 200)
 	check("POST", path+"/actions", base+"/people/{id}/actions", "editor", "{}", 400)
 	check("GET", fmt.Sprintf("%s/people?upper=%d", base, session.UpperID), base+"/people", "editor", "", 200)

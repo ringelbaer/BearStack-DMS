@@ -21,7 +21,7 @@ func (s *Server) labelError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, photos.ErrLabelNameExists):
 		status, code = 409, "name_exists"
-	case errors.Is(err, photos.ErrLabelConflict):
+	case errors.Is(err, photos.ErrLabelConflict), errors.Is(err, photos.ErrParentMerge):
 		status, code = 409, "conflict"
 	case errors.Is(err, photos.ErrLabelInvalid):
 		status, code = 400, "invalid"

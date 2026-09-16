@@ -261,3 +261,34 @@ test("tag a person and browse the virtual folders into the dated photo gallery",
   await page.screenshot({ path: "/tmp/bearstack-people-gallery-mobile.png", fullPage: true });
   await context.close();
 });
+
+test("named groups can choose, follow and clear existing parents", async ({ browser }) => {
+  const context = await browser.newContext(); const page = await context.newPage();
+  await login(page);
+  const groups = (await (await context.request.get(baseURL + "/photos/people?format=json")).json()).people;
+  const child = (await (await context.request.get(baseURL + "/photos/people?format=json&known=1&q=Zoe")).json()).people[0];
+  const parents = groups.filter(p => p.id !== child.id).slice(0,2);
+  for (const [i,parent] of parents.entries()) {
+    const response = await context.request.post(`${baseURL}/photos/people/${parent.id}/rename`, { form: {name: i === 0 ? "Mutter Beispiel" : "Vater Beispiel"}, headers: {Origin: baseURL, Accept: "application/json"} });
+    expect(response.ok()).toBe(true);
+  }
+  await page.goto(`${baseURL}/photos/people/${child.id}`);
+  await page.locator(".person-parents summary").click();
+  await page.getByRole("combobox",{name:"Mutter",exact:true}).fill("Mutter Beispiel");
+  await page.getByRole("option",{name:/^Mutter Beispiel/}).click();
+  await page.getByRole("combobox",{name:"Vater",exact:true}).fill("Vater Beispiel");
+  await page.getByRole("option",{name:/^Vater Beispiel/}).click();
+  await page.getByRole("button",{name:"Eltern speichern",exact:true}).click();
+  await expect(page.locator(".notice")).toContainText("Eltern gespeichert");
+  await page.locator(".person-parents summary").click();
+  await expect(page.locator(".person-parents").getByRole("link",{name:"Mutter Beispiel",exact:true})).toHaveAttribute("href",`/photos/people/${parents[0].id}`);
+  await page.setViewportSize({width:390,height:800});
+  const box = await page.locator(".person-parents-panel").boundingBox();
+  expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x+box.width).toBeLessThanOrEqual(390);
+  await page.getByRole("combobox",{name:"Mutter",exact:true}).fill("");
+  await page.getByRole("combobox",{name:"Vater",exact:true}).fill("");
+  await page.getByRole("button",{name:"Eltern speichern",exact:true}).click();
+  const result = await (await context.request.get(`${baseURL}/photos/people/${child.id}/parents`)).json();
+  expect(result).toEqual({});
+  await context.close();
+});

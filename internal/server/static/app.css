@@ -3547,6 +3547,15 @@ label span {
 .person-tags-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
 .person-tags-tools .tag-select { min-width: 0; max-width: 100%; }
 .person-tags-tools .tag-select-trigger { max-width: 100%; }
+.person-parents { position: relative; }
+.person-parents summary { list-style: none; cursor: pointer; }
+.person-parents-panel { position: absolute; left: 0; top: calc(100% + 6px); width: min(360px, calc(100vw - 40px)); padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow); z-index: 30; }
+.person-parents-panel form { display: grid; gap: 10px; }
+@media (max-width: 640px) {
+  .person-tags-tools { position: relative; }
+  .person-parents { position: static; }
+  .person-parents-panel { left: 0; }
+}
 .people-search-input { display: flex; align-items: center; gap: 6px; min-width: 0; margin: 0; text-transform: none; }
 .people-search-input input { flex: 1; }
 .people-search-reset { flex: 0 0 44px; min-height: 44px; padding: 8px; font-size: 1.25rem; text-align: center; }

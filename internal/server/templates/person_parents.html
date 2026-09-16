@@ -1,0 +1,26 @@
+{{define "person_parents"}}
+<details class="person-parents">
+  <summary class="secondary-button">Eltern</summary>
+  <div class="person-parents-panel">
+    <p>Mutter: {{with .People.Parents.Mother}}<a href="/photos/people/{{.ID}}">{{.Name}}</a>{{else}}Nicht zugeordnet{{end}}<br>Vater: {{with .People.Parents.Father}}<a href="/photos/people/{{.ID}}">{{.Name}}</a>{{else}}Nicht zugeordnet{{end}}</p>
+    {{if .Auth.CanPhotosEdit}}
+    <form method="post" action="/photos/people/{{.People.PersonID}}/parents" data-person-parents-form>
+      <div class="person-picker-field" data-person-picker data-person-exclude="{{.People.PersonID}}">
+        <label for="person-mother">Mutter</label>
+        <input id="person-mother" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="mother-options" autocomplete="off" data-person-search placeholder="Benannte Person suchen" value="{{with .People.Parents.Mother}}{{.Name}} (#{{.ID}}){{end}}">
+        <input type="hidden" name="mother_id" data-person-target value="{{with .People.Parents.Mother}}{{.ID}}{{else}}0{{end}}">
+        <div class="person-picker-popup" data-person-popup hidden><div id="mother-options" role="listbox" aria-label="Mutter auswählen" data-person-options></div><p role="status" data-person-feedback></p></div>
+      </div>
+      <div class="person-picker-field" data-person-picker data-person-exclude="{{.People.PersonID}}">
+        <label for="person-father">Vater</label>
+        <input id="person-father" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="father-options" autocomplete="off" data-person-search placeholder="Benannte Person suchen" value="{{with .People.Parents.Father}}{{.Name}} (#{{.ID}}){{end}}">
+        <input type="hidden" name="father_id" data-person-target value="{{with .People.Parents.Father}}{{.ID}}{{else}}0{{end}}">
+        <div class="person-picker-popup" data-person-popup hidden><div id="father-options" role="listbox" aria-label="Vater auswählen" data-person-options></div><p role="status" data-person-feedback></p></div>
+      </div>
+      <p class="muted">Aus den Vorschlägen wählen. Ein leeres Feld entfernt die Zuordnung.</p>
+      <button>Eltern speichern</button>
+    </form>
+    {{end}}
+  </div>
+</details>
+{{end}}
