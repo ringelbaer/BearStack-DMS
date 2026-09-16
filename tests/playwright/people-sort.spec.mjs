@@ -292,3 +292,24 @@ test("named groups can choose, follow and clear existing parents", async ({ brow
   expect(result).toEqual({});
   await context.close();
 });
+
+test("folder people view keeps portraits, photos and navigation inside the folder", async ({ browser }) => {
+  const context = await browser.newContext(); const page = await context.newPage();
+  await login(page);
+  await page.goto(baseURL + "/photos?path=B");
+  await page.locator(".photo-actions-menu > summary").click();
+  await page.getByRole("link",{name:"Personen im Ordner",exact:true}).click();
+  await expect(page.locator(".photo-folder-link")).toHaveCount(1);
+  await expect(page.locator(".photo-folder-link")).toContainText("Zoe");
+  await page.locator(".photo-folder-link").click();
+  await expect(page.locator(".photo-card")).toHaveCount(1);
+  await expect(page.locator(".photo-card")).toHaveAttribute("data-photo-path","B/photo.png");
+  await expect(page.getByRole("navigation",{name:"Fotopfad"}).getByRole("link",{name:"B",exact:true})).toHaveAttribute("href","/photos?path=B");
+  await page.setViewportSize({width:390,height:800});
+  expect(await page.evaluate(() => document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  await page.getByRole("navigation",{name:"Fotopfad"}).getByRole("link",{name:"Personen im Ordner",exact:true}).click();
+  await expect(page.locator(".photo-folder-link")).toHaveCount(1);
+  await page.getByRole("navigation",{name:"Fotopfad"}).getByRole("link",{name:"B",exact:true}).click();
+  await expect(page).toHaveURL(baseURL+"/photos?path=B");
+  await context.close();
+});

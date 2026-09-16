@@ -101,6 +101,7 @@
         <span aria-hidden="true"></span>
       </summary>
       <nav class="photo-actions-menu-list" aria-label="Weitere Fotoaktionen">
+		{{if .PhotoFilter.PeopleURL}}<a href="{{.PhotoFilter.PeopleURL}}">Personen im Ordner</a>{{end}}
         <a href="{{.PhotoFilter.RandomURL}}">Zufall</a>
         <a href="{{.PhotoFilter.FrameURL}}">Fotoframe</a>
         {{if .PhotoFilter.MapView}}<a href="{{.PhotoFilter.GalleryURL}}">Galerie</a>{{else if .PhotoFilter.MapAvailable}}<a href="{{.PhotoFilter.MapURL}}">Karte</a>{{end}}

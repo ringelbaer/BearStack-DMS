@@ -93,6 +93,9 @@ func (l *Library) listPeopleFolders(ctx context.Context, rel string, opts ListOp
 		return out, os.ErrNotExist
 	}
 	parts := strings.Split(rel, "/")
+	if len(parts) >= 2 && strings.HasPrefix(parts[1], "f-") {
+		return l.listDirectoryPeople(ctx, rel, opts)
+	}
 	if len(parts) > 3 {
 		return out, os.ErrNotExist
 	}
@@ -131,21 +134,10 @@ func (l *Library) listPeopleFolders(ctx context.Context, rel string, opts ListOp
 			name = "Unbenannt"
 		}
 		out.Breadcrumbs = append(out.Breadcrumbs, Crumb{Name: name, Path: rel})
-		if !opts.SkipMedia {
-			plan := indexQueryPlanFor(opts.Query)
-			condition := `mi.path IN (SELECT path FROM photo_faces WHERE person_id=? AND ignored=0)`
-			if plan.ExpressionSQL != "" {
-				condition = "(" + plan.ExpressionSQL + ") AND " + condition
-			}
-			plan.ExpressionSQL = condition
-			plan.ExpressionArgs = append(plan.ExpressionArgs, id)
-			out.Media, out.Total, err = l.indexMedia(ctx, indexMediaOptions{Query: opts.Query, Plan: plan, MediaType: opts.MediaType, GPSOnly: opts.GPSOnly, RequestSort: opts.Sort, Limit: opts.PageSize, Offset: (opts.Page - 1) * opts.PageSize, LeanMetadata: opts.LeanMetadata})
-			if err != nil {
-				return out, err
-			}
+		if err := l.listPersonFolderMedia(ctx, &out, id, "", opts); err != nil {
+			return out, err
 		}
-		out.HasPrev = opts.Page > 1
-		out.HasNext = opts.Page*opts.PageSize < out.Total
+
 		return out, nil
 	}
 	visibilityFilter, visibilityArgs := "", []any{}
@@ -244,4 +236,25 @@ func (l *Library) listPeopleFolders(ctx context.Context, rel string, opts ListOp
 		out.HasPrev = opts.Page > 1
 	}
 	return out, nil
+}
+
+// Both global and folder-scoped person galleries use the regular media planner.
+func (l *Library) listPersonFolderMedia(ctx context.Context, out *Listing, id int64, directory string, opts ListOptions) error {
+	if !opts.SkipMedia {
+		plan := indexQueryPlanFor(opts.Query)
+		condition := `mi.path IN (SELECT path FROM photo_faces WHERE person_id=? AND ignored=0)`
+		if plan.ExpressionSQL != "" {
+			condition = "(" + plan.ExpressionSQL + ") AND " + condition
+		}
+		plan.ExpressionSQL = condition
+		plan.ExpressionArgs = append(plan.ExpressionArgs, id)
+		var err error
+		out.Media, out.Total, err = l.indexMedia(ctx, indexMediaOptions{Directory: directory, Subtree: directory != "", Query: opts.Query, Plan: plan, MediaType: opts.MediaType, GPSOnly: opts.GPSOnly, RequestSort: opts.Sort, Limit: opts.PageSize, Offset: (opts.Page - 1) * opts.PageSize, LeanMetadata: opts.LeanMetadata})
+		if err != nil {
+			return err
+		}
+	}
+	out.HasPrev = opts.Page > 1
+	out.HasNext = opts.Page*opts.PageSize < out.Total
+	return nil
 }

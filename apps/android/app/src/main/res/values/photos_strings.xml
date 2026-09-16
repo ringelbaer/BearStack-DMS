@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="photos_directory_people">Personen im Ordner</string>
     <string name="photos_date_choose">Datum auswählen</string>
     <string name="photos_date_jump">Zum Datum springen</string>
     <string name="photos_date_hint">Ohne Aufnahmen an diesem Tag wird der nächste vorhandene Tag angezeigt. Bei gleichem Abstand wird der ältere Tag gewählt.</string>

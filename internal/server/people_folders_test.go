@@ -113,6 +113,34 @@ func TestPeopleFolderCatalogOptInAndFaceReadAccess(t *testing.T) {
 	}
 }
 
+func TestDirectoryPeopleCatalogAndMenu(t *testing.T) {
+	s, group := groupPhotoServerFixture(t)
+	w := labelRequest(s, "GET", "/api/photos/v1/browse?people=1", "reader", "")
+	var root photoCatalogPage
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &root) != nil || root.PeoplePath != photos.DirectoryPeoplePath("") {
+		t.Fatalf("root: %d %s", w.Code, w.Body.String())
+	}
+	w = labelRequest(s, "GET", "/api/photos/v1/browse?path="+url.QueryEscape(root.PeoplePath), "reader", "")
+	var people photoCatalogPage
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &people) != nil || len(people.Folders) != len(group.Faces) || people.Parent != "" || people.PeoplePath != "" {
+		t.Fatalf("people: %d %s", w.Code, w.Body.String())
+	}
+	r := httptest.NewRequest("GET", "/photos", nil)
+	r.SetBasicAuth("reader", "secret")
+	w = httptest.NewRecorder()
+	s.Handler().ServeHTTP(w, r)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), "Personen im Ordner") {
+		t.Fatalf("menu: %d", w.Code)
+	}
+	r = httptest.NewRequest("GET", "/photos?path="+url.QueryEscape(people.Folders[0].Path), nil)
+	r.SetBasicAuth("reader", "secret")
+	w = httptest.NewRecorder()
+	s.Handler().ServeHTTP(w, r)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), "photo-date-group") {
+		t.Fatalf("gallery: %d %s", w.Code, w.Body.String())
+	}
+}
+
 func TestPeopleSearchResetKeepsModeAndSort(t *testing.T) {
 	s, _ := groupPhotoServerFixture(t)
 	r := httptest.NewRequest("GET", "/photos/people?known=1&q=missing&page=3&sort=count_desc", nil)

@@ -27,6 +27,17 @@ class PhotosApiTest {
         } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
     }
 
+    @Test fun folderPeopleNavigationIsOptionalAndKeepsOpaquePaths()=runBlocking {
+        var body="""{"path":"Holiday","parent":"","people_path":".people/f-SG9saWRheQ","page":1,"total":0,"has_next":false,"folder_total":0,"folder_has_next":false,"blog_has_next":false,"media":[],"blogs":[],"folders":[]}"""
+        val client=OkHttpClient.Builder().addInterceptor {chain -> Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK").body(body.toResponseBody("application/json".toMediaType())).build() }.build()
+        try {
+            val api=PhotosApi(client,"https://example.test/proxy/")
+            assertEquals(".people/f-SG9saWRheQ",api.browse(PhotoQuery(path="Holiday")).peoplePath)
+            body=body.replace("\"people_path\":\".people/f-SG9saWRheQ\",", "")
+            assertEquals("",api.browse(PhotoQuery(path="Holiday")).peoplePath)
+        } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+    }
+
     @Test fun datePositionKeepsProxyPrefixAndUsesABoundedValidatedResponse()=runBlocking {
         var request:Request?=null
         var body="""{"path":"album/a.jpg","date":"2026-06-12","page":321}"""

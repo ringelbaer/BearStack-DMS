@@ -1,6 +1,6 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.13.0** (`versionCode 29`). Die Servergalerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.14.0** (`versionCode 30`). Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
@@ -24,6 +24,16 @@ begrenzt. `photos.read` genügt. Tags werden in der Web-Personenverwaltung verge
 Auf älteren Servern bleibt die vorhandene Ordneransicht verfügbar; ältere Apps
 behalten auch nach dem Serverupdate ihre bisherigen Antworten mit zwei Vorschauen.
 
+
+## Personen im aktuellen Fotoordner
+
+Ab App **0.14.0** und BearStack **0.55.0** öffnet **Weitere Optionen → Personen im
+Ordner** die Personen des aktuellen Fotoordners und seiner Unterordner. Fotoanzahl
+und Gesichtsvorschau beziehen sich auf diesen Bereich; beim Öffnen einer Person
+bleiben auch ihre Fotos darauf begrenzt. Zurück führt über die Personenübersicht
+zum ursprünglichen Ordner. Der Eintrag wird nur angezeigt, wenn der Server die
+Funktion anbietet. Lesen genügt; Suche, Sortierung, Datumsgruppen und seitenweises
+Nachladen verwenden die bestehende Galerie.
 
 ## Hilfe unter Personen
 

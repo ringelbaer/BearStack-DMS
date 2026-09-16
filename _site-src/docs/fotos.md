@@ -67,6 +67,22 @@ widersprüchlichen Eltern muss zuerst die Zuordnung korrigiert werden. Geschütz
 inaktive oder unbenannte Eltern werden nicht angezeigt. Foto-Schema **33** wird
 automatisch angelegt. Die Namenssuche lädt höchstens 60 Vorschläge pro Anfrage.
 
+### Personen eines Fotoordners ansehen
+
+Ab **0.55.0** steht in jedem normalen Fotoordner unter **Weitere Fotoaktionen** der
+Eintrag **Personen im Ordner**, neben den bisherigen Fotoaktionen wie der Karte.
+Die Übersicht berücksichtigt den aktuellen Ordner und alle Unterordner. Sie zeigt
+benannte und unbenannte aktive Gruppen, mit der Anzahl unterschiedlicher Fotos in
+diesem Bereich. Auch das Gesichtsporträt stammt aus dem Bereich; dessen Stern-
+Favoriten haben Vorrang. Der bestehende Gesichtscache wird wiederverwendet.
+
+Eine Person öffnet die normale, datumsgruppierte und sortierbare Galerie ihrer
+Fotos aus genau diesem Bereich. Suche und Blättern behalten die Begrenzung bei.
+Der Fotopfad führt zur Personenübersicht oder zum ursprünglichen Fotoordner zurück.
+Geschützte Unterordner und ignorierte Gesichter bleiben ausgeschlossen. Die
+Übersicht benötigt nur Fotoleserechte und lädt Personen seitenweise. Es werden
+bestehende Pfadindizes genutzt und keine Originalbilder für die Liste dekodiert.
+
 ## Aktivierung
 
 Minimal in `.env`:

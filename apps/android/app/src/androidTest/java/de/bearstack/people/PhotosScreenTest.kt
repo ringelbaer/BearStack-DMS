@@ -25,7 +25,7 @@ import java.util.Locale
 
 class PhotosScreenTest {
     @get:Rule val compose=createComposeRule()
-    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, test: (PhotosController,PhotosService)->Unit) {
+    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, directoryPeople: Boolean = false, test: (PhotosController,PhotosService)->Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext
         val context=app.createConfigurationContext(Configuration(app.resources.configuration).apply {setLocale(locale)})
         val file=File(app.cacheDir,"gallery-test.jpg")
@@ -39,6 +39,12 @@ class PhotosScreenTest {
             var infoAttempts=0
             override suspend fun session()=PhotoSession("gallery-test",false,240,240,1280,2048,5,8)
             override suspend fun browse(query: PhotoQuery,page: Int,section: String): PhotoPage {
+                if(directoryPeople && query.path.startsWith(".people/f-")) {
+                    val leaf=query.path.endsWith("/1")
+                    val folders=if(leaf) emptyList() else listOf(PhotoFolder(".people/f-SG9saWRheQ/1","Ada",null,1,false,0,listOf(photos[0].copy(faceId=1)),true))
+                    return PhotoPage(query.path,if(leaf) ".people/f-SG9saWRheQ" else "Holiday",1,if(leaf) 1 else 0,false,folders.size,false,false,
+                        if(leaf) photos.take(1) else emptyList(),folders,emptyList(),if(leaf) "Ada" else "Personen im Ordner")
+                }
                 if(peopleFolders && !query.recursive) {
                     val portraits=List(8) { photos[0].copy(name="Gesicht $it",faceId=it+1L) }
                     val folders=when(query.path) {
@@ -54,7 +60,7 @@ class PhotosScreenTest {
                 val folders=if(!query.recursive && query.path.isEmpty()) listOf(PhotoFolder("Holiday","Holiday",null,2,false,0,photos)) else emptyList()
                 val blogs=if(query.path=="Holiday") listOf(PhotoBlog("Holiday/story.md","story.md",null,"2026-09-09T10:00:00Z")) else emptyList()
                 return PhotoPage(query.path,"",1,2,false,folders.size,false,false,
-                    if(query.query.isNotEmpty()) photos.filter {it.name.contains(query.query)} else if(folders.isEmpty()) photos else emptyList(),folders,blogs)
+                    if(query.query.isNotEmpty()) photos.filter {it.name.contains(query.query)} else if(folders.isEmpty()) photos else emptyList(),folders,blogs,peoplePath=if(directoryPeople && query.path=="Holiday") ".people/f-SG9saWRheQ" else "")
             }
             override suspend fun info(path: String): Photo {
                 if(retryInfo && infoAttempts++==0) throw ApiFailure(404,"not_found",de.bearstack.people.text.UiText(R.string.error_missing))
@@ -86,6 +92,20 @@ class PhotosScreenTest {
             compose.waitUntil(10_000) {!controller.state.value.loading}
             test(controller,api)
         } finally {compose.runOnUiThread {controller.close();owner.cancel();images.shutdown()};file.delete()}
+    }
+    @Test fun readerOpensPeopleForAFolderAndReturnsToThatFolder()=screen(Locale.GERMAN,directoryPeople=true) {controller,_ ->
+        compose.onNodeWithText("Ordner").performClick()
+        compose.onNodeWithText("Holiday").performClick()
+        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
+        compose.onNodeWithText("Personen im Ordner").performClick()
+        compose.onNodeWithText("Ada").performClick()
+        compose.onNodeWithContentDescription("first.jpg").assertIsDisplayed()
+        compose.onNodeWithContentDescription("second.jpg").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Zurück").performClick()
+        compose.onNodeWithText("Ada").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Zurück").performClick()
+        compose.waitUntil(10_000) {controller.state.value.query.path=="Holiday" && !controller.state.value.loading}
+        compose.onNodeWithText("Holiday").assertIsDisplayed()
     }
     @Test fun readerBrowsesPeopleTagsAndPhotosAndReturnsThroughParents()=screen(Locale.GERMAN,peopleFolders=true) {controller,_ ->
         compose.onNodeWithText("Ordner").performClick()

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="photos_directory_people">People in folder</string>
     <string name="photos_date_choose">Choose date</string>
     <string name="photos_date_jump">Jump to date</string>
     <string name="photos_date_hint">If there are no photos on this day, the nearest available day is shown. Equal distances prefer the older day.</string>

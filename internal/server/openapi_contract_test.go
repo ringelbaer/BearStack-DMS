@@ -95,6 +95,8 @@ func TestOpenAPIHTTPResponses(t *testing.T) {
 	check("GET", "/api/photos/v1/browse?people=1", "/api/photos/v1/browse", "reader", "", 200)
 	check("GET", "/api/photos/v1/browse?people=1&path=.people", "/api/photos/v1/browse", "reader", "", 200)
 	check("GET", "/api/photos/v1/browse?people=1&path=.people/all", "/api/photos/v1/browse", "reader", "", 200)
+	check("GET", "/api/photos/v1/browse?path=.people/f-", "/api/photos/v1/browse", "reader", "", 200)
+	check("GET", fmt.Sprintf("/api/photos/v1/browse?path=.people/f-/%d", person.ID), "/api/photos/v1/browse", "reader", "", 200)
 	check("GET", fmt.Sprintf("/api/photos/v1/browse?people=1&path=.people/all/%d", person.ID), "/api/photos/v1/browse", "reader", "", 200)
 	faces, err := s.photos.AutomaticFaces(ctx, job.Path)
 	if err != nil {

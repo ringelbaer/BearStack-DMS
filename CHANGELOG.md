@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.55.0 / Android 0.14.0 – in Entwicklung
+
+- Normale Fotoordner bieten im Fotoaktionen-Menü eine Personenübersicht einschließlich ihrer Unterordner, im Web und in Android. Personen, unterschiedliche Fotoanzahlen, Stern-Porträts und anschließende Fotogalerien bleiben auf diesen Bereich beschränkt. Navigation zurück zum ursprünglichen Ordner, Namenssuche, Sortierung und Blättern bleiben verfügbar.
+- Wiederverwendung von Pfadindizes, begrenzten Ordner-/Medienseiten und Gesichtscache. Ignorierte und geschützte Unterordner bleiben ausgeschlossen; echte Präfixgrenzen verhindern Treffer aus ähnlich benannten Nachbarordnern. Keine zusätzliche Migration.
+- Native API ergänzt optional `people_path`; ältere Server zeigen den neuen Menüpunkt nicht. MINOR **0.55.0**, Android **0.14.0**, `versionCode` **30**. README, Website und OpenAPI aktualisiert. Vollständige Go-Suite, gezielte Race-Tests, JavaScript-Prüfungen, elf Browserregressionen, 87 Android-JVM-Tests, Lint, Debug-Build, neun Emulator-UI-Tests und Website-Build erfolgreich.
+
 ### BearStack 0.54.0 – in Entwicklung
 
 - Web: Mutter und Vater für benannte Personengruppen aus der vorhandenen Namenssuche wählen, entfernen und als verlinkte Personen ansehen. Keine neuen Gruppen durch die Elternauswahl; Bearbeitung mit `photos.edit`, Ansicht mit `photos.read`.

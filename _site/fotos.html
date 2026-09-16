@@ -510,6 +510,17 @@
 
 </li>
 
+          <li class="md-nav__item">
+  <a href="#personen-eines-fotoordners-ansehen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Personen eines Fotoordners ansehen
+      </span>
+    </span>
+  </a>
+
+</li>
+
       </ul>
     </nav>
 
@@ -935,6 +946,17 @@
 
 </li>
 
+          <li class="md-nav__item">
+  <a href="#personen-eines-fotoordners-ansehen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Personen eines Fotoordners ansehen
+      </span>
+    </span>
+  </a>
+
+</li>
+
       </ul>
     </nav>
 
@@ -1219,6 +1241,19 @@ Zusammenführen übernimmt Eltern und Verweise auf die Quellperson atomar; bei
 widersprüchlichen Eltern muss zuerst die Zuordnung korrigiert werden. Geschützte,
 inaktive oder unbenannte Eltern werden nicht angezeigt. Foto-Schema <strong>33</strong> wird
 automatisch angelegt. Die Namenssuche lädt höchstens 60 Vorschläge pro Anfrage.</p>
+<h3 id="personen-eines-fotoordners-ansehen">Personen eines Fotoordners ansehen<a class="headerlink" href="#personen-eines-fotoordners-ansehen" title="Permanent link">&para;</a></h3>
+<p>Ab <strong>0.55.0</strong> steht in jedem normalen Fotoordner unter <strong>Weitere Fotoaktionen</strong> der
+Eintrag <strong>Personen im Ordner</strong>, neben den bisherigen Fotoaktionen wie der Karte.
+Die Übersicht berücksichtigt den aktuellen Ordner und alle Unterordner. Sie zeigt
+benannte und unbenannte aktive Gruppen, mit der Anzahl unterschiedlicher Fotos in
+diesem Bereich. Auch das Gesichtsporträt stammt aus dem Bereich; dessen Stern-
+Favoriten haben Vorrang. Der bestehende Gesichtscache wird wiederverwendet.</p>
+<p>Eine Person öffnet die normale, datumsgruppierte und sortierbare Galerie ihrer
+Fotos aus genau diesem Bereich. Suche und Blättern behalten die Begrenzung bei.
+Der Fotopfad führt zur Personenübersicht oder zum ursprünglichen Fotoordner zurück.
+Geschützte Unterordner und ignorierte Gesichter bleiben ausgeschlossen. Die
+Übersicht benötigt nur Fotoleserechte und lädt Personen seitenweise. Es werden
+bestehende Pfadindizes genutzt und keine Originalbilder für die Liste dekodiert.</p>
 <h2 id="aktivierung">Aktivierung<a class="headerlink" href="#aktivierung" title="Permanent link">&para;</a></h2>
 <p>Minimal in <code>.env</code>:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>BEARSTACK_PHOTOS_ENABLED=true
@@ -2039,7 +2074,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.54.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.55.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

@@ -29,7 +29,7 @@ data class PhotoQuery(val path: String = "", val query: String = "", val recursi
     val gps: Boolean = false, val sort: String = "descending_date", val type: String = "")
 data class PhotoPage(val path: String, val parent: String, val page: Int, val total: Int, val hasNext: Boolean,
     val folderTotal: Int, val folderHasNext: Boolean, val blogHasNext: Boolean,
-    val media: List<Photo>, val folders: List<PhotoFolder>, val blogs: List<PhotoBlog>, val name: String = "")
+    val media: List<Photo>, val folders: List<PhotoFolder>, val blogs: List<PhotoBlog>, val name: String = "", val peoplePath: String = "")
 data class PhotoMapBounds(val south: Double, val west: Double, val north: Double, val east: Double)
 data class PhotoMapMarker(val latitude: Double, val longitude: Double, val count: Int, val path: String = "",val bounds: PhotoMapBounds? = null)
 data class PhotoMapData(val total: Int, val bounds: PhotoMapBounds?, val markers: List<PhotoMapMarker>)
@@ -103,7 +103,7 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
                 PhotoFolder(folder.getString("path"),folder.getString("name"),folder.optionalString("date"),
                     folder.getInt("media_count"),folder.getBoolean("approximate"),folder.getInt("folder_count"),
                     folder.getJSONArray("previews").objects(::photo),folder.optBoolean("virtual"))
-            },o.getJSONArray("blogs").objects(::post),o.optString("name"))
+            },o.getJSONArray("blogs").objects(::post),o.optString("name"),o.optString("people_path"))
     }
     override suspend fun info(path: String) = photo(json("media/info",mapOf("path" to path)).getJSONObject("media"))
     override suspend fun locateDate(date: String): PhotoDatePosition {

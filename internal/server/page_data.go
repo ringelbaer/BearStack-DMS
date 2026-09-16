@@ -245,6 +245,7 @@ func (d PageData) APILinkVisible() bool {
 }
 
 type PhotoFilter struct {
+	PeopleURL              string
 	Path                   string
 	Query                  string
 	MediaType              string

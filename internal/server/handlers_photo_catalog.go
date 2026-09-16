@@ -69,6 +69,7 @@ func catalogBlog(post photos.BlogPost) photoCatalogBlog {
 }
 
 type photoCatalogPage struct {
+	PeoplePath    string               `json:"people_path,omitempty"`
 	Name          string               `json:"name,omitempty"`
 	Path          string               `json:"path"`
 	Parent        string               `json:"parent"`
@@ -183,6 +184,9 @@ func (s *Server) handlePhotoCatalog(w http.ResponseWriter, r *http.Request) {
 	out := photoCatalogPage{Name: name, Path: listing.Path, Parent: listing.ParentPath, Page: listing.Page, Total: listing.Total, HasNext: listing.HasNext,
 		FolderTotal: listing.FolderTotal, FolderHasNext: listing.FolderHasNext, BlogHasNext: listing.BlogHasNext,
 		Media: []photoCatalogMedia{}, Folders: []photoCatalogFolder{}, Blogs: []photoCatalogBlog{}}
+	if !photos.IsPeopleFolder(listing.Path) && !opts.Recursive && opts.Query == "" {
+		out.PeoplePath = photos.DirectoryPeoplePath(listing.Path)
+	}
 	for _, item := range listing.Media {
 		out.Media = append(out.Media, catalogMedia(item))
 	}

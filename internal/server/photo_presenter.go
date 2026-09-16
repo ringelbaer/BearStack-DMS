@@ -444,6 +444,9 @@ func photoFilterFromRequest(r *http.Request, listing photos.Listing) PhotoFilter
 		MapAvailable: mapAvailable,
 	}
 	filter.RandomURL = pathWithQuery("/photos/random", base)
+	if !photos.IsPeopleFolder(listing.Path) && listing.Query == "" {
+		filter.PeopleURL = photoPageURL(url.Values{"path": {photos.DirectoryPeoplePath(listing.Path)}, "sort": {"ascending_name"}})
+	}
 	filter.FrameURL = pathWithQuery("/photos/frame", base)
 	mapValues := cloneQueryValues(base)
 	mapValues.Set("view", "map")

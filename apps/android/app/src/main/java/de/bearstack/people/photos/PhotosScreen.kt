@@ -64,6 +64,7 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
                 if(tab==0) PhotoDateAction(controller,state)
                 IconButton(onClick={menu=true}) { Icon(painterResource(R.drawable.ic_more_horiz),stringResource(R.string.photos_menu)) }
                 DropdownMenu(menu,{menu=false}) {
+                    if(state.peoplePath.isNotEmpty()) DropdownMenuItem(text={Text(stringResource(R.string.photos_directory_people))},onClick={menu=false;controller.open(PhotoQuery(path=state.peoplePath,sort="ascending_name"))},enabled=!state.loading)
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_map))},onClick={menu=false;mapOpen=true},enabled=!state.loading && !state.query.path.startsWith(".people"))
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_frame))},onClick={menu=false;controller.startFrame()},enabled=!state.loading && (!state.query.path.startsWith(".people") || state.query.path.count {it=='/'}==2))
                     listOf("descending_date" to R.string.photos_sort_newest,"ascending_date" to R.string.photos_sort_oldest,
