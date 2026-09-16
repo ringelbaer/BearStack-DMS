@@ -3,9 +3,10 @@
   var surface = document.querySelector("[data-face-chains]");
   if (!surface) return;
   var find = function (name) { return surface.querySelector("[data-chain-" + name + "]"); };
-  var options = find("options"), hopsInput = options.elements.hops, grid = find("grid"), content = find("content");
+  var options = find("options"), hopsInput = options.elements.hops, similarityInput = options.elements.similarity, grid = find("grid"), content = find("content");
   var status = find("status"), retry = find("retry"), recover = find("recover"), assign = find("assign"), stop = find("stop");
   var chain = null, page = null, omitted = new Set(), skipped = new Set(), after = 0, hops = 2;
+  var similarity = Number(similarityInput.value);
   var loading = false, saving = false, pending = null, controller = null, retryAction = null;
   var storageKey = "bearstack.face-chain.pending:" + surface.dataset.chainUser;
   function persist() { try { if (pending) sessionStorage.setItem(storageKey, JSON.stringify(pending)); else sessionStorage.removeItem(storageKey); } catch (_) {} }
@@ -75,7 +76,7 @@
       while (true) {
         if (skipped.size > 10000) throw new Error("Dieser Durchlauf hat 10.000 Gruppen erreicht. Bitte einen neuen Durchlauf starten.");
         status.textContent = "Passende Gesichtskette wird gesucht …";
-        var result = await request("/photos/people/chains/search", { hops: hops, after: after, excluded_groups: Array.from(skipped) });
+        var result = await request("/photos/people/chains/search", { hops: hops, similarity: similarity, after: after, excluded_groups: Array.from(skipped) });
         if (result.groups.length) { chain = result; await fetchPage(1); status.textContent = "Prüfe die Auswahl und entferne unpassende Gesichter."; break; }
         after = result.after;
         if (!result.has_more) { status.textContent = "Keine weiteren Gesichtsketten. Ein neuer Durchlauf berücksichtigt übersprungene Gruppen wieder."; break; }
@@ -92,8 +93,12 @@
   }
   function completeSave(receipt) {
     verifyReceipt(receipt);
-    chain = pending.chain; after = pending.after; hops = pending.hops; skipped = new Set(pending.skipped);
+    chain = pending.chain; restorePass();
     advance(); pending = null; persist(); recover.hidden = true;
+  }
+  function restorePass() {
+    after = pending.after; hops = pending.hops; similarity = pending.chain.similarity; skipped = new Set(pending.skipped);
+    hopsInput.value = String(hops); similarityInput.value = String(similarity);
   }
   var editor = window.BearStackPersonDialog.bind({
     surface: surface, status: status, requestTimeoutMS: 30000,
@@ -155,7 +160,7 @@
   find("previous").addEventListener("click", function () { loadPage(page.page - 1); });
   find("next-page").addEventListener("click", function () { loadPage(page.page + 1); });
   find("skip").addEventListener("click", function () { advance(); searchNext(); });
-  options.addEventListener("submit", function (event) { event.preventDefault(); if (loading || saving || pending || !options.reportValidity()) return; hops = Number(hopsInput.value); after = 0; skipped.clear(); searchNext(); });
+  options.addEventListener("submit", function (event) { event.preventDefault(); if (loading || saving || pending || !options.reportValidity()) return; hops = Number(hopsInput.value); similarity = Number(similarityInput.value); after = 0; skipped.clear(); searchNext(); });
   stop.addEventListener("click", function () { if (controller) controller.abort(); });
   retry.addEventListener("click", function () { if (retryAction) retryAction(); });
   recover.addEventListener("click", async function () {
@@ -173,6 +178,6 @@
   });
   window.addEventListener("pagehide", function () { if (controller) controller.abort(); });
   try { var stored = JSON.parse(sessionStorage.getItem(storageKey)); if (stored && stored.payload && stored.chain && Array.isArray(stored.skipped)) pending = stored; } catch (_) {}
-  if (pending) { recover.hidden = false; status.textContent = "Eine frühere Speicherung ist noch nicht bestätigt. Bitte zuerst die Speicherung prüfen."; sync(); }
+  if (pending) { restorePass(); recover.hidden = false; status.textContent = "Eine frühere Speicherung ist noch nicht bestätigt. Bitte zuerst die Speicherung prüfen."; sync(); }
   else searchNext();
 }());

@@ -39,6 +39,7 @@
       if (!control.closest("dialog")) control.disabled = blocked;
     });
     if (tagTools) tagTools.querySelectorAll("button, input, select").forEach(function (button) { button.disabled = blocked; });
+    root.querySelector("[data-person-details-open]").hidden = !root.dataset.personName || !cards().length;
     retry.disabled = busy;
     if (groupButton) {
       groupButton.disabled = blocked || !cards().length;

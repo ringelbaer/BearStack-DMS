@@ -544,8 +544,12 @@ Personen zeigt der Gruppenbutton nur das Stiftsymbol; Tooltip und
 Screenreader-Beschriftung bleiben verfügbar. **Alle auswählen** markiert nur die
 Gesichter der aktuellen Seite.
 
-Das **Mehr-Menü (⋯)** bündelt **Personen-Tags**, **Stammdaten**, **Anzeige**, **Hilfe** und
-weitere Navigation. Es öffnet über der Galerie, ohne Gesichtskarten zu verschieben.
+Die **Personen-Tags** stehen direkt hinter dem Namen in derselben Zeile und lassen
+sich dort mit Bearbeitungsrecht ändern. Bei wenig Platz darf die Zeile umbrechen.
+
+Das **Mehr-Menü (⋯)** bündelt **Stammdaten**, **Anzeige**, **Hilfe** und
+weitere Navigation. Die Einträge verwenden einen einheitlichen Menüstil.
+Es öffnet über der Galerie, ohne Gesichtskarten zu verschieben.
 **Hilfe** öffnet einen Dialog; **Schließen** oder Escape schließt ihn und setzt den
 Tastaturfokus zurück auf den Mehr-Menü-Button. Thumbnailgröße und Ordnerpfade bleiben
 gespeichert. Kleine Gesichtskarten füllen die verfügbare Breite gleichmäßig; auf
@@ -1053,10 +1057,18 @@ ein Gesicht von A zu B und ein anderes zu F, erscheinen B und F bereits bei eine
 Sprung; eine Verbindung von F zu Y ergänzt Y beim zweiten Sprung. Die kürzeste
 Entfernung zur Ausgangsgruppe steht an jeder Gesichtskarte.
 
+Ab **0.62.0** bietet `/photos/people/chains` neben **Maximale Sprünge** das Feld
+**Mindestähnlichkeit** (0 bis 1, Schritte von 0,01). Höhere Werte verlangen
+ähnlichere Gesichter für jede direkte Verbindung; der Wert ist keine Wahrscheinlichkeit.
+Vorgabe ist die eingestellte Mindestähnlichkeit manueller Vorschläge (standardmäßig 0,45).
+Mit **Durchlauf neu starten** werden der neue Wert übernommen und übersprungene
+Gruppen wieder berücksichtigt. Die globale Einstellung bleibt unverändert.
+Der Wert gilt auch für weitere Ketten, Wiederholungen und die Fortsetzung nach einer
+unbestätigten Speicherung. Beim normalen erneuten Öffnen gilt wieder die globale Vorgabe.
+
 Eine direkte Verbindung benötigt mindestens ein geeignetes gespeichertes
-Gesichtspaar mit der **Mindestähnlichkeit der manuellen Vorschläge** aus den
-Experteneinstellungen (Standard **0,45**). Auch geeignete Gesichter außerhalb des
-Referenzlimits werden verglichen. **Der Mindestabstand wird hier nicht angewendet**:
+Gesichtspaar mit der gewählten Mindestähnlichkeit. Auch geeignete Gesichter außerhalb
+des Referenzlimits werden verglichen. **Der Mindestabstand wird hier nicht angewendet**:
 Mehrere mögliche Treffer sind ausdrücklich Teil der manuellen Kettenprüfung.
 Benannte Gruppen sind weder Quellen noch Zwischenstationen. Ignorierte,
 geschützte, gezeichnete und ungeeignete Gesichter erzeugen keine Verbindungen;
@@ -1087,7 +1099,7 @@ Die Suche verarbeitet Vergleichsvektoren in kleinen Blöcken und hält keinen
 bibliotheksweiten Kettengraphen im Speicher. Pro Bibliothek läuft höchstens eine
 Kettensuche gleichzeitig. Eine Anfrage hat 30 Sekunden Zeit; **Suche anhalten**
 bricht die laufende Suche ab. Bei mehr als **1.000 verbundenen Gruppen** erscheint
-eine Aufforderung, weniger Sprünge zu wählen; die Kette wird niemals still gekürzt.
+eine Aufforderung, eine höhere Mindestähnlichkeit oder weniger Sprünge zu wählen; die Kette wird niemals still gekürzt.
 Pro Auswahl können höchstens **10.000 Gesichter** abgewählt werden, pro Durchlauf
 höchstens **10.000 Gruppen** ausgelassen werden. Für die insgesamt zugeordneten
 Gesichter gilt nicht das übliche 500er-Limit einzelner Stapelaktionen.

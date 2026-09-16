@@ -14,7 +14,12 @@ import (
 
 func (s *Server) handleFaceChains(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "private, no-store")
-	s.render(w, r, "face_chains.html", PageData{Title: "Gesichtsketten prüfen", Active: "photos", Assets: photoPageAssets(false)})
+	thresholds, err := s.photos.FaceThresholds(r.Context())
+	if err != nil {
+		s.faceError(w, r, err)
+		return
+	}
+	s.render(w, r, "face_chains.html", PageData{Title: "Gesichtsketten prüfen", Active: "photos", Assets: photoPageAssets(false), FaceChainSimilarity: thresholds.SuggestionSimilarity})
 }
 
 func decodeFaceChainRequest(w http.ResponseWriter, r *http.Request, out any) error {
@@ -46,7 +51,7 @@ func (s *Server) faceChainError(w http.ResponseWriter, r *http.Request, err erro
 		return
 	}
 	if errors.Is(err, context.DeadlineExceeded) {
-		_ = writeJSON(w, 503, map[string]string{"error": "Der Kettenabgleich dauert zu lange. Bitte weniger Sprünge wählen oder erneut versuchen.", "code": "timeout"})
+		_ = writeJSON(w, 503, map[string]string{"error": "Der Kettenabgleich dauert zu lange. Bitte eine höhere Mindestähnlichkeit oder weniger Sprünge wählen oder erneut versuchen.", "code": "timeout"})
 		return
 	}
 	s.labelError(w, r, err)

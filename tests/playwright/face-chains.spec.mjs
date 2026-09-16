@@ -82,6 +82,16 @@ test("review, skip, restart, assign selected faces to existing and new names", a
     await page.getByRole("link", { name: "Gesichtsketten prüfen", exact: true }).click();
     const cards = page.locator("[data-chain-grid] article"), boxes = cards.getByRole("checkbox");
     await expect(cards).toHaveCount(2);
+    const similarity = page.getByRole("spinbutton", { name: "Mindestähnlichkeit", exact: true });
+    await expect(similarity).toHaveValue("0.45");
+    await similarity.fill("0.8");
+    await page.getByRole("button", { name: "Durchlauf neu starten" }).click();
+    await expect(page.locator("[data-chain-status]")).toContainText("Keine weiteren Gesichtsketten");
+    await expect(page.locator("[data-chain-content]")).toBeHidden();
+    await similarity.fill("0.5");
+    await page.getByRole("button", { name: "Durchlauf neu starten" }).click();
+    await expect(cards).toHaveCount(2);
+    await expect(page.locator("[data-chain-summary]")).toContainText("Mindestähnlichkeit 0,5");
     await expect(boxes.nth(0)).toBeChecked(); await expect(boxes.nth(1)).toBeChecked();
     expect(await cards.locator("strong").allTextContents()).toEqual(["A", "B"]);
     await page.getByRole("button", { name: "Kette überspringen", exact: true }).click();
@@ -90,6 +100,7 @@ test("review, skip, restart, assign selected faces to existing and new names", a
     const search = page.waitForRequest(request => request.url().endsWith("/chains/search"));
     await page.getByRole("button", { name: "Durchlauf neu starten" }).click();
     expect((await search).postDataJSON().hops).toBe(1);
+    expect((await search).postDataJSON()).toMatchObject({ similarity: .5, after: 0, excluded_groups: [] });
     await expect(cards.locator("strong").first()).toHaveText("A");
     for (const width of [320, 390, 1440]) {
       await page.setViewportSize({ width, height: 900 });
@@ -116,6 +127,8 @@ test("review, skip, restart, assign selected faces to existing and new names", a
     await dialog.getByRole("option", { name: /Neu anlegen/ }).click();
     await expect(dialog).not.toBeVisible();
     await expect(page.locator("[data-chain-status]")).toContainText("Keine weiteren Gesichtsketten");
+    const defaults = await context.request.post(baseURL + "/photos/people/chains/search", { data: { hops: 1 }, headers: { Origin: baseURL } });
+    expect((await defaults.json()).similarity).toBe(.45);
     expect(calls).toBe(5); expect(errors).toEqual([]);
   } finally { await context.close(); }
 });
@@ -130,7 +143,9 @@ test("cross-page exclusions persist and a lost write response is recovered after
     let searchCount = 0, payload, receipt, assigned = false;
     await page.route("**/photos/people/chains/search", route => {
       searchCount++;
-      return route.fulfill({ json: { dataset, groups: assigned ? [] : groups, after: assigned ? 2 : 1, has_more: !assigned, similarity: .45 } });
+      const { similarity } = route.request().postDataJSON();
+      expect(similarity).toBe(searchCount === 1 ? .45 : .6);
+      return route.fulfill({ json: { dataset, groups: assigned ? [] : groups, after: assigned ? 2 : 1, has_more: !assigned, similarity } });
     });
     await page.route("**/photos/people/chains/faces", route => {
       const { page: number } = route.request().postDataJSON();
@@ -149,6 +164,10 @@ test("cross-page exclusions persist and a lost write response is recovered after
     await page.goto(baseURL + "/photos/people/chains");
     const boxes = page.locator("[data-chain-grid] input[type=checkbox]");
     await expect(boxes).toHaveCount(60);
+    await page.getByRole("spinbutton", { name: "Mindestähnlichkeit", exact: true }).fill("0.6");
+    await page.getByRole("spinbutton", { name: "Maximale Sprünge" }).fill("3");
+    await page.getByRole("button", { name: "Durchlauf neu starten" }).click();
+    await expect(page.locator("[data-chain-summary]")).toContainText("Mindestähnlichkeit 0,6");
     await expect(page.locator("[data-chain-selected]")).toContainText("64 Gesichter");
     await boxes.first().uncheck();
     await page.getByRole("button", { name: "Weiter", exact: true }).click();
@@ -169,10 +188,12 @@ test("cross-page exclusions persist and a lost write response is recovered after
     await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
     await expect(page.locator("[data-chain-skip]")).toBeDisabled();
     await page.reload();
-    expect(searchCount).toBe(1);
+    expect(searchCount).toBe(2);
+    await expect(page.getByRole("spinbutton", { name: "Mindestähnlichkeit", exact: true })).toHaveValue("0.6");
+    await expect(page.getByRole("spinbutton", { name: "Maximale Sprünge" })).toHaveValue("3");
     await page.getByRole("button", { name: "Speicherung prüfen", exact: true }).click();
     await expect(page.locator("[data-chain-status]")).toContainText("Keine weiteren Gesichtsketten");
-    expect(searchCount).toBe(2); expect(errors).toEqual([]);
+    expect(searchCount).toBe(3); expect(errors).toEqual([]);
   } finally { await context.close(); }
 });
 

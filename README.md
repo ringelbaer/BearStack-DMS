@@ -1,6 +1,10 @@
 # BearStack
 
-Aktuelle Version: **0.61.3** · Android-App: **0.15.1**.
+Aktuelle Version: **0.62.0** · Android-App: **0.15.1**.
+
+Ab **0.62.0** lässt sich unter **Gesichtsketten prüfen** die **Mindestähnlichkeit** von 0 bis 1 für den Durchlauf einstellen. Höhere Werte verlangen ähnlichere Gesichter. **Durchlauf neu starten** übernimmt den Wert und berücksichtigt übersprungene Gruppen erneut. Vorgabe ist die globale Schwelle für manuelle Vorschläge; diese bleibt unverändert.
+
+Die Personenansicht zeigt Personen-Tags direkt neben dem Namen. **Stammdaten** steht im Mehr-Menü im selben Stil wie **Anzeige** und **Hilfe**.
 
 Unter **Ähnliche Gesichter** zeigt ab **0.61.2** jedes Vergleichsbild seinen Ordnernamen. Ein Klick aufs Bild öffnet das vollständige Foto in der Lightbox; nur der Personenname öffnet die Personengruppe.
 
@@ -78,7 +82,7 @@ und zusätzlich den Vergleichsstern.
 Die Kopfzeile der Personenübersicht bietet **← Fotos**, **Gruppenbilder**,
 **Ähnliche Gesichter** und ein Zahnrad für die Einstellungen zur Gesichtserkennung.
 Textbuttons und Zahnrad haben eine einheitliche Mindesthöhe von 44 Pixeln.
-Die Personendetailansicht bündelt **← Alle Personen**, **Fotos ansehen**, Benennen und **Alle auswählen** in einer kompakten Aktionsleiste. Das **Mehr-Menü (⋯)** enthält Personen-Tags, Eltern, Anzeige, Hilfe und weitere Navigation. Die Hilfe öffnet sich als Dialog über der Galerie und lässt sich mit **Schließen** oder Escape schließen. Bei bereits benannten Personen zeigt der Button zum Benennen / Zuordnen nur das Stiftsymbol; bei unbenannten Gruppen bleibt die Beschriftung sichtbar.
+Die Personendetailansicht bündelt **← Alle Personen**, **Fotos ansehen**, Benennen und **Alle auswählen** in einer kompakten Aktionsleiste. Personen-Tags stehen direkt neben dem Namen. Das **Mehr-Menü (⋯)** enthält Stammdaten, Anzeige, Hilfe und weitere Navigation in einheitlichem Stil. Die Hilfe öffnet sich als Dialog über der Galerie und lässt sich mit **Schließen** oder Escape schließen. Bei bereits benannten Personen zeigt der Button zum Benennen / Zuordnen nur das Stiftsymbol; bei unbenannten Gruppen bleibt die Beschriftung sichtbar.
 
 Im Browser bietet auch **Zusammenführen und benennen/zuordnen** die Lupe für ähnliche benannte Personen. Sie prüft das erste Vergleichsgesicht; beim Benennen einer einzelnen Gruppe wird deren Vergleichsgesicht verwendet. Ein Treffer übernimmt die Zielperson mit Versionsprüfung für die atomare Zuordnung.
 

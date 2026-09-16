@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -114,6 +115,42 @@ func TestFaceChainsRespectEdgesVisibilityAndThreshold(t *testing.T) {
 				t.Fatalf("forbidden bridge: %+v %v", chain, err)
 			}
 		})
+	}
+}
+
+func TestFaceChainsRequestSimilarity(t *testing.T) {
+	l, _ := chainFixture(t)
+	ctx := context.Background()
+	v := make([]float32, facerec.Dimensions)
+	v[1], v[50] = .5, .8660254
+	if _, err := l.index.db.Exec(`UPDATE photo_faces SET embedding=? WHERE id=4`, encodeVector(v)); err != nil {
+		t.Fatal(err)
+	}
+	thresholds := DefaultFaceThresholds()
+	thresholds.SuggestionSimilarity = .6
+	if err := l.SetFaceThresholds(ctx, thresholds); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		similarity float64
+		groups     int
+	}{{.6, 2}, {.49, 5}, {.51, 2}, {0, 6}, {1, 2}} {
+		chain, err := l.NextFaceChain(ctx, FaceChainSearch{Hops: 3, Similarity: &tc.similarity})
+		if err != nil || chain.Similarity != tc.similarity || len(chain.Groups) != tc.groups {
+			t.Fatalf("similarity %g: %+v %v", tc.similarity, chain, err)
+		}
+	}
+	chain, err := l.NextFaceChain(ctx, FaceChainSearch{Hops: 3})
+	if err != nil || chain.Similarity != .6 || len(chain.Groups) != 2 {
+		t.Fatalf("omitted similarity must retain the global default: %+v %v", chain, err)
+	}
+	if got, err := l.FaceThresholds(ctx); err != nil || got != thresholds {
+		t.Fatalf("search changed global thresholds: %+v %v", got, err)
+	}
+	for _, value := range []float64{-.01, 1.01, math.NaN(), math.Inf(1), math.Inf(-1)} {
+		if _, err := l.NextFaceChain(ctx, FaceChainSearch{Hops: 2, Similarity: &value}); !errors.Is(err, ErrLabelInvalid) {
+			t.Fatalf("invalid similarity %g accepted: %v", value, err)
+		}
 	}
 }
 

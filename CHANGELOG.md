@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.62.0 – in Entwicklung
+
+- Personenansicht: Tags direkt neben der Namensüberschrift, mit Umbruch auf schmalen Bildschirmen. Stammdaten verwenden denselben Stil wie die anderen Einträge im Mehr-Menü; dynamische Aktualisierung beim Benennen bleibt erhalten. Für diese Layoutkorrektur bestehen die JavaScript-/DOM-Prüfungen und 13 Chromium-Szenarien zu Personenansicht, Tags und Stammdaten; Website neu gebaut.
+
+- Gesichtsketten: Mindestähnlichkeit direkt unter `/photos/people/chains` von 0 bis 1 einstellbar. Ein neuer Durchlauf übernimmt den Wert und setzt übersprungene Gruppen zurück. Vorgabe bleibt die globale Schwelle für manuelle Vorschläge, ohne sie zu verändern.
+- Der gewählte Wert gilt über weitere Ketten und Wiederholungen hinweg, auch nach Wiederherstellung einer unbestätigten Zuordnung. Hinweise bei zu großen oder zu langsamen Ketten empfehlen auch eine höhere Mindestähnlichkeit. Bestehende Speicher- und Laufzeitgrenzen bleiben erhalten; keine neue Vektorsuche im Hintergrund.
+- Validierung: vollständige Go-Suite, JavaScript-/DOM-Prüfungen, drei Chromium-Szenarien und Website-Build erfolgreich. Tests prüfen strengere und lockerere Schwellen, Grenzwerte und ungültige Eingaben, globale Vorgaben, Neustart, Zuordnungen und Wiederherstellung sowie Darstellung bei 320, 390 und 1440 Pixeln.
+- MINOR **0.62.0**: optionales `similarity` im Kettensuch-Endpunkt, ohne Wert weiterhin bisherige globale Vorgabe. Keine Migration, Android unverändert. README, Website und OpenAPI aktualisiert.
+
 ### BearStack 0.61.3 – in Entwicklung
 
 - Fehlende Vergleichsbilder im Dialog **Zusammenführen und benennen/zuordnen** sowie beim Benennen einer einzelnen Vorschlagsgruppe korrigiert. Die Dialogvorschau behält Bilder, Ordnernamen und Personennamen; die Bildbuttons der Vorschlagskarten werden ohne ihren Bildinhalt entfernt.

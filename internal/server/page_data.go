@@ -9,6 +9,7 @@ import (
 )
 
 type PageData struct {
+	FaceChainSimilarity     float64
 	FaceMergeSuggestions    []photos.FaceMergeSuggestion
 	GroupPhotos             photos.GroupPhotosPage
 	People                  photos.PeoplePage

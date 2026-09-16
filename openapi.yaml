@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.61.3
+  version: 0.62.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -2130,6 +2130,8 @@ paths:
       description: >-
         Since 0.57.0. Requires photos.edit. HTML shell; its JavaScript starts
         on-demand searches with two hops by default (adjustable from one to five).
+        Since 0.62.0 the minimum similarity is adjustable from zero to one for
+        this pass, initially using the configured manual suggestion threshold.
         No chain matching runs on other pages or in background workers.
         Responses use Cache-Control private, no-store.
       responses:
@@ -2156,7 +2158,10 @@ paths:
         isolated seed: continue using the returned after. Client-held exclusions
         remove previously reviewed or skipped groups for this pass only.
         Edges compare all eligible stored faces of the current model, including
-        those beyond the reference limit, using suggestion_similarity. The margin
+        those beyond the reference limit. Since 0.62.0, optional similarity overrides
+        suggestion_similarity for this search only; omitted or null uses the global
+        setting. Keep the same similarity for all requests in a pass; changing it
+        requires resetting after and excluded_groups. Global thresholds remain unchanged. The margin
         is deliberately not applied so branching alternatives remain reviewable.
         Named groups never participate or bridge chains. Ignored, drawn, unsuitable
         and private faces cannot form edges (favorites retain eligibility).
@@ -4414,6 +4419,13 @@ components:
       required: [hops]
       properties:
         hops: {type: integer, minimum: 1, maximum: 5}
+        similarity:
+          oneOf:
+            - type: number
+              minimum: 0
+              maximum: 1
+            - type: "null"
+          description: Minimum cosine similarity for each edge, not a probability. Omitted or null uses the configured suggestion_similarity. Since 0.62.0.
         after: {type: integer, format: int64, minimum: 0, default: 0}
         excluded_groups:
           type: array
@@ -4427,7 +4439,7 @@ components:
         dataset: {type: string, minLength: 32, maxLength: 32}
         after: {type: integer, format: int64, minimum: 0}
         has_more: {type: boolean, description: A seed was examined; continue after it, including when groups is empty.}
-        similarity: {type: number, minimum: 0.4, maximum: 0.7}
+        similarity: {type: number, minimum: 0, maximum: 1, description: Effective minimum similarity used for this search.}
         groups:
           type: array
           maxItems: 1000

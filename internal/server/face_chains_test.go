@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"net/http/httptest"
 	"net/url"
@@ -42,6 +43,15 @@ func TestFaceChainHTTPReviewAssignmentAndReceipt(t *testing.T) {
 	var chain photos.FaceChain
 	if err := json.Unmarshal(w.Body.Bytes(), &chain); err != nil || w.Code != 200 || len(chain.Groups) != 2 || w.Header().Get("Cache-Control") != "private, no-store" {
 		t.Fatalf("search: %d %s %v", w.Code, w.Body.String(), err)
+	}
+	for _, similarity := range []float64{0, .8, 1} {
+		body := mustChainJSON(t, photos.FaceChainSearch{Hops: 2, Similarity: &similarity})
+		w = labelRequest(s, "POST", base+"/search", "editor", string(body))
+		check("POST", base+"/search", w)
+		var custom photos.FaceChain
+		if err := json.Unmarshal(w.Body.Bytes(), &custom); err != nil || w.Code != 200 || custom.Similarity != similarity {
+			t.Fatalf("custom similarity: %d %s %v", w.Code, w.Body.String(), err)
+		}
 	}
 	selection := photos.FaceChainSelection{Dataset: chain.Dataset}
 	for _, g := range chain.Groups {
@@ -94,6 +104,26 @@ func mustChainJSON(t *testing.T, value any) []byte {
 	return encoded
 }
 
+func TestFaceChainHTTPDefaultSimilarity(t *testing.T) {
+	s := faceTestServer(t)
+	thresholds := photos.DefaultFaceThresholds()
+	thresholds.SuggestionSimilarity = .63
+	if err := s.photos.SetFaceThresholds(context.Background(), thresholds); err != nil {
+		t.Fatal(err)
+	}
+	w := labelRequest(s, "GET", "/photos/people/chains", "editor", "")
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `name="similarity" min="0" max="1" step="0.01" value="0.63"`) {
+		t.Fatalf("missing configured default: %d %s", w.Code, w.Body.String())
+	}
+	for _, body := range []string{`{"hops":2}`, `{"hops":2,"similarity":null}`} {
+		w = labelRequest(s, "POST", "/photos/people/chains/search", "editor", body)
+		var chain photos.FaceChain
+		if err := json.Unmarshal(w.Body.Bytes(), &chain); err != nil || w.Code != 200 || chain.Similarity != .63 {
+			t.Fatalf("default search: %d %s %v", w.Code, w.Body.String(), err)
+		}
+	}
+}
+
 func TestFaceChainHTTPPermissionsAndValidation(t *testing.T) {
 	s := faceTestServer(t)
 	const base = "/photos/people/chains"
@@ -126,6 +156,8 @@ func TestFaceChainHTTPPermissionsAndValidation(t *testing.T) {
 	for _, tc := range []struct{ path, body string }{
 		{"/search", `{"hops":0}`}, {"/search", `{"hops":6}`}, {"/search", `{"hops":2,"unknown":true}`},
 		{"/search", `{"hops":2} {}`}, {"/search", strings.Repeat(" ", 512<<10) + `{"hops":2}`},
+		{"/search", `{"hops":2,"similarity":-0.01}`}, {"/search", `{"hops":2,"similarity":1.01}`},
+		{"/search", `{"hops":2,"similarity":"0.5"}`}, {"/search", `{"hops":2,"similarity":1e999}`},
 		{"/faces", `{}`}, {"/assign", `{}`},
 	} {
 		w := labelRequest(s, "POST", base+tc.path, "editor", tc.body)

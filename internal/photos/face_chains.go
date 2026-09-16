@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"math"
 	"slices"
 
 	"bearstack/internal/sqlutil"
@@ -14,12 +15,13 @@ const MaxFaceChainGroups = 1000
 const MaxFaceChainExclusions = 10000
 const FaceChainPageSize = 60
 
-var ErrFaceChainLarge = errors.New("Die Kette umfasst mehr als 1.000 Gruppen. Bitte weniger Sprünge wählen.")
+var ErrFaceChainLarge = errors.New("Die Kette umfasst mehr als 1.000 Gruppen. Bitte eine höhere Mindestähnlichkeit oder weniger Sprünge wählen.")
 
 type FaceChainSearch struct {
-	Hops           int     `json:"hops"`
-	After          int64   `json:"after"`
-	ExcludedGroups []int64 `json:"excluded_groups"`
+	Similarity     *float64 `json:"similarity,omitempty"`
+	Hops           int      `json:"hops"`
+	After          int64    `json:"after"`
+	ExcludedGroups []int64  `json:"excluded_groups"`
 }
 
 type FaceChainGroup struct {
@@ -42,6 +44,9 @@ type FaceChain struct {
 func (l *Library) NextFaceChain(ctx context.Context, request FaceChainSearch) (FaceChain, error) {
 	out := FaceChain{Groups: []FaceChainGroup{}, After: request.After}
 	if request.Hops < 1 || request.Hops > MaxFaceChainHops || request.After < 0 || len(request.ExcludedGroups) > MaxFaceChainExclusions {
+		return out, ErrLabelInvalid
+	}
+	if v := request.Similarity; v != nil && (math.IsNaN(*v) || math.IsInf(*v, 0) || *v < 0 || *v > 1) {
 		return out, ErrLabelInvalid
 	}
 	excluded := make(map[int64]bool, len(request.ExcludedGroups))
@@ -67,6 +72,9 @@ func (l *Library) NextFaceChain(ctx context.Context, request FaceChainSearch) (F
 	var model string
 	if err := tx.QueryRowContext(ctx, `SELECT i.dataset,s.model,t.suggestion_similarity FROM photo_labeling_identity i CROSS JOIN photo_face_state s CROSS JOIN photo_face_thresholds t WHERE i.id=1 AND s.id=1 AND t.id=1`).Scan(&out.Dataset, &model, &out.Similarity); err != nil {
 		return out, err
+	}
+	if request.Similarity != nil {
+		out.Similarity = *request.Similarity
 	}
 	rows, err := tx.QueryContext(ctx, `SELECT p.id,v.revision FROM photo_people p CROSS JOIN photo_person_revisions v ON v.person_id=p.id
  WHERE p.name='' AND p.id>? AND EXISTS(SELECT 1 FROM photo_faces f JOIN media_index m ON m.path=f.path

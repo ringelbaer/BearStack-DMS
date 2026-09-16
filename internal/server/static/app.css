@@ -3832,6 +3832,10 @@ body.has-group-strip { padding-bottom: calc(158px + env(safe-area-inset-bottom))
 .person-detail-head { align-items: center; gap: 1rem; margin-bottom: .75rem; }
 .person-detail-head h1 { margin-bottom: .2rem; overflow-wrap: anywhere; }
 .person-detail-head p { margin: 0; }
+.person-detail-head > div { min-width: 0; max-width: 100%; }
+.person-detail-heading { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; }
+.person-detail-heading .person-tags-tools { min-width: 0; max-width: 100%; margin: 0; }
+.person-detail-heading .tag-select-trigger { border: 0; background: transparent; padding: .25rem; }
 .person-detail-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding-bottom: .75rem; border-bottom: 1px solid var(--line); }
 .person-detail-toolbar > a, .person-detail-toolbar > button { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; font-size: .85rem; }
 .person-detail-toolbar > [data-detail-select-all] { margin-left: auto; }
@@ -3922,7 +3926,6 @@ body.has-person-selection { padding-bottom: 150px; }
 .ignored-face-actions [data-ignored-edit] { display: grid; place-items: center; flex: 0 0 44px; height: 44px; padding: 0; }
 
 /* Lazily loaded person records keep the gallery toolbar compact. */
-.person-detail-menu [data-person-details-open] { width: 100%; text-align: left; border: 0; background: transparent; color: var(--text); }
 .app-dialog.person-details-dialog { width: min(720px, calc(100vw - 32px)); max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow: hidden; background: var(--surface); color: var(--text); }
 .person-details-dialog header h2 { margin: 0; font-size: 1.15rem; overflow-wrap: anywhere; }
 .person-details-dialog[open] { display: flex; flex-direction: column; }
