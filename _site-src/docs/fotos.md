@@ -61,6 +61,21 @@ die einzelnen Fotos übertragen. Beim Zusammenführen werden die Tags vereinigt;
 globales Umbenennen und Löschen eines Foto-Tags aktualisiert auch Personengruppen.
 Foto-Schema **32** ergänzt automatisch einen indizierten Zuordnungsspeicher.
 
+### Markierte Personen gemeinsam taggen
+
+Ab **0.59.0** erscheint nach dem Markieren von Personen unter `/photos/people`
+**Personen-Tags ergänzen** in der Auswahlleiste. Im bekannten Tag-Dialog vorhandene
+Tags wählen oder neue anlegen und **Übernehmen** drücken. Die Tags werden allen
+markierten Personen der aktuellen Seite hinzugefügt; bestehende Personen-Tags
+bleiben erhalten und die Tags ihrer Fotos unverändert. Abbrechen speichert nichts.
+Auch unbenannte aktive Personen können getaggt werden.
+
+Die gesamte Auswahl wird atomar gespeichert. Ist eine Person zwischenzeitlich
+entfernt, ignoriert oder geschützt, wird nichts hinzugefügt. Bei einem Fehler bleibt
+der Dialog für einen erneuten Versuch offen; wiederholtes Ergänzen erzeugt keine
+Duplikate. Erfordert `photos.edit`; höchstens 500 Personen pro Anfrage und 100 Tags
+pro Person. Keine neue Datenbankmigration.
+
 ### Mutter und Vater zuordnen
 
 Ab **0.54.0** öffnet **Eltern** in der Detailansicht einer benannten Person die

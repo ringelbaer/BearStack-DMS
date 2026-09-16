@@ -28,7 +28,7 @@ func TestOpenAPIHTTPResponses(t *testing.T) {
 	check := func(method, path, canonical, user, body string, status int) *httptest.ResponseRecorder {
 		t.Helper()
 		var w *httptest.ResponseRecorder
-		if canonical == "/photos/people/{id}/tags" || canonical == "/photos/people/{id}/parents" {
+		if canonical == "/photos/people/tags/add" || canonical == "/photos/people/{id}/tags" || canonical == "/photos/people/{id}/parents" {
 			form, err := url.ParseQuery(body)
 			if err != nil {
 				t.Fatal(err)
@@ -92,6 +92,7 @@ func TestOpenAPIHTTPResponses(t *testing.T) {
 	}
 	person := candidates.People[0]
 	check("POST", fmt.Sprintf("/photos/people/%d/tags", person.ID), "/photos/people/{id}/tags", "editor", "tags=family", 200)
+	check("POST", "/photos/people/tags/add", "/photos/people/tags/add", "editor", fmt.Sprintf("ids=%d&tags=batch", person.ID), 200)
 	check("GET", "/api/photos/v1/browse?people=1", "/api/photos/v1/browse", "reader", "", 200)
 	check("GET", "/api/photos/v1/browse?people=1&path=.people", "/api/photos/v1/browse", "reader", "", 200)
 	check("GET", "/api/photos/v1/browse?people=1&path=.people/all", "/api/photos/v1/browse", "reader", "", 200)

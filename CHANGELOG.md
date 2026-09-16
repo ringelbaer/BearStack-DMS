@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.59.0 – in Entwicklung
+
+- Personenübersicht: **Personen-Tags ergänzen** für markierte Personen in der vorhandenen Auswahlleiste. Gemeinsamer Tag-Dialog mit Suche, vorhandenen und neuen Tags; Ergänzen erhält bestehende Personen-Tags und verändert keine Foto-Tags. Abbrechen ohne Änderung, Wiederholen nach Fehler möglich.
+- Neuer POST-Endpunkt `/photos/people/tags/add` mit `photos.edit`, Same-Origin-Schutz, Sichtbarkeitsprüfung und Audit. Eine Transaktion für die gesamte Auswahl, idempotente Ergänzung, bis zu 500 Personen und 100 Tags pro Person. Mengenbegrenzte Indexabfragen und vorbereitete Schreibanweisung statt einzelner HTTP-Aufrufe je Person.
+- MINOR **0.59.0**; README, Website und OpenAPI aktualisiert. Keine Migration; Android-Version unverändert.
+- Validierung: vollständige Go-Suite einschließlich Rechte-, Sichtbarkeits-, Rollback-, Limit- und API-Vertragsprüfungen; JavaScript-/DOM-Prüfungen, zwölf Chromium-Browsertests und Website-Build erfolgreich. Browserregression prüft mehrere Personen, Erhalt bisheriger Tags, unveränderte unmarkierte Personen, Abbrechen, Fehlerwiederholung und Filtererhalt.
+
 ### BearStack 0.58.0 / Android 0.15.0 – in Entwicklung
 
 - Android: eigenes **Sortieren**-Menü mit aktiv markierter Auswahl neben dem Mehr-Menü. Der Fotostream und Personengalerien bieten Datum auf-/absteigend, normale Ordner zusätzlich Name. Kategorien nutzen Namen; Personenlisten zusätzlich **Anzahl Bilder** auf-/absteigend.

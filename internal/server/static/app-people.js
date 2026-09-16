@@ -130,6 +130,7 @@
     });
     merge.hidden = selected.size < 1;
     mergeButton.hidden = selected.size < 2;
+    merge.querySelectorAll("[data-bulk-tags-open]").forEach(function (button) { button.disabled = busy; });
     editSelectedButton.disabled = busy;
     mergeButton.disabled = busy;
     if (selected.size) {
@@ -195,7 +196,7 @@
       var label = document.createElement("label");
       label.className = "person-select";
       var checkbox = document.createElement("input");
-      checkbox.type = "checkbox"; checkbox.dataset.personSelect = ""; checkbox.value = person.id;
+      checkbox.type = "checkbox"; checkbox.name = "ids"; checkbox.dataset.personSelect = ""; checkbox.value = person.id;
       checkbox.setAttribute("aria-label", "Person auswählen: " + name);
       label.append(checkbox);
       card.append(label);

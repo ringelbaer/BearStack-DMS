@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"unicode/utf8"
+
+	"bearstack/internal/sqlutil"
 )
 
 func setupPersonTags(ctx context.Context, db *sql.DB) error {
@@ -77,4 +79,80 @@ func (l *Library) SetPersonTags(ctx context.Context, id int64, tags []string) ([
 		return nil, err
 	}
 	return tags, nil
+}
+
+// AddPeopleTags augments an entire selection atomically. Repeating a request is
+// harmless; validation and writes share a transaction after visibility refresh.
+func (l *Library) AddPeopleTags(ctx context.Context, ids []int64, tags []string) (int, error) {
+	if len(ids) == 0 || len(ids) > 500 || len(tags) > 100 {
+		return 0, errors.New("ungültige Personen- oder Tag-Auswahl")
+	}
+	tags = cleanPhotoTags(tags)
+	if len(tags) == 0 {
+		return 0, errors.New("Bitte mindestens einen Tag auswählen")
+	}
+	for _, tag := range tags {
+		if len(tag) > 4096 || !utf8.ValidString(tag) {
+			return 0, errors.New("ungültiger Personen-Tag")
+		}
+	}
+	unique := make([]int64, 0, len(ids))
+	args := make([]any, 0, len(ids))
+	seen := make(map[int64]bool, len(ids))
+	for _, id := range ids {
+		if id <= 0 {
+			return 0, errors.New("ungültige Personen-ID")
+		}
+		if !seen[id] {
+			seen[id] = true
+			unique = append(unique, id)
+			args = append(args, id)
+		}
+	}
+	if err := l.refreshPersonIDsVisibility(ctx, unique...); err != nil {
+		return 0, err
+	}
+	tx, err := l.index.beginTagWrite(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	filter := `p.id IN (` + sqlutil.Placeholders(len(unique)) + `)`
+	var count int
+	if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM photo_people p WHERE `+filter+` AND `+visiblePersonSQL, args...).Scan(&count); err != nil {
+		return 0, err
+	}
+	if count != len(unique) {
+		return 0, sql.ErrNoRows
+	}
+	// Bound each resulting selection as well as the incoming request.
+	limitArgs := append([]any{}, args...)
+	for _, tag := range tags {
+		limitArgs = append(limitArgs, tag)
+	}
+	limitArgs = append(limitArgs, len(tags))
+	if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM photo_people p WHERE `+filter+` AND
+ (SELECT count(*) FROM person_tag_index WHERE person_id=p.id AND tag NOT IN (`+sqlutil.Placeholders(len(tags))+`))+?>100`, limitArgs...).Scan(&count); err != nil {
+		return 0, err
+	}
+	if count > 0 {
+		return 0, errors.New("Höchstens 100 Tags pro Person möglich")
+	}
+	if err := insertPhotoTagsTx(tx, tags); err != nil {
+		return 0, err
+	}
+	stmt, err := tx.PrepareContext(ctx, `INSERT OR IGNORE INTO person_tag_index(person_id,tag) SELECT p.id,? FROM photo_people p WHERE `+filter)
+	if err != nil {
+		return 0, err
+	}
+	defer stmt.Close()
+	for _, tag := range tags {
+		if _, err := stmt.ExecContext(ctx, append([]any{tag}, args...)...); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(unique), nil
 }

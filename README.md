@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.58.0** · Android-App: **0.15.0**.
+Aktuelle Version: **0.59.0** · Android-App: **0.15.0**.
+
+Ab **0.59.0** ergänzt **Personen-Tags ergänzen** unter `/photos/people` gemeinsame Tags bei den markierten Personen. Der bekannte Tag-Dialog bietet vorhandene und neue Tags; bisherige Personen-Tags bleiben erhalten, Foto-Tags bleiben unverändert. Die Auswahl wird atomar gespeichert und benötigt **Fotos bearbeiten**.
 
 Android **0.15.0** bündelt die Sortierung in einem eigenen **Sortieren**-Menü neben den weiteren Optionen. **Fotos** bietet nur Datum auf-/absteigend; normale Ordner zusätzlich Name. Personenlisten bieten Name und ab BearStack **0.58.0** auch **Anzahl Bilder** auf-/absteigend. Die Bildanzahl berücksichtigt unterschiedliche sichtbare Fotos und bei **Personen im Ordner** nur den aktuellen Ordner samt Unterordnern. Der Server sortiert vor der Seitenaufteilung; ältere Server bleiben mit Namenssortierung nutzbar.
 

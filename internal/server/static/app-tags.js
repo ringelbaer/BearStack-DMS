@@ -405,11 +405,11 @@ async function createTagFromSearch() {
 
 async function applyTagSelect() {
   if (!activeTagSelect) return;
+  const picker = activeTagSelect;
   const selected = orderedTagNames(Array.from(draftTagSelection));
-  const updateUrl = activeTagSelect.dataset.updateUrl;
+  const updateUrl = picker.dataset.updateUrl;
 
   if (!updateUrl) {
-    const picker = activeTagSelect;
     const form = picker.closest("form");
     setTagSelection(picker, selected);
     tagSelectModal?.close();
@@ -425,8 +425,8 @@ async function applyTagSelect() {
 
   const body = new URLSearchParams();
   selected.forEach((name) => body.append("tags", name));
-  const bulkForm = activeTagSelect.dataset.bulkTags === "true" ? activeTagSelect.closest("form") : null;
-  if (activeTagSelect.dataset.bulkTags === "true") {
+  const bulkForm = picker.dataset.bulkTags === "true" ? picker.closest("form") : null;
+  if (picker.dataset.bulkTags === "true") {
     bulkForm?.querySelectorAll('input[name="ids"]:checked').forEach((input) => body.append("ids", input.value));
   }
   tagSelectApply.disabled = true;
@@ -441,21 +441,27 @@ async function applyTagSelect() {
       credentials: "same-origin",
       headers: { Accept: "application/json" },
     });
-    if (!response.ok) {
-      throw new Error("Tags konnten nicht gespeichert werden");
-    }
     const payload = await response.json();
-    if (activeTagSelect.dataset.bulkTags === "true") {
+    if (!response.ok) {
+      throw new Error(payload.error || "Tags konnten nicht gespeichert werden");
+    }
+    if (picker.dataset.bulkTags === "true") {
       if (bulkForm?.matches("[data-photo-bulk-form]")) {
         try {
           window.sessionStorage.setItem("bearstackPhotoModeAfterBulk", "edit");
         } catch (_) {}
       }
       tagSelectModal?.close();
+      if (picker.dataset.bulkSuccessNotice) {
+        const destination = new URL(window.location.href);
+        destination.searchParams.set("notice", picker.dataset.bulkSuccessNotice);
+        window.location.assign(destination.href);
+        return;
+      }
       window.location.reload();
       return;
     }
-    setTagSelection(activeTagSelect, payload.tags || selected);
+    setTagSelection(picker, payload.tags || selected);
     tagSelectModal?.close();
   } catch (error) {
     if (bulkForm) {

@@ -500,6 +500,17 @@
       <ul class="md-nav__list">
 
           <li class="md-nav__item">
+  <a href="#markierte-personen-gemeinsam-taggen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Markierte Personen gemeinsam taggen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#mutter-und-vater-zuordnen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -947,6 +958,17 @@
       <ul class="md-nav__list">
 
           <li class="md-nav__item">
+  <a href="#markierte-personen-gemeinsam-taggen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Markierte Personen gemeinsam taggen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#mutter-und-vater-zuordnen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1257,6 +1279,18 @@ zum Ansehen genügt <code>photos.read</code>. Die Tags gehören der Gruppe und w
 die einzelnen Fotos übertragen. Beim Zusammenführen werden die Tags vereinigt;
 globales Umbenennen und Löschen eines Foto-Tags aktualisiert auch Personengruppen.
 Foto-Schema <strong>32</strong> ergänzt automatisch einen indizierten Zuordnungsspeicher.</p>
+<h3 id="markierte-personen-gemeinsam-taggen">Markierte Personen gemeinsam taggen<a class="headerlink" href="#markierte-personen-gemeinsam-taggen" title="Permanent link">&para;</a></h3>
+<p>Ab <strong>0.59.0</strong> erscheint nach dem Markieren von Personen unter <code>/photos/people</code>
+<strong>Personen-Tags ergänzen</strong> in der Auswahlleiste. Im bekannten Tag-Dialog vorhandene
+Tags wählen oder neue anlegen und <strong>Übernehmen</strong> drücken. Die Tags werden allen
+markierten Personen der aktuellen Seite hinzugefügt; bestehende Personen-Tags
+bleiben erhalten und die Tags ihrer Fotos unverändert. Abbrechen speichert nichts.
+Auch unbenannte aktive Personen können getaggt werden.</p>
+<p>Die gesamte Auswahl wird atomar gespeichert. Ist eine Person zwischenzeitlich
+entfernt, ignoriert oder geschützt, wird nichts hinzugefügt. Bei einem Fehler bleibt
+der Dialog für einen erneuten Versuch offen; wiederholtes Ergänzen erzeugt keine
+Duplikate. Erfordert <code>photos.edit</code>; höchstens 500 Personen pro Anfrage und 100 Tags
+pro Person. Keine neue Datenbankmigration.</p>
 <h3 id="mutter-und-vater-zuordnen">Mutter und Vater zuordnen<a class="headerlink" href="#mutter-und-vater-zuordnen" title="Permanent link">&para;</a></h3>
 <p>Ab <strong>0.54.0</strong> öffnet <strong>Eltern</strong> in der Detailansicht einer benannten Person die
 Zuordnung von Mutter und Vater. Tippe einen Namen und wähle eine vorhandene benannte
@@ -2175,7 +2209,7 @@ Die Funktion benötigt keine neue Datenbankmigration.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.58.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.59.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

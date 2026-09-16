@@ -316,3 +316,61 @@ test("folder people view keeps portraits, photos and navigation inside the folde
   await expect(page).toHaveURL(baseURL+"/photos?path=B");
   await context.close();
 });
+
+test("selected people receive additive tags through the batch dialog with cancel and retry", async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const errors=[];page.on("pageerror",error=>errors.push(error.message));
+  await login(page);
+  await page.goto(baseURL + "/photos/people?filter=all&sort=count_desc&page=1");
+  const cards=page.locator(".person-overview-card");
+  const ids=await cards.evaluateAll(items=>items.slice(0,3).map(item=>item.dataset.personId));
+  const originals=[];
+  for (const id of ids) originals.push((await (await context.request.get(baseURL+`/photos/people/${id}?format=json`)).json()).tags || []);
+  const tagsOf=async id=>(await (await context.request.get(baseURL+`/photos/people/${id}?format=json`)).json()).tags || [];
+  try {
+    const seed=new URLSearchParams();[...originals[0],"batch-vorher"].forEach(tag=>seed.append("tags",tag));
+    const seeded=await context.request.post(baseURL+`/photos/people/${ids[0]}/tags`,{data:seed.toString(),headers:{"Content-Type":"application/x-www-form-urlencoded",Origin:baseURL}});
+    expect(seeded.ok()).toBe(true);
+    const previousFirst=[...new Set([...originals[0],"batch-vorher"])].sort();
+    const action=page.getByRole("button",{name:"Personen-Tags ergänzen",exact:true});
+    await expect(action).toBeHidden();
+    for(const id of ids.slice(0,2)) await page.locator(`[data-person-select][value="${id}"]`).check();
+    await page.setViewportSize({width:390,height:844});
+    await action.click();
+    const dialog=page.locator("[data-tag-select-modal]");
+    await dialog.locator("[data-tag-select-search]").fill("batch-abgebrochen");
+    await dialog.getByRole("button",{name:"Tag anlegen",exact:true}).click();
+    await page.keyboard.press("Escape");
+    expect(await tagsOf(ids[0])).toEqual(previousFirst);
+    await action.click();
+    await dialog.locator("[data-tag-select-search]").fill("batch-familie");
+    await dialog.getByRole("button",{name:"Tag anlegen",exact:true}).click();
+    let attempts=0;
+    await page.route("**/photos/people/tags/add",async route=>{
+      const body=new URLSearchParams(route.request().postData());
+      expect(body.getAll("ids")).toEqual(ids.slice(0,2));
+      expect(body.getAll("tags")).toEqual(["batch-familie"]);
+      if(++attempts===1) await route.fulfill({status:500,contentType:"application/json",body:'{"error":"fixture"}'});
+      else await route.continue();
+    });
+    await dialog.getByRole("button",{name:"Übernehmen",exact:true}).click();
+    await expect(dialog.locator("[data-tag-select-error]")).toBeVisible();
+    expect(await tagsOf(ids[1])).toEqual(originals[1]);
+    await dialog.getByRole("button",{name:"Übernehmen",exact:true}).click();
+    await expect(dialog).not.toBeVisible();
+    await expect.poll(()=>tagsOf(ids[0])).toEqual([...new Set([...previousFirst,"batch-familie"])].sort());
+    expect(await tagsOf(ids[1])).toEqual([...new Set([...originals[1],"batch-familie"])].sort());
+    expect(await tagsOf(ids[2])).toEqual(originals[2]);
+    expect(new URL(page.url()).searchParams.get("sort")).toBe("count_desc");
+    await expect(page.locator(".notice")).toHaveText("Personen-Tags für die Auswahl ergänzt.");
+    expect(attempts).toBe(2);expect(errors).toEqual([]);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  } finally {
+    for(let i=0;i<2;i++) {
+      const form=new URLSearchParams();originals[i].forEach(tag=>form.append("tags",tag));
+      await context.request.post(baseURL+`/photos/people/${ids[i]}/tags`,{data:form.toString(),headers:{"Content-Type":"application/x-www-form-urlencoded",Origin:baseURL}}).catch(()=>{});
+    }
+    await context.close();
+  }
+});

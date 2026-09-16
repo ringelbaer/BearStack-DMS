@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.58.0
+  version: 0.59.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -3096,6 +3096,46 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /photos/people/tags/add:
+    post:
+      tags: [Photos]
+      operationId: addPhotoPeopleTags
+      summary: Add tags to selected person groups atomically
+      description: Requires photos.edit and same-origin protection. Adds normalized tags while preserving existing group tags and leaving photo metadata untouched. One transaction validates all selected active visible people, creates tags and adds assignments. Duplicate IDs and repeated assignments are idempotent. Missing, private or inactive groups reject the whole batch. Up to 500 IDs, 100 submitted tags and 100 resulting tags per person; request body limited to 64 KiB. Empty or invalid selections are rejected.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [ids, tags]
+              properties:
+                ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 500
+                  items: {type: integer, format: int64, minimum: 1}
+                tags:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items: {type: string, maxLength: 4096}
+      responses:
+        '200':
+          description: Tags added to the distinct selected people. Cache-Control is no-store.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, count]
+                properties:
+                  ok: {type: boolean, const: true}
+                  count: {type: integer, minimum: 1, maximum: 500}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '413': {description: Request body too large.}
   /photos/people/{id}/tags:
     post:
       tags: [Photos]

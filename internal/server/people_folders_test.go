@@ -228,3 +228,45 @@ func TestNativePeopleCountSortCapabilityAndScope(t *testing.T) {
 		}
 	}
 }
+
+func TestPeopleBatchTagsPermissionsValidationAndUI(t *testing.T) {
+	s, group := groupPhotoServerFixture(t)
+	endpoint := "/photos/people/tags/add"
+	id := fmt.Sprint(group.Faces[0].PersonID)
+	for _, tc := range []struct {
+		user   string
+		status int
+	}{{"", 401}, {"reader", 403}, {"editor", 200}} {
+		w := faceRequest(s, "POST", endpoint, tc.user, url.Values{"ids": {id, id}, "tags": {"Family"}})
+		if w.Code != tc.status {
+			t.Fatalf("%s: %d %s", tc.user, w.Code, w.Body.String())
+		}
+		if w.Code == 200 && (w.Header().Get("Cache-Control") != "no-store" || !strings.Contains(w.Body.String(), `"count":1`)) {
+			t.Fatalf("response: %s", w.Body.String())
+		}
+	}
+	for _, form := range []url.Values{{"ids": {"0"}, "tags": {"family"}}, {"ids": {id}}, {"tags": {"family"}}} {
+		w := faceRequest(s, "POST", endpoint, "editor", form)
+		if w.Code != 400 {
+			t.Fatalf("invalid form: %d %s", w.Code, w.Body.String())
+		}
+	}
+	r := httptest.NewRequest("POST", endpoint, strings.NewReader("ids="+id+"&tags=bad"))
+	r.SetBasicAuth("editor", "secret")
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Set("Origin", "https://evil.invalid")
+	w := httptest.NewRecorder()
+	s.Handler().ServeHTTP(w, r)
+	if w.Code != 403 {
+		t.Fatalf("cross-origin: %d", w.Code)
+	}
+	for _, user := range []string{"reader", "editor"} {
+		r := httptest.NewRequest("GET", "/photos/people", nil)
+		r.SetBasicAuth(user, "secret")
+		w := httptest.NewRecorder()
+		s.Handler().ServeHTTP(w, r)
+		if w.Code != 200 || strings.Contains(w.Body.String(), "data-people-bulk-form") != (user == "editor") || strings.Contains(w.Body.String(), "data-tag-select-modal") != (user == "editor") {
+			t.Fatalf("batch UI %s: %d", user, w.Code)
+		}
+	}
+}
