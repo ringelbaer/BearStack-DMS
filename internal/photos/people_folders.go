@@ -48,14 +48,14 @@ func (l *Library) peopleFolderPreviews(ctx context.Context, folders []Folder, li
 	if len(folders) == 0 {
 		return nil
 	}
-	values, args := make([]string, 0, len(folders)), make([]any, 0, len(folders)*2+1)
+	values, args := make([]string, 0, len(folders)), make([]any, 0, len(folders)*3+1)
 	for i, folder := range folders {
-		values = append(values, "(?,?)")
+		values = append(values, "(?,?,?)")
 		var tag any
 		if len(folder.Tags) > 0 {
 			tag = folder.Tags[0]
 		}
-		args = append(args, i, tag)
+		args = append(args, i, tag, folder.Path == PeopleFolderPath+"/all")
 	}
 	args = append(args, limit)
 	reader, release, err := photoFileTempConn(ctx, l.index.db)
@@ -63,11 +63,12 @@ func (l *Library) peopleFolderPreviews(ctx context.Context, folders []Folder, li
 		return err
 	}
 	defer release()
-	rows, err := reader.QueryContext(ctx, `WITH requested(slot,tag) AS (VALUES `+strings.Join(values, ",")+`),
+	rows, err := reader.QueryContext(ctx, `WITH requested(slot,tag,named_only) AS (VALUES `+strings.Join(values, ",")+`),
  counts AS MATERIALIZED (SELECT f.person_id,count(DISTINCT f.path) AS n FROM photo_faces f
  JOIN media_index m ON m.path=f.path WHERE f.ignored=0 AND m.admin_only=0 GROUP BY f.person_id),
  ranked AS (SELECT r.slot,c.person_id,c.n,row_number() OVER(PARTITION BY r.slot ORDER BY c.n DESC,c.person_id) AS rank
  FROM (SELECT r.slot,c.person_id,c.n FROM requested r CROSS JOIN counts c WHERE r.tag IS NULL
+ AND (r.named_only=0 OR EXISTS(SELECT 1 FROM photo_people p WHERE p.id=c.person_id AND p.name<>''))
  UNION ALL SELECT r.slot,c.person_id,c.n FROM requested r JOIN person_tag_index pt ON pt.tag=r.tag JOIN counts c ON c.person_id=pt.person_id) c JOIN requested r ON r.slot=c.slot)
  SELECT r.slot,p.name,`+personPortraitSQL+` FROM ranked r JOIN photo_people p ON p.id=r.person_id WHERE r.rank<=? ORDER BY r.slot,r.rank`, args...)
 	if err != nil {
@@ -161,7 +162,7 @@ func (l *Library) listPeopleFolders(ctx context.Context, rel string, opts ListOp
 			return out, err
 		}
 		rows, err := l.index.db.QueryContext(ctx, `WITH entries AS (
- SELECT 'Alle' AS name,count(*) AS n,1 AS is_all FROM photo_people p WHERE `+visiblePersonSQL+`
+ SELECT 'Alle' AS name,count(*) AS n,1 AS is_all FROM photo_people p WHERE p.name<>'' AND `+visiblePersonSQL+`
  UNION ALL SELECT pt.tag,count(*),0 FROM person_tag_index pt JOIN photo_people p ON p.id=pt.person_id WHERE `+visiblePersonSQL+` GROUP BY pt.tag)
  SELECT name,n,is_all FROM entries ORDER BY is_all DESC,bearstack_german_fold(name),name LIMIT ? OFFSET ?`, size, (opts.Page-1)*size)
 		if err != nil {
@@ -193,6 +194,9 @@ func (l *Library) listPeopleFolders(ctx context.Context, rel string, opts ListOp
 		}
 	} else {
 		filter := visiblePersonSQL + ` AND (?='' OR EXISTS(SELECT 1 FROM person_tag_index WHERE person_id=p.id AND tag=?)) AND p.name_fold LIKE ? ESCAPE '\'`
+		if tag == "" {
+			filter = `p.name<>'' AND ` + filter
+		}
 		args := []any{tag, tag, searchtext.LikeContainsPattern(searchtext.GermanFold(opts.Query))}
 		if err := l.index.db.QueryRowContext(ctx, `SELECT count(*) FROM photo_people p WHERE `+filter, args...).Scan(&out.FolderTotal); err != nil {
 			return out, err

@@ -3558,7 +3558,7 @@ label span {
 }
 .people-search-input { display: flex; align-items: center; gap: 6px; min-width: 0; margin: 0; text-transform: none; }
 .people-search-input input { flex: 1; }
-.people-search-reset { flex: 0 0 44px; min-height: 44px; padding: 8px; font-size: 1.25rem; text-align: center; }
+.people-search-reset { flex: 0 0 44px; align-self: stretch; min-height: var(--control-height); padding: 0 8px; font-size: 1.25rem; line-height: 1; text-align: center; }
 .people-search-fields > label {
   display: grid;
   gap: 6px;
@@ -3835,16 +3835,19 @@ body.has-group-strip { padding-bottom: calc(158px + env(safe-area-inset-bottom))
 .person-detail-more summary { display: grid; place-items: center; width: 44px; height: 44px; cursor: pointer; font-size: 1.4rem; list-style: none; }
 .person-detail-more > div { position: absolute; right: 0; top: 100%; min-width: 210px; padding: .4rem; border: 1px solid var(--line); background: var(--surface); border-radius: .5rem; z-index: 20; box-shadow: var(--shadow); }
 .person-detail-more a { display: block; padding: .6rem; color: var(--text); }
-.person-detail-toolbar { display: flex; align-items: center; gap: .75rem; padding-block: .5rem; border-bottom: 1px solid var(--line); }
-.person-detail-toolbar > button { font-size: .85rem; }
-.person-detail-toolbar .people-display-menu > summary { font-size: .85rem; min-height: 40px; }
-.person-detail-help summary { white-space: nowrap; list-style: none; }
-.person-detail-toolbar > [data-detail-display] { margin-left: auto; }
-.person-detail-help { position: relative; font-size: .85rem; }
-.person-detail-help summary { cursor: pointer; padding: .5rem; }
-.person-detail-help[open] { position: static; }
-.person-detail-toolbar:has(.person-detail-help[open]) { flex-wrap: wrap; }
-.person-detail-help[open] { flex-basis: 100%; }
+.person-detail-toolbar { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: start; gap: .75rem; padding-block: .5rem; border-bottom: 1px solid var(--line); }
+.person-detail-toolbar > button { grid-column: 1; grid-row: 1; justify-self: start; font-size: .85rem; min-height: 44px; }
+.person-detail-toolbar > details { display: contents; }
+.person-detail-toolbar > details::details-content { display: contents; }
+.person-detail-toolbar > details > summary { grid-row: 1; min-height: 44px; display: flex; align-items: center; justify-content: center; padding: .5rem .8rem; font-size: .85rem; font-weight: 600; color: var(--primary); border: 1px solid var(--primary); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; list-style: none; white-space: nowrap; }
+.person-detail-toolbar > details > summary::-webkit-details-marker { display: none; }
+.person-detail-toolbar > details > summary:hover, .person-detail-toolbar > details[open] > summary { background: var(--surface-2); }
+.person-detail-toolbar [data-detail-display] > summary { grid-column: 2; }
+.person-detail-toolbar .person-detail-help > summary { grid-column: 3; }
+.person-detail-toolbar .people-display-options, .person-detail-toolbar .person-detail-help-content { position: static; grid-column: 1 / -1; grid-row: 2; width: 100%; min-width: 0; padding: .75rem; box-shadow: none; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); font-size: .85rem; }
+.person-detail-help-content p:first-child { margin-top: 0; }
+.person-detail-help-content p:last-child { margin-bottom: 0; }
+.person-detail-toolbar details:not([open]) > :not(summary) { display: none; }
 .person-detail-help p { max-width: 80ch; color: var(--muted); }
 .person-detail [role="status"]:empty { display: none; }
 .person-detail [data-detail-status] { margin: .6rem 0; }
@@ -3899,17 +3902,11 @@ body.has-person-selection { padding-bottom: 150px; }
   .person-detail-more > summary { grid-column: 3; grid-row: 1; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); }
   .person-detail-head .person-detail-more > div { position: static; grid-column: 1 / -1; grid-row: 2; min-width: 0; box-shadow: none; }
   .person-detail-more a { min-height: 44px; display: flex; align-items: center; padding: .5rem .7rem; }
-  .person-detail-toolbar { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: start; gap: .4rem; padding-block: .4rem; }
-  .person-detail-toolbar > button { grid-column: 1; grid-row: 1; justify-self: start; padding: .5rem; font-size: .8rem; min-height: 44px; }
-  .person-detail-toolbar > details { display: contents; }
-  .person-detail-toolbar > details::details-content, .person-detail-more::details-content { display: contents; }
-  .person-detail-toolbar > details > summary { grid-row: 1; min-height: 44px; display: flex; align-items: center; justify-content: center; padding: .5rem .6rem; font-size: .8rem; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); }
-  .person-detail-toolbar [data-detail-display] > summary { grid-column: 2; }
-  .person-detail-toolbar .person-detail-help > summary { grid-column: 3; }
-  .person-detail-toolbar .people-display-options, .person-detail-help-content { position: static; grid-column: 1 / -1; grid-row: 2; width: 100%; min-width: 0; padding: .75rem; box-shadow: none; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); font-size: .85rem; }
-  .person-detail-help-content p:first-child { margin-top: 0; }
-  .person-detail-help-content p:last-child { margin-bottom: 0; }
-  .person-detail-toolbar details:not([open]) > :not(summary), .person-detail-more:not([open]) > div { display: none; }
+  .person-detail-toolbar { gap: .4rem; padding-block: .4rem; }
+  .person-detail-toolbar > button { padding: .5rem; font-size: .8rem; }
+  .person-detail-more::details-content { display: contents; }
+  .person-detail-toolbar > details > summary { padding: .5rem .6rem; font-size: .8rem; }
+  .person-detail-more:not([open]) > div { display: none; }
   :is([data-people-view], [data-person-detail])[data-size="s"] :is([data-people-overview], .person-detail-grid) { grid-template-columns: repeat(auto-fill,minmax(min(100%,140px),1fr)); gap: .5rem; margin-top: .6rem; }
   .person-detail-selection { display: grid; grid-template-columns: 1fr auto; width: calc(100vw - 24px); }
   .person-detail-selection > strong { grid-column: 1; }

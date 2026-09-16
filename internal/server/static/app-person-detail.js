@@ -24,7 +24,10 @@
     });
     if (tagTools) tagTools.querySelectorAll("button, input, select").forEach(function (button) { button.disabled = blocked; });
     retry.disabled = busy;
-    if (groupButton) groupButton.disabled = blocked || !cards().length;
+    if (groupButton) {
+      groupButton.disabled = blocked || !cards().length;
+      groupButton.querySelector("span").hidden = !!root.dataset.personName;
+    }
     if (selection) {
       var count = selected().length;
       selection.hidden = count === 0;

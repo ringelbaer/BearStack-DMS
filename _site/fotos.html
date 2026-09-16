@@ -1226,8 +1226,9 @@ eine aktivierte Wiederholung funktioniert auch bei nur einer Mediendatei.</p>
 <p>Das Fotomodul ist optional und nutzt einen directory-first Ansatz: BearStack importiert Fotos nicht in die Dokumentenablage, sondern rendert ein vorhandenes, read-only Fotoverzeichnis als Galerie. Die Mediendateien bleiben unverändert; BearStack legt Index, Tags, Vorschaubilder und Einstellungen getrennt davon ab.</p>
 <h2 id="personen-ansehen-und-taggen">Personen ansehen und taggen<a class="headerlink" href="#personen-ansehen-und-taggen" title="Permanent link">&para;</a></h2>
 <p>Ab BearStack <strong>0.53.0</strong> öffnet die virtuelle Kachel <strong>Personen</strong> unter <strong>Fotos</strong> eine
-Ansicht zum Durchstöbern. <strong>Alle</strong> enthält alle aktiven benannten und unbenannten
-Personengruppen. Daneben stehen ausschließlich Foto-Tags, denen sichtbare Personen
+Ansicht zum Durchstöbern. <strong>Alle</strong> (<code>/photos?path=.people%2Fall</code>) enthält ab
+<strong>0.57.1</strong> ausschließlich aktive benannte Personengruppen; Anzahl, Seitenaufteilung
+und Vorschauen berücksichtigen denselben Filter. Daneben stehen ausschließlich Foto-Tags, denen sichtbare Personen
 zugeordnet sind. Es gibt genau eine Tag-Ebene; auch Tags mit einem Schrägstrich
 bleiben eine einzelne Kachel. Im Tag-Ordner stehen alle zugeordneten Personen.</p>
 <p>Eine Person öffnet ihre vollständigen Fotos in der normalen Galerie, mit
@@ -1242,7 +1243,8 @@ Gesichts-ID, sonst das bisherige Übersichtsbild. Die bestehenden Gesichtsthumbn
 und deren Cache werden wiederverwendet. Listen laden keine Originalbilder.
 Ignorierte und geschützte Gesichter bleiben ausgeschlossen, auch bei Admin-Konten.</p>
 <p><strong>Personen verwalten</strong> führt weiterhin nach <code>/photos/people</code>. Bei der Namenssuche
-leert <strong>Zurücksetzen</strong> mit einem Klick den Suchtext und springt zur ersten Seite;
+leert der <strong>×-Button</strong> mit einem Klick den Suchtext und springt zur ersten Seite.
+Er hat dieselbe Höhe wie das Suchfeld;
 der gewählte Personenfilter und die Sortierung bleiben erhalten. In der geöffneten
 Personengruppe vergibt <strong>Personen-Tags</strong> bestehende oder neue Foto-Tags. <strong>Keine
 Tags → Übernehmen</strong> entfernt die Auswahl. Dafür ist <code>photos.edit</code> erforderlich,
@@ -1267,7 +1269,7 @@ automatisch angelegt. Die Namenssuche lädt höchstens 60 Vorschläge pro Anfrag
 <p>Ab <strong>0.55.0</strong> steht in jedem normalen Fotoordner unter <strong>Weitere Fotoaktionen</strong> der
 Eintrag <strong>Personen im Ordner</strong>, neben den bisherigen Fotoaktionen wie der Karte.
 Die Übersicht berücksichtigt den aktuellen Ordner und alle Unterordner. Sie zeigt
-benannte und unbenannte aktive Gruppen, mit der Anzahl unterschiedlicher Fotos in
+ab <strong>0.57.1</strong> ausschließlich benannte aktive Gruppen, mit der Anzahl unterschiedlicher Fotos in
 diesem Bereich. Auch das Gesichtsporträt stammt aus dem Bereich; dessen Stern-
 Favoriten haben Vorrang. Der bestehende Gesichtscache wird wiederverwendet.</p>
 <p>Eine Person öffnet die normale, datumsgruppierte und sortierbare Galerie ihrer
@@ -1610,10 +1612,14 @@ Modul und <code>app-person-dialog.js</code>.</p>
 Spalten. Das Anzeigemenü sitzt neben den Filteraktionen, damit mehr Platz für
 die Personenbilder bleibt.</p>
 <p>Die Einzelpersonenansicht nutzt mobil eine kompakte Aktionsreihe mit <strong>Alle Personen</strong>,
-dem <strong>Stift für die gesamte Gruppe</strong> und dem Mehr-Menü. <strong>Alle auswählen</strong> markiert
+dem <strong>Stift für die gesamte Gruppe</strong> und dem Mehr-Menü. Bei bereits benannten
+Personen zeigt der Gruppenbutton nur das Stiftsymbol; bei unbenannten Gruppen
+bleibt die Beschriftung „Person benennen / zuordnen“ erhalten. Tooltip und
+Screenreader-Beschriftung bleiben auch beim reinen Symbol verfügbar. <strong>Alle auswählen</strong> markiert
 nur die Gesichter der aktuellen Seite. Anzeige, Hilfe und Mehr-Menü öffnen sich
 jeweils einzeln im Seitenfluss über die volle Breite, ohne andere Bedienelemente zu
-überdecken. Kleine Gesichtskarten füllen die verfügbare Breite gleichmäßig; auf
+überdecken. <strong>Anzeige</strong> und <strong>Hilfe</strong> haben auch auf großen Bildschirmen dieselbe
+Buttondarstellung und bleiben beim Öffnen in ihrer Zeile; der Inhalt erscheint darunter. Kleine Gesichtskarten füllen die verfügbare Breite gleichmäßig; auf
 schmalen Smartphones passen zwei Spalten nebeneinander. Die Einstellungen für
 Thumbnailgröße und Ordnerpfade bleiben gespeichert.</p>
 <p>Unter der Fotovorschau im Benennen-Dialog steht der aufbereitete Bildpfad,
@@ -2163,7 +2169,7 @@ Die Funktion benötigt keine neue Datenbankmigration.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.57.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.57.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

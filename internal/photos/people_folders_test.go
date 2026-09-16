@@ -48,7 +48,7 @@ func TestPeopleFoldersTagsPortraitsAndGallery(t *testing.T) {
 		t.Fatalf("root: %+v", f)
 	}
 	directory, err := l.List(ctx, ListOptions{Path: PeopleFolderPath, FolderPreviewSize: 1})
-	if err != nil || len(directory.Folders) != 3 || directory.Folders[0].Name != "Alle" {
+	if err != nil || len(directory.Folders) != 3 || directory.Folders[0].Name != "Alle" || directory.Folders[0].DirCount != 1 || len(directory.Folders[0].Previews) != 1 || directory.Folders[0].Previews[0].FaceID != b[0].ID {
 		t.Fatalf("tags: %+v %v", directory, err)
 	}
 	for _, folder := range directory.Folders {
@@ -153,6 +153,11 @@ func TestPeopleFoldersVisibilityAndIgnored(t *testing.T) {
 	finishFace(t, l, 1)
 	a, _ := l.AutomaticFaces(ctx, "public/a.jpg")
 	b, _ := l.AutomaticFaces(ctx, "secret/b.jpg")
+	for _, id := range []int64{a[0].PersonID, b[0].PersonID} {
+		if err := l.RenamePerson(ctx, id, "Person"); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if _, err := l.SetPersonTags(ctx, b[0].PersonID, []string{"secret-tag"}); err != nil {
 		t.Fatal(err)
 	}
@@ -197,12 +202,21 @@ func TestPeopleFoldersPaginationAndPreviewLimits(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	detections := make([]facerec.Detection, 65)
+	detections := make([]facerec.Detection, 70)
 	for i := range detections {
 		detections[i] = faceDetection(i)
 	}
 	if err := l.CommitFaceResult(ctx, job, facerec.Result{Model: facerec.Model, Faces: detections}); err != nil {
 		t.Fatal(err)
+	}
+	faces, err := l.AutomaticFaces(ctx, "group.jpg")
+	if err != nil || len(faces) != 70 {
+		t.Fatalf("faces: %d %v", len(faces), err)
+	}
+	for i, face := range faces[:65] {
+		if err := l.RenamePerson(ctx, face.PersonID, fmt.Sprintf("Person %02d", i)); err != nil {
+			t.Fatal(err)
+		}
 	}
 	for limit := 1; limit <= 4; limit++ {
 		root, err := l.List(ctx, ListOptions{IncludePeopleFolders: true, FolderPreviewSize: limit})
@@ -217,6 +231,9 @@ func TestPeopleFoldersPaginationAndPreviewLimits(t *testing.T) {
 			t.Fatalf("page %d: %+v %v", page, out, err)
 		}
 		for _, folder := range out.Folders {
+			if folder.Name == "Unbenannt" {
+				t.Fatal("unnamed person in all folder")
+			}
 			if seen[folder.Path] {
 				t.Fatal("duplicate person")
 			}
@@ -225,6 +242,27 @@ func TestPeopleFoldersPaginationAndPreviewLimits(t *testing.T) {
 	}
 	if len(seen) != 65 {
 		t.Fatalf("missing people: %d", len(seen))
+	}
+	for _, tc := range []struct {
+		sort, query, name string
+		total             int
+	}{
+		{"ascending_name", "", "Person 00", 65},
+		{"descending_name", "", "Person 64", 65},
+		{"ascending_name", "Person 06", "Person 06", 1},
+		{"ascending_name", "Unbenannt", "", 0},
+	} {
+		out, err := l.List(ctx, ListOptions{Path: PeopleFolderPath + "/all", PageSize: 1, Sort: tc.sort, Query: tc.query})
+		if err != nil || out.Total != tc.total || out.FolderTotal != tc.total || out.HasNext != (tc.total > 1) || out.FolderHasNext != out.HasNext {
+			t.Fatalf("browser %s %q: %+v %v", tc.sort, tc.query, out, err)
+		}
+		if tc.total == 0 {
+			if len(out.Folders) != 0 {
+				t.Fatalf("unexpected folders: %+v", out.Folders)
+			}
+		} else if len(out.Folders) != 1 || out.Folders[0].Name != tc.name {
+			t.Fatalf("browser order/search: %+v", out.Folders)
+		}
 	}
 	for _, path := range []string{".people/nope", ".people/t-!", ".people/t-YQ/0", ".people/all/-1", ".people/all/1/extra"} {
 		if _, err := l.List(ctx, ListOptions{Path: path}); err == nil {

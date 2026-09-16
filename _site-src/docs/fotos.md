@@ -23,8 +23,9 @@ Das Fotomodul ist optional und nutzt einen directory-first Ansatz: BearStack imp
 ## Personen ansehen und taggen
 
 Ab BearStack **0.53.0** öffnet die virtuelle Kachel **Personen** unter **Fotos** eine
-Ansicht zum Durchstöbern. **Alle** enthält alle aktiven benannten und unbenannten
-Personengruppen. Daneben stehen ausschließlich Foto-Tags, denen sichtbare Personen
+Ansicht zum Durchstöbern. **Alle** (`/photos?path=.people%2Fall`) enthält ab
+**0.57.1** ausschließlich aktive benannte Personengruppen; Anzahl, Seitenaufteilung
+und Vorschauen berücksichtigen denselben Filter. Daneben stehen ausschließlich Foto-Tags, denen sichtbare Personen
 zugeordnet sind. Es gibt genau eine Tag-Ebene; auch Tags mit einem Schrägstrich
 bleiben eine einzelne Kachel. Im Tag-Ordner stehen alle zugeordneten Personen.
 
@@ -42,7 +43,8 @@ und deren Cache werden wiederverwendet. Listen laden keine Originalbilder.
 Ignorierte und geschützte Gesichter bleiben ausgeschlossen, auch bei Admin-Konten.
 
 **Personen verwalten** führt weiterhin nach `/photos/people`. Bei der Namenssuche
-leert **Zurücksetzen** mit einem Klick den Suchtext und springt zur ersten Seite;
+leert der **×-Button** mit einem Klick den Suchtext und springt zur ersten Seite.
+Er hat dieselbe Höhe wie das Suchfeld;
 der gewählte Personenfilter und die Sortierung bleiben erhalten. In der geöffneten
 Personengruppe vergibt **Personen-Tags** bestehende oder neue Foto-Tags. **Keine
 Tags → Übernehmen** entfernt die Auswahl. Dafür ist `photos.edit` erforderlich,
@@ -72,7 +74,7 @@ automatisch angelegt. Die Namenssuche lädt höchstens 60 Vorschläge pro Anfrag
 Ab **0.55.0** steht in jedem normalen Fotoordner unter **Weitere Fotoaktionen** der
 Eintrag **Personen im Ordner**, neben den bisherigen Fotoaktionen wie der Karte.
 Die Übersicht berücksichtigt den aktuellen Ordner und alle Unterordner. Sie zeigt
-benannte und unbenannte aktive Gruppen, mit der Anzahl unterschiedlicher Fotos in
+ab **0.57.1** ausschließlich benannte aktive Gruppen, mit der Anzahl unterschiedlicher Fotos in
 diesem Bereich. Auch das Gesichtsporträt stammt aus dem Bereich; dessen Stern-
 Favoriten haben Vorrang. Der bestehende Gesichtscache wird wiederverwendet.
 
@@ -475,10 +477,14 @@ Spalten. Das Anzeigemenü sitzt neben den Filteraktionen, damit mehr Platz für
 die Personenbilder bleibt.
 
 Die Einzelpersonenansicht nutzt mobil eine kompakte Aktionsreihe mit **Alle Personen**,
-dem **Stift für die gesamte Gruppe** und dem Mehr-Menü. **Alle auswählen** markiert
+dem **Stift für die gesamte Gruppe** und dem Mehr-Menü. Bei bereits benannten
+Personen zeigt der Gruppenbutton nur das Stiftsymbol; bei unbenannten Gruppen
+bleibt die Beschriftung „Person benennen / zuordnen“ erhalten. Tooltip und
+Screenreader-Beschriftung bleiben auch beim reinen Symbol verfügbar. **Alle auswählen** markiert
 nur die Gesichter der aktuellen Seite. Anzeige, Hilfe und Mehr-Menü öffnen sich
 jeweils einzeln im Seitenfluss über die volle Breite, ohne andere Bedienelemente zu
-überdecken. Kleine Gesichtskarten füllen die verfügbare Breite gleichmäßig; auf
+überdecken. **Anzeige** und **Hilfe** haben auch auf großen Bildschirmen dieselbe
+Buttondarstellung und bleiben beim Öffnen in ihrer Zeile; der Inhalt erscheint darunter. Kleine Gesichtskarten füllen die verfügbare Breite gleichmäßig; auf
 schmalen Smartphones passen zwei Spalten nebeneinander. Die Einstellungen für
 Thumbnailgröße und Ordnerpfade bleiben gespeichert.
 

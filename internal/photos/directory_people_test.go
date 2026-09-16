@@ -69,8 +69,12 @@ func TestDirectoryPeopleScopePortraitsAndGallery(t *testing.T) {
 		t.Fatalf("scoped OR: %+v %v", gallery, err)
 	}
 	for page := 1; page <= 3; page++ {
+		wantFolders := 0
+		if page == 1 {
+			wantFolders = 1
+		}
 		out, err = l.List(ctx, ListOptions{Path: path, Page: page, FolderPageSize: 1})
-		if err != nil || out.FolderTotal != 2 || out.FolderHasNext != (page < 2) || (page == 3 && len(out.Folders) != 0) {
+		if err != nil || out.FolderTotal != 1 || out.FolderHasNext || len(out.Folders) != wantFolders {
 			t.Fatalf("page %d: %+v %v", page, out, err)
 		}
 	}
@@ -83,6 +87,17 @@ func TestDirectoryPeoplePathsAndEmptyDirectories(t *testing.T) {
 	ctx := context.Background()
 	l := faceLibrary(t, "space %_ &/a.jpg")
 	finishFace(t, l, 0)
+	out, err := l.List(ctx, ListOptions{Path: DirectoryPeoplePath("")})
+	if err != nil || out.FolderTotal != 0 || len(out.Folders) != 0 {
+		t.Fatalf("unnamed directory: %+v %v", out, err)
+	}
+	faces, err := l.AutomaticFaces(ctx, "space %_ &/a.jpg")
+	if err != nil || len(faces) != 1 {
+		t.Fatalf("faces: %+v %v", faces, err)
+	}
+	if err := l.RenamePerson(ctx, faces[0].PersonID, "Ada"); err != nil {
+		t.Fatal(err)
+	}
 	for _, dir := range []string{"space %_ &", ""} {
 		out, err := l.List(ctx, ListOptions{Path: DirectoryPeoplePath(dir)})
 		if err != nil || out.FolderTotal != 1 || out.ParentPath != dir {
@@ -92,7 +107,7 @@ func TestDirectoryPeoplePathsAndEmptyDirectories(t *testing.T) {
 	if err := os.Mkdir(filepath.Join(l.root, "empty"), 0700); err != nil {
 		t.Fatal(err)
 	}
-	out, err := l.List(ctx, ListOptions{Path: DirectoryPeoplePath("empty")})
+	out, err = l.List(ctx, ListOptions{Path: DirectoryPeoplePath("empty")})
 	if err != nil || out.FolderTotal != 0 {
 		t.Fatalf("empty: %+v %v", out, err)
 	}

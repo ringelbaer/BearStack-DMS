@@ -101,7 +101,8 @@ func (l *Library) listDirectoryPeople(ctx context.Context, rel string, opts List
 	// portraits from this subtree, preferring its starred faces.
 	cte := `WITH scoped AS MATERIALIZED (SELECT f.person_id,count(DISTINCT f.path) AS n,
  coalesce(min(CASE WHEN f.favorite=1 THEN f.id END),min(f.id)) AS face_id
- FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.ignored=0 AND m.admin_only=0 AND ` + scope + `
+ FROM photo_faces f JOIN photo_people p ON p.id=f.person_id AND p.name<>''
+ JOIN media_index m ON m.path=f.path WHERE f.ignored=0 AND m.admin_only=0 AND ` + scope + `
  GROUP BY f.person_id), matched AS (SELECT p.id,p.name,p.name_fold,s.n,s.face_id FROM scoped s JOIN photo_people p ON p.id=s.person_id WHERE p.name_fold LIKE ? ESCAPE '\') `
 	args = append(args, searchtext.LikeContainsPattern(searchtext.GermanFold(opts.Query)))
 	// Window total avoids repeating the subtree aggregation for count and page.

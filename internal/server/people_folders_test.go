@@ -98,8 +98,19 @@ func TestPeopleFolderCatalogOptInAndFaceReadAccess(t *testing.T) {
 	}
 	w := labelRequest(s, "GET", "/api/photos/v1/browse?people=1&path=.people%2Fall", "reader", "")
 	var page photoCatalogPage
-	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &page) != nil || len(page.Folders) != 6 || page.Name != "Alle" || page.Parent != ".people" {
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &page) != nil || len(page.Folders) != 0 || page.Name != "Alle" || page.Parent != ".people" {
 		t.Fatalf("directory: %d %s", w.Code, w.Body.String())
+	}
+	if err := s.photos.RenamePerson(context.Background(), group.Faces[0].PersonID, "Zoe"); err != nil {
+		t.Fatal(err)
+	}
+	w = labelRequest(s, "GET", "/api/photos/v1/browse?people=1&path=.people%2Fall", "reader", "")
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &page) != nil || len(page.Folders) != 1 || page.Folders[0].Name != "Zoe" {
+		t.Fatalf("named directory: %d %s", w.Code, w.Body.String())
+	}
+	w = labelRequest(s, "GET", "/photos?path=.people%2Fall", "reader", "")
+	if w.Code != 200 || !strings.Contains(w.Body.String(), "Zoe") || strings.Contains(w.Body.String(), "Unbenannt") {
+		t.Fatalf("named web directory: %d %s", w.Code, w.Body.String())
 	}
 	for _, user := range []string{"", "reader", "editor"} {
 		w := labelRequest(s, "GET", fmt.Sprintf("/api/photos/v1/faces/%d/thumbnail", group.Faces[0].ID), user, "")
@@ -115,6 +126,9 @@ func TestPeopleFolderCatalogOptInAndFaceReadAccess(t *testing.T) {
 
 func TestDirectoryPeopleCatalogAndMenu(t *testing.T) {
 	s, group := groupPhotoServerFixture(t)
+	if err := s.photos.RenamePerson(context.Background(), group.Faces[0].PersonID, "Ada"); err != nil {
+		t.Fatal(err)
+	}
 	w := labelRequest(s, "GET", "/api/photos/v1/browse?people=1", "reader", "")
 	var root photoCatalogPage
 	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &root) != nil || root.PeoplePath != photos.DirectoryPeoplePath("") {
@@ -122,7 +136,7 @@ func TestDirectoryPeopleCatalogAndMenu(t *testing.T) {
 	}
 	w = labelRequest(s, "GET", "/api/photos/v1/browse?path="+url.QueryEscape(root.PeoplePath), "reader", "")
 	var people photoCatalogPage
-	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &people) != nil || len(people.Folders) != len(group.Faces) || people.Parent != "" || people.PeoplePath != "" {
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &people) != nil || len(people.Folders) != 1 || people.FolderTotal != 1 || people.Folders[0].Name != "Ada" || people.Parent != "" || people.PeoplePath != "" {
 		t.Fatalf("people: %d %s", w.Code, w.Body.String())
 	}
 	r := httptest.NewRequest("GET", "/photos", nil)

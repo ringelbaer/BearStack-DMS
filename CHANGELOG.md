@@ -4,6 +4,16 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.57.1 – in Entwicklung
+
+- Fotos → Personen → Alle (`/photos?path=.people%2Fall`) zeigt ausschließlich benannte aktive Personen. Datenbankfilter vor der Seitenaufteilung; Anzahl und Vorschaubilder der Alle-Kachel berücksichtigen denselben Filter, auch in der nativen Galerie-API. Tag-Ordner, Personenverwaltung und direkte Personengalerien bleiben erhalten.
+- WebUI: Der Gruppenbutton zum Benennen / Zuordnen zeigt bei bereits benannten Personen nur das Stiftsymbol, auch nach einer Benennung ohne Seitenwechsel. Tooltip und barrierefreie Beschriftung bleiben erhalten.
+- Auch **Personen im Ordner** zeigt ausschließlich benannte aktive Personen aus dem Ordner und seinen Unterordnern. Der Datenbankfilter greift vor Fotozählung, Porträtauswahl und Seitenaufteilung; Web und native API verwenden dieselbe Abfrage.
+- WebUI: Der ×-Button zum Zurücksetzen der Personensuche passt sich der Höhe des Suchfelds an; das Symbol bleibt mittig ausgerichtet. In Chromium bei 320, 390 und 1440 Pixeln Breite in allen drei Designs auf gleiche Höhe und bündige Ausrichtung geprüft.
+- WebUI: **Anzeige** und **Hilfe** in der Personendetailansicht erhalten einheitliche Buttons. Geöffnete Inhalte stehen auf allen Bildschirmgrößen unter der Aktionszeile, ohne den Hilfe-Button zu verschieben. Bestehender Chromium-Browsertest sowie Layoutmessungen bei fünf Bildschirmbreiten in allen drei Designs erfolgreich.
+- PATCH **0.57.1**; README, Website und OpenAPI aktualisiert. Keine Migration.
+- Validierung: vollständige Go-Suite einschließlich API-Verträgen und Website-Build erfolgreich. Regressionen prüfen gemischte benannte/unbenannte Gruppen, leere Ergebnisse, Seitenaufteilung, Suche, Sortierung, Vorschauen und Sichtbarkeit. Die Button-Anpassung wurde zusätzlich mit JavaScript-/DOM-Prüfungen und dem bestehenden Chromium-Browsertest der Personenansicht geprüft.
+
 ### BearStack 0.57.0 – in Entwicklung
 
 - WebUI: **Ähnliche Gesichter → Gesichtsketten prüfen** durchsucht auf Aufruf zusammenhängende unbenannte Gruppen mit einstellbaren 1–5 Sprüngen (Standard 2). Alle geeigneten gespeicherten Gesichter können Verbindungen bilden, auch außerhalb des Referenzlimits. Es gilt die manuelle Vorschlagsähnlichkeit; der Mindestabstand entfällt zugunsten verzweigter Alternativen. Benannte Gruppen werden weder eingeschlossen noch als Zwischenstation verwendet.
