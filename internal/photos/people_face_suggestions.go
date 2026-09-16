@@ -123,9 +123,10 @@ func (l *Library) faceSuggestionPeople(ctx context.Context, id, sourcePerson int
 	if err := l.refreshPersonIDsVisibility(ctx, ids...); err != nil {
 		return out, err
 	}
-	rows, err := l.index.db.QueryContext(ctx, `SELECT p.id,p.name,f.id,coalesce(`+personFavoritePortraitSQL+`,f.id),
+	rows, err := l.index.db.QueryContext(ctx, `SELECT p.id,p.name,v.revision,f.id,coalesce(`+personFavoritePortraitSQL+`,f.id),
  (SELECT count(DISTINCT path) FROM photo_faces WHERE person_id=p.id AND ignored=0)
  FROM photo_faces f CROSS JOIN photo_people p ON p.id=f.person_id
+ JOIN photo_person_revisions v ON v.person_id=p.id
  WHERE f.id IN (`+sqlutil.Placeholders(len(args))+`) AND f.ignored=0 AND p.name<>''`, args...)
 	if err != nil {
 		return out, err
@@ -138,7 +139,7 @@ func (l *Library) faceSuggestionPeople(ctx context.Context, id, sourcePerson int
 	for rows.Next() {
 		var p PersonSuggestion
 		var witness int64
-		if err = rows.Scan(&p.ID, &p.Name, &witness, &p.FaceID, &p.Count); err != nil {
+		if err = rows.Scan(&p.ID, &p.Name, &p.Revision, &witness, &p.FaceID, &p.Count); err != nil {
 			rows.Close()
 			return out, err
 		}

@@ -16,6 +16,7 @@
     </nav>
   </div>
   <div class="page-actions">
+    {{if and .Auth.CanPhotosEdit .Photos.PersonEditURL}}<a class="secondary-button photo-people-manage" href="{{.Photos.PersonEditURL}}" aria-label="Person bearbeiten" title="Person bearbeiten">{{template "person_pencil_icon"}}<span>Person bearbeiten</span></a>{{end}}
     <a class="secondary-button photo-people-manage" href="/photos/people" aria-label="Personen verwalten" title="Personen verwalten"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"></circle><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m3 11v-3a6 6 0 0 0-2-4.5"></path></svg><span>Personen verwalten</span></a>
     {{if and .Auth.CanPhotosEdit (not .PhotoFilter.MapView) (not .Photos.PeopleDirectory)}}
     <button type="button" class="photo-mode-toggle" data-photo-mode-toggle aria-pressed="false" aria-label="Bearbeiten einschalten" title="Bearbeiten einschalten">

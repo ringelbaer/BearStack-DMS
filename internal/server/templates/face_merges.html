@@ -9,12 +9,12 @@
 {{range .FaceMergeSuggestions}}
 <section class="panel face-merge-suggestion" data-merge-id="{{.ID}}" data-source-id="{{.SourceID}}" data-target-id="{{.TargetID}}" aria-label="Zusammenführung prüfen">
 <div class="face-merge-pair">
-<div class="face-merge-side" data-merge-side="{{.SourceID}}" data-side-revision="{{.SourceRevision}}" data-side-name="{{.SourceName}}" aria-label="Erste Gruppe">
+<div class="face-merge-side" data-merge-side="{{.SourceID}}" data-side-face-id="{{.SourceFaceID}}" data-side-revision="{{.SourceRevision}}" data-side-name="{{.SourceName}}" aria-label="Erste Gruppe">
 <a class="person-card" href="/photos/people/{{.SourceID}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.SourceFaceID}}/thumbnail" alt="Erste Gruppe"><strong>{{if .SourceName}}{{.SourceName}}{{else}}Unbenannt{{end}}</strong></a>
 {{if not .SourceName}}<div class="face-merge-side-actions"><button type="button" class="secondary-button" data-merge-ignore aria-label="Erste Gruppe ignorieren">Ignorieren</button><button type="button" class="secondary-button" data-merge-side-name title="Erste Gruppe benennen/zuordnen" aria-label="Erste Gruppe benennen/zuordnen">{{template "person_pencil_icon"}}</button></div>{{end}}
 <p class="muted" data-merge-side-status role="status" hidden></p>
 </div>
-<div class="face-merge-side" data-merge-side="{{.TargetID}}" data-side-revision="{{.TargetRevision}}" data-side-name="{{.TargetName}}" aria-label="Zweite Gruppe">
+<div class="face-merge-side" data-merge-side="{{.TargetID}}" data-side-face-id="{{.TargetFaceID}}" data-side-revision="{{.TargetRevision}}" data-side-name="{{.TargetName}}" aria-label="Zweite Gruppe">
 <a class="person-card" href="/photos/people/{{.TargetID}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.TargetFaceID}}/thumbnail" alt="Zweite Gruppe"><strong>{{if .TargetName}}{{.TargetName}}{{else}}Unbenannt{{end}}</strong></a>
 {{if not .TargetName}}<div class="face-merge-side-actions"><button type="button" class="secondary-button" data-merge-ignore aria-label="Zweite Gruppe ignorieren">Ignorieren</button><button type="button" class="secondary-button" data-merge-side-name title="Zweite Gruppe benennen/zuordnen" aria-label="Zweite Gruppe benennen/zuordnen">{{template "person_pencil_icon"}}</button></div>{{end}}
 <p class="muted" data-merge-side-status role="status" hidden></p>

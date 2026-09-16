@@ -57,6 +57,19 @@ func TestPersonTagsHTTPAndGallery(t *testing.T) {
 		}
 	}
 	for _, user := range []string{"reader", "editor"} {
+		for _, path := range []string{"", ".people", ".people/all", photos.PersonFolderPath(id), ".people/t-ZmFtaWx5/" + fmt.Sprint(id), photos.DirectoryPeoplePath("") + "/" + fmt.Sprint(id)} {
+			w := labelRequest(s, "GET", "/photos?path="+url.QueryEscape(path), user, "")
+			want := user == "editor" && strings.Count(path, "/") == 2
+			if w.Code != 200 || strings.Contains(w.Body.String(), `aria-label="Person bearbeiten"`) != want {
+				t.Fatalf("edit link %s %s: %d", user, path, w.Code)
+			}
+			if want && !strings.Contains(w.Body.String(), fmt.Sprintf(`href="/photos/people/%d" aria-label="Person bearbeiten"`, id)) {
+				t.Fatal("incorrect person edit target")
+			}
+		}
+	}
+
+	for _, user := range []string{"reader", "editor"} {
 		r := httptest.NewRequest("GET", fmt.Sprintf("/photos/people/%d", id), nil)
 		r.SetBasicAuth(user, "secret")
 		w := httptest.NewRecorder()

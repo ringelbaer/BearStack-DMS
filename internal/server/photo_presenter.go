@@ -15,6 +15,7 @@ import (
 )
 
 type PhotoListingView struct {
+	PersonEditURL    string
 	Virtual          bool
 	PeopleDirectory  bool
 	Path             string
@@ -83,6 +84,15 @@ func newPhotoListingView(ctx context.Context, library *photos.Library, listing p
 		Total:            listing.Total,
 		HasPrev:          listing.HasPrev,
 		HasNext:          listing.HasNext,
+	}
+
+	if view.Virtual {
+		parts := strings.Split(listing.Path, "/")
+		if len(parts) == 3 {
+			if id, err := strconv.ParseInt(parts[2], 10, 64); err == nil && id > 0 {
+				view.PersonEditURL = "/photos/people/" + strconv.FormatInt(id, 10)
+			}
+		}
 	}
 
 	thumbnailGroups := map[int]*photoThumbnailReadyGroup{}

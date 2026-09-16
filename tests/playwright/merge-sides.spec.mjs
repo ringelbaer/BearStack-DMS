@@ -125,7 +125,7 @@ test("individual actions affect only unnamed sides and retain the pair until hid
         })).toBeGreaterThanOrEqual(-1);
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
-      if (width === 320) await page.screenshot({path:"/private/tmp/bearstack-merge-sides-320.png",fullPage:true});
+      if (width === 320) await page.screenshot({path:path.join(os.tmpdir(),"bearstack-merge-sides-320.png"),fullPage:true});
     }
     await page.evaluate(() => { window.mergeSideMarker="same document"; });
     const firstSide=first.locator("[data-merge-side]").first(), otherSide=first.locator("[data-merge-side]").last();
@@ -135,6 +135,8 @@ test("individual actions affect only unnamed sides and retain the pair until hid
     const dialog=page.getByRole("dialog");
     await otherSide.locator("[data-merge-side-name]").click();
     await expect(dialog.getByRole("combobox")).toBeEnabled();
+    await expect(dialog.getByRole("button", {name:"Ähnliche benannte Personen suchen"})).toBeVisible();
+    await expect(dialog.locator("form")).toHaveAttribute("data-person-face-id", await otherSide.getAttribute("data-side-face-id"));
     await dialog.getByRole("button", {name:"Abbrechen",exact:true}).click();
     await expect(first.locator("[data-merge-dismiss]")).toBeHidden();
     // The server commits, but the response is lost. Reloading resolves its receipt,
@@ -154,7 +156,7 @@ test("individual actions affect only unnamed sides and retain the pair until hid
     await expect(first.locator(".face-merge-accept")).toBeHidden();
     await expect(first.locator(".face-merge-reject")).toBeHidden();
     await expect(otherSide.locator("[data-merge-ignore]")).toBeEnabled();
-    await page.screenshot({path:"/private/tmp/bearstack-merge-sides-edited.png",fullPage:true});
+    await page.screenshot({path:path.join(os.tmpdir(),"bearstack-merge-sides-edited.png"),fullPage:true});
     expect(ignoreWrites).toBe(1);
     expect(await detail(otherID)).toEqual(untouched);
     expect((await context.request.get(`${baseURL}/api/photos/labeling/v1/people/${ignoredID}`)).status()).toBe(404);

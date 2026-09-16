@@ -114,6 +114,11 @@ test("pencil names or assigns two unnamed groups atomically", async ({ browser }
       await page.setViewportSize({ width, height: 900 });
       await pencil.first().click();
       await expect(dialog.getByRole("combobox")).toBeEnabled();
+      const faceID = await cards.first().locator("[data-merge-side]").first().getAttribute("data-side-face-id");
+      const search = page.waitForResponse(response => response.url().endsWith(`/photos/faces/${faceID}/suggestions`));
+      await dialog.getByRole("button", { name: "Ähnliche benannte Personen suchen" }).click();
+      expect((await search).ok()).toBe(true);
+      await expect(dialog.locator("[data-person-feedback]")).toContainText("Keine ähnlichen benannten Personen gefunden.");
       expect(await dialog.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
       await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
       await expect(cards).toHaveCount(2);
@@ -133,7 +138,14 @@ test("pencil names or assigns two unnamed groups atomically", async ({ browser }
     await expect(dialog.locator("[data-person-dialog-status]")).toContainText("Dieser Name existiert bereits");
     await expect(cards).toHaveCount(1);
     expect(await people()).toHaveLength(3);
-    await dialog.getByRole("combobox").click();
+    const suggestions = await (await context.request.get(baseURL + "/api/photos/labeling/v1/suggestions?q=Ada")).json();
+    expect(suggestions.people[0].revision).toBeGreaterThan(0);
+    const faceID = await cards.locator("[data-merge-side]").first().getAttribute("data-side-face-id");
+    await page.route(`**/photos/faces/${faceID}/suggestions`, route => route.fulfill({
+      contentType: "application/x-ndjson",
+      body: JSON.stringify({ people: suggestions.people, has_next: false, done: true }) + "\n"
+    }));
+    await dialog.getByRole("button", { name: "Ähnliche benannte Personen suchen" }).click();
     await dialog.getByRole("option").filter({ hasText: "Ada (#" }).click();
     await expect(dialog).not.toBeVisible();
     await expect(cards).toHaveCount(0);

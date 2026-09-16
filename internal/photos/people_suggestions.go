@@ -7,10 +7,11 @@ import (
 )
 
 type PersonSuggestion struct {
-	ID     int64  `json:"id"`
-	Name   string `json:"name"`
-	Count  int    `json:"count"`
-	FaceID int64  `json:"face_id"`
+	Revision int64  `json:"revision,omitempty"`
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	Count    int    `json:"count"`
+	FaceID   int64  `json:"face_id"`
 }
 
 type PeopleSuggestions struct {

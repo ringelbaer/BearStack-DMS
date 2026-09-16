@@ -20,6 +20,8 @@ Die native Galerie hält höchstens drei Metadatenseiten je Bereich. Beim Zurüc
 
 Das Fotomodul ist optional und nutzt einen directory-first Ansatz: BearStack importiert Fotos nicht in die Dokumentenablage, sondern rendert ein vorhandenes, read-only Fotoverzeichnis als Galerie. Die Mediendateien bleiben unverändert; BearStack legt Index, Tags, Vorschaubilder und Einstellungen getrennt davon ab.
 
+Im Browser bietet auch **Zusammenführen und benennen/zuordnen** die Lupe für ähnliche benannte Personen. Sie prüft das erste Vergleichsgesicht; beim Benennen einer einzelnen Gruppe wird deren Vergleichsgesicht verwendet. Ein Treffer übernimmt die Zielperson mit Versionsprüfung für die atomare Zuordnung.
+
 ## Personen ansehen und taggen
 
 Ab BearStack **0.53.0** öffnet die virtuelle Kachel **Personen** unter **Fotos** eine
@@ -32,7 +34,7 @@ bleiben eine einzelne Kachel. Im Tag-Ordner stehen alle zugeordneten Personen.
 Eine Person öffnet ihre vollständigen Fotos in der normalen Galerie, mit
 Datumsgruppen, Sortierung und seitenweisem Laden. Mehrere Erkennungen derselben
 Person in einem Foto erzeugen nur einen Bildeintrag. Die Suche innerhalb dieser
-Galerie bleibt auf die Person begrenzt.
+Galerie bleibt auf die Person begrenzt. Mit der Berechtigung **Fotos bearbeiten** führt **Person bearbeiten** aus der Personengalerie direkt zur Bearbeitungsansicht dieser Person.
 
 Die Personen-Kachel sowie **Alle** und die Tag-Kacheln zeigen bis zur doppelten
 konfigurierten Anzahl der Ordner-Vorschaubilder (2–8). Die Auswahl bevorzugt

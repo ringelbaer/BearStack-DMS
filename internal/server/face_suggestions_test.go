@@ -74,11 +74,12 @@ func TestFacePersonSuggestionsStream(t *testing.T) {
 	for i, line := range lines {
 		var event struct {
 			People []struct {
-				Name string `json:"name"`
+				Name     string `json:"name"`
+				Revision int64  `json:"revision"`
 			} `json:"people"`
 			Done bool `json:"done"`
 		}
-		if err := json.Unmarshal([]byte(line), &event); err != nil || event.Done != (i == 1) || len(event.People) != 1 || event.People[0].Name != "Match" {
+		if err := json.Unmarshal([]byte(line), &event); err != nil || event.Done != (i == 1) || len(event.People) != 1 || event.People[0].Name != "Match" || event.People[0].Revision <= 0 {
 			t.Fatalf("frame: %s %v", line, err)
 		}
 	}

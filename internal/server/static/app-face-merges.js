@@ -253,7 +253,7 @@
   var namingCard, namingSide, namingOpener, namingSession, namingOperation, namingBusy = false;
   namingForm.dataset.personSuggestionsUrl = "/api/photos/labeling/v1/suggestions?q=";
   dialog.querySelector("[data-person-dialog-ignore]").hidden = true;
-  dialog.querySelector("[data-person-face-match]").hidden = true;
+  var faceMatchButton = dialog.querySelector("[data-person-face-match]");
 
   function namingControls(disabled) {
     namingForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = disabled; });
@@ -287,6 +287,10 @@
     dialog.querySelector(".person-dialog-photo").replaceChildren((namingSide ? namingSide.querySelector(".person-card") : namingCard.querySelector(".face-merge-pair")).cloneNode(true));
     dialog.querySelectorAll(".person-dialog-photo button, .person-dialog-photo [data-merge-side-status]").forEach(function (element) { element.remove(); });
     dialog.querySelectorAll(".person-dialog-photo a").forEach(function (link) { link.removeAttribute("href"); });
+    var searchSide = namingSide || namingCard.querySelector("[data-merge-side]");
+    namingForm.dataset.personFaceId = searchSide.dataset.sideFaceId || "";
+    faceMatchButton.hidden = !namingForm.dataset.personFaceId;
+    faceMatchButton.title = namingSide ? "Dieses Vergleichsgesicht mit benannten Personen abgleichen" : "Erstes Vergleichsgesicht mit benannten Personen abgleichen";
     namingForm.dataset.personCount = namingSide ? "1" : "2";
     namingForm.dataset.personExclude = namingSide ? namingSide.dataset.mergeSide : "";
     namingForm.dataset.renameAction = "/unused/rename";

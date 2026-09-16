@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.57.2 – in Entwicklung
+
+- Personengalerien bieten mit **Fotos bearbeiten** einen direkten Button **Person bearbeiten** zur jeweiligen Personenansicht. Gilt für Alle-, Tag- und ordnerbezogene Personengalerien; reine Lesekonten sehen den Button nicht. Keine zusätzlichen Datenbankabfragen.
+- WebUI: Die Lupe im Dialog **Zusammenführen und benennen/zuordnen** sowie beim Benennen einer einzelnen Vergleichsgruppe ist verfügbar. Wiederverwendung der abbrechbaren Streaming-Suche; Gesichtstreffer liefern die Zielrevision für konfliktgeprüfte atomare Zuordnungen.
+- PATCH **0.57.2**: fehlende Navigation ergänzt; README und Website aktualisiert. OpenAPI ergänzt die optionale Zielrevision in Gesichtssuchtreffern.
+- Validierung: vollständige Go-Testsuite einschließlich Berechtigungsprüfungen für den neuen Link, JavaScript-/DOM-Prüfungen, drei Browserregressionen zur Zusammenführung und Website-Build erfolgreich. Lupen-Leerergebnisse, Auswahl mit Zielrevision und Gesichtsauswahl der Einzelgruppe geprüft.
+
 ### BearStack 0.57.1 – in Entwicklung
 
 - Fotos → Personen → Alle (`/photos?path=.people%2Fall`) zeigt ausschließlich benannte aktive Personen. Datenbankfilter vor der Seitenaufteilung; Anzahl und Vorschaubilder der Alle-Kachel berücksichtigen denselben Filter, auch in der nativen Galerie-API. Tag-Ordner, Personenverwaltung und direkte Personengalerien bleiben erhalten.
