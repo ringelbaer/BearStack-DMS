@@ -159,6 +159,13 @@ test("individual actions affect only unnamed sides and retain the pair until hid
     const dialog=page.getByRole("dialog");
     await otherSide.locator("[data-merge-side-name]").click();
     await expect(dialog.getByRole("combobox")).toBeEnabled();
+    const preview = dialog.locator(".person-dialog-photo");
+    await expect(preview.locator("img")).toHaveCount(1);
+    await expect(preview.locator("img")).toHaveAttribute("src", await otherSide.locator(".person-card img").getAttribute("src"));
+    await expect(preview.locator("img")).toBeVisible();
+    await expect.poll(() => preview.locator("img").evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
+    await expect(preview.locator(".face-merge-folder")).toHaveText(await otherSide.locator(".face-merge-folder").textContent());
+    await expect(preview.locator("button, a[href], [data-photo-item]")).toHaveCount(0);
     await expect(dialog.getByRole("button", {name:"Ähnliche benannte Personen suchen"})).toBeVisible();
     await expect(dialog.locator("form")).toHaveAttribute("data-person-face-id", await otherSide.getAttribute("data-side-face-id"));
     await dialog.getByRole("button", {name:"Abbrechen",exact:true}).click();

@@ -961,6 +961,11 @@ Lightbox mit dem vollständigen Foto; nur der Personenname öffnet die Personeng
 Das gilt auch nach dem Nachladen und Bearbeiten von Vorschlägen. Die Bildpfade
 kommen aus der bestehenden begrenzten Abfrage; zusätzliche Einzelabfragen entfallen.
 
+Ab **0.61.3** bleiben die Vergleichsgesichter mit Ordnernamen auch im Dialog
+**Zusammenführen und benennen/zuordnen** sichtbar. Beim Benennen einer einzelnen
+Gruppe erscheint nur deren Gesicht. Die Vorschauen im Dialog übernehmen keine
+Aktionsbuttons oder Personenlinks aus den Vorschlagskarten.
+
 Ab Android-App **0.9.0** und BearStack **0.49.0** ist **Ähnliche Gruppen** auch über das App-Menü verfügbar: immer eine Entscheidung mit zwei Portraits und festen Buttons, ohne scrollbare Vorschlagsliste. Nach **Zusammenführen** oder **Getrennt lassen** lädt automatisch das nächste Gruppenpaar. Beide Portraits bieten dieselbe Originalfoto-Vergrößerung per Halten und Wischen wie beim Benennen/Zuordnen. Aktionsquittungen verhindern doppelte Änderungen bei verlorenen Antworten; Konflikte verlangen eine erneute Prüfung. Die Android-Portraits stehen gleich groß und auf derselben Höhe; Namen, Gesichtsanzahlen und Einzelaktionen sind kompakt darunter angeordnet. Bei wenig Platz oder großer Schrift scrollt der Vergleichsbereich bei weiterhin sichtbaren Entscheidungsbuttons. Details stehen in der [Android-Anleitung](android.md#ahnliche-gruppen).
 
 **Kleine Gesichter:** Nach der ersten Analyse des maximal 1.600 Pixel großen Fotos

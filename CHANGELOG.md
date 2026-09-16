@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.61.3 – in Entwicklung
+
+- Fehlende Vergleichsbilder im Dialog **Zusammenführen und benennen/zuordnen** sowie beim Benennen einer einzelnen Vorschlagsgruppe korrigiert. Die Dialogvorschau behält Bilder, Ordnernamen und Personennamen; die Bildbuttons der Vorschlagskarten werden ohne ihren Bildinhalt entfernt.
+- Validierung: Fehler durch Browserregression reproduziert, anschließend vier Chromium-Szenarien erfolgreich. Geladene Vorschauen, Ordnernamen, Suche, Benennen/Zuordnen, Lightbox, Fokus-Rückkehr und Dialogbreiten von 320, 390 und 1440 Pixeln geprüft. JavaScript-/DOM- und OpenAPI-/Versionsprüfungen sowie Website-Build erfolgreich.
+- Bestehende Vorschaubilder werden wiederverwendet, keine zusätzlichen API- oder Datenbankabfragen. PATCH **0.61.3**, keine API-/Schemaänderung, Android unverändert; README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.61.2 – in Entwicklung
 
 - Web-Zusammenführungsvorschläge zeigen den Ordnernamen unter jedem Vergleichsbild. Bilder öffnen die bestehende Foto-Lightbox; ausschließlich der Personenname führt zur Personengruppe. Die Lightbox berücksichtigt auch nachgeladene oder entfernte Vorschläge.

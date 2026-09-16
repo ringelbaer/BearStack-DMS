@@ -289,6 +289,10 @@
     dialog.querySelector("#person-dialog-title").textContent = namingSide ? "Gruppe benennen/zuordnen" : "Zusammenführen und benennen/zuordnen";
     dialog.querySelector("#overview-person-hint").textContent = namingSide ? "Nur diese Gruppe wird benannt oder einer vorhandenen Person zugeordnet." : "Beide Gruppen werden unter dem neuen Namen oder mit der ausgewählten Person zusammengeführt. Abbrechen ändert nichts.";
     dialog.querySelector(".person-dialog-photo").replaceChildren((namingSide ? namingSide.querySelector(".person-card") : namingCard.querySelector(".face-merge-pair")).cloneNode(true));
+    // Keep the portraits when removing the gallery's interactive controls.
+    dialog.querySelectorAll(".person-dialog-photo [data-photo-item]").forEach(function (button) {
+      button.replaceWith(...button.childNodes);
+    });
     dialog.querySelectorAll(".person-dialog-photo button, .person-dialog-photo [data-merge-side-status]").forEach(function (element) { element.remove(); });
     dialog.querySelectorAll(".person-dialog-photo a").forEach(function (link) { link.removeAttribute("href"); });
     var searchSide = namingSide || namingCard.querySelector("[data-merge-side]");
