@@ -20,6 +20,14 @@ func IsPeopleFolder(path string) bool {
 	return path == PeopleFolderPath || strings.HasPrefix(path, PeopleFolderPath+"/")
 }
 
+// IsPeopleDirectory identifies paginated lists of people, excluding the category
+// root and individual photo galleries. List still validates the opaque path.
+func IsPeopleDirectory(path string) bool {
+	parts := strings.Split(path, "/")
+	return len(parts) == 2 && parts[0] == PeopleFolderPath &&
+		(parts[1] == "all" || strings.HasPrefix(parts[1], "t-") || strings.HasPrefix(parts[1], "f-"))
+}
+
 func PersonFolderPath(id int64) string { return PeopleFolderPath + "/all/" + strconv.FormatInt(id, 10) }
 
 func personTagPath(tag string) string {
@@ -33,7 +41,7 @@ func (l *Library) peopleRootFolder(ctx context.Context, previews int) (Folder, e
 		return Folder{}, err
 	}
 	folders := []Folder{{Name: "Personen", DisplayName: "Personen", Path: PeopleFolderPath, Virtual: true}}
-	if err := l.index.db.QueryRowContext(ctx, `SELECT count(*) FROM photo_people p WHERE `+visiblePersonSQL).Scan(&folders[0].DirCount); err != nil {
+	if err := l.index.db.QueryRowContext(ctx, `SELECT count(*) FROM photo_people p WHERE p.name<>'' AND `+visiblePersonSQL).Scan(&folders[0].DirCount); err != nil {
 		return Folder{}, err
 	}
 	if err := l.peopleFolderPreviews(ctx, folders, previews); err != nil {
@@ -55,7 +63,7 @@ func (l *Library) peopleFolderPreviews(ctx context.Context, folders []Folder, li
 		if len(folder.Tags) > 0 {
 			tag = folder.Tags[0]
 		}
-		args = append(args, i, tag, folder.Path == PeopleFolderPath+"/all")
+		args = append(args, i, tag, folder.Path == PeopleFolderPath || folder.Path == PeopleFolderPath+"/all")
 	}
 	args = append(args, limit)
 	reader, release, err := photoFileTempConn(ctx, l.index.db)
@@ -161,10 +169,14 @@ func (l *Library) listPeopleFolders(ctx context.Context, rel string, opts ListOp
 		if err := l.index.db.QueryRowContext(ctx, `SELECT 1+count(DISTINCT pt.tag) FROM person_tag_index pt JOIN photo_people p ON p.id=pt.person_id WHERE `+visiblePersonSQL).Scan(&out.FolderTotal); err != nil {
 			return out, err
 		}
+		direction := "ASC"
+		if opts.Sort == "descending_name" {
+			direction = "DESC"
+		}
 		rows, err := l.index.db.QueryContext(ctx, `WITH entries AS (
  SELECT 'Alle' AS name,count(*) AS n,1 AS is_all FROM photo_people p WHERE p.name<>'' AND `+visiblePersonSQL+`
  UNION ALL SELECT pt.tag,count(*),0 FROM person_tag_index pt JOIN photo_people p ON p.id=pt.person_id WHERE `+visiblePersonSQL+` GROUP BY pt.tag)
- SELECT name,n,is_all FROM entries ORDER BY is_all DESC,bearstack_german_fold(name),name LIMIT ? OFFSET ?`, size, (opts.Page-1)*size)
+ SELECT name,n,is_all FROM entries ORDER BY is_all DESC,bearstack_german_fold(name) `+direction+`,name `+direction+` LIMIT ? OFFSET ?`, size, (opts.Page-1)*size)
 		if err != nil {
 			return out, err
 		}
@@ -209,8 +221,24 @@ func (l *Library) listPeopleFolders(ctx context.Context, rel string, opts ListOp
 			direction = "DESC"
 		}
 		args = append(args, size, (opts.Page-1)*size)
-		rows, err := l.index.db.QueryContext(ctx, `WITH page AS MATERIALIZED (SELECT p.id,p.name,p.name_fold FROM photo_people p WHERE `+filter+` ORDER BY p.name_fold `+direction+`,p.id LIMIT ? OFFSET ?)
- SELECT p.id,p.name,`+personPhotoCountSQL+`,`+personPortraitSQL+` FROM page p ORDER BY p.name_fold `+direction+`,p.id`, args...)
+		var reader peopleSortReader = l.index.db
+		columns, count, order := "p.id,p.name,p.name_fold", personPhotoCountSQL, "p.name_fold "+direction+",p.id"
+		if opts.Sort == "ascending_count" || opts.Sort == "descending_count" {
+			// Count matching people before paging; portraits remain limited to the
+			// returned page. The person/path index bounds each distinct-photo count.
+			columns += "," + personPhotoCountSQL + " AS photo_count"
+			count = "p.photo_count"
+			order = "photo_count " + direction + ",p.name_fold,p.id"
+			// Allow large aggregate sorts to spill to disk, like the people editor.
+			conn, release, err := photoFileTempConn(ctx, l.index.db)
+			if err != nil {
+				return out, err
+			}
+			defer release()
+			reader = conn
+		}
+		rows, err := reader.QueryContext(ctx, `WITH page AS MATERIALIZED (SELECT `+columns+` FROM photo_people p WHERE `+filter+` ORDER BY `+order+` LIMIT ? OFFSET ?)
+ SELECT p.id,p.name,`+count+`,`+personPortraitSQL+` FROM page p ORDER BY `+order, args...)
 		if err != nil {
 			return out, err
 		}

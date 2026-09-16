@@ -105,7 +105,7 @@ func TestPeopleFolderCatalogOptInAndFaceReadAccess(t *testing.T) {
 		if (virtual != nil) != (query == "?people=1") {
 			t.Fatalf("unexpected virtual folder: %s %+v", query, page.Folders)
 		}
-		if virtual != nil && (virtual.Path != photos.PeopleFolderPath || len(virtual.Previews) != 4 || virtual.Previews[0].FaceID == 0) {
+		if virtual != nil && (virtual.Path != photos.PeopleFolderPath || len(virtual.Previews) != 0 || virtual.FolderCount != 0) {
 			t.Fatalf("previews: %+v", virtual)
 		}
 	}
@@ -120,6 +120,23 @@ func TestPeopleFolderCatalogOptInAndFaceReadAccess(t *testing.T) {
 	w = labelRequest(s, "GET", "/api/photos/v1/browse?people=1&path=.people%2Fall", "reader", "")
 	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &page) != nil || len(page.Folders) != 1 || page.Folders[0].Name != "Zoe" {
 		t.Fatalf("named directory: %d %s", w.Code, w.Body.String())
+	}
+	w = labelRequest(s, "GET", "/api/photos/v1/browse?people=1", "reader", "")
+	var namedRoot photoCatalogPage
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &namedRoot) != nil {
+		t.Fatalf("named root: %d %s", w.Code, w.Body.String())
+	}
+	found := false
+	for _, folder := range namedRoot.Folders {
+		if folder.Path == photos.PeopleFolderPath {
+			found = true
+			if folder.FolderCount != 1 || len(folder.Previews) != 1 || folder.Previews[0].FaceID != group.Faces[0].ID {
+				t.Fatalf("named root count/previews: %+v", folder)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("missing people root")
 	}
 	w = labelRequest(s, "GET", "/photos?path=.people%2Fall", "reader", "")
 	if w.Code != 200 || !strings.Contains(w.Body.String(), "Zoe") || strings.Contains(w.Body.String(), "Unbenannt") {
@@ -176,5 +193,38 @@ func TestPeopleSearchResetKeepsModeAndSort(t *testing.T) {
 	s.Handler().ServeHTTP(w, r)
 	if w.Code != 200 || !strings.Contains(w.Body.String(), `aria-label="Personensuche zurücksetzen" href="/photos/people?filter=known&amp;sort=count_desc&amp;q="`) {
 		t.Fatalf("reset: %d %s", w.Code, w.Body.String())
+	}
+}
+
+func TestNativePeopleCountSortCapabilityAndScope(t *testing.T) {
+	s, group := groupPhotoServerFixture(t)
+	id := group.Faces[0].PersonID
+	if err := s.photos.RenamePerson(context.Background(), id, "Ada"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.photos.SetPersonTags(context.Background(), id, []string{"Family"}); err != nil {
+		t.Fatal(err)
+	}
+	w := labelRequest(s, "GET", "/api/photos/v1/session", "reader", "")
+	var session struct {
+		PeopleCountSort bool `json:"people_count_sort"`
+	}
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &session) != nil || !session.PeopleCountSort {
+		t.Fatalf("session: %d %s", w.Code, w.Body.String())
+	}
+	for _, sort := range []string{"ascending_count", "descending_count"} {
+		for _, path := range []string{".people/all", ".people/t-ZmFtaWx5", photos.DirectoryPeoplePath("")} {
+			w := labelRequest(s, "GET", "/api/photos/v1/browse?path="+url.QueryEscape(path)+"&sort="+sort, "reader", "")
+			var page photoCatalogPage
+			if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &page) != nil || len(page.Folders) != 1 || page.Folders[0].Name != "Ada" || page.Folders[0].MediaCount != 1 {
+				t.Fatalf("%s %s: %d %s", path, sort, w.Code, w.Body.String())
+			}
+		}
+		for _, path := range []string{"", ".people", photos.PersonFolderPath(id)} {
+			w := labelRequest(s, "GET", "/api/photos/v1/browse?path="+url.QueryEscape(path)+"&sort="+sort, "reader", "")
+			if w.Code != 400 {
+				t.Fatalf("invalid count scope %s: %d", path, w.Code)
+			}
+		}
 	}
 }

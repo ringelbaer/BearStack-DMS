@@ -9,6 +9,23 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PhotosApiTest {
+    @Test fun peopleCountSortingRequiresAnExplicitSessionCapability()=runBlocking {
+        var capability=""
+        val client=OkHttpClient.Builder().addInterceptor {chain ->
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body("""{"protocol":1,"instance":"test","dataset":"photos","account":"reader","can_manage_people":false,$capability
+                    "settings":{"thumbnail_size":240,"folder_thumbnail_size":240,"preview_size":1280,"large_preview_size":2048,"slideshow_seconds":5,"frame_seconds":8}}"""
+                    .toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        try {
+            val api=PhotosApi(client,"https://example.test/")
+            assertFalse(api.session().peopleCountSort)
+            capability="\"people_count_sort\":true,"
+            assertTrue(api.session().peopleCountSort)
+            capability="\"people_count_sort\":false,"
+            assertFalse(api.session().peopleCountSort)
+        } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+    }
     @Test fun virtualPeopleFoldersUseCachedFacesAndKeepProxyPrefix()=runBlocking {
         var request:Request?=null
         val portrait="""{"path":"","name":"Zoe","type":"image","mime":"image/jpeg","version":"0","modified":"2026-09-16T00:00:00Z","bytes":0,"width":0,"height":0,"face_id":42}"""

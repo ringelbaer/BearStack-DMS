@@ -16,6 +16,8 @@ Die nativen Foto-Informationen zeigen Aufnahmezeit samt Zeitzone, Bewertung,
 Personen und Schlagwörter. Der Fotoframe spielt auch Videos und Audio bis zum Ende;
 eine aktivierte Wiederholung funktioniert auch bei nur einer Mediendatei.
 
+Die Android-App **0.15.0** bietet ein eigenes **Sortieren**-Menü. Der Fotostream nutzt Datumssortierung; normale Ordner bieten zusätzlich Namen. In Personenlisten ist ab BearStack **0.58.0** auch **Anzahl Bilder** auf-/absteigend verfügbar. Der Server zählt unterschiedliche sichtbare Fotos und sortiert vor der Seitenaufteilung. Bei **Personen im Ordner** bleibt die Zählung auf dessen Unterbaum begrenzt.
+
 Die native Galerie hält höchstens drei Metadatenseiten je Bereich. Beim Zurückscrollen lädt sie ältere Seiten erneut; Vollbild und Diashow behalten die Fotoreihenfolge, und Ladefehler sind direkt im betroffenen Bereich wiederholbar.
 
 Das Fotomodul ist optional und nutzt einen directory-first Ansatz: BearStack importiert Fotos nicht in die Dokumentenablage, sondern rendert ein vorhandenes, read-only Fotoverzeichnis als Galerie. Die Mediendateien bleiben unverändert; BearStack legt Index, Tags, Vorschaubilder und Einstellungen getrennt davon ab.
@@ -35,6 +37,10 @@ Eine Person öffnet ihre vollständigen Fotos in der normalen Galerie, mit
 Datumsgruppen, Sortierung und seitenweisem Laden. Mehrere Erkennungen derselben
 Person in einem Foto erzeugen nur einen Bildeintrag. Die Suche innerhalb dieser
 Galerie bleibt auf die Person begrenzt. Mit der Berechtigung **Fotos bearbeiten** führt **Person bearbeiten** aus der Personengalerie direkt zur Bearbeitungsansicht dieser Person.
+
+Ab **0.57.3** berücksichtigt die Hauptkachel **Personen** bei Anzahl und
+Vorschaubildern ausschließlich benannte aktive Personen. Ohne benannte Personen
+zeigt sie null Personen und keine Gesichtsvorschauen.
 
 Die Personen-Kachel sowie **Alle** und die Tag-Kacheln zeigen bis zur doppelten
 konfigurierten Anzahl der Ordner-Vorschaubilder (2–8). Die Auswahl bevorzugt
@@ -478,17 +484,19 @@ Auf Smartphones stehen die Navigationslinks der Personenansicht kompakt in zwei
 Spalten. Das Anzeigemenü sitzt neben den Filteraktionen, damit mehr Platz für
 die Personenbilder bleibt.
 
-Die Einzelpersonenansicht nutzt mobil eine kompakte Aktionsreihe mit **Alle Personen**,
-dem **Stift für die gesamte Gruppe** und dem Mehr-Menü. Bei bereits benannten
-Personen zeigt der Gruppenbutton nur das Stiftsymbol; bei unbenannten Gruppen
-bleibt die Beschriftung „Person benennen / zuordnen“ erhalten. Tooltip und
-Screenreader-Beschriftung bleiben auch beim reinen Symbol verfügbar. **Alle auswählen** markiert
-nur die Gesichter der aktuellen Seite. Anzeige, Hilfe und Mehr-Menü öffnen sich
-jeweils einzeln im Seitenfluss über die volle Breite, ohne andere Bedienelemente zu
-überdecken. **Anzeige** und **Hilfe** haben auch auf großen Bildschirmen dieselbe
-Buttondarstellung und bleiben beim Öffnen in ihrer Zeile; der Inhalt erscheint darunter. Kleine Gesichtskarten füllen die verfügbare Breite gleichmäßig; auf
-schmalen Smartphones passen zwei Spalten nebeneinander. Die Einstellungen für
-Thumbnailgröße und Ordnerpfade bleiben gespeichert.
+Die Einzelpersonenansicht hat eine gemeinsame Aktionsleiste mit **Alle Personen**,
+**Fotos ansehen**, dem **Stift für die gesamte Gruppe** und **Alle auswählen**.
+Auf schmalen Bildschirmen bricht diese Leiste platzsparend um. Bei benannten
+Personen zeigt der Gruppenbutton nur das Stiftsymbol; Tooltip und
+Screenreader-Beschriftung bleiben verfügbar. **Alle auswählen** markiert nur die
+Gesichter der aktuellen Seite.
+
+Das **Mehr-Menü (⋯)** bündelt **Personen-Tags**, **Eltern**, **Anzeige**, **Hilfe** und
+weitere Navigation. Es öffnet über der Galerie, ohne Gesichtskarten zu verschieben.
+**Hilfe** öffnet einen Dialog; **Schließen** oder Escape schließt ihn und setzt den
+Tastaturfokus zurück auf den Mehr-Menü-Button. Thumbnailgröße und Ordnerpfade bleiben
+gespeichert. Kleine Gesichtskarten füllen die verfügbare Breite gleichmäßig; auf
+schmalen Smartphones passen zwei Spalten nebeneinander.
 
 Unter der Fotovorschau im Benennen-Dialog steht der aufbereitete Bildpfad,
 zum Beispiel **Fotos / 11.05.2026 · Urlaub / IMG_1234.jpg**. Er gehört immer zum

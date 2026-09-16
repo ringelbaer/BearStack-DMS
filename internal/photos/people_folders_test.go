@@ -44,7 +44,7 @@ func TestPeopleFoldersTagsPortraitsAndGallery(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := root.Folders[0]
-	if f.Path != PeopleFolderPath || !f.Virtual || f.DirCount != 2 || len(f.Previews) != 2 || f.Previews[0].FaceID != b[0].ID {
+	if f.Path != PeopleFolderPath || !f.Virtual || f.DirCount != 1 || len(f.Previews) != 1 || f.Previews[0].FaceID != b[0].ID {
 		t.Fatalf("root: %+v", f)
 	}
 	directory, err := l.List(ctx, ListOptions{Path: PeopleFolderPath, FolderPreviewSize: 1})

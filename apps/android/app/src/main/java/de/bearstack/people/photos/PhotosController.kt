@@ -54,16 +54,17 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     private val additional = mutableMapOf<String,Job>()
     init { open(initialQuery) }
     fun open(query: PhotoQuery, tab: Int = state.value.tab, frame: Boolean = false) {
+        val resolvedQuery = normalizePhotoSort(query, tab, session.peopleCountSort)
         generation++
         request?.cancel(); dateRequest?.cancel(); detail?.cancel(); additional.values.forEach { it.cancel() }; additional.clear()
         gridPosition=null;visibleKeys=emptySet()
-        mutable.value = PhotosState(query=query,tab=tab,frame=frame,loading=true,parent=query.path.substringBeforeLast('/',""))
+        mutable.value = PhotosState(query=resolvedQuery,tab=tab,frame=frame,loading=true,parent=resolvedQuery.path.substringBeforeLast('/',""))
         val expected = generation
         request = scope.launch {
             try {
-                val page = service.browse(query)
+                val page = service.browse(resolvedQuery)
                 validate(page,1)
-                if(generation == expected) mutable.value = PhotosState(query=query,tab=tab,frame=frame,
+                if(generation == expected) mutable.value = PhotosState(query=resolvedQuery,tab=tab,frame=frame,
                     selected=if(frame) page.media.firstOrNull()?.path else null,
                     mediaPages=PhotoPages.media().add(1,page.media,page.hasNext),
                     folderPages=PhotoPages.folders().add(1,page.folders,page.folderHasNext),

@@ -64,34 +64,46 @@ test("person detail keeps actions compact and scopes face editing, selection and
     for (const width of [320,390,480,640,1440]) {
       await page.setViewportSize({width,height:900});
       await page.screenshot({path:`/tmp/bearstack-person-detail-${width}.png`,fullPage:true});
+      const helpButton = page.getByRole("button", {name:"Hilfe",exact:true});
+      const helpDialog = page.getByRole("dialog", {name:"Hilfe zur Personenansicht"});
+      const beforeHelp = await cards.first().boundingBox();
+      await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
+      await helpButton.click();
+      await expect(helpDialog).toBeVisible();
+      expect((await cards.first().boundingBox()).y).toBe(beforeHelp.y);
+      const helpBox = await helpDialog.boundingBox();
+      expect(helpBox.x).toBeGreaterThanOrEqual(0);
+      expect(helpBox.x + helpBox.width).toBeLessThanOrEqual(width);
+      await helpDialog.getByRole("button", {name:"Schließen",exact:true}).click();
+      await expect(page.getByLabel("Weitere Personenaktionen", {exact:true})).toBeFocused();
+      await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
+      await helpButton.click();
+      await page.keyboard.press("Escape");
+      await expect(helpDialog).not.toBeVisible();
+      await expect(page.getByLabel("Weitere Personenaktionen", {exact:true})).toBeFocused();
       const geometry = await cards.first().boundingBox();
-      const tagTools = await page.locator("[data-person-tags-tools]").boundingBox();
-      // The new gallery/tag actions add exactly one compact row to the existing layout.
-      expect(tagTools.height).toBeLessThanOrEqual(44);
-      expect(geometry.y - tagTools.height - 8).toBeLessThan(width <= 640 ? 290 : 360);
+      const toolbar = await page.locator(".person-detail-toolbar").boundingBox();
+      expect(toolbar.height).toBeLessThan(width <= 640 ? 112 : 65);
+      expect(geometry.y).toBeLessThan(width <= 640 ? 310 : 360);
       expect(geometry.height).toBeLessThan(260);
       expect(await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     }
     for (const width of [320,390]) {
       await page.setViewportSize({width,height:900});
-      const display = page.locator("[data-detail-display]");
-      const help = page.locator(".person-detail-help");
-      const more = page.locator(".person-detail-more");
-      for (const [menu, panel] of [[display, ".people-display-options"], [help, ".person-detail-help-content"], [more, ":scope > div"]]) {
-        await menu.locator("summary").click();
-        await expect(menu).toHaveAttribute("open", "");
-        const box = await menu.locator(panel).boundingBox();
-        const firstCard = await cards.first().boundingBox();
-        expect(box.width).toBeGreaterThan(width-60);
-        expect(box.x).toBeGreaterThanOrEqual(0);
-        expect(box.x+box.width).toBeLessThanOrEqual(width);
-        expect(box.y+box.height).toBeLessThanOrEqual(firstCard.y);
-        await page.screenshot({path:`/tmp/bearstack-person-detail-${width}-${panel.includes("help") ? "help" : panel.includes("options") ? "display" : "more"}.png`,fullPage:true});
-        expect(await page.locator('details[name="person-detail-tools"][open]').count()).toBe(1);
-      }
-      await more.locator("summary").click();
+      const before = await cards.first().boundingBox();
+      await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
+      await page.getByLabel("Anzeigeeinstellungen", {exact:true}).click();
+      const box = await page.locator(".person-detail-menu").boundingBox();
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x+box.width).toBeLessThanOrEqual(width);
+      expect((await cards.first().boundingBox()).y).toBe(before.y);
+      await page.getByLabel("Anzeigeeinstellungen", {exact:true}).press("Escape");
+      await expect(page.locator("[data-detail-display]")).not.toHaveAttribute("open", "");
+      await page.getByLabel("Weitere Personenaktionen", {exact:true}).press("Escape");
+      await expect(page.locator(".person-detail-more")).not.toHaveAttribute("open", "");
     }
     await page.setViewportSize({width:1440,height:900});
+    await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
     await page.getByLabel("Anzeigeeinstellungen", {exact:true}).click();
     await page.getByLabel("Thumbnailgröße", {exact:true}).selectOption("m");
     await page.getByLabel("Ordnerpfad anzeigen", {exact:true}).check();

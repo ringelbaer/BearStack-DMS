@@ -30,6 +30,19 @@ func BenchmarkPeopleSort(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+	for _, path := range []string{".people/all", DirectoryPeoplePath("")} {
+		for _, sorting := range []string{"ascending_name", "descending_count"} {
+			b.Run("browse/"+path+"/"+sorting, func(b *testing.B) {
+				b.ReportAllocs()
+				for b.Loop() {
+					page, err := l.List(context.Background(), ListOptions{Path: path, Sort: sorting, FolderPageSize: 24})
+					if err != nil || page.FolderTotal != 10000 || len(page.Folders) != 24 || page.Folders[0].MediaCount != 5 {
+						b.Fatalf("page: %+v %v", page, err)
+					}
+				}
+			})
+		}
+	}
 	for _, sorting := range []string{"name_asc", "name_desc", "count_desc", "folder_asc", "date_desc"} {
 		b.Run(sorting, func(b *testing.B) {
 			b.ReportAllocs()

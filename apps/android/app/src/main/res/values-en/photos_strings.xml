@@ -119,4 +119,7 @@
     <string name="photos_sort_name_asc">Name: A–Z</string>
     <string name="photos_sort_name_desc">Name: Z–A</string>
     <plurals name="photos_person_count"><item quantity="one">%d person</item><item quantity="other">%d people</item></plurals>
+    <string name="photos_sort">Sort</string>
+    <string name="photos_sort_count_desc">Photo count: Descending</string>
+    <string name="photos_sort_count_asc">Photo count: Ascending</string>
 </resources>

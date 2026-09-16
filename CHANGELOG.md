@@ -4,6 +4,22 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.58.0 / Android 0.15.0 – in Entwicklung
+
+- Android: eigenes **Sortieren**-Menü mit aktiv markierter Auswahl neben dem Mehr-Menü. Der Fotostream und Personengalerien bieten Datum auf-/absteigend, normale Ordner zusätzlich Name. Kategorien nutzen Namen; Personenlisten zusätzlich **Anzahl Bilder** auf-/absteigend.
+- Native Galerie-API: `ascending_count`/`descending_count` für Alle-, Tag- und ordnerbezogene Personenlisten. Unterschiedliche sichtbare Bilder zählen einmal; im Ordner gilt dessen Unterbaum. Sortierung vor der Seitenaufteilung, stabile Gleichstände nach Name und ID, Porträts nur für die geladene Seite; große Sortierungen können auf Datenträger auslagern.
+- Optionale Session-Capability `people_count_sort`; auf älteren Servern zeigt die App weiterhin nur unterstützte Namenssortierungen. Wechsel zur Fotogalerie setzt eine dort unpassende Sortierung zurück.
+- MINOR **0.58.0**, Android **0.15.0** (`versionCode 31`). README, Website und OpenAPI aktualisiert; keine Migration.
+- Validierung: vollständige Go-Suite, Android-JVM-Tests, Lint und Debug-Build, elf Android-Galerietests im Emulator, JavaScript-/DOM-Prüfungen und Website-Build erfolgreich. Regressionen für getrennte Menüs, passende Sortieroptionen, ältere Server, Seitenwechsel, doppelte Erkennungen, Sichtbarkeit und Ordnergrenzen. Benchmark mit 10.000 Personen, 50.000 Fotos und 100.000 Gesichtern ergänzt.
+
+### BearStack 0.57.3 – in Entwicklung
+
+- Die Hauptkachel **Personen** zählt ausschließlich benannte aktive Personen und zeigt nur deren Gesichtsvorschauen. Gilt für Web und native Galerie; ohne benannte Personen bleiben Anzahl und Vorschauen leer beziehungsweise null. Bestehende Sichtbarkeitsregeln und Vorschaugrenzen bleiben erhalten.
+- WebUI: Die Hilfe der Personendetailansicht öffnet als modaler, auf kleinen Bildschirmen scrollbar begrenzter Dialog. Schließen und Escape führen den Fokus zum Mehr-Menü zurück; die Galerie wird nicht verschoben.
+- WebUI: Eine gemeinsame Aktionsleiste bündelt Zurück, Fotos, Benennen und Auswahl. Personen-Tags, Eltern, Anzeige, Hilfe und weitere Navigation liegen im Mehr-Menü. Galerie- und Metadatenlinks folgen auch nach einer Zuordnung der aktuellen Person.
+- PATCH **0.57.3**; README, Website und OpenAPI aktualisiert. Keine Migration.
+- Validierung: vollständige Go-Testsuite und Website-Build erfolgreich; Regressionen prüfen gemischte Gruppen sowie Anzahl und Vorschauen vor und nach dem Benennen. JavaScript-/DOM-Prüfungen und Chromium-Browserregressionen für Personenansicht, Tags, Eltern und Galerie erfolgreich; Hilfedialog, Escape, Fokus-Rückkehr, kompakte Leiste und stabile Galerieposition bei fünf Bildschirmbreiten geprüft.
+
 ### BearStack 0.57.2 – in Entwicklung
 
 - Personengalerien bieten mit **Fotos bearbeiten** einen direkten Button **Person bearbeiten** zur jeweiligen Personenansicht. Gilt für Alle-, Tag- und ordnerbezogene Personengalerien; reine Lesekonten sehen den Button nicht. Keine zusätzlichen Datenbankabfragen.

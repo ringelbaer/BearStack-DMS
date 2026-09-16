@@ -683,7 +683,7 @@ func normalizeMediaType(value string) string {
 
 func normalizeSort(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "ascending_name", "descending_name", "ascending_date", "descending_date", "random":
+	case "ascending_name", "descending_name", "ascending_date", "descending_date", "ascending_count", "descending_count", "random":
 		return value
 	default:
 		return ""

@@ -1274,7 +1274,7 @@
 
 
 <h1 id="bearstack-fotos-fur-android">BearStack Fotos für Android<a class="headerlink" href="#bearstack-fotos-fur-android" title="Permanent link">&para;</a></h1>
-<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.14.0</strong> (<code>versionCode 30</code>). Die Servergalerie benötigt
+<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.15.0</strong> (<code>versionCode 31</code>). Die Servergalerie benötigt
 <strong>BearStack 0.50.0</strong>, ein aktiviertes Fotomodul und <code>photos.read</code>. Personenverwaltung
 benötigt zusätzlich <code>photos.edit</code>; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.</p>
@@ -1282,9 +1282,16 @@ beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich 
 <h2 id="personen-unter-ordner-ansehen">Personen unter Ordner ansehen<a class="headerlink" href="#personen-unter-ordner-ansehen" title="Permanent link">&para;</a></h2>
 <p>Ab App <strong>0.13.0</strong> mit BearStack <strong>0.53.0</strong> erscheint unter <strong>Ordner</strong> die virtuelle
 Kachel <strong>Personen</strong>. <strong>Alle</strong> und die belegten Foto-Tags führen zu Personengruppen,
-eine Person zu ihren nach Datum gruppierten Fotos. <strong>Weitere Optionen</strong> bietet die
-Sortierung nach Datum oder Name in beiden Richtungen. Zurück führt zum jeweiligen
+eine Person zu ihren nach Datum gruppierten Fotos. Zurück führt zum jeweiligen
 übergeordneten Ordner; verständliche Personen- und Tagnamen stehen im Titel.</p>
+<p>Ab App <strong>0.15.0</strong> öffnet das separate Symbol <strong>Sortieren</strong> neben <strong>Weitere Optionen</strong>
+ein eigenes Menü mit markierter aktiver Sortierung. Im Fotostream <strong>Fotos</strong> und in
+Personengalerien stehen nur Datumssortierungen zur Wahl; normale Fotoordner bieten
+zusätzlich Name. Personenlisten bieten Name und mit BearStack <strong>0.58.0</strong> zusätzlich
+<strong>Anzahl Bilder</strong>, jeweils auf- und absteigend. Gezählt werden unterschiedliche
+sichtbare Fotos, bei <strong>Personen im Ordner</strong> nur im jeweiligen Ordner samt Unterordnern.
+Die Sortierung erfolgt serverseitig vor der Seitenaufteilung, Gleichstände nach Name
+und Personen-ID. Ältere Server ohne <code>people_count_sort</code> behalten die Namenssortierung.</p>
 <p>Normale Ordner berücksichtigen nun die serverseitige Einstellung für die Zahl der
 Vorschaubilder. Personen- und Tag-Kacheln zeigen doppelt so viele Gesichtsthumbnails
 (maximal acht), nach Fotoanzahl und mit Stern-Priorität. Die Anzeige nutzt den
@@ -1841,7 +1848,7 @@ Fehler werden zusätzlich anhand der XML-Ergebnisse zurückgewiesen.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.57.2 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.58.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

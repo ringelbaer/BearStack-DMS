@@ -1,6 +1,6 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.14.0** (`versionCode 30`). Die Servergalerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.15.0** (`versionCode 31`). Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
@@ -12,9 +12,17 @@ Ab App **0.12.0** liegen die Warteschlangen als einzelne, indizierte Room-Eintr�
 
 Ab App **0.13.0** mit BearStack **0.53.0** erscheint unter **Ordner** die virtuelle
 Kachel **Personen**. **Alle** und die belegten Foto-Tags führen zu Personengruppen,
-eine Person zu ihren nach Datum gruppierten Fotos. **Weitere Optionen** bietet die
-Sortierung nach Datum oder Name in beiden Richtungen. Zurück führt zum jeweiligen
+eine Person zu ihren nach Datum gruppierten Fotos. Zurück führt zum jeweiligen
 übergeordneten Ordner; verständliche Personen- und Tagnamen stehen im Titel.
+
+Ab App **0.15.0** öffnet das separate Symbol **Sortieren** neben **Weitere Optionen**
+ein eigenes Menü mit markierter aktiver Sortierung. Im Fotostream **Fotos** und in
+Personengalerien stehen nur Datumssortierungen zur Wahl; normale Fotoordner bieten
+zusätzlich Name. Personenlisten bieten Name und mit BearStack **0.58.0** zusätzlich
+**Anzahl Bilder**, jeweils auf- und absteigend. Gezählt werden unterschiedliche
+sichtbare Fotos, bei **Personen im Ordner** nur im jeweiligen Ordner samt Unterordnern.
+Die Sortierung erfolgt serverseitig vor der Seitenaufteilung, Gleichstände nach Name
+und Personen-ID. Ältere Server ohne `people_count_sort` behalten die Namenssortierung.
 
 Normale Ordner berücksichtigen nun die serverseitige Einstellung für die Zahl der
 Vorschaubilder. Personen- und Tag-Kacheln zeigen doppelt so viele Gesichtsthumbnails

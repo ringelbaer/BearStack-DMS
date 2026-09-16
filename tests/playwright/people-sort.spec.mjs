@@ -235,6 +235,7 @@ test("tag a person and browse the virtual folders into the dated photo gallery",
   await login(page);
   await page.goto(baseURL + "/photos/people?known=1&q=Zoe");
   await page.locator("a.person-card").click();
+  await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
   await page.getByRole("button", { name: "Personen-Tags bearbeiten" }).click();
   const dialog = page.locator("[data-tag-select-modal]");
   await dialog.locator("[data-tag-select-search]").fill("familie");
@@ -245,9 +246,9 @@ test("tag a person and browse the virtual folders into the dated photo gallery",
   await page.goto(baseURL + "/photos");
   await checkPhotoHead();
   const people = page.locator(".photo-folder-link").filter({ hasText: "Personen" }).first();
-  await expect(people.locator("img")).toHaveCount(8);
+  await expect(people.locator("img")).toHaveCount(1);
   await people.click();
-  await expect(page.getByRole("link", { name: /^Alle \d+ Personen/ })).toHaveCount(1);
+  await expect(page.getByRole("link", { name: /^Alle 1 Person/ })).toHaveCount(1);
   await page.locator(".photo-folder-link").filter({ hasText: "familie" }).click();
   await expect(page.locator(".photo-folder-link")).toHaveCount(1);
   await page.locator(".photo-folder-link").filter({ hasText: "Zoe" }).click();
@@ -273,6 +274,7 @@ test("named groups can choose, follow and clear existing parents", async ({ brow
     expect(response.ok()).toBe(true);
   }
   await page.goto(`${baseURL}/photos/people/${child.id}`);
+  await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
   await page.locator(".person-parents summary").click();
   await page.getByRole("combobox",{name:"Mutter",exact:true}).fill("Mutter Beispiel");
   await page.getByRole("option",{name:/^Mutter Beispiel/}).click();
@@ -280,6 +282,7 @@ test("named groups can choose, follow and clear existing parents", async ({ brow
   await page.getByRole("option",{name:/^Vater Beispiel/}).click();
   await page.getByRole("button",{name:"Eltern speichern",exact:true}).click();
   await expect(page.locator(".notice")).toContainText("Eltern gespeichert");
+  await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
   await page.locator(".person-parents summary").click();
   await expect(page.locator(".person-parents").getByRole("link",{name:"Mutter Beispiel",exact:true})).toHaveAttribute("href",`/photos/people/${parents[0].id}`);
   await page.setViewportSize({width:390,height:800});

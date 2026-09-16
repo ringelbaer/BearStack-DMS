@@ -12,6 +12,22 @@
   var display = root.querySelector("[data-detail-display]");
   var size = display.querySelector("[data-detail-size]");
   var paths = display.querySelector("[data-detail-paths]");
+  var more = root.querySelector(".person-detail-more");
+  var moreTrigger = more.querySelector("summary");
+  var galleryLink = root.querySelector("[data-detail-gallery]");
+  var helpButton = root.querySelector("[data-detail-help-open]");
+  var helpDialog = root.querySelector("[data-detail-help-dialog]");
+  helpButton.hidden = false;
+  helpButton.addEventListener("click", function () { more.open = false; helpDialog.showModal(); });
+  helpDialog.addEventListener("close", function () { moreTrigger.focus({ preventScroll: true }); });
+  more.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && !event.defaultPrevented) {
+      more.open = false; moreTrigger.focus({ preventScroll: true }); event.stopPropagation();
+    }
+  });
+  document.addEventListener("click", function (event) {
+    if (more.open && !more.contains(event.target) && !event.target.closest("dialog")) more.open = false;
+  });
   var storageKey = "bearstack.people.detailDisplay:" + root.dataset.personUser;
   var busy = false, uncertain = false, mode = "group", editingFaces = [], retryTarget = null;
   function cards() { return Array.from(grid.querySelectorAll("[data-detail-face]")); }
@@ -49,7 +65,7 @@
     configureDisplay();
     try { localStorage.setItem(storageKey, JSON.stringify({ size: size.value, paths: paths.checked })); } catch (_) {}
   });
-  display.addEventListener("keydown", function (event) { if (event.key === "Escape") { display.open = false; display.querySelector("summary").focus(); } });
+  display.addEventListener("keydown", function (event) { if (event.key === "Escape") { display.open = false; display.querySelector("summary").focus(); event.preventDefault(); event.stopPropagation(); } });
 
   async function refresh(target) {
     retryTarget = target || null;
@@ -86,6 +102,7 @@
       if (window.initializeTagSelects) window.initializeTagSelects(tagTools);
       if (window.initializePersonPickers) window.initializePersonPickers(tagTools);
     }
+    galleryLink.setAttribute("href", view.querySelector("[data-detail-gallery]").getAttribute("href"));
     root.dataset.personId = updated.dataset.personId; root.dataset.personName = updated.dataset.personName;
     document.querySelector("[data-detail-title]").textContent = updated.dataset.personName || "Unbenannt";
     document.querySelector("[data-detail-count]").textContent = view.querySelector("[data-detail-count]").textContent;

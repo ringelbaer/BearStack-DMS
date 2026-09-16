@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
 
 data class PhotoSession(val scope: String, val canManagePeople: Boolean, val thumbnailSize: Int,
     val folderThumbnailSize: Int, val previewSize: Int, val largePreviewSize: Int,
-    val slideshowSeconds: Int, val frameSeconds: Int)
+    val slideshowSeconds: Int, val frameSeconds: Int, val peopleCountSort: Boolean = false)
 data class Photo(val path: String, val name: String, val type: String, val mime: String, val version: String,
     val modified: String, val captured: String?, val bytes: Long, val width: Int, val height: Int,
     val camera: String = "", val lens: String = "", val latitude: Double? = null, val longitude: Double? = null,
@@ -91,7 +91,7 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
         return PhotoSession(scope,o.getBoolean("can_manage_people"),settings.getInt("thumbnail_size").coerceIn(80,640),
             settings.getInt("folder_thumbnail_size").coerceIn(80,640),settings.getInt("preview_size").coerceIn(640,2048),
             settings.getInt("large_preview_size").coerceIn(640,4096),settings.getInt("slideshow_seconds").coerceIn(3,300),
-            settings.getInt("frame_seconds").coerceIn(3,300))
+            settings.getInt("frame_seconds").coerceIn(3,300),o.optBoolean("people_count_sort",false))
     }
     override suspend fun browse(query: PhotoQuery, page: Int, section: String): PhotoPage {
         val o = json("browse",mapOf("people" to "1","path" to query.path,"q" to query.query,"page" to "$page","section" to section,

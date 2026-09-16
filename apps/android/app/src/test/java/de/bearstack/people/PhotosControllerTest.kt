@@ -28,6 +28,25 @@ class PhotosControllerTest {
         override fun thumbnail(photo: Photo,size: Int)="https://example.test/thumbnail"
         override fun original(photo: Photo)="https://example.test/media"
     }
+    @Test fun countSortSurvivesPagingAndResetsWhenLeavingPeople()=runTest {
+        val fake=Fake().apply {handler={q,p,_ -> page(q,p).copy(folderHasNext=p==1,
+            folders=listOf(PhotoFolder("${q.path}/$p","Person $p",null,5-p,false,0,emptyList(),true)))}}
+        val controller=PhotosController(this,fake,session.copy(peopleCountSort=true),
+            initialQuery=PhotoQuery(path=".people/all",sort="descending_count"));runCurrent()
+        controller.more("folders");runCurrent()
+        assertEquals(listOf(1,2),fake.requests.map {it.second})
+        assertTrue(fake.requests.all {it.first.sort=="descending_count"})
+        controller.open(controller.state.value.query.copy(path=".people/all/1"),tab=1);runCurrent()
+        assertEquals("descending_date",fake.requests.last().first.sort)
+        controller.open(PhotoQuery(path=".people/all",sort="descending_date"),tab=1);runCurrent()
+        assertEquals("ascending_name",fake.requests.last().first.sort)
+        controller.open(PhotoQuery(recursive=true,sort="ascending_name"),tab=0);runCurrent()
+        assertEquals("descending_date",fake.requests.last().first.sort)
+        controller.close()
+        val legacy=PhotosController(this,fake,session,initialQuery=PhotoQuery(path=".people/all",sort="descending_count"));runCurrent()
+        assertEquals("ascending_name",fake.requests.last().first.sort)
+        legacy.close()
+    }
     @Test fun virtualFoldersKeepNamesParentsAndBoundPortraitCounts()=runTest {
         val fake=Fake().apply {handler={q,p,_ -> page(q,p).copy(name="Familie",parent=".people",
             folders=listOf(PhotoFolder(".people/all/1","Zoe",null,10,false,0,List(8){photo("face-$it").copy(faceId=it+1L)},true)))}}

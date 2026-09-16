@@ -110,7 +110,11 @@ func (l *Library) listDirectoryPeople(ctx context.Context, rel string, opts List
 	if strings.HasPrefix(opts.Sort, "descending_") {
 		direction = "DESC"
 	}
-	rows, err := reader.QueryContext(ctx, cte+`SELECT id,name,n,face_id,count(*) OVER() FROM matched ORDER BY name_fold `+direction+`,id LIMIT ? OFFSET ?`, append(append([]any{}, args...), size, (opts.Page-1)*size)...)
+	order := "name_fold " + direction + ",id"
+	if opts.Sort == "ascending_count" || opts.Sort == "descending_count" {
+		order = "n " + direction + ",name_fold,id"
+	}
+	rows, err := reader.QueryContext(ctx, cte+`SELECT id,name,n,face_id,count(*) OVER() FROM matched ORDER BY `+order+` LIMIT ? OFFSET ?`, append(append([]any{}, args...), size, (opts.Page-1)*size)...)
 	if err != nil {
 		return out, err
 	}

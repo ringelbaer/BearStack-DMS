@@ -25,6 +25,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -47,7 +49,8 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
     val text=uiStrings()
     val state by controller.state.collectAsStateWithLifecycle()
     val tab = state.tab
-    var menu by remember { mutableStateOf(false) }
+    var menu by remember(state.query, tab) { mutableStateOf(false) }
+    var sortMenu by remember(state.query, tab) { mutableStateOf(false) }
     var mapOpen by rememberSaveable(state.query) {mutableStateOf(false)}
     val locale = LocalConfiguration.current.locales[0]
     BackHandler(state.query.path.isNotEmpty() && state.selected==null && state.blog==null) {
@@ -62,15 +65,24 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
                 }
             },actions={
                 if(tab==0) PhotoDateAction(controller,state)
-                IconButton(onClick={menu=true}) { Icon(painterResource(R.drawable.ic_more_horiz),stringResource(R.string.photos_menu)) }
+                Box {
+                    IconButton(onClick={menu=false;sortMenu=true},enabled=!state.loading) {
+                        Icon(painterResource(R.drawable.ic_sort),stringResource(R.string.photos_sort))
+                    }
+                    DropdownMenu(sortMenu,{sortMenu=false}) {
+                        photoSortChoices(state.query,tab,controller.session.peopleCountSort).forEach { option ->
+                            DropdownMenuItem(text={Text(stringResource(option.label))},
+                                modifier=Modifier.semantics {selected=state.query.sort==option.value},
+                                trailingIcon={if(state.query.sort==option.value) Text("✓")},
+                                onClick={sortMenu=false;controller.open(state.query.copy(sort=option.value))})
+                        }
+                    }
+                }
+                IconButton(onClick={sortMenu=false;menu=true}) { Icon(painterResource(R.drawable.ic_more_horiz),stringResource(R.string.photos_menu)) }
                 DropdownMenu(menu,{menu=false}) {
                     if(state.peoplePath.isNotEmpty()) DropdownMenuItem(text={Text(stringResource(R.string.photos_directory_people))},onClick={menu=false;controller.open(PhotoQuery(path=state.peoplePath,sort="ascending_name"))},enabled=!state.loading)
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_map))},onClick={menu=false;mapOpen=true},enabled=!state.loading && !state.query.path.startsWith(".people"))
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_frame))},onClick={menu=false;controller.startFrame()},enabled=!state.loading && (!state.query.path.startsWith(".people") || state.query.path.count {it=='/'}==2))
-                    listOf("descending_date" to R.string.photos_sort_newest,"ascending_date" to R.string.photos_sort_oldest,
-                        "ascending_name" to R.string.photos_sort_name_asc,"descending_name" to R.string.photos_sort_name_desc).forEach { (sort,label) ->
-                        DropdownMenuItem(text={Text(stringResource(label))},onClick={menu=false;controller.open(state.query.copy(sort=sort))})
-                    }
                     if(canManage) DropdownMenuItem(text={Text(stringResource(R.string.photos_people))},onClick={menu=false;onPeople()})
                     DropdownMenuItem(text={Text(stringResource(R.string.connection_local_photos))},onClick={menu=false;onLocal()})
                     DropdownMenuItem(text={Text(stringResource(R.string.photos_settings))},onClick={menu=false;onSettings()})

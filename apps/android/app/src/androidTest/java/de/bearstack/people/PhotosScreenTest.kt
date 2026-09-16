@@ -25,7 +25,7 @@ import java.util.Locale
 
 class PhotosScreenTest {
     @get:Rule val compose=createComposeRule()
-    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, directoryPeople: Boolean = false, test: (PhotosController,PhotosService)->Unit) {
+    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, directoryPeople: Boolean = false, peopleCountSort: Boolean = true, test: (PhotosController,PhotosService)->Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext
         val context=app.createConfigurationContext(Configuration(app.resources.configuration).apply {setLocale(locale)})
         val file=File(app.cacheDir,"gallery-test.jpg")
@@ -37,7 +37,7 @@ class PhotosScreenTest {
         val api=object:PhotosService {
             var blogAttempts=0
             var infoAttempts=0
-            override suspend fun session()=PhotoSession("gallery-test",false,240,240,1280,2048,5,8)
+            override suspend fun session()=PhotoSession("gallery-test",false,240,240,1280,2048,5,8,peopleCountSort)
             override suspend fun browse(query: PhotoQuery,page: Int,section: String): PhotoPage {
                 if(directoryPeople && query.path.startsWith(".people/f-")) {
                     val leaf=query.path.endsWith("/1")
@@ -55,7 +55,7 @@ class PhotosScreenTest {
                     }
                     val name=when(query.path) {".people" -> "Personen"; ".people/t-ZmFtaWxpZQ" -> "Familie"; else -> "Zoe"}
                     return PhotoPage(query.path,query.path.substringBeforeLast('/',""),1,if(folders.isEmpty()) 2 else 0,false,folders.size,false,false,
-                        if(folders.isEmpty()) if(query.sort=="ascending_name") photos else photos.reversed() else emptyList(),folders,emptyList(),name)
+                        if(folders.isEmpty()) if(query.sort=="ascending_date") photos else photos.reversed() else emptyList(),folders,emptyList(),name)
                 }
                 val folders=if(!query.recursive && query.path.isEmpty()) listOf(PhotoFolder("Holiday","Holiday",null,2,false,0,photos)) else emptyList()
                 val blogs=if(query.path=="Holiday") listOf(PhotoBlog("Holiday/story.md","story.md",null,"2026-09-09T10:00:00Z")) else emptyList()
@@ -79,7 +79,7 @@ class PhotosScreenTest {
             override fun original(photo: Photo)=file.toURI().toString()
         }
         lateinit var controller:PhotosController
-        compose.runOnUiThread {controller=PhotosController(owner,api,PhotoSession("gallery-test",false,240,240,1280,2048,5,8))}
+        compose.runOnUiThread {controller=PhotosController(owner,api,PhotoSession("gallery-test",false,240,240,1280,2048,5,8,peopleCountSort))}
         try {
             compose.setContent {
                 val registry = checkNotNull(LocalActivityResultRegistryOwner.current)
@@ -92,6 +92,44 @@ class PhotosScreenTest {
             compose.waitUntil(10_000) {!controller.state.value.loading}
             test(controller,api)
         } finally {compose.runOnUiThread {controller.close();owner.cancel();images.shutdown()};file.delete()}
+    }
+    @Test fun sortingHasItsOwnMenuAndAdaptsToTheCurrentFolder()=screen(Locale.GERMAN,peopleFolders=true) {controller,_ ->
+        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
+        compose.onNodeWithText("Datum: Neueste zuerst").assertDoesNotExist()
+        compose.onNodeWithText("Name: A–Z").assertDoesNotExist()
+        compose.onNodeWithText("Einstellungen").assertIsDisplayed()
+        androidx.test.espresso.Espresso.pressBack()
+        compose.onNodeWithContentDescription("Sortieren").performClick()
+        compose.onNodeWithText("Datum: Neueste zuerst").assertIsSelected()
+        compose.onNodeWithText("Name: A–Z").assertDoesNotExist()
+        compose.onNodeWithText("Anzahl Bilder: Absteigend").assertDoesNotExist()
+        compose.onNodeWithText("Datum: Älteste zuerst").performClick()
+        compose.waitUntil(10_000) {!controller.state.value.loading && controller.state.value.query.sort=="ascending_date"}
+        compose.onNodeWithText("Ordner").performClick()
+        compose.onNodeWithContentDescription("Sortieren").performClick()
+        compose.onNodeWithText("Name: A–Z").assertIsDisplayed()
+        compose.onNodeWithText("Anzahl Bilder: Absteigend").assertDoesNotExist()
+        androidx.test.espresso.Espresso.pressBack()
+        compose.onNodeWithText("Personen").performClick()
+        compose.onNodeWithText("Familie").performClick()
+        compose.onNodeWithContentDescription("Sortieren").performClick()
+        compose.onNodeWithText("Datum: Neueste zuerst").assertDoesNotExist()
+        compose.onNodeWithText("Anzahl Bilder: Absteigend").performClick()
+        compose.waitUntil(10_000) {!controller.state.value.loading && controller.state.value.query.sort=="descending_count"}
+        compose.onNodeWithContentDescription("Sortieren").performClick()
+        compose.onNodeWithText("Anzahl Bilder: Absteigend").assertIsSelected()
+        compose.onNodeWithText("Anzahl Bilder: Aufsteigend").performClick()
+        compose.waitUntil(10_000) {!controller.state.value.loading && controller.state.value.query.sort=="ascending_count"}
+        compose.onNodeWithText("Zoe").performClick()
+        assertEquals("descending_date",controller.state.value.query.sort)
+    }
+    @Test fun olderServersKeepPeopleNameSorting()=screen(Locale.ENGLISH,peopleFolders=true,peopleCountSort=false) {_,_ ->
+        compose.onNodeWithText("Folders").performClick()
+        compose.onNodeWithText("Personen").performClick()
+        compose.onNodeWithText("Familie").performClick()
+        compose.onNodeWithContentDescription("Sort").performClick()
+        compose.onNodeWithText("Name: A–Z").assertIsDisplayed()
+        compose.onNodeWithText("Photo count: Descending").assertDoesNotExist()
     }
     @Test fun readerOpensPeopleForAFolderAndReturnsToThatFolder()=screen(Locale.GERMAN,directoryPeople=true) {controller,_ ->
         compose.onNodeWithText("Ordner").performClick()
@@ -117,9 +155,9 @@ class PhotosScreenTest {
         compose.onNodeWithText("Zoe").performClick()
         compose.onNodeWithContentDescription("first.jpg").assertIsDisplayed()
         compose.onNodeWithContentDescription("second.jpg").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-        compose.onNodeWithText("Name: A–Z").performClick()
-        compose.waitUntil(10_000) {!controller.state.value.loading && controller.state.value.query.sort=="ascending_name"}
+        compose.onNodeWithContentDescription("Sortieren").performClick()
+        compose.onNodeWithText("Datum: Älteste zuerst").performClick()
+        compose.waitUntil(10_000) {!controller.state.value.loading && controller.state.value.query.sort=="ascending_date"}
         assertEquals("first.jpg",controller.state.value.media.first().path)
         compose.onNodeWithContentDescription("Zurück").performClick()
         compose.waitUntil(10_000) {controller.state.value.name=="Familie"}

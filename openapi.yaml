@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.57.2
+  version: 0.58.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -487,7 +487,7 @@ paths:
       - Photos
       operationId: browsePhotoCatalog
       summary: Read a bounded native gallery page
-      description: Requires photos.read. Pages contain at most 96 media, 24 folders, and 20 blog summaries. Folder search totals and sorting include all matching visible folders; results are not truncated to 50. Folder previews are fetched only after slicing the folder page. Blog bodies load on demand. Native listings exclude admin-only content. Existing sorting, search, index and visibility rules are shared with the browser. Since 0.53.0, people=1 adds the virtual Personen folder at the nonrecursive root and uses the configured preview count (1–4) for ordinary folders. Personen and its All/tag folders contain twice that many cached face previews (2–8), ordered by distinct visible photo count, with favorite portraits preferred. Tags form a single level; only tags assigned to visible active people appear. Since 0.57.1, All includes only named active people; its count, pagination and face previews use the same filter. Tag folders and direct person galleries still include unnamed active groups. Person folders contain distinct ordinary photos with the existing sorting and date metadata. Opaque virtual paths must be followed unchanged; responses provide their display name and parent. Without people=1, existing clients retain two ordinary previews and no virtual root entry. Page numbers refer to the live library; clients should deduplicate paths if indexing occurs during browsing. Since 0.55.0, people_path on physical folder listings opens a paginated subtree-specific people overview. Since 0.57.1, this overview includes only named active people; filtering applies before aggregation and pagination. Its counts and starred portraits are computed only from visible active faces in that subtree. Opening a person keeps its normal media gallery scoped to that directory and descendants; sibling folders and private or ignored faces are excluded. Parent links return to the physical folder. These paths are opaque and must not be used as filesystem or media paths.
+      description: Requires photos.read. Pages contain at most 96 media, 24 folders, and 20 blog summaries. Folder search totals and sorting include all matching visible folders; results are not truncated to 50. Folder previews are fetched only after slicing the folder page. Blog bodies load on demand. Native listings exclude admin-only content. Existing sorting, search, index and visibility rules are shared with the browser. Since 0.53.0, people=1 adds the virtual Personen folder at the nonrecursive root and uses the configured preview count (1–4) for ordinary folders. Personen and its All/tag folders contain twice that many cached face previews (2–8), ordered by distinct visible photo count, with favorite portraits preferred. Since 0.57.3, the root Personen folder count and face previews include only named active people. Tags form a single level; only tags assigned to visible active people appear. Since 0.57.1, All includes only named active people; its count, pagination and face previews use the same filter. Tag folders and direct person galleries still include unnamed active groups. Person folders contain distinct ordinary photos with the existing sorting and date metadata. Opaque virtual paths must be followed unchanged; responses provide their display name and parent. Without people=1, existing clients retain two ordinary previews and no virtual root entry. Page numbers refer to the live library; clients should deduplicate paths if indexing occurs during browsing. Since 0.55.0, people_path on physical folder listings opens a paginated subtree-specific people overview. Since 0.57.1, this overview includes only named active people; filtering applies before aggregation and pagination. Its counts and starred portraits are computed only from visible active faces in that subtree. Opening a person keeps its normal media gallery scoped to that directory and descendants; sibling folders and private or ignored faces are excluded. Parent links return to the physical folder. These paths are opaque and must not be used as filesystem or media paths.
       responses:
         '200':
           description: Successful response. Cache-Control is private, no-store.
@@ -561,7 +561,13 @@ paths:
       - name: sort
         in: query
         required: false
-        description: ''
+        description: >-
+          Count sorts require the people_count_sort session capability and a people
+          directory (.people/all, .people/t-… or .people/f-…). They count distinct
+          visible photos before pagination, restricted to the subtree for folder
+          people. Equal counts sort by folded person name, then ID. Other paths
+          reject count sorts with 400. Name sorts in people categories and lists
+          sort folder/person names.
         schema:
           type: string
           enum:
@@ -569,6 +575,8 @@ paths:
           - descending_date
           - ascending_name
           - descending_name
+          - ascending_count
+          - descending_count
           default: descending_date
       - name: type
         in: query
@@ -4062,6 +4070,10 @@ components:
           type: string
         can_manage_people:
           type: boolean
+        people_count_sort:
+          type: boolean
+          default: false
+          description: Supports ascending_count/descending_count for browse people directories; absent on older servers.
         settings:
           type: object
           required:
