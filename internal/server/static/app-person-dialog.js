@@ -175,10 +175,13 @@
       personDialog.setAttribute("aria-busy", "true");
       dialogStatus.textContent = ignoring ? "Gesicht wird ignoriert …" : "Person wird gespeichert …";
       var saved = false, conflict = false;
+      var saveController = options.requestTimeoutMS ? new AbortController() : null;
+      var saveTimer = saveController ? setTimeout(function () { saveController.abort(); }, options.requestTimeoutMS) : null;
       try {
         var response = await fetch(action, {
           method: "POST", credentials: "same-origin", redirect: "error",
-          headers: { Accept: "application/json" }, body: body
+          headers: { Accept: "application/json" }, body: body,
+          signal: saveController ? saveController.signal : undefined
         });
         if (!response.ok) {
           if (ignoring && response.status === 409 && options.onIgnoreConflict) {
@@ -186,12 +189,14 @@
             await options.onIgnoreConflict();
             throw new Error("Das Gruppenbild wurde inzwischen geändert. Bitte den Dialog schließen und die aktualisierte Auswahl erneut prüfen.");
           }
-          throw new Error((ignoring ? "Gesicht konnte nicht ignoriert werden" : "Person konnte nicht gespeichert werden") + " (HTTP " + response.status + ").");
+          var saveError = new Error((ignoring ? "Gesicht konnte nicht ignoriert werden" : "Person konnte nicht gespeichert werden") + " (HTTP " + response.status + ").");
+          saveError.status = response.status;
+          throw saveError;
         }
         var result = await response.json();
         if (result.ok !== true) throw new Error("Person konnte nicht gespeichert werden.");
         saved = true;
-        await options.onSave(dialogIDs, { action: action, body: body, ignoring: ignoring });
+        await options.onSave(dialogIDs, { action: action, body: body, ignoring: ignoring, result: result });
         status.textContent = options.savedMessage ? options.savedMessage(ignoring) : ignoring ? (dialogIDs.length > 1 ? "Angezeigte Gesichter ignoriert." : "Gesicht ignoriert.") : (merging ? "Personen zusammengeführt." : "Person benannt.");
         personDialog.close();
       } catch (error) {
@@ -200,6 +205,7 @@
         // Do not offer the same mutation again after a successful save.
         if (saved && opener && opener.isConnected) opener.disabled = true;
       } finally {
+        if (saveTimer !== null) clearTimeout(saveTimer);
         busy = false;
         options.onBusy(busy);
         personDialog.removeAttribute("aria-busy");
@@ -295,6 +301,7 @@
       if (!person || input.disabled || popup.hidden) return;
       target.value = String(person.id);
       target.dataset.revision = String(person.revision || 0);
+      target.dataset.name = person.name || "";
       input.value = person.create ? person.name : (person.name || "Unbenannt") + " (#" + person.id + ")";
       validate();
       close();

@@ -701,6 +701,17 @@
       </span>
     </span>
   </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#gesichtsketten-gemeinsam-prufen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gesichtsketten gemeinsam prüfen
+      </span>
+    </span>
+  </a>
   
 </li>
         
@@ -1134,6 +1145,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Verarbeitung, Metadaten und Datenschutz
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#gesichtsketten-gemeinsam-prufen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gesichtsketten gemeinsam prüfen
       </span>
     </span>
   </a>
@@ -2041,6 +2063,53 @@ Merkmalsvektoren erscheinen weder in HTTP-Antworten an Browser noch in Logs.</p>
 <p>V1 unterstützt JPEG, PNG, WebP und das erste GIF-Bild. Videos und SVG werden nicht
 analysiert. Bilder über 40 Megapixel werden zur Begrenzung des Speichers zurückgewiesen;
 sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können fehlen.</p>
+<h3 id="gesichtsketten-gemeinsam-prufen">Gesichtsketten gemeinsam prüfen<a class="headerlink" href="#gesichtsketten-gemeinsam-prufen" title="Permanent link">&para;</a></h3>
+<p>Ab <strong>0.57.0</strong> führt <strong>Ähnliche Gesichter → Gesichtsketten prüfen</strong> zur neuen
+Webansicht unter <code>/photos/people/chains</code>. Die Funktion benötigt <strong>Fotos bearbeiten</strong>.
+Sie sucht ausschließlich beim Aufruf dieser Ansicht, beim Blättern zur nächsten
+Kette oder beim Neustart des Durchlaufs; im Hintergrund werden keine Ketten berechnet.
+Ein laufender Erkennungsdienst ist dafür nicht erforderlich.</p>
+<p><strong>Maximale Sprünge</strong> begrenzt die Entfernung von der Ausgangsgruppe auf <strong>1 bis 5</strong>
+(Standard <strong>2</strong>). A → F → Y sind zwei Sprünge. Verzweigungen gehören dazu: Passt
+ein Gesicht von A zu B und ein anderes zu F, erscheinen B und F bereits bei einem
+Sprung; eine Verbindung von F zu Y ergänzt Y beim zweiten Sprung. Die kürzeste
+Entfernung zur Ausgangsgruppe steht an jeder Gesichtskarte.</p>
+<p>Eine direkte Verbindung benötigt mindestens ein geeignetes gespeichertes
+Gesichtspaar mit der <strong>Mindestähnlichkeit der manuellen Vorschläge</strong> aus den
+Experteneinstellungen (Standard <strong>0,45</strong>). Auch geeignete Gesichter außerhalb des
+Referenzlimits werden verglichen. <strong>Der Mindestabstand wird hier nicht angewendet</strong>:
+Mehrere mögliche Treffer sind ausdrücklich Teil der manuellen Kettenprüfung.
+Benannte Gruppen sind weder Quellen noch Zwischenstationen. Ignorierte,
+geschützte, gezeichnete und ungeeignete Gesichter erzeugen keine Verbindungen;
+Vergleichssterne behalten ihre Referenz-Eignung. Abgelehnte Gruppenpaare und Gruppen,
+die aktiv im selben Foto vorkommen, bilden keine direkte Verbindung. Ein indirekter
+Weg über andere Gruppen kann sie dennoch in dieselbe Prüfauswahl bringen.</p>
+<p>Die Ansicht zeigt <strong>alle aktiven Gesichter</strong> der erreichten Gruppen einschließlich
+manuell zugeordneter und gezeichneter Gesichter, jeweils mit Ordnernamen. Es gibt
+<strong>60 Gesichter pro Seite</strong>. Zunächst ist die <strong>gesamte Kette über alle Seiten</strong>
+angekreuzt; Abwahlen bleiben beim Blättern erhalten. Die Auswahlzahl unten umfasst
+auch unsichtbare Seiten. <strong>Seite auswählen/abwählen</strong> betrifft nur die sichtbare Seite.
+<strong>Auswahl zuordnen</strong> öffnet den bekannten Namensdialog für eine vorhandene benannte
+Person oder einen neuen Namen. Ein leerer Name wird nicht gespeichert.</p>
+<p>Die Speicherung ordnet alle ausgewählten Gesichter atomar und manuell bestätigt
+zu; nicht ausgewählte, ignorierte und bereits benannte Gesichter bleiben unverändert.
+Gruppen-Tags und Familienbeziehungen werden bei dieser Gesichtsauswahl nicht
+zusammengeführt. Nach erfolgreichem Speichern folgt die nächste Kette.
+<strong>Kette überspringen</strong> ändert keine Daten. Übersprungene und bearbeitete Gruppen
+werden nur für diesen Durchlauf ausgelassen; <strong>Durchlauf neu starten</strong> bezieht
+sie wieder ein. Änderungen an Gruppen, Zielen oder Fotos erfordern eine erneute
+Prüfung. Bei einer verlorenen Speicherantwort bleibt die Auswahl gesperrt;
+<strong>Speicherung prüfen</strong> klärt den Vorgang über eine Aktionsquittung, auch nach einem
+Neuladen im selben Browser-Tab.</p>
+<p>Die Suche verarbeitet Vergleichsvektoren in kleinen Blöcken und hält keinen
+bibliotheksweiten Kettengraphen im Speicher. Pro Bibliothek läuft höchstens eine
+Kettensuche gleichzeitig. Eine Anfrage hat 30 Sekunden Zeit; <strong>Suche anhalten</strong>
+bricht die laufende Suche ab. Bei mehr als <strong>1.000 verbundenen Gruppen</strong> erscheint
+eine Aufforderung, weniger Sprünge zu wählen; die Kette wird niemals still gekürzt.
+Pro Auswahl können höchstens <strong>10.000 Gesichter</strong> abgewählt werden, pro Durchlauf
+höchstens <strong>10.000 Gruppen</strong> ausgelassen werden. Für die insgesamt zugeordneten
+Gesichter gilt nicht das übliche 500er-Limit einzelner Stapelaktionen.
+Die Funktion benötigt keine neue Datenbankmigration.</p>
 <h2 id="android-personen-app">Android-Personen-App<a class="headerlink" href="#android-personen-app" title="Permanent link">&para;</a></h2>
 <p>Ab BearStack 0.30.0 lassen sich unbenannte Gruppen auch mit der <a href="android.html">nativen Android-App</a> bearbeiten. Ab App 0.6.0 und BearStack 0.43.0 bietet „Menü → Personen“ zusätzlich alle benannten Personen mit Portraits, Umbenennen, einzelne Zuordnungen zurücksetzen, Favoriten, Galeriesuche im Browser und Originalfoto-Vorschau per Halten und Wischen. Die Anleitung beschreibt HTTPS-Anmeldung, Gesten, Statistik und den privaten APK-Build.</p>
 <p>Ab Android-App 0.7.0 und BearStack 0.45.0 durchsucht das Textfeld im Personenbereich alle benannten Personen. Personenliste und Portrait-Raster laden beim Scrollen automatisch nach. Das Entfernen einer Zuordnung verlangt zuvor eine Bestätigung mit Name und Bildpfad.</p>
@@ -2094,7 +2163,7 @@ sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können 
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.56.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.57.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

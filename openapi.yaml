@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.56.0
+  version: 0.57.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -2114,6 +2114,186 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /photos/people/chains:
+    get:
+      tags: [Photos]
+      operationId: getFaceChainReview
+      summary: Review chains of similar unnamed groups in the WebUI
+      description: >-
+        Since 0.57.0. Requires photos.edit. HTML shell; its JavaScript starts
+        on-demand searches with two hops by default (adjustable from one to five).
+        No chain matching runs on other pages or in background workers.
+        Responses use Cache-Control private, no-store.
+      responses:
+        '200':
+          description: Chain review with cross-page selection and the usual person dialog.
+          content:
+            text/html:
+              schema: {type: string}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /photos/people/chains/search:
+    post:
+      tags: [Photos]
+      operationId: searchFaceChain
+      summary: Find groups within a hop radius of the next unnamed seed
+      description: >-
+        Since 0.57.0. Requires photos.edit; same-origin mutation protections apply,
+        although this search does not mutate face data. Each request searches one
+        eligible seed after the cursor. Empty groups with has_more=true mean an
+        isolated seed: continue using the returned after. Client-held exclusions
+        remove previously reviewed or skipped groups for this pass only.
+        Edges compare all eligible stored faces of the current model, including
+        those beyond the reference limit, using suggestion_similarity. The margin
+        is deliberately not applied so branching alternatives remain reviewable.
+        Named groups never participate or bridge chains. Ignored, drawn, unsuitable
+        and private faces cannot form edges (favorites retain eligibility).
+        Rejected group pairs and pairs sharing an active photo cannot form direct edges.
+        Breadth-first depth counts edges from the seed; A to F to Y is two hops.
+        At most 1,000 groups; exceeding this returns 422 without a truncated chain.
+        Memory is bounded by source-vector blocks; searches are serialized per library
+        and canceled after 30 seconds, including waiting for a search slot.
+        JSON bodies are capped at 512 KiB; unknown fields are rejected. No-store.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/FaceChainSearch'}
+      responses:
+        '200':
+          description: Group revisions, shortest depths, dataset and continuation cursor.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FaceChain'}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          description: More than 1,000 connected groups; reduce the hop limit (code chain_too_large).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: Search exceeded its 30-second limit (code timeout); reduce hops or retry.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /photos/people/chains/faces:
+    post:
+      tags: [Photos]
+      operationId: getFaceChainFaces
+      summary: Page through every active face of the reviewed unnamed groups
+      description: >-
+        Since 0.57.0. Requires photos.edit and same-origin requests. Up to 60 faces
+        per page, ordered by group ID, path and face ID. Includes manual, drawn,
+        favorited and lower-quality faces once their group is connected. No named
+        or ignored faces are included. Source revisions and live visibility are
+        rechecked; changed datasets or groups return 409. Replaced originals invalidate
+        the selection; missing sources return 404, private sources 403 or 409.
+        Displayed source files are verified without decoding images. No embeddings
+        are returned. Unknown fields are rejected; request limit 512 KiB,
+        timeout 30 seconds, Cache-Control private, no-store.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/FaceChainPageRequest'}
+      responses:
+        '200':
+          description: A face page with folder labels and counts for selection across all pages.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FaceChainPage'}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Dataset, source groups or visibility changed; search and review again.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: The request exceeded 30 seconds.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /photos/people/chains/assign:
+    post:
+      tags: [Photos]
+      operationId: assignFaceChain
+      summary: Atomically assign all checked chain faces to a named person
+      description: >-
+        Since 0.57.0. Requires photos.edit and same-origin requests. All active
+        source faces across every page are selected except excluded_faces. Only
+        unnamed source groups are accepted, with unchanged revisions and dataset.
+        Unselected, ignored and previously named faces retain their assignments.
+        Chosen faces become manually assigned. Group metadata is not merged.
+        Supply either name for a new named person or target_id for an existing
+        named person, with target_revision and/or target_name for conflict detection.
+        A new name must not already exist. Selection, sources and target are validated
+        in one transaction; every selected original is checked, including unseen pages.
+        operation_id is scoped to the authenticated actor; identical retries replay
+        the receipt, changed requests with the same ID conflict. The existing labeling
+        actions endpoint retrieves the receipt after a lost response (action assign_chain).
+        No 500-face batch limit; at most 1,000 source groups and 10,000 excluded faces.
+        Unknown fields are rejected; request limit 512 KiB, timeout 30 seconds, no-store.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/FaceChainAssignment'}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [payload]
+              properties:
+                payload: {type: string, description: JSON-encoded FaceChainAssignment, exactly one value.}
+      responses:
+        '200':
+          description: Committed or replayed selection receipt.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, receipt]
+                properties:
+                  ok: {type: boolean, const: true}
+                  receipt: {$ref: '#/components/schemas/LabelingReceipt'}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Stale selection or target, duplicate name, changed source, or operation-ID conflict.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: Request exceeded 30 seconds; check the receipt before retrying the same operation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /photos/people/groups:
     get:
       tags: [Photos]
@@ -4087,6 +4267,96 @@ components:
             $ref: '#/components/schemas/PhotoCatalogBlog'
           maxItems: 20
 
+    FaceChainGroupRef:
+      type: object
+      required: [id, revision]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        revision: {type: integer, format: int64, minimum: 1}
+    FaceChainSelection:
+      type: object
+      required: [dataset, groups]
+      properties:
+        dataset: {type: string, minLength: 32, maxLength: 32}
+        groups:
+          type: array
+          minItems: 2
+          maxItems: 1000
+          description: Distinct unnamed source IDs and the revisions returned by search.
+          items: {$ref: '#/components/schemas/FaceChainGroupRef'}
+    FaceChainSearch:
+      type: object
+      additionalProperties: false
+      required: [hops]
+      properties:
+        hops: {type: integer, minimum: 1, maximum: 5}
+        after: {type: integer, format: int64, minimum: 0, default: 0}
+        excluded_groups:
+          type: array
+          maxItems: 10000
+          uniqueItems: true
+          items: {type: integer, format: int64, minimum: 1}
+    FaceChain:
+      type: object
+      required: [dataset, groups, after, has_more, similarity]
+      properties:
+        dataset: {type: string, minLength: 32, maxLength: 32}
+        after: {type: integer, format: int64, minimum: 0}
+        has_more: {type: boolean, description: A seed was examined; continue after it, including when groups is empty.}
+        similarity: {type: number, minimum: 0.4, maximum: 0.7}
+        groups:
+          type: array
+          maxItems: 1000
+          description: Empty for an isolated seed or end of pass; otherwise at least two groups ordered by depth then ID.
+          items:
+            allOf:
+              - $ref: '#/components/schemas/FaceChainGroupRef'
+              - type: object
+                required: [depth]
+                properties:
+                  depth: {type: integer, minimum: 0, maximum: 5}
+    FaceChainPageRequest:
+      allOf:
+        - $ref: '#/components/schemas/FaceChainSelection'
+        - type: object
+          required: [page]
+          properties:
+            page: {type: integer, minimum: 1, maximum: 1000000}
+    FaceChainPage:
+      type: object
+      required: [faces, page, pages, total]
+      properties:
+        page: {type: integer, minimum: 1}
+        pages: {type: integer, format: int64, minimum: 1}
+        total: {type: integer, format: int64, minimum: 0}
+        faces:
+          type: array
+          maxItems: 60
+          items:
+            allOf:
+              - $ref: '#/components/schemas/RecognizedPhotoFace'
+              - type: object
+                required: [folder_name, display_path]
+                properties:
+                  folder_name: {type: string}
+                  display_path: {type: string}
+    FaceChainAssignment:
+      allOf:
+        - $ref: '#/components/schemas/FaceChainSelection'
+        - type: object
+          required: [operation_id]
+          properties:
+            operation_id: {type: string, minLength: 16, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$'}
+            excluded_faces:
+              type: array
+              maxItems: 10000
+              uniqueItems: true
+              items: {type: integer, format: int64, minimum: 1}
+            target_id: {type: integer, format: int64, minimum: 0, default: 0}
+            target_revision: {type: integer, format: int64, minimum: 0, default: 0}
+            target_name: {type: string, description: Exact selected destination name; required if target_revision is zero.}
+            name: {type: string, maxLength: 200, description: Nonempty new name when target_id is zero; otherwise empty.}
+
     GroupPhotoStrip:
       type: object
       required: [minimum, photos, before, after, has_previous, has_next]
@@ -4289,12 +4559,12 @@ components:
       properties:
         source_revision: {type: integer, format: int64, minimum: 0, description: "Optional since 0.45.0. Source revision at commit (zero if absent). Preserved on replay; use for local updates, never as proof of the latest server state."}
         operation_id: {type: string}
-        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge, name_merge, merge_groups, name_groups, unassign_faces, assign_faces, name_faces, ignore_faces]}
+        action: {type: string, enum: [name, assign, detach, ignore, rename, unassign, favorite, accept_merge, reject_merge, name_merge, merge_groups, name_groups, unassign_faces, assign_faces, name_faces, ignore_faces, assign_chain]}
         source_id: {type: integer, format: int64}
         target_id: {type: integer, format: int64, description: Assignment, name_faces destination or merge-decision target; otherwise zero.}
         new_id: {type: integer, format: int64, description: New unnamed group for detach/unassign/unassign_faces or zero.}
         faces: {type: integer, format: int64, minimum: 0, description: Actually affected active face count; zero for reject_merge.}
-        groups: {type: integer, minimum: 0, maximum: 60, description: Zero for selected-face batch actions and detach/rename/unassign/favorite/accept_merge/reject_merge/merge_groups; one for name/assign/ignore; two for name_merge; selected group count for name_groups.}
+        groups: {type: integer, minimum: 0, maximum: 1000, description: "Source group count for assign_chain (up to 1,000 since 0.57.0). Zero for selected-face batch actions and detach/rename/unassign/favorite/accept_merge/reject_merge/merge_groups; one for name/assign/ignore; two for name_merge; selected group count for name_groups (up to 60)."}
         at: {type: integer, format: int64, description: Server confirmation time in Unix seconds.}
 
     Error:

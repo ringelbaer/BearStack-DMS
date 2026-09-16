@@ -959,6 +959,61 @@ V1 unterstützt JPEG, PNG, WebP und das erste GIF-Bild. Videos und SVG werden ni
 analysiert. Bilder über 40 Megapixel werden zur Begrenzung des Speichers zurückgewiesen;
 sehr kleine, verdeckte oder durch die Verkleinerung zu kleine Gesichter können fehlen.
 
+### Gesichtsketten gemeinsam prüfen
+
+Ab **0.57.0** führt **Ähnliche Gesichter → Gesichtsketten prüfen** zur neuen
+Webansicht unter `/photos/people/chains`. Die Funktion benötigt **Fotos bearbeiten**.
+Sie sucht ausschließlich beim Aufruf dieser Ansicht, beim Blättern zur nächsten
+Kette oder beim Neustart des Durchlaufs; im Hintergrund werden keine Ketten berechnet.
+Ein laufender Erkennungsdienst ist dafür nicht erforderlich.
+
+**Maximale Sprünge** begrenzt die Entfernung von der Ausgangsgruppe auf **1 bis 5**
+(Standard **2**). A → F → Y sind zwei Sprünge. Verzweigungen gehören dazu: Passt
+ein Gesicht von A zu B und ein anderes zu F, erscheinen B und F bereits bei einem
+Sprung; eine Verbindung von F zu Y ergänzt Y beim zweiten Sprung. Die kürzeste
+Entfernung zur Ausgangsgruppe steht an jeder Gesichtskarte.
+
+Eine direkte Verbindung benötigt mindestens ein geeignetes gespeichertes
+Gesichtspaar mit der **Mindestähnlichkeit der manuellen Vorschläge** aus den
+Experteneinstellungen (Standard **0,45**). Auch geeignete Gesichter außerhalb des
+Referenzlimits werden verglichen. **Der Mindestabstand wird hier nicht angewendet**:
+Mehrere mögliche Treffer sind ausdrücklich Teil der manuellen Kettenprüfung.
+Benannte Gruppen sind weder Quellen noch Zwischenstationen. Ignorierte,
+geschützte, gezeichnete und ungeeignete Gesichter erzeugen keine Verbindungen;
+Vergleichssterne behalten ihre Referenz-Eignung. Abgelehnte Gruppenpaare und Gruppen,
+die aktiv im selben Foto vorkommen, bilden keine direkte Verbindung. Ein indirekter
+Weg über andere Gruppen kann sie dennoch in dieselbe Prüfauswahl bringen.
+
+Die Ansicht zeigt **alle aktiven Gesichter** der erreichten Gruppen einschließlich
+manuell zugeordneter und gezeichneter Gesichter, jeweils mit Ordnernamen. Es gibt
+**60 Gesichter pro Seite**. Zunächst ist die **gesamte Kette über alle Seiten**
+angekreuzt; Abwahlen bleiben beim Blättern erhalten. Die Auswahlzahl unten umfasst
+auch unsichtbare Seiten. **Seite auswählen/abwählen** betrifft nur die sichtbare Seite.
+**Auswahl zuordnen** öffnet den bekannten Namensdialog für eine vorhandene benannte
+Person oder einen neuen Namen. Ein leerer Name wird nicht gespeichert.
+
+Die Speicherung ordnet alle ausgewählten Gesichter atomar und manuell bestätigt
+zu; nicht ausgewählte, ignorierte und bereits benannte Gesichter bleiben unverändert.
+Gruppen-Tags und Familienbeziehungen werden bei dieser Gesichtsauswahl nicht
+zusammengeführt. Nach erfolgreichem Speichern folgt die nächste Kette.
+**Kette überspringen** ändert keine Daten. Übersprungene und bearbeitete Gruppen
+werden nur für diesen Durchlauf ausgelassen; **Durchlauf neu starten** bezieht
+sie wieder ein. Änderungen an Gruppen, Zielen oder Fotos erfordern eine erneute
+Prüfung. Bei einer verlorenen Speicherantwort bleibt die Auswahl gesperrt;
+**Speicherung prüfen** klärt den Vorgang über eine Aktionsquittung, auch nach einem
+Neuladen im selben Browser-Tab.
+
+Die Suche verarbeitet Vergleichsvektoren in kleinen Blöcken und hält keinen
+bibliotheksweiten Kettengraphen im Speicher. Pro Bibliothek läuft höchstens eine
+Kettensuche gleichzeitig. Eine Anfrage hat 30 Sekunden Zeit; **Suche anhalten**
+bricht die laufende Suche ab. Bei mehr als **1.000 verbundenen Gruppen** erscheint
+eine Aufforderung, weniger Sprünge zu wählen; die Kette wird niemals still gekürzt.
+Pro Auswahl können höchstens **10.000 Gesichter** abgewählt werden, pro Durchlauf
+höchstens **10.000 Gruppen** ausgelassen werden. Für die insgesamt zugeordneten
+Gesichter gilt nicht das übliche 500er-Limit einzelner Stapelaktionen.
+Die Funktion benötigt keine neue Datenbankmigration.
+
+
 ## Android-Personen-App
 
 Ab BearStack 0.30.0 lassen sich unbenannte Gruppen auch mit der [nativen Android-App](android.md) bearbeiten. Ab App 0.6.0 und BearStack 0.43.0 bietet „Menü → Personen“ zusätzlich alle benannten Personen mit Portraits, Umbenennen, einzelne Zuordnungen zurücksetzen, Favoriten, Galeriesuche im Browser und Originalfoto-Vorschau per Halten und Wischen. Die Anleitung beschreibt HTTPS-Anmeldung, Gesten, Statistik und den privaten APK-Build.

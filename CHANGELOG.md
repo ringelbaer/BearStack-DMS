@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.57.0 – in Entwicklung
+
+- WebUI: **Ähnliche Gesichter → Gesichtsketten prüfen** durchsucht auf Aufruf zusammenhängende unbenannte Gruppen mit einstellbaren 1–5 Sprüngen (Standard 2). Alle geeigneten gespeicherten Gesichter können Verbindungen bilden, auch außerhalb des Referenzlimits. Es gilt die manuelle Vorschlagsähnlichkeit; der Mindestabstand entfällt zugunsten verzweigter Alternativen. Benannte Gruppen werden weder eingeschlossen noch als Zwischenstation verwendet.
+- Alle aktiven Gesichter der Kette erscheinen mit Ordnernamen, seitenweise und zunächst vollständig ausgewählt. Abwahlen bleiben über Seiten erhalten; der übliche Dialog ordnet die Auswahl atomar einer vorhandenen oder neuen benannten Person zu. Bestehende benannte Gesichter und abgewählte Gesichter behalten ihre Zuordnung. Nach Zuordnung folgt die nächste Kette; Überspringen und Neustart sind möglich.
+- Suche mit kleinen Vektorblöcken, einer gleichzeitigen Suche pro Bibliothek und Zeitlimit. Mehr als 1.000 Gruppen verursachen einen ausdrücklichen Fehler statt einer still gekürzten Auswahl. Revisionen und Originaldateiprüfungen schützen vor veralteten Entscheidungen; Aktionsquittungen klären verlorene Antworten auch nach Neuladen. Keine neue Migration oder Laufzeitabhängigkeit.
+- Additive Web-API, README, Website und OpenAPI aktualisiert. MINOR **0.57.0**; Android bleibt **0.14.0**.
+- Validierung: vollständige Go-Suite einschließlich API-Verträgen, gezielte Race-Tests, JavaScript-/DOM-Prüfungen, sieben Browserregressionen und Website-Build erfolgreich. Geprüft werden unter anderem 607 Gesichter, die Kettengrößenbegrenzung, veränderte Originale auch auf ungesehenen Seiten, atomarer Rollback und Quittungswiederherstellung.
+
 ### BearStack 0.56.0 – in Entwicklung
 
 - Experteneinstellungen: neue, standardmäßig ausgeschaltete Checkbox „Unbenannte Gruppen automatisch zusammenführen“. Aktiviert führt der Hintergrundabgleich ganze unbenannte Quellgruppen atomar zusammen. Bestätigte benannte Personen haben Vorrang; ohne passenden benannten Treffer folgen unbenannte Gruppen. Beide Schritte verwenden die strengen Hintergrundgrenzwerte und den Abstand innerhalb ihres jeweiligen Bereichs.

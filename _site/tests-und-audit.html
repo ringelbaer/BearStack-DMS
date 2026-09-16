@@ -976,6 +976,15 @@
 <li>Admin-only-Fotoordner sind für Nicht-Admins nicht sichtbar und bleiben auch über direkte Medien- und Thumbnail-URLs geschützt.</li>
 </ul>
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
+<p>Die Kettenprüfung (0.57.0) hat eigene Go- und Browserregressionen: Verzweigungen,
+Sprunggrenzen, benannte Zwischenstationen, abgelehnte Paare, Sichtbarkeit,
+Vorschlagsschwellen und Gesichter außerhalb des Referenzlimits. Eine Auswahl mit
+607 Gesichtern prüft Blättern und atomare Zuordnung über dem üblichen Stapellimit.
+Geänderte oder gelöschte Originale, Gruppen-/Zielkonflikte, Transaktionsfehler,
+Aktionswiederholung, Berechtigungen und fremde Origins sind abgedeckt. Der Browser
+prüft Ordnernamen, Standardauswahl, Überspringen/Neustart, vorhandene und neue Namen,
+Abwahlen über mehrere Seiten sowie die Quittungsabfrage nach verlorener Antwort
+und Neuladen. Die Größenbegrenzung liefert einen Fehler statt einer Teilkette.</p>
 <p>Nur von Tests benötigte Mail-Nachrichtenhelfer liegen in <code>_test.go</code>; sie erweitern die Produktionsschnittstellen nicht. Browser-Regressionen für Bildfehler fordern eine eigene Bild-URL an und prüfen die tatsächliche 404-Antwort, damit bereits dekodierte Portraits den Fehlerfall nicht verdecken. Der Login-Helfer der Einstellungs-Suite setzt ein ausdrückliches Rücksprungziel; ein zuvor gespeicherter Startseitenwert beeinflusst dadurch spätere Tests nicht.</p>
 <p>Die Standardprüfung kombiniert Go-Tests und JavaScript-Syntaxchecks:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span><span class="nb">test</span>
@@ -1408,7 +1417,7 @@ Browser sind abgedeckt.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.56.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.57.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

@@ -34,6 +34,16 @@ Die wichtigsten Vorkehrungen entstehen direkt in der Anwendung:
 
 ## Tests
 
+Die Kettenprüfung (0.57.0) hat eigene Go- und Browserregressionen: Verzweigungen,
+Sprunggrenzen, benannte Zwischenstationen, abgelehnte Paare, Sichtbarkeit,
+Vorschlagsschwellen und Gesichter außerhalb des Referenzlimits. Eine Auswahl mit
+607 Gesichtern prüft Blättern und atomare Zuordnung über dem üblichen Stapellimit.
+Geänderte oder gelöschte Originale, Gruppen-/Zielkonflikte, Transaktionsfehler,
+Aktionswiederholung, Berechtigungen und fremde Origins sind abgedeckt. Der Browser
+prüft Ordnernamen, Standardauswahl, Überspringen/Neustart, vorhandene und neue Namen,
+Abwahlen über mehrere Seiten sowie die Quittungsabfrage nach verlorener Antwort
+und Neuladen. Die Größenbegrenzung liefert einen Fehler statt einer Teilkette.
+
 Nur von Tests benötigte Mail-Nachrichtenhelfer liegen in `_test.go`; sie erweitern die Produktionsschnittstellen nicht. Browser-Regressionen für Bildfehler fordern eine eigene Bild-URL an und prüfen die tatsächliche 404-Antwort, damit bereits dekodierte Portraits den Fehlerfall nicht verdecken. Der Login-Helfer der Einstellungs-Suite setzt ein ausdrückliches Rücksprungziel; ein zuvor gespeicherter Startseitenwert beeinflusst dadurch spätere Tests nicht.
 
 Die Standardprüfung kombiniert Go-Tests und JavaScript-Syntaxchecks:

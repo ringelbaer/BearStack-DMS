@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.56.0** · Android-App: **0.14.0**.
+Aktuelle Version: **0.57.0** · Android-App: **0.14.0**.
+
+Ab **0.57.0** öffnet **Ähnliche Gesichter → Gesichtsketten prüfen** die gemeinsame Prüfung verbundener unbenannter Gruppen. Die Suche startet erst beim Öffnen dieser Ansicht. Ein bis fünf Sprünge sind einstellbar (Standard zwei); A → F → Y entspricht zwei Sprüngen. Alle aktiven Gesichter erscheinen mit Ordnernamen und sind über alle Seiten hinweg vorausgewählt. Unpassende Gesichter abwählen und die Auswahl im gewohnten Personendialog einem vorhandenen oder neuen Namen zuordnen. Danach folgt die nächste Kette; **Kette überspringen** lässt sie für diesen Durchlauf aus. Benannte Gruppen werden nicht einbezogen, ihre bestehenden Gesichter behalten ihre Zuordnung.
 
 Unter **Fotos → Personen** und in Android unter **Ordner → Personen** lassen sich Personen bequem ansehen: **Alle** oder einen zugewiesenen Foto-Tag öffnen, danach die Person. Ihre Fotos erscheinen in der normalen, nach Datum gruppierten und sortierbaren Galerie. Die Personen- und Tag-Kacheln zeigen doppelt so viele Gesichtsvorschauen wie normale Ordner, zuerst Personen mit den meisten unterschiedlichen sichtbaren Bildern; Stern-Favoriten bestimmen das Porträt. **Personen verwalten** bleibt unter `/photos/people`: Die Suche lässt sich mit **Zurücksetzen** leeren, und in der Personendetailansicht lassen sich **Personen-Tags** vergeben. Die Tags gelten für die Gruppe, unabhängig von den Tags ihrer Bilder. Beim Zusammenführen bleiben alle Tags erhalten. Foto-Schema 32 migriert die Zuordnungen automatisch.
 
