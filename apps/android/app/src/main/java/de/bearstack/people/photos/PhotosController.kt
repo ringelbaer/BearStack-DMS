@@ -35,6 +35,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     val state = mutable.asStateFlow()
     val downloads = application?.let {PhotoDownloads(it,scope,service)}
     val playback = application?.let {PlaybackPreferences(it)}
+    internal var thumbnailCache: de.bearstack.people.media.ThumbnailCache? = null
     private val application=application?.applicationContext
     private val preloader=this.application?.let {WifiOriginalPreloader(it,scope)}
     private var frameReturn: Pair<PhotosState,GalleryPosition?>? = null
@@ -63,6 +64,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     private val additional = mutableMapOf<String,Job>()
     init { open(initialQuery) }
     fun open(query: PhotoQuery, tab: Int = state.value.tab, frame: Boolean = false) {
+        thumbnailCache?.refresh()
         val resolvedQuery = normalizePhotoSort(query, tab, session.peopleCountSort)
         val current = state.value
         val name = current.name.takeIf {current.query.path==resolvedQuery.path && it.isNotBlank()}

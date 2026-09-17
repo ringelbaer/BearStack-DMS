@@ -58,7 +58,7 @@ class MergeReviewTest {
             }
             idle(vm)
             compose.runOnUiThread {vm.page(1)};idle(vm)
-            compose.onNodeWithText("Menü").performClick()
+            compose.onNodeWithContentDescription("Weitere Optionen").performClick()
             compose.onNodeWithText("Ähnliche Gruppen").performClick();idle(vm)
             test(vm,api,db)
         } finally {compose.runOnUiThread {store.clear()}}
@@ -568,7 +568,7 @@ class MergeReviewTest {
         assertEquals(0,api.commits);assertFalse(vm.state.value.naming)
         compose.onNodeWithText("Zurück").performClick();idle(vm)
         api.supportsMergeSideActions=false
-        compose.onNodeWithText("Menü").performClick();compose.onNodeWithText("Ähnliche Gruppen").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Weitere Optionen").performClick();compose.onNodeWithText("Ähnliche Gruppen").performClick();idle(vm)
         compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertDoesNotExist()
     }
     @Test fun faceSearchUsesMergeWitnessAndAssignsBothGroups() = screen(setup=::unnamed) {vm,api,_ ->
@@ -707,7 +707,7 @@ class MergeReviewTest {
         assertEquals(1,api.commits)
         compose.onNodeWithText("Zurück").performClick();idle(vm)
         api.supportsMerges=false
-        compose.onNodeWithText("Menü").performClick()
+        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
         compose.onNodeWithText("Ähnliche Gruppen").performClick();idle(vm)
         compose.onNodeWithText("Ähnliche Gruppen benötigen BearStack 0.49.0.").assertIsDisplayed()
         compose.onNodeWithText("Zusammenführen").assertIsNotEnabled()

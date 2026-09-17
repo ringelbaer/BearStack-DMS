@@ -36,7 +36,7 @@ class PeopleDirectoryTest {
                 CompositionLocalProvider(LocalDensity provides Density(density.density,scale)) {PeopleApp(vm)}
             }
             idle(vm)
-            compose.onNodeWithText("Menü").performClick()
+            compose.onNodeWithContentDescription("Weitere Optionen").performClick()
             compose.onNodeWithText("Personen verwalten").performClick()
             idle(vm)
             if(openDetail) {compose.onNodeWithText("Anna").performClick();idle(vm)}
@@ -61,7 +61,7 @@ class PeopleDirectoryTest {
         compose.onNodeWithText("Über die Checkboxen",substring=true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Schließen").assertIsDisplayed().performClick()
         assertEquals(setOf(30L),vm.state.value.selectedFaces);assertEquals(3L,vm.state.value.selectedPerson!!.id)
-        compose.onNodeWithText("Aktionen").assertIsEnabled();assertEquals(0,api.commits)
+        compose.onNodeWithContentDescription("Aktionen").assertIsEnabled();assertEquals(0,api.commits)
     }
 
     @Test fun listRenameFavoriteAndRemoveLastFace() = screen(2f) {vm,api ->
@@ -96,16 +96,16 @@ class PeopleDirectoryTest {
         compose.onNodeWithTag("select-face-31").performScrollTo().performClick()
         compose.onNodeWithText("2 ausgewählt").assertIsDisplayed()
         compose.onAllNodesWithContentDescription("Zuordnung entfernen")[0].assertIsNotEnabled()
-        compose.onNodeWithText("Aktionen").performClick()
+        compose.onNodeWithContentDescription("Aktionen").performClick()
         compose.onNodeWithText("Ignorieren").performClick()
         compose.onNodeWithText("Ausgewählte Gesichter ignorieren?").assertIsDisplayed()
         compose.onNodeWithText("Abbrechen").performClick()
         assertEquals(0,api.commits);assertEquals(setOf(30L,31L),vm.state.value.selectedFaces)
-        compose.onNodeWithText("Aktionen").performClick()
+        compose.onNodeWithContentDescription("Aktionen").performClick()
         compose.onNodeWithText("Ignorieren").performClick()
         compose.onNodeWithText("Ignorieren").performClick();idle(vm)
         assertEquals(1,api.commits);assertEquals(listOf(32L),vm.state.value.selectedPerson!!.faces)
-        compose.onNodeWithText("Aktionen").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Aktionen").assertDoesNotExist()
     }
 
     @Test fun batchUsesExistingNamingDialogAndExistingPerson() = screen(setup={api ->
@@ -115,7 +115,7 @@ class PeopleDirectoryTest {
     }) {vm,api ->
         compose.onNodeWithTag("select-face-30").performScrollTo().performClick()
         compose.onNodeWithTag("select-face-31").performScrollTo().performClick()
-        compose.onNodeWithText("Aktionen").performClick()
+        compose.onNodeWithContentDescription("Aktionen").performClick()
         compose.onNodeWithText("Gruppe zuordnen").performClick()
         compose.onNodeWithText("Name").performTextInput("Bert")
         compose.waitUntil(10000) {vm.state.value.suggestions.isNotEmpty()}

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.63.0
+  version: 0.64.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -17,6 +17,13 @@ info:
     The Android app can optionally display device photo folders using Android MediaStore.
     Those folders and content URIs are local to the device and are never sent to this API;
     gallery endpoints below continue to describe the server library only.
+    Android 0.16.0 stores gallery thumbnails in a private, configurable disk cache
+    (64–2048 MiB; default 256 MiB). Existing browse and thumbnail endpoints warm
+    the latest 50 unfiltered stream thumbnails and every top-level folder preview.
+    These entries are protected from LRU eviction, even above the configured budget.
+    Entries are scoped to server, instance, dataset, account, image version and size;
+    switching connections explicitly clears the cache. Originals and large previews
+    are not persisted, and catalogue browsing still requires a server connection.
     Android image sharing downloads server originals through the existing media endpoint
     and grants temporary read access to a private local copy using the system chooser.
     Device images are shared directly through MediaStore; sharing sends no credentials

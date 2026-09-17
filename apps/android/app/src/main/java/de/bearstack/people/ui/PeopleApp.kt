@@ -115,8 +115,7 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
     LaunchedEffect(state.person?.id,state.person?.revision) { held=null;accessibleZoom=false }
     Box(Modifier.fillMaxSize()) {
         Scaffold(topBar={ TopAppBar(title={Text(if(statistics) text(R.string.people_statistics) else text(R.string.people_labeling))},actions={
-            TextButton(onClick={menu=true}) { Text(text(R.string.common_menu)) }
-            DropdownMenu(menu,{menu=false}) {
+            OptionsMenu(menu,{menu=it}) {
                 if(vm.photos!=null) DropdownMenuItem(text={Text(stringResource(R.string.photos_title))},onClick={vm.openGallery();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(text(R.string.connection_local_photos))},onClick={vm.openDevicePhotos();menu=false})
                 DropdownMenuItem(text={Text(text(R.string.people_directory))},onClick={vm.openDirectory();menu=false},enabled=enabled)
@@ -130,24 +129,19 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                 Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal+WindowInsetsSides.Bottom))
                     .heightIn(min=56.dp).padding(horizontal=12.dp).testTag("labeling-action-bar"),
                     horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-                    Box {
-                        IconButton(onClick={actions=true},enabled=enabled && !state.naming,
-                            modifier=Modifier.semantics {contentDescription=text(R.string.people_group_actions)}) {
-                            Icon(painterResource(R.drawable.ic_more_horiz),contentDescription=null,modifier=Modifier.size(24.dp))
-                        }
-                        DropdownMenu(actions,{actions=false}) {
-                            DropdownMenuItem(text={Text(text(R.string.people_ignore_group))},onClick={actions=false;vm.ignore()},enabled=enabled && state.person!=null)
-                            DropdownMenuItem(text={Text(text(R.string.people_skip_group))},onClick={actions=false;vm.skip()},enabled=enabled && state.person!=null)
-                            DropdownMenuItem(text={Text(text(R.string.people_undo_skip))},onClick={actions=false;vm.back()},enabled=enabled && state.canGoBack)
-                        }
+                    IconButton(onClick=vm::startNaming,enabled=enabled && !state.naming && state.person!=null,
+                        modifier=Modifier.semantics {contentDescription=text(R.string.people_name_person)}) {
+                        Icon(painterResource(R.drawable.ic_edit),contentDescription=null,modifier=Modifier.size(24.dp))
                     }
                     IconButton(onClick={help=true},enabled=held==null && !state.naming,
                         modifier=Modifier.semantics {contentDescription=text(R.string.people_naming_help)}) {
                         Icon(painterResource(R.drawable.ic_question_mark),contentDescription=null,modifier=Modifier.size(24.dp))
                     }
-                    IconButton(onClick=vm::startNaming,enabled=enabled && !state.naming && state.person!=null,
-                        modifier=Modifier.semantics {contentDescription=text(R.string.people_name_person)}) {
-                        Icon(painterResource(R.drawable.ic_edit),contentDescription=null,modifier=Modifier.size(24.dp))
+                    OptionsMenu(actions,{actions=it},enabled=enabled && !state.naming,
+                        description=text(R.string.people_group_actions)) {
+                        DropdownMenuItem(text={Text(text(R.string.people_ignore_group))},onClick={actions=false;vm.ignore()},enabled=enabled && state.person!=null)
+                        DropdownMenuItem(text={Text(text(R.string.people_skip_group))},onClick={actions=false;vm.skip()},enabled=enabled && state.person!=null)
+                        DropdownMenuItem(text={Text(text(R.string.people_undo_skip))},onClick={actions=false;vm.back()},enabled=enabled && state.canGoBack)
                     }
                 }
             }

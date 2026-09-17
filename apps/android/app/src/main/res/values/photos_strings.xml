@@ -127,4 +127,12 @@
     <string name="photos_people_folder">Personen</string>
     <string name="photos_all_people">Alle</string>
     <string name="photos_folder_name">%1$s</string>
+    <string name="photos_cache_title">Thumbnail-Cache</string>
+    <string name="photos_cache_size">Speicherbudget: %1$d MiB</string>
+    <string name="photos_cache_help">Die neuesten 50 Stream-Vorschauen und die Vorschauen aller Ordner der ersten Ebene bleiben gespeichert. Der übrige Platz wird nach letzter Nutzung verwaltet. Der Pflichtbestand hat Vorrang vor dem Budget.</string>
+    <string name="photos_cache_usage">Belegt: %1$d MiB · geschützt: %2$d MiB (%3$d von %4$d Vorschauen)</string>
+    <string name="photos_cache_minimum">Der geschützte Bestand benötigt mindestens %1$d MiB.</string>
+    <string name="photos_cache_loading">Pflichtbestand wird aktualisiert …</string>
+    <string name="photos_cache_incomplete">Der Cache konnte nicht vollständig aktualisiert werden. Verbindung und freien Gerätespeicher prüfen.</string>
+    <string name="photos_cache_unavailable">Der Thumbnail-Speicher ist nicht verfügbar. Freien Gerätespeicher prüfen und die App erneut öffnen.</string>
 </resources>

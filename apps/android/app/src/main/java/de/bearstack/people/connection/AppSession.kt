@@ -6,6 +6,7 @@ import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import de.bearstack.people.data.remote.*
 import de.bearstack.people.media.OriginalMemoryCache
+import de.bearstack.people.media.ThumbnailCache
 import de.bearstack.people.photos.PhotosController
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
@@ -21,9 +22,10 @@ class AppSession(private val context: Context, private val scope: CoroutineScope
     var active: Resources? = null; private set
 
     class Resources internal constructor(val people: LabelingApi, val peopleSession: Session?,
-        val images: ImageLoader, val photos: PhotosController?, internal val client: OkHttpClient) {
-        suspend fun close() = withContext(NonCancellable + Dispatchers.IO) {
-            try { images.memoryCache?.clear(); images.shutdown() }
+        val images: ImageLoader, val photos: PhotosController?, internal val client: OkHttpClient,
+        internal val thumbnails: ThumbnailCache? = null) {
+        suspend fun close(clearThumbnails: Boolean = false) = withContext(NonCancellable + Dispatchers.IO) {
+            try { thumbnails?.close(clearThumbnails); images.memoryCache?.clear(); images.shutdown() }
             finally { Connections.close(client) }
         }
     }
@@ -65,6 +67,7 @@ class AppSession(private val context: Context, private val scope: CoroutineScope
         val client = Connections.client(profile)
         var images: ImageLoader? = null
         var photos: PhotosController? = null
+        var thumbnails: ThumbnailCache? = null
         var published = false
         try {
             val people = LabelingApi(client, profile.url)
@@ -74,17 +77,24 @@ class AppSession(private val context: Context, private val scope: CoroutineScope
                 null // Older servers can still provide person management.
             }
             val peopleSession = if (gallerySession?.canManagePeople != false) people.session() else null
-            images = ImageLoader.Builder(context).okHttpClient(client).diskCachePolicy(CachePolicy.DISABLED)
-                .memoryCache { OriginalMemoryCache(MemoryCache.Builder(context).maxSizeBytes(16 * 1024 * 1024)
-                    .weakReferencesEnabled(false).build()) }.build()
             if (save) store.write(profile)
             currentCoroutineContext().ensureActive()
             // Do not replace a working account until negotiation and persistence
             // succeed. Detach feature jobs before disposing the old connection.
             detach()?.close()
             currentCoroutineContext().ensureActive()
+            thumbnails = gallerySession?.let {
+                try { ThumbnailCache.open(context, profile.url, client, gallery, it, scope) }
+                catch (_: java.io.IOException) { null } // Keep the gallery usable; settings report unavailable storage.
+            }
+            images = ImageLoader.Builder(context).okHttpClient(client).diskCachePolicy(CachePolicy.DISABLED)
+                .components { thumbnails?.let { add(ThumbnailCache.Factory(it)); add(ThumbnailCache.Keys()); add(ThumbnailCache.Integrity(it)) } }
+                .memoryCache { OriginalMemoryCache(MemoryCache.Builder(context).maxSizeBytes(16 * 1024 * 1024)
+                    .weakReferencesEnabled(false).build()) }.build()
             photos = gallerySession?.let { PhotosController(scope, gallery, it, context) }
-            active = Resources(people, peopleSession, images, photos, client)
+            photos?.thumbnailCache = thumbnails
+            active = Resources(people, peopleSession, images, photos, client, thumbnails)
+            thumbnails?.refresh()
             published = true
             cancelCertificate()
         } catch (e: java.io.IOException) {
@@ -96,6 +106,7 @@ class AppSession(private val context: Context, private val scope: CoroutineScope
                 // Cancellation and persistence failures must also dispose the
                 // unpublished client, without masking the original login error.
                 withContext(NonCancellable) {
+                    runCatching { thumbnails?.close() }
                     runCatching { images?.memoryCache?.clear(); images?.shutdown() }
                     runCatching { Connections.close(client) }
                 }
@@ -113,7 +124,10 @@ class AppSession(private val context: Context, private val scope: CoroutineScope
     }
 
     suspend fun disconnect(forget: Boolean = false) {
-        detach()?.close()
-        if (forget) store.clear()
+        detach()?.close(clearThumbnails = forget)
+        if (forget) {
+            store.clear()
+            withContext(Dispatchers.IO) { java.io.File(context.noBackupFilesDir, "thumbnails-v1").deleteRecursively() }
+        }
     }
 }

@@ -98,6 +98,7 @@ fun PhotosScreen(controller: PhotosController?, images: ImageLoader?, canManage:
         onDispose { lifecycle.removeObserver(observer) }
     }
     val serverState = rememberSaveableStateHolder()
+    LaunchedEffect(foreground, controller) { if (foreground) controller?.thumbnailCache?.refresh() }
     if(controller == null || images == null || deviceOpen) {
         DevicePhotosScreen(access, foreground, revision, onAccess={ permission.launch(devicePhotoPermissions()) },
             onSettings={ settingsOpen = true }, onPeople=onPeople.takeIf { canManage },
@@ -129,6 +130,8 @@ fun PhotosScreen(controller: PhotosController?, images: ImageLoader?, canManage:
             }
             Text(stringResource(R.string.photos_device_setting_help))
             if(enabled) DeviceAccessControls(access) { permission.launch(devicePhotoPermissions()) }
+            HorizontalDivider()
+            ThumbnailCacheSettings(controller?.thumbnailCache, unavailable = controller != null && controller.thumbnailCache == null)
         } }, confirmButton={ TextButton(onClick={ settingsOpen = false }) { Text(stringResource(R.string.photos_close)) } })
 }
 

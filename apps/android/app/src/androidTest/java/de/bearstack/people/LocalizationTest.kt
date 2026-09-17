@@ -77,11 +77,11 @@ class LocalizationTest {
         compose.onNodeWithText("Save").performClick();idle(vm)
         assertEquals("name",api.receipts.values.single().action)
         compose.onNodeWithText("Pass complete").assertIsDisplayed()
-        compose.onNodeWithText("Menu").performClick()
+        compose.onNodeWithContentDescription("More options").performClick()
         compose.onNodeWithText("Statistics").performClick()
         compose.waitUntil(10_000) {compose.onAllNodesWithText("Total: 5 faces · 1 group").fetchSemanticsNodes().isNotEmpty()}
         compose.onNodeWithText("Total: 5 faces · 1 group").assertIsDisplayed()
-        compose.onNodeWithText("Menu").performClick()
+        compose.onNodeWithContentDescription("More options").performClick()
         compose.onNodeWithText("People").performClick();idle(vm)
         compose.onNodeWithText("Search people").assertIsDisplayed()
         compose.onNodeWithText("Ada").performClick();idle(vm)
@@ -95,7 +95,7 @@ class LocalizationTest {
 
     @Test fun englishSimilarGroupsKeepDecisionsAndAccessiblePreview()=screen {vm,api,language ->
         language(Locale.ENGLISH)
-        compose.onNodeWithText("Menu").performClick()
+        compose.onNodeWithContentDescription("More options").performClick()
         compose.onNodeWithText("Similar groups").performClick();idle(vm)
         compose.onNodeWithText("Same person?").assertIsDisplayed()
         compose.onNodeWithText("First group").assertIsDisplayed()

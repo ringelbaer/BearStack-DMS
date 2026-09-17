@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.64.0 / Android 0.16.0 – in Entwicklung
+
+- Android: dauerhafter Thumbnail-Cache mit einstellbarem Budget von 64–2048 MiB (Standard 256 MiB). Die neuesten 50 Stream-Vorschauen und alle Kachelvorschauen der ersten Ordnerebene bleiben geschützt; übrige Einträge werden nach letzter Nutzung verdrängt. Der Pflichtbestand hat Vorrang vor einem kleineren Budget. Einstellungen zeigen Belegung, Fortschritt und Wiederholung bei Fehlern.
+- Privater Speicher ohne Backup, getrennte Schlüssel nach Server/Instanz/Datenbestand/Konto/Bildversion/Größe, atomare Dateien und persistenter Pflichtbestand. Verbindungswechsel löscht den Cache. Begrenzte, abbrechbare Downloads teilen sich Anfragen pro Bild; Originale, große Vorschauen und lokale Gerätefotos werden nicht dauerhaft gespeichert.
+- Einheitliche Optionsmenüs als horizontales **… rechts**: Galerie, Benennen/Statistik, Gruppenaktionen und Mehrfachauswahl. Gemeinsame Menükomponente mit unveränderten Aktionssperren und zugänglichen Beschriftungen; Stift beim Benennen nun links.
+- Validierung: 105 JVM-Tests und 48 unterschiedliche Emulatorprüfungen erfolgreich; Cache-/Sitzungstests zuletzt auf der finalen APK wiederholt. Android-Lint für Debug und Release, Debug-/Test-APK, minimierter Release-Build, Versions-/OpenAPI-Prüfungen und Website-Build erfolgreich.
+- MINOR **0.64.0** / Android **0.16.0**, `versionCode 34`. Bestehende API-Endpunkte unverändert; README, Android-Anleitung, Website und OpenAPI-Versionsangabe aktualisiert.
+
 ### BearStack 0.63.0 – in Entwicklung
 
 - WebUI: **Alle ignorierten Gesichter zurücksetzen** im Dreipunkt-Menü echter Fotoordner ab Ebene 2. Nach Bestätigung gilt die Aktion rekursiv für den aktuellen Ordner, unabhängig von Such-/Anzeigefiltern. Root, Jahresordner und virtuelle Personenordner sind ausgeschlossen.

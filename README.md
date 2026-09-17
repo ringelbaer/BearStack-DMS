@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.63.0** · Android-App: **0.15.2**.
+Aktuelle Version: **0.64.0** · Android-App: **0.16.0**.
+
+Android **0.16.0** ergänzt unter **… → Einstellungen** einen dauerhaften Thumbnail-Cache mit **64–2048 MiB** Speicherbudget (Standard **256 MiB**). Die neuesten **50 Stream-Vorschauen** und alle Vorschaubilder der **ersten Ordnerebene** sind vor Verdrängung geschützt; übrige Vorschauen werden nach letzter Nutzung verwaltet. Ein größerer Pflichtbestand hat Vorrang vor dem Budget. Optionsmenüs erscheinen einheitlich als **… rechts**, auch beim Benennen und für die Mehrfachauswahl. [Details zum Cache](_site-src/docs/android.md#einstellbarer-thumbnail-cache).
 
 Ab **0.63.0** bietet das Dreipunkt-Menü eines Fotoordners ab Ebene 2 **Alle ignorierten Gesichter zurücksetzen**. Die Aktion gilt nach Bestätigung für diesen Ordner und seine Unterordner, unabhängig von Suchfiltern. Ignorierte Gesichter ohne Personennamen werden wieder unbenannt sichtbar; benannte Personen einschließlich ihrer ignorierten Gesichter, Tags und Stammdaten bleiben unverändert. Root, Jahresordner und virtuelle Personenordner sind ausgeschlossen. Erfordert **Fotos bearbeiten**; keine neue Gesichtserkennung. [Details zur Ordneraktion](_site-src/docs/fotos.md#ignorierte-gesichter-eines-fotoordners-zurucksetzen).
 

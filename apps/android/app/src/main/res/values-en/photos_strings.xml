@@ -127,4 +127,12 @@
     <string name="photos_people_folder">People</string>
     <string name="photos_all_people">All</string>
     <string name="photos_folder_name">%1$s</string>
+    <string name="photos_cache_title">Thumbnail cache</string>
+    <string name="photos_cache_size">Storage budget: %1$d MiB</string>
+    <string name="photos_cache_help">The latest 50 stream thumbnails and previews of all top-level folders stay stored. Remaining space is managed by last use. Required thumbnails take priority over the budget.</string>
+    <string name="photos_cache_usage">Used: %1$d MiB · protected: %2$d MiB (%3$d of %4$d thumbnails)</string>
+    <string name="photos_cache_minimum">Protected thumbnails require at least %1$d MiB.</string>
+    <string name="photos_cache_loading">Updating required thumbnails…</string>
+    <string name="photos_cache_incomplete">The cache could not be fully updated. Check your connection and available device storage.</string>
+    <string name="photos_cache_unavailable">Thumbnail storage is unavailable. Check available device storage and reopen the app.</string>
 </resources>

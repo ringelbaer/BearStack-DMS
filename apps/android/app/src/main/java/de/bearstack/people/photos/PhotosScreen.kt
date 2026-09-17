@@ -194,7 +194,12 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
 }
 @Composable internal fun PhotoThumbnail(photo: Photo, controller: PhotosController, images: ImageLoader, size: Int, modifier: Modifier) {
     val context=LocalContext.current
-    val request=remember(photo.path,photo.version,photo.faceId,size,controller) { ImageRequest.Builder(context).data(controller.service.thumbnail(photo,size)).size(size).build() }
+    val request=remember(photo.path,photo.version,photo.faceId,size,controller) {
+        val data = if(controller.thumbnailCache != null)
+            de.bearstack.people.media.cachedThumbnail(controller.service, controller.session, photo, size)
+            else controller.service.thumbnail(photo,size)
+        ImageRequest.Builder(context).data(data).size(size).build()
+    }
     AsyncImage(request,photo.name,imageLoader=images,contentScale=ContentScale.Crop,
         modifier=modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest))
 }

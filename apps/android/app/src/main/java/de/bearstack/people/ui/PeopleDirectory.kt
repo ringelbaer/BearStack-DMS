@@ -202,16 +202,13 @@ private fun FaceBatchBar(state: PeopleState, enabled: Boolean, vm: PeopleViewMod
             Text(text(R.string.people_batch_selected,state.selectedFaces.size),style=MaterialTheme.typography.titleSmall)
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
                 TextButton(onClick=vm::clearFaceSelection,enabled=enabled) {Text(text(R.string.people_batch_clear))}
-                Box {
-                    FilledTonalButton(onClick={actions=true},enabled=enabled) {Text(text(R.string.people_batch_actions))}
-                    DropdownMenu(expanded=actions,onDismissRequest={actions=false}) {
+                OptionsMenu(actions,{actions=it},enabled=enabled,description=text(R.string.people_batch_actions)) {
                         DropdownMenuItem(text={Text(text(R.string.people_batch_reset))},enabled=enabled,
                             onClick={actions=false;vm.requestFaceBatch("unassign_faces")})
                         DropdownMenuItem(text={Text(text(R.string.people_batch_assign))},enabled=enabled,
                             onClick={actions=false;vm.startBatchNaming()})
                         DropdownMenuItem(text={Text(text(R.string.people_batch_ignore))},enabled=enabled,
                             onClick={actions=false;vm.requestFaceBatch("ignore_faces")})
-                    }
                 }
             }
         }
