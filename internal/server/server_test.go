@@ -2102,7 +2102,7 @@ func TestHandlePhotoThumbnailStatusAndPreviewGeneration(t *testing.T) {
 		log:    slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 
-	thumbPath := photoTestThumbnailPath(cacheDir, "photo.jpg", 960)
+	thumbPath := photoTestThumbnailPath(cacheDir, photoIdentityTestPath(t, photoLib, "photo.jpg"), 960)
 	req := httptest.NewRequest(http.MethodGet, "/photos/thumbnail/status?path=photo.jpg&size=960", nil)
 	rec := httptest.NewRecorder()
 	server.handlePhotoThumbnailStatus(rec, req)
@@ -2744,15 +2744,15 @@ func TestHandlePhotoRandomStreamsConfiguredSize(t *testing.T) {
 		t.Fatal(err)
 	}
 	settings := defaultPhotoSettings()
-	writePhotoRandomThumbnail(t, cacheDir, "photo.jpg", settings.FolderThumbnailSize, "folder")
-	writePhotoRandomThumbnail(t, cacheDir, "photo.jpg", settings.ThumbnailSize, "gallery")
-	writePhotoRandomThumbnail(t, cacheDir, "photo.jpg", settings.PreviewSize, "large")
-	writePhotoRandomThumbnail(t, cacheDir, "photo.jpg", settings.LargePreviewSize, "hd")
 	photoLib, err := photos.New(root, cacheDir, filepath.Join(t.TempDir(), "photos.db"), 50)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer photoLib.Close()
+	writePhotoRandomThumbnail(t, cacheDir, photoIdentityTestPath(t, photoLib, "photo.jpg"), settings.FolderThumbnailSize, "folder")
+	writePhotoRandomThumbnail(t, cacheDir, photoIdentityTestPath(t, photoLib, "photo.jpg"), settings.ThumbnailSize, "gallery")
+	writePhotoRandomThumbnail(t, cacheDir, photoIdentityTestPath(t, photoLib, "photo.jpg"), settings.PreviewSize, "large")
+	writePhotoRandomThumbnail(t, cacheDir, photoIdentityTestPath(t, photoLib, "photo.jpg"), settings.LargePreviewSize, "hd")
 	server := &Server{
 		photos: photoLib,
 		log:    slog.New(slog.NewTextHandler(io.Discard, nil)),
@@ -3216,13 +3216,13 @@ func newPhotoAuthMatrixServer(t *testing.T) *Server {
 	if err := os.WriteFile(filepath.Join(root, "secret", photos.AdminOnlyMarkerName), nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	writePhotoAuthMatrixThumbnail(t, cacheDir, "public.jpg", 420)
-	writePhotoAuthMatrixThumbnail(t, cacheDir, "secret/private.jpg", 420)
 	photoLib, err := photos.New(root, cacheDir, filepath.Join(t.TempDir(), "photos.db"), 50)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = photoLib.Close() })
+	writePhotoAuthMatrixThumbnail(t, cacheDir, photoIdentityTestPath(t, photoLib, "public.jpg"), 420)
+	writePhotoAuthMatrixThumbnail(t, cacheDir, photoIdentityTestPath(t, photoLib, "secret/private.jpg"), 420)
 	for _, role := range photoAuthMatrixRoles() {
 		if role == "" {
 			continue
@@ -6590,4 +6590,13 @@ func zipFileByName(zr *zip.Reader, name string) *zip.File {
 		}
 	}
 	return nil
+}
+
+func photoIdentityTestPath(t *testing.T, l *photos.Library, path string) string {
+	t.Helper()
+	m, err := l.Media(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return fmt.Sprintf("#entity/%d", m.EntityID)
 }

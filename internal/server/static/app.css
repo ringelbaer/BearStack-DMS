@@ -3968,3 +3968,10 @@ body.has-person-selection { padding-bottom: 150px; }
 @media (max-width: 480px) { .person-details-dates { grid-template-columns: minmax(0, 1fr); } }
 
 .person-details-dates:has(.person-details-date > .person-details-icon:not([hidden])) { grid-template-columns: minmax(0, 1fr) 44px; }
+
+.face-review-stage { position: relative; width: min(100%, 60rem); touch-action: none; }
+.face-review-stage > img { display: block; width: 100%; height: auto; user-select: none; }
+.face-review-box { position: absolute; border: 3px solid #ffbc42; box-shadow: 0 0 0 1px #111; pointer-events: none; }
+.face-review-fields { display: flex; gap: 1rem; flex-wrap: wrap; }
+.face-review-fields input { width: 8rem; }
+.face-review-warning { font-size: .85rem; }

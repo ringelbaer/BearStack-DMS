@@ -96,6 +96,7 @@
 <button type="button" data-detail-ignore-face aria-label="Dieses Gesicht ignorieren" title="Dieses Gesicht ignorieren" hidden>×</button>
 <button type="button" data-detail-edit-face aria-label="Dieses Gesicht benennen oder zuordnen" title="Dieses Gesicht benennen / zuordnen" hidden>{{template "person_pencil_icon" .}}</button>
 {{else if .Favorite}}<span class="face-favorite-button is-favorite" role="img" aria-label="Favorisiertes Vergleichsgesicht" title="Favorisiertes Vergleichsgesicht">{{template "face_favorite_icon" .}}</span>{{end}}
+{{if .NeedsReview}}<span class="face-review-warning">Foto geändert{{if $.Auth.CanPhotosEdit}} · <a href="/photos/faces/{{.ID}}/review">Prüfen</a>{{end}}</span>{{end}}
 {{if .Manual}}<span class="person-detail-manual" title="Manuell zugeordnet" aria-label="Manuell zugeordnet">✓</span>{{end}}
 </div>
 </article>{{else}}<p>Keine aktiven Gesichter in dieser Gruppe.</p>{{end}}

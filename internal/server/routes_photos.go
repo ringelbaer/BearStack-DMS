@@ -2,6 +2,9 @@
 package server
 
 var photoRouteSpecs = []routeSpec{
+	{pattern: "GET /photos/faces/review", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceSourceReviews},
+	{pattern: "GET /photos/faces/{id}/review", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceSourceReview},
+	{pattern: "POST /photos/faces/{id}/review", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceSourceReview},
 	{pattern: "GET /photos/people/chains", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceChains},
 	{pattern: "POST /photos/people/chains/search", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceChainSearch},
 	{pattern: "POST /photos/people/chains/faces", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceChainFaces},

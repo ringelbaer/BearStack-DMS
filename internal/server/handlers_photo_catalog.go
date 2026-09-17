@@ -15,31 +15,34 @@ import (
 // The native API carries source values rather than localized browser labels.
 // Paths are library-relative; clients build URLs under their configured base.
 type photoCatalogMedia struct {
-	FaceID         int64                   `json:"face_id,omitempty"`
-	Path           string                  `json:"path"`
-	Name           string                  `json:"name"`
-	Type           string                  `json:"type"`
-	MIME           string                  `json:"mime"`
-	Version        string                  `json:"version"`
-	Modified       time.Time               `json:"modified"`
-	Captured       *time.Time              `json:"captured,omitempty"`
-	Bytes          int64                   `json:"bytes"`
-	Width          int                     `json:"width"`
-	Height         int                     `json:"height"`
-	Camera         string                  `json:"camera,omitempty"`
-	Lens           string                  `json:"lens,omitempty"`
-	Latitude       *float64                `json:"latitude,omitempty"`
-	Longitude      *float64                `json:"longitude,omitempty"`
-	Rating         *float64                `json:"rating,omitempty"`
-	Tags           []string                `json:"tags,omitempty"`
-	Keywords       []string                `json:"keywords,omitempty"`
-	Faces          []photos.Face           `json:"faces,omitempty"`
-	AutomaticFaces []photos.RecognizedFace `json:"automatic_faces,omitempty"`
+	EntityID        int64                   `json:"entity_id,omitempty"`
+	ContentRevision int64                   `json:"content_revision,omitempty"`
+	NeedsReview     bool                    `json:"needs_review"`
+	FaceID          int64                   `json:"face_id,omitempty"`
+	Path            string                  `json:"path"`
+	Name            string                  `json:"name"`
+	Type            string                  `json:"type"`
+	MIME            string                  `json:"mime"`
+	Version         string                  `json:"version"`
+	Modified        time.Time               `json:"modified"`
+	Captured        *time.Time              `json:"captured,omitempty"`
+	Bytes           int64                   `json:"bytes"`
+	Width           int                     `json:"width"`
+	Height          int                     `json:"height"`
+	Camera          string                  `json:"camera,omitempty"`
+	Lens            string                  `json:"lens,omitempty"`
+	Latitude        *float64                `json:"latitude,omitempty"`
+	Longitude       *float64                `json:"longitude,omitempty"`
+	Rating          *float64                `json:"rating,omitempty"`
+	Tags            []string                `json:"tags,omitempty"`
+	Keywords        []string                `json:"keywords,omitempty"`
+	Faces           []photos.Face           `json:"faces,omitempty"`
+	AutomaticFaces  []photos.RecognizedFace `json:"automatic_faces,omitempty"`
 }
 
 func catalogMedia(media photos.Media) photoCatalogMedia {
-	return photoCatalogMedia{FaceID: media.FaceID, Path: media.Path, Name: media.Name, Type: media.Type, MIME: media.MIMEType,
-		Version: strconv.FormatInt(media.ModTime.UnixNano(), 10), Modified: media.ModTime, Captured: media.CapturedAt,
+	return photoCatalogMedia{EntityID: media.EntityID, ContentRevision: media.ContentRevision, NeedsReview: media.NeedsReview, FaceID: media.FaceID, Path: media.Path, Name: media.Name, Type: media.Type, MIME: media.MIMEType,
+		Version: strconv.FormatInt(media.ModTime.UnixNano(), 10) + ":" + strconv.FormatInt(media.ContentRevision, 10), Modified: media.ModTime, Captured: media.CapturedAt,
 		Bytes: media.SizeBytes, Width: media.Width, Height: media.Height, Camera: media.Camera, Lens: media.Lens,
 		Latitude: media.Latitude, Longitude: media.Longitude, Rating: media.Rating, Tags: media.Tags,
 		Keywords: media.Keywords, Faces: media.Faces, AutomaticFaces: media.AutomaticFaces}
@@ -188,6 +191,16 @@ func (s *Server) handlePhotoCatalog(w http.ResponseWriter, r *http.Request) {
 		Media: []photoCatalogMedia{}, Folders: []photoCatalogFolder{}, Blogs: []photoCatalogBlog{}}
 	if !photos.IsPeopleFolder(listing.Path) && !opts.Recursive && opts.Query == "" {
 		out.PeoplePath = photos.DirectoryPeoplePath(listing.Path)
+	}
+	if err = s.photos.AddContentStates(r.Context(), listing.Media); err != nil {
+		s.catalogError(w, err)
+		return
+	}
+	for i := range listing.Folders {
+		if err = s.photos.AddContentStates(r.Context(), listing.Folders[i].Previews); err != nil {
+			s.catalogError(w, err)
+			return
+		}
 	}
 	for _, item := range listing.Media {
 		out.Media = append(out.Media, catalogMedia(item))

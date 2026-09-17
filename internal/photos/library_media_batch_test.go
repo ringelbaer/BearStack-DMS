@@ -47,7 +47,7 @@ func TestMediaBatchMatchesSinglesAndRefreshesFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !batch[0].ModTime.Equal(changedAt) || len(batch[0].AutomaticFaces) != 0 || !reflect.DeepEqual(batch[0].Tags, []string{"original"}) {
+	if !batch[0].ModTime.Equal(changedAt) || (len(batch[0].AutomaticFaces) != 1 || !batch[0].AutomaticFaces[0].NeedsReview) || !reflect.DeepEqual(batch[0].Tags, []string{"original"}) {
 		t.Fatalf("stale metadata/faces or lost manual tags: %+v", batch[0])
 	}
 	writeJPEG(t, filepath.Join(l.Root(), "album/new.jpg"), color.White)

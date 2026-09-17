@@ -142,4 +142,5 @@
     <string name="people_batch_reset_title">Reset selected faces?</string>
     <string name="people_batch_ignore_confirmation">The %1$d selected faces will be ignored and hidden from this view. Photos are kept. You can restore the faces under “Ignored” in the browser.</string>
     <string name="people_batch_reset_confirmation">The %1$d selected faces will be moved together into a new unnamed group. Their reference favorites will be cleared. Photos are kept.</string>
+    <string name="people_source_review">Photo changed · review on the web</string>
 </resources>

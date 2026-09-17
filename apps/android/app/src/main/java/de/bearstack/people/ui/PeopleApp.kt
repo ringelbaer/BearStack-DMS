@@ -279,6 +279,9 @@ fun FaceGrid(person: Person, enabled: Boolean, images: ImageLoader?, image: (Lon
                                             stateDescription=if(face in person.favorites) text(R.string.people_favorited) else text(R.string.people_not_favorited)
                                         }) { Text(if(face in person.favorites) "★" else "☆",style=MaterialTheme.typography.titleMedium) }
                                 }
+                                if(face in person.reviewFaces) Text(text(R.string.people_source_review),
+                                    style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.error,
+                                    modifier=Modifier.fillMaxWidth().padding(top=6.dp).testTag("face-review-$face"))
                                 person.facePaths[face]?.takeIf {showPaths && it.isNotEmpty()}?.let {
                                     Text(text.photoPath(it),style=MaterialTheme.typography.bodySmall,
                                         modifier=Modifier.fillMaxWidth().padding(top=6.dp).testTag("face-path-$face"))

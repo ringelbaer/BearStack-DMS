@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.64.0
+  version: 0.65.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -47,6 +47,138 @@ tags:
     description: Tags, custom fields and virtual folders.
 
 paths:
+  /settings/photos/identities:
+    get:
+      tags: [Photos]
+      operationId: getPhotoIdentities
+      summary: Inspect missing content, relocations and fingerprint progress
+      description: Requires photos.manage. Send Accept application/json for JSON; otherwise renders the management page. Missing content is retained for seven days. Paths remain relative to the read-only photo root.
+      parameters:
+        - in: query
+          name: after
+          schema: {type: integer, format: int64, minimum: 0}
+      responses:
+        '200':
+          description: Current management state, at most 100 missing entries and 100 recent relocations.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhotoIdentityStatus'}
+            text/html:
+              schema: {type: string}
+        '403': {description: Missing photos.manage capability.}
+  /settings/photos/identities/{id}:
+    post:
+      tags: [Photos]
+      operationId: resolvePhotoIdentity
+      summary: Associate a missing folder or permanently discard retained data
+      description: Requires photos.manage, same-origin form protection and the current entity revision. Conflicting manual target changes are never overwritten. Purge removes BearStack data only. Mutations are audited.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [revision, action]
+              properties:
+                revision: {type: integer, format: int64, minimum: 1}
+                action: {type: string, enum: [relocate, purge]}
+                target: {type: string, description: Existing target folder relative to the photo root; required for relocate.}
+      responses:
+        '200':
+          description: Completed, when requesting JSON.
+          content:
+            application/json:
+              schema: {type: object, required: [ok], properties: {ok: {const: true}}}
+        '303': {description: Redirect to management after a successful HTML form.}
+        '400': {description: Invalid action or path.}
+        '403': {description: Missing capability or invalid origin.}
+        '404': {description: Entry not found.}
+        '409': {description: "Revision, availability or target conflict. Reload before retrying."}
+  /photos/faces/review:
+    get:
+      tags: [Photos]
+      operationId: getFaceSourceReviews
+      summary: List faces whose original content changed
+      description: Requires photos.edit. Only available, public photos are included. Send Accept application/json for JSON; otherwise renders the review list.
+      parameters:
+        - in: query
+          name: after
+          schema: {type: integer, format: int64, minimum: 0}
+      responses:
+        '200':
+          description: Up to 100 faces, ordered by ID.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [faces]
+                properties:
+                  faces: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/RecognizedPhotoFace'}}
+            text/html:
+              schema: {type: string}
+        '403': {description: Missing photos.edit capability.}
+  /photos/faces/{id}/review:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: {type: integer, format: int64, minimum: 1}
+    get:
+      tags: [Photos]
+      operationId: getFaceSourceReview
+      summary: Inspect the saved preview alongside the changed original
+      description: Requires photos.edit. The opaque revision binds the face, assignment, region and current file signature. No content hashing occurs on this GET.
+      responses:
+        '200':
+          description: Review data or HTML form.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [face, revision]
+                properties:
+                  face: {$ref: '#/components/schemas/RecognizedPhotoFace'}
+                  revision: {type: string, pattern: '^[a-f0-9]{64}$'}
+            text/html:
+              schema: {type: string}
+        '403': {description: Missing capability or protected photo.}
+        '404': {description: Face or source unavailable.}
+    post:
+      tags: [Photos]
+      operationId: confirmFaceSourceReview
+      summary: Confirm or correct a face on the current original
+      description: Requires photos.edit and same-origin form protection. Retains the face ID. Only a newly computed, unambiguous and eligible embedding can become a reference. Without a configured recognition service, the region can be confirmed but the historical embedding remains excluded. A concurrent file or face edit returns 409. Audited.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [revision, x, y, width, height]
+              properties:
+                revision: {type: string, pattern: '^[a-f0-9]{64}$'}
+                name: {type: string, maxLength: 200}
+                x: {type: number, minimum: 0, maximum: 1}
+                y: {type: number, minimum: 0, maximum: 1}
+                width: {type: number, minimum: 0.002, maximum: 1}
+                height: {type: number, minimum: 0.002, maximum: 1}
+      responses:
+        '200':
+          description: Confirmed, when requesting JSON.
+          content:
+            application/json:
+              schema: {type: object, required: [ok], properties: {ok: {const: true}}}
+        '303': {description: Redirect to the review list after successful HTML form.}
+        '400': {description: Invalid region or assignment.}
+        '403': {description: "Missing capability, invalid origin or protected photo."}
+        '404': {description: Face or source unavailable.}
+        '409': {description: Stale revision or ambiguous person name.}
+        '502': {description: Recognition service failed; historical data retained.}
   /api/photos/v1/session:
     get:
       tags:
@@ -4039,6 +4171,41 @@ components:
             format: binary
 
   schemas:
+    PhotoIdentityStatus:
+      type: object
+      required: [files, fingerprinted, review_required, missing, relocations, next, has_next]
+      properties:
+        files: {type: integer, minimum: 0}
+        fingerprinted: {type: integer, minimum: 0}
+        review_required: {type: integer, minimum: 0}
+        next: {type: integer, format: int64}
+        has_next: {type: boolean}
+        missing:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            required: [id, kind, path, revision, missing_since, expires_at]
+            properties:
+              id: {type: integer, format: int64, minimum: 1}
+              kind: {type: string}
+              path: {type: string}
+              revision: {type: integer, format: int64, minimum: 1}
+              missing_since: {type: string, format: date-time}
+              expires_at: {type: string, format: date-time}
+        relocations:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            required: [id, old_path, new_path, at, automatic]
+            properties:
+              id: {type: integer, format: int64, minimum: 1}
+              old_path: {type: string}
+              new_path: {type: string}
+              at: {type: string, format: date-time}
+              automatic: {type: boolean}
+
     FaceThresholds:
       type: object
       description: Persisted expert settings since 0.50.0; human decisions do not tune these values automatically.
@@ -4104,6 +4271,10 @@ components:
       - width
       - height
       properties:
+        entity_id: {type: integer, format: int64, description: Stable internal media identity since 0.65.0.}
+        content_revision: {type: integer, format: int64, description: Current indexed identity revision.}
+        needs_review: {type: boolean, description: At least one preserved face requires source review.}
+
         face_id:
           type: integer
           format: int64
@@ -4654,13 +4825,15 @@ components:
             properties:
               id: {type: integer, format: int64, minimum: 1}
               favorite: {type: boolean, description: "Reference favorite status since 0.40.0. Older servers omit this field."}
+              needs_review: {type: boolean, description: Display a review warning; do not overlay historical bounds on the current original. Android 0.17.0 displays this state.}
+              source_revision: {type: integer, format: int64, minimum: 1}
               original_key:
                 type: string
                 pattern: '^[a-f0-9]{64}$'
                 description: >-
                   Optional opaque original-image identity since 0.43.1. Shared by
                   faces from the same source; changes when indexed size or modification
-                  time changes. Scoped to the connected instance, dataset and account
+                  time changes, or the indexed content revision changes (since 0.65.0). Scoped to the connected instance, dataset and account
                   by the client. Android 0.6.1 uses this for a bounded decoded-bitmap
                   memory cache with a fixed 180-second lifetime from loading; cache
                   hits do not extend it. HTTP responses remain private, no-store.
@@ -5329,6 +5502,8 @@ components:
       - ignored
       - favorite
       properties:
+        needs_review: {type: boolean, description: Original content changed; preserved regions and vectors require review. Available since 0.65.0.}
+        source_revision: {type: integer, format: int64, minimum: 1, description: Analysis source revision.}
         id:
           type: integer
           format: int64

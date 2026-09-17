@@ -60,7 +60,7 @@ func (l *Library) NextGroupPhoto(ctx context.Context, after string, minimum int)
  FROM photo_faces f INDEXED BY idx_face_group_candidates
  CROSS JOIN photo_people p ON p.id=f.person_id
  CROSS JOIN media_index m ON m.path=f.path
- WHERE f.path>? AND f.ignored=0 AND (p.name='' OR p.name_source<>'')
+ WHERE f.path>? AND f.ignored=0 AND f.needs_review=0 AND (p.name='' OR p.name_source<>'')
  AND m.admin_only=0 AND m.type='image'
  GROUP BY f.path HAVING count(*)>? ORDER BY f.path LIMIT 1`, after, minimum).Scan(&path)
 		if errors.Is(err, sql.ErrNoRows) {
@@ -108,7 +108,7 @@ func readGroupPhoto(ctx context.Context, query faceRowsQuery, path string) (Grou
 	out := GroupPhoto{Path: path, DisplayPath: mediaDisplayPath(path), Faces: []RecognizedFace{}}
 	rows, err := query.QueryContext(ctx, `SELECT `+faceColumns+` FROM photo_faces f
  JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path
- WHERE f.path=? AND m.admin_only=0 ORDER BY f.id LIMIT ?`, path, facerec.MaxFaces+1)
+ WHERE f.path=? AND f.needs_review=0 AND m.admin_only=0 ORDER BY f.id LIMIT ?`, path, facerec.MaxFaces+1)
 	if err != nil {
 		return out, err
 	}

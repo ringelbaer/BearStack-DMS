@@ -18,10 +18,11 @@ type faceImageKey struct {
 	path        string
 	size, mtime int64
 	xmp         string
+	signature   string
 }
 
 func imageSourceKey(path string, info os.FileInfo) faceImageKey {
-	return faceImageKey{path: path, size: info.Size(), mtime: info.ModTime().UnixNano(), xmp: xmpSidecarFingerprint(path)}
+	return faceImageKey{path: path, size: info.Size(), mtime: info.ModTime().UnixNano(), xmp: xmpSidecarFingerprint(path), signature: identityStat(info)}
 }
 
 type faceImageEntry struct {
@@ -124,7 +125,11 @@ func (l *Library) checkFaceImageSource(key faceImageKey) error {
 	if err != nil {
 		return err
 	}
-	if imageSourceKey(key.path, info) != key {
+	current := imageSourceKey(key.path, info)
+	if key.signature == "" {
+		current.signature = ""
+	} // Indexed callers separately validate face revisions.
+	if current != key {
 		return errFaceSourceChanged
 	}
 	return nil

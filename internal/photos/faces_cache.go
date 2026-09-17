@@ -74,7 +74,7 @@ func (c *faceThumbnailCache) register(ctx context.Context, key string, faceID in
 	}
 	now := time.Now().Unix()
 	res, err := c.db.ExecContext(ctx, `INSERT INTO photo_face_thumbnail_cache(cache_key,face_id,expires_at)
- SELECT ?,id,CASE WHEN ignored=1 THEN ? ELSE 0 END FROM photo_faces WHERE id=?
+ SELECT ?,id,CASE WHEN ignored=1 AND needs_review=0 THEN ? ELSE 0 END FROM photo_faces WHERE id=?
  ON CONFLICT(cache_key) DO UPDATE SET expires_at=CASE
  WHEN excluded.expires_at>0 AND photo_face_thumbnail_cache.expires_at>? THEN photo_face_thumbnail_cache.expires_at
  ELSE excluded.expires_at END`, key, now+int64(ignoredFaceThumbnailTTL/time.Second), faceID, now)

@@ -1,0 +1,23 @@
+{{define "photo_identity.html"}}
+{{template "head" .}}
+<section class="page-head"><h1>Fotoordner und Aufbewahrung</h1><a href="/settings/photos">Fotoeinstellungen</a></section>
+{{if .Notice}}<div class="notice">{{.Notice}}</div>{{end}}
+<section class="panel">
+<p>{{.PhotoIdentities.Fingerprinted}} von {{.PhotoIdentities.Files}} Dateien für die Wiedererkennung erfasst.</p>
+<p>BearStack erkennt eindeutige Ordnerumzüge beim Indexabgleich. Das Fotoverzeichnis bleibt unverändert. Fehlende Inhalte und ihre Zuordnungen werden sieben Tage aufbewahrt.</p>
+<p><a href="/photos/faces/review">{{.PhotoIdentities.ReviewRequired}} Gesichter geänderter Fotos prüfen</a></p>
+<h2>Fehlende Inhalte</h2>
+{{range .PhotoIdentities.Missing}}
+<article class="panel"><h3>{{.Path}}</h3><p>Aufbewahrt bis {{.ExpiresAt.Format "02.01.2006 15:04 MST"}}. Keine eindeutige automatische Zuordnung.</p>
+{{if eq .Kind "folder"}}<form method="post" action="/settings/photos/identities/{{.ID}}">
+<input type="hidden" name="revision" value="{{.Revision}}"><input type="hidden" name="action" value="relocate">
+<label>Neuer Ordnerpfad im Fotoverzeichnis <input name="target" required autocomplete="off"></label><button>Diesem Ordner zuordnen</button>
+</form>{{end}}
+<details><summary>Aufbewahrung beenden</summary><p>Die gespeicherten Zuordnungen und Vorschaubilder werden endgültig entfernt. Originaldateien werden nicht verändert.</p>
+<form method="post" action="/settings/photos/identities/{{.ID}}"><input type="hidden" name="revision" value="{{.Revision}}"><input type="hidden" name="action" value="purge"><button class="danger">Fotodaten endgültig entfernen</button></form></details>
+</article>{{else}}<p>Keine fehlenden Inhalte.</p>{{end}}
+{{if .PhotoIdentities.HasNext}}<a href="?after={{.PhotoIdentities.Next}}">Weitere fehlende Inhalte</a>{{end}}
+<h2>Zuletzt erkannte Umzüge</h2>
+<ul>{{range .PhotoIdentities.Relocations}}<li>{{.OldPath}} → {{.NewPath}} · {{.At.Format "02.01.2006 15:04 MST"}} · {{if .Automatic}}automatisch{{else}}manuell zugeordnet{{end}}</li>{{else}}<li>Noch keine Umzüge.</li>{{end}}</ul>
+</section>
+{{template "foot" .}}{{end}}

@@ -2,8 +2,6 @@ package photos
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,7 +49,7 @@ func TestFaceSourceRejectsFailedFingerprintUpdate(t *testing.T) {
 	if _, err := l.index.db.Exec(`DROP TRIGGER fail_fingerprint`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := l.Face(ctx, face.ID); !errors.Is(err, sql.ErrNoRows) {
-		t.Fatalf("stale face survived successful retry: %v", err)
+	if got, err := l.Face(ctx, face.ID); err != nil || !got.NeedsReview {
+		t.Fatalf("changed face must be retained for review: %+v %v", got, err)
 	}
 }

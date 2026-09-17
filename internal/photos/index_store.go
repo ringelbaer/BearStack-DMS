@@ -12,6 +12,7 @@ import (
 )
 
 type photoIndexStore struct {
+	retainedColumns  map[string]string
 	db               *sql.DB
 	mapIndexesDone   chan struct{}
 	mapIndexesCancel context.CancelFunc
@@ -23,7 +24,12 @@ func openPhotoIndexStore(path string) (*photoIndexStore, string, error) {
 	if err != nil || db == nil {
 		return nil, abs, err
 	}
-	return &photoIndexStore{db: db}, abs, nil
+	columns, err := loadRetainedColumns(context.Background(), db)
+	if err != nil {
+		_ = db.Close()
+		return nil, "", err
+	}
+	return &photoIndexStore{db: db, retainedColumns: columns}, abs, nil
 }
 
 func (s *photoIndexStore) available() bool {

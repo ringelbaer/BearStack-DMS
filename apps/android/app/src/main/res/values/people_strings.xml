@@ -142,4 +142,5 @@
     <string name="people_batch_reset_title">Ausgewählte Gesichter zurücksetzen?</string>
     <string name="people_batch_ignore_confirmation">Die %1$d ausgewählten Gesichter werden ignoriert und aus dieser Ansicht ausgeblendet. Die Fotos bleiben erhalten. Du kannst die Gesichter im Browser unter „Ignoriert“ wiederherstellen.</string>
     <string name="people_batch_reset_confirmation">Die %1$d ausgewählten Gesichter werden gemeinsam in eine neue unbenannte Gruppe verschoben. Ihre Vergleichsfavoriten werden aufgehoben. Die Fotos bleiben erhalten.</string>
+    <string name="people_source_review">Foto geändert · im Web prüfen</string>
 </resources>

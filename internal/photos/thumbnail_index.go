@@ -186,6 +186,7 @@ func thumbnailQueueUpsertSQL() string {
 		VALUES (?, ?, ?, ?, ?, ?, 0, '', '', '', ?, ?)
 		ON CONFLICT(media_path, size) DO UPDATE SET
 			quality = excluded.quality,
+			content_verified = 0,
 			source_mod_time_unix_nano = excluded.source_mod_time_unix_nano,
 			source_size_bytes = excluded.source_size_bytes,
 			status = CASE
@@ -693,6 +694,7 @@ func (s *photoIndexStore) markThumbnailGenerated(ctx context.Context, media Medi
 		VALUES (?, ?, ?, ?, ?, ?, 0, '', ?, '', ?, ?)
 		ON CONFLICT(media_path, size) DO UPDATE SET
 			quality = excluded.quality,
+			content_verified = 0,
 			source_mod_time_unix_nano = excluded.source_mod_time_unix_nano,
 			source_size_bytes = excluded.source_size_bytes,
 			status = excluded.status,
@@ -743,6 +745,7 @@ func (s *photoIndexStore) markThumbnailFailed(ctx context.Context, media Media, 
 		VALUES (?, ?, ?, ?, ?, ?, 1, ?, '', ?, ?, ?)
 		ON CONFLICT(media_path, size) DO UPDATE SET
 			quality = excluded.quality,
+			content_verified = 0,
 			source_mod_time_unix_nano = excluded.source_mod_time_unix_nano,
 			source_size_bytes = excluded.source_size_bytes,
 			status = excluded.status,

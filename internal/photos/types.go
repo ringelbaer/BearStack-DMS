@@ -29,6 +29,7 @@ func NormalizeFolderPreviewCount(value int) int {
 }
 
 type Library struct {
+	identityMu      sync.Mutex
 	photoRoutes     photoRouteCacheState
 	faceVisibility  faceVisibilityState
 	faceProgress    faceProgressState
@@ -167,29 +168,32 @@ type Folder struct {
 }
 
 type Media struct {
-	FaceID         int64 // Nonzero only for cached face previews of virtual folders.
-	Name           string
-	Path           string
-	Directory      string
-	Type           string
-	MIMEType       string
-	SizeBytes      int64
-	ModTime        time.Time
-	CapturedAt     *time.Time
-	Width          int
-	Height         int
-	Orientation    string
-	Camera         string
-	Lens           string
-	Rating         *float64
-	Latitude       *float64
-	Longitude      *float64
-	Keywords       []string
-	Tags           []string
-	AutomaticFaces []RecognizedFace
-	Faces          []Face
-	XMPFingerprint string
-	AdminOnly      bool
+	EntityID        int64
+	ContentRevision int64
+	NeedsReview     bool
+	FaceID          int64 // Nonzero only for cached face previews of virtual folders.
+	Name            string
+	Path            string
+	Directory       string
+	Type            string
+	MIMEType        string
+	SizeBytes       int64
+	ModTime         time.Time
+	CapturedAt      *time.Time
+	Width           int
+	Height          int
+	Orientation     string
+	Camera          string
+	Lens            string
+	Rating          *float64
+	Latitude        *float64
+	Longitude       *float64
+	Keywords        []string
+	Tags            []string
+	AutomaticFaces  []RecognizedFace
+	Faces           []Face
+	XMPFingerprint  string
+	AdminOnly       bool
 }
 
 type Face struct {

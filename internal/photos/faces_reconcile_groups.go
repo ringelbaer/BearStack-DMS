@@ -91,7 +91,7 @@ func (l *Library) reconcileFaceGroup(ctx context.Context, tx *sql.Tx, source, fa
 // decode originals. A protected member prevents moving the entire source group.
 func (l *Library) reconcileGroupEligible(ctx context.Context, tx *sql.Tx, source int64, model string) (bool, error) {
 	rows, err := tx.QueryContext(ctx, `SELECT f.path,f.x,f.y,f.width,f.height,m.faces,m.size_bytes,m.mod_time_unix_nano,m.xmp_fingerprint,
- f.manual=0 AND f.favorite=0 AND f.ignored=0 AND f.drawn=0 AND coalesce(f.reference_eligible,1)=1
+ f.manual=0 AND f.favorite=0 AND f.ignored=0 AND f.drawn=0 AND f.needs_review=0 AND f.embedding_current=1 AND coalesce(f.reference_eligible,1)=1
  AND f.model=? AND p.name='' AND p.manual_name=0 AND m.admin_only=0
  FROM photo_faces f JOIN photo_people p ON p.id=f.person_id LEFT JOIN media_index m ON m.path=f.path WHERE f.person_id=?
  ORDER BY f.ignored,f.path,f.id`, model, source)

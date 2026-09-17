@@ -4,7 +4,9 @@ package photos
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"os"
 
 	"bearstack/internal/fsutil"
 	"bearstack/internal/sqlutil"
@@ -28,6 +30,9 @@ func (l *Library) refreshAdminOnlyIndexFlags(ctx context.Context) error {
 		}
 		_, abs, err := paths.Resolve(rel, true, ErrPathEscapesRoot())
 		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
 			// Do not publish private index entries or modify face data when the
 			// current directory cannot be checked safely. No writes have begun.
 			return fmt.Errorf("check photo directory visibility %q: %w", rel, err)

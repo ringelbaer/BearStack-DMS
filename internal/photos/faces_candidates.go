@@ -65,7 +65,7 @@ func faceCandidateValidationSQL(count int) string {
 	return `SELECT f.id,f.person_id,f.path,p.name_source,v.revision FROM photo_faces f
  CROSS JOIN photo_people p ON p.id=f.person_id CROSS JOIN media_index m ON m.path=f.path
  CROSS JOIN photo_person_revisions v ON v.person_id=p.id
- WHERE f.id IN (` + sqlutil.Placeholders(count) + `) AND f.ignored=0 AND m.admin_only=0
+ WHERE f.id IN (` + sqlutil.Placeholders(count) + `) AND f.ignored=0 AND f.needs_review=0 AND f.embedding_current=1 AND m.admin_only=0
  AND (f.favorite=1 OR coalesce(f.reference_eligible,1)=1)`
 }
 

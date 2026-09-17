@@ -22,10 +22,11 @@ func scanLabel(row interface{ Scan(...any) error }) (LabelPerson, error) {
 
 // indexedLabelFace stays inside the photo module; paths never enter API JSON.
 type indexedLabelFace struct {
-	PersonID       int64
-	Face           LabelFace
-	Path           string
-	Size, Modified int64
+	PersonID        int64
+	Face            LabelFace
+	Path            string
+	Size, Modified  int64
+	ContentRevision int64
 }
 
 func (s *photoIndexStore) labelIdentity(ctx context.Context, out *LabelSession) error {
@@ -45,7 +46,7 @@ func (s *photoIndexStore) labelPersonPage(ctx context.Context, id int64, offset,
 		return person, nil, err
 	}
 	person.Offset = offset
-	rows, err := tx.QueryContext(ctx, `SELECT f.id,f.path,f.x,f.y,f.width,f.height,f.favorite,m.size_bytes,m.mod_time_unix_nano FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.ignored=0 AND f.id>? ORDER BY f.id LIMIT ? OFFSET ?`, id, after, limit, offset)
+	rows, err := tx.QueryContext(ctx, `SELECT f.id,f.path,f.x,f.y,f.width,f.height,f.favorite,f.needs_review,f.source_revision,m.size_bytes,m.mod_time_unix_nano,coalesce((SELECT revision FROM photo_entities e WHERE e.id=f.entity_id),0) FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.ignored=0 AND f.id>? ORDER BY f.id LIMIT ? OFFSET ?`, id, after, limit, offset)
 	if err != nil {
 		return person, nil, err
 	}
@@ -54,7 +55,7 @@ func (s *photoIndexStore) labelPersonPage(ctx context.Context, id int64, offset,
 	for rows.Next() {
 		var row indexedLabelFace
 		row.PersonID = id
-		if err := rows.Scan(&row.Face.ID, &row.Path, &row.Face.Bounds.X, &row.Face.Bounds.Y, &row.Face.Bounds.Width, &row.Face.Bounds.Height, &row.Face.Favorite, &row.Size, &row.Modified); err != nil {
+		if err := rows.Scan(&row.Face.ID, &row.Path, &row.Face.Bounds.X, &row.Face.Bounds.Y, &row.Face.Bounds.Width, &row.Face.Bounds.Height, &row.Face.Favorite, &row.Face.NeedsReview, &row.Face.SourceRevision, &row.Size, &row.Modified, &row.ContentRevision); err != nil {
 			return person, nil, err
 		}
 		faces = append(faces, row)
@@ -181,7 +182,7 @@ func (s *photoIndexStore) labelPortraits(ctx context.Context, people []LabelPers
 	for i, person := range people {
 		args[i] = person.FaceID
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT f.person_id,f.id,f.path,f.x,f.y,f.width,f.height,f.favorite,m.size_bytes,m.mod_time_unix_nano
+	rows, err := s.db.QueryContext(ctx, `SELECT f.person_id,f.id,f.path,f.x,f.y,f.width,f.height,f.favorite,f.needs_review,f.source_revision,m.size_bytes,m.mod_time_unix_nano,coalesce((SELECT revision FROM photo_entities e WHERE e.id=f.entity_id),0)
  FROM photo_faces f JOIN media_index m ON m.path=f.path
  WHERE f.id IN (`+sqlutil.Placeholders(len(args))+`) AND f.ignored=0 AND m.admin_only=0`, args...)
 	if err != nil {
@@ -191,7 +192,7 @@ func (s *photoIndexStore) labelPortraits(ctx context.Context, people []LabelPers
 	faces := make([]indexedLabelFace, 0, len(people))
 	for rows.Next() {
 		var row indexedLabelFace
-		if err := rows.Scan(&row.PersonID, &row.Face.ID, &row.Path, &row.Face.Bounds.X, &row.Face.Bounds.Y, &row.Face.Bounds.Width, &row.Face.Bounds.Height, &row.Face.Favorite, &row.Size, &row.Modified); err != nil {
+		if err := rows.Scan(&row.PersonID, &row.Face.ID, &row.Path, &row.Face.Bounds.X, &row.Face.Bounds.Y, &row.Face.Bounds.Width, &row.Face.Bounds.Height, &row.Face.Favorite, &row.Face.NeedsReview, &row.Face.SourceRevision, &row.Size, &row.Modified, &row.ContentRevision); err != nil {
 			return nil, err
 		}
 		faces = append(faces, row)

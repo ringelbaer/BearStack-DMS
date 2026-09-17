@@ -24,15 +24,8 @@ func TestLabelOriginalKeySharesSourceAndChangesWithIndexedFile(t *testing.T) {
 	if page.Faces[0].OriginalKey != page.Faces[3].OriginalKey || page.Faces[0].Bounds == page.Faces[3].Bounds {
 		t.Fatal("face-specific key or shared bounds")
 	}
-	// Index updates invalidate old detections. Simulate detection of the changed
-	// source again, with the same face geometry and person but new file metadata.
-	if _, err = l.index.db.Exec(`CREATE TABLE test_saved_detection AS SELECT * FROM photo_faces WHERE id=?`, p.Faces[0].ID); err != nil {
-		t.Fatal(err)
-	}
+	// Index updates retain detections and invalidate the current original key.
 	if _, err = l.index.db.Exec(`UPDATE media_index SET mod_time_unix_nano=mod_time_unix_nano+1 WHERE path=(SELECT path FROM photo_faces WHERE id=?)`, p.Faces[0].ID); err != nil {
-		t.Fatal(err)
-	}
-	if _, err = l.index.db.Exec(`INSERT INTO photo_faces SELECT * FROM test_saved_detection`); err != nil {
 		t.Fatal(err)
 	}
 	after, err := l.LabelPerson(ctx, p.ID, 0)

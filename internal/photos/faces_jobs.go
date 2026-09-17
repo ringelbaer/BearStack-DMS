@@ -76,7 +76,7 @@ func (l *Library) PrepareFaceQueue(ctx context.Context, model string) error {
 
 func (l *Library) NextFaceJob(ctx context.Context) (FaceJob, error) {
 	var j FaceJob
-	err := l.index.db.QueryRowContext(ctx, `SELECT path,source_size,source_mtime,source_xmp,model,attempts FROM photo_face_jobs WHERE status='queued' AND retry_at<=? ORDER BY retry_at,path LIMIT 1`, time.Now().Unix()).Scan(&j.Path, &j.Size, &j.ModTime, &j.XMP, &j.Model, &j.Attempts)
+	err := l.index.db.QueryRowContext(ctx, `SELECT path,source_size,source_mtime,source_xmp,model,attempts FROM photo_face_jobs j WHERE status='queued' AND retry_at<=? AND NOT EXISTS(SELECT 1 FROM photo_faces f WHERE f.path=j.path AND f.needs_review=1) ORDER BY retry_at,path LIMIT 1`, time.Now().Unix()).Scan(&j.Path, &j.Size, &j.ModTime, &j.XMP, &j.Model, &j.Attempts)
 	return j, err
 }
 
@@ -127,7 +127,10 @@ func (l *Library) ClearFaces(ctx context.Context) error {
 		return err
 	}
 	defer tx.Rollback()
-	for _, table := range []string{"photo_labeling_actions", "photo_faces", "photo_face_references", "photo_people", "photo_face_jobs"} {
+	if _, err = tx.ExecContext(ctx, `UPDATE photo_face_thumbnail_cache SET expires_at=unixepoch()`); err != nil {
+		return err
+	}
+	for _, table := range []string{"photo_retained_photo_faces", "photo_retained_photo_face_jobs", "photo_hidden_person_names", "photo_labeling_actions", "photo_faces", "photo_face_references", "photo_people", "photo_face_jobs"} {
 		if _, err = tx.ExecContext(ctx, `DELETE FROM `+table); err != nil {
 			return err
 		}
@@ -170,6 +173,15 @@ func (s *photoIndexStore) queueFaceMediaTx(ctx context.Context, tx *sql.Tx, item
 	}
 	for _, m := range items {
 		if m.AdminOnly || m.Type != MediaTypeImage || !CanThumbnail(m.Path) {
+			continue
+		}
+		// An unchanged original already has its analysis. Retiming a copy must
+		// not schedule a replacement analysis and recreate the face IDs.
+		var analyzed bool
+		if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM photo_faces f JOIN photo_entities e ON e.id=f.entity_id WHERE f.path=? AND f.source_hash<>'' AND f.source_hash=e.fingerprint AND f.model=? AND f.needs_review=0) AND EXISTS(SELECT 1 FROM photo_face_jobs WHERE path=? AND source_xmp=? AND model=? AND status='done')`, m.Path, model, m.Path, m.XMPFingerprint, model).Scan(&analyzed); err != nil {
+			return err
+		}
+		if analyzed {
 			continue
 		}
 		_, err := tx.ExecContext(ctx, `INSERT INTO photo_face_jobs(path,directory,source_size,source_mtime,source_xmp,model) VALUES(?,?,?,?,?,?) ON CONFLICT(path) DO UPDATE SET source_size=excluded.source_size,source_mtime=excluded.source_mtime,source_xmp=excluded.source_xmp,model=excluded.model,status='queued',attempts=0,retry_at=0,error='' WHERE photo_face_jobs.source_size<>excluded.source_size OR photo_face_jobs.source_mtime<>excluded.source_mtime OR photo_face_jobs.source_xmp<>excluded.source_xmp OR photo_face_jobs.model<>excluded.model`, m.Path, m.Directory, m.SizeBytes, m.ModTime.UnixNano(), m.XMPFingerprint, model)

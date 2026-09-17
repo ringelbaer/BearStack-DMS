@@ -30,11 +30,13 @@ type LabelPerson struct {
 	Offset   int         `json:"offset"`
 }
 type LabelFace struct {
-	OriginalKey string          `json:"original_key"`
-	Favorite    bool            `json:"favorite"`
-	ID          int64           `json:"id"`
-	DisplayPath string          `json:"display_path"`
-	Bounds      LabelFaceBounds `json:"bounds"`
+	NeedsReview    bool            `json:"needs_review"`
+	SourceRevision int64           `json:"source_revision"`
+	OriginalKey    string          `json:"original_key"`
+	Favorite       bool            `json:"favorite"`
+	ID             int64           `json:"id"`
+	DisplayPath    string          `json:"display_path"`
+	Bounds         LabelFaceBounds `json:"bounds"`
 }
 
 // LabelFaceBounds uses normalized coordinates in the EXIF-oriented original image.

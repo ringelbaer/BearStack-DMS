@@ -128,6 +128,17 @@ func (l *Library) CachedThumbnailContext(ctx context.Context, rel string, size i
 	if !ok || (kind != MediaTypeImage && kind != MediaTypeVideo) || !CanThumbnail(clean) {
 		return "", false, errThumbnailUnavailable
 	}
+	// Cached bytes do not bypass current folder permissions. Marker checks are
+	// bounded by path depth and never walk the cache or read original contents.
+	if !includeAdminOnly {
+		private, err := l.MediaAdminOnly(clean)
+		if err != nil {
+			return "", false, err
+		}
+		if private {
+			return "", false, errAdminOnly
+		}
+	}
 	var mediaType string
 	var adminOnly int
 	var sizeBytes int64
@@ -226,6 +237,13 @@ func (l *Library) thumbnailForMedia(ctx context.Context, media Media, size int) 
 			err := fmt.Errorf("empty thumbnail")
 			_ = l.markThumbnailFailed(ctx, media, size, err)
 			return "", err
+		}
+		current, err := os.Stat(source)
+		if err != nil {
+			return "", err
+		}
+		if identityStat(sourceInfo) != identityStat(current) || l.thumbnailCachePath(media.Path, size) != cachePath {
+			return "", ErrLabelConflict
 		}
 		if err := os.Rename(tmp, cachePath); err != nil {
 			_ = l.markThumbnailFailed(ctx, media, size, err)
@@ -371,11 +389,13 @@ func (l *Library) ensureThumbnailsFromFilesystem(ctx context.Context, sizes []in
 }
 
 func (l *Library) thumbnailCachePath(rel string, size int) string {
+	rel = l.thumbnailIdentityPath(rel)
 	key := thumbnailCacheKey(rel)
 	return filepath.Join(l.cacheDir, "thumbnails", "v2", key[:2], key[2:4], fmt.Sprintf("%s_%dq%d.webp", key, NormalizeThumbnailSize(size), thumbnailWebPQuality))
 }
 
 func (l *Library) legacyThumbnailCachePath(rel string, size int) string {
+	rel = l.thumbnailIdentityPath(rel)
 	clean := filepath.Clean(filepath.FromSlash(canonicalThumbnailCacheRel(rel)))
 	if clean == "." || clean == string(filepath.Separator) || filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
 		clean = filepath.Base(clean)
@@ -409,7 +429,7 @@ func (l *Library) thumbnailReadyCachePathForMedia(ctx context.Context, media Med
 		return "", false
 	}
 	for _, cachePath := range l.thumbnailCachePaths(media.Path, size) {
-		if !thumbnailFileReadyForSource(cachePath, media.ModTime) {
+		if !thumbnailFileReadyForSource(cachePath, media.ModTime) && !(fsutil.FileHasContent(cachePath) && l.retainedThumbnailReady(ctx, media, size)) {
 			continue
 		}
 		ready, repair := l.index.thumbnailReadyState(ctx, media, size)

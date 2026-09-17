@@ -20,7 +20,7 @@ func refreshFaceReferencesTx(ctx context.Context, tx *sql.Tx, person int64) erro
 	// already fill the target. Read metadata only, never embeddings or originals.
 	result, err := tx.ExecContext(ctx, `INSERT OR REPLACE INTO photo_face_references(face_id,person_id)
  SELECT f.id,f.person_id FROM photo_faces f INDEXED BY idx_face_favorites JOIN media_index m ON m.path=f.path
- WHERE f.person_id=? AND f.favorite=1 AND f.ignored=0 AND m.admin_only=0
+ WHERE f.person_id=? AND f.favorite=1 AND f.ignored=0 AND f.needs_review=0 AND f.embedding_current=1 AND m.admin_only=0
  AND f.drawn=0 AND f.model=(SELECT model FROM photo_face_state WHERE id=1)`, person)
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func refreshFaceReferencesTx(ctx context.Context, tx *sql.Tx, person int64) erro
  SELECT f.id,f.person_id,f.favorite,f.manual,f.confidence,
  row_number() OVER (PARTITION BY f.directory ORDER BY f.favorite DESC,f.manual DESC,f.confidence DESC,f.id) AS directory_rank
  FROM photo_faces f JOIN media_index m ON m.path=f.path
- WHERE f.person_id=? AND f.ignored=0 AND m.admin_only=0
+ WHERE f.person_id=? AND f.ignored=0 AND f.needs_review=0 AND f.embedding_current=1 AND m.admin_only=0
  AND (f.favorite=1 OR coalesce(f.reference_eligible,1)=1)
  AND f.drawn=0 AND f.model=(SELECT model FROM photo_face_state WHERE id=1)
  ) INSERT OR REPLACE INTO photo_face_references(face_id,person_id)

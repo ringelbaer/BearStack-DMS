@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.65.0 / Android 0.17.0 – in Entwicklung
+
+- Stabile Fotoidentitäten und fortsetzbare SHA-256-Erfassung: eindeutige externe Ordnerumzüge sowie Kopieren mit anschließendem Löschen erhalten Tags, Gesichts-/Personen-IDs und bestehende Vorschauen. Der Foto-Root bleibt ausschließlich lesbar.
+- Fehlende Medien, Ordner, Blogs und GPX-Einträge werden sieben Tage verborgen aufbewahrt. Unvollständige Scans und nicht verfügbare Roots bestätigen keine Löschung. Verwaltung zeigt Fristen, Umzüge und Fingerabdruckfortschritt; manuelle Zuordnung und endgültige Bereinigung benötigen `photos.manage` und aktuelle Revisionen.
+- Geänderter Originalinhalt erhält Gesichtsdaten als prüfbedürftigen Analysestand. Webprüfung mit alter Vorschau, aktuellem Bild und korrigierbarem Rahmen/Person; alte Embeddings bleiben bis zu einer geeigneten Neuberechnung von Referenzen ausgeschlossen. Android zeigt den Prüfstatus und blendet veraltete Rahmen aus.
+- Cachezuordnungen bleiben bei Umzügen stabil; Inhaltsänderungen und endgültige Löschungen verwenden ein persistentes Bereinigungsprotokoll. Geschützte Quellen entziehen auch gespeicherten Gesichtsvorschauen und Referenzen die öffentliche Sichtbarkeit.
+- Validierung: Go-Suite, gezielte Race-Prüfungen, Android-Unit-Tests/Lint/Debug-Build und JavaScript-Prüfungen; Chromium-Ablauf für Prüfung bei Desktop- und Mobilbreite. Migration aus Schema 35, Copy/Delete, mehrdeutige Teilbäume, gleiche Größe/Zeitstempel, XMP-Neuanalyse, Cache-Aufbewahrung und Wiederanlauf geprüft. Index/Fingerabdrücke auf einem tatsächlich read-only eingebundenen APFS-Testimage geprüft; synthetischer Folgelauf mit 10.000 Dateien gemessen.
+- Kompatible SQLite-Migration; additive API-Felder und Verwaltungs-/Prüfendpunkte. MINOR **0.65.0**, Android **0.17.0**, `versionCode 35`. README, Website und OpenAPI aktualisiert.
+
 ### BearStack 0.64.0 / Android 0.16.0 – in Entwicklung
 
 - Android: dauerhafter Thumbnail-Cache mit einstellbarem Budget von 64–2048 MiB (Standard 256 MiB). Die neuesten 50 Stream-Vorschauen und alle Kachelvorschauen der ersten Ordnerebene bleiben geschützt; übrige Einträge werden nach letzter Nutzung verdrängt. Der Pflichtbestand hat Vorrang vor einem kleineren Budget. Einstellungen zeigen Belegung, Fortschritt und Wiederholung bei Fehlern.

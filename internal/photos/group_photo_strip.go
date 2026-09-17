@@ -67,8 +67,8 @@ func (l *Library) groupPhotoPreview(ctx context.Context, path string) (GroupPhot
 		return out, err
 	}
 	var count int
-	err := l.index.db.QueryRowContext(ctx, `SELECT count(*),coalesce(sum(CASE WHEN f.ignored=0 AND p.name='' THEN 1 ELSE 0 END),0)
- FROM photo_faces f JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path WHERE f.path=? AND m.admin_only=0 AND m.type='image'`, path).Scan(&count, &out.Remaining)
+	err := l.index.db.QueryRowContext(ctx, `SELECT count(*),coalesce(sum(CASE WHEN f.ignored=0 AND f.needs_review=0 AND p.name='' THEN 1 ELSE 0 END),0)
+ FROM photo_faces f JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path WHERE f.path=? AND f.needs_review=0 AND m.admin_only=0 AND m.type='image'`, path).Scan(&count, &out.Remaining)
 	if err == nil && count == 0 {
 		err = sql.ErrNoRows
 	}
@@ -88,7 +88,7 @@ func (l *Library) groupPhotoPreviewSide(ctx context.Context, cursor string, mini
 		rows, err := l.index.db.QueryContext(ctx, `SELECT f.path
  FROM photo_faces f INDEXED BY idx_face_group_candidates
  CROSS JOIN photo_people p ON p.id=f.person_id CROSS JOIN media_index m ON m.path=f.path
- WHERE f.path`+operator+`? AND f.ignored=0 AND (p.name='' OR p.name_source<>'')
+ WHERE f.path`+operator+`? AND f.ignored=0 AND f.needs_review=0 AND (p.name='' OR p.name_source<>'')
  AND m.admin_only=0 AND m.type='image'
  GROUP BY f.path HAVING count(*)>? ORDER BY f.path `+order+` LIMIT ?`, cursor, minimum, limit+1)
 		if err != nil {

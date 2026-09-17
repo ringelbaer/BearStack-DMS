@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.64.0** · Android-App: **0.16.0**.
+Aktuelle Version: **0.65.0** · Android-App: **0.17.0**.
+
+Extern umbenannte Fotoordner behalten nach eindeutiger Zuordnung Tags, Gesichtsdaten und Vorschauen. Fehlende Inhalte werden sieben Tage aufbewahrt; geänderte Fotos erhalten eine Gesichtsprüfung im Web und eine Statusanzeige in Android. Der Foto-Root bleibt read-only. [Details](_site-src/docs/fotos.md#extern-umbenannte-fotoordner).
 
 Android **0.16.0** ergänzt unter **… → Einstellungen** einen dauerhaften Thumbnail-Cache mit **64–2048 MiB** Speicherbudget (Standard **256 MiB**). Die neuesten **50 Stream-Vorschauen** und alle Vorschaubilder der **ersten Ordnerebene** sind vor Verdrängung geschützt; übrige Vorschauen werden nach letzter Nutzung verwaltet. Ein größerer Pflichtbestand hat Vorrang vor dem Budget. Optionsmenüs erscheinen einheitlich als **… rechts**, auch beim Benennen und für die Mehrfachauswahl. [Details zum Cache](_site-src/docs/android.md#einstellbarer-thumbnail-cache).
 

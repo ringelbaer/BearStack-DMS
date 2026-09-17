@@ -1146,3 +1146,54 @@ Ab Android-App 0.7.0 und BearStack 0.45.0 durchsucht das Textfeld im Personenber
 ### Lokale Fotoordner in der Android-App
 
 Die optionale Einstellung **Lokale Fotoordner anzeigen** ergänzt **Ordner → Dieses Gerät** um die freigegebenen Fotoordner des Smartphones, inklusive Vorschauen und lokalem Vollbildbetrachter. Standardmäßig deaktiviert, ohne Upload; Fotos und Suche bleiben auf den Serverbestand bezogen. Freigabe, ausgewählte Fotos ab Android 14 und Speichergrenzen beschreibt die [Android-Anleitung](android.md#lokale-fotoordner).
+
+## Extern umbenannte Fotoordner
+
+Ab **BearStack 0.65.0** behält die Bibliothek dauerhafte interne Identitäten für
+Medien, Ordner, Markdown-Blogs und GPX-Dateien. BearStack schreibt weiterhin
+**nicht in den Foto-Root**: Umbenennen, Verschieben oder Kopieren und späteres
+Löschen erfolgt außerhalb der Anwendung. Der nächste vollständige Indexlauf
+ordnet eindeutige Umzüge innerhalb desselben Roots zu.
+
+- Foto-, Ordner- und Blogtags, Personen- und Gesichts-IDs sowie manuelle
+  Entscheidungen bleiben bei einer Zuordnung erhalten. Existierende
+  Gesichtsvorschauen und unveränderte Foto-/Video-Thumbnails werden wiederverwendet.
+- Fehlende Inhalte verschwinden aus den normalen Ansichten und bleiben **sieben
+  Tage** in BearStacks Datenbank aufbewahrt. Wiederholte Scans und Neustarts
+  verlängern diese Frist nicht. Ein fehlgeschlagener oder unvollständiger Scan
+  bestätigt keine Löschung; ein ausgefallener oder verdächtig leerer Root löst
+  keine endgültige Bereinigung aus.
+- Unter **Einstellungen → Fotos → Ordner und Aufbewahrung** erscheinen erfasste
+  Umzüge, fehlende Einträge mit Ablaufdatum und der Fingerabdruckfortschritt.
+  Eine fehlende Ordneridentität lässt sich einem vorhandenen Ziel zuordnen.
+  Unabhängige manuelle Änderungen am Ziel verhindern eine automatische Übernahme.
+  Die endgültige Löschung entfernt nur BearStacks aufbewahrte Daten und Caches.
+- Unveränderte Vergleichsdateien müssen an denselben relativen Pfaden liegen.
+  Mindestens zwei unterschiedliche, nichtleere SHA-256-Fingerabdrücke oder die
+  eindeutige Übereinstimmung zweier Ein-Datei-Ordner erlauben eine automatische
+  Zuordnung. Identische Kopien bleiben eigenständig, solange beide existieren.
+  Leere Ordner, fehlende historische Fingerabdrücke und mehrdeutige Kopien
+  können eine manuelle Zuordnung benötigen.
+- Zusätzliche und gelöschte Dateien verhindern die Zuordnung nicht, wenn genug
+  eindeutige Vergleichsdateien verbleiben. Markdown/GPX und XMP werden unabhängig
+  aktualisiert. Ein Wechsel des Dateityps gilt als neuer Eintrag.
+
+Ändern sich die Bytes eines Fotos am bisherigen relativen Pfad, bleiben die
+Gesichtsdaten und vorhandenen Gesichtsvorschauen als letzter bestätigter Stand
+bestehen. **Foto geändert / Prüfen** kennzeichnet diese Regionen im Web und ab
+**Android 0.17.0** in den Gesichtslisten. Alte Embeddings werden auch bei
+Favoriten nicht mehr als Erkennungsreferenzen verwendet. Unter **Geänderte Fotos
+prüfen** zeigt das Web die bisherige Vorschau neben dem aktuellen Bild; Rahmen
+und Person lassen sich bestätigen oder korrigieren. Die Prüfung erfordert
+`photos.edit`, die Ordnerverwaltung `photos.manage`. Ohne verfügbaren
+Gesichtsdienst kann eine Region bestätigt werden; der historische Vektor wird
+dadurch nicht zur Erkennungsreferenz. Veraltete Prüfentscheidungen werden mit
+HTTP 409 abgewiesen.
+
+Die SQLite-Migration übernimmt vorhandene IDs und Cachedateien. SHA-256-Erfassung
+und Cacheinventar werden anschließend fortsetzbar aufgebaut. Unveränderte
+Folgeläufe lesen keine Dateiinhalte; Galerieaufrufe berechnen keine vollständigen
+Hashes. Für noch nicht erfasste Altbestände ist keine automatische Wiedererkennung
+zugesichert. Bestehende pfadbasierte URLs bleiben unterstützt; alte Pfade werden
+nach einem Umzug nicht automatisch weitergeleitet. Aktuelle Zugriffsrechte gelten
+auch für gespeicherte Vorschauen und Erkennungsreferenzen.

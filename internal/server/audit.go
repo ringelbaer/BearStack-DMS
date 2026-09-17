@@ -470,6 +470,10 @@ func auditActionTarget(r *http.Request) (string, string) {
 		return "Unbenannte Gesichter im Gruppenbild ignorieren", ""
 	case "POST /photos/people/chains/assign":
 		return "Ausgewählte Gesichter einer Ähnlichkeitskette zuordnen", ""
+	case "POST /settings/photos/identities/{id}":
+		return "Fotoaufbewahrung und Ordnerzuordnung ändern", idAuditTarget("Eintrag", r.PathValue("id"))
+	case "POST /photos/faces/{id}/review":
+		return "Geänderte Gesichtsquelle bestätigen", idAuditTarget("Gesicht", r.PathValue("id"))
 	case "POST /photos/faces/edit":
 		return "Gesichtszuordnungen ändern", ""
 	case "POST /settings/photos/faces", "POST /settings/photos/faces/{action}":

@@ -34,6 +34,11 @@ func (l *Library) MediaContext(ctx context.Context, rel string) (Media, error) {
 	if err == nil && l.index.available() && !media.AdminOnly {
 		media.AutomaticFaces, err = l.AutomaticFaces(ctx, clean)
 	}
+	if err == nil {
+		items := []Media{media}
+		err = l.AddContentStates(ctx, items)
+		media = items[0]
+	}
 	return media, err
 }
 

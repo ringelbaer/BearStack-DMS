@@ -11,11 +11,11 @@ import (
 	"bearstack/internal/sqlutil"
 )
 
-const faceColumns = `f.id,f.person_id,p.name,f.path,f.x,f.y,f.width,f.height,f.manual,f.ignored,f.favorite,p.name_source,f.drawn`
+const faceColumns = `f.id,f.person_id,p.name,f.path,f.x,f.y,f.width,f.height,f.manual,f.ignored,f.favorite,p.name_source,f.drawn,f.needs_review,f.source_revision`
 
 func scanFace(s interface{ Scan(...any) error }) (RecognizedFace, error) {
 	var f RecognizedFace
-	err := s.Scan(&f.ID, &f.PersonID, &f.Name, &f.Path, &f.X, &f.Y, &f.Width, &f.Height, &f.Manual, &f.Ignored, &f.Favorite, &f.nameSource, &f.Drawn)
+	err := s.Scan(&f.ID, &f.PersonID, &f.Name, &f.Path, &f.X, &f.Y, &f.Width, &f.Height, &f.Manual, &f.Ignored, &f.Favorite, &f.nameSource, &f.Drawn, &f.NeedsReview, &f.SourceRevision)
 	return f, err
 }
 
@@ -31,7 +31,7 @@ func (l *Library) Face(ctx context.Context, id int64) (RecognizedFace, error) {
 	if err = l.index.db.QueryRowContext(ctx, `SELECT 1 FROM photo_faces WHERE id=?`, id).Scan(&exists); err != nil {
 		return f, err
 	}
-	return f, nil
+	return scanFace(l.index.db.QueryRowContext(ctx, `SELECT `+faceColumns+` FROM photo_faces f JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path WHERE f.id=? AND m.admin_only=0`, id))
 }
 
 // Refresh the fingerprint strictly before using stored face coordinates. A failed
@@ -455,7 +455,7 @@ func (l *Library) AddAutomaticFaces(ctx context.Context, items []Media) error {
 	for i := range items {
 		paths[i] = items[i].Path
 	}
-	auto, err := l.automaticFacesBatch(ctx, paths)
+	auto, err := l.automaticFacesBatch(ctx, paths, items)
 	if err != nil {
 		return err
 	}
@@ -497,8 +497,14 @@ func recognizedFaceNames(f []RecognizedFace) string {
 	return strings.Join(names, " ")
 }
 
-func (l *Library) automaticFacesBatch(ctx context.Context, paths []string) (map[string][]RecognizedFace, error) {
+func (l *Library) automaticFacesBatch(ctx context.Context, paths []string, media ...[]Media) (map[string][]RecognizedFace, error) {
 	out := map[string][]RecognizedFace{}
+	byPath := map[string][]*Media{}
+	for _, items := range media {
+		for i := range items {
+			byPath[items[i].Path] = append(byPath[items[i].Path], &items[i])
+		}
+	}
 	if l == nil || !l.index.available() {
 		return out, nil
 	}
@@ -508,17 +514,43 @@ func (l *Library) automaticFacesBatch(ctx context.Context, paths []string) (map[
 		for _, p := range paths[start:end] {
 			args = append(args, p)
 		}
-		rows, err := l.index.db.QueryContext(ctx, `SELECT `+faceColumns+` FROM photo_faces f JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path WHERE f.path IN (`+strings.TrimRight(strings.Repeat("?,", len(args)), ",")+`) AND f.ignored=0 AND m.admin_only=0 ORDER BY f.id`, args...)
+		query := `SELECT ` + faceColumns + ` FROM photo_faces f JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path WHERE f.path IN (` + strings.TrimRight(strings.Repeat("?,", len(args)), ",") + `) AND f.ignored=0 AND m.admin_only=0 ORDER BY f.id`
+		if len(media) > 0 {
+			cols := strings.Split(faceColumns, ",")
+			for i, col := range cols {
+				fallback := "0"
+				if col == "p.name" || col == "f.path" || col == "p.name_source" {
+					fallback = "''"
+				}
+				cols[i] = "coalesce(" + col + "," + fallback + ")"
+			}
+			query = `SELECT e.id,e.path,e.revision,EXISTS(SELECT 1 FROM photo_faces r WHERE r.entity_id=e.id AND r.needs_review=1),` + strings.Join(cols, ",") + ` FROM photo_entities e JOIN media_index m ON m.path=e.path AND m.type=e.kind LEFT JOIN photo_faces f ON f.path=m.path AND f.ignored=0 AND m.admin_only=0 LEFT JOIN photo_people p ON p.id=f.person_id WHERE e.missing_since=0 AND e.path IN (` + strings.TrimRight(strings.Repeat("?,", len(args)), ",") + `) ORDER BY f.id`
+		}
+		rows, err := l.index.db.QueryContext(ctx, query, args...)
 		if err != nil {
 			return nil, err
 		}
 		for rows.Next() {
-			f, e := scanFace(rows)
+			var f RecognizedFace
+			var e error
+			if len(media) > 0 {
+				var identity Media
+				f, e = scanFace(identityFaceScanner{rows, &identity})
+				for _, item := range byPath[identity.Path] {
+					item.EntityID = identity.EntityID
+					item.ContentRevision = identity.ContentRevision
+					item.NeedsReview = identity.NeedsReview
+				}
+			} else {
+				f, e = scanFace(rows)
+			}
 			if e != nil {
 				rows.Close()
 				return nil, e
 			}
-			out[f.Path] = append(out[f.Path], f)
+			if f.ID != 0 {
+				out[f.Path] = append(out[f.Path], f)
+			}
 		}
 		err = rows.Err()
 		rows.Close()
@@ -547,4 +579,13 @@ func (l *Library) sanitizeFaceNames(faces []RecognizedFace) {
 			faces[i].Name = ""
 		}
 	}
+}
+
+type identityFaceScanner struct {
+	rows  *sql.Rows
+	media *Media
+}
+
+func (s identityFaceScanner) Scan(values ...any) error {
+	return s.rows.Scan(append([]any{&s.media.EntityID, &s.media.Path, &s.media.ContentRevision, &s.media.NeedsReview}, values...)...)
 }

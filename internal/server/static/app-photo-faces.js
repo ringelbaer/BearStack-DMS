@@ -58,6 +58,12 @@
           label.textContent = face.name || "Unbenannt";
           var edit = window.BearStackPersonDialog.createEditButton("Benennen oder zuordnen: " + label.textContent);
           card.append(image, label, edit);
+          if (face.needs_review) {
+            var review = document.createElement("a");
+            review.href = "/photos/faces/" + encodeURIComponent(face.id) + "/review";
+            review.textContent = "Foto geändert · Prüfen";
+            card.append(review);
+          }
           grid.append(card);
         });
         options.onFaces(current, faces, currentFaces);

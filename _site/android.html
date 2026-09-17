@@ -825,6 +825,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#geanderte-gesichtsquellen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Geänderte Gesichtsquellen
+      </span>
+    </span>
+  </a>
+
+</li>
+
     </ul>
   
 </nav>
@@ -1299,6 +1310,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#geanderte-gesichtsquellen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Geänderte Gesichtsquellen
+      </span>
+    </span>
+  </a>
+
+</li>
+
     </ul>
   
 </nav>
@@ -1318,7 +1340,7 @@
 
 
 <h1 id="bearstack-fotos-fur-android">BearStack Fotos für Android<a class="headerlink" href="#bearstack-fotos-fur-android" title="Permanent link">&para;</a></h1>
-<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.16.0</strong> (<code>versionCode 34</code>). Die Servergalerie benötigt
+<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.17.0</strong> (<code>versionCode 35</code>). Die Servergalerie benötigt
 <strong>BearStack 0.50.0</strong>, ein aktiviertes Fotomodul und <code>photos.read</code>. Personenverwaltung
 benötigt zusätzlich <code>photos.edit</code>; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.</p>
@@ -1912,6 +1934,8 @@ Fehler werden zusätzlich anhand der XML-Ergebnisse zurückgewiesen.</p>
 </span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    src/androidTest/      # Emulator- und Go-Integrationstests
 </span></code></pre></div>
 <p>Die Personenlogik bleibt im Go-Backend unter <code>internal/photos</code>; HTTP-Adapter und Rechte liegen unter <code>internal/server</code>.</p>
+<h2 id="geanderte-gesichtsquellen">Geänderte Gesichtsquellen<a class="headerlink" href="#geanderte-gesichtsquellen" title="Permanent link">&para;</a></h2>
+<p>Ab Android <strong>0.17.0</strong> und BearStack <strong>0.65.0</strong> kennzeichnet „Foto geändert · im Web prüfen“ erhaltene Gesichtsdaten, deren Original geändert wurde. Die bisherige Gesichtsvorschau bleibt sichtbar. Alte Rahmen werden auf dem aktuellen Original nicht eingezeichnet. Rahmen und Person werden zunächst im Web geprüft; ungeprüfte Embeddings sind keine Erkennungsreferenzen.</p>
 
 
 
@@ -1957,7 +1981,7 @@ Fehler werden zusätzlich anhand der XML-Ergebnisse zurückgewiesen.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.64.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.65.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

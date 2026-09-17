@@ -64,6 +64,9 @@ func (s *photoIndexStore) replaceGPXDirectory(ctx context.Context, directory str
 			}
 		}
 	}
+	if err = s.retainSelectionTx(ctx, tx, retentionSelection{`kind='gpx' AND path IN(SELECT path FROM gpx_index WHERE directory=? AND seen=0)`, []any{directory}}); err != nil {
+		return err
+	}
 	if _, err = tx.ExecContext(ctx, `DELETE FROM gpx_index WHERE directory=? AND seen=0`, directory); err != nil {
 		return err
 	}

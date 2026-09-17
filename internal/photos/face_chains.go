@@ -78,7 +78,7 @@ func (l *Library) NextFaceChain(ctx context.Context, request FaceChainSearch) (F
 	}
 	rows, err := tx.QueryContext(ctx, `SELECT p.id,v.revision FROM photo_people p CROSS JOIN photo_person_revisions v ON v.person_id=p.id
  WHERE p.name='' AND p.id>? AND EXISTS(SELECT 1 FROM photo_faces f JOIN media_index m ON m.path=f.path
- WHERE f.person_id=p.id AND f.ignored=0 AND f.drawn=0 AND f.model=? AND m.admin_only=0
+ WHERE f.person_id=p.id AND f.ignored=0 AND f.needs_review=0 AND f.embedding_current=1 AND f.drawn=0 AND f.model=? AND m.admin_only=0
  AND (f.favorite=1 OR coalesce(f.reference_eligible,1)=1)) ORDER BY p.id`, request.After, model)
 	if err != nil {
 		return out, err
@@ -142,7 +142,7 @@ type chainVector struct {
 const faceChainVectorsSQL = `SELECT f.person_id,f.embedding,f.path,v.revision
  FROM photo_people p CROSS JOIN photo_faces f ON f.person_id=p.id
  CROSS JOIN media_index m ON m.path=f.path CROSS JOIN photo_person_revisions v ON v.person_id=p.id
- WHERE p.name='' AND f.ignored=0 AND f.drawn=0 AND f.model=? AND m.admin_only=0
+ WHERE p.name='' AND f.ignored=0 AND f.needs_review=0 AND f.embedding_current=1 AND f.drawn=0 AND f.model=? AND m.admin_only=0
  AND (f.favorite=1 OR coalesce(f.reference_eligible,1)=1)`
 
 func (l *Library) expandFaceChain(ctx context.Context, tx *sql.Tx, model string, frontier []int64, groups map[int64]FaceChainGroup, excluded map[int64]bool, visibility *faceDirectoryVisibility, depth int, similarity float64) ([]int64, error) {

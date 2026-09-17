@@ -1,6 +1,6 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.16.0** (`versionCode 34`). Die Servergalerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.17.0** (`versionCode 35`). Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
@@ -747,3 +747,7 @@ apps/android/
 ```
 
 Die Personenlogik bleibt im Go-Backend unter `internal/photos`; HTTP-Adapter und Rechte liegen unter `internal/server`.
+
+## Geänderte Gesichtsquellen
+
+Ab Android **0.17.0** und BearStack **0.65.0** kennzeichnet „Foto geändert · im Web prüfen“ erhaltene Gesichtsdaten, deren Original geändert wurde. Die bisherige Gesichtsvorschau bleibt sichtbar. Alte Rahmen werden auf dem aktuellen Original nicht eingezeichnet. Rahmen und Person werden zunächst im Web geprüft; ungeprüfte Embeddings sind keine Erkennungsreferenzen.

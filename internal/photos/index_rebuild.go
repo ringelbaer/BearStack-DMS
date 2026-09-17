@@ -20,6 +20,10 @@ func (l *Library) rebuildIndex(ctx context.Context, opts IndexOptions) (stats In
 	if l == nil || !l.index.available() {
 		return IndexStats{}, nil
 	}
+	if err := l.lockPhotoIdentities(ctx); err != nil {
+		return IndexStats{}, err
+	}
+	defer l.identityMu.Unlock()
 	if err := ctx.Err(); err != nil {
 		return IndexStats{}, err
 	}
@@ -27,6 +31,24 @@ func (l *Library) rebuildIndex(ctx context.Context, opts IndexOptions) (stats In
 	defer func() {
 		l.finishIndexTelemetry(telemetry, stats, err)
 	}()
+	complete, err := l.scanPhotoIdentities(ctx)
+	if err != nil {
+		return IndexStats{}, err
+	}
+	if !complete {
+		return l.cachedIndexStats(ctx)
+	}
+	if complete {
+		if err := l.recognizePhotoRelocations(ctx); err != nil {
+			return IndexStats{}, err
+		}
+		if err := l.restorePresentEntities(ctx); err != nil {
+			return IndexStats{}, err
+		}
+		if err := l.publishIdentityFingerprints(ctx); err != nil {
+			return IndexStats{}, err
+		}
+	}
 
 	runCache, err := l.loadIndexRunCache(ctx)
 	if err != nil {
@@ -43,6 +65,7 @@ func (l *Library) rebuildIndex(ctx context.Context, opts IndexOptions) (stats In
 			if item.Path == "" {
 				return IndexStats{}, err
 			}
+			complete = false
 			telemetry.SkippedFolders++
 			telemetry.addError(item.Path, err)
 			continue
@@ -81,7 +104,17 @@ func (l *Library) rebuildIndex(ctx context.Context, opts IndexOptions) (stats In
 		}
 	}
 	if !scannedAny {
+		if complete {
+			if err := l.finishIdentityScan(ctx); err != nil {
+				return IndexStats{}, err
+			}
+		}
 		return runCache.stats, nil
+	}
+	if complete {
+		if err := l.finishIdentityScan(ctx); err != nil {
+			return IndexStats{}, err
+		}
 	}
 	return l.cachedIndexStats(ctx)
 }

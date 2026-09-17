@@ -21,7 +21,7 @@ data class Session(val instance: String, val dataset: String, val account: Strin
 data class Person(val id: Long, val name: String, val revision: Long, val count: Long, val faceId: Long,
     val faces: List<Long> = emptyList(), val offset: Int = 0, val facePaths: Map<Long,String> = emptyMap(),
     val faceBounds: Map<Long,FaceBounds> = emptyMap(), val favorites: Set<Long> = emptySet(),
-    val originalKeys: Map<Long,String> = emptyMap())
+    val originalKeys: Map<Long,String> = emptyMap(), val reviewFaces: Set<Long> = emptySet())
 data class FaceMatch(val id: Long, val name: String, val count: Long, val faceId: Long)
 
 data class Candidates(val people: List<Person>, val next: Long, val hasNext: Boolean)
@@ -123,6 +123,7 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
                 val face=faces.getJSONObject(it);face.getLong("id") to face.optString("display_path", "")
             }, if(faces == null) emptyMap() else (0 until faces.length()).mapNotNull {
                 val face=faces.getJSONObject(it)
+                if(face.optBoolean("needs_review")) return@mapNotNull null
                 val b=face.optJSONObject("bounds") ?: return@mapNotNull null
                 FaceBounds.validated(b.optDouble("x").toFloat(), b.optDouble("y").toFloat(),
                     b.optDouble("width").toFloat(), b.optDouble("height").toFloat())?.let { face.getLong("id") to it }
@@ -131,7 +132,9 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
             }.toSet(), if(faces == null) emptyMap() else (0 until faces.length()).mapNotNull {
                 val face=faces.getJSONObject(it)
                 face.optString("original_key").takeIf { key -> key.matches(Regex("[a-f0-9]{64}")) }?.let { face.getLong("id") to it }
-            }.toMap())
+            }.toMap(), if(faces == null) emptySet() else (0 until faces.length()).mapNotNull {
+                faces.getJSONObject(it).takeIf { face -> face.optBoolean("needs_review") }?.getLong("id")
+            }.toSet())
     }
     private fun receipt(o: JSONObject) = Receipt(o.getString("operation_id"),o.getString("action"),o.getLong("source_id"),
         o.getLong("target_id"),o.getLong("new_id"),o.getLong("faces"),o.getInt("groups"),o.getLong("at"),o.optLong("source_revision"))

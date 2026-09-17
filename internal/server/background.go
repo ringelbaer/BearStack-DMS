@@ -100,5 +100,6 @@ func (w BackgroundWorkers) Start(ctx context.Context) {
 	start(w.runPhotoCacheStatistics)
 	if w.server != nil {
 		start(w.server.RunFaceWorker)
+		start(w.server.runPhotoIdentityBackfill)
 	}
 }

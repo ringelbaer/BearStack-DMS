@@ -97,19 +97,41 @@ func (c *faceThumbnailCache) purgeExpiredBatch(ctx context.Context, now int64, c
 			return 0, cursor, errors.Join(failures, err)
 		}
 		cursor = entry
-		if err = os.Remove(c.path(entry.key)); err != nil && !errors.Is(err, os.ErrNotExist) {
-			if failures == nil {
-				failures = err
-			}
+		tx, e := c.db.BeginTx(ctx, nil)
+		if e != nil {
+			return 0, cursor, e
+		}
+		// Take a write reservation and recheck pinning before unlinking. A
+		// concurrent retention/restore/review cannot commit between this check
+		// and the unlink; failures leave the persistent journal intact.
+		res, e := tx.ExecContext(ctx, `UPDATE photo_face_thumbnail_cache SET expires_at=expires_at WHERE cache_key=? AND expires_at>0 AND expires_at<=? AND NOT EXISTS(SELECT 1 FROM photo_retained_photo_faces r WHERE r.id=face_id) AND NOT EXISTS(SELECT 1 FROM photo_faces f WHERE f.id=face_id AND f.needs_review=1)`, entry.key, now)
+		if e != nil {
+			tx.Rollback()
+			return 0, cursor, e
+		}
+		n, e := res.RowsAffected()
+		if e != nil {
+			tx.Rollback()
+			return 0, cursor, e
+		}
+		if n == 0 {
+			tx.Rollback()
 			continue
 		}
-		// Retain the expiry record until removal succeeds, allowing retries after
-		// an IO failure or a restart. Restored faces no longer have an expiry.
-		if _, err = c.db.ExecContext(ctx, `DELETE FROM photo_face_thumbnail_cache WHERE cache_key=? AND expires_at>0 AND expires_at<=?`, entry.key, now); err != nil {
-			if failures == nil {
-				failures = err
-			}
+		if e = os.Remove(c.path(entry.key)); e != nil && !errors.Is(e, os.ErrNotExist) {
+			tx.Rollback()
+			failures = errors.Join(failures, e)
+			continue
 		}
+		if _, e = tx.ExecContext(ctx, `DELETE FROM photo_face_thumbnail_cache WHERE cache_key=?`, entry.key); e == nil {
+			e = tx.Commit()
+		} else {
+			tx.Rollback()
+		}
+		if e != nil {
+			failures = errors.Join(failures, e)
+		}
+
 	}
 	return len(entries), cursor, failures
 }

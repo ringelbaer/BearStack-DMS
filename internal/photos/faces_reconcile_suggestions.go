@@ -49,7 +49,7 @@ func cacheFaceMergeSuggestion(ctx context.Context, tx *sql.Tx, item faceSuggesti
  FROM photo_faces original JOIN photo_people sp ON sp.id=original.person_id
  JOIN photo_person_revisions sr ON sr.person_id=sp.id JOIN photo_person_revisions tr ON tr.person_id=?
  JOIN photo_faces witness ON witness.id=? AND witness.person_id=? AND witness.model=? AND witness.ignored=0
- AND (witness.favorite=1 OR coalesce(witness.reference_eligible,1)=1)
+ AND witness.needs_review=0 AND witness.embedding_current=1 AND (witness.favorite=1 OR coalesce(witness.reference_eligible,1)=1)
  JOIN media_index wm ON wm.path=witness.path AND wm.admin_only=0
  WHERE original.id=? AND original.person_id=? AND original.manual=0 AND original.favorite=0 AND original.ignored=0
  AND sp.name='' AND sp.manual_name=0

@@ -213,9 +213,12 @@ func TestFaceFavoriteRedetection(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, face := range faces {
-				if face.Favorite != (scenario == "same") {
+				if face.Favorite != (face.ID == f.ID) {
 					t.Fatalf("incorrect carried favorite: %+v", face)
 				}
+			}
+			if preserved, err := l.Face(ctx, f.ID); err != nil || !preserved.Favorite || preserved.PersonID != f.PersonID {
+				t.Fatal("redetection discarded a manual favorite", err)
 			}
 			if scenario == "same" && faces[0].PersonID != f.PersonID {
 				t.Fatal("favorite changed person")

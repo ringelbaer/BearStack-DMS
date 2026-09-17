@@ -130,7 +130,7 @@ func (l *Library) FaceChainFaces(ctx context.Context, request FaceChainPageReque
 	if err := request.validate(ctx, tx); err != nil {
 		return out, err
 	}
-	filter := `f.person_id IN (` + sqlutil.Placeholders(len(args)) + `) AND f.ignored=0 AND m.admin_only=0`
+	filter := `f.person_id IN (` + sqlutil.Placeholders(len(args)) + `) AND f.ignored=0 AND f.needs_review=0 AND f.embedding_current=1 AND m.admin_only=0`
 	if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE `+filter, args...).Scan(&out.Total); err != nil {
 		return out, err
 	}

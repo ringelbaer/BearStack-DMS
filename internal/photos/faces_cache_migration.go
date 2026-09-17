@@ -24,10 +24,10 @@ func (c *faceThumbnailCache) adoptLegacy(ctx context.Context, key string, faceID
 		return nil
 	}
 	_, err = c.db.ExecContext(ctx, `INSERT INTO photo_face_thumbnail_cache(cache_key,face_id,expires_at)
- SELECT ?,f.id,CASE WHEN f.ignored=0 THEN 0
+ SELECT ?,f.id,CASE WHEN f.ignored=0 OR f.needs_review=1 OR f.retained=1 THEN 0
  WHEN f.id<=b.upper_id THEN min(b.ignored_expires_at,unixepoch()+?)
  ELSE unixepoch()+? END
- FROM photo_faces f CROSS JOIN photo_face_thumbnail_backfill b WHERE f.id=? AND b.id=1
+ FROM (SELECT id,ignored,needs_review,0 retained FROM photo_faces UNION ALL SELECT id,ignored,needs_review,1 retained FROM photo_retained_photo_faces) f CROSS JOIN photo_face_thumbnail_backfill b WHERE f.id=? AND b.id=1
  ON CONFLICT(cache_key) DO NOTHING`, key, int64(ignoredFaceThumbnailTTL/time.Second), int64(ignoredFaceThumbnailTTL/time.Second), faceID)
 	return err
 }
@@ -45,8 +45,9 @@ func (c *faceThumbnailCache) backfillLegacyBatch(ctx context.Context) (bool, err
 	if cursor >= upper {
 		return false, nil
 	}
-	rows, err := c.db.QueryContext(ctx, `SELECT f.id,f.path,f.x,f.y,f.width,f.height,coalesce(m.size_bytes,0),coalesce(m.mod_time_unix_nano,0)
- FROM photo_faces f LEFT JOIN media_index m ON m.path=f.path
+	rows, err := c.db.QueryContext(ctx, `SELECT f.id,CASE WHEN f.source_path<>'' THEN f.source_path ELSE f.path END,f.x,f.y,f.width,f.height,
+ CASE WHEN f.source_path<>'' THEN f.source_size ELSE coalesce(m.size_bytes,0) END,CASE WHEN f.source_path<>'' THEN f.source_mtime ELSE coalesce(m.mod_time_unix_nano,0) END
+ FROM (SELECT id,path,source_path,source_size,source_mtime,x,y,width,height FROM photo_faces UNION ALL SELECT id,path,source_path,source_size,source_mtime,x,y,width,height FROM photo_retained_photo_faces) f LEFT JOIN media_index m ON m.path=f.path
  WHERE f.id>? AND f.id<=? ORDER BY f.id LIMIT 100`, cursor, upper)
 	if err != nil {
 		return false, err
@@ -80,9 +81,11 @@ func (c *faceThumbnailCache) backfillLegacyBatch(ctx context.Context) (bool, err
 		}
 		abs := filepath.Join(c.root, filepath.FromSlash(rel))
 		for _, size := range []int{160, 640} {
-			key := hashFaceThumbnailKey(faceThumbnailKey(f.face, size, abs, f.size, f.mtime))
-			if err := c.adoptLegacy(ctx, key, f.face.ID); err != nil {
-				return false, err
+			raw := faceThumbnailKey(f.face, size, abs, f.size, f.mtime)
+			for _, key := range []string{hashFaceThumbnailKey(raw), hashFaceThumbnailKey("aspect-fit-v2:" + raw)} {
+				if err := c.adoptLegacy(ctx, key, f.face.ID); err != nil {
+					return false, err
+				}
 			}
 		}
 		cursor = f.face.ID

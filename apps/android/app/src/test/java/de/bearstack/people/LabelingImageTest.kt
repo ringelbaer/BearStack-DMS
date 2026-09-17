@@ -8,6 +8,14 @@ import org.junit.Test
 import org.json.JSONObject
 
 class LabelingImageTest {
+    @org.junit.Test fun changedSourcePreservesIdentityAndSuppressesOldBounds() {
+        val p=LabelingApi(OkHttpClient(),"https://example.test/").person(JSONObject("""{"id":1,"name":"Ada","revision":2,"count":1,"face_id":10,"faces":[{"id":10,"needs_review":true,"bounds":{"x":0.1,"y":0.1,"width":0.3,"height":0.3},"favorite":true}]}"""))
+        org.junit.Assert.assertEquals(setOf(10L),p.reviewFaces)
+        org.junit.Assert.assertEquals(listOf(10L),p.faces)
+        org.junit.Assert.assertEquals(setOf(10L),p.favorites)
+        org.junit.Assert.assertTrue(p.faceBounds.isEmpty())
+    }
+
     @Test fun originalKeysRemainAssociatedWithFacesAndLegacyResponsesAreSafe() {
         val key="a".repeat(64)
         val p=LabelingApi(OkHttpClient(),"https://example.test/").person(JSONObject("""{"id":1,"name":"Anna","revision":1,"count":4,"face_id":10,

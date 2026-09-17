@@ -247,8 +247,8 @@ func TestFacesAtomicEditsAndReferenceBound(t *testing.T) {
 		t.Fatal(err)
 	}
 	f, _ = l.AutomaticFaces(ctx, paths[0])
-	if len(f) != 0 {
-		t.Fatal("replaced photo retained")
+	if len(f) != 1 || f[0].NeedsReview {
+		t.Fatal("timestamp-only change lost a valid face")
 	}
 }
 func TestFaceImageLimitsAndCancellation(t *testing.T) {
@@ -374,19 +374,20 @@ func TestFacesXMPNameChangeAndLateSeed(t *testing.T) {
 	}
 }
 
-func TestFacePreviewRejectsUnindexedReplacement(t *testing.T) {
+func TestFacePreviewPreservesSnapshotOfUnindexedReplacement(t *testing.T) {
 	l := faceLibrary(t, "a.jpg")
 	finishFace(t, l, 0)
 	faces, err := l.AutomaticFaces(context.Background(), "a.jpg")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := l.FaceThumbnail(context.Background(), faces[0].ID); err != nil {
+	before, err := l.FaceThumbnail(context.Background(), faces[0].ID)
+	if err != nil {
 		t.Fatal(err)
 	}
 	writeSizedJPEG(t, filepath.Join(l.Root(), "a.jpg"), 160, 90, color.Black)
-	if _, err = l.FaceThumbnail(context.Background(), faces[0].ID); err == nil {
-		t.Fatal("cropped replacement using stale face region")
+	if after, err := l.FaceThumbnail(context.Background(), faces[0].ID); err != nil || string(before) != string(after) {
+		t.Fatal("changed source must preserve previous preview bytes", err)
 	}
 }
 

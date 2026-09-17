@@ -216,6 +216,13 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 		return err
 	}
 	defer tx.Rollback()
+	var review bool
+	if err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM photo_faces WHERE path=? AND needs_review=1)`, j.Path).Scan(&review); err != nil {
+		return err
+	}
+	if review {
+		return ErrLabelConflict
+	}
 	var baseRevision int64
 	if err = tx.QueryRowContext(ctx, `SELECT revision FROM photo_face_state WHERE id=1`).Scan(&baseRevision); err != nil {
 		return err
@@ -256,9 +263,7 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 	for _, f := range old {
 		affected[f.PersonID] = true
 	}
-	if _, err = tx.ExecContext(ctx, `DELETE FROM photo_faces WHERE path=? AND drawn=0`, j.Path); err != nil {
-		return err
-	}
+	retainedIDs := map[int64]bool{}
 	used := map[int64]bool{}
 	var named map[int64]bool
 	matchPerson := func(vector []float32) (int64, error) {
@@ -393,9 +398,51 @@ detections:
 			facePixels = d.Quality.FacePixels
 			sharpness = d.Quality.Sharpness
 		}
-		_, err = tx.ExecContext(ctx, `INSERT INTO photo_faces(path,directory,person_id,x,y,width,height,confidence,embedding,model,manual,ignored,favorite,reference_eligible,face_pixels,sharpness,recognition_assignment) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, j.Path, media.Directory, person, d.X, d.Y, d.Width, d.Height, d.Confidence, encodeVector(d.Embedding), j.Model, manual, ignored, favorite, referenceEligible, facePixels, sharpness, assignment)
+		// Reanalysis of unchanged content (for example an XMP edit) must not
+		// recreate a one-to-one face or retire its existing preview bytes.
+		var stableID int64
+		for _, f := range old {
+			if f.Drawn || overlap(box, Face{X: f.X, Y: f.Y, Width: f.Width, Height: f.Height}) < .7 {
+				continue
+			}
+			if stableID != 0 {
+				stableID = 0
+				break
+			}
+			stableID = f.ID
+		}
+		if stableID != 0 {
+			for _, f := range old {
+				if f.ID != stableID {
+					continue
+				}
+				n := 0
+				for _, other := range result.Faces {
+					if overlap(Face{X: other.X, Y: other.Y, Width: other.Width, Height: other.Height}, Face{X: f.X, Y: f.Y, Width: f.Width, Height: f.Height}) >= .7 {
+						n++
+					}
+				}
+				if n != 1 {
+					stableID = 0
+				}
+				break
+			}
+		}
+		if stableID != 0 {
+			retainedIDs[stableID] = true
+			_, err = tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=?,x=?,y=?,width=?,height=?,confidence=?,embedding=?,model=?,manual=?,ignored=?,favorite=?,reference_eligible=?,face_pixels=?,sharpness=?,recognition_assignment=?,embedding_current=1 WHERE id=?`, person, d.X, d.Y, d.Width, d.Height, d.Confidence, encodeVector(d.Embedding), j.Model, manual, ignored, favorite, referenceEligible, facePixels, sharpness, assignment, stableID)
+		} else {
+			_, err = tx.ExecContext(ctx, `INSERT INTO photo_faces(path,directory,person_id,x,y,width,height,confidence,embedding,model,manual,ignored,favorite,reference_eligible,face_pixels,sharpness,recognition_assignment) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, j.Path, media.Directory, person, d.X, d.Y, d.Width, d.Height, d.Confidence, encodeVector(d.Embedding), j.Model, manual, ignored, favorite, referenceEligible, facePixels, sharpness, assignment)
+		}
 		if err != nil {
 			return err
+		}
+	}
+	for _, f := range old {
+		if !f.Drawn && !f.Manual && !f.Favorite && !f.Ignored && !retainedIDs[f.ID] {
+			if _, err = tx.ExecContext(ctx, `DELETE FROM photo_faces WHERE id=?`, f.ID); err != nil {
+				return err
+			}
 		}
 	}
 	for p := range affected {
@@ -409,6 +456,9 @@ detections:
 	}
 	if n, _ := res.RowsAffected(); n != 1 {
 		return errors.New("Gesichtsauftrag wurde ersetzt")
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE photo_face_state SET revision=revision+1 WHERE id=1`); err != nil {
+		return err
 	}
 	var committedRevision int64
 	if err = tx.QueryRowContext(ctx, `SELECT revision FROM photo_face_state WHERE id=1`).Scan(&committedRevision); err != nil {

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"bearstack/internal/sqlutil"
@@ -411,7 +412,11 @@ func (s *photoIndexStore) deleteIndexPaths(ctx context.Context, paths []string, 
 		for _, stmt := range statements {
 			batch = append(batch, indexDeleteStatement{fmt.Sprintf(stmt, in), args})
 		}
-		if err := s.deleteIndexBatch(ctx, batch); err != nil {
+		kind := `kind='blog'`
+		if strings.Contains(statements[len(statements)-1], "media_index") {
+			kind = `kind IN ('image','video','audio')`
+		}
+		if err := s.deleteIndexBatch(ctx, batch, retentionSelection{kind + ` AND path IN (` + in + `)`, args}); err != nil {
 			return err
 		}
 	}
@@ -442,7 +447,7 @@ func (s *photoIndexStore) deleteFolderIndexSubtree(ctx context.Context, rel stri
 		{`DELETE FROM folder_index WHERE path = ? OR (path >= ? AND path < ?)`, folderArgs},
 		{`DELETE FROM photo_folder_scan WHERE path = ? OR (path >= ? AND path < ?)`, folderArgs},
 	}
-	return s.deleteIndexBatch(ctx, statements)
+	return s.deleteIndexBatch(ctx, statements, retentionSelection{`path=? OR (path>=? AND path<?)`, folderArgs})
 }
 
 type indexDeleteStatement struct {
@@ -450,12 +455,17 @@ type indexDeleteStatement struct {
 	args []any
 }
 
-func (s *photoIndexStore) deleteIndexBatch(ctx context.Context, statements []indexDeleteStatement) error {
+func (s *photoIndexStore) deleteIndexBatch(ctx context.Context, statements []indexDeleteStatement, retained ...retentionSelection) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
+	for _, selection := range retained {
+		if err := s.retainSelectionTx(ctx, tx, selection); err != nil {
+			return err
+		}
+	}
 	for _, stmt := range statements {
 		if err := ctx.Err(); err != nil {
 			return err

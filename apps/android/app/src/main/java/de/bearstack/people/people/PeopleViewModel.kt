@@ -490,7 +490,7 @@ class PeopleViewModel private constructor(application: Application, private val 
         val old=state.value.selectedPerson ?: return
         update {it.copy(selectedPerson=person,removeFace=null,selectedFaces=if(preserveSelection) it.selectedFaces else emptySet(),
             batchNaming=false,batchConfirmation=null,namedPeople=it.namedPeople.mapNotNull { p ->
-            if(p.id!=old.id) p else person?.copy(faces=emptyList(),facePaths=emptyMap(),faceBounds=emptyMap(),originalKeys=emptyMap(),favorites=emptySet())
+            if(p.id!=old.id) p else person?.copy(faces=emptyList(),facePaths=emptyMap(),faceBounds=emptyMap(),originalKeys=emptyMap(),favorites=emptySet(),reviewFaces=emptySet())
         })}
     }
     private suspend fun refreshSelectedPerson() {
@@ -513,7 +513,7 @@ class PeopleViewModel private constructor(application: Application, private val 
                 requireMessage(faces.size>old.faces.size,R.string.error_no_more_photos)
                 update {it.copy(selectedPerson=old.copy(faces=faces,facePaths=old.facePaths+page.facePaths,
                     faceBounds=old.faceBounds+page.faceBounds,originalKeys=old.originalKeys+page.originalKeys,
-                    favorites=old.favorites+page.favorites))}
+                    favorites=old.favorites+page.favorites,reviewFaces=old.reviewFaces+page.reviewFaces))}
             }
         }
     }
@@ -605,10 +605,10 @@ class PeopleViewModel private constructor(application: Application, private val 
             "unassign_faces", "assign_faces", "name_faces", "ignore_faces" -> {
                 val ids=body.getJSONArray("face_ids").let { a -> (0 until a.length()).map {a.getLong(it)}.toSet() }
                 person=person.copy(count=person.count-receipt.faces,faces=person.faces.filterNot {it in ids},
-                    favorites=person.favorites-ids,facePaths=person.facePaths-ids,faceBounds=person.faceBounds-ids,
+                    favorites=person.favorites-ids,reviewFaces=person.reviewFaces-ids,facePaths=person.facePaths-ids,faceBounds=person.faceBounds-ids,
                     originalKeys=person.originalKeys-ids,faceId=person.faces.firstOrNull {it !in ids} ?: 0)
             }
-            "unassign" -> person=person.copy(count=person.count-1,faces=person.faces-face,favorites=person.favorites-face,
+            "unassign" -> person=person.copy(count=person.count-1,faces=person.faces-face,favorites=person.favorites-face,reviewFaces=person.reviewFaces-face,
                 facePaths=person.facePaths-face,faceBounds=person.faceBounds-face,originalKeys=person.originalKeys-face,
                 faceId=person.faces.firstOrNull {it!=face} ?: 0)
         }

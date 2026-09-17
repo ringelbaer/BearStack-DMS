@@ -63,7 +63,7 @@ func (l *Library) ReconcileFacesBatch(ctx context.Context, batchSize int) (FaceR
 	// Scan a bounded number of rows, including named groups. Filtering named
 	// groups in SQL could otherwise scan the entire library in a single batch.
 	rows, err := l.index.db.QueryContext(ctx, `SELECT f.id,f.person_id,f.path,
- p.name='' AND p.manual_name=0 AND coalesce(f.reference_eligible,1)=1 AND f.model=(SELECT model FROM photo_face_state WHERE id=1)
+ p.name='' AND p.manual_name=0 AND f.needs_review=0 AND f.embedding_current=1 AND coalesce(f.reference_eligible,1)=1 AND f.model=(SELECT model FROM photo_face_state WHERE id=1)
  FROM photo_faces f INDEXED BY idx_face_reconcile_candidates CROSS JOIN photo_people p ON p.id=f.person_id
  WHERE f.id>? AND f.id<=? AND f.manual=0 AND f.ignored=0 AND f.favorite=0 ORDER BY f.id LIMIT ?`, state.Cursor, state.Upper, batchSize)
 	if err != nil {
@@ -169,7 +169,7 @@ func (l *Library) ReconcileFacesBatch(ctx context.Context, batchSize int) (FaceR
 		var region Face
 		var xmpJSON string
 		err = tx.QueryRowContext(ctx, `SELECT f.person_id,f.embedding,f.x,f.y,f.width,f.height,m.faces FROM photo_faces f JOIN photo_people p ON p.id=f.person_id JOIN media_index m ON m.path=f.path
- WHERE f.id=? AND f.model=? AND f.manual=0 AND f.favorite=0 AND f.ignored=0 AND coalesce(f.reference_eligible,1)=1 AND p.name='' AND p.manual_name=0 AND m.admin_only=0`, f.id, model).Scan(&person, &encoded, &region.X, &region.Y, &region.Width, &region.Height, &xmpJSON)
+ WHERE f.id=? AND f.model=? AND f.manual=0 AND f.favorite=0 AND f.ignored=0 AND f.needs_review=0 AND f.embedding_current=1 AND coalesce(f.reference_eligible,1)=1 AND p.name='' AND p.manual_name=0 AND m.admin_only=0`, f.id, model).Scan(&person, &encoded, &region.X, &region.Y, &region.Width, &region.Height, &xmpJSON)
 		if errors.Is(err, sql.ErrNoRows) {
 			continue
 		}

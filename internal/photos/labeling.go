@@ -49,7 +49,7 @@ func (l *Library) labelPersonPage(ctx context.Context, id int64, offset, limit i
 func presentLabelFace(row indexedLabelFace) LabelFace {
 	face := row.Face
 	face.DisplayPath = mediaDisplayPath(row.Path)
-	face.OriginalKey = labelOriginalKey(row.Path, row.Size, row.Modified)
+	face.OriginalKey = labelOriginalKey(row.Path, row.Size, row.Modified, row.ContentRevision)
 	return face
 }
 
@@ -138,8 +138,8 @@ func LabelActor(source, subject, username string, accountID int64) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func labelOriginalKey(source string, size, modified int64) string {
-	encoded, _ := json.Marshal([]any{source, size, modified})
+func labelOriginalKey(source string, size, modified, revision int64) string {
+	encoded, _ := json.Marshal([]any{source, size, modified, revision})
 	sum := sha256.Sum256(encoded)
 	return hex.EncodeToString(sum[:])
 }

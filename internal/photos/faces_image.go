@@ -9,6 +9,7 @@ import (
 	"image/jpeg"
 	"math"
 	"os"
+	"path/filepath"
 
 	"golang.org/x/image/draw"
 	_ "golang.org/x/image/webp"
@@ -161,13 +162,31 @@ func (l *Library) FaceThumbnailSize(ctx context.Context, id int64, size int) ([]
 	if err != nil {
 		return nil, err
 	}
-	legacyKey := faceThumbnailKey(f, size, abs, info.Size(), info.ModTime().UnixNano())
+	var sourcePath string
+	var sourceSize, sourceMtime int64
+	if err = l.index.db.QueryRowContext(ctx, `SELECT source_path,source_size,source_mtime FROM photo_faces WHERE id=?`, id).Scan(&sourcePath, &sourceSize, &sourceMtime); err != nil {
+		return nil, err
+	}
+	if sourcePath == "" {
+		sourcePath = f.Path
+		sourceSize = info.Size()
+		sourceMtime = info.ModTime().UnixNano()
+	}
+	legacyKey := faceThumbnailKey(f, size, filepath.Join(l.root, filepath.FromSlash(sourcePath)), sourceSize, sourceMtime)
 	// Old previews stretched the crop. Replace them on demand without a full
 	// cache scan or rebuilding the library at startup.
 	key := "aspect-fit-v2:" + legacyKey
 	b, err := l.faceThumbnails.get(ctx, id, key, func() ([]byte, error) {
+		if f.NeedsReview {
+			return nil, ErrLabelConflict
+		}
 		return l.renderFaceThumbnail(ctx, f, size)
 	}, legacyKey)
+	if f.NeedsReview && errors.Is(err, ErrLabelConflict) {
+		// A legacy stretched crop is still the only trustworthy snapshot when
+		// the original changed before its on-demand format upgrade.
+		b, err = l.faceThumbnails.get(ctx, id, legacyKey, func() ([]byte, error) { return nil, ErrLabelConflict })
+	}
 	if err != nil {
 		return nil, err
 	}

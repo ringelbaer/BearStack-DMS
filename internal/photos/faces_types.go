@@ -7,6 +7,8 @@ type RecognizedFace struct {
 	recognitionAssignment string
 	nameSource            string
 	ID                    int64   `json:"id"`
+	NeedsReview           bool    `json:"needs_review"`
+	SourceRevision        int64   `json:"source_revision"`
 	PersonID              int64   `json:"person_id"`
 	Name                  string  `json:"name"`
 	Path                  string  `json:"path"`

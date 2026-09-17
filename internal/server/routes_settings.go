@@ -26,6 +26,9 @@ var settingsRouteSpecs = []routeSpec{
 }
 
 var photoSettingsRouteSpecs = []routeSpec{
+	{pattern: "GET /settings/photos/identities", capabilities: authCapPhotosManage, handler: (*Server).handlePhotoIdentities},
+	{pattern: "POST /settings/photos/identities/{id}", capabilities: authCapPhotosManage, handler: (*Server).handleResolvePhotoIdentity},
+
 	{pattern: "GET /settings/photos/faces", capabilities: authCapPhotosManage, handler: (*Server).handleFaceSettings},
 	{pattern: "POST /settings/photos/faces", capabilities: authCapPhotosManage, handler: (*Server).handleSaveFaceSettings},
 	{pattern: "POST /settings/photos/faces/{action}", capabilities: authCapPhotosManage, handler: (*Server).handleFaceControl},
