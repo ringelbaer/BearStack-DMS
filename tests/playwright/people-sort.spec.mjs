@@ -534,6 +534,10 @@ test("unnamed selection survives failed actions and refreshes existing and new t
   await expect(page.locator("[data-person-select]:checked")).toHaveCount(2);
   await page.evaluate(() => { window.retainedPeopleImage = document.querySelector(".person-overview-card img"); });
   data.people[0].count = 9;
+  data.people[0].directory = "2026_07_15_Raw_Existing";
+  data.people[0].folder_name = "Existing formatted & <folder>";
+  next.people[0].directory = "2026_07_15_Raw_New";
+  next.people[0].folder_name = "New formatted & <folder>";
   data.people = [data.people[0], ...data.people.slice(2), next.people[0]];
   await page.route("**/photos/people?*format=json*", route => route.fulfill({ json: data }));
   succeed = true;
@@ -541,9 +545,10 @@ test("unnamed selection survives failed actions and refreshes existing and new t
   await expect(page.locator("[data-people-status]")).toHaveText("Personen zusammengeführt.");
   expect(await page.evaluate(() => window.retainedPeopleImage === document.querySelector(".person-overview-card img"))).toBe(true);
   await expect(cards.first().locator("[data-person-count]")).toHaveText("9 Fotos");
-  await expect(cards.first().locator("[data-person-folder]")).toHaveText(data.people[0].directory.split("/").pop());
+  await expect(cards.first().locator("[data-person-folder]")).toHaveText(data.people[0].folder_name);
   await expect(page.locator('.person-overview-card a[href]')).toHaveCount(0);
   await expect(page.locator("[data-person-select]:checked")).toHaveCount(0);
+  await expect(cards.last().locator("[data-person-folder]")).toHaveText("New formatted & <folder>");
   await expect(cards.last().locator("[data-person-folder]")).toBeVisible();
   await expect(cards.last().locator("[data-person-edit]")).toBeHidden();
   await cards.last().locator("img").click();
@@ -566,7 +571,7 @@ test("source headings also work for ignored faces without JavaScript and selecti
       await expect(page.locator("[data-person-folder]").first()).toBeVisible();
       await page.goto(baseURL + "/photos/people?ignored=1");
       const card = page.locator(`[data-ignored-face="${faceID}"]`);
-      await expect(card.locator("[data-person-folder]")).toHaveText(people.people[0].directory.split("/").pop());
+      await expect(card.locator("[data-person-folder]")).toHaveText(people.people[0].folder_name);
       const heading = await card.locator("[data-person-folder]").boundingBox();
       expect(heading.y + heading.height).toBeLessThanOrEqual((await card.locator("img").boundingBox()).y);
       await expect(page.locator("[data-people-selection-mode]")).toHaveCount(0);

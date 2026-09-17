@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.67.0
+  version: 0.67.1
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -5573,6 +5573,9 @@ components:
         directory:
           type: string
           description: Since 0.47.0, relative parent directory of the representative active portrait; Fotos for the photo root. Other photos of the person may be in other directories.
+        folder_name:
+          type: string
+          description: Since 0.67.1, gallery-formatted parent folder name for display; date prefixes and underscores follow gallery rules, Fotos for the root. Use this instead of the raw directory value.
         portrait:
           type: object
           description: Since 0.47.0, normalized bounds of face_id in the oriented photo. Used for the naming dialog's 300-percent bounding-box preview.

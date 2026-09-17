@@ -139,6 +139,7 @@ func (l *Library) People(ctx context.Context, id int64, page int, q string, know
 				return out, err
 			}
 			p.DisplayPath = mediaDisplayPath(source)
+			p.FolderName = MediaFolderName(source)
 			p.Directory = path.Dir(source)
 			if p.Directory == "." {
 				p.Directory = "Fotos"

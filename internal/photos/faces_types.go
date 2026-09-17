@@ -29,6 +29,7 @@ type Person struct {
 	FaceID       int64       `json:"face_id"`
 	SearchFaceID int64       `json:"search_face_id,omitempty"`
 	Directory    string      `json:"directory,omitempty"`
+	FolderName   string      `json:"folder_name,omitempty"`
 	Portrait     *FaceRegion `json:"portrait,omitempty"`
 }
 type FaceRegion struct {

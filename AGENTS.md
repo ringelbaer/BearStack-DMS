@@ -29,3 +29,10 @@ BearStack uses semantic versioning from the root `VERSION` file. Any agent or ma
 ## Doku und API yaml
 
 - Halte die Dokumentation / Website, die README und die API Dokumentation (openapi) stets aktuell.
+
+## Anzeige von Fotoordnern und Pfaden
+
+- Sichtbare Fotoordnernamen müssen die zentrale Galerie-Formatierung `photos.MediaFolderName` verwenden; sichtbare Fotopfade verwenden `photos.MediaDisplayPath`. Das gilt auch für Tooltips, Dialoge und nachgeladene Kacheln.
+- Rohe Verzeichniswerte wie `directory`, `path.Base` oder JavaScript-`split` dürfen nicht als sichtbare Ordnerbeschriftung verwendet werden. Technische Pfade bleiben für URLs, Dateizugriffe und Sortierung unverändert.
+- Für JavaScript-Ansichten stellt der Server formatierte Anzeigefelder bereit. Keine eigene Formatierungslogik und kein Rückfall auf Rohpfade im Browser.
+- Änderungen an solchen Anzeigen müssen Regressionen für Datumspräfixe, Unterstriche, verschachtelte Ordner und das Stammverzeichnis enthalten. HTML-Erstausgabe sowie Aktualisierung bestehender und neu eingefügter AJAX-Kacheln sind abzudecken.

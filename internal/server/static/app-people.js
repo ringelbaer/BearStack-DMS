@@ -159,10 +159,6 @@
   }
 
 
-  function folderName(directory) {
-    return (directory || "Fotos").split("/").pop();
-  }
-
   function personCard(person, existing) {
     var name = person.name || "Unbenannt";
     var thumbnail = "/photos/faces/" + encodeURIComponent(person.face_id) + "/thumbnail";
@@ -181,7 +177,7 @@
       existing.querySelector("strong").hidden = overview.dataset.unknownOnly === "true" && !person.name;
       existing.querySelector("[data-person-count]").textContent = countText;
       var folder = existing.querySelector("[data-person-folder]");
-      if (folder) { folder.textContent = overview.dataset.unknownOnly === "true" ? folderName(person.directory) : person.directory || ""; folder.title = person.directory || "Fotos"; }
+      if (folder) { folder.textContent = person.folder_name || ""; folder.title = person.display_path || ""; }
       var checkbox = existing.querySelector("[data-person-select]");
       if (checkbox) checkbox.setAttribute("aria-label", "Person auswählen: " + name);
       var ignore = existing.querySelector("[data-ignore-face]");
@@ -212,9 +208,8 @@
     title.hidden = overview.dataset.unknownOnly === "true" && !person.name;
     var count = document.createElement("span");
     count.textContent = countText; count.dataset.personCount = "";
-    var folder = document.createElement("span"); folder.dataset.personFolder = ""; folder.title = "Ordner des Vorschaubilds"; folder.textContent = person.directory || "";
+    var folder = document.createElement("span"); folder.dataset.personFolder = ""; folder.title = person.display_path || ""; folder.textContent = person.folder_name || "";
     if (overview.dataset.unknownOnly === "true") {
-      folder.textContent = folderName(person.directory); folder.title = person.directory || "Fotos";
       link.append(folder, img, title, count);
     } else link.append(img, title, count, folder);
     card.append(link);

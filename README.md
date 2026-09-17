@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.67.0** · Android-App: **0.17.0**.
+Aktuelle Version: **0.67.1** · Android-App: **0.17.0**.
+
+**0.67.1** korrigiert rohe Ordnernamen in der Personenübersicht: HTML und AJAX verwenden die zentrale Galerie-Formatierung, ebenso die Tooltips. Eine verbindliche Vorgabe in `AGENTS.md` und Regressionstests sichern dies ab.
 
 **0.67.0** zeigt bei **Unbenannt** und **Ignoriert** den Ordnernamen über dem Vorschaubild. Der neue **Auswahlmodus** unter **Unbenannt** macht die gesamte Kachel zur Batch-Auswahl. **Ähnliche Gesichter** verwendet beim Benennen/Zuordnen dieselbe 300%-Fotovorschau wie der normale Dialog und formatiert Ordnernamen nach den Galerie-Regeln.
 

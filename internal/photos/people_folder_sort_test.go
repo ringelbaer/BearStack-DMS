@@ -74,3 +74,25 @@ func TestPeopleFolderPhotoCountSortingBeforePagination(t *testing.T) {
 		}
 	}
 }
+
+func TestPeopleFolderDisplayUsesGalleryNames(t *testing.T) {
+	for _, tc := range []struct{ source, directory, name string }{
+		{"photo.jpg", "Fotos", "Fotos"},
+		{"2026_07_15_Sommer_Urlaub/photo.jpg", "2026_07_15_Sommer_Urlaub", "Sommer Urlaub"},
+		{"Archiv/15.03.2024 - Schöne_Ausflüge/photo.jpg", "Archiv/15.03.2024 - Schöne_Ausflüge", "Schöne Ausflüge"},
+		{"Archiv/See_&_Berge/photo.jpg", "Archiv/See_&_Berge", "See & Berge"},
+	} {
+		t.Run(tc.source, func(t *testing.T) {
+			l := faceLibrary(t, tc.source)
+			finishFace(t, l, 0)
+			got, err := l.People(context.Background(), 0, 1, "", false, true)
+			if err != nil || len(got.People) != 1 {
+				t.Fatalf("people: %+v %v", got, err)
+			}
+			person := got.People[0]
+			if person.Directory != tc.directory || person.FolderName != tc.name {
+				t.Fatalf("raw/display fields: %+v", person)
+			}
+		})
+	}
+}

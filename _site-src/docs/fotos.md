@@ -752,6 +752,8 @@ steht „Fotos“. Die Einstellungen bleiben pro Benutzer im Browser gespeichert
 gelten auch nach AJAX-Aktualisierungen. Das Umschalten verwendet die vorhandenen
 Bilder und benötigt keine Serverabfrage. Ohne JavaScript gilt die Standardansicht.
 
+Ab **0.67.1** verwenden alle Ordnerbeschriftungen der Personenübersicht die Galerie-Formatierung, auch nach AJAX-Aktualisierungen. Beispielsweise wird `2026_07_15_Sommer_Urlaub` als **Sommer Urlaub** angezeigt. Tooltips zeigen den formatierten Fotopfad. Der technische Ordnerpfad für Sortierung und API bleibt unverändert; `folder_name` liefert den formatierten Anzeigenamen.
+
 **Benenn-Modal (ab 0.47.0):** Links erscheint das Foto mit einem Ausschnitt von
 300 % der Bounding Box des gewählten Vorschaubilds und der Gesichtsmarkierung,
 rechts stehen Name und Vorschläge. Auf schmalen Bildschirmen steht das Bild darüber.

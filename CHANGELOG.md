@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.67.1 – in Entwicklung
+
+- Personenübersicht: Ordnernamen in Alle, Benannt und Unbenannt verwenden dieselbe zentrale Galerie-Formatierung wie Ignoriert. Datumspräfixe und Unterstriche werden korrekt verarbeitet; Tooltips zeigen den formatierten Fotopfad. HTML, vorhandene AJAX-Kacheln und neu eingefügte Kacheln verwenden dieselben Serverwerte.
+- Das ergänzende JSON-Anzeigefeld `folder_name` korrigiert die Darstellung; technische Verzeichnisse und Sortierung bleiben unverändert. Keine zusätzlichen Datenbankabfragen.
+- Verbindliche Vorgabe in `AGENTS.md`: zentrale Formatierung für Namen, Pfade und Tooltips, keine Rohpfad-Fallbacks im Browser sowie Regressionen für HTML und AJAX.
+- PATCH **0.67.1** für die Darstellungskorrektur; keine Datenmigration. README, Website und OpenAPI aktualisiert.
+
 ### BearStack 0.67.0 – in Entwicklung
 
 - Personenübersicht: Unter **Unbenannt** und **Ignoriert** steht der Ordnername immer über dem Vorschaubild, auch ohne JavaScript. Im Stammverzeichnis erscheint „Fotos“; lange Namen werden mit vollständigem Tooltip gekürzt.

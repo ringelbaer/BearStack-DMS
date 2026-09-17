@@ -79,13 +79,15 @@ func TestPeopleSourceFolderHeadingsAndSelectionPermissions(t *testing.T) {
 	}
 	for _, mode := range []string{"all", "known", "unknown", "ignored"} {
 		for _, canEdit := range []bool{false, true} {
-			for _, directory := range []string{"Fotos", `2026/Urlaub & <Meer>`} {
+			for _, directory := range []string{"Fotos", `2026/2026_07_15_Urlaub_&_ <Meer>`} {
 				page := photos.PeoplePage{Page: 1, TotalPages: 1, KnownOnly: mode == "known", UnknownOnly: mode == "unknown", IgnoredOnly: mode == "ignored"}
 				page.People = []photos.Person{{ID: 1, FaceID: 2, Directory: directory, Count: 1}}
 				photoPath := "photo.jpg"
 				if directory != "Fotos" {
 					photoPath = directory + "/photo.jpg"
 				}
+				page.People[0].FolderName = photos.MediaFolderName(photoPath)
+				page.People[0].DisplayPath = photos.MediaDisplayPath(photoPath)
 				page.Faces = []photos.RecognizedFace{{ID: 2, PersonID: 1, Path: photoPath}}
 				var out bytes.Buffer
 				if err := templates.ExecuteTemplate(&out, "people.html", PageData{People: page, Auth: AuthPermissions{CanPhotosEdit: canEdit}}); err != nil {
@@ -99,14 +101,13 @@ func TestPeopleSourceFolderHeadingsAndSelectionPermissions(t *testing.T) {
 				if folder < 0 || image < 0 || (folder < image) != (mode == "unknown" || mode == "ignored") {
 					t.Fatalf("mode=%s: wrong folder/image order", mode)
 				}
-				if mode == "unknown" || mode == "ignored" {
-					name := "Fotos"
-					if directory != "Fotos" {
-						name = "Urlaub &amp; &lt;Meer&gt;"
-					}
-					if !strings.Contains(html[folder:image], ">"+name+"</span>") {
-						t.Fatalf("mode=%s: missing escaped folder basename: %s", mode, html[folder:image])
-					}
+				folderEnd := folder + strings.Index(html[folder:], "</span>") + len("</span>")
+				name := "Fotos"
+				if directory != "Fotos" {
+					name = "Urlaub &amp; &lt;Meer&gt;"
+				}
+				if !strings.Contains(html[folder:folderEnd], ">"+name+"</span>") {
+					t.Fatalf("mode=%s: missing escaped folder basename: %s", mode, html[folder:folderEnd])
 				}
 			}
 		}
