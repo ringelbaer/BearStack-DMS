@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"bearstack/internal/document"
-	"bearstack/internal/repository"
 )
 
 type documentListService struct {
@@ -79,11 +78,18 @@ func (svc documentListService) count(ctx context.Context, filter document.ListFi
 }
 
 type folderApplicationService struct {
-	repo                        *repository.Repository
+	repo                        folderRepository
 	listFolderCustomFieldValues func(context.Context, document.ListFilter) ([]document.CustomFieldValueFolder, error)
 	folderTagMinDocuments       func(context.Context) (int, error)
 	countDocuments              func(context.Context, document.ListFilter) (int, error)
 	countDocumentFilters        func(context.Context, []document.ListFilter) ([]int, error)
+}
+
+type folderRepository interface {
+	ListFolderTags(context.Context, document.ListFilter) ([]document.Tag, error)
+	ListFolderCustomFieldValues(context.Context, document.ListFilter) ([]document.CustomFieldValueFolder, error)
+	ListSearchFavorites(context.Context) ([]document.SearchFavorite, error)
+	CountDocuments(context.Context, document.ListFilter) (int, error)
 }
 
 func (s *Server) folderService() folderApplicationService {

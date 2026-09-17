@@ -2,7 +2,7 @@
   "use strict";
 
   // Shared naming/assignment controller. Each page owns its selection, loading
-  // state and refresh; the dialog owns search, submission and focus restoration.
+  // state and refresh; the dialog connects the picker to submission and focus restoration.
   function createEditButton(label) {
     var edit = document.createElement("button");
     edit.type = "button"; edit.className = "person-edit-button secondary-button";
@@ -221,300 +221,47 @@
 
   window.BearStackPersonDialog = { bind: bind, createEditButton: createEditButton };
 
+  // Adapter for the shipped forms. The picker itself has no route, button-label
+  // or submit policy and can also be used by a component without a form.
   function initializePersonPickers(root) {
-  root.querySelectorAll("[data-person-picker]").forEach(function (form) {
-    if (form.dataset.personPickerReady) return;
-    form.dataset.personPickerReady = "1";
-    var input = form.querySelector("[data-person-search]");
-    var target = form.querySelector("[data-person-target]");
-    var list = form.querySelector("[data-person-options]");
-    var popup = form.querySelector("[data-person-popup]");
-    var feedback = form.querySelector("[data-person-feedback]");
-    var matchButton = form.querySelector("[data-person-face-match]");
-    var matching = false;
-    var allowCreate = form.hasAttribute("data-person-create");
-    var renameAction = allowCreate ? form.action : "";
-    var items = [], active = -1, revision = 0, pointerPerson, touchChoice;
-    var timer, controller, pendingDirection, renderFrame, pendingRender;
-
-    function cancel() {
-      clearTimeout(timer);
-      if (renderFrame) cancelAnimationFrame(renderFrame);
-      renderFrame = 0;
-      pendingRender = null;
-      if (controller) controller.abort();
-      revision++;
-      matching = false;
-      if (matchButton) matchButton.removeAttribute("aria-busy");
-    }
-    function close() {
-      cancel();
-      popup.hidden = true;
-      input.setAttribute("aria-expanded", "false");
-      input.removeAttribute("aria-activedescendant");
-      active = -1;
-      pointerPerson = undefined;
-      touchChoice = null;
-    }
-    function validate() {
-      if (form.hasAttribute("data-person-restore")) {
-        var assigned = target.value && target.value !== "0";
-        form.querySelector("[data-person-submit]").textContent = assigned ? "Zuordnen und wiederherstellen" : "Benennen und wiederherstellen";
-        input.setCustomValidity(assigned || input.value.trim() ? "" : "Bitte einen Namen eingeben oder eine Person auswählen.");
-        return;
-      }
-      if (form.hasAttribute("data-person-face-selection")) {
-        var subject = form.dataset.personFaceSelection === "single" ? "Gesicht" : "Auswahl";
-        form.querySelector("[data-person-submit]").textContent = target.value && target.value !== "0" ? subject + " zuordnen" : input.value.trim() ? subject + " benennen" : "Als neue Gruppe abtrennen";
-        input.setCustomValidity("");
-        return;
-      }
-      if (form.hasAttribute("data-person-manual-create")) {
-        input.setCustomValidity((target.value && target.value !== "0") || input.value.trim() ? "" : "Bitte einen Namen eingeben oder eine Person auswählen.");
-        return;
-      }
-      if (allowCreate) {
-        var merging = target.value && target.value !== "0";
-        form.action = merging ? renameAction.replace(/\/rename$/, "/merge") : renameAction;
-        form.querySelector("[data-person-submit]").textContent = merging ? "Gruppen zusammenführen" : (Number(form.dataset.personCount) > 1 ? "Benennen und zusammenführen" : "Benennen");
-        input.setCustomValidity(Number(form.dataset.personCount) > 1 && !merging && !input.value.trim() ? "Bitte einen Namen eingeben oder eine Person auswählen." : "");
-        return;
-      }
-      input.setCustomValidity(target.value && (target.value !== "0" || !input.required) ? "" :
-        "Bitte eine Person aus den Vorschlägen auswählen.");
-    }
-    function activate(index) {
-      active = index;
-      Array.from(list.children).forEach(function (option, i) {
-        option.setAttribute("aria-selected", String(i === active));
-      });
-      if (active >= 0) {
-        var option = list.children[active];
-        input.setAttribute("aria-activedescendant", option.id);
-        option.scrollIntoView({ block: "nearest" });
-      } else {
-        input.removeAttribute("aria-activedescendant");
-      }
-    }
-    function choose(index) {
-      var person = items[index];
-      if (!person || input.disabled || popup.hidden) return;
-      target.value = String(person.id);
-      target.dataset.revision = String(person.revision || 0);
-      target.dataset.name = person.name || "";
-      input.value = person.create ? person.name : (person.name || "Unbenannt") + " (#" + person.id + ")";
-      validate();
-      close();
-      if (form.hasAttribute("data-person-modal")) form.requestSubmit();
-    }
-    async function load(direction, faceMatch) {
-      cancel();
-      matching = !!faceMatch;
-      if (matchButton && matching) matchButton.setAttribute("aria-busy", "true");
-      pendingDirection = direction;
-      var request = revision;
-      controller = new AbortController();
-      list.replaceChildren();
-      items = [];
-      activate(-1);
-      popup.hidden = false;
-      input.setAttribute("aria-expanded", "true");
-      feedback.textContent = faceMatch ? "Gesicht wird mit benannten Personen abgeglichen …" : "Personen werden geladen …";
-      // A selected label contains the ID; opening it again lists alternatives.
-      var query = target.value && target.value !== "0" ? "" : input.value.trim();
-      try {
-        var url = faceMatch ? "/photos/faces/" + encodeURIComponent(form.dataset.personFaceId) + "/suggestions" : (form.dataset.personSuggestionsUrl || "/photos/people?format=suggestions&q=") + encodeURIComponent(query);
-        var response = await fetch(url, {
-          signal: controller.signal, credentials: "same-origin", redirect: "error",
-          headers: { Accept: faceMatch ? "application/x-ndjson" : "application/json" }
-        });
-        if (!response.ok) throw new Error(faceMatch ? "Gesichtsabgleich fehlgeschlagen. Bitte erneut versuchen oder die Ansicht aktualisieren." : "Personen konnten nicht geladen werden. Bitte erneut suchen.");
-        function render(data, pending) {
-        if (data.error) throw new Error(data.error);
-        if (!Array.isArray(data.people)) throw new Error("Ungültige Antwort der Personensuche.");
-        if (request !== revision || document.activeElement !== input) return;
-        var activeID = active >= 0 && items[active] ? String(items[active].id) : null;
-        var previous = new Map(Array.from(list.children).map(function (node) { return [node.dataset.personKey, node]; }));
-        var scrollTop = popup.scrollTop;
-        items = data.people.filter(function (person) { return typeof person.name === "string" && person.name.trim() && String(person.id) !== form.dataset.personExclude; });
-        if (allowCreate && query && !faceMatch) items.push({ id: 0, name: query, create: true });
-        var options = document.createDocumentFragment();
-        items.forEach(function (person, index) {
-          var key = JSON.stringify(person);
-          var option = previous.get(key);
-          if (option) {
-            option.id = list.id + "-" + index;
-            option.dataset.personOption = String(index);
-            options.append(option);
-            return;
-          }
-          option = document.createElement("div");
-          option.dataset.personKey = key;
-          option.id = list.id + "-" + index;
-          option.dataset.personOption = String(index);
-          option.setAttribute("role", "option");
-          option.setAttribute("aria-selected", "false");
-          var label = document.createElement("span");
-          label.textContent = person.create ? "Neu anlegen: „" + person.name + "“" : (person.name || "Unbenannt") + " (#" + person.id + ", " +
-            person.count + (person.count === 1 ? " Foto)" : " Fotos)");
-          if (form.hasAttribute("data-person-modal") && !person.create && Number.isSafeInteger(person.face_id) && person.face_id > 0) {
-            var thumbnail = document.createElement("img");
-            thumbnail.className = "person-picker-thumbnail";
-            thumbnail.width = 40; thumbnail.height = 40;
-            thumbnail.alt = ""; thumbnail.loading = "lazy"; thumbnail.decoding = "async";
-            // A missing preview must not hide or disable the person's name.
-            thumbnail.addEventListener("error", function () { this.style.visibility = "hidden"; }, { once: true });
-            thumbnail.src = "/photos/faces/" + encodeURIComponent(person.face_id) + "/thumbnail";
-            option.append(thumbnail);
-          }
-          option.append(label);
-          options.append(option);
-        });
-        list.replaceChildren(options);
-        popup.scrollTop = scrollTop;
-        feedback.textContent = pending ? items.length + " Kandidaten gefunden – Abgleich läuft …" : data.has_next ? "Weitere Personen vorhanden. Bitte die Suche eingrenzen." :
-          (items.length ? items.length + (items.length === 1 ? " Vorschlag verfügbar." : " Vorschläge verfügbar.") : (faceMatch ? "Keine ähnlichen benannten Personen gefunden." : "Keine passende Person gefunden."));
-        if (activeID !== null) activate(items.findIndex(function (person) { return String(person.id) === activeID; }));
-        else if (items.length && pendingDirection) { activate(pendingDirection === "last" ? items.length - 1 : 0); pendingDirection = undefined; }
-        else activate(-1);
-        }
-        function renderStream(update) {
-          if (update.error) throw new Error(update.error);
-          if (!Array.isArray(update.people) || update.people.length > 20 || typeof update.done !== "boolean") throw new Error("Ungültige Antwort des Gesichtsabgleichs.");
-          if (update.done) {
-            if (renderFrame) cancelAnimationFrame(renderFrame);
-            renderFrame = 0; pendingRender = null;
-            render(update, false);
-            return;
-          }
-          // A proxy or a busy tab can deliver many frames at once. Only the
-          // newest ranking needs layout; final results and errors stay immediate.
-          pendingRender = update;
-          if (!renderFrame) renderFrame = requestAnimationFrame(function () {
-            if (request !== revision) return;
-            renderFrame = 0;
-            var latest = pendingRender; pendingRender = null;
-            if (!latest) return;
-            try { render(latest, true); }
-            catch (error) {
-              cancel(); items = []; list.replaceChildren(); activate(-1);
-              feedback.textContent = error.message;
-            }
-          });
-        }
-        if (faceMatch && (response.headers.get("Content-Type") || "").includes("application/x-ndjson")) {
-          var reader = response.body.getReader();
-          var decoder = new TextDecoder(), buffer = "", complete = false;
-          try {
-            while (!complete) {
-              var chunk = await reader.read();
-              if (request !== revision) return;
-              buffer += decoder.decode(chunk.value, { stream: !chunk.done });
-              var newline;
-              while ((newline = buffer.indexOf("\n")) >= 0) {
-                var line = buffer.slice(0, newline); buffer = buffer.slice(newline + 1);
-                if (!line.trim()) continue;
-                var update = JSON.parse(line);
-                renderStream(update);
-                if (update.done) { complete = true; break; }
-              }
-              if (buffer.length > 128 * 1024) throw new Error("Ungültige Antwort des Gesichtsabgleichs.");
-              if (chunk.done && !complete) throw new Error("Gesichtsabgleich unterbrochen. Bitte erneut versuchen.");
-            }
-          } finally { await reader.cancel().catch(function () {}); }
+    root.querySelectorAll("[data-person-picker]").forEach(function (form) {
+      if (form.dataset.personPickerReady) return;
+      form.dataset.personPickerReady = "1";
+      var input = form.querySelector("[data-person-search]");
+      var allowCreate = form.hasAttribute("data-person-create");
+      var renameAction = form.dataset.renameAction || form.getAttribute("action");
+      function validate(state) {
+        if (form.hasAttribute("data-person-restore")) {
+          form.querySelector("[data-person-submit]").textContent = state.assigned ? "Zuordnen und wiederherstellen" : "Benennen und wiederherstellen";
+          input.setCustomValidity(state.assigned || state.name ? "" : "Bitte einen Namen eingeben oder eine Person auswählen.");
+        } else if (form.hasAttribute("data-person-face-selection")) {
+          var subject = form.dataset.personFaceSelection === "single" ? "Gesicht" : "Auswahl";
+          form.querySelector("[data-person-submit]").textContent = state.assigned ? subject + " zuordnen" : state.name ? subject + " benennen" : "Als neue Gruppe abtrennen";
+          input.setCustomValidity("");
+        } else if (form.hasAttribute("data-person-manual-create")) {
+          input.setCustomValidity(state.assigned || state.name ? "" : "Bitte einen Namen eingeben oder eine Person auswählen.");
+        } else if (allowCreate) {
+          if (renameAction) form.action = state.assigned ? renameAction.replace(/\/rename$/, "/merge") : renameAction;
+          form.querySelector("[data-person-submit]").textContent = state.assigned ? "Gruppen zusammenführen" : (Number(form.dataset.personCount) > 1 ? "Benennen und zusammenführen" : "Benennen");
+          input.setCustomValidity(Number(form.dataset.personCount) > 1 && !state.assigned && !state.name ? "Bitte einen Namen eingeben oder eine Person auswählen." : "");
         } else {
-          render(await response.json(), false);
+          input.setCustomValidity(state.target && (state.target !== "0" || !input.required) ? "" : "Bitte eine Person aus den Vorschlägen auswählen.");
         }
-      } catch (error) {
-        if (request === revision && error.name !== "AbortError") {
-          if (renderFrame) cancelAnimationFrame(renderFrame);
-          renderFrame = 0; pendingRender = null;
-          if (faceMatch) { items = []; list.replaceChildren(); activate(-1); }
-          feedback.textContent = error.message;
-        }
-      } finally {
-        if (request === revision) { matching = false; if (matchButton) matchButton.removeAttribute("aria-busy"); }
       }
-    }
-    if (matchButton) {
-      matchButton.addEventListener("pointerdown", function (event) { event.preventDefault(); });
-      matchButton.addEventListener("click", function () {
-        if (input.disabled || matching || !form.dataset.personFaceId) return;
-        input.focus({ preventScroll: true });
-        target.value = "";
-        validate();
-        load(undefined, true);
+      var picker = window.BearStackPersonPicker.bind(form, {
+        allowCreate: allowCreate,
+        showThumbnails: form.hasAttribute("data-person-modal"),
+        context: function () { return { faceID: form.dataset.personFaceId, exclude: form.dataset.personExclude,
+          suggestionsURL: form.dataset.personSuggestionsUrl }; },
+        onChange: validate,
+        onChoose: function () { if (form.hasAttribute("data-person-modal")) form.requestSubmit(); }
       });
-    }
-    input.addEventListener("focus", function () { load(); });
-    input.addEventListener("click", function () { if (popup.hidden) load(); });
-    input.addEventListener("input", function (event) {
-      close();
-      target.value = !input.required && !input.value.trim() ? "0" : "";
-      validate();
-      if (!event.isComposing) timer = setTimeout(load, 250);
+      form.addEventListener("person-picker-reset", function (event) {
+        renameAction = form.dataset.renameAction;
+        picker.reset(event.detail && event.detail.name);
+      });
+      form.addEventListener("person-picker-close", picker.close);
     });
-    input.addEventListener("keydown", function (event) {
-      if (event.isComposing) return;
-      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-        event.preventDefault();
-        var down = event.key === "ArrowDown";
-        if (popup.hidden) load(down ? "first" : "last");
-        else if (items.length) activate(active < 0 ? (down ? 0 : items.length - 1) :
-          (active + (down ? 1 : -1) + items.length) % items.length);
-        else pendingDirection = down ? "first" : "last";
-      } else if (event.key === "Enter" && !popup.hidden && active >= 0) {
-        event.preventDefault();
-        choose(active);
-      } else if (event.key === "Escape" && !popup.hidden) {
-        event.preventDefault();
-        event.stopPropagation();
-        close();
-      }
-    });
-    // Keep keyboard focus on the combobox when clicking or tapping an option.
-    list.addEventListener("pointerdown", function (event) {
-      if (event.isPrimary === false || event.button !== 0) return;
-      var option = event.target.closest("[data-person-option]");
-      if (option) {
-        pointerPerson = items[Number(option.dataset.personOption)].id;
-        touchChoice = event.pointerType === "touch" ? { id: event.pointerId, x: event.clientX, y: event.clientY } : null;
-        event.preventDefault();
-      }
-    });
-    // Touch release remains reliable when the browser suppresses the follow-up
-    // click after drawing. Scrolling/cancelled gestures never select a person.
-    list.addEventListener("pointercancel", function () { touchChoice = null; pointerPerson = undefined; });
-    list.addEventListener("pointermove", function (event) {
-      if (touchChoice && touchChoice.id === event.pointerId &&
-          (Math.abs(event.clientX - touchChoice.x) > 10 || Math.abs(event.clientY - touchChoice.y) > 10)) touchChoice = null;
-    });
-    list.addEventListener("pointerup", function (event) {
-      var touch = touchChoice;
-      touchChoice = null;
-      if (!touch || touch.id !== event.pointerId) return;
-      if (Math.abs(event.clientX - touch.x) <= 10 && Math.abs(event.clientY - touch.y) <= 10) {
-        choose(items.findIndex(function (person) { return person.id === pointerPerson; }));
-      }
-      pointerPerson = undefined;
-    });
-    list.addEventListener("click", function (event) {
-      if (event.pointerType === "touch") return;
-      var option = event.target.closest("[data-person-option]");
-      if (option) choose(pointerPerson !== undefined ? items.findIndex(function (person) { return person.id === pointerPerson; }) : Number(option.dataset.personOption));
-      pointerPerson = undefined;
-    });
-    form.addEventListener("person-picker-reset", function (event) {
-      close();
-      renameAction = form.dataset.renameAction;
-      target.value = "";
-      input.value = event.detail.name || "";
-      validate();
-    });
-    form.addEventListener("person-picker-close", close);
-    input.addEventListener("blur", close);
-    validate();
-  });
   }
   window.initializePersonPickers = initializePersonPickers;
   initializePersonPickers(document);

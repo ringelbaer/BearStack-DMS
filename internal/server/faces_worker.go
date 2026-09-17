@@ -24,8 +24,6 @@ type FaceSettings struct {
 	IntervalMinutes  int                    `json:"interval_minutes"`
 }
 type faceWorkerState struct {
-	analysisOnce     sync.Once
-	analysis         chan struct{}
 	reconcileRun     sync.Mutex
 	reconcileCancel  context.CancelFunc
 	reconcileRunning bool
@@ -102,9 +100,6 @@ func (s *Server) saveFaceSettings(ctx context.Context, v FaceSettings) error {
 	default:
 	}
 	return nil
-}
-func (s *Server) faceClient() (*facerec.Client, error) {
-	return facerec.New(s.cfg.Photos.FaceServiceURL, s.cfg.Photos.FaceServiceToken)
 }
 func (s *Server) stopFaceRun() {
 	s.faceWorker.mu.Lock()
@@ -199,11 +194,12 @@ func (s *Server) processFaceBatch(ctx context.Context) (runErr error) {
 	if err != nil || !settings.Enabled {
 		return err
 	}
-	client, err := s.faceClient()
+	analyzer, err := s.faceAnalysisService().NewAnalyzer()
 	if err != nil {
 		return err
 	}
-	if err = client.Health(ctx); err != nil {
+	defer analyzer.Close()
+	if err = analyzer.Health(ctx); err != nil {
 		return err
 	}
 	photoSettings, err := s.photoSettings(ctx)
@@ -231,7 +227,7 @@ func (s *Server) processFaceBatch(ctx context.Context) (runErr error) {
 			return nil
 		}
 		e = func() error {
-			release, err := s.acquireFaceAnalysis(ctx)
+			release, err := s.faceAnalysisService().Acquire(ctx)
 			if err != nil {
 				return err
 			}
@@ -240,7 +236,7 @@ func (s *Server) processFaceBatch(ctx context.Context) (runErr error) {
 			if err != nil {
 				return err
 			}
-			err = s.analyzeFaceJob(ctx, client, job)
+			err = analyzer.AnalyzeJob(ctx, job)
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
@@ -291,22 +287,4 @@ func faceWorkerSchedule(settings FaceSettings, running bool, finished, now time.
 		return true, time.Minute
 	}
 	return false, wait
-}
-
-// Caller holds the per-image analysis gate; manual and background work share
-// the same orientation, refinement, matching and override-preservation path.
-func (s *Server) analyzeFaceJob(ctx context.Context, client *facerec.Client, job photos.FaceJob) error {
-	data, err := s.photos.FaceImage(ctx, job.Path)
-	if err != nil {
-		return err
-	}
-	result, err := client.Analyze(ctx, data)
-	if err != nil {
-		return err
-	}
-	result, err = s.photos.RefineFaceResult(ctx, job.Path, result, client.Analyze)
-	if err != nil {
-		return err
-	}
-	return s.photos.CommitFaceResult(ctx, job, result)
 }

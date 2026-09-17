@@ -41,6 +41,7 @@
 <p data-merge-hint {{if not .FaceMergeSuggestions}}hidden{{end}}>Bis zu 60 Vorschläge werden angezeigt. Nach dem Bearbeiten rücken weitere nach.</p>
 {{template "person_edit_dialog" .}}
 <div class="photo-module" data-photo-module data-photo-mode="view">{{template "photo_lightbox" .}}</div>
+<script src="{{assetURL "/static/app-person-picker.js"}}" defer></script>
 <script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
 <script src="{{assetURL "/static/app-face-merges.js"}}" defer></script>
 {{template "foot" .}}

@@ -114,7 +114,8 @@
   {{if .People.HasNext}}<a class="secondary-button" rel="last" aria-label="Letzte Seite" title="Letzte Seite" href="?page={{.People.TotalPages}}&amp;q={{queryEscape .People.Query}}{{if .People.KnownOnly}}&amp;known=1{{end}}{{if .People.UnknownOnly}}&amp;unknown=1{{end}}{{if .People.IgnoredOnly}}&amp;ignored=1{{end}}{{if .People.Sort}}&amp;sort={{.People.Sort}}{{end}}"><span class="people-page-symbol" aria-hidden="true">»</span><span class="people-page-label">Letzte Seite</span></a>{{else if gt .People.TotalPages 1}}<span class="secondary-button" aria-disabled="true" aria-label="Letzte Seite"><span class="people-page-symbol" aria-hidden="true">»</span><span class="people-page-label">Letzte Seite</span></span>{{end}}
 </nav>
 {{if .People.PersonID}}<div class="photo-module" data-photo-module data-photo-mode="view">{{template "photo_lightbox" .}}</div>{{end}}
-{{if not .People.PersonID}}<script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>{{end}}
+{{if not .People.PersonID}}<script src="{{assetURL "/static/app-person-picker.js"}}" defer></script>
+<script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>{{end}}
 <script src="{{assetURL "/static/app-people.js"}}" defer></script>
 {{if and .People.IgnoredOnly .Auth.CanPhotosEdit}}<script src="{{assetURL "/static/app-ignored-faces.js"}}" defer></script>{{end}}
 {{if .People.PersonID}}<script src="{{assetURL "/static/app-person-detail.js"}}" defer></script><script src="{{assetURL "/static/app-person-details.js"}}" defer></script>{{end}}

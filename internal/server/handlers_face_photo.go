@@ -10,30 +10,20 @@ import (
 	"bearstack/internal/photos"
 )
 
-func (s *Server) acquireFaceAnalysis(ctx context.Context) (func(), error) {
-	s.faceWorker.analysisOnce.Do(func() { s.faceWorker.analysis = make(chan struct{}, 1) })
-	select {
-	case s.faceWorker.analysis <- struct{}{}:
-		return func() { <-s.faceWorker.analysis }, nil
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-}
-
 func (s *Server) handleAnalyzePhotoFaces(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "private, no-store")
 	if !s.parseFaceForm(w, r) {
 		return
 	}
-	client, err := s.faceClient()
+	analyzer, err := s.faceAnalysisService().NewAnalyzer()
 	if err != nil {
 		_ = writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "Der Gesichtserkennungsdienst ist nicht konfiguriert."})
 		return
 	}
-	defer client.HTTP.CloseIdleConnections()
+	defer analyzer.Close()
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
 	defer cancel()
-	release, err := s.acquireFaceAnalysis(ctx)
+	release, err := s.faceAnalysisService().Acquire(ctx)
 	if err != nil {
 		s.labelError(w, r, err)
 		return
@@ -44,7 +34,7 @@ func (s *Server) handleAnalyzePhotoFaces(w http.ResponseWriter, r *http.Request)
 		s.labelError(w, r, err)
 		return
 	}
-	if err = s.analyzeFaceJob(ctx, client, job); err != nil {
+	if err = analyzer.AnalyzeJob(ctx, job); err != nil {
 		if ctx.Err() == nil {
 			_ = s.photos.FailFaceJob(ctx, job, "Bild konnte nicht analysiert werden")
 		}

@@ -12,6 +12,8 @@ Die Regressionen zur Dokumentverarbeitung vergleichen SQL-Thumbnail-Kandidaten u
 
 `internal/testutil` stellt die gemeinsame Soffice-Fixture für Import-, Vorschau- und Thumbnail-Tests bereit. Jeder Test erhält ein eigenes temporäres Programmverzeichnis und einen wiederhergestellten `PATH`. Die Fixture prüft die Integration und ersetzt keine Prüfung realer LibreOffice-Konvertierungen.
 
+Für die Service-Trennung in **0.66.2** prüfen Go-Tests, dass fehlerhafte Gesichtsanalyse keine Ergebnisse speichert und eine Quellenprüfung gespeicherte Gesichter nicht ersetzt. Gleichzeitiger Service-Zugriff teilt dieselbe Instanz; das Schließen eines Analyse-Clients betrifft keine anderen Clients. Ordner-Tests sichern unveränderte Filter, Root-Cache-Nutzung und eine gemeinsame Favoritenzählung ohne SQLite ab. Browser-Tests laden die Personenauswahl ohne Dialogadapter: Auswahl und Vorschaubilder funktionieren, Formularziel, Validierung und Absenden bleiben Sache des Aufrufers, und verspätete Suchantworten öffnen keine geschlossene Liste. Die bestehenden Dialog- und Streaming-Regressionen laufen weiterhin im Standardtestziel.
+
 ## KI und Codex im Projekt
 
 Codex wird als Repo-naher Assistent eingesetzt. Der Arbeitsstil ist konservativ: zuerst Code lesen, bestehende Patterns übernehmen, keine unnötigen Abstraktionen einführen und keine fremden Änderungen zurückrollen. Für BearStack ist das besonders wichtig, weil Dokumente, Fotos, Metadaten und Berechtigungen eng zusammenhängen.

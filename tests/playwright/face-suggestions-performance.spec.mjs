@@ -56,7 +56,8 @@ test("face-match modal keeps at most 20 options while consuming many snapshots",
 async function loadModal(page) {
   const template = await readFile(new URL("../../internal/server/templates/person_edit_dialog.html", import.meta.url), "utf8");
   const markup = template.slice(template.indexOf("<dialog"), template.indexOf("</dialog>") + 9);
-  const script = await readFile(new URL("../../internal/server/static/app-person-dialog.js", import.meta.url), "utf8");
+  const script = (await Promise.all(["app-person-picker.js", "app-person-dialog.js"].map(name =>
+    readFile(new URL("../../internal/server/static/" + name, import.meta.url), "utf8")))).join("\n");
   const styles = await readFile(new URL("../../internal/server/static/app.css", import.meta.url), "utf8");
   await page.route("**/*", route => route.request().resourceType() === "document"
     ? route.fulfill({ contentType: "text/html", body: `<!doctype html><meta charset="utf-8"><style>${styles}</style>${markup}<script>${script}</script>` })

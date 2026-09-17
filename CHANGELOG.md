@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.66.2 – in Entwicklung
+
+- Gemeinsamer Gesichtsanalyse-Service für Hintergrundlauf, manuelle Analyse und Quellenprüfung. Der Service besitzt die gemeinsame abbrechbare Sperre und die Client-Erzeugung; Bildaufbereitung, Ausschnittverbesserung und Speichern folgen weiterhin demselben Ablauf. Die Quellenprüfung ersetzt keine ungeprüften Bestandsdaten. HTTP-Verbindungen werden nach jeder Aktion beziehungsweise jedem Batch freigegeben.
+- Der Ordnerdienst verwendet eine schmale lesende Repository-Schnittstelle statt des konkreten SQLite-Repositories. Root-Tag-Cache, Feldwert-Cache und gebündelte Favoritenzählung bleiben erhalten; keine zusätzlichen Abfragen.
+- `app-person-picker.js` kapselt Personensuche, gestreamte Gesichtsvorschläge, Vorschauanzeige und Tastatur-/Touch-Auswahl. Formularziele, Validierung, Buttontexte und Absenden liegen im Dialogadapter. Der Zusammenführungsdialog benötigt keine künstliche Rename-URL mehr.
+- Regressionen prüfen fehlgeschlagene Analysen ohne Speichern, getrennte Client-Lebenszyklen, Ordner-Abfragebudgets sowie eigenständige Personenauswahl ohne Formularänderung und veraltete Suchantworten. PATCH **0.66.2**, keine API-, Schema- oder Dependency-Änderungen; Android bleibt **0.17.0**. README, Website und OpenAPI-Version aktualisiert.
+- Validierung: vollständiges `make test` mit Go, JavaScript/DOM, 95 Browser- und 13 Python-Tests, Android/JVM/Lint/Debug-Build und tatsächlichem Read-only-Mount erfolgreich. Gezielte Race-Tests für Service-Aufbau und Gesichtsanalyse, `go vet`, Go-Build und Website-Build ebenfalls erfolgreich.
+
 ### BearStack 0.66.1 – in Entwicklung
 
 - Konservatives Cleanup: ungenutzte Felder aus kompilierten Foto-Suchausdrücken und aufbereiteten Dokumentspalten-Einstellungen entfernt; die Tabellenliste beim Ordnerumzug verwendet das bestehende Muster einer einfachen String-Liste.

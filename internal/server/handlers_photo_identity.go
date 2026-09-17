@@ -111,7 +111,7 @@ func (s *Server) handleFaceSourceReview(w http.ResponseWriter, r *http.Request) 
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
 	defer cancel()
-	release, err := s.acquireFaceAnalysis(ctx)
+	release, err := s.faceAnalysisService().Acquire(ctx)
 	if err != nil {
 		s.labelError(w, r, err)
 		return
@@ -127,14 +127,14 @@ func (s *Server) handleFaceSourceReview(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	var result *facerec.Result
-	if client, clientErr := s.faceClient(); clientErr == nil {
-		defer client.HTTP.CloseIdleConnections()
+	if analyzer, analyzerErr := s.faceAnalysisService().NewAnalyzer(); analyzerErr == nil {
+		defer analyzer.Close()
 		data, err := s.photos.FaceImage(ctx, review.Face.Path)
 		if err != nil {
 			s.labelError(w, r, err)
 			return
 		}
-		analyzed, err := client.Analyze(ctx, data)
+		analyzed, err := analyzer.Analyze(ctx, data)
 		if err != nil {
 			_ = writeJSON(w, http.StatusBadGateway, map[string]string{"error": "Gesichtserkennung fehlgeschlagen. Die bisherigen Daten bleiben erhalten."})
 			return

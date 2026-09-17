@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"bearstack/internal/document"
+	"bearstack/internal/facerec"
 )
 
 type settingReader interface {
@@ -62,6 +63,7 @@ type mailApplication struct {
 type photoApplication struct {
 	jobs     chan struct{}
 	settings photoSettingsState
+	analysis *faceAnalysisService
 }
 
 // initServices is the single construction path for production and partial test
@@ -69,6 +71,11 @@ type photoApplication struct {
 // before first use; dependencies and instances then remain stable.
 func (s *Server) initServices() {
 	s.servicesOnce.Do(func() {
+		if s.apps.photo.analysis == nil {
+			s.apps.photo.analysis = newFaceAnalysisService(s.photos, func() (*facerec.Client, error) {
+				return facerec.New(s.cfg.Photos.FaceServiceURL, s.cfg.Photos.FaceServiceToken)
+			})
+		}
 		docs := &s.apps.documents
 		if docs.thumbnails == nil {
 			docs.thumbnails = newThumbnailService(s.repo, s.store, s.log, make(chan struct{}, 1))
@@ -96,6 +103,11 @@ func (s *Server) initServices() {
 			docs.trash = newTrashService(s.repo, s.store, s.log, s.trashRetentionDays, s.invalidateDocumentCountCache)
 		}
 	})
+}
+
+func (s *Server) faceAnalysisService() *faceAnalysisService {
+	s.initServices()
+	return s.apps.photo.analysis
 }
 
 func (s *Server) thumbnailService() thumbnailRunner {

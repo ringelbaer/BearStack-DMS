@@ -301,7 +301,7 @@
     faceMatchButton.title = namingSide ? "Dieses Vergleichsgesicht mit benannten Personen abgleichen" : "Erstes Vergleichsgesicht mit benannten Personen abgleichen";
     namingForm.dataset.personCount = namingSide ? "1" : "2";
     namingForm.dataset.personExclude = namingSide ? namingSide.dataset.mergeSide : "";
-    namingForm.dataset.renameAction = "/unused/rename";
+    delete namingForm.dataset.renameAction;
     namingForm.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: namingSide ? namingSide.dataset.sideName : "" } }));
     namingStatus.textContent = "Namenssuche wird vorbereitet …";
     namingControls(true);

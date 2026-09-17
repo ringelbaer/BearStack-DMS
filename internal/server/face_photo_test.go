@@ -82,14 +82,14 @@ func TestPhotoFacesEmptyResultAndReadPermissions(t *testing.T) {
 
 func TestFaceAnalysisGateCanBeCancelled(t *testing.T) {
 	s := faceTestServer(t)
-	release, err := s.acquireFaceAnalysis(context.Background())
+	release, err := s.faceAnalysisService().Acquire(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer release()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err = s.acquireFaceAnalysis(ctx); err != context.Canceled {
+	if _, err = s.faceAnalysisService().Acquire(ctx); err != context.Canceled {
 		t.Fatalf("cancelled wait: %v", err)
 	}
 }

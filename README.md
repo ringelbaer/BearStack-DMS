@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.66.1** · Android-App: **0.17.0**.
+Aktuelle Version: **0.66.2** · Android-App: **0.17.0**.
+
+**0.66.2** bündelt die Gesichtsanalyse in einem gemeinsamen Service, entkoppelt den Ordnerdienst über eine schmale Repository-Schnittstelle und trennt die Personensuche von Formularaktionen. Bedienung und API-Verträge bleiben unverändert. [Architektur](_site-src/docs/architektur.md#abfragen-und-darstellung).
 
 Extern umbenannte Fotoordner behalten nach eindeutiger Zuordnung Tags, Gesichtsdaten und Vorschauen. Fehlende Inhalte werden sieben Tage aufbewahrt; geänderte Fotos erhalten eine Gesichtsprüfung im Web und eine Statusanzeige in Android. Der Foto-Root bleibt read-only. [Details](_site-src/docs/fotos.md#extern-umbenannte-fotoordner).
 

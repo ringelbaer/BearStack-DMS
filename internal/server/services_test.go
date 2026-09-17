@@ -21,6 +21,7 @@ func TestServicesShareInstancesAcrossConcurrentFirstUse(t *testing.T) {
 				s = faceTestServer(t)
 			}
 			type instances struct {
+				analysis  *faceAnalysisService
 				thumbnail thumbnailRunner
 				preview   officePreviewRunner
 				ocr       ocrRunner
@@ -40,7 +41,7 @@ func TestServicesShareInstancesAcrossConcurrentFirstUse(t *testing.T) {
 					} else {
 						s.mailImportService()
 					}
-					results <- instances{s.thumbnailService(), s.officePreviewService(), s.ocrService(), s.mailImportService(), s.documentPostProcessor(), s.trashService()}
+					results <- instances{s.faceAnalysisService(), s.thumbnailService(), s.officePreviewService(), s.ocrService(), s.mailImportService(), s.documentPostProcessor(), s.trashService()}
 				})
 			}
 			close(start)

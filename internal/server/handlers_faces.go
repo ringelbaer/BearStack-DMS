@@ -330,9 +330,10 @@ func (s *Server) handleSaveFaceSettings(w http.ResponseWriter, r *http.Request) 
 		settings.ReferenceLimit = limit
 	}
 	if settings.Enabled {
-		client, err := s.faceClient()
+		analyzer, err := s.faceAnalysisService().NewAnalyzer()
 		if err == nil {
-			err = client.Health(r.Context())
+			defer analyzer.Close()
+			err = analyzer.Health(r.Context())
 		}
 		if err != nil {
 			s.faceError(w, r, err)
@@ -379,10 +380,11 @@ func (s *Server) handleFaceControl(w http.ResponseWriter, r *http.Request) {
 		err = s.saveFaceSettings(r.Context(), settings)
 		s.stopFaceRun()
 	case "resume":
-		client, e := s.faceClient()
+		analyzer, e := s.faceAnalysisService().NewAnalyzer()
 		err = e
 		if err == nil {
-			err = client.Health(r.Context())
+			defer analyzer.Close()
+			err = analyzer.Health(r.Context())
 		}
 		if err == nil {
 			settings.Enabled = true
@@ -413,7 +415,7 @@ func (s *Server) handleFaceControl(w http.ResponseWriter, r *http.Request) {
 			s.stopFaceReconciliationRun()
 			s.faceWorker.run.Lock()
 			s.faceWorker.reconcileRun.Lock()
-			release, lockErr := s.acquireFaceAnalysis(r.Context())
+			release, lockErr := s.faceAnalysisService().Acquire(r.Context())
 			if lockErr != nil {
 				err = lockErr
 			} else {
