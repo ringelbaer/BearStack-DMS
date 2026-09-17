@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -52,6 +54,7 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
     var sortMenu by remember(state.query, tab) { mutableStateOf(false) }
     var mapOpen by rememberSaveable(state.query) {mutableStateOf(false)}
     val locale = LocalConfiguration.current.locales[0]
+    val layoutDirection = LocalLayoutDirection.current
     BackHandler(state.query.path.isNotEmpty() && state.selected==null && state.blog==null) {
         controller.open(state.query.copy(path=state.parent))
     }
@@ -97,8 +100,9 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
             }
         }
     },bottomBar={
-        Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal=20.dp,vertical=8.dp),contentAlignment=Alignment.Center) {
-            Surface(shape=RoundedCornerShape(32.dp),shadowElevation=3.dp,modifier=Modifier.widthIn(max=440.dp)) {
+        Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal+WindowInsetsSides.Bottom))
+            .padding(horizontal=20.dp,vertical=8.dp),contentAlignment=Alignment.Center) {
+            Surface(shape=RoundedCornerShape(percent=50),shadowElevation=3.dp,modifier=Modifier.widthIn(max=440.dp).testTag("gallery-navigation")) {
             NavigationBar(windowInsets=WindowInsets(0,0,0,0),containerColor=MaterialTheme.colorScheme.surfaceContainer) {
                 listOf(R.string.photos_title to R.drawable.ic_photos,R.string.photos_folders to R.drawable.ic_folder,R.string.photos_search to R.drawable.ic_search)
                     .forEachIndexed { index,(label,icon) ->
@@ -110,7 +114,11 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
             }
         }
     }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        // Let the grid scroll behind the floating navigation. Its bottom inset is
+        // scrollable content padding, so the final row can still clear the bar.
+        Column(Modifier.fillMaxSize().padding(PaddingValues(
+            start=padding.calculateStartPadding(layoutDirection),top=padding.calculateTopPadding(),
+            end=padding.calculateEndPadding(layoutDirection))).consumeWindowInsets(padding)) {
             PhotoDateStatus(controller,state)
             Box(Modifier.fillMaxWidth().height(3.dp)) { if(state.loading || state.loadingSections.isNotEmpty()) LinearProgressIndicator(Modifier.fillMaxSize()) }
             state.error?.let { error ->
@@ -121,7 +129,8 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
                     }
                 }
             }
-            PhotoGallery(controller,images,state,onDevice=onDevice.takeIf { tab==1 && state.query.path.isEmpty() })
+            PhotoGallery(controller,images,state,onDevice=onDevice.takeIf { tab==1 && state.query.path.isEmpty() },
+                contentPadding=PaddingValues(bottom=padding.calculateBottomPadding()+16.dp))
         }
     }
     state.selected?.let { path -> PhotoViewer(controller,images,state.media,path) }

@@ -1340,7 +1340,7 @@
 
 
 <h1 id="bearstack-fotos-fur-android">BearStack Fotos für Android<a class="headerlink" href="#bearstack-fotos-fur-android" title="Permanent link">&para;</a></h1>
-<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.17.0</strong> (<code>versionCode 35</code>). Die Servergalerie benötigt
+<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.17.2</strong> (<code>versionCode 37</code>). Die Servergalerie benötigt
 <strong>BearStack 0.50.0</strong>, ein aktiviertes Fotomodul und <code>photos.read</code>. Personenverwaltung
 benötigt zusätzlich <code>photos.edit</code>; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.</p>
@@ -1552,7 +1552,11 @@ verwenden die Systemsprache. Bereits sichtbare Fehler werden bei einem Sprachwec
 neu übersetzt, ohne die aktuelle Gruppe oder eine offene Aktion zu verlieren.</p>
 <p>Fehlermeldungen verwenden feste Meldungsschlüssel statt ungefilterter technischer
 Ausnahmetexte. Kamera-, Datei- und Personenbezeichnungen bleiben die Originaldaten.
-Die kompakte, abgerundete Navigation verbindet Fotos, Ordner und Suche. Das Raster
+Ab App <strong>0.17.2</strong> schwebt die abgerundete Navigation für Fotos, Ordner und Suche
+über dem Galerieinhalt. Fotos, Ordner und Suchergebnisse scrollen hinter der Leiste
+weiter; die Zwischenräume bis zum Bildschirmrand bleiben durchsichtig. Ein
+scrollbarer Abstand am Listenende hält die letzte Reihe vollständig erreichbar.
+Die Leiste berücksichtigt die Systemnavigation und seitliche Displayausschnitte. Das Raster
 zeigt auf breiten Displays sechs statt drei Fotos pro Reihe. Bei großer Schrift
 erhalten Ordner im Hochformat die gesamte Breite für ihre Beschriftung. Das
 adaptive App-Symbol bleibt auch beim runden Android-Beschnitt vollständig sichtbar.</p>
@@ -1817,7 +1821,7 @@ adaptiven Icon liegt jetzt innerhalb des runden Beschnitts.</p>
 <p>Die Liste verwendet ein Lazy-Layout; Portraits werden nur für sichtbare Einträge geladen. Personen-Metadaten und Sichtbarkeitsprüfungen erfolgen serverseitig in kleinen Paketen ohne Gesamtzählung. Das Raster stellt nur sichtbare Kacheln bereit. BearStack 0.45.0 liefert pro Anfrage bis zu 40 Gesichter über einen indexierten Gesichts-ID-Cursor; tiefes Scrollen benötigt keinen zunehmend großen Offset. Alte Server liefern weiterhin vier Gesichter je Anfrage, die App fügt sie ebenfalls fortlaufend an. Vor dem Anfügen werden Revision und Gesichtsanzahl geprüft; bei zwischenzeitlichen Änderungen wird neu geladen und eine Meldung angezeigt. Bestätigte Favoriten-, Namens- und Zuordnungsänderungen aktualisieren den geladenen Bestand anhand der atomaren Aktionsquittung, sodass Bilder und Scrollposition erhalten bleiben. Während eines Dialogs oder einer Originalvorschau wird nicht automatisch nachgeladen; Ladefehler lösen keine Endlosschleife aus. Ab App 0.8.0 werden große Fotovorschauen der angezeigten Portraits bei WLAN nacheinander vorgeladen; über Mobilfunk werden sie erst beim Öffnen der Vorschau geladen. Der vorhandene begrenzte Bildcache wird weiterverwendet. Änderungen aktualisieren den Gesichtssuchindex nur für betroffene Personen, sofern der Index aktuell ist.</p>
 <p>Ab App <strong>0.8.3</strong> erscheinen <strong>…</strong>, <strong>?</strong> und <strong>Stift</strong> in der unteren Benennen-Aktionsleiste als gleich große, vertikal mittig ausgerichtete Symbole. Der Stift hat keinen sichtbaren Schaltflächenhintergrund mehr; die unsichtbaren Touchflächen bleiben jeweils 48 dp groß. In „Personen benennen“ beginnt der Inhalt direkt mit dem Gesichtsraster; „Unbenannte Person“ und die Bildanzahlzeile entfallen.</p>
 <p>Ab App <strong>0.8.2</strong> hat der Favoritenstern im Personenbereich dieselbe Schriftgröße wie „×“ und keinen sichtbaren Schaltflächenhintergrund; die unsichtbare Touchfläche bleibt 48 dp groß.</p>
-<p>Ab App <strong>0.8.1</strong> bleibt unten eine schlanke Aktionsleiste stehen: ab App <strong>0.16.0</strong> links der <strong>Stift</strong> zum Benennen, mittig <strong>?</strong> für die scrollbar angezeigte Bedienhilfe und rechts <strong>…</strong> für Ignorieren, Überspringen und dessen Rücknahme. Die Leiste reserviert Platz unter dem Inhalt und berücksichtigt die Systemnavigation. Das obere Menü enthält die App-Navigation.</p>
+<p>Ab App <strong>0.8.1</strong> bleibt unten eine schlanke Aktionsleiste stehen: ab App <strong>0.17.1</strong> wieder links <strong>…</strong> für Ignorieren, Überspringen und dessen Rücknahme, mittig <strong>?</strong> für die scrollbar angezeigte Bedienhilfe und rechts der <strong>Stift</strong> zum Benennen. Die Leiste reserviert Platz unter dem Inhalt und berücksichtigt die Systemnavigation. Das obere Menü enthält die App-Navigation.</p>
 <h2 id="zuordnungsmodus">Zuordnungsmodus<a class="headerlink" href="#zuordnungsmodus" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Ab App-Version 0.5.2 bleibt der Platz für den Ladebalken dauerhaft reserviert. Gesichtsraster und Navigation behalten beim Ein- und Ausblenden ihre Position, auch in gescrollten Ansichten mit großer Schrift.</li>
@@ -1981,7 +1985,7 @@ Fehler werden zusätzlich anhand der XML-Ergebnisse zurückgewiesen.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.67.3 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.67.5 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

@@ -19,7 +19,7 @@ import de.bearstack.people.text.*
 
 @Composable
 internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, state: PhotosState, modifier: Modifier = Modifier.fillMaxSize(),
-    onDevice: (() -> Unit)? = null) {
+    onDevice: (() -> Unit)? = null, contentPadding: PaddingValues = PaddingValues(bottom=16.dp)) {
     val configuration=LocalConfiguration.current
     val locale=configuration.locales[0]
     val columns=if(configuration.screenWidthDp>=600) 12 else 6
@@ -88,7 +88,7 @@ internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, sta
             if(index>=0) {grid.scrollToItem(index);controller.scrollConsumed()}
         }
         LazyVerticalGrid(columns=GridCells.Fixed(columns),state=grid,modifier=modifier.testTag("photo-gallery"),
-            horizontalArrangement=Arrangement.spacedBy(2.dp),verticalArrangement=Arrangement.spacedBy(2.dp),contentPadding=PaddingValues(bottom=16.dp)) {
+            horizontalArrangement=Arrangement.spacedBy(2.dp),verticalArrangement=Arrangement.spacedBy(2.dp),contentPadding=contentPadding) {
             items(rows,key={it.key},span={GridItemSpan(when(it) {
                 is GalleryRow.Folder -> folderSpan; is GalleryRow.Media -> 2; else -> maxLineSpan
             })},contentType={when(it) {

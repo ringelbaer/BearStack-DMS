@@ -129,19 +129,19 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
                 Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal+WindowInsetsSides.Bottom))
                     .heightIn(min=56.dp).padding(horizontal=12.dp).testTag("labeling-action-bar"),
                     horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-                    IconButton(onClick=vm::startNaming,enabled=enabled && !state.naming && state.person!=null,
-                        modifier=Modifier.semantics {contentDescription=text(R.string.people_name_person)}) {
-                        Icon(painterResource(R.drawable.ic_edit),contentDescription=null,modifier=Modifier.size(24.dp))
-                    }
-                    IconButton(onClick={help=true},enabled=held==null && !state.naming,
-                        modifier=Modifier.semantics {contentDescription=text(R.string.people_naming_help)}) {
-                        Icon(painterResource(R.drawable.ic_question_mark),contentDescription=null,modifier=Modifier.size(24.dp))
-                    }
                     OptionsMenu(actions,{actions=it},enabled=enabled && !state.naming,
                         description=text(R.string.people_group_actions)) {
                         DropdownMenuItem(text={Text(text(R.string.people_ignore_group))},onClick={actions=false;vm.ignore()},enabled=enabled && state.person!=null)
                         DropdownMenuItem(text={Text(text(R.string.people_skip_group))},onClick={actions=false;vm.skip()},enabled=enabled && state.person!=null)
                         DropdownMenuItem(text={Text(text(R.string.people_undo_skip))},onClick={actions=false;vm.back()},enabled=enabled && state.canGoBack)
+                    }
+                    IconButton(onClick={help=true},enabled=held==null && !state.naming,
+                        modifier=Modifier.semantics {contentDescription=text(R.string.people_naming_help)}) {
+                        Icon(painterResource(R.drawable.ic_question_mark),contentDescription=null,modifier=Modifier.size(24.dp))
+                    }
+                    IconButton(onClick=vm::startNaming,enabled=enabled && !state.naming && state.person!=null,
+                        modifier=Modifier.semantics {contentDescription=text(R.string.people_name_person)}) {
+                        Icon(painterResource(R.drawable.ic_edit),contentDescription=null,modifier=Modifier.size(24.dp))
                     }
                 }
             }

@@ -1,6 +1,6 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.17.0** (`versionCode 35`). Die Servergalerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.17.2** (`versionCode 37`). Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
@@ -255,7 +255,11 @@ neu übersetzt, ohne die aktuelle Gruppe oder eine offene Aktion zu verlieren.
 
 Fehlermeldungen verwenden feste Meldungsschlüssel statt ungefilterter technischer
 Ausnahmetexte. Kamera-, Datei- und Personenbezeichnungen bleiben die Originaldaten.
-Die kompakte, abgerundete Navigation verbindet Fotos, Ordner und Suche. Das Raster
+Ab App **0.17.2** schwebt die abgerundete Navigation für Fotos, Ordner und Suche
+über dem Galerieinhalt. Fotos, Ordner und Suchergebnisse scrollen hinter der Leiste
+weiter; die Zwischenräume bis zum Bildschirmrand bleiben durchsichtig. Ein
+scrollbarer Abstand am Listenende hält die letzte Reihe vollständig erreichbar.
+Die Leiste berücksichtigt die Systemnavigation und seitliche Displayausschnitte. Das Raster
 zeigt auf breiten Displays sechs statt drei Fotos pro Reihe. Bei großer Schrift
 erhalten Ordner im Hochformat die gesamte Breite für ihre Beschriftung. Das
 adaptive App-Symbol bleibt auch beim runden Android-Beschnitt vollständig sichtbar.
@@ -585,7 +589,7 @@ Ab App **0.8.3** erscheinen **…**, **?** und **Stift** in der unteren Benennen
 
 Ab App **0.8.2** hat der Favoritenstern im Personenbereich dieselbe Schriftgröße wie „×“ und keinen sichtbaren Schaltflächenhintergrund; die unsichtbare Touchfläche bleibt 48 dp groß.
 
-Ab App **0.8.1** bleibt unten eine schlanke Aktionsleiste stehen: ab App **0.16.0** links der **Stift** zum Benennen, mittig **?** für die scrollbar angezeigte Bedienhilfe und rechts **…** für Ignorieren, Überspringen und dessen Rücknahme. Die Leiste reserviert Platz unter dem Inhalt und berücksichtigt die Systemnavigation. Das obere Menü enthält die App-Navigation.
+Ab App **0.8.1** bleibt unten eine schlanke Aktionsleiste stehen: ab App **0.17.1** wieder links **…** für Ignorieren, Überspringen und dessen Rücknahme, mittig **?** für die scrollbar angezeigte Bedienhilfe und rechts der **Stift** zum Benennen. Die Leiste reserviert Platz unter dem Inhalt und berücksichtigt die Systemnavigation. Das obere Menü enthält die App-Navigation.
 
 ## Zuordnungsmodus
 

@@ -1,6 +1,10 @@
 # BearStack
 
-Aktuelle Version: **0.67.3** · Android-App: **0.17.0**.
+Aktuelle Version: **0.67.5** · Android-App: **0.17.2**.
+
+**Android 0.17.2** lässt die Galerie-Navigation **Fotos · Ordner · Suchen** über dem Inhalt schweben. Das Raster scrollt hinter der Leiste weiter; die letzte Reihe bleibt vollständig erreichbar.
+
+**Android 0.17.1** korrigiert die untere Leiste im Benennmodus: links **…**, mittig **?**, rechts der **Stift**.
 
 **0.67.3** ergänzt im Benennen-/Zuordnen-Dialog aus einem Foto den Button **Auf unbenannt setzen**, sobald das ausgewählte Gesicht benannt ist. Er löst nur dieses Gesicht aus der Personenzuordnung; die übrigen Gesichter behalten ihre Namen.
 
@@ -173,7 +177,7 @@ Ab App **0.8.3** erscheinen **…**, **?** und **Stift** in der unteren Benennen
 
 Ab App **0.8.2** hat der Favoritenstern im Personenbereich dieselbe Schriftgröße wie „×“ und keinen sichtbaren Schaltflächenhintergrund; die unsichtbare Touchfläche bleibt 48 dp groß.
 
-Ab App **0.8.1** bleibt unten eine schlanke Aktionsleiste stehen: links **…** für Ignorieren, Überspringen und dessen Rücknahme, mittig **?** für die scrollbar angezeigte Bedienhilfe, rechts der **Stift** zum Benennen. Die Leiste reserviert Platz unter dem Inhalt und berücksichtigt die Systemnavigation. Das obere Menü enthält die App-Navigation.
+Ab App **0.8.1** bleibt unten eine schlanke Aktionsleiste stehen, ab App **0.17.1** wieder in dieser Reihenfolge: links **…** für Ignorieren, Überspringen und dessen Rücknahme, mittig **?** für die scrollbar angezeigte Bedienhilfe, rechts der **Stift** zum Benennen. Die Leiste reserviert Platz unter dem Inhalt und berücksichtigt die Systemnavigation. Das obere Menü enthält die App-Navigation.
 
 Ab App **0.7.0** bietet der Personenbereich eine Textsuche über den gesamten Bestand (BearStack **0.45.0**), eine Bestätigung vor „× / Zuordnung entfernen“ und automatisches Nachladen beim Scrollen in Personenliste und Portrait-Raster. Der Server liefert Portraits über einen indexierten Cursor in Paketen bis 40; bestätigte Änderungen erhalten den geladenen Bestand und die Scrollposition. Ab App **0.8.0** erscheinen im Benennen-Modus „Zurück“ und „Weiter“ nur bei mehr als vier Fotos. Die Originalvorschau öffnet nach 250 ms Halten. Über WLAN werden große Fotovorschauen der angezeigten Portraits nacheinander im vorhandenen Drei-Minuten-Cache vorgeladen; beim Verlassen der Ansicht oder WLAN wird das Vorladen abgebrochen. Ab App **0.7.1** ist das „×“ zum Entfernen einer Zuordnung im Personenbereich kleiner; die Touchfläche bleibt mindestens 48 dp groß.
 

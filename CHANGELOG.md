@@ -4,6 +4,19 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.67.5 / Android 0.17.2 – in Entwicklung
+
+- Android-Galerie: **Fotos · Ordner · Suchen** schweben als abgerundete Leiste über dem Inhalt. Das Raster läuft hinter der Leiste weiter, ohne durch einen festen unteren Bereich verkürzt zu werden.
+- Scrollbarer Endabstand hält die letzte Reihe erreichbar; Systemnavigation und seitliche Displayausschnitte werden berücksichtigt. Bestehendes Lazy-Grid, Paging und Bildcache bleiben erhalten.
+- Layoutregressionen für alle drei Ansichten, letzte Bildreihe und große Schrift ergänzt. JVM-Tests, Lint, Debug- und Website-Build erfolgreich; UI-Tests kompiliert, mangels laufendem Testemulator nicht ausgeführt.
+- PATCH für die Layoutkorrektur; Android `versionCode 37`. README, Website und OpenAPI-Version aktualisiert.
+
+### BearStack 0.67.4 / Android 0.17.1 – in Entwicklung
+
+- Android: Im Benennmodus stehen in der unteren Aktionsleiste wieder **…** links, **?** mittig und der **Stift** rechts. Aktionen und Touchflächen bleiben unverändert; keine zusätzlichen Abfragen.
+- Vorhandenen Layouttest für die Reihenfolge und überlappungsfreie Bedienflächen bei großer Schrift angepasst.
+- PATCH für die UI-Korrektur; Android `versionCode 36`. README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.67.3 – in Entwicklung
 
 - Foto-Lightbox: Im Benennen-/Zuordnen-Dialog erscheint bei benannten Gesichtern **Auf unbenannt setzen**. Der Button löst nur das angeklickte Gesicht als neue unbenannte Gruppe ab, auch das letzte Gesicht einer Person. Andere Gesichter derselben Person bleiben unverändert; Entwürfe im Namensfeld werden nicht gespeichert.

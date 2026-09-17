@@ -9,6 +9,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.geometry.Offset
@@ -27,7 +29,7 @@ import java.util.Locale
 
 class PhotosScreenTest {
     @get:Rule val compose=createComposeRule()
-    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, directoryPeople: Boolean = false, peopleCountSort: Boolean = true, beforeBrowse: suspend (PhotoQuery)->Unit = {}, test: (PhotosController,PhotosService)->Unit) {
+    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, directoryPeople: Boolean = false, peopleCountSort: Boolean = true, photoCount: Int = 2, fontScale: Float = 1f, beforeBrowse: suspend (PhotoQuery)->Unit = {}, test: (PhotosController,PhotosService)->Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext
         val context=app.createConfigurationContext(Configuration(app.resources.configuration).apply {setLocale(locale)})
         val file=File(app.cacheDir,"gallery-test.jpg")
@@ -35,7 +37,8 @@ class PhotosScreenTest {
         file.outputStream().use {bitmap.compress(Bitmap.CompressFormat.JPEG,90,it)};bitmap.recycle()
         val images=ImageLoader.Builder(context).build()
         val owner=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
-        val photos=listOf("first.jpg","second.jpg").map {Photo(it,it,"image","image/jpeg","1","2026-09-09T10:00:00Z",null,1024,400,300)}
+        val photos=(listOf("first.jpg","second.jpg")+(2 until photoCount).map {"photo-$it.jpg"})
+            .map {Photo(it,it,"image","image/jpeg","1","2026-09-09T10:00:00Z",null,1024,400,300)}
         val api=object:PhotosService {
             var blogAttempts=0
             var infoAttempts=0
@@ -62,7 +65,7 @@ class PhotosScreenTest {
                 }
                 val folders=if(!query.recursive && query.path.isEmpty()) listOf(PhotoFolder("Holiday","Holiday",null,2,false,0,photos)) else emptyList()
                 val blogs=if(query.path=="Holiday") listOf(PhotoBlog("Holiday/story.md","story.md",null,"2026-09-09T10:00:00Z")) else emptyList()
-                return PhotoPage(query.path,"",1,2,false,folders.size,false,false,
+                return PhotoPage(query.path,"",1,photos.size,false,folders.size,false,false,
                     if(query.query.isNotEmpty()) photos.filter {it.name.contains(query.query)} else if(folders.isEmpty()) photos else emptyList(),folders,blogs,peoplePath=if(directoryPeople && query.path=="Holiday") ".people/f-SG9saWRheQ" else "")
             }
             override suspend fun info(path: String): Photo {
@@ -86,7 +89,8 @@ class PhotosScreenTest {
         try {
             compose.setContent {
                 val registry = checkNotNull(LocalActivityResultRegistryOwner.current)
-                CompositionLocalProvider(LocalActivityResultRegistryOwner provides registry, LocalContext provides context,LocalResources provides context.resources,LocalConfiguration provides context.resources.configuration) {
+                CompositionLocalProvider(LocalActivityResultRegistryOwner provides registry, LocalContext provides context,LocalResources provides context.resources,LocalConfiguration provides context.resources.configuration,
+                    LocalDensity provides Density(LocalDensity.current.density,fontScale)) {
                 MaterialTheme {
                     if(showMapSelection) MapPhotoSelection(controller,images,PhotoQuery(),PhotoMapMarker(52.5,13.4,2)) {}
                     else PhotosScreen(controller,images,false,{fail("reader reached people editing")},{})
@@ -95,6 +99,34 @@ class PhotosScreenTest {
             compose.waitUntil(10_000) {!controller.state.value.loading}
             test(controller,api)
         } finally {compose.runOnUiThread {controller.close();owner.cancel();images.shutdown()};file.delete()}
+    }
+    @Test fun galleryScrollsBehindFloatingNavigation() = checkFloatingNavigation(Locale.ENGLISH,1f)
+
+    @Test fun floatingNavigationKeepsLastRowReachableWithLargeFont() = checkFloatingNavigation(Locale.GERMAN,2f)
+
+    private fun checkFloatingNavigation(locale: Locale,fontScale: Float) = screen(locale,photoCount=60,fontScale=fontScale) {controller,_ ->
+        val navigation=compose.onNodeWithTag("gallery-navigation")
+        val gallery=compose.onNodeWithTag("photo-gallery")
+        val labels=if(locale==Locale.GERMAN) listOf("Fotos","Ordner","Suchen") else listOf("Photos","Folders","Search")
+        val bounds=navigation.getUnclippedBoundsInRoot()
+        labels.forEachIndexed { index,label ->
+            compose.onNodeWithText(label).assertIsDisplayed().performClick()
+            compose.waitUntil { !controller.state.value.loading && controller.state.value.tab==index }
+            compose.onNodeWithText(label).assertIsSelected()
+            val viewport=gallery.getUnclippedBoundsInRoot()
+            assertTrue("The grid must extend behind and below navigation",viewport.bottom>bounds.bottom)
+            assertTrue("Navigation must float with side margins",bounds.left>viewport.left && bounds.right<viewport.right)
+            assertEquals(bounds,navigation.getUnclippedBoundsInRoot())
+        }
+        // The empty search contains all 60 photos and one date heading. Scroll
+        // to the end so the last row clears the overlay, including large text.
+        gallery.performScrollToIndex(60)
+        val last=compose.onNodeWithContentDescription("photo-59.jpg")
+        last.assertIsDisplayed()
+        assertTrue("Last row must be fully above navigation",last.getUnclippedBoundsInRoot().bottom<=bounds.top)
+        assertEquals(bounds,navigation.getUnclippedBoundsInRoot())
+        last.performClick()
+        compose.waitUntil {controller.state.value.selected=="photo-59.jpg"}
     }
     @Test fun peopleTitlesStayReadableThroughoutSlowForwardBackAndSortRequests() {
         var gate=CompletableDeferred<Unit>()
