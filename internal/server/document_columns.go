@@ -26,7 +26,6 @@ type documentColumnSettings struct {
 	options               []DocumentColumn
 	table                 []DocumentColumn
 	visible               map[string]bool
-	order                 []string
 	desktopDateUnderTitle bool
 }
 
@@ -148,7 +147,6 @@ func makeDocumentColumnSettings(fields []document.CustomField, order, visible []
 		options:               options,
 		table:                 table,
 		visible:               visibleMap,
-		order:                 order,
 		desktopDateUnderTitle: desktopDateUnderTitle,
 	}
 }

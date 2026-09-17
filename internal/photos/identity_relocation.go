@@ -314,8 +314,8 @@ func (l *Library) relocatePhotoFolder(ctx context.Context, source photoEntity, t
 		}
 	}
 	// Visibility changes and face archival are published with the new paths.
-	for _, spec := range []struct{ table, kind string }{{"media_index", ""}, {"folder_index", "folder"}, {"blog_index", "blog"}, {"gpx_index", "gpx"}} {
-		if _, err = tx.ExecContext(ctx, `UPDATE `+spec.table+` AS t SET admin_only=p.admin_only FROM photo_relocation_plan p WHERE t.path=p.path AND t.admin_only<>p.admin_only`); err != nil {
+	for _, table := range []string{"media_index", "folder_index", "blog_index", "gpx_index"} {
+		if _, err = tx.ExecContext(ctx, `UPDATE `+table+` AS t SET admin_only=p.admin_only FROM photo_relocation_plan p WHERE t.path=p.path AND t.admin_only<>p.admin_only`); err != nil {
 			return err
 		}
 	}

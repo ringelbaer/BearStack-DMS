@@ -58,7 +58,7 @@ func (s *Server) handleNewUser(w http.ResponseWriter, r *http.Request) {
 		s.renderForbidden(w, r)
 		return
 	}
-	role := defaultAssignableUserRole(principal, bootstrap)
+	role := defaultAssignableUserRole(bootstrap)
 	form := ManagedUserFormView{
 		Role:                role,
 		Active:              true,
@@ -187,14 +187,13 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleEditUser(w http.ResponseWriter, r *http.Request) {
-	user, principal, ok := s.editableUserFromRequest(w, r)
+	user, _, ok := s.editableUserFromRequest(w, r)
 	if !ok {
 		return
 	}
 	form := managedUserFormFromAccount(user)
 	form.Action = userFormActionAccess
 	s.renderUserForm(w, r, http.StatusOK, form, false, false, "")
-	_ = principal
 }
 
 func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -921,11 +920,10 @@ func friendlyAccessError(err error) string {
 	}
 }
 
-func defaultAssignableUserRole(actor authPrincipal, bootstrap bool) string {
+func defaultAssignableUserRole(bootstrap bool) string {
 	if bootstrap {
 		return account.RoleAdmin
 	}
-	_ = actor
 	return account.RoleCustom
 }
 

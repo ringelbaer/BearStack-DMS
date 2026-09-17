@@ -1,6 +1,6 @@
 # BearStack
 
-Aktuelle Version: **0.66.0** · Android-App: **0.17.0**.
+Aktuelle Version: **0.66.1** · Android-App: **0.17.0**.
 
 Extern umbenannte Fotoordner behalten nach eindeutiger Zuordnung Tags, Gesichtsdaten und Vorschauen. Fehlende Inhalte werden sieben Tage aufbewahrt; geänderte Fotos erhalten eine Gesichtsprüfung im Web und eine Statusanzeige in Android. Der Foto-Root bleibt read-only. [Details](_site-src/docs/fotos.md#extern-umbenannte-fotoordner).
 

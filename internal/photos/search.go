@@ -130,7 +130,6 @@ type compiledMediaQuery struct {
 }
 
 type compiledQueryTerm struct {
-	raw      string
 	term     queryTerm
 	skip     bool
 	nOf      int
@@ -147,7 +146,6 @@ func compileMediaQuery(query string) compiledMediaQuery {
 		group := make([]compiledQueryTerm, 0, len(expressionGroup))
 		for _, node := range expressionGroup {
 			compiled := compiledQueryTerm{
-				raw:      node.Raw,
 				term:     node.Term,
 				skip:     node.Skip,
 				nOf:      node.NOf,

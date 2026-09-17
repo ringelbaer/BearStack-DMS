@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.66.1 – in Entwicklung
+
+- Konservatives Cleanup: ungenutzte Felder aus kompilierten Foto-Suchausdrücken und aufbereiteten Dokumentspalten-Einstellungen entfernt; die Tabellenliste beim Ordnerumzug verwendet das bestehende Muster einer einfachen String-Liste.
+- Nicht verwendeten Parameter und überflüssige Variablenbindung in der Benutzerverwaltung entfernt. Suchverhalten, Spaltenreihenfolge, Rollenvergabe und Berechtigungsprüfungen bleiben unverändert.
+- PATCH **0.66.1** gemäß `AGENTS.md`; keine API-, Datenbank- oder Dependency-Änderung. Android bleibt **0.17.0**. README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.66.0 – in Entwicklung
 
 - Manuelle und automatische Personen-Zusammenführungen übertragen aufbewahrte und durch Ordnerschutz ausgeblendete Gesichter atomar zur Zielperson. Gesichts-IDs, Embeddings, Favoriten und Vorschaubytes bleiben auch bei Rückkehr nach Neustart erhalten; verborgene Namensquellen werden ohne Veröffentlichung übernommen.

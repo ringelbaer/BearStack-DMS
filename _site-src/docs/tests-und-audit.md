@@ -46,6 +46,12 @@ und Neuladen. Die Größenbegrenzung liefert einen Fehler statt einer Teilkette.
 
 Nur von Tests benötigte Mail-Nachrichtenhelfer liegen in `_test.go`; sie erweitern die Produktionsschnittstellen nicht. Browser-Regressionen für Bildfehler fordern eine eigene Bild-URL an und prüfen die tatsächliche 404-Antwort, damit bereits dekodierte Portraits den Fehlerfall nicht verdecken. Der Login-Helfer der Einstellungs-Suite setzt ein ausdrückliches Rücksprungziel; ein zuvor gespeicherter Startseitenwert beeinflusst dadurch spätere Tests nicht.
 
+Das konservative Cleanup in **0.66.1** entfernt ausschließlich ungenutzte interne
+Felder, Parameter und Variablenbindungen in Fotosuche, Ordnerzuordnung,
+Dokumentspalten und Benutzerverwaltung. Bestehende Such-, Spalten-, Umzugs- und
+Benutzerverwaltungstests sichern das unveränderte Verhalten ab; Datenbankschema,
+HTTP-Verträge und Dependencies bleiben unverändert.
+
 Die Standardprüfung (`make test`, ab 0.66.0) führt Go, JavaScript/DOM, Playwright, den Python-Gesichtsdienst, Android/JVM/Lint/Debug-Build und einen tatsächlichen Read-only-Foto-Mount aus:
 
 ```sh
