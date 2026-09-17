@@ -110,6 +110,9 @@
   var merge = document.querySelector("[data-people-merge]");
   var mergeButton = document.querySelector("[data-people-merge-button]");
   var editSelectedButton = document.querySelector("[data-people-edit-button]");
+  var ignoreSelectedButton = document.querySelector("[data-people-ignore-button]");
+  var retryButton = document.querySelector("[data-people-retry]");
+  var needsRefresh = false;
 
   function mergeSelection() {
     var ids = Array.from(selected);
@@ -151,6 +154,10 @@
     merge.querySelectorAll("[data-bulk-tags-open]").forEach(function (button) { button.disabled = busy; });
     editSelectedButton.disabled = busy;
     mergeButton.disabled = busy;
+    if (ignoreSelectedButton) ignoreSelectedButton.disabled = busy || !selected.size;
+    overview.querySelectorAll("[data-ignore-face], [data-person-edit]").forEach(function (button) {
+      button.disabled = busy || button.dataset.ignoreSaved === "true";
+    });
     if (selected.size) {
       var target = cards.get(mergeSelection()[0]);
       document.querySelector("[data-people-merge-target]").textContent =
@@ -233,11 +240,11 @@
     return card;
   }
 
-  async function refreshPeople() {
+  async function refreshPeople(signal) {
     var url = new URL(window.location.href);
     url.searchParams.set("format", "json");
     async function load() {
-      var response = await fetch(url, { credentials: "same-origin", redirect: "error", headers: { Accept: "application/json" } });
+      var response = await fetch(url, { credentials: "same-origin", redirect: "error", headers: { Accept: "application/json" }, signal: signal });
       if (!response.ok) throw new Error("Personen konnten nicht geladen werden.");
       var data = await response.json();
       if (!Array.isArray(data.people)) throw new Error("Ungültige Antwort der Personenübersicht.");
@@ -302,6 +309,72 @@
   }
 
   if (overview && overview.dataset.canIgnore === "true") {
+    if (ignoreSelectedButton) ignoreSelectedButton.addEventListener("click", async function () {
+      if (busy || !selected.size) return;
+      var cards = Array.from(overview.querySelectorAll("[data-person-id]")).filter(function (card) { return selected.has(card.dataset.personId); });
+      if (cards.length !== selected.size || cards.some(function (card) { return card.dataset.personName || !card.dataset.faceId; })) return;
+      var body = new URLSearchParams({ action: "ignore" });
+      cards.forEach(function (card) { body.append("face_id", card.dataset.faceId); });
+      busy = true;
+      updateSelection();
+      overview.setAttribute("aria-busy", "true");
+      status.textContent = "Ausgewählte Gesichter werden ignoriert …";
+      var saved = false;
+      var controller = new AbortController();
+      var timer = setTimeout(function () { controller.abort(); }, 20000);
+      // An interrupted write may already have committed. Only a fresh read
+      // can unlock another action, without replaying the old selection.
+      needsRefresh = true;
+      try {
+        var response = await fetch("/photos/faces/edit", {
+          method: "POST", credentials: "same-origin", redirect: "error",
+          headers: { Accept: "application/json" }, body: body, signal: controller.signal
+        });
+        if (!response.ok) {
+          needsRefresh = false;
+          throw new Error("Gesichter konnten nicht ignoriert werden (HTTP " + response.status + ").");
+        }
+        var result = await response.json();
+        if (result.ok !== true) throw new Error("Ignorieren wurde nicht bestätigt.");
+        saved = true;
+        selected.clear();
+        await refreshPeople(controller.signal);
+        needsRefresh = false;
+        status.textContent = "Ausgewählte Gesichter ignoriert.";
+      } catch (error) {
+        status.textContent = needsRefresh
+          ? (saved ? "Gesichter ignoriert, aber die Ansicht konnte nicht aktualisiert werden." : "Ignorieren wurde nicht bestätigt.") + " Bitte die Ansicht erneut laden."
+          : error.message;
+      } finally {
+        clearTimeout(timer);
+        busy = needsRefresh;
+        retryButton.hidden = !needsRefresh;
+        overview.removeAttribute("aria-busy");
+        updateSelection();
+      }
+    });
+    if (retryButton) retryButton.addEventListener("click", async function () {
+      if (!needsRefresh || retryButton.disabled) return;
+      retryButton.disabled = true;
+      overview.setAttribute("aria-busy", "true");
+      var controller = new AbortController();
+      var timer = setTimeout(function () { controller.abort(); }, 20000);
+      try {
+        await refreshPeople(controller.signal);
+        selected.clear();
+        needsRefresh = false;
+        busy = false;
+        retryButton.hidden = true;
+        status.textContent = "Ansicht aktualisiert. Bitte die Auswahl erneut prüfen.";
+      } catch (_) {
+        status.textContent = "Ansicht konnte nicht aktualisiert werden. Bitte erneut laden.";
+      } finally {
+        clearTimeout(timer);
+        retryButton.disabled = false;
+        overview.removeAttribute("aria-busy");
+        updateSelection();
+      }
+    });
     if (selectionModeButton && overview.dataset.unknownOnly === "true") {
       selectionModeButton.hidden = false;
       selectionModeButton.addEventListener("click", function () {

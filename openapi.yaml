@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.67.5
+  version: 0.67.6
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -3636,7 +3636,9 @@ paths:
         With action=move, target=0 and a blank name, an active face is detached
         into a new unnamed group, including the last face of a named person.
         Since 0.67.3 the photo info naming dialog exposes this existing action
-        directly for named faces.
+        directly for named faces. Since 0.67.6 the unnamed people overview exposes
+        batch ignore directly, submitting only the displayed portrait face ID of
+        each selected group in one request. Other faces and photos remain unchanged.
       parameters: []
       requestBody:
         required: true

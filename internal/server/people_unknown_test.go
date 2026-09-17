@@ -97,6 +97,9 @@ func TestPeopleSourceFolderHeadingsAndSelectionPermissions(t *testing.T) {
 				if got, want := strings.Contains(html, "data-people-selection-mode"), canEdit && mode == "unknown"; got != want {
 					t.Fatalf("mode=%s edit=%v: selection mode=%v, want %v", mode, canEdit, got, want)
 				}
+				if got, want := strings.Contains(html, "data-people-ignore-button"), canEdit && mode == "unknown"; got != want {
+					t.Fatalf("mode=%s edit=%v: batch ignore=%v, want %v", mode, canEdit, got, want)
+				}
 				folder, image := strings.Index(html, "<span data-person-folder"), strings.Index(html, `<img loading="lazy"`)
 				if folder < 0 || image < 0 || (folder < image) != (mode == "unknown" || mode == "ignored") {
 					t.Fatalf("mode=%s: wrong folder/image order", mode)

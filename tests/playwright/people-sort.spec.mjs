@@ -587,3 +587,109 @@ test("source headings also work for ignored faces without JavaScript and selecti
     await manager.close();
   }
 });
+
+test("batch ignore submits only selected portraits and preserves remaining faces and selection mode", async ({ browser }) => {
+  const context = await browser.newContext(); const page = await context.newPage();
+  await login(page);
+  const all = await (await context.request.get(baseURL + "/photos/people?format=json&sort=count_desc")).json();
+  const group = all.people.find(person => person.count > 1);
+  expect(group).toBeTruthy();
+  const edit = form => context.request.post(baseURL + "/photos/faces/edit", { form, headers: { Origin: baseURL, Accept: "application/json" } });
+  const rename = name => context.request.post(baseURL + `/photos/people/${group.id}/rename`, { form: { name }, headers: { Origin: baseURL, Accept: "application/json" } });
+  expect((await rename("")).ok()).toBe(true);
+  let selectedPeople = [];
+  try {
+    await page.goto(baseURL + "/photos/people?filter=unknown&sort=count_desc&page=1");
+    const data = await (await context.request.get(page.url() + "&format=json")).json();
+    selectedPeople = data.people.slice(0, 2);
+    expect(selectedPeople[0].id).toBe(group.id);
+    const button = page.getByRole("button", { name: "Ignorieren", exact: true });
+    await expect(button).toBeHidden();
+    await page.locator("[data-people-selection-mode]").click();
+    for (const person of selectedPeople) await page.locator(`[data-person-id="${person.id}"] img`).click();
+    await expect(button).toBeEnabled();
+    await page.evaluate(() => { window.untouchedPortrait = document.querySelectorAll(".person-overview-card img")[2]; });
+    const writes = [];
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    await page.route("**/photos/faces/edit", async route => {
+      writes.push(new URLSearchParams(route.request().postData()));
+      await gate;
+      await route.continue();
+    });
+    await button.click();
+    await expect(button).toBeDisabled();
+    await expect(page.locator("[data-people-edit-button]")).toBeDisabled();
+    await expect(page.locator("[data-people-merge-button]")).toBeDisabled();
+    await expect(page.locator("[data-people-selection-mode]")).toBeDisabled();
+    await button.dispatchEvent("click");
+    release();
+    await expect(page.locator("[data-people-status]")).toHaveText("Ausgewählte Gesichter ignoriert.");
+    expect(writes).toHaveLength(1);
+    expect(writes[0].getAll("face_id")).toEqual(selectedPeople.map(person => String(person.face_id)));
+    expect([...writes[0].keys()].sort()).toEqual(["action", "face_id", "face_id"]);
+    expect(writes[0].get("action")).toBe("ignore");
+    // Count sorting may move the surviving group onto another page.
+    const remaining = await (await context.request.get(baseURL + `/photos/people/${group.id}?format=json`)).json();
+    expect(remaining.faces).toHaveLength(1);
+    expect(remaining.faces[0].id).not.toBe(group.face_id);
+    await expect(page.locator(`[data-person-id="${selectedPeople[1].id}"]`)).toHaveCount(0);
+    await expect(page.locator("[data-person-select]:checked")).toHaveCount(0);
+    await expect(page.locator("[data-people-selection-mode]")).toHaveAttribute("aria-pressed", "true");
+    await expect(page).toHaveURL(/filter=unknown&sort=count_desc&page=1/);
+    expect(await page.evaluate(() => window.untouchedPortrait.isConnected)).toBe(true);
+    const ignored = await (await context.request.get(baseURL + "/photos/people?filter=ignored&format=json")).json();
+    for (const person of selectedPeople) expect(ignored.faces.some(face => face.id === person.face_id)).toBe(true);
+  } finally {
+    for (const person of selectedPeople) expect((await edit({ face_id: String(person.face_id), action: "move", target: person.id === group.id ? String(group.id) : "0" })).ok()).toBe(true);
+    expect((await rename(group.name || "")).ok()).toBe(true);
+    await context.close();
+  }
+});
+
+for (const failure of ["rejected", "lost", "invalid", "refresh", "timeout"]) {
+  test(`batch ignore handles ${failure} responses without replaying writes`, async ({ browser }) => {
+    const context = await browser.newContext(); const page = await context.newPage();
+    await login(page);
+    await page.goto(baseURL + "/photos/people?filter=unknown&page=2&sort=date_desc");
+    if (failure === "timeout") await page.clock.install();
+    const button = page.locator("[data-people-ignore-button]");
+    const retry = page.locator("[data-people-retry]");
+    await page.locator("[data-person-select]").first().check();
+    await expect(button).toBeVisible();
+    let writes = 0;
+    await page.route("**/photos/faces/edit", route => {
+      writes++;
+      if (failure === "timeout") return;
+      if (failure === "lost") return route.abort("failed");
+      if (failure === "invalid") return route.fulfill({ status: 200, body: "truncated-json" });
+      return route.fulfill({ status: failure === "rejected" ? 503 : 200, json: { ok: true } });
+    });
+    let failRead = true;
+    await page.route("**/photos/people?*format=json*", route => failRead ? route.fulfill({ status: 503, body: "Unavailable" }) : route.continue());
+    await button.click();
+    if (failure === "timeout") await page.clock.runFor(20001);
+    if (failure === "rejected") {
+      await expect(page.locator("[data-people-status]")).toContainText("HTTP 503");
+      await expect(button).toBeEnabled();
+      await expect(page.locator("[data-person-select]:checked")).toHaveCount(1);
+      await expect(retry).toBeHidden();
+    } else {
+      await expect(retry).toBeVisible();
+      await expect(button).toBeDisabled();
+      await expect(page.locator("[data-person-select]").first()).toBeDisabled();
+      await retry.click();
+      await expect(page.locator("[data-people-status]")).toContainText("Bitte erneut laden");
+      await expect(button).toBeDisabled();
+      failRead = false;
+      await retry.click();
+      await expect(retry).toBeHidden();
+      await expect(page.locator("[data-person-select]:checked")).toHaveCount(0);
+      await expect(page.locator("[data-person-select]").first()).toBeEnabled();
+      await page.locator("[data-person-select]").first().check();
+      await expect(button).toBeEnabled();
+    }
+    expect(writes).toBe(1);
+    await context.close();
+  });
+}

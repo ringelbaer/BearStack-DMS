@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.67.6 – in Entwicklung
+
+- Personenübersicht: Unter **Unbenannt** steht **Ignorieren** direkt in der Batch-Leiste, auch im Auswahlmodus. Je ausgewählter Kachel wird ausschließlich das angezeigte Gesicht gesammelt über den bestehenden Endpunkt ignoriert. Weitere Gesichter und Fotos bleiben erhalten.
+- Gemeinsame Aktionssperre, begrenzte Anfragezeit und reine Lese-Wiederholung nach unbestätigten Antworten oder fehlgeschlagener Aktualisierung verhindern versehentliche Folgeaktionen. Filter, Sortierung, Auswahlmodus und unveränderte Vorschaubilder bleiben bei AJAX-Aktualisierungen erhalten.
+- Validierung: Go-Tests für Server, Fotoverwaltung und OpenAPI, JavaScript-/DOM-Prüfungen, 25 Personen-/Gesichts-Browserszenarien und Website-Build erfolgreich. Regressionen für Rechte, Mehrfachauswahl, übrige Gruppengesichter, doppelte Klicks, Fehlerantworten, Verbindungsabbrüche und Zeitüberschreitungen; bestehende Sichtbarkeitsprüfungen an die aktuelle Oberfläche angepasst.
+- PATCH **0.67.6** für den direkten Zugang zur bestehenden Ignorieraktion. README, Website und OpenAPI aktualisiert; keine API- oder Datenmigration.
+
 ### BearStack 0.67.5 / Android 0.17.2 – in Entwicklung
 
 - Android-Galerie: **Fotos · Ordner · Suchen** schweben als abgerundete Leiste über dem Inhalt. Das Raster läuft hinter der Leiste weiter, ohne durch einen festen unteren Bereich verkürzt zu werden.

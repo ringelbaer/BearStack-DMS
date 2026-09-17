@@ -72,20 +72,22 @@ test("people navigation and filters leave room for results on mobile", async ({ 
       expect(layout.filterBottom).toBeLessThan(620);
     }
     await page.getByLabel("Anzeigeeinstellungen", { exact: true }).click();
-    await page.getByLabel("Ordnername anzeigen", { exact: true }).check();
-    await expect(page.locator("[data-people-view]")).toHaveAttribute("data-show-folders", "true");
+    await expect(page.getByLabel("Ordnername anzeigen", { exact: true })).toBeHidden();
+    await page.getByLabel("Fotoanzahl anzeigen", { exact: true }).uncheck();
+    await expect(page.locator("[data-people-view]")).toHaveAttribute("data-show-count", "false");
+    await page.getByLabel("Fotoanzahl anzeigen", { exact: true }).check();
     const panel = await page.locator(".people-display-options").boundingBox();
     expect(panel.x).toBeGreaterThanOrEqual(0);
     expect(panel.x + panel.width).toBeLessThanOrEqual(width);
     const controls = await page.locator(".people-display-options").evaluate(panel => {
-      const labels = [...panel.querySelectorAll("label")];
+      const labels = [...panel.querySelectorAll("label")].filter(label => !label.hidden);
       return {
-        checkboxes: [...panel.querySelectorAll('input[type="checkbox"]')].map(input => input.getBoundingClientRect().width),
-        oneLine: labels.slice(0, 2).every(label => label.getBoundingClientRect().height <= 34),
-        contained: [...panel.querySelectorAll("input, select")].every(input => input.getBoundingClientRect().right <= panel.getBoundingClientRect().right),
+        checkboxes: [...panel.querySelectorAll('label:not([hidden]) input[type="checkbox"]')].map(input => input.getBoundingClientRect().width),
+        oneLine: labels.slice(0, 1).every(label => label.getBoundingClientRect().height <= 34),
+        contained: [...panel.querySelectorAll("label:not([hidden]) input, select")].every(input => input.getBoundingClientRect().right <= panel.getBoundingClientRect().right),
       };
     });
-    expect(controls.checkboxes).toEqual([18, 18]);
+    expect(controls.checkboxes).toEqual([18]);
     expect(controls.oneLine).toBe(true);
     expect(controls.contained).toBe(true);
     const icon = await page.locator("[data-people-display] summary svg").boundingBox();
@@ -321,7 +323,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await displayMenu.locator("summary").click();
   await expect(displayMenu.getByLabel("Fotoanzahl anzeigen", { exact: true })).toBeChecked();
   await expect(displayMenu.getByLabel("Ordnername anzeigen", { exact: true })).not.toBeChecked();
-  await displayMenu.getByLabel("Ordnername anzeigen", { exact: true }).check();
+  await expect(displayMenu.getByLabel("Ordnername anzeigen", { exact: true })).toBeHidden();
   await displayMenu.getByLabel("Fotoanzahl anzeigen", { exact: true }).uncheck();
   const thumbnailSize = displayMenu.getByRole("combobox", { name: "Thumbnailgröße", exact: true });
   for (const [size, pixels] of [["s", 160], ["m", 224], ["l", 320]]) {
@@ -356,7 +358,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(unnamedCard.locator("[data-person-count]")).toBeHidden();
   await displayMenu.locator("summary").click();
   await displayMenu.getByLabel("Fotoanzahl anzeigen", { exact: true }).check();
-  await displayMenu.getByLabel("Ordnername anzeigen", { exact: true }).uncheck();
+  await expect(displayMenu.getByLabel("Ordnername anzeigen", { exact: true })).toBeHidden();
   await thumbnailSize.selectOption("s");
   await displayMenu.press("Escape");
   await page.getByRole("navigation", { name: "Personenfilter", exact: true }).getByRole("link", { name: "Benannt", exact: true }).click();
@@ -656,7 +658,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   expect(captionBounds.y).toBeGreaterThanOrEqual(previewBounds.y + previewBounds.height);
   expect(await caption.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
   const dialogBounds = await personDialog.boundingBox();
-  for (const button of await personDialog.locator("footer button").all()) {
+  for (const button of await personDialog.locator("footer button:visible").all()) {
     const bounds = await button.boundingBox();
     expect(bounds.y + bounds.height).toBeLessThanOrEqual(dialogBounds.y + dialogBounds.height);
     expect(bounds.y + bounds.height).toBeLessThanOrEqual(page.viewportSize().height);

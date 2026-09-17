@@ -388,6 +388,13 @@ erscheinen mit der Auswahl. Nach dem Ausschalten bleiben Markierungen erhalten u
 die Personenlinks sowie Einzelaktionen sind wieder verfügbar. Der Modus gilt für
 die geöffnete Seite, bleibt bei AJAX-Aktualisierungen erhalten und benötigt JavaScript.
 
+Ab **0.67.6** bietet die Batch-Leiste unter **Unbenannt** direkt **Ignorieren**.
+Die Aktion ignoriert je ausgewählter Kachel das angezeigte Gesicht gemeinsam in
+einer Anfrage; weitere Gesichter der Gruppe und die Fotos bleiben erhalten.
+Bei verlorener Antwort oder fehlgeschlagener Aktualisierung entsperrt
+**Ansicht erneut laden** die Bearbeitung nach einem frischen Abruf, ohne die
+Schreibaktion zu wiederholen.
+
 Personenübersicht und Personendetailseite verwenden dieselbe Kacheldarstellung mit
 einheitlichen Größen S/M/L, Bildflächen, Abständen, Rahmen und Aktionspositionen.
 Die Übersicht zeigt Personennamen und Fotoanzahl, die Detailseite den Dateinamen

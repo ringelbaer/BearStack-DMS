@@ -52,6 +52,7 @@
 {{else}}
 {{if .Auth.CanPhotosEdit}}<form method="post" action="/photos/people/tags/add" data-people-bulk-form>{{end}}
 <p role="status" data-people-status></p>
+{{if and .Auth.CanPhotosEdit .People.UnknownOnly}}<button type="button" class="secondary-button" data-people-retry hidden>Ansicht erneut laden</button>{{end}}
 <div class="people-grid" data-people-overview data-unknown-only="{{.People.UnknownOnly}}" data-can-ignore="{{if .Auth.CanPhotosEdit}}true{{else}}false{{end}}">
 {{range .People.People}}
   <div class="person-overview-card" data-person-id="{{.ID}}" data-person-name="{{.Name}}" data-face-id="{{.FaceID}}" data-search-face-id="{{.SearchFaceID}}" data-display-path="{{.DisplayPath}}" {{with .Portrait}}data-x="{{.X}}" data-y="{{.Y}}" data-width="{{.Width}}" data-height="{{.Height}}"{{end}}>
@@ -60,7 +61,7 @@
   </div>
 {{else}}<p>{{if or .People.Query .People.KnownOnly .People.UnknownOnly}}Keine Personen für diesen Filter gefunden.{{else}}Noch keine Personen gefunden. {{if .Auth.CanPhotosManage}}Die optionale Erkennung lässt sich in den Einstellungen aktivieren.{{end}}{{end}}</p>{{end}}
 </div>
-{{if .Auth.CanPhotosEdit}}<div class="people-merge" data-people-merge hidden><span data-people-merge-target></span><button type="button" data-people-edit-button>Auswahl benennen / zuordnen</button><button type="button" data-people-merge-button>Personen zusammenführen</button><button type="button" data-bulk-tags-open="add" data-empty-selection-message="Bitte mindestens eine Person auswählen.">Personen-Tags ergänzen</button><div class="tag-select hidden" data-tag-select data-create-tag-mode="local" data-empty-label="Keine Tags ausgewählt" data-update-url="/photos/people/tags/add" data-bulk-success-notice="Personen-Tags für die Auswahl ergänzt." data-bulk-tags="true" data-bulk-tags-action="add"></div></div></form>
+{{if .Auth.CanPhotosEdit}}<div class="people-merge" data-people-merge hidden><span data-people-merge-target></span><button type="button" data-people-edit-button>Auswahl benennen / zuordnen</button>{{if .People.UnknownOnly}}<button type="button" data-people-ignore-button title="Angezeigtes Gesicht jeder ausgewählten Kachel ignorieren">Ignorieren</button>{{end}}<button type="button" data-people-merge-button>Personen zusammenführen</button><button type="button" data-bulk-tags-open="add" data-empty-selection-message="Bitte mindestens eine Person auswählen.">Personen-Tags ergänzen</button><div class="tag-select hidden" data-tag-select data-create-tag-mode="local" data-empty-label="Keine Tags ausgewählt" data-update-url="/photos/people/tags/add" data-bulk-success-notice="Personen-Tags für die Auswahl ergänzt." data-bulk-tags="true" data-bulk-tags-action="add"></div></div></form>
 {{template "person_edit_dialog" .}}{{end}}
 {{end}}
 </div>
