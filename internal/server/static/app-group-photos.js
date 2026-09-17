@@ -12,6 +12,7 @@
   var status = surface.querySelector("[data-people-status]");
   var ignoreForm = surface.querySelector("[data-group-ignore-form]");
   var ignoreButtons = surface.querySelectorAll("[data-group-ignore]");
+  var restoreButtons = surface.querySelectorAll("[data-group-unignore]");
   var skips = surface.querySelectorAll("[data-group-skip]");
   var retry = surface.querySelector("[data-group-retry]");
   var help = document.querySelector("[data-group-help]");
@@ -22,6 +23,7 @@
   var minimum = Number(surface.dataset.minimum);
   var currentPath = surface.dataset.path || "";
   var remaining = grid.querySelectorAll('[data-person-name=""][data-ignored="false"]').length;
+  var ignoredCount = grid.querySelectorAll('[data-ignored="true"]').length;
   var busy = false, navigationPending = false, request = 0, controller, retryParams;
   var hovered, focused, zoomed;
   var strip = window.BearStackGroupStrip.bind({
@@ -58,6 +60,7 @@
       control.disabled = !control.hasAttribute("data-group-highlight") && (value || navigationPending);
     });
     ignoreButtons.forEach(function (button) { button.disabled = value || navigationPending || !remaining; });
+    restoreButtons.forEach(function (button) { button.disabled = value || navigationPending || !ignoredCount; });
     skips.forEach(function (link) { link.setAttribute("aria-disabled", String(value)); });
     retry.disabled = value;
     strip.busy();
@@ -184,6 +187,7 @@
     surface.dataset.path = currentPath;
     surface.dataset.revision = photo ? photo.revision : "";
     remaining = photo ? photo.remaining : 0;
+    ignoredCount = photo ? photo.faces.filter(function (face) { return face.ignored; }).length : 0;
     surface.querySelector("[data-group-layout]").hidden = !photo;
     surface.querySelector("[data-group-toolbar]").hidden = !photo;
     surface.querySelector("[data-group-empty]").hidden = Boolean(photo);
@@ -266,21 +270,22 @@
     status.textContent = "";
     loadPhoto({ after: currentPath }).catch(function () {});
   }); });
-  ignoreForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
-    if (busy || navigationPending || !remaining) return;
-    var submitter = event.submitter;
-    if (!submitter || (!submitter.hasAttribute("data-group-ignore") && !submitter.hasAttribute("data-group-ignore-face"))) return;
+  async function changeIgnoredFaces(submitter) {
+    if (!submitter) return;
+    var restoring = submitter.hasAttribute("data-group-unignore");
+    if (!restoring && !submitter.hasAttribute("data-group-ignore") && !submitter.hasAttribute("data-group-ignore-face")) return;
+    if (busy || navigationPending || (restoring ? !ignoredCount : !remaining)) return;
     var single = submitter.hasAttribute("data-group-ignore-face");
     var faceID = single ? submitter.value : "";
     var focusPreview = single && document.activeElement === submitter;
+    var focusRestore = restoring && document.activeElement === submitter;
     var path = currentPath;
     var body = new URLSearchParams(new FormData(ignoreForm));
     if (single) body.set("face_id", faceID);
     var saved = false, rejected = false;
-    setBusy(true); status.textContent = single ? "Gesicht wird ignoriert …" : "Gesichter werden ignoriert …";
+    setBusy(true); status.textContent = restoring ? "Gesichter werden wiederhergestellt …" : single ? "Gesicht wird ignoriert …" : "Gesichter werden ignoriert …";
     try {
-      var reply = await requestJSON(ignoreForm.action, { method: "POST", credentials: "same-origin", redirect: "error", headers: { Accept: "application/json" }, body: body });
+      var reply = await requestJSON(restoring ? "/photos/faces/unignore" : ignoreForm.action, { method: "POST", credentials: "same-origin", redirect: "error", headers: { Accept: "application/json" }, body: body });
       var response = reply.response, result = reply.result;
       if (!response.ok || result.ok !== true) {
         rejected = !response.ok;
@@ -288,11 +293,13 @@
           navigationPending = true;
           await loadPhoto({ path: path });
         }
-        throw new Error(result.error || "Die Gesichter konnten nicht ignoriert werden.");
+        throw new Error(result.error || (restoring ? "Die Gesichter konnten nicht wiederhergestellt werden." : "Die Gesichter konnten nicht ignoriert werden."));
       }
+      if (restoring && (!Number.isInteger(result.restored) || result.restored < 0 || result.restored > 256)) throw new Error("Wiederherstellen konnte nicht bestätigt werden.");
       saved = true; navigationPending = true;
-      await loadPhoto(single ? { path: path } : { after: path });
-      status.textContent = single ? "Gesicht ignoriert." : result.ignored + " Gesichter ignoriert.";
+      await loadPhoto(single || restoring ? { path: path } : { after: path });
+      status.textContent = restoring ? (result.restored === 1 ? "Ein Gesicht wiederhergestellt." : result.restored + " Gesichter wiederhergestellt.") : single ? "Gesicht ignoriert." : result.ignored + " Gesichter ignoriert.";
+      if (focusRestore) submitter.closest("[data-group-actions]").querySelector("[data-group-skip]").focus({ preventScroll: true });
       if (focusPreview) {
         var card = grid.querySelector('[data-group-face="' + faceID + '"]');
         if (card && !card.hidden) card.querySelector("[data-group-highlight]").focus({ preventScroll: true });
@@ -307,10 +314,19 @@
         status.textContent = "Speichern nicht bestätigt. Bitte die Ansicht erneut laden, um den aktuellen Stand zu prüfen. " + error.message;
       } else if (navigationPending) {
         retry.hidden = false;
-        status.textContent = saved ? (single ? "Gesicht gespeichert. Die Ansicht konnte nicht aktualisiert werden; bitte die Ansicht erneut laden." : "Gesichter gespeichert. Das nächste Foto konnte nicht geladen werden; bitte die Ansicht erneut laden.") : error.message;
+        status.textContent = saved ? (restoring ? "Gesichter wiederhergestellt. Die Ansicht konnte nicht aktualisiert werden; bitte die Ansicht erneut laden." : single ? "Gesicht gespeichert. Die Ansicht konnte nicht aktualisiert werden; bitte die Ansicht erneut laden." : "Gesichter gespeichert. Das nächste Foto konnte nicht geladen werden; bitte die Ansicht erneut laden.") : error.message;
       } else status.textContent = error.message;
     } finally { setBusy(false); }
+  }
+  ignoreForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    changeIgnoredFaces(event.submitter);
   });
+  restoreButtons.forEach(function (button) {
+    button.hidden = false;
+    button.addEventListener("click", function () { changeIgnoredFaces(button); });
+  });
+  setBusy(false);
   retry.addEventListener("click", function () {
     if (busy || !retryParams) return;
     status.textContent = "";

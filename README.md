@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.66.2** · Android-App: **0.17.0**.
+Aktuelle Version: **0.67.0** · Android-App: **0.17.0**.
+
+**0.67.0** zeigt bei **Unbenannt** und **Ignoriert** den Ordnernamen über dem Vorschaubild. Der neue **Auswahlmodus** unter **Unbenannt** macht die gesamte Kachel zur Batch-Auswahl. **Ähnliche Gesichter** verwendet beim Benennen/Zuordnen dieselbe 300%-Fotovorschau wie der normale Dialog und formatiert Ordnernamen nach den Galerie-Regeln.
 
 **0.66.2** bündelt die Gesichtsanalyse in einem gemeinsamen Service, entkoppelt den Ordnerdienst über eine schmale Repository-Schnittstelle und trennt die Personensuche von Formularaktionen. Bedienung und API-Verträge bleiben unverändert. [Architektur](_site-src/docs/architektur.md#abfragen-und-darstellung).
 
@@ -85,6 +87,16 @@ Wechsel verworfen. Sortierung und Dreipunkt-Menü stehen in der Zeile der Filter
 auf schmalen Bildschirmen brechen sie passend um. Ein zusätzlicher Kasten erscheint
 nur für das Namenssuchfeld mit **Suchen**. Die Seitennavigation bleibt auf schmalen
 Bildschirmen kompakt.
+
+Bei **Unbenannt** und **Ignoriert** steht der Ordnername immer über dem Vorschaubild
+(im Stammverzeichnis „Fotos“). Unter **Unbenannt** können Benutzer mit
+Fotobearbeitungsrechten den **Auswahlmodus** aktivieren: Klicks auf Bild, Ordnername
+oder freie Kachelfläche wählen die Person aus beziehungsweise ab. Enter und
+Leertaste funktionieren ebenfalls. Personenlinks sind währenddessen deaktiviert;
+Stift und Einzel-Ignorieren sind ausgeblendet. Die bisherigen Batch-Aktionen
+erscheinen mit der Auswahl. Nach dem Ausschalten bleiben Markierungen erhalten und
+die Personenlinks sowie Einzelaktionen sind wieder verfügbar. Der Modus gilt für
+die geöffnete Seite, bleibt bei AJAX-Aktualisierungen erhalten und benötigt JavaScript.
 
 Personenübersicht und Personendetailseite verwenden dieselbe Kacheldarstellung mit
 einheitlichen Größen S/M/L, Bildflächen, Abständen, Rahmen und Aktionspositionen.
@@ -907,6 +919,14 @@ sich ohne Seitenwechsel, die Zoomauswahl bleibt bestehen. Die Aktion funktionier
 auch ohne JavaScript und kehrt dann zum selben Foto zurück. Sie verwendet dieselbe
 Revisions- und Rechteprüfung wie die Sammelaktion. Schlägt nur das Aktualisieren nach
 dem Speichern fehl, lädt „Ansicht erneut laden“ die Daten ohne erneute Schreibaktion.
+
+Ab **0.67.0** stellt der **Rückgängig-Pfeil** in beiden Aktionsleisten alle ignorierten
+Gesichter des aktuell geöffneten Gruppenfotos wieder her. Namen, Personenzuordnungen,
+Favoriten und andere Fotos bleiben erhalten. Die Aktion gilt auch für durch
+**Nur Unbenannte anzeigen** ausgeblendete Gesichter und bleibt anschließend beim
+aktuellen Foto. Ohne ignorierte Gesichter ist der Symbolbutton deaktiviert.
+Wiederherstellen benötigt JavaScript; nach unbestätigten Antworten oder fehlgeschlagenem
+Nachladen aktualisiert **Ansicht erneut laden** ausschließlich die Anzeige.
 
 **Verbleibende ignorieren** ignoriert atomar ausschließlich die noch unbenannten,
 aktiven Gesichter des angezeigten Fotos und wechselt danach zum nächsten passenden

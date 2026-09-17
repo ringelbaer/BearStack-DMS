@@ -71,3 +71,44 @@ func TestUnknownPeoplePaginationLinks(t *testing.T) {
 		t.Fatalf("pagination lost unknown filter: %s", html)
 	}
 }
+
+func TestPeopleSourceFolderHeadingsAndSelectionPermissions(t *testing.T) {
+	templates, err := parseTemplates()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, mode := range []string{"all", "known", "unknown", "ignored"} {
+		for _, canEdit := range []bool{false, true} {
+			for _, directory := range []string{"Fotos", `2026/Urlaub & <Meer>`} {
+				page := photos.PeoplePage{Page: 1, TotalPages: 1, KnownOnly: mode == "known", UnknownOnly: mode == "unknown", IgnoredOnly: mode == "ignored"}
+				page.People = []photos.Person{{ID: 1, FaceID: 2, Directory: directory, Count: 1}}
+				photoPath := "photo.jpg"
+				if directory != "Fotos" {
+					photoPath = directory + "/photo.jpg"
+				}
+				page.Faces = []photos.RecognizedFace{{ID: 2, PersonID: 1, Path: photoPath}}
+				var out bytes.Buffer
+				if err := templates.ExecuteTemplate(&out, "people.html", PageData{People: page, Auth: AuthPermissions{CanPhotosEdit: canEdit}}); err != nil {
+					t.Fatal(err)
+				}
+				html := out.String()
+				if got, want := strings.Contains(html, "data-people-selection-mode"), canEdit && mode == "unknown"; got != want {
+					t.Fatalf("mode=%s edit=%v: selection mode=%v, want %v", mode, canEdit, got, want)
+				}
+				folder, image := strings.Index(html, "<span data-person-folder"), strings.Index(html, `<img loading="lazy"`)
+				if folder < 0 || image < 0 || (folder < image) != (mode == "unknown" || mode == "ignored") {
+					t.Fatalf("mode=%s: wrong folder/image order", mode)
+				}
+				if mode == "unknown" || mode == "ignored" {
+					name := "Fotos"
+					if directory != "Fotos" {
+						name = "Urlaub &amp; &lt;Meer&gt;"
+					}
+					if !strings.Contains(html[folder:image], ">"+name+"</span>") {
+						t.Fatalf("mode=%s: missing escaped folder basename: %s", mode, html[folder:image])
+					}
+				}
+			}
+		}
+	}
+}

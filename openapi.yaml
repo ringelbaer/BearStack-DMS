@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.66.2
+  version: 0.67.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -2893,11 +2893,15 @@ paths:
         Requires photos.edit and same-origin protection. Atomically clears ignored
         flags only in the requested photo, preserving person IDs, names and manual
         markers. Does not run inference or alter faces in other photos. The revision
-        from GET /photos/faces must match the current snapshot; stale requests return
+        from GET /photos/faces or GET /photos/people/groups?path=... must match the current snapshot; stale requests return
         409 without changes. A fresh snapshot with no ignored faces returns restored=0.
         Only affected groups have their reference caches refreshed. The photo is
         bounded to 256 detections. Responses are private, no-store. Refresh the photo
         after completion or an uncertain response; do not automatically repeat writes.
+        Since 0.67.0, the group-photo editor also uses this endpoint to restore all
+        ignored faces in its current photo, independently of the unnamed display
+        filter. The editor stays on this photo, shares write locks across both
+        action bars and bounds POST and refresh GET to 20 seconds each.
       requestBody:
         required: true
         content:

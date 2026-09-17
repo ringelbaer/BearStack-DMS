@@ -9,7 +9,7 @@
 {{range .FaceMergeSuggestions}}
 <section class="panel face-merge-suggestion" data-merge-id="{{.ID}}" data-source-id="{{.SourceID}}" data-target-id="{{.TargetID}}" aria-label="Zusammenführung prüfen">
 <div class="face-merge-pair">
-<div class="face-merge-side" data-merge-side="{{.SourceID}}" data-side-face-id="{{.SourceFaceID}}" data-side-revision="{{.SourceRevision}}" data-side-name="{{.SourceName}}" aria-label="Erste Gruppe">
+<div class="face-merge-side" data-merge-side="{{.SourceID}}" data-side-face-id="{{.SourceFaceID}}" data-face-id="{{.SourceFaceID}}" data-display-path="{{photoDisplayPath .SourcePath}}" {{with .SourcePortrait}}data-x="{{.X}}" data-y="{{.Y}}" data-width="{{.Width}}" data-height="{{.Height}}"{{end}} data-side-revision="{{.SourceRevision}}" data-side-name="{{.SourceName}}" aria-label="Erste Gruppe">
 <div class="person-card">
 <button type="button" class="person-photo-button" data-photo-item data-photo-path="{{.SourcePath}}" data-photo-title="{{photoDisplayPath .SourcePath}}" data-photo-type="image" aria-label="Foto öffnen: {{photoDisplayPath .SourcePath}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.SourceFaceID}}/thumbnail" alt="Erste Gruppe"></button>
 <span class="face-merge-folder muted" title="{{photoDisplayPath .SourcePath}}">{{photoParentName .SourcePath}}</span>
@@ -18,7 +18,7 @@
 {{if not .SourceName}}<div class="face-merge-side-actions"><button type="button" class="secondary-button" data-merge-ignore aria-label="Erste Gruppe ignorieren">Ignorieren</button><button type="button" class="secondary-button" data-merge-side-name title="Erste Gruppe benennen/zuordnen" aria-label="Erste Gruppe benennen/zuordnen">{{template "person_pencil_icon"}}</button></div>{{end}}
 <p class="muted" data-merge-side-status role="status" hidden></p>
 </div>
-<div class="face-merge-side" data-merge-side="{{.TargetID}}" data-side-face-id="{{.TargetFaceID}}" data-side-revision="{{.TargetRevision}}" data-side-name="{{.TargetName}}" aria-label="Zweite Gruppe">
+<div class="face-merge-side" data-merge-side="{{.TargetID}}" data-side-face-id="{{.TargetFaceID}}" data-face-id="{{.TargetFaceID}}" data-display-path="{{photoDisplayPath .TargetPath}}" {{with .TargetPortrait}}data-x="{{.X}}" data-y="{{.Y}}" data-width="{{.Width}}" data-height="{{.Height}}"{{end}} data-side-revision="{{.TargetRevision}}" data-side-name="{{.TargetName}}" aria-label="Zweite Gruppe">
 <div class="person-card">
 <button type="button" class="person-photo-button" data-photo-item data-photo-path="{{.TargetPath}}" data-photo-title="{{photoDisplayPath .TargetPath}}" data-photo-type="image" aria-label="Foto öffnen: {{photoDisplayPath .TargetPath}}"><img loading="lazy" width="160" height="160" src="/photos/faces/{{.TargetFaceID}}/thumbnail" alt="Zweite Gruppe"></button>
 <span class="face-merge-folder muted" title="{{photoDisplayPath .TargetPath}}">{{photoParentName .TargetPath}}</span>
@@ -39,10 +39,7 @@
 {{else}}<p>Aktuell keine Zusammenführungsvorschläge. Neue Vorschläge entstehen beim Hintergrundabgleich.{{if .Auth.CanPhotosManage}} Du kannst ihn unter <a href="/settings/photos/faces">Gesichtserkennung</a> erneut starten.{{end}}</p>{{end}}
 </div>
 <p data-merge-hint {{if not .FaceMergeSuggestions}}hidden{{end}}>Bis zu 60 Vorschläge werden angezeigt. Nach dem Bearbeiten rücken weitere nach.</p>
-{{template "person_edit_dialog" .}}
 <div class="photo-module" data-photo-module data-photo-mode="view">{{template "photo_lightbox" .}}</div>
-<script src="{{assetURL "/static/app-person-picker.js"}}" defer></script>
-<script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
 <script src="{{assetURL "/static/app-face-merges.js"}}" defer></script>
 {{template "foot" .}}
 {{end}}

@@ -19,17 +19,9 @@
     return edit;
   }
 
-  function bind(options) {
-    var personSurface = options.surface;
-    var status = options.status;
-    var personDialog = document.querySelector("[data-person-dialog]");
-    if (!personDialog || !personSurface) return { open: function () {} };
-    var busy = false, owner = {};
-    function ownsDialog() { return personDialog.bearstackOwner === owner; }
-    var dialogForm = personDialog.querySelector("form");
-    var dialogStatus = personDialog.querySelector("[data-person-dialog-status]");
-    var ignoreButton = personDialog.querySelector("[data-person-dialog-ignore]");
-    var ignoreRequest;
+  // The same 300% face-context preview is used by every naming dialog.
+  function bindPreview(personDialog) {
+    if (personDialog.bearstackPreview) return personDialog.bearstackPreview;
     var preview = personDialog.querySelector("[data-person-preview]");
     var previewImage = personDialog.querySelector("[data-person-preview-image]");
     var previewBox = personDialog.querySelector("[data-person-preview-box]");
@@ -56,10 +48,10 @@
       previewBox.style.height = (previewRegion.height * height) + "px";
       previewBox.hidden = false;
     }
-    function showPreview(card) {
+    function showPreview(card, displayPath) {
       if (!preview) return;
       previewRegion = null;
-      var displayPath = options.getPreviewPath ? options.getPreviewPath(card) : card.dataset.displayPath;
+      if (displayPath === undefined) displayPath = card.dataset.displayPath;
       if (previewPath) { previewPath.textContent = displayPath || ""; previewPath.hidden = !displayPath; }
       previewBox.hidden = true;
       previewImage.style.transform = "";
@@ -88,6 +80,27 @@
       if (window.ResizeObserver) new ResizeObserver(drawPreview).observe(preview);
       else window.addEventListener("resize", drawPreview);
     }
+    personDialog.addEventListener("close", function () {
+      if (previewPath) { previewPath.textContent = ""; previewPath.hidden = true; }
+      previewRegion = null;
+      if (preview) { previewImage.removeAttribute("src"); previewImage.style.transform = ""; previewBox.hidden = true; }
+    });
+    personDialog.bearstackPreview = { show: showPreview };
+    return personDialog.bearstackPreview;
+  }
+
+  function bind(options) {
+    var personSurface = options.surface;
+    var status = options.status;
+    var personDialog = document.querySelector("[data-person-dialog]");
+    if (!personDialog || !personSurface) return { open: function () {} };
+    var busy = false, owner = {};
+    function ownsDialog() { return personDialog.bearstackOwner === owner; }
+    var dialogForm = personDialog.querySelector("form");
+    var dialogStatus = personDialog.querySelector("[data-person-dialog-status]");
+    var ignoreButton = personDialog.querySelector("[data-person-dialog-ignore]");
+    var ignoreRequest;
+    var photoPreview = bindPreview(personDialog);
     var opener, sourceCard, dialogIDs = [];
     function openPersonDialog(ids, button) {
       if (!ids.length || busy || options.isBusy() || button.disabled) return;
@@ -116,7 +129,8 @@
       personDialog.showModal();
       sourceCard = (options.getPreviewCard ? options.getPreviewCard() : null) || button.closest("[data-person-id]");
       if (sourceCard) sourceCard.setAttribute("data-person-dialog-source", "");
-      showPreview(sourceCard || card);
+      var previewCard = sourceCard || card;
+      photoPreview.show(previewCard, options.getPreviewPath ? options.getPreviewPath(previewCard) : undefined);
       var ignoreCards = sourceCard ? [sourceCard] : ids.map(function (id) { return personSurface.querySelector('[data-person-id="' + id + '"]'); });
       ignoreRequest = options.getIgnoreRequest ? options.getIgnoreRequest(ignoreCards) : null;
       ignoreButton.disabled = !ignoreRequest;
@@ -134,9 +148,6 @@
       if (!ownsDialog()) return;
       if (sourceCard) sourceCard.removeAttribute("data-person-dialog-source");
       sourceCard = null;
-      if (previewPath) { previewPath.textContent = ""; previewPath.hidden = true; }
-      previewRegion = null;
-      if (preview) { previewImage.removeAttribute("src"); previewBox.hidden = true; }
       dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
       var candidates = opener ? [opener] : [];
       candidates = candidates.concat(Array.from(personSurface.querySelectorAll("a, button:not([disabled])")));
@@ -219,7 +230,7 @@
     return { open: openPersonDialog };
   }
 
-  window.BearStackPersonDialog = { bind: bind, createEditButton: createEditButton };
+  window.BearStackPersonDialog = { bind: bind, bindPreview: bindPreview, createEditButton: createEditButton };
 
   // Adapter for the shipped forms. The picker itself has no route, button-label
   // or submit policy and can also be used by a component without a form.

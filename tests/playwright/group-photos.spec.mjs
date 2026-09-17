@@ -716,3 +716,100 @@ for (const status of [200, 409]) {
     } finally { await context.close(); }
   });
 }
+
+test("restore symbols recover ignored faces in this photo while preserving names and other photos", async ({ browser }) => {
+  const context = await browser.newContext({ httpCredentials: { username: "manager", password: "secret" } });
+  try {
+    const post = async (url, form) => {
+      const response = await context.request.post(baseURL + url, { form, headers: { Origin: baseURL, Accept: "application/json" } });
+      expect(response.ok()).toBe(true); return response;
+    };
+    await post("/settings/photos/faces", { enabled: "1", delay_millis: "100" });
+    await expect.poll(async () => (await (await context.request.get(baseURL + "/settings/photos/faces?format=json")).json()).status.done, { timeout: 20000 }).toBe(4);
+    const get = async path => (await (await context.request.get(baseURL + "/photos/people/groups", { params: { format: "json", path } })).json()).photo;
+    const original = await get("b.png"), sibling = await get("d.png");
+    await post(`/photos/people/${original.faces[0].person_id}/rename`, { name: "Rückgängig Test" });
+    for (const face of [original.faces[0], original.faces[1], sibling.faces[0]]) await post("/photos/faces/edit", { action: "ignore", face_id: String(face.id) });
+    const before = await get("b.png"), otherBefore = await get("d.png");
+    const page = await context.newPage(), errors = []; page.on("pageerror", error => errors.push(error.message));
+    await page.goto(baseURL + "/photos/people/groups?min=255&path=b.png");
+    const buttons = page.getByRole("button", { name: "Alle ignorierten Gesichter dieses Fotos wiederherstellen", exact: true });
+    await expect(buttons).toHaveCount(2);
+    await expect(buttons.first()).toBeEnabled(); await expect(buttons.last()).toBeEnabled();
+    for (const width of [320, 390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const button of await buttons.all()) {
+        const box = await button.boundingBox(); expect(box.width).toBeGreaterThanOrEqual(44); expect(box.height).toBeGreaterThanOrEqual(44);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      if (width === 390) await page.locator('[data-group-actions="top"]').screenshot({ path: "/tmp/bearstack-group-undo-390.png" });
+    }
+    await openGroupOptions(page); await page.locator("[data-group-unnamed]").check();
+    await expect(page.locator('[data-group-face][data-ignored="true"]').first()).toBeHidden();
+    await page.evaluate(() => { window.originalGroupImage = document.querySelector("[data-group-image]"); });
+    await buttons.last().click();
+    await expect(page.locator("[data-people-status]")).toContainText("Gesichter wiederhergestellt.");
+    await expect(page.locator("[data-group-photos]")).toHaveAttribute("data-path", "b.png");
+    await expect(buttons.first()).toBeDisabled(); await expect(buttons.last()).toBeDisabled();
+    expect(await page.evaluate(() => window.originalGroupImage === document.querySelector("[data-group-image]"))).toBe(true);
+    const after = await get("b.png");
+    expect(after.faces).toEqual(before.faces.map(face => ({ ...face, ignored: false })));
+    expect(await get("d.png")).toEqual(otherBefore);
+    // A later single-face ignore enables both symbols again, without leaving the photo.
+    const face = page.locator('[data-group-face][data-person-name=""]').first();
+    await face.locator("[data-group-ignore-face]").click();
+    await expect(buttons.first()).toBeEnabled(); await expect(buttons.last()).toBeEnabled();
+    await buttons.first().click();
+    await expect(page.locator("[data-people-status]")).toHaveText("Ein Gesicht wiederhergestellt.");
+    await expect(buttons.first()).toBeDisabled();
+    expect(errors).toEqual([]);
+  } finally { await context.close(); }
+});
+
+for (const outcome of ["lost", "stale", "refresh-failed"]) {
+  test(`group restore ${outcome} shares action locks and retries only reading`, async ({ browser }) => {
+    const { context, page, photo, errors } = await recoveryPage(browser);
+    let release;
+    const pending = new Promise(resolve => { release = resolve; });
+    try {
+      photo.faces.forEach(face => { face.ignored = true; }); photo.remaining = 0; photo.revision = "ignored";
+      await page.locator("[data-group-skip]").first().click();
+      await expect(page.locator("[data-group-photos]")).toHaveAttribute("data-revision", "ignored");
+      const buttons = page.locator("[data-group-unignore]");
+      let writes = 0, failRead = false;
+      await page.route("**/photos/faces/unignore", async route => {
+        writes++;
+        const body = new URLSearchParams(route.request().postData());
+        expect(body.get("path")).toBe(photo.path); expect(body.get("revision")).toBe("ignored");
+        await pending;
+        if (outcome === "stale") return route.fulfill({ status: 409, json: { error: "Foto geändert" } });
+        photo.faces.forEach(face => { face.ignored = false; }); photo.remaining = photo.faces.length; photo.revision = "restored";
+        if (outcome === "lost") return route.abort();
+        failRead = true;
+        return route.fulfill({ json: { ok: true, restored: photo.faces.length } });
+      });
+      await page.route("**/photos/people/groups?**", route => {
+        if (route.request().isNavigationRequest() || new URL(route.request().url()).searchParams.get("format") !== "json") return route.fallback();
+        return route.fulfill(failRead ? { status: 503, json: { error: "refresh unavailable" } } : { json: { minimum: 0, photo } });
+      });
+      await buttons.first().click();
+      await expect.poll(() => writes).toBe(1);
+      await expect(buttons.first()).toBeDisabled(); await expect(buttons.last()).toBeDisabled();
+      await buttons.last().evaluate(button => button.click());
+      release();
+      if (outcome === "stale") {
+        await expect(page.locator("[data-people-status]")).toHaveText("Foto geändert");
+        await expect(buttons.first()).toBeEnabled();
+      } else {
+        await expect(page.locator("[data-group-retry]")).toBeEnabled();
+        await expect(buttons.first()).toBeDisabled();
+        failRead = false;
+        await page.locator("[data-group-retry]").click();
+        await expect(page.locator("[data-group-photos]")).toHaveAttribute("data-revision", "restored");
+        await expect(page.locator("[data-group-ignore]").first()).toBeEnabled();
+        await expect(buttons.first()).toBeDisabled();
+      }
+      expect(writes).toBe(1); expect(errors).toEqual([]);
+    } finally { release(); await context.close(); }
+  });
+}

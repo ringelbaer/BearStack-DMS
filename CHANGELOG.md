@@ -4,6 +4,16 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.67.0 – in Entwicklung
+
+- Personenübersicht: Unter **Unbenannt** und **Ignoriert** steht der Ordnername immer über dem Vorschaubild, auch ohne JavaScript. Im Stammverzeichnis erscheint „Fotos“; lange Namen werden mit vollständigem Tooltip gekürzt.
+- Neuer **Auswahlmodus** für unbenannte Personen mit Fotobearbeitungsrechten: Die gesamte Kachel wählt per Klick, Enter oder Leertaste aus beziehungsweise ab. Personenlinks sind deaktiviert, Stift und Einzel-Ignorieren ausgeblendet. Die bisherigen Batch-Aktionen bleiben verfügbar; Ausschalten erhält die Auswahl und stellt die Einzelaktionen wieder her.
+- AJAX-Aktualisierungen erhalten den Modus und unveränderte Bild-Elemente. Ordneranzeige und Auswahl benötigen keine zusätzlichen Serverabfragen; bestehende Seitengrößen und Berechtigungen bleiben erhalten.
+- **Ähnliche Gesichter** nutzt im Benennen-/Zuordnen-Modal die gemeinsame 300%-Fotovorschau mit Gesichtsrahmen und formatiertem Pfad. Einzelgruppen zeigen ihr Vergleichsgesicht, Zusammenführungen das erste Gesicht wie bei normaler Mehrfachauswahl. Ordnerbeschriftungen verwenden die Galerie-Formatierung statt roher Namen. Koordinaten kommen aus der bestehenden Abfrage, ohne zusätzliche Metadatenanfragen; JSON-Verträge bleiben unverändert.
+- Validierung: vollständige Go-Suite, JavaScript-/DOM-Prüfungen, 37 Chromium-Szenarien für Personenansicht, Vorschläge, Gruppenbilder und Foto-Lightbox sowie Website-Build erfolgreich. Regressionen prüfen Ordnerformatierung, Rechte, Kachel-/Tastaturauswahl, AJAX-Nachladen, 300%-Ausschnitt, Vorschaufehler und Wechsel zwischen Dialogaufrufern ohne zusätzliche Schreibaktionen. Die Vorschlagsseite bindet Dialog und Picker nur einmal ein.
+- **Gruppenbilder**: Rückgängig-Symbol in beiden Aktionsleisten zum Wiederherstellen aller ignorierten Gesichter des aktuellen Fotos, auch bei aktivem Unbenannt-Filter. Namen, Zuordnungen und Favoriten bleiben erhalten; das Foto bleibt geöffnet. Bestehender revisionsgeschützter Endpunkt, gemeinsame Aktionssperren und reine Lese-Wiederholung nach verlorenen Antworten oder fehlgeschlagenem Nachladen. Alle 11 Gruppenbilder-Browsertests sowie gezielte Go-/OpenAPI- und JavaScript-Prüfungen erfolgreich.
+- MINOR **0.67.0** für die optionalen UI-Funktionen; keine API- oder Datenmigration. Android bleibt **0.17.0**. README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.66.2 – in Entwicklung
 
 - Gemeinsamer Gesichtsanalyse-Service für Hintergrundlauf, manuelle Analyse und Quellenprüfung. Der Service besitzt die gemeinsame abbrechbare Sperre und die Client-Erzeugung; Bildaufbereitung, Ausschnittverbesserung und Speichern folgen weiterhin demselben Ablauf. Die Quellenprüfung ersetzt keine ungeprüften Bestandsdaten. HTTP-Verbindungen werden nach jeder Aktion beziehungsweise jedem Batch freigegeben.

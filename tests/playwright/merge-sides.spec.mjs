@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectPersonPreview } from "./person-preview.mjs";
 import { startBearStack, stopBearStack, freePort } from "./server-fixture.mjs";
 import http from "node:http";
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
@@ -23,8 +24,8 @@ test.beforeAll(async () => {
   root = await mkdtemp(path.join(os.tmpdir(), "bearstack-reconciliation-e2e-"));
   const photos = path.join(root, "photos");
   await mkdir(photos);
-  await mkdir(path.join(photos,"Urlaub & Familie"));
-  for (const name of ["Urlaub & Familie/a", "b", "c", "d"]) await writeFile(path.join(photos, `${name}.png`), portrait);
+  await mkdir(path.join(photos,"2026_07_15_Urlaub_&_Familie"));
+  for (const name of ["2026_07_15_Urlaub_&_Familie/a", "b", "c", "d"]) await writeFile(path.join(photos, `${name}.png`), portrait);
   service = http.createServer((request, response) => {
     if (request.headers.authorization !== `Bearer ${token}`) {
       response.writeHead(401).end();
@@ -46,7 +47,7 @@ test.beforeAll(async () => {
       const axis = index < 2 ? 0 : 2;
       embedding[axis] = index % 2 ? .52 : 1;
       if (index % 2) embedding[axis + 1] = Math.sqrt(1 - .52 * .52);
-      response.end(JSON.stringify({ model, faces: [{ x: .3, y: .1, width: .3, height: .35, confidence: .99, embedding,
+      response.end(JSON.stringify({ model, faces: [{ x: .3, y: .1, width: .1, height: .12, confidence: .99, embedding,
         quality: { face_pixels: 153.6, sharpness: 100, reference_eligible: true } }] }));
     });
   });
@@ -161,14 +162,45 @@ test("individual actions affect only unnamed sides and retain the pair until hid
     await expect(dialog.getByRole("combobox")).toBeEnabled();
     const preview = dialog.locator(".person-dialog-photo");
     await expect(preview.locator("img")).toHaveCount(1);
-    await expect(preview.locator("img")).toHaveAttribute("src", await otherSide.locator(".person-card img").getAttribute("src"));
-    await expect(preview.locator("img")).toBeVisible();
-    await expect.poll(() => preview.locator("img").evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
-    await expect(preview.locator(".face-merge-folder")).toHaveText(await otherSide.locator(".face-merge-folder").textContent());
+    await expectPersonPreview(dialog, otherSide);
     await expect(preview.locator("button, a[href], [data-photo-item]")).toHaveCount(0);
     await expect(dialog.getByRole("button", {name:"Ähnliche benannte Personen suchen"})).toBeVisible();
     await expect(dialog.locator("form")).toHaveAttribute("data-person-face-id", await otherSide.getAttribute("data-side-face-id"));
     await dialog.getByRole("button", {name:"Abbrechen",exact:true}).click();
+    await expect(page.locator("[data-person-preview-image]")).not.toHaveAttribute("src");
+    // A failed image must not block the naming form; reopening uses the current side.
+    await page.route("**/photos/people/groups/image/*", route => route.fulfill({ status: 503, body: "unavailable" }));
+    await firstSide.locator("[data-merge-side-name]").click();
+    await expect(dialog.locator("[data-person-preview-status]")).toHaveText("Fotovorschau konnte nicht geladen werden.");
+    await expect(dialog.getByRole("combobox")).toBeEnabled();
+    await dialog.getByRole("button", {name:"Abbrechen",exact:true}).click();
+    await page.unroute("**/photos/people/groups/image/*");
+    await firstSide.locator("[data-merge-side-name]").click();
+    await expectPersonPreview(dialog, firstSide);
+    await dialog.getByRole("button", {name:"Abbrechen",exact:true}).click();
+    // Reuse the same modal from the lightbox, then return to the merge caller.
+    await expect(page.locator("[data-person-dialog]")).toHaveCount(1);
+    await firstSide.locator("[data-photo-item]").click();
+    await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await lightbox.locator("[data-person-edit]").click();
+    await expectPersonPreview(dialog, firstSide);
+    const writes = [];
+    const recordWrite = request => { if (request.method() === "POST") writes.push(request.url()); };
+    page.on("request", recordWrite);
+    await page.route(`**/photos/people/${ignoredID}/rename`, route => route.fulfill({ status: 503, json: { error: "test failure" } }));
+    await dialog.getByRole("combobox").fill("Preview test");
+    await dialog.getByRole("button", { name: "Benennen", exact: true }).click();
+    await expect(dialog.locator("[data-person-dialog-status]")).toContainText("HTTP 503");
+    expect(writes).toEqual([`${baseURL}/photos/people/${ignoredID}/rename`]);
+    page.off("request", recordWrite);
+    await page.unroute(`**/photos/people/${ignoredID}/rename`);
+    await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
+    await expect(page.locator("[data-person-dialog]")).toBeHidden();
+    await lightbox.locator("[data-photo-close]").press("Enter");
+    await otherSide.locator("[data-merge-side-name]").click();
+    await expectPersonPreview(dialog, otherSide);
+    await expect(dialog.locator("[data-person-dialog-ignore]")).toBeHidden();
+    await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
     await expect(first.locator("[data-merge-dismiss]")).toBeHidden();
     // The server commits, but the response is lost. Reloading resolves its receipt,
     // retains this pair, and allows editing the untouched other side.

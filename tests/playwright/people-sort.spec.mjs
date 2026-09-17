@@ -458,3 +458,127 @@ test("person records support multiple relatives, reciprocal marriages, cancellat
     await context.close();
   }
 });
+
+for (const width of [390, 1440]) {
+  test(`unnamed selection mode toggles whole tiles and restores navigation at ${width}px`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    await login(page);
+    await page.goto(baseURL + "/photos/people?page=2&q=&sort=date_desc&unknown=1");
+    const mode = page.getByRole("button", { name: "Auswahlmodus", exact: true });
+    const cards = page.locator(".person-overview-card");
+    const first = cards.first(), second = cards.nth(1);
+    const link = first.locator(".person-card"), checkbox = first.locator("[data-person-select]");
+    const href = await link.getAttribute("href");
+    const folder = first.locator("[data-person-folder]");
+    await expect(folder).toBeVisible();
+    expect((await folder.boundingBox()).y + (await folder.boundingBox()).height).toBeLessThanOrEqual((await first.locator("img").boundingBox()).y);
+    await mode.click();
+    await expect(mode).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('.person-overview-card a[href]')).toHaveCount(0);
+    await expect(first.locator("[data-person-edit]")).toBeHidden();
+    await first.locator("img").click();
+    await expect(checkbox).toBeChecked();
+    await expect(page.locator("[data-people-merge]")).toBeVisible();
+    await expect(page.locator("[data-people-merge-button]")).toBeHidden();
+    await folder.click();
+    await expect(checkbox).not.toBeChecked();
+    await link.focus(); await page.keyboard.press("Space");
+    await expect(checkbox).toBeChecked();
+    await page.keyboard.press("Enter");
+    await expect(checkbox).not.toBeChecked();
+    await first.locator(".person-select").click();
+    await expect(checkbox).toBeChecked();
+    await checkbox.click();
+    await expect(checkbox).not.toBeChecked();
+    // The empty tile footer is part of the selection target too.
+    const box = await link.boundingBox();
+    await link.click({ position: { x: box.width / 2, y: box.height - 12 } });
+    await expect(checkbox).toBeChecked();
+    await second.locator("img").click();
+    await expect(page.locator("[data-people-merge-button]")).toBeVisible();
+    await page.locator("[data-people-edit-button]").click();
+    await expect(page.locator("[data-person-dialog]")).toBeVisible();
+    await page.locator("[data-person-dialog-cancel]").click();
+    await expect(page.locator("[data-person-dialog]")).toBeHidden();
+    await page.locator('[data-bulk-tags-open="add"]').click();
+    await expect(page.locator("[data-tag-select-modal]")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator("[data-tag-select-modal]")).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: `/tmp/bearstack-people-selection-${width}.png`, fullPage: true });
+    await mode.click();
+    await expect(checkbox).toBeChecked();
+    await expect(link).toHaveAttribute("href", href);
+    await expect(first.locator("[data-person-edit]")).toBeVisible();
+    await link.click();
+    await expect(page).toHaveURL(baseURL + href);
+    await context.close();
+  });
+}
+
+test("unnamed selection survives failed actions and refreshes existing and new tiles", async ({ browser }) => {
+  const context = await browser.newContext(); const page = await context.newPage();
+  await login(page);
+  const url = baseURL + "/photos/people?unknown=1&sort=date_desc";
+  await page.goto(url);
+  const data = await (await context.request.get(url + "&format=json")).json();
+  const next = await (await context.request.get(url + "&format=json&page=2")).json();
+  const cards = page.locator(".person-overview-card");
+  await page.locator("[data-people-selection-mode]").click();
+  await cards.nth(0).locator("img").click(); await cards.nth(1).locator("img").click();
+  let succeed = false;
+  await page.route("**/photos/people/*/merge", route => route.fulfill({ status: succeed ? 200 : 500, json: succeed ? { ok: true } : { error: "test failure" } }));
+  await page.locator("[data-people-merge-button]").click();
+  await expect(page.locator("[data-people-status]")).toContainText("HTTP 500");
+  await expect(page.locator("[data-person-select]:checked")).toHaveCount(2);
+  await page.evaluate(() => { window.retainedPeopleImage = document.querySelector(".person-overview-card img"); });
+  data.people[0].count = 9;
+  data.people = [data.people[0], ...data.people.slice(2), next.people[0]];
+  await page.route("**/photos/people?*format=json*", route => route.fulfill({ json: data }));
+  succeed = true;
+  await page.locator("[data-people-merge-button]").click();
+  await expect(page.locator("[data-people-status]")).toHaveText("Personen zusammengeführt.");
+  expect(await page.evaluate(() => window.retainedPeopleImage === document.querySelector(".person-overview-card img"))).toBe(true);
+  await expect(cards.first().locator("[data-person-count]")).toHaveText("9 Fotos");
+  await expect(cards.first().locator("[data-person-folder]")).toHaveText(data.people[0].directory.split("/").pop());
+  await expect(page.locator('.person-overview-card a[href]')).toHaveCount(0);
+  await expect(page.locator("[data-person-select]:checked")).toHaveCount(0);
+  await expect(cards.last().locator("[data-person-folder]")).toBeVisible();
+  await expect(cards.last().locator("[data-person-edit]")).toBeHidden();
+  await cards.last().locator("img").click();
+  await expect(cards.last().locator("[data-person-select]")).toBeChecked();
+  await context.close();
+});
+
+test("source headings also work for ignored faces without JavaScript and selection requires edit rights", async ({ browser }) => {
+  const manager = await browser.newContext({ httpCredentials: { username: "manager", password: "secret" } });
+  const people = await (await manager.request.get(baseURL + "/photos/people?unknown=1&format=json")).json();
+  const faceID = people.people[0].face_id;
+  const edit = form => manager.request.post(baseURL + "/photos/faces/edit", { form, headers: { Origin: baseURL, Accept: "application/json" } });
+  expect((await edit({ face_id: String(faceID), action: "ignore" })).ok()).toBe(true);
+  try {
+    for (const javaScriptEnabled of [false, true]) {
+      const context = await browser.newContext({ javaScriptEnabled }); const page = await context.newPage();
+      await login(page, "reader");
+      await page.goto(baseURL + "/photos/people?unknown=1");
+      await expect(page.locator("[data-people-selection-mode]")).toHaveCount(0);
+      await expect(page.locator("[data-person-folder]").first()).toBeVisible();
+      await page.goto(baseURL + "/photos/people?ignored=1");
+      const card = page.locator(`[data-ignored-face="${faceID}"]`);
+      await expect(card.locator("[data-person-folder]")).toHaveText(people.people[0].directory.split("/").pop());
+      const heading = await card.locator("[data-person-folder]").boundingBox();
+      expect(heading.y + heading.height).toBeLessThanOrEqual((await card.locator("img").boundingBox()).y);
+      await expect(page.locator("[data-people-selection-mode]")).toHaveCount(0);
+      for (const filter of ["all", "known"]) {
+        await page.goto(baseURL + "/photos/people?filter=" + filter);
+        await expect(page.locator("[data-people-selection-mode]")).toHaveCount(0);
+        await expect(page.locator("[data-person-folder]").first()).toBeHidden();
+      }
+      await context.close();
+    }
+  } finally {
+    expect((await edit({ face_id: String(faceID), action: "restore", target: "0", name: "" })).ok()).toBe(true);
+    await manager.close();
+  }
+});

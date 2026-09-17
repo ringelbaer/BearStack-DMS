@@ -75,11 +75,12 @@ func mergeSuggestionServer(t *testing.T, named ...bool) (*Server, photos.FaceMer
 		t.Fatalf("suggestions %+v %v", suggestions, err)
 	}
 	for _, item := range []struct {
-		id   int64
-		path string
-	}{{suggestions[0].SourceFaceID, suggestions[0].SourcePath}, {suggestions[0].TargetFaceID, suggestions[0].TargetPath}} {
+		id       int64
+		path     string
+		portrait photos.FaceRegion
+	}{{suggestions[0].SourceFaceID, suggestions[0].SourcePath, suggestions[0].SourcePortrait}, {suggestions[0].TargetFaceID, suggestions[0].TargetPath, suggestions[0].TargetPortrait}} {
 		face, err := s.photos.Face(ctx, item.id)
-		if err != nil || face.Path != item.path || item.path == "" {
+		if err != nil || face.Path != item.path || item.path == "" || item.portrait != (photos.FaceRegion{X: face.X, Y: face.Y, Width: face.Width, Height: face.Height}) {
 			t.Fatalf("suggestion photo path: %+v %v", item, err)
 		}
 	}
@@ -99,7 +100,7 @@ func TestFaceMergeSuggestionsHTTP(t *testing.T) {
 				if w.Code != want {
 					t.Fatalf("list %s: %d %s", user, w.Code, w.Body.String())
 				}
-				if want == 200 && (w.Header().Get("Cache-Control") != "private, no-store" || !strings.Contains(w.Body.String(), `"source_revision"`) || strings.Contains(w.Body.String(), "embedding") || strings.Contains(w.Body.String(), "source_path")) {
+				if want == 200 && (w.Header().Get("Cache-Control") != "private, no-store" || !strings.Contains(w.Body.String(), `"source_revision"`) || strings.Contains(w.Body.String(), "embedding") || strings.Contains(w.Body.String(), "source_path") || strings.Contains(w.Body.String(), "SourcePortrait") || strings.Contains(w.Body.String(), "source_portrait")) {
 					t.Fatalf("list contract %s", w.Body.String())
 				}
 			}

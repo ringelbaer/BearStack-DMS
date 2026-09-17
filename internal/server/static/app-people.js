@@ -105,6 +105,8 @@
   var status = document.querySelector("[data-people-status]");
   var busy = false;
   var selected = new Set();
+  var selectionMode = false;
+  var selectionModeButton = document.querySelector("[data-people-selection-mode]");
   var merge = document.querySelector("[data-people-merge]");
   var mergeButton = document.querySelector("[data-people-merge-button]");
   var editSelectedButton = document.querySelector("[data-people-edit-button]");
@@ -128,6 +130,22 @@
       input.checked = selected.has(input.value);
       input.disabled = busy;
     });
+    if (selectionModeButton) selectionModeButton.disabled = busy;
+    if (selectionModeButton) overview.querySelectorAll(".person-overview-card > .person-card").forEach(function (link) {
+      if (selectionMode) {
+        link.removeAttribute("href");
+        link.setAttribute("role", "button");
+        link.setAttribute("tabindex", "0");
+        link.setAttribute("aria-pressed", String(selected.has(link.parentElement.dataset.personId)));
+        link.setAttribute("aria-label", "Person auswählen: " + (link.parentElement.dataset.personName || "Unbenannt"));
+      } else if (link.getAttribute("role") === "button") {
+        link.href = "/photos/people/" + encodeURIComponent(link.parentElement.dataset.personId);
+        link.removeAttribute("role");
+        link.removeAttribute("tabindex");
+        link.removeAttribute("aria-pressed");
+        link.setAttribute("aria-label", "Person anzeigen: " + (link.parentElement.dataset.personName || "Unbenannt"));
+      }
+    });
     merge.hidden = selected.size < 1;
     mergeButton.hidden = selected.size < 2;
     merge.querySelectorAll("[data-bulk-tags-open]").forEach(function (button) { button.disabled = busy; });
@@ -140,6 +158,10 @@
     }
   }
 
+
+  function folderName(directory) {
+    return (directory || "Fotos").split("/").pop();
+  }
 
   function personCard(person, existing) {
     var name = person.name || "Unbenannt";
@@ -157,9 +179,9 @@
       if (existingImage.getAttribute("src") !== thumbnail) existingImage.src = thumbnail;
       existing.querySelector("strong").textContent = name;
       existing.querySelector("strong").hidden = overview.dataset.unknownOnly === "true" && !person.name;
-      existing.querySelector(".person-card > span").textContent = countText;
+      existing.querySelector("[data-person-count]").textContent = countText;
       var folder = existing.querySelector("[data-person-folder]");
-      if (folder) folder.textContent = person.directory || "";
+      if (folder) { folder.textContent = overview.dataset.unknownOnly === "true" ? folderName(person.directory) : person.directory || ""; folder.title = person.directory || "Fotos"; }
       var checkbox = existing.querySelector("[data-person-select]");
       if (checkbox) checkbox.setAttribute("aria-label", "Person auswählen: " + name);
       var ignore = existing.querySelector("[data-ignore-face]");
@@ -191,7 +213,11 @@
     var count = document.createElement("span");
     count.textContent = countText; count.dataset.personCount = "";
     var folder = document.createElement("span"); folder.dataset.personFolder = ""; folder.title = "Ordner des Vorschaubilds"; folder.textContent = person.directory || "";
-    link.append(img, title, count, folder); card.append(link);
+    if (overview.dataset.unknownOnly === "true") {
+      folder.textContent = folderName(person.directory); folder.title = person.directory || "Fotos";
+      link.append(folder, img, title, count);
+    } else link.append(img, title, count, folder);
+    card.append(link);
     if (overview.dataset.canIgnore === "true") {
       var label = document.createElement("label");
       label.className = "person-select";
@@ -281,6 +307,34 @@
   }
 
   if (overview && overview.dataset.canIgnore === "true") {
+    if (selectionModeButton && overview.dataset.unknownOnly === "true") {
+      selectionModeButton.hidden = false;
+      selectionModeButton.addEventListener("click", function () {
+        if (busy) return;
+        selectionMode = !selectionMode;
+        selectionModeButton.setAttribute("aria-pressed", String(selectionMode));
+        overview.dataset.selectionMode = String(selectionMode);
+        updateSelection();
+      });
+      // Capture the whole tile before link, ignore and dialog handlers run.
+      overview.addEventListener("click", function (event) {
+        if (!selectionMode) return;
+        var card = event.target.closest(".person-overview-card");
+        if (!card || !overview.contains(card)) return;
+        if (!busy && event.target.closest(".person-select")) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (busy) return;
+        var input = card.querySelector("[data-person-select]");
+        input.checked = !input.checked;
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }, true);
+      overview.addEventListener("keydown", function (event) {
+        if (!selectionMode || !event.target.matches(".person-card") || !["Enter", " "].includes(event.key)) return;
+        event.preventDefault();
+        if (!event.repeat) event.target.click();
+      });
+    }
     overview.addEventListener("change", function (event) {
       var input = event.target.closest("[data-person-select]");
       if (!input || busy) return;

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectPersonPreview } from "./person-preview.mjs";
 import { startBearStack, stopBearStack, freePort } from "./server-fixture.mjs";
 import http from "node:http";
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
@@ -45,7 +46,7 @@ test.beforeAll(async () => {
       const axis = index < 2 ? 0 : 2;
       embedding[axis] = index % 2 ? .52 : 1;
       if (index % 2) embedding[axis + 1] = Math.sqrt(1 - .52 * .52);
-      response.end(JSON.stringify({ model, faces: [{ x: .3, y: .1, width: .3, height: .35, confidence: .99, embedding,
+      response.end(JSON.stringify({ model, faces: [{ x: .3, y: .1, width: .1, height: .12, confidence: .99, embedding,
         quality: { face_pixels: 153.6, sharpness: 100, reference_eligible: true } }] }));
     });
   });
@@ -108,6 +109,8 @@ test("pencil names or assigns two unnamed groups atomically", async ({ browser }
     const cards = page.locator(".face-merge-suggestion");
     const pencil = page.getByRole("button", { name: "Zusammenführen und benennen/zuordnen", exact: true });
     const dialog = page.getByRole("dialog");
+    await expect(page.locator("[data-person-dialog]")).toHaveCount(1);
+    await expect(page.locator('script[src*="/static/app-person-dialog.js"]')).toHaveCount(1);
     await expect(cards).toHaveCount(2);
     await expect(pencil).toHaveCount(2);
     for (const width of [320,390,1440]) {
@@ -115,14 +118,8 @@ test("pencil names or assigns two unnamed groups atomically", async ({ browser }
       await pencil.first().click();
       await expect(dialog.getByRole("combobox")).toBeEnabled();
       const preview = dialog.locator(".person-dialog-photo");
-      await expect(preview.locator("img")).toHaveCount(2);
-      expect(await preview.locator("img").evaluateAll(images => images.map(img => img.getAttribute("src"))))
-        .toEqual(await cards.first().locator(".person-card img").evaluateAll(images => images.map(img => img.getAttribute("src"))));
-      for (const image of await preview.locator("img").all()) {
-        await expect(image).toBeVisible();
-        await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
-      }
-      await expect(preview.locator(".face-merge-folder")).toHaveText(["Fotos", "Fotos"]);
+      await expect(preview.locator("img")).toHaveCount(1);
+      await expectPersonPreview(dialog, cards.first().locator("[data-merge-side]").first());
       await expect(preview.locator("button, a[href], [data-photo-item]")).toHaveCount(0);
       const faceID = await cards.first().locator("[data-merge-side]").first().getAttribute("data-side-face-id");
       const search = page.waitForResponse(response => response.url().endsWith(`/photos/faces/${faceID}/suggestions`));
@@ -132,6 +129,7 @@ test("pencil names or assigns two unnamed groups atomically", async ({ browser }
       expect(await dialog.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
       await page.screenshot({ path: path.join(os.tmpdir(), `bearstack-merge-naming-${width}.png`), fullPage: true });
       await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
+      await expect(page.locator("[data-person-preview-image]")).not.toHaveAttribute("src");
       await expect(pencil.first()).toBeFocused();
       await expect(cards).toHaveCount(2);
     }

@@ -11,18 +11,20 @@ import (
 
 // Score describes the best reference match for the group, not a probability.
 type FaceMergeSuggestion struct {
-	SourcePath     string  `json:"-"`
-	TargetPath     string  `json:"-"`
-	ID             int64   `json:"id"`
-	SourceID       int64   `json:"source_id"`
-	TargetID       int64   `json:"target_id"`
-	SourceRevision int64   `json:"source_revision"`
-	TargetRevision int64   `json:"target_revision"`
-	SourceFaceID   int64   `json:"source_face_id"`
-	TargetFaceID   int64   `json:"target_face_id"`
-	SourceName     string  `json:"source_name"`
-	TargetName     string  `json:"target_name"`
-	Score          float64 `json:"score"`
+	SourcePortrait FaceRegion `json:"-"`
+	TargetPortrait FaceRegion `json:"-"`
+	SourcePath     string     `json:"-"`
+	TargetPath     string     `json:"-"`
+	ID             int64      `json:"id"`
+	SourceID       int64      `json:"source_id"`
+	TargetID       int64      `json:"target_id"`
+	SourceRevision int64      `json:"source_revision"`
+	TargetRevision int64      `json:"target_revision"`
+	SourceFaceID   int64      `json:"source_face_id"`
+	TargetFaceID   int64      `json:"target_face_id"`
+	SourceName     string     `json:"source_name"`
+	TargetName     string     `json:"target_name"`
+	Score          float64    `json:"score"`
 }
 
 func cacheFaceMergeSuggestion(ctx context.Context, tx *sql.Tx, item faceSuggestionEvidence, model string) (bool, error) {
@@ -80,7 +82,7 @@ func cacheFaceMergeSuggestion(ctx context.Context, tx *sql.Tx, item faceSuggesti
 	return !exists && err == nil, err
 }
 
-const faceMergeSuggestionSelect = `SELECT s.id,s.source_id,s.target_id,s.source_revision,s.target_revision,s.source_face_id,s.target_face_id,sp.name,tp.name,s.score,sf.path,tf.path
+const faceMergeSuggestionSelect = `SELECT s.id,s.source_id,s.target_id,s.source_revision,s.target_revision,s.source_face_id,s.target_face_id,sp.name,tp.name,s.score,sf.path,tf.path,sf.x,sf.y,sf.width,sf.height,tf.x,tf.y,tf.width,tf.height
  FROM photo_face_merge_suggestions s JOIN photo_people sp ON sp.id=s.source_id JOIN photo_people tp ON tp.id=s.target_id
  JOIN photo_person_revisions sr ON sr.person_id=s.source_id AND sr.revision=s.source_revision
  JOIN photo_person_revisions tr ON tr.person_id=s.target_id AND tr.revision=s.target_revision
@@ -91,7 +93,9 @@ const faceMergeSuggestionSelect = `SELECT s.id,s.source_id,s.target_id,s.source_
 
 func scanFaceMergeSuggestion(row interface{ Scan(...any) error }) (FaceMergeSuggestion, error) {
 	var s FaceMergeSuggestion
-	err := row.Scan(&s.ID, &s.SourceID, &s.TargetID, &s.SourceRevision, &s.TargetRevision, &s.SourceFaceID, &s.TargetFaceID, &s.SourceName, &s.TargetName, &s.Score, &s.SourcePath, &s.TargetPath)
+	err := row.Scan(&s.ID, &s.SourceID, &s.TargetID, &s.SourceRevision, &s.TargetRevision, &s.SourceFaceID, &s.TargetFaceID, &s.SourceName, &s.TargetName, &s.Score, &s.SourcePath, &s.TargetPath,
+		&s.SourcePortrait.X, &s.SourcePortrait.Y, &s.SourcePortrait.Width, &s.SourcePortrait.Height,
+		&s.TargetPortrait.X, &s.TargetPortrait.Y, &s.TargetPortrait.Width, &s.TargetPortrait.Height)
 	return s, err
 }
 

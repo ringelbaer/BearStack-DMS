@@ -1616,6 +1616,15 @@ Eine eigene Dienstadresse lässt sich über folgende optionale Werte setzen:</p>
 </table>
 <h2 id="ab-bearstack-0524-verwenden-personen-ubersichtskarten-und-die-treffer-thumbnails-im-benennen-dialog-in-webui-und-android-ausschlielich-sichtbare-aktive-stern-favoriten-sofern-die-gruppe-welche-besitzt-bei-mehreren-favoriten-wird-stabil-der-mit-der-kleinsten-gesichts-id-gezeigt-ohne-favoriten-bleibt-die-bisherige-bildauswahl-erhalten-das-gilt-auch-fur-die-portraits-der-lupentreffer-personenerkennung-vergleichsreferenzen-such-ausgangsgesichter-und-trefferreihenfolge-bleiben-unverandert-die-auswahl-erfolgt-serverseitig-uber-den-vorhandenen-favoritenindex-ohne-zusatzliche-bildabrufe-oder-datenmigration-die-android-app-erhalt-die-korrigierten-portraits-nach-dem-serverupdate-uber-die-bestehenden-antworten">Ab BearStack <strong>0.52.4</strong> verwenden Personen-Übersichtskarten und die Treffer-Thumbnails im Benennen-Dialog in WebUI und Android ausschließlich sichtbare, aktive <strong>Stern-Favoriten</strong>, sofern die Gruppe welche besitzt. Bei mehreren Favoriten wird stabil der mit der kleinsten Gesichts-ID gezeigt. Ohne Favoriten bleibt die bisherige Bildauswahl erhalten. Das gilt auch für die Portraits der Lupentreffer; Personenerkennung, Vergleichsreferenzen, Such-Ausgangsgesichter und Trefferreihenfolge bleiben unverändert. Die Auswahl erfolgt serverseitig über den vorhandenen Favoritenindex, ohne zusätzliche Bildabrufe oder Datenmigration. Die Android-App erhält die korrigierten Portraits nach dem Serverupdate über die bestehenden Antworten.<a class="headerlink" href="#ab-bearstack-0524-verwenden-personen-ubersichtskarten-und-die-treffer-thumbnails-im-benennen-dialog-in-webui-und-android-ausschlielich-sichtbare-aktive-stern-favoriten-sofern-die-gruppe-welche-besitzt-bei-mehreren-favoriten-wird-stabil-der-mit-der-kleinsten-gesichts-id-gezeigt-ohne-favoriten-bleibt-die-bisherige-bildauswahl-erhalten-das-gilt-auch-fur-die-portraits-der-lupentreffer-personenerkennung-vergleichsreferenzen-such-ausgangsgesichter-und-trefferreihenfolge-bleiben-unverandert-die-auswahl-erfolgt-serverseitig-uber-den-vorhandenen-favoritenindex-ohne-zusatzliche-bildabrufe-oder-datenmigration-die-android-app-erhalt-die-korrigierten-portraits-nach-dem-serverupdate-uber-die-bestehenden-antworten" title="Permanent link">&para;</a></h2>
 <h2 id="personen-sortieren">Personen sortieren<a class="headerlink" href="#personen-sortieren" title="Permanent link">&para;</a></h2>
+<p>Bei <strong>Unbenannt</strong> und <strong>Ignoriert</strong> steht der Ordnername immer über dem Vorschaubild
+(im Stammverzeichnis „Fotos“). Unter <strong>Unbenannt</strong> können Benutzer mit
+Fotobearbeitungsrechten den <strong>Auswahlmodus</strong> aktivieren: Klicks auf Bild, Ordnername
+oder freie Kachelfläche wählen die Person aus beziehungsweise ab. Enter und
+Leertaste funktionieren ebenfalls. Personenlinks sind währenddessen deaktiviert;
+Stift und Einzel-Ignorieren sind ausgeblendet. Die bisherigen Batch-Aktionen
+erscheinen mit der Auswahl. Nach dem Ausschalten bleiben Markierungen erhalten und
+die Personenlinks sowie Einzelaktionen sind wieder verfügbar. Der Modus gilt für
+die geöffnete Seite, bleibt bei AJAX-Aktualisierungen erhalten und benötigt JavaScript.</p>
 <p>Personenübersicht und Personendetailseite verwenden dieselbe Kacheldarstellung mit
 einheitlichen Größen S/M/L, Bildflächen, Abständen, Rahmen und Aktionspositionen.
 Die Übersicht zeigt Personennamen und Fotoanzahl, die Detailseite den Dateinamen
@@ -1927,8 +1936,10 @@ Begrenzung des Suchbestands. Den ausführlichen Vergleich beschreibt der
 unter <code>/photos/people</code> steuert <strong>Ordnername anzeigen</strong>, <strong>Fotoanzahl anzeigen</strong> und
 <strong>Thumbnailgröße S, M oder L</strong>. S entspricht der bisherigen Größe (bis 160 Pixel),
 M verwendet bis 224 Pixel und L bis 320 Pixel; kleine Bildschirme begrenzen die
-Breite automatisch. Standard: Fotoanzahl sichtbar, Ordner ausgeblendet, Größe S.
-Der Ordner steht unter der Fotoanzahl und gehört zum jeweiligen Vorschaubild;
+Breite automatisch. Standard: Fotoanzahl sichtbar, Größe S. Bei <strong>Alle</strong> und
+<strong>Benannt</strong> ist der Ordner standardmäßig ausgeblendet und lässt sich unter der
+Fotoanzahl einblenden. Bei <strong>Unbenannt</strong> und <strong>Ignoriert</strong> steht der Ordnername ab
+0.67.0 immer über dem Bild; dort entfällt der Ordnerschalter. Der Ordner gehört zum jeweiligen Vorschaubild;
 andere Fotos der Person können aus anderen Ordnern stammen. Für das Stammverzeichnis
 steht „Fotos“. Die Einstellungen bleiben pro Benutzer im Browser gespeichert und
 gelten auch nach AJAX-Aktualisierungen. Das Umschalten verwendet die vorhandenen
@@ -2019,6 +2030,13 @@ sich ohne Seitenwechsel, die Zoomauswahl bleibt bestehen. Die Aktion funktionier
 auch ohne JavaScript und kehrt dann zum selben Foto zurück. Sie verwendet dieselbe
 Revisions- und Rechteprüfung wie die Sammelaktion. Schlägt nur das Aktualisieren nach
 dem Speichern fehl, lädt „Ansicht erneut laden“ die Daten ohne erneute Schreibaktion.</p>
+<p>Ab <strong>0.67.0</strong> stellt der <strong>Rückgängig-Pfeil</strong> in beiden Aktionsleisten alle ignorierten
+Gesichter des aktuell geöffneten Gruppenfotos wieder her. Namen, Personenzuordnungen,
+Favoriten und andere Fotos bleiben erhalten. Die Aktion gilt auch für durch
+<strong>Nur Unbenannte anzeigen</strong> ausgeblendete Gesichter und bleibt anschließend beim
+aktuellen Foto. Ohne ignorierte Gesichter ist der Symbolbutton deaktiviert.
+Wiederherstellen benötigt JavaScript; nach unbestätigten Antworten oder fehlgeschlagenem
+Nachladen aktualisiert <strong>Ansicht erneut laden</strong> ausschließlich die Anzeige.</p>
 <p><strong>Verbleibende ignorieren</strong> ignoriert atomar ausschließlich die noch unbenannten,
 aktiven Gesichter des angezeigten Fotos und wechselt danach zum nächsten passenden
 Foto. Bereits benannte Gesichter und dieselben Personen auf anderen Fotos bleiben
@@ -2174,14 +2192,19 @@ nutzbar. Aufrufe der Seite
 lösen keine neue Vektorsuche aus. Bearbeiten benötigt <code>photos.edit</code>, Einstellungen
 und Steuerung benötigen <code>photos.manage</code>.</p>
 <p>Ab <strong>0.61.2</strong> zeigt <code>/photos/people/merge-suggestions</code> zu jedem Vergleichsbild den
-Ordnernamen (im Hauptordner „Fotos“). Ein Klick auf das Bild öffnet die vorhandene
+Ordnernamen (im Hauptordner „Fotos“). Ab <strong>0.67.0</strong> gelten dieselben Regeln wie in
+der Galerie: Datumspräfixe werden erkannt und Unterstriche als Leerzeichen dargestellt. Ein Klick auf das Bild öffnet die vorhandene
 Lightbox mit dem vollständigen Foto; nur der Personenname öffnet die Personengruppe.
 Das gilt auch nach dem Nachladen und Bearbeiten von Vorschlägen. Die Bildpfade
 kommen aus der bestehenden begrenzten Abfrage; zusätzliche Einzelabfragen entfallen.</p>
-<p>Ab <strong>0.61.3</strong> bleiben die Vergleichsgesichter mit Ordnernamen auch im Dialog
-<strong>Zusammenführen und benennen/zuordnen</strong> sichtbar. Beim Benennen einer einzelnen
-Gruppe erscheint nur deren Gesicht. Die Vorschauen im Dialog übernehmen keine
-Aktionsbuttons oder Personenlinks aus den Vorschlagskarten.</p>
+<p>Der Dialog <strong>Benennen/Zuordnen</strong> verwendet ab <strong>0.67.0</strong> auch auf dieser Seite die
+normale Fotovorschau mit <strong>300 % der Bounding Box</strong>, Gesichtsrahmen und formatiertem
+Fotopfad. Beim Benennen einer einzelnen Gruppe zeigt er deren Vergleichsgesicht;
+bei <strong>Zusammenführen und benennen/zuordnen</strong> das erste Vergleichsgesicht, wie bei
+der normalen Mehrfachauswahl. Die Vorschau passt sich an die Bildschirmgröße an
+und wird beim Schließen zurückgesetzt. Die Koordinaten kommen aus der vorhandenen
+begrenzten Vorschlagsabfrage; das Foto lädt erst beim Öffnen des Dialogs. Eine
+fehlgeschlagene Fotovorschau blockiert die Namenssuche nicht.</p>
 <p>Ab Android-App <strong>0.9.0</strong> und BearStack <strong>0.49.0</strong> ist <strong>Ähnliche Gruppen</strong> auch über das App-Menü verfügbar: immer eine Entscheidung mit zwei Portraits und festen Buttons, ohne scrollbare Vorschlagsliste. Nach <strong>Zusammenführen</strong> oder <strong>Getrennt lassen</strong> lädt automatisch das nächste Gruppenpaar. Beide Portraits bieten dieselbe Originalfoto-Vergrößerung per Halten und Wischen wie beim Benennen/Zuordnen. Aktionsquittungen verhindern doppelte Änderungen bei verlorenen Antworten; Konflikte verlangen eine erneute Prüfung. Die Android-Portraits stehen gleich groß und auf derselben Höhe; Namen, Gesichtsanzahlen und Einzelaktionen sind kompakt darunter angeordnet. Bei wenig Platz oder großer Schrift scrollt der Vergleichsbereich bei weiterhin sichtbaren Entscheidungsbuttons. Details stehen in der <a href="android.html#ahnliche-gruppen">Android-Anleitung</a>.</p>
 <p><strong>Kleine Gesichter:</strong> Nach der ersten Analyse des maximal 1.600 Pixel großen Fotos
 werden bei Bedarf bis zu acht Originalausschnitte nachanalysiert. Das Original wird
@@ -2412,7 +2435,7 @@ Identitätszustand entfällt; Fristen und Einzelrevisionen bleiben an den Eintr�
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.66.2 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.67.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

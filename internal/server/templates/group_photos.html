@@ -7,6 +7,7 @@
 <p>Personen auf Gruppenfotos benennen und verbleibende Gesichter bearbeiten.</p>
 <p id="group-photo-filter-help">Unbearbeitet bedeutet: weder benannt noch ignoriert. Standard: mehr als 5. Übersprungene Fotos erscheinen im nächsten Durchlauf wieder.</p>
 <p>Zeige auf ein Gesicht, um es im Foto zu markieren. Ein Klick auf die Vorschau vergrößert den Ausschnitt auf die dreifache Breite und Höhe der Gesichtsmarkierung (300 %). Ein weiterer Klick auf dieselbe Vorschau zeigt wieder das ganze Foto.</p>
+<p>Der Rückgängig-Pfeil stellt alle ignorierten Gesichter im aktuellen Foto wieder her; Namen und Zuordnungen bleiben erhalten. Bei „Nur Unbenannte anzeigen“ gilt das auch für ausgeblendete Gesichter.</p>
 <p>Mit × ignorierst du nur dieses Gesicht im aktuellen Foto. Mit dem Stift benennst du die gesamte Personengruppe oder führst sie mit einer vorhandenen Person zusammen, auch in anderen Fotos.</p>
 </div></details>
 <a class="secondary-button" href="/photos/people">← Alle Personen</a></div></section>
@@ -51,7 +52,7 @@
 </div>
 </nav>
 {{template "person_edit_dialog" .}}
-<noscript><p>Für Gesichtsmarkierungen, Vergrößern und den Benenn-Dialog wird JavaScript benötigt. Überspringen und Ignorieren funktionieren auch ohne JavaScript.</p></noscript>
+<noscript><p>Für Gesichtsmarkierungen, Vergrößern, Wiederherstellen und den Benenn-Dialog wird JavaScript benötigt. Überspringen und Ignorieren funktionieren auch ohne JavaScript.</p></noscript>
 <script src="{{assetURL "/static/app-person-picker.js"}}" defer></script>
 <script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
 <script src="{{assetURL "/static/app-group-strip.js"}}" defer></script>
@@ -61,6 +62,7 @@
 
 {{define "group_photo_actions"}}
 <button type="submit" form="group-photo-ignore-form" data-group-ignore {{if .GroupPhotos.Photo}}{{if not .GroupPhotos.Photo.Remaining}}disabled{{end}}{{else}}disabled{{end}}>Verbleibende ignorieren</button>
+<button type="button" class="secondary-button" data-group-unignore aria-label="Alle ignorierten Gesichter dieses Fotos wiederherstellen" title="Alle ignorierten Gesichter dieses Fotos wiederherstellen" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h5M3 10V5m0 5a9 9 0 1 1 0 5"/><path d="m9 12 2 2 4-4"/></svg></button>
 <a class="secondary-button" data-group-skip title="Nächstes Foto" href="?min={{.GroupPhotos.Minimum}}&amp;after={{with .GroupPhotos.Photo}}{{queryEscape .Path}}{{end}}">Überspringen</a>
 {{end}}
 

@@ -249,6 +249,9 @@
   // Reuse the person picker, while preserving the reviewed pair and its revisions.
   var dialog = document.querySelector("[data-person-dialog]");
   if (!dialog) return;
+  var photoPreview = window.BearStackPersonDialog.bindPreview(dialog);
+  var namingOwner = {};
+  function ownsNaming() { return dialog.bearstackOwner === namingOwner; }
   var namingForm = dialog.querySelector("form");
   var namingStatus = dialog.querySelector("[data-person-dialog-status]");
   var targetInput = namingForm.querySelector("[data-person-target]");
@@ -263,10 +266,11 @@
     namingForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = disabled; });
     dialog.setAttribute("aria-busy", String(disabled));
   }
-  function closeNaming() { if (!namingBusy) dialog.close(); }
+  function closeNaming() { if (ownsNaming() && !namingBusy) dialog.close(); }
   cancelNaming.addEventListener("click", closeNaming);
-  dialog.addEventListener("cancel", function (event) { if (namingBusy) event.preventDefault(); });
+  dialog.addEventListener("cancel", function (event) { if (ownsNaming() && namingBusy) event.preventDefault(); });
   dialog.addEventListener("close", function () {
+    if (!ownsNaming()) return;
     namingForm.dispatchEvent(new CustomEvent("person-picker-close"));
     if (namingOpener && namingOpener.isConnected && !namingOpener.disabled) namingOpener.focus({ preventScroll: true });
     else {
@@ -278,6 +282,7 @@
   list.addEventListener("click", async function (event) {
     var button = event.target.closest("[data-merge-name], [data-merge-side-name]");
     if (!button || button.disabled || dialog.open) return;
+    dialog.bearstackOwner = namingOwner;
     namingCard = button.closest("[data-merge-id]");
     namingSide = button.closest("[data-merge-side]");
     namingOpener = button;
@@ -286,15 +291,11 @@
     // close the dialog and lock this card until suggestions have been reloaded.
     namingOperation = operationID();
     var operation = namingOperation;
+    delete namingForm.dataset.personFaceSelection;
+    delete namingForm.dataset.personRestore;
+    dialog.querySelector("[data-person-dialog-ignore]").hidden = true;
     dialog.querySelector("#person-dialog-title").textContent = namingSide ? "Gruppe benennen/zuordnen" : "Zusammenführen und benennen/zuordnen";
     dialog.querySelector("#overview-person-hint").textContent = namingSide ? "Nur diese Gruppe wird benannt oder einer vorhandenen Person zugeordnet." : "Beide Gruppen werden unter dem neuen Namen oder mit der ausgewählten Person zusammengeführt. Abbrechen ändert nichts.";
-    dialog.querySelector(".person-dialog-photo").replaceChildren((namingSide ? namingSide.querySelector(".person-card") : namingCard.querySelector(".face-merge-pair")).cloneNode(true));
-    // Keep the portraits when removing the gallery's interactive controls.
-    dialog.querySelectorAll(".person-dialog-photo [data-photo-item]").forEach(function (button) {
-      button.replaceWith(...button.childNodes);
-    });
-    dialog.querySelectorAll(".person-dialog-photo button, .person-dialog-photo [data-merge-side-status]").forEach(function (element) { element.remove(); });
-    dialog.querySelectorAll(".person-dialog-photo a").forEach(function (link) { link.removeAttribute("href"); });
     var searchSide = namingSide || namingCard.querySelector("[data-merge-side]");
     namingForm.dataset.personFaceId = searchSide.dataset.sideFaceId || "";
     faceMatchButton.hidden = !namingForm.dataset.personFaceId;
@@ -307,22 +308,23 @@
     namingControls(true);
     cancelNaming.disabled = false;
     dialog.showModal();
+    photoPreview.show(searchSide);
     try {
       var response = await fetch("/api/photos/labeling/v1/session", { credentials: "same-origin", redirect: "error", cache: "no-store" });
       if (!response.ok) throw new Error("Namenssuche konnte nicht geladen werden. Bitte den Dialog erneut öffnen.");
       var session = await response.json();
-      if (operation !== namingOperation || !dialog.open) return;
+      if (operation !== namingOperation || !dialog.open || !ownsNaming()) return;
       namingSession = session;
       namingStatus.textContent = "";
       namingControls(false);
       nameInput.focus();
     } catch (error) {
-      if (operation === namingOperation && dialog.open) namingStatus.textContent = error.message;
+      if (operation === namingOperation && dialog.open && ownsNaming()) namingStatus.textContent = error.message;
     }
   });
   namingForm.addEventListener("submit", async function (event) {
     event.preventDefault();
-    if (namingBusy || !namingSession) return;
+    if (!ownsNaming() || namingBusy || !namingSession) return;
     var card = namingCard, id = card.dataset.mergeId;
     if (!card.isConnected || pending.has(id) || uncertain.has(id)) {
       closeNaming();

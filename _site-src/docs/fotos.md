@@ -378,6 +378,16 @@ Eine eigene Dienstadresse lässt sich über folgende optionale Werte setzen:
 
 ## Personen sortieren
 
+Bei **Unbenannt** und **Ignoriert** steht der Ordnername immer über dem Vorschaubild
+(im Stammverzeichnis „Fotos“). Unter **Unbenannt** können Benutzer mit
+Fotobearbeitungsrechten den **Auswahlmodus** aktivieren: Klicks auf Bild, Ordnername
+oder freie Kachelfläche wählen die Person aus beziehungsweise ab. Enter und
+Leertaste funktionieren ebenfalls. Personenlinks sind währenddessen deaktiviert;
+Stift und Einzel-Ignorieren sind ausgeblendet. Die bisherigen Batch-Aktionen
+erscheinen mit der Auswahl. Nach dem Ausschalten bleiben Markierungen erhalten und
+die Personenlinks sowie Einzelaktionen sind wieder verfügbar. Der Modus gilt für
+die geöffnete Seite, bleibt bei AJAX-Aktualisierungen erhalten und benötigt JavaScript.
+
 Personenübersicht und Personendetailseite verwenden dieselbe Kacheldarstellung mit
 einheitlichen Größen S/M/L, Bildflächen, Abständen, Rahmen und Aktionspositionen.
 Die Übersicht zeigt Personennamen und Fotoanzahl, die Detailseite den Dateinamen
@@ -733,8 +743,10 @@ Die Dreipunkt-Menüs verwenden vertikal mittig ausgerichtete SVG-Punkte. Im Anze
 unter `/photos/people` steuert **Ordnername anzeigen**, **Fotoanzahl anzeigen** und
 **Thumbnailgröße S, M oder L**. S entspricht der bisherigen Größe (bis 160 Pixel),
 M verwendet bis 224 Pixel und L bis 320 Pixel; kleine Bildschirme begrenzen die
-Breite automatisch. Standard: Fotoanzahl sichtbar, Ordner ausgeblendet, Größe S.
-Der Ordner steht unter der Fotoanzahl und gehört zum jeweiligen Vorschaubild;
+Breite automatisch. Standard: Fotoanzahl sichtbar, Größe S. Bei **Alle** und
+**Benannt** ist der Ordner standardmäßig ausgeblendet und lässt sich unter der
+Fotoanzahl einblenden. Bei **Unbenannt** und **Ignoriert** steht der Ordnername ab
+0.67.0 immer über dem Bild; dort entfällt der Ordnerschalter. Der Ordner gehört zum jeweiligen Vorschaubild;
 andere Fotos der Person können aus anderen Ordnern stammen. Für das Stammverzeichnis
 steht „Fotos“. Die Einstellungen bleiben pro Benutzer im Browser gespeichert und
 gelten auch nach AJAX-Aktualisierungen. Das Umschalten verwendet die vorhandenen
@@ -836,6 +848,14 @@ sich ohne Seitenwechsel, die Zoomauswahl bleibt bestehen. Die Aktion funktionier
 auch ohne JavaScript und kehrt dann zum selben Foto zurück. Sie verwendet dieselbe
 Revisions- und Rechteprüfung wie die Sammelaktion. Schlägt nur das Aktualisieren nach
 dem Speichern fehl, lädt „Ansicht erneut laden“ die Daten ohne erneute Schreibaktion.
+
+Ab **0.67.0** stellt der **Rückgängig-Pfeil** in beiden Aktionsleisten alle ignorierten
+Gesichter des aktuell geöffneten Gruppenfotos wieder her. Namen, Personenzuordnungen,
+Favoriten und andere Fotos bleiben erhalten. Die Aktion gilt auch für durch
+**Nur Unbenannte anzeigen** ausgeblendete Gesichter und bleibt anschließend beim
+aktuellen Foto. Ohne ignorierte Gesichter ist der Symbolbutton deaktiviert.
+Wiederherstellen benötigt JavaScript; nach unbestätigten Antworten oder fehlgeschlagenem
+Nachladen aktualisiert **Ansicht erneut laden** ausschließlich die Anzeige.
 
 **Verbleibende ignorieren** ignoriert atomar ausschließlich die noch unbenannten,
 aktiven Gesichter des angezeigten Fotos und wechselt danach zum nächsten passenden
@@ -991,15 +1011,20 @@ lösen keine neue Vektorsuche aus. Bearbeiten benötigt `photos.edit`, Einstellu
 und Steuerung benötigen `photos.manage`.
 
 Ab **0.61.2** zeigt `/photos/people/merge-suggestions` zu jedem Vergleichsbild den
-Ordnernamen (im Hauptordner „Fotos“). Ein Klick auf das Bild öffnet die vorhandene
+Ordnernamen (im Hauptordner „Fotos“). Ab **0.67.0** gelten dieselben Regeln wie in
+der Galerie: Datumspräfixe werden erkannt und Unterstriche als Leerzeichen dargestellt. Ein Klick auf das Bild öffnet die vorhandene
 Lightbox mit dem vollständigen Foto; nur der Personenname öffnet die Personengruppe.
 Das gilt auch nach dem Nachladen und Bearbeiten von Vorschlägen. Die Bildpfade
 kommen aus der bestehenden begrenzten Abfrage; zusätzliche Einzelabfragen entfallen.
 
-Ab **0.61.3** bleiben die Vergleichsgesichter mit Ordnernamen auch im Dialog
-**Zusammenführen und benennen/zuordnen** sichtbar. Beim Benennen einer einzelnen
-Gruppe erscheint nur deren Gesicht. Die Vorschauen im Dialog übernehmen keine
-Aktionsbuttons oder Personenlinks aus den Vorschlagskarten.
+Der Dialog **Benennen/Zuordnen** verwendet ab **0.67.0** auch auf dieser Seite die
+normale Fotovorschau mit **300 % der Bounding Box**, Gesichtsrahmen und formatiertem
+Fotopfad. Beim Benennen einer einzelnen Gruppe zeigt er deren Vergleichsgesicht;
+bei **Zusammenführen und benennen/zuordnen** das erste Vergleichsgesicht, wie bei
+der normalen Mehrfachauswahl. Die Vorschau passt sich an die Bildschirmgröße an
+und wird beim Schließen zurückgesetzt. Die Koordinaten kommen aus der vorhandenen
+begrenzten Vorschlagsabfrage; das Foto lädt erst beim Öffnen des Dialogs. Eine
+fehlgeschlagene Fotovorschau blockiert die Namenssuche nicht.
 
 Ab Android-App **0.9.0** und BearStack **0.49.0** ist **Ähnliche Gruppen** auch über das App-Menü verfügbar: immer eine Entscheidung mit zwei Portraits und festen Buttons, ohne scrollbare Vorschlagsliste. Nach **Zusammenführen** oder **Getrennt lassen** lädt automatisch das nächste Gruppenpaar. Beide Portraits bieten dieselbe Originalfoto-Vergrößerung per Halten und Wischen wie beim Benennen/Zuordnen. Aktionsquittungen verhindern doppelte Änderungen bei verlorenen Antworten; Konflikte verlangen eine erneute Prüfung. Die Android-Portraits stehen gleich groß und auf derselben Höhe; Namen, Gesichtsanzahlen und Einzelaktionen sind kompakt darunter angeordnet. Bei wenig Platz oder großer Schrift scrollt der Vergleichsbereich bei weiterhin sichtbaren Entscheidungsbuttons. Details stehen in der [Android-Anleitung](android.md#ahnliche-gruppen).
 

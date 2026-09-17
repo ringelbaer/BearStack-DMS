@@ -1044,15 +1044,13 @@ async function testPeopleRefreshRetainsImagesWhenCountsChange() {
   const img = el("img", { src: "/photos/faces/10/thumbnail" });
   let imageWrites = 0;
   Object.defineProperty(img, "src", { set(value) { imageWrites++; this.setAttribute("src", value); } });
-  const count = el("span", { text: "1 Foto" });
+  const count = el("span", { "data-person-count": "", text: "1 Foto" });
   const title = el("strong", { text: "Alt" });
   const ignore = el("button", { "data-ignore-face": "10" });
   const checkbox = el("input", { "data-person-select": "", value: "1" });
   const card = el("div", { "data-person-id": "1", class: "person-overview-card" }, [
     el("a", { class: "person-card" }, [img, title, count]), checkbox, ignore,
   ]);
-  const query = card.querySelector.bind(card);
-  card.querySelector = (selector) => selector === ".person-card > span" ? count : query(selector);
   const overview = el("div", { "data-people-overview": "", "data-can-ignore": "true" }, [card]);
   const status = el("p", { "data-people-status": "" });
   document.body.append(overview, status,
