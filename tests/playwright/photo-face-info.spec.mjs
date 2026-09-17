@@ -38,8 +38,16 @@ test.beforeAll(async () => {
   await new Promise(resolve => service.listen(0, "127.0.0.1", resolve));
   const port = await freePort(); baseURL = `http://127.0.0.1:${port}`;
   const configPath = path.join(root, "config.json");
-  await writeFile(configPath, JSON.stringify({ addr: `127.0.0.1:${port}`, data_dir: path.join(root, "data"), auth: { credentials: [{ username: "editor", password: "secret", role: "photos_editor" }, { username: "reader", password: "secret", role: "photos_read" }] }, photos: { enabled: true, root_dir: photos, face_service_url: `http://127.0.0.1:${service.address().port}`, face_service_token: "photo-face-info-test-token-000000000" } }));
+  await writeFile(configPath, JSON.stringify({ addr: `127.0.0.1:${port}`, data_dir: path.join(root, "data"), auth: { credentials: [{ username: "manager", password: "secret", role: "admin" }, { username: "editor", password: "secret", role: "photos_editor" }, { username: "reader", password: "secret", role: "photos_read" }] }, photos: { enabled: true, root_dir: photos, face_service_url: `http://127.0.0.1:${service.address().port}`, face_service_token: "photo-face-info-test-token-000000000" } }));
   app = await startBearStack({ configPath, baseURL }, { username: "editor", password: "secret" });
+  // These tests isolate explicit per-photo edits. Background reconciliation is
+  // covered separately and would legitimately assign matching unnamed siblings
+  // while this suite checks that a single-face action leaves them unchanged.
+  const paused = await fetch(baseURL + "/settings/photos/faces", {
+    method: "POST", headers: { Authorization: `Basic ${Buffer.from("manager:secret").toString("base64")}`, Origin: baseURL, Accept: "application/json" },
+    body: new URLSearchParams({ reconcile_enabled: "0" }),
+  });
+  expect(paused.ok, await paused.text()).toBe(true);
 });
 
 test("draw and name missing faces with mouse, touch and keyboard without inference", async ({ browser }) => {
@@ -233,8 +241,15 @@ test("drawing shows labeled existing regions and submits picker choices only wit
     await expect(drawing.locator("[data-face-drawing-status]")).toHaveText("Ziehe einen Rahmen um das Gesicht.");
     await expect(boxes).toHaveCount(4);
     await expect(boxes.filter({ hasText: "Klara" })).toBeVisible();
-    await drawing.getByRole("button", { name: "Abbrechen" }).click();
+    // Native dialog close is queued. Wait for its focus-restoration handler
+    // before focusing another button and sending Enter, which could otherwise
+    // activate the restored drawing opener instead of the lightbox close button.
+    await Promise.all([
+      drawing.evaluate(dialog => new Promise(resolve => dialog.addEventListener("close", () => resolve(), { once: true }))),
+      drawing.getByRole("button", { name: "Abbrechen" }).click(),
+    ]);
     await lightbox.locator("[data-photo-close]").press("Enter");
+    await expect(lightbox).not.toBeVisible();
     await page.locator('[data-photo-path="j.png"] .photo-card-button').click();
     await lightbox.locator("[data-photo-info-toggle]").press("Enter");
     await draw.click();

@@ -242,6 +242,13 @@ func (l *Library) relocatePhotoFolder(ctx context.Context, source photoEntity, t
 	if conflict {
 		return ErrLabelConflict
 	}
+	var referencePending, referenceCursor int64
+	if err = tx.QueryRowContext(ctx, `SELECT pending,cursor FROM photo_face_reference_settings WHERE id=1`).Scan(&referencePending, &referenceCursor); err != nil {
+		return err
+	}
+	if err = relocationPeopleTx(ctx, tx, source.Path, target); err != nil {
+		return err
+	}
 	// Drop only unedited destination duplicates. Additions at the destination
 	// remain independent; source IDs always win the proven one-to-one mapping.
 	if err = eachPhotoEntity(ctx, tx, source.Path, func(e photoEntity) error {
@@ -323,16 +330,14 @@ func (l *Library) relocatePhotoFolder(ctx context.Context, source photoEntity, t
 	}); err != nil {
 		return err
 	}
-	for _, stmt := range []string{
-		`DELETE FROM photo_folder_scan`, `DELETE FROM folder_preview_index`,
-		`DELETE FROM photo_face_directories`, `INSERT INTO photo_face_directories SELECT directory,count(*) FROM photo_faces GROUP BY directory`,
-		`DELETE FROM photo_face_job_directories`, `INSERT INTO photo_face_job_directories SELECT directory,count(*) FROM photo_face_jobs GROUP BY directory`,
-		`UPDATE photo_face_reference_settings SET pending=1,cursor=0`, `UPDATE photo_face_state SET revision=revision+1`,
-		`UPDATE photo_identity_state SET revision=revision+1 WHERE id=1`,
-	} {
-		if _, err = tx.ExecContext(ctx, stmt); err != nil {
-			return err
-		}
+	if err = invalidateIdentityFoldersTx(ctx, tx, true, source.Path, target); err != nil {
+		return err
+	}
+	if err = refreshSelectedFaceReferencesTx(ctx, tx, `SELECT person_id FROM relocation_people`); err != nil {
+		return err
+	}
+	if _, err = tx.ExecContext(ctx, `DROP TABLE relocation_people; UPDATE photo_face_reference_settings SET pending=?,cursor=? WHERE id=1; UPDATE photo_face_state SET revision=revision+1`, referencePending, referenceCursor); err != nil {
+		return err
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE photo_entities SET revision=revision+1 WHERE id=?`, source.ID); err != nil {
 		return err

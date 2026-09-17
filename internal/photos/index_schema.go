@@ -26,7 +26,7 @@ var (
 const (
 	indexSchemaSetupTimeout = 30 * time.Second
 	photoSchemaComponent    = "photos"
-	photoSchemaVersion      = 36
+	photoSchemaVersion      = 37
 )
 
 type photoSchemaMigration struct {
@@ -75,6 +75,7 @@ var photoSchemaMigrations = []photoSchemaMigration{
 	{Version: 34, Name: "optional automatic unnamed group reconciliation", Table: "photo_face_thresholds", Column: "reconcile_unnamed_groups", SQL: `ALTER TABLE photo_face_thresholds ADD COLUMN reconcile_unnamed_groups INTEGER NOT NULL DEFAULT 0 CHECK(reconcile_unnamed_groups IN (0,1))`},
 	{Version: 35, Name: "person life dates, siblings and marriages"},
 	{Version: 36, Name: "stable photo identities and retained relocations"},
+	{Version: 37, Name: "retained schema synchronization and scoped relocation maintenance"},
 }
 
 func openIndexDB(path string) (*sql.DB, string, error) {
@@ -333,6 +334,9 @@ func runPhotoSchemaMigrations(ctx context.Context, db *sql.DB) error {
 		if current >= migration.Version {
 			continue
 		}
+		if migration.Version == 37 {
+			continue // Applied with retained schema synchronization after all column migrations.
+		}
 		if migration.Version == 36 {
 			if err := setupPhotoIdentity(ctx, db); err != nil {
 				return fmt.Errorf("photo schema migration 36: %w", err)
@@ -446,6 +450,9 @@ func runPhotoSchemaMigrations(ctx context.Context, db *sql.DB) error {
 				return fmt.Errorf("photo schema migration %d (%s) backfill: %w", migration.Version, migration.Name, err)
 			}
 		}
+	}
+	if current < photoSchemaVersion {
+		return setupIdentityMaintenance(ctx, db)
 	}
 	return nil
 }

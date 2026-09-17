@@ -1,8 +1,10 @@
 # BearStack
 
-Aktuelle Version: **0.65.0** · Android-App: **0.17.0**.
+Aktuelle Version: **0.66.0** · Android-App: **0.17.0**.
 
 Extern umbenannte Fotoordner behalten nach eindeutiger Zuordnung Tags, Gesichtsdaten und Vorschauen. Fehlende Inhalte werden sieben Tage aufbewahrt; geänderte Fotos erhalten eine Gesichtsprüfung im Web und eine Statusanzeige in Android. Der Foto-Root bleibt read-only. [Details](_site-src/docs/fotos.md#extern-umbenannte-fotoordner).
+
+**0.66.0** erhält Personenzuordnungen auch beim Zusammenführen während der Aufbewahrungsfrist oder bei geschützten Fotos. Ordnerumzüge aktualisieren gezielt die betroffenen Indexbereiche; Foto-Schema 37 synchronisiert Aufbewahrungstabellen und entfernt ungenutzten Zustand.
 
 Android **0.16.0** ergänzt unter **… → Einstellungen** einen dauerhaften Thumbnail-Cache mit **64–2048 MiB** Speicherbudget (Standard **256 MiB**). Die neuesten **50 Stream-Vorschauen** und alle Vorschaubilder der **ersten Ordnerebene** sind vor Verdrängung geschützt; übrige Vorschauen werden nach letzter Nutzung verwaltet. Ein größerer Pflichtbestand hat Vorrang vor dem Budget. Optionsmenüs erscheinen einheitlich als **… rechts**, auch beim Benennen und für die Mehrfachauswahl. [Details zum Cache](_site-src/docs/android.md#einstellbarer-thumbnail-cache).
 
@@ -191,11 +193,15 @@ Die Mail- und OCR-Abläufe liegen in `internal/mailservice` und `internal/ocrser
 
 ## Tests
 
-Go-Tests und Browser-Syntaxchecks:
+Standardprüfung: Go, JavaScript/DOM, Browser, Gesichtsdienst,
+Android/JVM/Lint/Debug und ein tatsächlicher Read-only-Mount-Test:
 
 ```sh
 make test
 ```
+
+`make test-fast` führt nur Go/JavaScript aus; `make test-release` ergänzt Race-
+und Android-Release-Prüfungen. [Voraussetzungen und Test-Mounts](_site-src/docs/tests-und-audit.md#tests).
 
 Einzeln:
 

@@ -986,19 +986,56 @@ prüft Ordnernamen, Standardauswahl, Überspringen/Neustart, vorhandene und neue
 Abwahlen über mehrere Seiten sowie die Quittungsabfrage nach verlorener Antwort
 und Neuladen. Die Größenbegrenzung liefert einen Fehler statt einer Teilkette.</p>
 <p>Nur von Tests benötigte Mail-Nachrichtenhelfer liegen in <code>_test.go</code>; sie erweitern die Produktionsschnittstellen nicht. Browser-Regressionen für Bildfehler fordern eine eigene Bild-URL an und prüfen die tatsächliche 404-Antwort, damit bereits dekodierte Portraits den Fehlerfall nicht verdecken. Der Login-Helfer der Einstellungs-Suite setzt ein ausdrückliches Rücksprungziel; ein zuvor gespeicherter Startseitenwert beeinflusst dadurch spätere Tests nicht.</p>
-<p>Die Standardprüfung kombiniert Go-Tests und JavaScript-Syntaxchecks:</p>
+<p>Die Standardprüfung (<code>make test</code>, ab 0.66.0) führt Go, JavaScript/DOM, Playwright, den Python-Gesichtsdienst, Android/JVM/Lint/Debug-Build und einen tatsächlichen Read-only-Foto-Mount aus:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span><span class="nb">test</span>
 </span></code></pre></div>
+<p><code>make test-fast</code> ist die ausdrücklich reduzierte lokale Go-/JavaScript-Prüfung.
+<code>make test-release</code> ergänzt den Standardlauf um Race-Tests für Fotos/Server und
+Android-Release-Tests, Lint und die minimierte APK. Android-Emulatortests bleiben
+als <code>make test-android-integration</code> beziehungsweise <code>make test-android-release-integration</code>
+separat, da sie einen dedizierten gestarteten Testemulator benötigen.</p>
+<p>Voraussetzungen: Go gemäß <code>go.mod</code>, Node/npm, der in <code>playwright.config.mjs</code>
+konfigurierte Browser (standardmäßig Chrome), JDK 17 und Android-SDK sowie eine
+Python-Umgebung mit <code>services/faces/requirements.txt</code>. Beispiel:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>/tmp/bearstack-faces-tests
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>/tmp/bearstack-faces-tests/bin/python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>services/faces/requirements.txt
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>make<span class="w"> </span><span class="nb">test</span><span class="w"> </span><span class="nv">PYTHON</span><span class="o">=</span>/tmp/bearstack-faces-tests/bin/python
+</span></code></pre></div>
+<p><code>PYTHON</code> gilt auch für die aus Go gestartete Modellprüfung; bei Bedarf lässt sich
+deren Interpreter mit <code>BEARSTACK_TEST_FACE_PYTHON</code> getrennt angeben.</p>
+<p>Fehlende Werkzeuge sind Fehler, keine erfolgreichen übersprungenen Teilprüfungen.
+Die optionalen Tests mit echten Erkennungsmodellen benötigen zusätzlich
+<code>BEARSTACK_TEST_FACE_MODELS_DIR</code>; ohne dieses Verzeichnis laufen Protokoll- und
+Algorithmustests, die Modelltests melden ausdrücklich einen Skip. Einrichtung
+und Prüfsummen beschreibt die <a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/services/faces/README.md">Gesichtsdienst-Anleitung</a>.</p>
+<p><code>make test-readonly</code> erstellt auf macOS ein temporäres APFS-Abbild und hängt es
+schreibgeschützt ein; unter Linux verwendet es <code>unshare</code> und einen Bind-Mount in
+einem eigenen Mount-Namespace. Unter Linux müssen Benutzer-/Mount-Namespaces
+zugelassen und die Werkzeuge aus util-linux installiert sein. Alternativ kann
+<code>BEARSTACK_READONLY_TEST_ROOT</code> auf einen vorbereiteten, entbehrlichen Test-Mount
+zeigen. Die Prüfung versucht einen Schreibzugriff und muss dessen Ablehnung
+beobachten. BearStacks Datenbank und Cache liegen außerhalb des Foto-Roots.
+Ein fehlender Mount oder fehlende Mount-Berechtigungen lassen das Ziel fehlschlagen.</p>
+<p>Die Aufbewahrungsregressionen prüfen manuelle und automatische Zusammenführungen
+bei fehlenden und geschützten Fotos, erhaltene Vorschaubytes und Embeddings,
+Rollback nach späten Schreibfehlern sowie Neustarts vor der Rückkehr und nach
+der atomaren Ordnerzuordnung. SQL-Wächter verbieten Schreibzugriffe auf fremde
+Ordnerindizes und Referenzen. Migrationstests prüfen Version 36 auf 37, zusätzliche
+Spalten, abweichende Spaltenreihenfolgen und Rollback bei inkompatiblen Änderungen.
+Die Foto-Info-Browsertests warten auf das <code>close</code>-Ereignis vor dem nächsten
+Tastaturkommando. Ihre Fixture pausiert den Hintergrundabgleich, damit isolierte
+Einzelaktionsprüfungen keine parallelen automatischen Zuordnungen beobachten;
+eigene Abgleich-Suiten prüfen die Hintergrundfunktion.</p>
 <p>Nach den Syntaxchecks führt <code>make test-js</code> auch die DOM-Regressionen aus. Die Personen-Fixtures verwenden eine gemeinsame vollständige Auswahlleiste, damit ein neuer Bedienknopf den restlichen Testlauf nicht durch veraltete Fixtures blockiert.</p>
 <p>Regressionen prüfen atomare Einstellungen bei Schreibfehlern, konsistente Datenbank-Snapshots und konkurrierende Cache-Ladevorgänge. Fototests sichern die Beschränkung auf betroffene Personen, importierte Namensquellen, neue Schutzmarkierungen, wartende Prüfungen und eine gebündelte Referenzabfrage ab. Gemeinsame MIME-Fixtures decken Transferdecoder sowie UTF-8-, Windows-1252- und RFC-2231-Anhangsnamen ab. Bildtests prüfen proportionale Gesichtsausschnitte in quadratischen Vorschauen für Hochformat, Querformat, quadratische Regionen und Randbeschnitt bei 160 und 640 Pixeln. Weitere Regressionen sichern den bedarfsweisen Ersatz gestreckter Cachebilder, Fehlerwiederholungen und dieselbe Auslieferung über Web- und Android-/Labeling-Endpunkte ab; Browser-Tests prüfen Hintergrund und quadratische Kacheln auf Desktop und Mobilgeräten.</p>
 <p><code>make test-openapi</code> prüft beide ausgelieferten OpenAPI-3.1-Dateien gegen das lokal gespeicherte offizielle Dokumentschema, kompiliert JSON-Schemas und löst Vertragsreferenzen ohne Netzabrufe auf. Reale HTTP-Testantworten der Galerie und Personenverwaltung prüfen Status, Medientyp und JSON-Inhalt einschließlich Fehlerfällen. YAML-Fehler, fehlende Referenzen, ungültige Schematypen und vertragswidrige Antworten besitzen Negativtests. Die YAML- und JSON-Schema-Validatoren werden ausschließlich von Tests importiert.</p>
 <p>Android-Migrationstests öffnen frühere Room-Schemas mit erhaltenen Quittungen und Statistiken. Große Warteschlangen mit 10.000 Einträgen prüfen Reihenfolge, Kartenpositionen, Wiederherstellung und Kontentrennung; vorhandene Repositorytests sichern Zurückgehen, verlorene Antworten und Wiederaufnahme ab. XMP-Tests decken die 4-MiB-Grenze, Symlinks und unter Unix FIFOs ab; Personenpagination prüft neue Schutzmarkierungen, Abbruch und den SQL-Plan mit 20.000 weiteren Personen.</p>
 <p>Einzeln:</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./...
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>make<span class="w"> </span>test-go
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>make<span class="w"> </span>test-openapi
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>make<span class="w"> </span>test-js
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>make<span class="w"> </span>test-playwright
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./...
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>make<span class="w"> </span>test-go
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>make<span class="w"> </span>test-openapi
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>make<span class="w"> </span>test-js
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>make<span class="w"> </span>test-playwright
 </span></code></pre></div>
 <p>Die Go-Tests decken Repository-Migrationen, Suche, Tags, benutzerdefinierte Felder, Suchfavoriten, Uploads, Auth, Berechtigungen, Audit-Logs, Dokumentverarbeitung, Fotoindex, Thumbnails, Worker und viele HTTP-Handler ab. JavaScript wird per <code>node --check</code> geprüft. Playwright-Smokes starten BearStack mit temporärer Konfiguration und prüfen zentrale Browser-Flows wie Dokumenten-Upload und Foto-Galerie.</p>
 <p>Reine Testhelfer bleiben in <code>_test.go</code>-Dateien. Ab 0.52.1 gilt das auch für <code>nearestPerson</code>, <code>decodeGPX</code> und <code>normalizeRenderSettingsSnapshot</code>; ihre bestehenden Aufrufer und Regressionen bleiben erhalten. Das getrennte Blogdarstellungspaket prüft zusätzlich, dass HTML-Eingaben maskiert werden, Textdateien ihre Leerzeichen behalten und ungültige Datumsangaben entfallen. Ab 0.41.2 liegen auch die Helfer zum Vorbelegen der Einstellungs-Caches in <code>internal/server/test_helpers_test.go</code>. Mailimport-Tests rufen die gemeinsamen Anhangsfunktionen direkt auf; die ausschließlich in Tests genutzten PDF-Weiterleitungen sind entfernt. Absenderfilter, Größenlimit, Decodierung und sichere Dateinamen bleiben durch dieselben Prüfungen abgedeckt.</p>
@@ -1077,8 +1114,8 @@ misst den Indexaufbau mit 100.000 vorhandenen GPS-Medien. <code>AppSessionTest</
 Lesekonten und Kontowechsel ohne Personendatenbank samt getrennten Bildcaches und
 vollständigem Schließen alter HTTP-Ressourcen.</p>
 <p>Die Go-Anweisungsabdeckung lässt sich reproduzierbar messen:</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./...<span class="w"> </span>-coverprofile<span class="o">=</span>/tmp/bearstack-coverage.out
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>go<span class="w"> </span>tool<span class="w"> </span>cover<span class="w"> </span>-func<span class="o">=</span>/tmp/bearstack-coverage.out
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./...<span class="w"> </span>-coverprofile<span class="o">=</span>/tmp/bearstack-coverage.out
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>go<span class="w"> </span>tool<span class="w"> </span>cover<span class="w"> </span>-func<span class="o">=</span>/tmp/bearstack-coverage.out
 </span></code></pre></div>
 <p>Diese Messung umfasst die Go-Tests; Browser-Tests werden separat ausgeführt. Eine hohe Prozentzahl ersetzt keine Prüfung von Fehler- und Abbruchpfaden.</p>
 <p>OCR-Tests führen kontrollierte Ersatzprogramme für Tesseract und Poppler aus. Sie prüfen Argumentübergabe, Seitenreihenfolge, Fortschritt, das 50-Seiten-Limit im Fallback, Werkzeugfehler, Abbruch und die Bereinigung temporärer Dateien. Sie benötigen keine installierten OCR-Werkzeuge und bewerten nicht die Erkennungsqualität echter Scans. Dateisystemtests prüfen Traversal sowie interne, externe und ungültige Symlinks beim Auflösen und Anlegen von Verzeichnissen.</p>
@@ -1105,10 +1142,10 @@ vollständigem Schließen alter HTTP-Ressourcen.</p>
 </ul>
 <h2 id="performance-benchmarks">Performance-Benchmarks<a class="headerlink" href="#performance-benchmarks" title="Permanent link">&para;</a></h2>
 <p>BearStack enthält Benchmarks für Dokumentlisten, Feldwertvorschläge und das Fotomodul. Sie messen Suche, Tag-Filter, Pagination, Ähnlichkeitssuche mit 1.500 Feldwerten, große Fotoindexe, GPX-Daten, Thumbnail-Status und Index-Neuaufbau.</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/repository<span class="w"> </span>-bench<span class="o">=</span>BenchmarkList<span class="w"> </span>-benchmem
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/server<span class="w"> </span>-run<span class="w"> </span><span class="s1">&#39;^$&#39;</span><span class="w"> </span>-bench<span class="o">=</span>BenchmarkSimilarCustomFieldValues<span class="w"> </span>-benchmem
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/photos<span class="w"> </span>-bench<span class="o">=</span>BenchmarkPhoto<span class="w"> </span>-benchmem
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/photos<span class="w"> </span>-bench<span class="o">=</span>BenchmarkMillionPhotoRebuildIndexScenarios<span class="w"> </span>-benchmem
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/repository<span class="w"> </span>-bench<span class="o">=</span>BenchmarkList<span class="w"> </span>-benchmem
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/server<span class="w"> </span>-run<span class="w"> </span><span class="s1">&#39;^$&#39;</span><span class="w"> </span>-bench<span class="o">=</span>BenchmarkSimilarCustomFieldValues<span class="w"> </span>-benchmem
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/photos<span class="w"> </span>-bench<span class="o">=</span>BenchmarkPhoto<span class="w"> </span>-benchmem
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/photos<span class="w"> </span>-bench<span class="o">=</span>BenchmarkMillionPhotoRebuildIndexScenarios<span class="w"> </span>-benchmem
 </span></code></pre></div>
 <p>Die Benchmarks sind als Regressionsschutz gedacht. Absolute Zahlen hängen stark von CPU, Speicher, Dateisystem, SQLite-I/O und Go-Version ab; vergleichbar werden sie erst auf demselben System mit mehreren Wiederholungen.</p>
 <p>Die GPX-Benchmarks setzen für Messungen ohne Cache auch die LRU-Verwaltung und den Speicherzähler zurück. Reine Go-Testhelfer liegen in <code>_test.go</code>-Dateien und werden nicht in das Anwendungsbinary übernommen.</p>
@@ -1222,16 +1259,16 @@ wurden. Ein ausstehender Referenzneuaufbau läuft vor dem ersten Treffer. Favori
 können die normale Zielanzahl von 30 Referenzen zusätzlich überschreiten. Weitere
 Optimierungen sollten deshalb Cache-Aufbau und Referenzvorbereitung gesondert messen.
 Ein positiver Vorschlagsabstand wartet absichtlich auf das vollständige Ranking.</p>
-<p>Reproduzieren (opt-in, ausschließlich temporäre Daten):</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nv">BEARSTACK_FACE_SUGGESTION_PERF</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/photos<span class="w"> </span>-run<span class="w"> </span><span class="s1">&#39;^TestFaceSuggestionPerformance$&#39;</span><span class="w"> </span>-count<span class="o">=</span><span class="m">1</span><span class="w"> </span>-v<span class="w"> </span>-timeout<span class="o">=</span>8m
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">BEARSTACK_FACE_SUGGESTION_PERF</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_SUGGESTION_CPU</span><span class="o">=</span>/tmp/face-suggestions.cpu<span class="w"> </span>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/photos<span class="w"> </span>-run<span class="w"> </span><span class="s1">&#39;^TestFaceSuggestionPerformanceStages$&#39;</span><span class="w"> </span>-count<span class="o">=</span><span class="m">1</span><span class="w"> </span>-v
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>go<span class="w"> </span>tool<span class="w"> </span>pprof<span class="w"> </span>-top<span class="w"> </span>/tmp/face-suggestions.cpu
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nv">BEARSTACK_FACE_SUGGESTION_PERF</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">PLAYWRIGHT_BROWSER_CHANNEL</span><span class="o">=</span>chromium<span class="w"> </span>npm<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>--<span class="w"> </span>playwright<span class="w"> </span><span class="nb">test</span><span class="w"> </span>tests/playwright/face-suggestions-performance.spec.mjs
+<p>Reproduzieren (Go-Lastmessungen opt-in; Browserprüfung seit 0.66.0 auch in <code>make test-playwright</code>, ausschließlich temporäre Daten):</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">BEARSTACK_FACE_SUGGESTION_PERF</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/photos<span class="w"> </span>-run<span class="w"> </span><span class="s1">&#39;^TestFaceSuggestionPerformance$&#39;</span><span class="w"> </span>-count<span class="o">=</span><span class="m">1</span><span class="w"> </span>-v<span class="w"> </span>-timeout<span class="o">=</span>8m
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nv">BEARSTACK_FACE_SUGGESTION_PERF</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_SUGGESTION_CPU</span><span class="o">=</span>/tmp/face-suggestions.cpu<span class="w"> </span>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/photos<span class="w"> </span>-run<span class="w"> </span><span class="s1">&#39;^TestFaceSuggestionPerformanceStages$&#39;</span><span class="w"> </span>-count<span class="o">=</span><span class="m">1</span><span class="w"> </span>-v
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>go<span class="w"> </span>tool<span class="w"> </span>pprof<span class="w"> </span>-top<span class="w"> </span>/tmp/face-suggestions.cpu
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nv">BEARSTACK_FACE_SUGGESTION_PERF</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">PLAYWRIGHT_BROWSER_CHANNEL</span><span class="o">=</span>chromium<span class="w"> </span>npm<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>--<span class="w"> </span>playwright<span class="w"> </span><span class="nb">test</span><span class="w"> </span>tests/playwright/face-suggestions-performance.spec.mjs
 </span></code></pre></div>
 <p>Der Stufentest vergleicht die feste Abfragereihenfolge mit der bisherigen frei
 planbaren Variante. Die Umfangsmessung protokolliert Cache-Zustände, erste Ausgabe,
-Laufzeit, Antwortzahl, Allokationen und Abbruchverhalten. In normalen Testläufen
-werden die aufwendigen Messungen übersprungen.</p>
+Laufzeit, Antwortzahl, Allokationen und Abbruchverhalten. In normalen Go-Testläufen
+werden die aufwendigen Lastmessungen übersprungen; die begrenzte Browserprüfung ist im Standardlauf aktiviert.</p>
 <h4 id="umgesetzte-optimierung">Umgesetzte Optimierung<a class="headerlink" href="#umgesetzte-optimierung" title="Permanent link">&para;</a></h4>
 <p>Die Kandidatenprüfung startet jetzt ausdrücklich bei höchstens <strong>512 Gesicht-IDs
 pro SQL-Paket</strong>. Alle infrage kommenden benannten Gruppen bleiben im Vergleich;
@@ -1417,7 +1454,7 @@ Browser sind abgedeckt.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.65.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.66.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

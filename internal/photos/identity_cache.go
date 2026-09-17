@@ -33,9 +33,6 @@ func (l *Library) finishIdentityScan(ctx context.Context) error {
 	if err := l.publishIdentityFingerprints(ctx); err != nil {
 		return err
 	}
-	if _, err := l.index.db.ExecContext(ctx, `UPDATE photo_identity_state SET last_complete=unixepoch() WHERE id=1`); err != nil {
-		return err
-	}
 	for {
 		rows, err := l.index.db.QueryContext(ctx, `SELECT `+entityColumns+` FROM photo_entities WHERE missing_since>0 AND missing_since<=? ORDER BY missing_since,id LIMIT 100`, time.Now().Add(-PhotoRetention).Unix())
 		if err != nil {

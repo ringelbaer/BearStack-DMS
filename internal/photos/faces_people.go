@@ -444,6 +444,9 @@ func mergePersonTx(ctx context.Context, tx *sql.Tx, source, target int64) error 
 	if _, err := tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=?,manual=1 WHERE person_id=?`, target, source); err != nil {
 		return err
 	}
+	if err := mergeRetainedPersonTx(ctx, tx, source, target, true); err != nil {
+		return err
+	}
 	_, err := tx.ExecContext(ctx, `DELETE FROM photo_people WHERE id=?`, source)
 	return err
 }

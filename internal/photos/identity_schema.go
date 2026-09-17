@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 )
 
 // The live tables remain compact serving indexes. Retained rows are stored in
@@ -60,7 +59,6 @@ func setupPhotoIdentity(ctx context.Context, db *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS photo_relocations (id INTEGER PRIMARY KEY AUTOINCREMENT, entity_id INTEGER NOT NULL, old_path TEXT NOT NULL, new_path TEXT NOT NULL, created_at INTEGER NOT NULL, automatic INTEGER NOT NULL)`,
 		`CREATE TABLE IF NOT EXISTS photo_cache_gc (path TEXT PRIMARY KEY, created_at INTEGER NOT NULL) WITHOUT ROWID`,
 		`CREATE TABLE IF NOT EXISTS photo_hidden_person_names(person_id INTEGER PRIMARY KEY,name TEXT NOT NULL,name_fold TEXT NOT NULL,name_source TEXT NOT NULL)`,
-		`CREATE TABLE IF NOT EXISTS photo_identity_state (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL DEFAULT 1, last_complete INTEGER NOT NULL DEFAULT 0); INSERT OR IGNORE INTO photo_identity_state(id) VALUES(1)`,
 		`CREATE TABLE IF NOT EXISTS photo_relocation_plan(id INTEGER PRIMARY KEY,path TEXT NOT NULL,admin_only INTEGER NOT NULL)`,
 	}
 	for _, stmt := range statements {
@@ -96,13 +94,8 @@ func setupPhotoIdentity(ctx context.Context, db *sql.DB) error {
  source_size=coalesce((SELECT size_bytes FROM media_index WHERE path=photo_faces.path),0),source_mtime=coalesce((SELECT mod_time_unix_nano FROM media_index WHERE path=photo_faces.path),0) WHERE entity_id=0`); err != nil {
 		return err
 	}
-	for _, spec := range retainedTables {
-		if _, err = tx.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS photo_retained_`+spec.table+` AS SELECT CAST(0 AS INTEGER) AS retention_id,t.* FROM `+spec.table+` t WHERE 0`); err != nil {
-			return err
-		}
-		if _, err = tx.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_retained_`+spec.table+` ON photo_retained_`+spec.table+`(retention_id)`); err != nil {
-			return err
-		}
+	if err := syncRetainedTablesTx(ctx, tx); err != nil {
+		return err
 	}
 	for _, stmt := range []string{
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_retained_face_id ON photo_retained_photo_faces(id)`,
@@ -138,57 +131,8 @@ func setupPhotoIdentity(ctx context.Context, db *sql.DB) error {
 			return err
 		}
 	}
-	cols, err := loadRetainedColumns(ctx, db)
-	if err != nil {
+	if err := setupIdentityPrivacyTx(ctx, tx); err != nil {
 		return err
 	}
-	for _, stmt := range []string{
-		`CREATE TRIGGER IF NOT EXISTS photo_identity_private AFTER UPDATE OF admin_only ON media_index WHEN new.admin_only=1 AND old.admin_only=0 BEGIN
- INSERT OR IGNORE INTO photo_retained_photo_faces SELECT f.entity_id,f.* FROM photo_faces f WHERE f.path=new.path;
- DELETE FROM photo_faces WHERE path=new.path; DELETE FROM photo_face_jobs WHERE path=new.path;
- INSERT OR REPLACE INTO photo_hidden_person_names SELECT id,name,name_fold,name_source FROM photo_people WHERE name_source=new.path AND manual_name=0 AND name<>'';
- UPDATE photo_people SET name='',name_fold='' WHERE name_source=new.path AND manual_name=0;
- END`,
-		`CREATE TRIGGER IF NOT EXISTS photo_identity_public AFTER UPDATE OF admin_only ON media_index WHEN new.admin_only=0 AND old.admin_only=1 BEGIN
- INSERT INTO photo_faces(` + cols["photo_faces"] + `) SELECT ` + cols["photo_faces"] + ` FROM photo_retained_photo_faces WHERE path=new.path;
- DELETE FROM photo_retained_photo_faces WHERE path=new.path;
- UPDATE photo_faces SET needs_review=1,source_revision=source_revision+1 WHERE path=new.path AND (source_size<>new.size_bytes OR source_mtime<>new.mod_time_unix_nano) AND NOT EXISTS(SELECT 1 FROM photo_entities e WHERE e.id=entity_id AND e.fingerprint<>'' AND e.fingerprint=source_hash AND e.size_bytes=new.size_bytes AND e.mtime=new.mod_time_unix_nano);
- UPDATE photo_people SET name=(SELECT name FROM photo_hidden_person_names WHERE person_id=photo_people.id),name_fold=(SELECT name_fold FROM photo_hidden_person_names WHERE person_id=photo_people.id) WHERE manual_name=0 AND name='' AND id IN(SELECT person_id FROM photo_hidden_person_names WHERE name_source=new.path);
- DELETE FROM photo_hidden_person_names WHERE name_source=new.path;
- UPDATE photo_face_reference_settings SET pending=1,cursor=0;
- END`,
-	} {
-		if _, err = tx.ExecContext(ctx, stmt); err != nil {
-			return err
-		}
-	}
 	return tx.Commit()
-}
-
-func loadRetainedColumns(ctx context.Context, db *sql.DB) (map[string]string, error) {
-	out := map[string]string{}
-	for _, spec := range retainedTables {
-		rows, err := db.QueryContext(ctx, `PRAGMA table_info(`+spec.table+`)`)
-		if err != nil {
-			return nil, err
-		}
-		var cols []string
-		for rows.Next() {
-			var cid, notnull, pk int
-			var name, kind string
-			var def any
-			if err = rows.Scan(&cid, &name, &kind, &notnull, &def, &pk); err != nil {
-				rows.Close()
-				return nil, err
-			}
-			cols = append(cols, `"`+name+`"`)
-		}
-		err = rows.Err()
-		rows.Close()
-		if err != nil {
-			return nil, err
-		}
-		out[spec.table] = strings.Join(cols, ",")
-	}
-	return out, nil
 }

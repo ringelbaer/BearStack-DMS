@@ -184,6 +184,9 @@ func mergeAutomaticFaceGroupTx(ctx context.Context, tx *sql.Tx, source, target i
 	if err != nil {
 		return 0, err
 	}
+	if err := mergeRetainedPersonTx(ctx, tx, source, target, false); err != nil {
+		return 0, err
+	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM photo_people WHERE id=?`, source); err != nil {
 		return 0, err
 	}

@@ -1197,3 +1197,16 @@ Hashes. Für noch nicht erfasste Altbestände ist keine automatische Wiedererken
 zugesichert. Bestehende pfadbasierte URLs bleiben unterstützt; alte Pfade werden
 nach einem Umzug nicht automatisch weitergeleitet. Aktuelle Zugriffsrechte gelten
 auch für gespeicherte Vorschauen und Erkennungsreferenzen.
+
+Ab **0.66.0** folgen auch vorübergehend aufbewahrte und durch Ordnerschutz
+verborgene Gesichter einer manuellen oder automatischen Personen-Zusammenführung.
+Nach Rückkehr des Fotos bleibt die Zuordnung zur überlebenden Person erhalten;
+IDs, Embeddings, Favoriten und gespeicherte Vorschauen werden dabei bewahrt.
+Ordnerumzüge aktualisieren die betroffenen Teilbäume und Vorfahren, ohne fremde
+Scanstände oder Vorschauzuordnungen zu löschen.
+
+Foto-Schema **37** synchronisiert aufbewahrte Spalten zentral nach jeder
+versionierten Migration. Kopien verwenden explizite Spaltennamen; zusätzliche
+Spalten übernehmen ihre definierten Standardwerte. Umbenennungen, Entfernungen
+oder Typwechsel benötigen eine explizite Datenmigration. Der zuvor ungenutzte
+Identitätszustand entfällt; Fristen und Einzelrevisionen bleiben an den Einträgen.

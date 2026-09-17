@@ -68,7 +68,7 @@ func (s *photoIndexStore) retainSelectionTx(ctx context.Context, tx *sql.Tx, sel
 				if !retainedForKind(spec, e.Kind) {
 					continue
 				}
-				if _, err = tx.ExecContext(ctx, `INSERT INTO photo_retained_`+spec.table+` SELECT ?,t.* FROM `+spec.table+` t WHERE `+spec.key+`=?`, e.ID, e.Path); err != nil {
+				if _, err = tx.ExecContext(ctx, `INSERT INTO photo_retained_`+spec.table+` (retention_id,`+s.retainedColumns[spec.table]+`) SELECT ?,`+s.retainedColumns[spec.table]+` FROM `+spec.table+` WHERE `+spec.key+`=?`, e.ID, e.Path); err != nil {
 					return err
 				}
 			}
@@ -120,7 +120,17 @@ func (s *photoIndexStore) restoreEntityTx(ctx context.Context, tx *sql.Tx, e pho
 	if err := s.refreshEntitySearchTx(ctx, tx, e); err != nil {
 		return err
 	}
-	_, err := tx.ExecContext(ctx, `UPDATE photo_face_reference_settings SET pending=1,cursor=0; UPDATE photo_face_state SET revision=revision+1; DELETE FROM photo_folder_scan`)
+	if err := refreshSelectedFaceReferencesTx(ctx, tx, `SELECT person_id FROM photo_faces WHERE entity_id=?`, e.ID); err != nil {
+		return err
+	}
+	dir := parentPath(e.Path)
+	if e.Kind == "folder" {
+		dir = e.Path
+	}
+	if err := invalidateIdentityFoldersTx(ctx, tx, false, dir); err != nil {
+		return err
+	}
+	_, err := tx.ExecContext(ctx, `UPDATE photo_face_state SET revision=revision+1`)
 	return err
 }
 

@@ -2,11 +2,24 @@ GO ?= go
 NODE ?= node
 NPM ?= npm
 PYTHON ?= python3
+export BEARSTACK_TEST_FACE_PYTHON ?= $(PYTHON)
 FUZZTIME ?= 10s
 
-.PHONY: test test-go test-openapi test-js test-playwright build
+.PHONY: test test-fast test-release test-race test-readonly test-go test-openapi test-js test-playwright build
 
-test: test-go test-js
+# The standard gate must fail, rather than silently skip, missing toolchains or
+# a genuinely read-only photo root. Use test-fast explicitly for the local loop.
+test: test-fast test-playwright test-faces test-android test-readonly
+
+test-fast: test-go test-js
+
+test-release: test test-race test-android-release
+
+test-race:
+	$(GO) test -race ./internal/photos ./internal/server
+
+test-readonly:
+	GO="$(GO)" ./scripts/test-photos-readonly.sh
 
 test-go:
 	$(GO) test ./...
@@ -18,7 +31,7 @@ test-js:
 	NODE="$(NODE)" ./scripts/check-js.sh
 
 test-playwright: node_modules/@playwright/test/package.json
-	GO="$(GO)" $(NPM) exec -- playwright test
+	GO="$(GO)" BEARSTACK_FACE_SUGGESTION_PERF=1 $(NPM) exec -- playwright test
 
 node_modules/@playwright/test/package.json: package.json package-lock.json
 	$(NPM) ci --ignore-scripts

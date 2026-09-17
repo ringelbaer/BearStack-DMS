@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.66.0 – in Entwicklung
+
+- Manuelle und automatische Personen-Zusammenführungen übertragen aufbewahrte und durch Ordnerschutz ausgeblendete Gesichter atomar zur Zielperson. Gesichts-IDs, Embeddings, Favoriten und Vorschaubytes bleiben auch bei Rückkehr nach Neustart erhalten; verborgene Namensquellen werden ohne Veröffentlichung übernommen.
+- Ordnerumzüge und Rückkehr invalidieren nur betroffene Ordner und Vorfahren. Gesichts-/Jobzähler folgen Verzeichnisänderungen inkrementell; Referenzen werden für betroffene Personen aktualisiert. Unbeteiligte Scanstände, Vorschauzuordnungen und Referenzen bleiben erhalten.
+- Foto-Schema 37: zentrale Synchronisierung aktiver und aufbewahrter Tabellenspalten nach versionierten Migrationen, explizite Spaltenzuordnung für Kopien und Sichtbarkeitstrigger, indexgestützte Pfad-/Personenzuordnung. Nichtadditive Schemaänderungen verlangen eine explizite Migration. Die ungenutzte Tabelle `photo_identity_state` entfällt.
+- `make test` umfasst jetzt Go, JavaScript/DOM, Playwright, Python-Gesichtsdienst, Android/JVM/Lint/Debug-Build und einen tatsächlichen Read-only-Foto-Mount. `make test-fast` bietet Go/JavaScript für die lokale Schleife; `make test-release` ergänzt Race-Tests und den minimierten Android-Release-Build. Fehlende Voraussetzungen brechen die jeweilige Prüfung ab.
+- Regressionen für Zusammenführen während Aufbewahrung/Ordnerschutz, Transaktionsrollback, Wiederanlauf nach Zuordnung, unveränderte fremde Indexbereiche und additive Migrationen mit abweichender Spaltenreihenfolge. Browserprüfungen warten auf das Dialog-Schließen und pausieren für Einzelaktionsprüfungen den unabhängig getesteten Hintergrundabgleich. MINOR **0.66.0** aufgrund der automatischen kompatiblen Migration gemäß `AGENTS.md`; Android bleibt **0.17.0**, HTTP-Verträge bleiben kompatibel.
+
 ### BearStack 0.65.0 / Android 0.17.0 – in Entwicklung
 
 - Stabile Fotoidentitäten und fortsetzbare SHA-256-Erfassung: eindeutige externe Ordnerumzüge sowie Kopieren mit anschließendem Löschen erhalten Tags, Gesichts-/Personen-IDs und bestehende Vorschauen. Der Foto-Root bleibt ausschließlich lesbar.

@@ -46,11 +46,56 @@ und Neuladen. Die Größenbegrenzung liefert einen Fehler statt einer Teilkette.
 
 Nur von Tests benötigte Mail-Nachrichtenhelfer liegen in `_test.go`; sie erweitern die Produktionsschnittstellen nicht. Browser-Regressionen für Bildfehler fordern eine eigene Bild-URL an und prüfen die tatsächliche 404-Antwort, damit bereits dekodierte Portraits den Fehlerfall nicht verdecken. Der Login-Helfer der Einstellungs-Suite setzt ein ausdrückliches Rücksprungziel; ein zuvor gespeicherter Startseitenwert beeinflusst dadurch spätere Tests nicht.
 
-Die Standardprüfung kombiniert Go-Tests und JavaScript-Syntaxchecks:
+Die Standardprüfung (`make test`, ab 0.66.0) führt Go, JavaScript/DOM, Playwright, den Python-Gesichtsdienst, Android/JVM/Lint/Debug-Build und einen tatsächlichen Read-only-Foto-Mount aus:
 
 ```sh
 make test
 ```
+
+`make test-fast` ist die ausdrücklich reduzierte lokale Go-/JavaScript-Prüfung.
+`make test-release` ergänzt den Standardlauf um Race-Tests für Fotos/Server und
+Android-Release-Tests, Lint und die minimierte APK. Android-Emulatortests bleiben
+als `make test-android-integration` beziehungsweise `make test-android-release-integration`
+separat, da sie einen dedizierten gestarteten Testemulator benötigen.
+
+Voraussetzungen: Go gemäß `go.mod`, Node/npm, der in `playwright.config.mjs`
+konfigurierte Browser (standardmäßig Chrome), JDK 17 und Android-SDK sowie eine
+Python-Umgebung mit `services/faces/requirements.txt`. Beispiel:
+
+```sh
+python3 -m venv /tmp/bearstack-faces-tests
+/tmp/bearstack-faces-tests/bin/python -m pip install -r services/faces/requirements.txt
+make test PYTHON=/tmp/bearstack-faces-tests/bin/python
+```
+
+`PYTHON` gilt auch für die aus Go gestartete Modellprüfung; bei Bedarf lässt sich
+deren Interpreter mit `BEARSTACK_TEST_FACE_PYTHON` getrennt angeben.
+
+Fehlende Werkzeuge sind Fehler, keine erfolgreichen übersprungenen Teilprüfungen.
+Die optionalen Tests mit echten Erkennungsmodellen benötigen zusätzlich
+`BEARSTACK_TEST_FACE_MODELS_DIR`; ohne dieses Verzeichnis laufen Protokoll- und
+Algorithmustests, die Modelltests melden ausdrücklich einen Skip. Einrichtung
+und Prüfsummen beschreibt die [Gesichtsdienst-Anleitung](https://github.com/ringelbaer/BearStack-DMS/blob/main/services/faces/README.md).
+
+`make test-readonly` erstellt auf macOS ein temporäres APFS-Abbild und hängt es
+schreibgeschützt ein; unter Linux verwendet es `unshare` und einen Bind-Mount in
+einem eigenen Mount-Namespace. Unter Linux müssen Benutzer-/Mount-Namespaces
+zugelassen und die Werkzeuge aus util-linux installiert sein. Alternativ kann
+`BEARSTACK_READONLY_TEST_ROOT` auf einen vorbereiteten, entbehrlichen Test-Mount
+zeigen. Die Prüfung versucht einen Schreibzugriff und muss dessen Ablehnung
+beobachten. BearStacks Datenbank und Cache liegen außerhalb des Foto-Roots.
+Ein fehlender Mount oder fehlende Mount-Berechtigungen lassen das Ziel fehlschlagen.
+
+Die Aufbewahrungsregressionen prüfen manuelle und automatische Zusammenführungen
+bei fehlenden und geschützten Fotos, erhaltene Vorschaubytes und Embeddings,
+Rollback nach späten Schreibfehlern sowie Neustarts vor der Rückkehr und nach
+der atomaren Ordnerzuordnung. SQL-Wächter verbieten Schreibzugriffe auf fremde
+Ordnerindizes und Referenzen. Migrationstests prüfen Version 36 auf 37, zusätzliche
+Spalten, abweichende Spaltenreihenfolgen und Rollback bei inkompatiblen Änderungen.
+Die Foto-Info-Browsertests warten auf das `close`-Ereignis vor dem nächsten
+Tastaturkommando. Ihre Fixture pausiert den Hintergrundabgleich, damit isolierte
+Einzelaktionsprüfungen keine parallelen automatischen Zuordnungen beobachten;
+eigene Abgleich-Suiten prüfen die Hintergrundfunktion.
 
 Nach den Syntaxchecks führt `make test-js` auch die DOM-Regressionen aus. Die Personen-Fixtures verwenden eine gemeinsame vollständige Auswahlleiste, damit ein neuer Bedienknopf den restlichen Testlauf nicht durch veraltete Fixtures blockiert.
 
@@ -247,7 +292,7 @@ können die normale Zielanzahl von 30 Referenzen zusätzlich überschreiten. Wei
 Optimierungen sollten deshalb Cache-Aufbau und Referenzvorbereitung gesondert messen.
 Ein positiver Vorschlagsabstand wartet absichtlich auf das vollständige Ranking.
 
-Reproduzieren (opt-in, ausschließlich temporäre Daten):
+Reproduzieren (Go-Lastmessungen opt-in; Browserprüfung seit 0.66.0 auch in `make test-playwright`, ausschließlich temporäre Daten):
 
 ```sh
 BEARSTACK_FACE_SUGGESTION_PERF=1 go test ./internal/photos -run '^TestFaceSuggestionPerformance$' -count=1 -v -timeout=8m
@@ -258,8 +303,8 @@ BEARSTACK_FACE_SUGGESTION_PERF=1 PLAYWRIGHT_BROWSER_CHANNEL=chromium npm exec --
 
 Der Stufentest vergleicht die feste Abfragereihenfolge mit der bisherigen frei
 planbaren Variante. Die Umfangsmessung protokolliert Cache-Zustände, erste Ausgabe,
-Laufzeit, Antwortzahl, Allokationen und Abbruchverhalten. In normalen Testläufen
-werden die aufwendigen Messungen übersprungen.
+Laufzeit, Antwortzahl, Allokationen und Abbruchverhalten. In normalen Go-Testläufen
+werden die aufwendigen Lastmessungen übersprungen; die begrenzte Browserprüfung ist im Standardlauf aktiviert.
 
 #### Umgesetzte Optimierung
 
