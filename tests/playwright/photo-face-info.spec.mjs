@@ -8,6 +8,11 @@ import path from "node:path";
 let root, app, service, baseURL;
 let embeddingIndex = 0, inferenceCalls = 0, detectionsPerPhoto = 1;
 const model = "yunet-2023mar-sface-2021dec-v1";
+test.afterEach(async ({}, testInfo) => {
+  if (testInfo.status !== testInfo.expectedStatus) {
+    await testInfo.attach("server.log", { body: app?.output || "", contentType: "text/plain" });
+  }
+});
 test.beforeAll(async () => {
   root = await mkdtemp(path.join(os.tmpdir(), "bearstack-photo-face-info-"));
   const photos = path.join(root, "photos");
@@ -25,7 +30,7 @@ test.beforeAll(async () => {
   await writeFile(path.join(photos, "j.png"), png);
   await writeFile(path.join(photos, "k.png"), png);
   await writeFile(path.join(photos, "l.png"), png);
-  for (const photo of ["m.png", "n.png", "o.png"]) await writeFile(path.join(photos, photo), png);
+  for (const photo of ["m.png", "n.png", "o.png", "p.png", "q.png"]) await writeFile(path.join(photos, photo), png);
   service = http.createServer((request, response) => {
     request.resume();
     request.on("end", () => {
@@ -428,8 +433,10 @@ test("renaming an already named face in photo info never changes its siblings", 
     await lightbox.locator("[data-photo-info-toggle]").press("Enter");
     await lightbox.locator("[data-photo-face-toggle]").click();
     const input = modal.getByRole("combobox", { name: "Name", exact: true });
+    const unname = modal.getByRole("button", { name: "Auf unbenannt setzen", exact: true });
     const editSelected = () => lightbox.locator(`[data-face-id="${selected}"] [data-person-edit]`).click();
     await editSelected();
+    await expect(unname).toBeVisible();
     await expect(modal.locator("#person-dialog-title")).toHaveText("Gesicht in diesem Foto benennen oder zuordnen");
     await expect(modal.locator("#overview-person-hint")).toContainText("Nur dieses Gesicht");
     await expect(modal.locator("[data-person-preview-image]")).toHaveAttribute("src", new RegExp(`/${selected}$`));
@@ -467,12 +474,50 @@ test("renaming an already named face in photo info never changes its siblings", 
       expect(write.body.getAll("face_id")).toEqual([String(selected)]);
       expect(write.body.get("action")).toBe("move");
     }
+    // The explicit reset ignores draft input and detaches only the clicked face,
+    // even when the same named person occurs twice in this photo.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await editSelected();
+    await page.screenshot({ path: "/tmp/bearstack-photo-face-unname-mobile.png", fullPage: true });
+    await input.fill("Nicht speichern");
+    await page.route("**/photos/faces/edit", route => route.fulfill({ status: 503, json: { error: "Try again" } }), { times: 1 });
+    await unname.click();
+    await expect(modal.locator("[data-person-dialog-status]")).toContainText("HTTP 503");
+    await expect(unname).toBeEnabled();
+    expect((await get("m.png")).faces.find(face => face.id === selected).name).toBe("Vera");
+    await unchangedSiblings();
+    let release, posted = false;
+    const pending = new Promise(resolve => { release = resolve; });
+    await page.route("**/photos/faces/edit", async route => {
+      const response = await route.fetch(); posted = true;
+      await pending; await route.fulfill({ response });
+    }, { times: 1 });
+    const beforeReset = writes.length;
+    try {
+      await unname.click();
+      await expect.poll(() => posted).toBe(true);
+      await expect(unname).toBeDisabled();
+      await expect(modal.locator("[data-person-dialog-cancel]")).toBeDisabled();
+      await unname.evaluate(button => button.click());
+      expect(writes).toHaveLength(beforeReset + 1);
+      expect(Object.fromEntries(writes.at(-1).body)).toEqual({ action: "move", face_id: String(selected), target: "0", name: "" });
+    } finally { release(); }
+    await expect(modal).not.toBeVisible();
+    await expect(lightbox).toBeVisible();
+    await expect(lightbox.locator("[data-photo-face-status]")).toHaveText("Gesicht auf unbenannt gesetzt.");
+    const resetFace = (await get("m.png")).faces.find(face => face.id === selected);
+    expect(resetFace).toMatchObject({ name: "", ignored: false });
+    expect(resetFace.person_id).not.toBe(target);
+    await unchangedSiblings();
+    await expect(lightbox.locator("[data-photo-face-overlay] .photo-face-box > span")).toHaveText(["Ursula", "Unbenannt", "Vera"]);
+    await page.screenshot({ path: "/tmp/bearstack-photo-face-unnamed-mobile.png", fullPage: true });
     // Opening an unnamed group afterwards resets the dialog's scope correctly.
     await lightbox.locator("[data-photo-close]").press("Enter");
     await page.locator('[data-photo-path="n.png"] .photo-card-button').click();
     await lightbox.locator("[data-photo-info-toggle]").press("Enter");
     const unnamed = (await get("n.png")).faces[1];
     await lightbox.locator(`[data-face-id="${unnamed.id}"] [data-person-edit]`).click();
+    await expect(unname).toBeHidden();
     await expect(modal.locator("#overview-person-hint")).toContainText("gesamte Gruppe");
     await input.fill("Waltraud");
     await modal.getByRole("button", { name: "Benennen", exact: true }).click();
@@ -488,6 +533,65 @@ test("renaming an already named face in photo info never changes its siblings", 
     expect(errors).toEqual([]);
   } finally { detectionsPerPhoto = 1; embeddingIndex = 0; await context.close(); }
 });
+
+for (const failure of ["lost response", "refresh failed"]) {
+  test(`resetting the last named face prevents repeated writes after ${failure}`, async ({ browser }) => {
+    const context = await browser.newContext({ httpCredentials: { username: "editor", password: "secret" } });
+    try {
+      const photo = failure === "lost response" ? "p.png" : "q.png";
+      embeddingIndex = failure === "lost response" ? 60 : 61;
+      const post = async (route, form) => {
+        const response = await context.request.post(baseURL + route, { form, headers: { Origin: baseURL, Accept: "application/json" } });
+        expect(response.ok(), await response.text()).toBe(true);
+        return response.json();
+      };
+      const face = (await post("/photos/faces/analyze", { path: photo })).photo.faces[0];
+      await post(`/photos/people/${face.person_id}/rename`, { name: "Einzelgesicht " + photo });
+      const calls = inferenceCalls, page = await context.newPage(), errors = [];
+      page.on("pageerror", error => errors.push(error.message));
+      await page.goto(baseURL + "/photos?sort=ascending_date&q=" + photo + "&type=");
+      await page.locator(`[data-photo-path="${photo}"] .photo-card-button`).click();
+      const lightbox = page.locator("[data-photo-lightbox]"), modal = page.locator("[data-person-dialog]");
+      await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+      await lightbox.locator("[data-person-edit]").click();
+      const unname = modal.getByRole("button", { name: "Auf unbenannt setzen", exact: true });
+      await expect(unname).toBeVisible();
+      await page.screenshot({ path: `/tmp/bearstack-photo-face-unname-${photo}.png`, fullPage: true });
+      // Cancelling never changes the face.
+      await modal.getByRole("button", { name: "Abbrechen", exact: true }).click();
+      await expect(lightbox.locator(".photo-info-face")).toContainText("Einzelgesicht " + photo);
+      await lightbox.locator("[data-person-edit]").click();
+      let writes = 0;
+      await page.route("**/photos/faces/edit", async route => {
+        writes++;
+        const response = await route.fetch();
+        if (failure === "lost response") await route.abort();
+        else await route.fulfill({ response });
+      });
+      if (failure === "refresh failed") {
+        await page.route("**/photos/faces?path=*", route => route.fulfill({ status: 503, json: { error: "Read failed" } }), { times: 1 });
+      }
+      await unname.click();
+      await expect(modal.locator("[data-person-dialog-status]")).toContainText(failure === "lost response" ? "nicht bestätigt" : "Ansicht konnte nicht aktualisiert");
+      await expect(unname).toBeDisabled();
+      await expect(modal.locator("[data-person-submit]")).toBeDisabled();
+      await modal.getByRole("button", { name: "Abbrechen", exact: true }).click();
+      await expect(lightbox.locator("[data-person-edit]")).toBeDisabled();
+      await lightbox.getByRole("button", { name: "Gesichter aktualisieren", exact: true }).click();
+      await expect(lightbox.locator(".photo-info-face")).toContainText("Unbenannt");
+      await expect(lightbox.locator("[data-person-edit]")).toBeEnabled();
+      const updated = (await (await context.request.get(baseURL + "/photos/faces", { params: { path: photo } })).json()).photo.faces;
+      expect(updated).toHaveLength(1);
+      expect(updated[0]).toMatchObject({ id: face.id, name: "", ignored: false });
+      expect(updated[0].person_id).not.toBe(face.person_id);
+      await lightbox.locator("[data-person-edit]").click();
+      await expect(unname).toBeHidden();
+      expect(writes).toBe(1);
+      expect(inferenceCalls).toBe(calls);
+      expect(errors).toEqual([]);
+    } finally { embeddingIndex = 0; await context.close(); }
+  });
+}
 
 test("recognize one photo and name faces inside its info panel", async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });

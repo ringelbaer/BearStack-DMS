@@ -1618,7 +1618,7 @@ Eine eigene Dienstadresse lässt sich über folgende optionale Werte setzen:</p>
 <h2 id="personen-sortieren">Personen sortieren<a class="headerlink" href="#personen-sortieren" title="Permanent link">&para;</a></h2>
 <p>Bei <strong>Unbenannt</strong> und <strong>Ignoriert</strong> steht der Ordnername immer über dem Vorschaubild
 (im Stammverzeichnis „Fotos“). Unter <strong>Unbenannt</strong> können Benutzer mit
-Fotobearbeitungsrechten den <strong>Auswahlmodus</strong> aktivieren: Klicks auf Bild, Ordnername
+Fotobearbeitungsrechten den <strong>Auswahlmodus</strong> direkt links neben dem Drei-Punkte-Menü aktivieren: Klicks auf Bild, Ordnername
 oder freie Kachelfläche wählen die Person aus beziehungsweise ab. Enter und
 Leertaste funktionieren ebenfalls. Personenlinks sind währenddessen deaktiviert;
 Stift und Einzel-Ignorieren sind ausgeblendet. Die bisherigen Batch-Aktionen
@@ -1820,6 +1820,12 @@ vorhandenen Person zuordnen, einschließlich Live-Abgleich per Lupe. <strong>Bei
 benannten Personen gilt eine Korrektur hier nur für das angeklickte Gesicht im
 aktuellen Foto.</strong> Ein neuer Name erstellt eine eigene Person für dieses Gesicht;
 die Auswahl eines vorhandenen Namens verschiebt nur dieses Gesicht dorthin.
+Ab <strong>0.67.3</strong> erscheint bei benannten Gesichtern außerdem <strong>Auf unbenannt setzen</strong>:
+Das angeklickte Gesicht wird als eigene unbenannte Gruppe abgetrennt, auch wenn
+es das letzte Gesicht dieser Person ist. Der Button übernimmt keine Eingabe aus
+dem Namensfeld. Vorschau und Gesichtsbeschriftung werden nach dem Speichern
+aktualisiert. Bei einer verlorenen Speicherantwort zuerst den Dialog schließen
+und <strong>Gesichter aktualisieren</strong>, bevor weiter bearbeitet wird.
 Andere Gesichter derselben Person – auch im selben Foto – behalten ihren Namen
 und ihre Zuordnung. Unbenannte Gruppen werden weiterhin gemeinsam benannt oder
 zugeordnet; der Dialog zeigt den jeweiligen Geltungsbereich an. Die gesamte
@@ -2436,7 +2442,7 @@ Identitätszustand entfällt; Fristen und Einzelrevisionen bleiben an den Eintr�
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.67.1 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.67.3 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

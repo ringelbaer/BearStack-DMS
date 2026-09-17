@@ -194,12 +194,28 @@ test("individual actions affect only unnamed sides and retain the pair until hid
     expect(writes).toEqual([`${baseURL}/photos/people/${ignoredID}/rename`]);
     page.off("request", recordWrite);
     await page.unroute(`**/photos/people/${ignoredID}/rename`);
-    await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
-    await expect(page.locator("[data-person-dialog]")).toBeHidden();
-    await lightbox.locator("[data-photo-close]").press("Enter");
+    async function closePhotoNaming() {
+      // Native close restores focus asynchronously. Wait before Enter so it
+      // cannot activate the edit opener instead of closing the lightbox.
+      await Promise.all([
+        page.locator("[data-person-dialog]").evaluate(element => new Promise(resolve => element.addEventListener("close", () => resolve(), { once: true }))),
+        dialog.getByRole("button", { name: "Abbrechen", exact: true }).click(),
+      ]);
+      await lightbox.locator("[data-photo-close]").press("Enter");
+      await expect(lightbox).toBeHidden();
+    }
+    await closePhotoNaming();
+    // The named photo offers a face reset, but the shared merge dialog must
+    // never inherit that action when it takes ownership again.
+    await second.locator('[data-side-name="Existing"] [data-photo-item]').click();
+    if (!await lightbox.locator("[data-photo-face-tools]").isVisible()) await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await lightbox.locator("[data-person-edit]").click();
+    await expect(dialog.getByRole("button", { name: "Auf unbenannt setzen", exact: true })).toBeVisible();
+    await closePhotoNaming();
     await otherSide.locator("[data-merge-side-name]").click();
     await expectPersonPreview(dialog, otherSide);
     await expect(dialog.locator("[data-person-dialog-ignore]")).toBeHidden();
+    await expect(dialog.locator("[data-person-dialog-unname]")).toBeHidden();
     await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
     await expect(first.locator("[data-merge-dismiss]")).toBeHidden();
     // The server commits, but the response is lost. Reloading resolves its receipt,

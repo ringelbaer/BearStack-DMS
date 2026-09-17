@@ -380,7 +380,7 @@ Eine eigene Dienstadresse lässt sich über folgende optionale Werte setzen:
 
 Bei **Unbenannt** und **Ignoriert** steht der Ordnername immer über dem Vorschaubild
 (im Stammverzeichnis „Fotos“). Unter **Unbenannt** können Benutzer mit
-Fotobearbeitungsrechten den **Auswahlmodus** aktivieren: Klicks auf Bild, Ordnername
+Fotobearbeitungsrechten den **Auswahlmodus** direkt links neben dem Drei-Punkte-Menü aktivieren: Klicks auf Bild, Ordnername
 oder freie Kachelfläche wählen die Person aus beziehungsweise ab. Enter und
 Leertaste funktionieren ebenfalls. Personenlinks sind währenddessen deaktiviert;
 Stift und Einzel-Ignorieren sind ausgeblendet. Die bisherigen Batch-Aktionen
@@ -618,6 +618,12 @@ vorhandenen Person zuordnen, einschließlich Live-Abgleich per Lupe. **Bei berei
 benannten Personen gilt eine Korrektur hier nur für das angeklickte Gesicht im
 aktuellen Foto.** Ein neuer Name erstellt eine eigene Person für dieses Gesicht;
 die Auswahl eines vorhandenen Namens verschiebt nur dieses Gesicht dorthin.
+Ab **0.67.3** erscheint bei benannten Gesichtern außerdem **Auf unbenannt setzen**:
+Das angeklickte Gesicht wird als eigene unbenannte Gruppe abgetrennt, auch wenn
+es das letzte Gesicht dieser Person ist. Der Button übernimmt keine Eingabe aus
+dem Namensfeld. Vorschau und Gesichtsbeschriftung werden nach dem Speichern
+aktualisiert. Bei einer verlorenen Speicherantwort zuerst den Dialog schließen
+und **Gesichter aktualisieren**, bevor weiter bearbeitet wird.
 Andere Gesichter derselben Person – auch im selben Foto – behalten ihren Namen
 und ihre Zuordnung. Unbenannte Gruppen werden weiterhin gemeinsam benannt oder
 zugeordnet; der Dialog zeigt den jeweiligen Geltungsbereich an. Die gesamte

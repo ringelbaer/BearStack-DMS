@@ -142,12 +142,26 @@
             name: target && target !== "0" ? "" : name
           }) };
         },
+        getUnnameRequest: function () {
+          if (!editedFace || !current || current.path !== editedFace.path || !editedFace.id) return null;
+          return { action: "/photos/faces/edit", body: new URLSearchParams({
+            action: "move", face_id: editedFace.id, target: "0", name: ""
+          }) };
+        },
         getIgnoreRequest: function (cards) {
           var card = cards[0];
           if (!current || !revision || cards.length !== 1 || !card || card.dataset.personName || !card.dataset.faceId) return null;
           return { action: "/photos/people/groups/ignore", body: new URLSearchParams({ path: current.path, revision: revision, face_id: card.dataset.faceId }) };
         },
         onIgnoreConflict: function () { return request(false); },
+        onSaveError: function (error, saved, action) {
+          if (!action.unnaming || (!saved && error.status)) return false;
+          // A lost response may have created the unnamed group already. Only
+          // a fresh read can unlock editing without repeating that mutation.
+          uncertain = true;
+          error.message = "Die Aktion konnte nicht bestätigt werden. Bitte den Dialog schließen und die Gesichter aktualisieren.";
+          return true;
+        },
         onSave: function (ids, saved) {
           if (saved.action === "/photos/faces/edit") {
             var target = saved.body.get("target");

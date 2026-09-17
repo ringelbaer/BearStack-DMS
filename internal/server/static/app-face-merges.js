@@ -294,6 +294,7 @@
     delete namingForm.dataset.personFaceSelection;
     delete namingForm.dataset.personRestore;
     dialog.querySelector("[data-person-dialog-ignore]").hidden = true;
+    dialog.querySelector("[data-person-dialog-unname]").hidden = true;
     dialog.querySelector("#person-dialog-title").textContent = namingSide ? "Gruppe benennen/zuordnen" : "Zusammenführen und benennen/zuordnen";
     dialog.querySelector("#overview-person-hint").textContent = namingSide ? "Nur diese Gruppe wird benannt oder einer vorhandenen Person zugeordnet." : "Beide Gruppen werden unter dem neuen Namen oder mit der ausgewählten Person zusammengeführt. Abbrechen ändert nichts.";
     var searchSide = namingSide || namingCard.querySelector("[data-merge-side]");

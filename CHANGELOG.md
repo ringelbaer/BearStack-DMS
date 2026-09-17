@@ -4,6 +4,18 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.67.3 – in Entwicklung
+
+- Foto-Lightbox: Im Benennen-/Zuordnen-Dialog erscheint bei benannten Gesichtern **Auf unbenannt setzen**. Der Button löst nur das angeklickte Gesicht als neue unbenannte Gruppe ab, auch das letzte Gesicht einer Person. Andere Gesichter derselben Person bleiben unverändert; Entwürfe im Namensfeld werden nicht gespeichert.
+- Vorhandener Endpunkt und gemeinsame Aktionssperren; keine zusätzliche Gesichtserkennung oder Abfrage beim Öffnen. Nach unbestätigtem Speichern oder fehlgeschlagener Aktualisierung verhindert eine Lesewiederholung doppelte Schreibaktionen.
+- Validierung: 39 Chromium-Szenarien für Foto-Lightbox, Personen, Gruppenbilder und Zusammenführung sowie gezielte Go-/OpenAPI-, JavaScript-/DOM-Prüfungen und Website-Build erfolgreich. Regressionen decken Einzelgesicht, letztes Gesicht, Fehlerantworten, verlorene Antworten und Schutz vor doppeltem Speichern ab.
+- PATCH **0.67.3** für den direkten Zugang zur bereits vorhandenen Einzelgesichtsaktion; keine API- oder Datenmigration. README, Website und OpenAPI aktualisiert.
+
+### BearStack 0.67.2 – in Entwicklung
+
+- Personenübersicht: Auswahlmodus unter Unbenannt direkt links neben dem Drei-Punkte-Menü angeordnet, nach der Sortierung.
+- PATCH für die kleine UI-Korrektur; README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.67.1 – in Entwicklung
 
 - Personenübersicht: Ordnernamen in Alle, Benannt und Unbenannt verwenden dieselbe zentrale Galerie-Formatierung wie Ignoriert. Datumspräfixe und Unterstriche werden korrekt verarbeitet; Tooltips zeigen den formatierten Fotopfad. HTML, vorhandene AJAX-Kacheln und neu eingefügte Kacheln verwenden dieselben Serverwerte.

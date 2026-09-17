@@ -1,6 +1,10 @@
 # BearStack
 
-Aktuelle Version: **0.67.1** · Android-App: **0.17.0**.
+Aktuelle Version: **0.67.3** · Android-App: **0.17.0**.
+
+**0.67.3** ergänzt im Benennen-/Zuordnen-Dialog aus einem Foto den Button **Auf unbenannt setzen**, sobald das ausgewählte Gesicht benannt ist. Er löst nur dieses Gesicht aus der Personenzuordnung; die übrigen Gesichter behalten ihre Namen.
+
+**0.67.2** platziert den Auswahlmodus für unbenannte Personen direkt links neben dem Drei-Punkte-Menü.
 
 **0.67.1** korrigiert rohe Ordnernamen in der Personenübersicht: HTML und AJAX verwenden die zentrale Galerie-Formatierung, ebenso die Tooltips. Eine verbindliche Vorgabe in `AGENTS.md` und Regressionstests sichern dies ab.
 

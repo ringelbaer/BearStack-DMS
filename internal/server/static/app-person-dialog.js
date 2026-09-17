@@ -99,7 +99,8 @@
     var dialogForm = personDialog.querySelector("form");
     var dialogStatus = personDialog.querySelector("[data-person-dialog-status]");
     var ignoreButton = personDialog.querySelector("[data-person-dialog-ignore]");
-    var ignoreRequest;
+    var unnameButton = personDialog.querySelector("[data-person-dialog-unname]");
+    var ignoreRequest, unnameRequest;
     var photoPreview = bindPreview(personDialog);
     var opener, sourceCard, dialogIDs = [];
     function openPersonDialog(ids, button) {
@@ -126,6 +127,9 @@
       personDialog.querySelector("#overview-person-hint").textContent = ids.length > 1 ? "Alle markierten Gruppen werden unter dem neuen Namen oder mit der ausgewählten Person zusammengeführt." : "Ein neuer Name benennt diese Gruppe. Eine vorhandene Person auswählen, um die gesamte Gruppe mit ihr zusammenzuführen.";
       dialogForm.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: ids.length === 1 ? card.dataset.personName : "" } }));
       if (options.configureDialog) options.configureDialog({ dialog: personDialog, form: dialogForm, card: faceCard });
+      unnameRequest = options.getUnnameRequest ? options.getUnnameRequest() : null;
+      unnameButton.hidden = !unnameRequest;
+      unnameButton.disabled = !unnameRequest;
       personDialog.showModal();
       sourceCard = (options.getPreviewCard ? options.getPreviewCard() : null) || button.closest("[data-person-id]");
       if (sourceCard) sourceCard.setAttribute("data-person-dialog-source", "");
@@ -146,6 +150,8 @@
     personDialog.addEventListener("cancel", function (event) { if (ownsDialog() && busy) event.preventDefault(); });
     personDialog.addEventListener("close", function () {
       if (!ownsDialog()) return;
+      unnameButton.hidden = true;
+      unnameRequest = null;
       if (sourceCard) sourceCard.removeAttribute("data-person-dialog-source");
       sourceCard = null;
       dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
@@ -155,12 +161,14 @@
       if (!focus) focus = document.querySelector('.people-filter-tabs [aria-current="page"], [data-group-unnamed]');
       if (focus) focus.focus({ preventScroll: true });
     });
-    async function savePerson(ignoring) {
-      if (!ownsDialog() || busy || (ignoring && (!ignoreRequest || ignoreButton.disabled))) return;
-      var body = ignoring ? ignoreRequest.body : new URLSearchParams(new FormData(dialogForm));
-      var action = ignoring ? ignoreRequest.action : dialogForm.action;
+    async function savePerson(mode) {
+      var ignoring = mode === "ignore", unnaming = mode === "unname";
+      if (!ownsDialog() || busy || (ignoring && (!ignoreRequest || ignoreButton.disabled)) || (unnaming && (!unnameRequest || unnameButton.disabled))) return;
+      var specialRequest = ignoring ? ignoreRequest : unnaming ? unnameRequest : null;
+      var body = specialRequest ? specialRequest.body : new URLSearchParams(new FormData(dialogForm));
+      var action = specialRequest ? specialRequest.action : dialogForm.action;
       var merging = action.endsWith("/merge");
-      if (!ignoring && dialogIDs.length > 1) {
+      if (!specialRequest && dialogIDs.length > 1) {
         var targetID = body.get("target");
         if (!targetID || targetID === "0") {
           targetID = dialogIDs[0];
@@ -173,7 +181,7 @@
         merging = true;
       }
 
-      if (!ignoring && options.getSaveRequest) {
+      if (!specialRequest && options.getSaveRequest) {
         var custom = options.getSaveRequest({ action: action, body: body });
         if (!custom) return;
         action = custom.action; body = custom.body;
@@ -184,7 +192,7 @@
       dialogForm.dispatchEvent(new CustomEvent("person-picker-close"));
       dialogForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = true; });
       personDialog.setAttribute("aria-busy", "true");
-      dialogStatus.textContent = ignoring ? "Gesicht wird ignoriert …" : "Person wird gespeichert …";
+      dialogStatus.textContent = unnaming ? "Gesicht wird auf unbenannt gesetzt …" : ignoring ? "Gesicht wird ignoriert …" : "Person wird gespeichert …";
       var saved = false, conflict = false;
       var saveController = options.requestTimeoutMS ? new AbortController() : null;
       var saveTimer = saveController ? setTimeout(function () { saveController.abort(); }, options.requestTimeoutMS) : null;
@@ -200,7 +208,7 @@
             await options.onIgnoreConflict();
             throw new Error("Das Gruppenbild wurde inzwischen geändert. Bitte den Dialog schließen und die aktualisierte Auswahl erneut prüfen.");
           }
-          var saveError = new Error((ignoring ? "Gesicht konnte nicht ignoriert werden" : "Person konnte nicht gespeichert werden") + " (HTTP " + response.status + ").");
+          var saveError = new Error((unnaming ? "Gesicht konnte nicht auf unbenannt gesetzt werden" : ignoring ? "Gesicht konnte nicht ignoriert werden" : "Person konnte nicht gespeichert werden") + " (HTTP " + response.status + ").");
           saveError.status = response.status;
           throw saveError;
         }
@@ -208,10 +216,10 @@
         if (result.ok !== true) throw new Error("Person konnte nicht gespeichert werden.");
         saved = true;
         await options.onSave(dialogIDs, { action: action, body: body, ignoring: ignoring, result: result });
-        status.textContent = options.savedMessage ? options.savedMessage(ignoring) : ignoring ? (dialogIDs.length > 1 ? "Angezeigte Gesichter ignoriert." : "Gesicht ignoriert.") : (merging ? "Personen zusammengeführt." : "Person benannt.");
+        status.textContent = unnaming ? "Gesicht auf unbenannt gesetzt." : options.savedMessage ? options.savedMessage(ignoring) : ignoring ? (dialogIDs.length > 1 ? "Angezeigte Gesichter ignoriert." : "Gesicht ignoriert.") : (merging ? "Personen zusammengeführt." : "Person benannt.");
         personDialog.close();
       } catch (error) {
-        if (options.onSaveError) conflict = options.onSaveError(error, saved) === true || conflict;
+        if (options.onSaveError) conflict = options.onSaveError(error, saved, { unnaming: unnaming }) === true || conflict;
         dialogStatus.textContent = saved ? "Gespeichert, aber die Ansicht konnte nicht aktualisiert werden. Bitte die Seite neu laden." : error.message;
         // Do not offer the same mutation again after a successful save.
         if (saved && opener && opener.isConnected) opener.disabled = true;
@@ -222,11 +230,13 @@
         personDialog.removeAttribute("aria-busy");
         dialogForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = saved || conflict; });
         ignoreButton.disabled = saved || conflict || !ignoreRequest;
+        unnameButton.disabled = saved || conflict || !unnameRequest;
         personDialog.querySelector("[data-person-dialog-cancel]").disabled = false;
       }
     }
-    dialogForm.addEventListener("submit", function (event) { event.preventDefault(); savePerson(false); });
-    ignoreButton.addEventListener("click", function () { savePerson(true); });
+    dialogForm.addEventListener("submit", function (event) { event.preventDefault(); savePerson("save"); });
+    ignoreButton.addEventListener("click", function () { savePerson("ignore"); });
+    unnameButton.addEventListener("click", function () { savePerson("unname"); });
     return { open: openPersonDialog };
   }
 
