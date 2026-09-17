@@ -1,6 +1,6 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.15.1** (`versionCode 32`). Die Servergalerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.15.2** (`versionCode 33`). Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
@@ -96,7 +96,8 @@ BearStack-Design und meldet sich automatisch an. Das Anmeldeformular erscheint e
 bei der Einrichtung oder nach einem ausdrücklich gewählten Verbindungswechsel.
 **Lokale Fotos öffnen** führt schon während des Verbindungsaufbaus zu den Gerätefotos.
 Auch in der geöffneten Servergalerie ist dieser Einstieg jederzeit unter
-**Weitere Optionen → Lokale Fotos öffnen** erreichbar, etwa bei einem späteren Serverausfall.
+**Ordner → Dieses Gerät** erreichbar, etwa bei einem späteren Serverausfall. Die Kachel
+lässt sich unter **Weitere Optionen → Einstellungen → Lokale Fotoordner anzeigen** einschalten.
 
 Die automatische Serveranmeldung wartet höchstens acht Sekunden auf die
 Sitzungsaushandlung. Bei einem nicht erreichbaren oder fehlerhaften Server öffnet
@@ -289,11 +290,19 @@ Es werden weder weitere Fotos vorgeladen noch alle Galerieeinträge durchsucht.
 
 ### Lokale Fotoordner
 
+Ab Android **0.15.2** verwenden **Fotos**, **Ordner**, **Suchen** und **Dieses Gerät**
+dasselbe Dreipunkt-Menü mit **Karte**, **Fotoframe starten**, **Personen verwalten**
+(bei vorhandenen Rechten) und **Einstellungen**. Kontextabhängig kommt der bestehende
+Eintrag für die Personen des Serverordners hinzu. Nicht verfügbare Aktionen sind deaktiviert:
+Lokal gibt es keine Karte, Fotoframe ist in einem geöffneten Fotoordner verfügbar.
+**Verbindung wechseln** steht unter **Einstellungen**; der zusätzliche Menüeintrag
+**Lokale Fotos öffnen** entfällt.
+
 Unter **Weitere Optionen → Einstellungen → Lokale Fotoordner anzeigen** lässt sich
 zusätzlich **Ordner → Dieses Gerät** einschalten. Die Funktion ist standardmäßig aus
 und die Einstellung bleibt auf dem Gerät gespeichert. Unter dem Hauptordner stehen
 die von Android erkannten Fotoordner, beispielsweise Camera, Screenshots und Pictures,
-mit Medienanzahl und bis zu vier Vorschauen (virtuelle Personenordner bis zu acht). Ein Ordner öffnet seine Fotos im
+mit Medienanzahl und bis zu zwei Vorschauen. Ein Ordner öffnet seine Fotos im
 fortlaufenden Raster; Vollbild, Zoom, Diashow und lokale Dateiinformationen sind verfügbar.
 Bei aktiver Serververbindung führt Zurück über das Gerät wieder zur Servergalerie.
 Die Tabs Fotos und Suchen zeigen dann den Serverbestand. Ohne Serververbindung
@@ -319,7 +328,11 @@ Verzögerung und schließen gegebenenfalls den Betrachter.
 
 Die Ordnerübersicht liest einmal pro geöffnetem beziehungsweise aktualisiertem
 Katalog nur IDs und Ordner-Metadaten, hält je Ordner einen Zähler und höchstens zwei
-Vorschau-IDs und lädt Ordner in Paketen von 24 nach. Fotos laden in Paketen von 96;
+Vorschau-IDs und lädt Ordner in Paketen von 24 nach. Kacheln und Ordnerinhalt verwenden
+dieselbe Reihenfolge nach absteigender Medien-ID: zuletzt in den Index aufgenommene
+Fotos zuerst. Fehlende oder ältere Aufnahmedaten verschieben neue Screenshots und
+Importe dadurch nicht mehr hinter ältere Fotos. Die Sortierung nutzt den eindeutigen
+Indexschlüssel und benötigt keine zusätzliche Metadatenabfrage. Fotos laden in Paketen von 96;
 das Raster hält höchstens drei Seiten. Die Abfragen laufen abbrechbar außerhalb
 des UI-Threads. Android-Anbieter ohne native Seitengrenzen verwenden einen Cursor
 zum angefragten Ausschnitt, weiterhin ohne die komplette Fotoliste in den App-Speicher

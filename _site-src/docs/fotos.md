@@ -24,6 +24,37 @@ Das Fotomodul ist optional und nutzt einen directory-first Ansatz: BearStack imp
 
 Im Browser bietet auch **Zusammenführen und benennen/zuordnen** die Lupe für ähnliche benannte Personen. Sie prüft das erste Vergleichsgesicht; beim Benennen einer einzelnen Gruppe wird deren Vergleichsgesicht verwendet. Ein Treffer übernimmt die Zielperson mit Versionsprüfung für die atomare Zuordnung.
 
+## Ignorierte Gesichter eines Fotoordners zurücksetzen
+
+Ab **0.63.0** steht im **…**-Menü eines normalen Fotoordners die Funktion
+**Alle ignorierten Gesichter zurücksetzen** bereit. Sie benötigt **Fotos bearbeiten**
+(`photos.edit`) und ist erst ab Ordnerebene 2 verfügbar: nicht unter `/photos`,
+nicht im Jahresordner `2011`, aber beispielsweise in
+`2011/20111015-Silberhochzeit-Onkel-Hermann` und tieferen Ordnern.
+
+Die Bestätigung nennt den aktuellen Ordner. Die Aktion schließt sämtliche Unterordner
+ein; Suchbegriffe, Medientyp- und Anzeigefilter begrenzen sie nicht. Ignorierte
+Gesichter ohne Personennamen werden wieder als **Unbenannt** sichtbar. Benannte
+Personen bleiben vollständig erhalten, einschließlich ihrer eventuell ignorierten
+Gesichter, Zuordnungen, Tags, Favoriten und Stammdaten. Andere aktive Gesichter und
+Nachbarordner werden nicht verändert. Virtuelle Personenordner und Admin-only-Inhalte
+sind von der Rücksetzung ausgeschlossen; die vorhandenen Sichtbarkeitsprüfungen gelten weiter.
+Nach Abschluss zeigt die Galerie die Anzahl zurückgesetzter Gesichter an. Abbrechen
+führt keine Rücksetzung aus.
+
+Der Server prüft Rechte, Pfad und Mindesttiefe unabhängig vom Menü. Er verwendet den
+vorhandenen Pfadindex mit exakten Unterordnergrenzen, auch für Ordnernamen mit `%` oder
+`_`. Er liest keine Bilder ein und startet keine Gesichtserkennung. Die Rücksetzung
+und die Aktualisierung der Referenzen betroffener Gruppen erfolgen in einer Transaktion;
+bei Fehlern bleibt keine teilweise Rücksetzung zurück. Im Arbeitsspeicher werden nur
+die betroffenen Gruppen-IDs gehalten, keine vollständigen Gesichts- oder Bildlisten.
+Auch mehr als 500 Gesichter sind möglich. Eine Wiederholung ohne neue Ignorierungen
+ändert nichts; nach einer unklaren Antwort zuerst den Bestand prüfen.
+
+Der Formularendpunkt ist `POST /photos/faces/reset-ignored-directory` mit `path`.
+Mit `Accept: application/json` antwortet er mit `ok` und `restored`, andernfalls
+führt er zurück zum Ordner mit einer Ergebnismeldung. Einzelheiten stehen in OpenAPI.
+
 ## Personen ansehen und taggen
 
 Ab BearStack **0.53.0** öffnet die virtuelle Kachel **Personen** unter **Fotos** eine

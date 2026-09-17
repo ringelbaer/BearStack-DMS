@@ -1296,7 +1296,7 @@
 
 
 <h1 id="bearstack-fotos-fur-android">BearStack Fotos für Android<a class="headerlink" href="#bearstack-fotos-fur-android" title="Permanent link">&para;</a></h1>
-<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.15.1</strong> (<code>versionCode 32</code>). Die Servergalerie benötigt
+<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.15.2</strong> (<code>versionCode 33</code>). Die Servergalerie benötigt
 <strong>BearStack 0.50.0</strong>, ein aktiviertes Fotomodul und <code>photos.read</code>. Personenverwaltung
 benötigt zusätzlich <code>photos.edit</code>; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.</p>
@@ -1376,7 +1376,8 @@ BearStack-Design und meldet sich automatisch an. Das Anmeldeformular erscheint e
 bei der Einrichtung oder nach einem ausdrücklich gewählten Verbindungswechsel.
 <strong>Lokale Fotos öffnen</strong> führt schon während des Verbindungsaufbaus zu den Gerätefotos.
 Auch in der geöffneten Servergalerie ist dieser Einstieg jederzeit unter
-<strong>Weitere Optionen → Lokale Fotos öffnen</strong> erreichbar, etwa bei einem späteren Serverausfall.</p>
+<strong>Ordner → Dieses Gerät</strong> erreichbar, etwa bei einem späteren Serverausfall. Die Kachel
+lässt sich unter <strong>Weitere Optionen → Einstellungen → Lokale Fotoordner anzeigen</strong> einschalten.</p>
 <p>Die automatische Serveranmeldung wartet höchstens acht Sekunden auf die
 Sitzungsaushandlung. Bei einem nicht erreichbaren oder fehlerhaften Server öffnet
 sich <strong>Dieses Gerät</strong> mit einem verständlichen Verbindungsfehler und <strong>Erneut versuchen</strong>.
@@ -1535,11 +1536,18 @@ Dateien ab 24 Stunden sowie ältere Dateien oberhalb der Grenzen bereinigt. Eins
 der laufenden Vorbereitung bleiben höchstens acht Dateien und 512 MiB im Cache.
 Es werden weder weitere Fotos vorgeladen noch alle Galerieeinträge durchsucht.</p>
 <h3 id="lokale-fotoordner">Lokale Fotoordner<a class="headerlink" href="#lokale-fotoordner" title="Permanent link">&para;</a></h3>
+<p>Ab Android <strong>0.15.2</strong> verwenden <strong>Fotos</strong>, <strong>Ordner</strong>, <strong>Suchen</strong> und <strong>Dieses Gerät</strong>
+dasselbe Dreipunkt-Menü mit <strong>Karte</strong>, <strong>Fotoframe starten</strong>, <strong>Personen verwalten</strong>
+(bei vorhandenen Rechten) und <strong>Einstellungen</strong>. Kontextabhängig kommt der bestehende
+Eintrag für die Personen des Serverordners hinzu. Nicht verfügbare Aktionen sind deaktiviert:
+Lokal gibt es keine Karte, Fotoframe ist in einem geöffneten Fotoordner verfügbar.
+<strong>Verbindung wechseln</strong> steht unter <strong>Einstellungen</strong>; der zusätzliche Menüeintrag
+<strong>Lokale Fotos öffnen</strong> entfällt.</p>
 <p>Unter <strong>Weitere Optionen → Einstellungen → Lokale Fotoordner anzeigen</strong> lässt sich
 zusätzlich <strong>Ordner → Dieses Gerät</strong> einschalten. Die Funktion ist standardmäßig aus
 und die Einstellung bleibt auf dem Gerät gespeichert. Unter dem Hauptordner stehen
 die von Android erkannten Fotoordner, beispielsweise Camera, Screenshots und Pictures,
-mit Medienanzahl und bis zu vier Vorschauen (virtuelle Personenordner bis zu acht). Ein Ordner öffnet seine Fotos im
+mit Medienanzahl und bis zu zwei Vorschauen. Ein Ordner öffnet seine Fotos im
 fortlaufenden Raster; Vollbild, Zoom, Diashow und lokale Dateiinformationen sind verfügbar.
 Bei aktiver Serververbindung führt Zurück über das Gerät wieder zur Servergalerie.
 Die Tabs Fotos und Suchen zeigen dann den Serverbestand. Ohne Serververbindung
@@ -1562,7 +1570,11 @@ neu geprüft; Änderungen am Medienindex aktualisieren die offene Ansicht mit ku
 Verzögerung und schließen gegebenenfalls den Betrachter.</p>
 <p>Die Ordnerübersicht liest einmal pro geöffnetem beziehungsweise aktualisiertem
 Katalog nur IDs und Ordner-Metadaten, hält je Ordner einen Zähler und höchstens zwei
-Vorschau-IDs und lädt Ordner in Paketen von 24 nach. Fotos laden in Paketen von 96;
+Vorschau-IDs und lädt Ordner in Paketen von 24 nach. Kacheln und Ordnerinhalt verwenden
+dieselbe Reihenfolge nach absteigender Medien-ID: zuletzt in den Index aufgenommene
+Fotos zuerst. Fehlende oder ältere Aufnahmedaten verschieben neue Screenshots und
+Importe dadurch nicht mehr hinter ältere Fotos. Die Sortierung nutzt den eindeutigen
+Indexschlüssel und benötigt keine zusätzliche Metadatenabfrage. Fotos laden in Paketen von 96;
 das Raster hält höchstens drei Seiten. Die Abfragen laufen abbrechbar außerhalb
 des UI-Threads. Android-Anbieter ohne native Seitengrenzen verwenden einen Cursor
 zum angefragten Ausschnitt, weiterhin ohne die komplette Fotoliste in den App-Speicher
@@ -1883,7 +1895,7 @@ Fehler werden zusätzlich anhand der XML-Ergebnisse zurückgewiesen.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.62.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.63.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

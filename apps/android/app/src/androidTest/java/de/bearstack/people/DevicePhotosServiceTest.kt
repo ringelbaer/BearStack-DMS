@@ -19,7 +19,8 @@ import java.util.concurrent.TimeUnit
 
 @SdkSuppress(minSdkVersion=29)
 class DevicePhotosServiceTest {
-    private data class Entry(val id: Long, val bucket: String, val name: String, val volume: String = "external_primary")
+    private data class Entry(val id: Long, val bucket: String, val name: String, val volume: String = "external_primary",
+        val captured: Long? = 1_700_000_000_000L + id * 1000)
     private class Provider(val entries: List<Entry>, val paging: Boolean = true) : ContentProvider() {
         var folderScans = 0
         var closedCursors = 0
@@ -34,7 +35,10 @@ class DevicePhotosServiceTest {
         override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?): Int = error("must stay read-only")
         override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int = error("must stay read-only")
         override fun query(uri: Uri, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor =
-            query(uri, projection, Bundle(), null)
+            query(uri, projection, Bundle().apply {
+                putString(ContentResolver.QUERY_ARG_SQL_SORT_ORDER, sortOrder)
+                putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, selectionArgs)
+            }, null)
         override fun query(uri: Uri, projection: Array<out String>?, queryArgs: Bundle?, cancellationSignal: CancellationSignal?): Cursor {
             if(fail) throw SecurityException("private provider details")
             if(block) {
@@ -50,7 +54,11 @@ class DevicePhotosServiceTest {
             var matching = entries.filter { entry ->
                 (arguments == null || entry.bucket == arguments[0] && entry.volume == arguments.getOrNull(1)) &&
                     (uri.lastPathSegment == "media" || uri.lastPathSegment == entry.id.toString())
-            }.sortedByDescending { it.id }
+            }
+            val order = queryArgs?.getString(ContentResolver.QUERY_ARG_SQL_SORT_ORDER).orEmpty()
+            matching = if(order.startsWith(MediaStore.Images.Media.DATE_TAKEN))
+                matching.sortedWith(compareByDescending<Entry> { it.captured }.thenByDescending { it.id })
+            else matching.sortedByDescending { it.id }
             val limited = paging && queryArgs?.containsKey(ContentResolver.QUERY_ARG_LIMIT) == true
             if(limited) matching = matching.drop(queryArgs!!.getInt(ContentResolver.QUERY_ARG_OFFSET))
                 .take(queryArgs.getInt(ContentResolver.QUERY_ARG_LIMIT))
@@ -62,7 +70,7 @@ class DevicePhotosServiceTest {
                 }
                 override fun close() { super.close(); closedCursors++ }
             }.apply {
-                matching.forEach { entry -> addRow(columns.map<String, Any> { column -> when(column) {
+                matching.forEach { entry -> addRow(columns.map<String, Any?> { column -> when(column) {
                     MediaStore.Images.Media._ID -> entry.id
                     MediaStore.Images.Media.BUCKET_ID -> entry.bucket
                     MediaStore.Images.Media.BUCKET_DISPLAY_NAME -> entry.name
@@ -70,7 +78,7 @@ class DevicePhotosServiceTest {
                     MediaStore.Images.Media.DISPLAY_NAME -> "${entry.id}.jpg"
                     MediaStore.Images.Media.MIME_TYPE -> "image/jpeg"
                     MediaStore.Images.Media.DATE_MODIFIED -> 1_700_000_000L + entry.id
-                    MediaStore.Images.Media.DATE_TAKEN -> 1_700_000_000_000L + entry.id * 1000
+                    MediaStore.Images.Media.DATE_TAKEN -> entry.captured
                     MediaStore.Images.Media.SIZE -> 2048L
                     MediaStore.Images.Media.WIDTH -> 400
                     MediaStore.Images.Media.HEIGHT -> 300
@@ -101,6 +109,22 @@ class DevicePhotosServiceTest {
     }
     @Test fun photoPagesAndInfoWorkWithNativePaging() = pages(true)
     @Test fun olderProvidersWithoutPagingNeverRepeatTheFirstPage() = pages(false)
+    @Test fun newestPreviewsStayFirstWithMissingOrOldCaptureDates() = previewOrder(true)
+    @Test fun newestPreviewsStayFirstWithoutNativePaging() = previewOrder(false)
+    private fun previewOrder(paging: Boolean) = runBlocking {
+        val entries = (1L..300).map { Entry(it, "1", "Camera") } +
+            Entry(301, "1", "Camera", captured=1L) + Entry(302, "1", "Camera", captured=null) +
+            Entry(303, "1", "Camera", captured=0L)
+        val provider = Provider(entries, paging)
+        val service = DevicePhotosService(ContentResolver.wrap(provider))
+        val folder = service.browse(PhotoQuery()).folders.single()
+        val pages = (1..4).map { service.browse(PhotoQuery(path=folder.path), it, "media") }
+        assertEquals(listOf("303.jpg", "302.jpg", "301.jpg"), pages.first().media.take(3).map { it.name })
+        assertEquals(folder.previews.map { it.path }, pages.first().media.take(2).map { it.path })
+        assertEquals((303L downTo 1).map { "$it.jpg" }, pages.flatMap { it.media }.map { it.name })
+        assertEquals(1, provider.folderScans)
+        assertEquals(provider.openedCursors, provider.closedCursors)
+    }
     private fun pages(paging: Boolean) = runBlocking {
         val provider = Provider((1L..300).map { Entry(it, "1", "Camera") }, paging)
         val service = DevicePhotosService(ContentResolver.wrap(provider))

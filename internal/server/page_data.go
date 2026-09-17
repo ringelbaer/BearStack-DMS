@@ -246,6 +246,7 @@ func (d PageData) APILinkVisible() bool {
 }
 
 type PhotoFilter struct {
+	CanResetIgnoredFaces   bool
 	PeopleURL              string
 	Path                   string
 	Query                  string

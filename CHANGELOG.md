@@ -4,6 +4,21 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.63.0 – in Entwicklung
+
+- WebUI: **Alle ignorierten Gesichter zurücksetzen** im Dreipunkt-Menü echter Fotoordner ab Ebene 2. Nach Bestätigung gilt die Aktion rekursiv für den aktuellen Ordner, unabhängig von Such-/Anzeigefiltern. Root, Jahresordner und virtuelle Personenordner sind ausgeschlossen.
+- Nur ignorierte Gesichter ohne Personennamen werden wieder unbenannt sichtbar. Benannte Personen einschließlich ihrer ignorierten Gesichter, Zuordnungen, Tags, Favoriten und Stammdaten sowie andere aktive Gesichter bleiben unverändert. Bestehende Admin-only-Sichtbarkeitsprüfungen gelten weiterhin.
+- Serverseitige Rechte-, Pfad- und Tiefenprüfung; gleicher CSRF-Schutz wie bei vorhandenen Gesichtsaktionen. Atomare Rücksetzung und Referenzaktualisierung über den vorhandenen Pfadindex, ohne Bilder einzulesen oder Erkennung zu starten; kein 500-Gesichter-Limit. Unveränderte Wiederholungen bleiben ohne Wirkung.
+- Validierung: vollständige Go-Suite und JavaScript-/DOM-Prüfungen erfolgreich; Foto-/Serverpakete nach den letzten Änderungen erneut geprüft. Zwei Chromium-Szenarien prüfen Bestätigung, Abbruch, rekursiven Umfang trotz Medientypfilter, Namens-/Tag-Erhalt, Leserrechte und Menübreiten bei 320, 390 und 1440 Pixeln. Regressionen decken Pfadgrenzen, SQL-Sonderzeichen, CSRF, Symlinks, Admin-only, Rollback, Wiederholungen und 654 Gesichter ab. Website-Build erfolgreich.
+- MINOR **0.63.0**: neuer Formular-/JSON-Endpunkt `/photos/faces/reset-ignored-directory`. Keine Datenmigration; Android-App weiterhin **0.15.2**. README, Website und OpenAPI aktualisiert.
+
+### BearStack 0.62.1 / Android 0.15.2 – in Entwicklung
+
+- Android: gemeinsames Dreipunkt-Menü für Fotos, Ordner, Suchen und Dieses Gerät. Lokale Fotos öffnen entfällt dort; Verbindung wechseln steht in den Einstellungen. Lokal öffnet das Dreipunkt-Symbol das Menü, mit deaktivierter Karte und Fotoframe für geöffnete Fotoordner.
+- Lokale Ordner sortieren wie ihre Vorschaukacheln nach absteigender Medien-ID. Neue Screenshots oder importierte Bilder mit fehlendem beziehungsweise älterem Aufnahmedatum bleiben so am Anfang sichtbar. Eindeutige, indexgestützte Reihenfolge; bestehende Seiten- und Speichergrenzen bleiben erhalten.
+- Validierung: 93 JVM-Tests und 38 Emulatorprüfungen erfolgreich. Regressionen prüfen Menüeinträge auf Deutsch und Englisch, Personenrechte, Verbindungswechsel aus den Einstellungen, lokalen Fotoframe, native und alternative Seitennavigation mit fehlenden/älteren Aufnahmedaten sowie Galerie und Offline-Start. Android-Lint, Debug-/Test-APK, Versions-/OpenAPI-Prüfungen und Website-Build erfolgreich.
+- PATCH **0.62.1** / App **0.15.2**, `versionCode 33`. Keine API-Vertrags- oder Datenformatänderung; README, Android-Anleitung, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.62.0 – in Entwicklung
 
 - Personenansicht: Tags direkt neben der Namensüberschrift, mit Umbruch auf schmalen Bildschirmen. Stammdaten verwenden denselben Stil wie die anderen Einträge im Mehr-Menü; dynamische Aktualisierung beim Benennen bleibt erhalten. Für diese Layoutkorrektur bestehen die JavaScript-/DOM-Prüfungen und 13 Chromium-Szenarien zu Personenansicht, Tags und Stammdaten; Website neu gebaut.

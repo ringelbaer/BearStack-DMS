@@ -1,6 +1,10 @@
 # BearStack
 
-Aktuelle Version: **0.62.0** · Android-App: **0.15.1**.
+Aktuelle Version: **0.63.0** · Android-App: **0.15.2**.
+
+Ab **0.63.0** bietet das Dreipunkt-Menü eines Fotoordners ab Ebene 2 **Alle ignorierten Gesichter zurücksetzen**. Die Aktion gilt nach Bestätigung für diesen Ordner und seine Unterordner, unabhängig von Suchfiltern. Ignorierte Gesichter ohne Personennamen werden wieder unbenannt sichtbar; benannte Personen einschließlich ihrer ignorierten Gesichter, Tags und Stammdaten bleiben unverändert. Root, Jahresordner und virtuelle Personenordner sind ausgeschlossen. Erfordert **Fotos bearbeiten**; keine neue Gesichtserkennung. [Details zur Ordneraktion](_site-src/docs/fotos.md#ignorierte-gesichter-eines-fotoordners-zurucksetzen).
+
+Android **0.15.2** vereinheitlicht das Dreipunkt-Menü unter **Fotos**, **Ordner**, **Suchen** und **Dieses Gerät**. **Verbindung wechseln** steht unter **Einstellungen**, lokale Fotos sind über **Ordner → Dieses Gerät** erreichbar. Lokale Ordner zeigen zuletzt in den Medienindex aufgenommene Fotos zuerst, passend zu ihren Kachelvorschauen und auch ohne Aufnahmedatum.
 
 Ab **0.62.0** lässt sich unter **Gesichtsketten prüfen** die **Mindestähnlichkeit** von 0 bis 1 für den Durchlauf einstellen. Höhere Werte verlangen ähnlichere Gesichter. **Durchlauf neu starten** übernimmt den Wert und berücksichtigt übersprungene Gruppen erneut. Vorgabe ist die globale Schwelle für manuelle Vorschläge; diese bleibt unverändert.
 

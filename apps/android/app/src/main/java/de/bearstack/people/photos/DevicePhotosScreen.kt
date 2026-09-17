@@ -100,7 +100,8 @@ fun PhotosScreen(controller: PhotosController?, images: ImageLoader?, canManage:
     val serverState = rememberSaveableStateHolder()
     if(controller == null || images == null || deviceOpen) {
         DevicePhotosScreen(access, foreground, revision, onAccess={ permission.launch(devicePhotoPermissions()) },
-            onSettings={ settingsOpen = true }, serverAvailable=controller != null, onLeave={ tab ->
+            onSettings={ settingsOpen = true }, onPeople=onPeople.takeIf { canManage },
+            serverAvailable=controller != null, onLeave={ tab ->
                 deviceOpen = false
                 if(tab != 1) controller?.open(PhotoQuery(query=if(tab == 2) search.trim() else "", recursive=true), tab=tab)
             }, connectionStatus={
@@ -108,13 +109,15 @@ fun PhotosScreen(controller: PhotosController?, images: ImageLoader?, canManage:
                     onPeople=onPeople.takeIf { canManage })
             })
     } else serverState.SaveableStateProvider("server") {
-        ServerPhotosScreen(controller, images, canManage, onPeople, onConnection, search, { search = it },
-            onSettings={ settingsOpen = true }, onDevice=if(enabled) ({ deviceOpen = true }) else null,
-            onLocal={ deviceOpen = true })
+        ServerPhotosScreen(controller, images, canManage, onPeople, search, { search = it },
+            onSettings={ settingsOpen = true }, onDevice=if(enabled) ({ deviceOpen = true }) else null)
     }
     if(settingsOpen) AlertDialog(onDismissRequest={ settingsOpen = false },
         title={ Text(stringResource(R.string.photos_settings)) },
         text={ Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            TextButton(onClick={ settingsOpen = false; onConnection() }) {
+                Text(stringResource(R.string.photos_connection))
+            }
             Row(Modifier.toggleable(value=enabled, role=Role.Switch, onValueChange={ value ->
                     preferences.enabled = value
                     enabled = value
@@ -166,7 +169,7 @@ private fun DeviceAccessControls(access: DevicePhotoAccess, onAccess: () -> Unit
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, revision: Int,
-    onAccess: () -> Unit, onSettings: () -> Unit, onLeave: (Int) -> Unit,
+    onAccess: () -> Unit, onSettings: () -> Unit, onPeople: (() -> Unit)?, onLeave: (Int) -> Unit,
     serverAvailable: Boolean = true, connectionStatus: @Composable () -> Unit = {}) {
     var path by rememberSaveable { mutableStateOf("") }
     var title by rememberSaveable { mutableStateOf("") }
@@ -216,9 +219,13 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
         if(path.isNotEmpty()) Text(stringResource(R.string.photos_device), style=MaterialTheme.typography.labelSmall)
     } }, navigationIcon={ if(path.isNotEmpty() || serverAvailable) IconButton(onClick={ back() }) {
         Icon(painterResource(R.drawable.ic_back), stringResource(R.string.photos_back))
-    } }, actions={ IconButton(onClick=onSettings) {
-        Icon(painterResource(R.drawable.ic_more_horiz), stringResource(R.string.photos_settings))
-    } }) }, bottomBar={ if(serverAvailable) NavigationBar {
+    } }, actions={
+        key(path) {
+            PhotosMenu(onSettings, onMap=null,
+                onFrame=local?.let { catalog -> catalog::startFrame.takeIf { state?.loading == false && state.media.isNotEmpty() } },
+                onPeople=onPeople)
+        }
+    }) }, bottomBar={ if(serverAvailable) NavigationBar {
         listOf(R.string.photos_title to R.drawable.ic_photos, R.string.photos_folders to R.drawable.ic_folder,
             R.string.photos_search to R.drawable.ic_search).forEachIndexed { index, (label, icon) ->
             NavigationBarItem(selected=index == 1, onClick={ onLeave(index) },

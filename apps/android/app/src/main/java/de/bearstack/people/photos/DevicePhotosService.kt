@@ -67,7 +67,7 @@ internal class DevicePhotosService(private val resolver: ContentResolver) : Phot
         if(Build.VERSION.SDK_INT >= 29) columns += MediaStore.MediaColumns.VOLUME_NAME
         val found = linkedMapOf<String, Bucket>()
         // One streaming metadata pass; retain only counts and two thumbnail IDs per folder.
-        resolver.query(collection, columns.toTypedArray(), null, null, "${MediaStore.Images.Media._ID} DESC", signal)?.use { cursor ->
+        resolver.query(collection, columns.toTypedArray(), null, null, PHOTO_ORDER, signal)?.use { cursor ->
             while(cursor.moveToNext()) {
                 signal.throwIfCanceled()
                 val id = cursor.getString(1) ?: continue
@@ -91,8 +91,10 @@ internal class DevicePhotosService(private val resolver: ContentResolver) : Phot
         val query = Bundle().apply {
             putString(ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
             putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, args)
-            putString(ContentResolver.QUERY_ARG_SQL_SORT_ORDER,
-                "${MediaStore.Images.Media.DATE_TAKEN} DESC, ${MediaStore.Images.Media._ID} DESC")
+            // Match the folder previews: newest indexed images first, including
+            // screenshots/imports with absent or older capture dates. The unique
+            // indexed ID also keeps page boundaries deterministic and inexpensive.
+            putString(ContentResolver.QUERY_ARG_SQL_SORT_ORDER, PHOTO_ORDER)
             putInt(ContentResolver.QUERY_ARG_LIMIT, 97)
             putInt(ContentResolver.QUERY_ARG_OFFSET, offset)
         }
@@ -144,6 +146,7 @@ internal class DevicePhotosService(private val resolver: ContentResolver) : Phot
     }
 
     companion object {
+        private val PHOTO_ORDER = "${MediaStore.Images.Media._ID} DESC"
         val SESSION = PhotoSession("device", false, 240, 240, 1280, 2048, 5, 8)
         private val PHOTO_COLUMNS = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME,
             MediaStore.Images.Media.MIME_TYPE, MediaStore.Images.Media.DATE_MODIFIED, MediaStore.Images.Media.DATE_TAKEN,

@@ -488,6 +488,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#ignorierte-gesichter-eines-fotoordners-zurucksetzen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ignorierte Gesichter eines Fotoordners zurücksetzen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
   <a href="#personen-ansehen-und-taggen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -957,6 +968,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#ignorierte-gesichter-eines-fotoordners-zurucksetzen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ignorierte Gesichter eines Fotoordners zurücksetzen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
   <a href="#personen-ansehen-und-taggen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1270,6 +1292,32 @@ eine aktivierte Wiederholung funktioniert auch bei nur einer Mediendatei.</p>
 <p>Die native Galerie hält höchstens drei Metadatenseiten je Bereich. Beim Zurückscrollen lädt sie ältere Seiten erneut; Vollbild und Diashow behalten die Fotoreihenfolge, und Ladefehler sind direkt im betroffenen Bereich wiederholbar.</p>
 <p>Das Fotomodul ist optional und nutzt einen directory-first Ansatz: BearStack importiert Fotos nicht in die Dokumentenablage, sondern rendert ein vorhandenes, read-only Fotoverzeichnis als Galerie. Die Mediendateien bleiben unverändert; BearStack legt Index, Tags, Vorschaubilder und Einstellungen getrennt davon ab.</p>
 <p>Im Browser bietet auch <strong>Zusammenführen und benennen/zuordnen</strong> die Lupe für ähnliche benannte Personen. Sie prüft das erste Vergleichsgesicht; beim Benennen einer einzelnen Gruppe wird deren Vergleichsgesicht verwendet. Ein Treffer übernimmt die Zielperson mit Versionsprüfung für die atomare Zuordnung.</p>
+<h2 id="ignorierte-gesichter-eines-fotoordners-zurucksetzen">Ignorierte Gesichter eines Fotoordners zurücksetzen<a class="headerlink" href="#ignorierte-gesichter-eines-fotoordners-zurucksetzen" title="Permanent link">&para;</a></h2>
+<p>Ab <strong>0.63.0</strong> steht im <strong>…</strong>-Menü eines normalen Fotoordners die Funktion
+<strong>Alle ignorierten Gesichter zurücksetzen</strong> bereit. Sie benötigt <strong>Fotos bearbeiten</strong>
+(<code>photos.edit</code>) und ist erst ab Ordnerebene 2 verfügbar: nicht unter <code>/photos</code>,
+nicht im Jahresordner <code>2011</code>, aber beispielsweise in
+<code>2011/20111015-Silberhochzeit-Onkel-Hermann</code> und tieferen Ordnern.</p>
+<p>Die Bestätigung nennt den aktuellen Ordner. Die Aktion schließt sämtliche Unterordner
+ein; Suchbegriffe, Medientyp- und Anzeigefilter begrenzen sie nicht. Ignorierte
+Gesichter ohne Personennamen werden wieder als <strong>Unbenannt</strong> sichtbar. Benannte
+Personen bleiben vollständig erhalten, einschließlich ihrer eventuell ignorierten
+Gesichter, Zuordnungen, Tags, Favoriten und Stammdaten. Andere aktive Gesichter und
+Nachbarordner werden nicht verändert. Virtuelle Personenordner und Admin-only-Inhalte
+sind von der Rücksetzung ausgeschlossen; die vorhandenen Sichtbarkeitsprüfungen gelten weiter.
+Nach Abschluss zeigt die Galerie die Anzahl zurückgesetzter Gesichter an. Abbrechen
+führt keine Rücksetzung aus.</p>
+<p>Der Server prüft Rechte, Pfad und Mindesttiefe unabhängig vom Menü. Er verwendet den
+vorhandenen Pfadindex mit exakten Unterordnergrenzen, auch für Ordnernamen mit <code>%</code> oder
+<code>_</code>. Er liest keine Bilder ein und startet keine Gesichtserkennung. Die Rücksetzung
+und die Aktualisierung der Referenzen betroffener Gruppen erfolgen in einer Transaktion;
+bei Fehlern bleibt keine teilweise Rücksetzung zurück. Im Arbeitsspeicher werden nur
+die betroffenen Gruppen-IDs gehalten, keine vollständigen Gesichts- oder Bildlisten.
+Auch mehr als 500 Gesichter sind möglich. Eine Wiederholung ohne neue Ignorierungen
+ändert nichts; nach einer unklaren Antwort zuerst den Bestand prüfen.</p>
+<p>Der Formularendpunkt ist <code>POST /photos/faces/reset-ignored-directory</code> mit <code>path</code>.
+Mit <code>Accept: application/json</code> antwortet er mit <code>ok</code> und <code>restored</code>, andernfalls
+führt er zurück zum Ordner mit einer Ergebnismeldung. Einzelheiten stehen in OpenAPI.</p>
 <h2 id="personen-ansehen-und-taggen">Personen ansehen und taggen<a class="headerlink" href="#personen-ansehen-und-taggen" title="Permanent link">&para;</a></h2>
 <p>Ab BearStack <strong>0.53.0</strong> öffnet die virtuelle Kachel <strong>Personen</strong> unter <strong>Fotos</strong> eine
 Ansicht zum Durchstöbern. <strong>Alle</strong> (<code>/photos?path=.people%2Fall</code>) enthält ab
@@ -2283,7 +2331,7 @@ Die Funktion benötigt keine neue Datenbankmigration.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.62.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.63.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

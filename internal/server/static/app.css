@@ -1554,6 +1554,7 @@ label span {
   display: grid;
   gap: 4px;
   min-width: 180px;
+  max-width: min(320px, calc(100vw - 32px));
   padding: 6px;
   position: absolute;
   right: 0;
@@ -1561,15 +1562,32 @@ label span {
   z-index: 30;
 }
 
-.photo-actions-menu-list a {
+.photo-actions-menu-list a,
+.photo-actions-menu-list button {
   border-radius: var(--radius-sm);
   color: var(--text);
   padding: 9px 10px;
   text-decoration: none;
 }
 
+.photo-actions-menu-list form {
+  margin: 0;
+}
+
+.photo-actions-menu-list button {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  font: inherit;
+  text-align: left;
+  white-space: normal;
+  width: 100%;
+}
+
 .photo-actions-menu-list a:hover,
-.photo-actions-menu-list a:focus-visible {
+.photo-actions-menu-list a:focus-visible,
+.photo-actions-menu-list button:hover,
+.photo-actions-menu-list button:focus-visible {
   background: var(--surface-2);
   text-decoration: none;
 }

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.62.0
+  version: 0.63.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -2692,6 +2692,59 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {description: 'Stale source, missing target, overlapping region or face limit reached.'}
+  /photos/faces/reset-ignored-directory:
+    post:
+      tags: [Photos]
+      operationId: resetIgnoredDirectoryFaces
+      summary: Restore ignored unnamed faces in a photo folder and its descendants
+      description: >-
+        Since 0.63.0. Requires photos.edit and same-origin protection. The canonical
+        gallery-relative path must identify an existing real directory at least two
+        levels below the photo root (for example 2011/20111015-Party). Root, first-level,
+        noncanonical and virtual people paths are rejected. Atomically clears ignored
+        flags for indexed, visible faces whose person has no name in that directory
+        and its descendants. Named persons, including their ignored faces, retain
+        their assignments, names, tags, favorites and metadata. Other active faces
+        and neighbouring folders are unaffected. Search, media-type and display
+        filters do not narrow this operation. Existing admin-only visibility checks
+        apply; private faces are excluded. Uses an indexed exact path prefix range,
+        without image reads, inference or a 500-face selection limit. Only affected
+        groups have their reference caches refreshed. A repeat without intervening
+        ignores returns restored=0. No automatic retries; a later deliberate request
+        applies to the then-current ignored faces. Responses are private, no-store.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [path]
+              properties:
+                path:
+                  type: string
+                  minLength: 3
+                  maxLength: 4096
+                  description: Canonical photo directory with at least two path components.
+                  example: 2011/20111015-Party
+      responses:
+        '200':
+          description: JSON response when Accept includes application/json.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, restored]
+                properties:
+                  ok: {type: boolean, const: true}
+                  restored: {type: integer, format: int64, minimum: 0}
+        '303':
+          description: Browser form redirects to the selected photo folder with a result notice.
+          headers:
+            Location: {schema: {type: string}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
   /photos/faces/unignore:
     post:
       tags: [Photos]

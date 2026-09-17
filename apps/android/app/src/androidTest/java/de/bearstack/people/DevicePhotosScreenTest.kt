@@ -47,6 +47,23 @@ class DevicePhotosScreenTest {
         val settings = if(german) "Einstellungen" else "Settings"
         val close = if(german) "Schließen" else "Close"
         val back = if(german) "Zurück" else "Back"
+        val menu = if(german) "Weitere Optionen" else "More options"
+        val connection = if(german) "Verbindung wechseln" else "Switch connection"
+        val frame = if(german) "Fotoframe starten" else "Start photo frame"
+        val people = if(german) "Personen verwalten" else "Manage people"
+        val canManage = german // Cover both permitted and read-only menus.
+        fun checkMenu(local: Boolean = false) {
+            compose.onNodeWithContentDescription(menu).performClick()
+            compose.onNodeWithText(if(german) "Karte" else "Map").assertIsDisplayed().also {
+                if(local) it.assertIsNotEnabled()
+            }
+            compose.onNodeWithText(frame).assertIsDisplayed()
+            if(canManage) compose.onNodeWithText(people).assertIsDisplayed()
+            else compose.onNodeWithText(people).assertDoesNotExist()
+            compose.onNodeWithText(settings).assertIsDisplayed()
+            compose.onNodeWithText(connection).assertDoesNotExist()
+            compose.onNodeWithText(if(german) "Lokale Fotos öffnen" else "Open local photos").assertDoesNotExist()
+        }
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, "bearstack-device-photo.jpg")
             put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
@@ -76,6 +93,8 @@ class DevicePhotosScreenTest {
             override fun original(photo: Photo): String = error("Local original reached server")
         }
         var removed = false
+        var connectionChanges = 0
+        var peopleVisits = 0
         lateinit var controller: PhotosController
         compose.runOnUiThread { controller = PhotosController(owner, api, DevicePhotosService.SESSION) }
         try {
@@ -83,21 +102,26 @@ class DevicePhotosScreenTest {
                 val registry = checkNotNull(LocalActivityResultRegistryOwner.current)
                 CompositionLocalProvider(LocalActivityResultRegistryOwner provides registry, LocalContext provides context, LocalResources provides context.resources,
                     LocalConfiguration provides context.resources.configuration) {
-                    MaterialTheme { PhotosScreen(controller, images, false, {}, {}) }
+                    MaterialTheme { PhotosScreen(controller, images, canManage, { peopleVisits++ }, { connectionChanges++ }) }
                 }
             }
             compose.onNodeWithText(folders).performClick()
             compose.onNodeWithText(device).assertDoesNotExist()
-            compose.onNodeWithContentDescription(if(german) "Weitere Optionen" else "More options").performClick()
+            checkMenu()
             compose.onNodeWithText(settings).performClick()
+            compose.onNodeWithText(connection).assertIsDisplayed()
             compose.onNodeWithText(setting).assertIsOff().performClick().assertIsOn()
             assertTrue(DevicePhotoPreferences(app).enabled)
             compose.onNodeWithText(close).performClick()
             compose.onNodeWithText(device).assertIsDisplayed()
             compose.onNodeWithText(if(german) "Fotos" else "Photos").performClick()
             compose.onNodeWithText(device).assertDoesNotExist()
+            checkMenu()
+            androidx.test.espresso.Espresso.pressBack()
             compose.onNodeWithText(folders).performClick()
             compose.onNodeWithText(if(german) "Suchen" else "Search").performClick()
+            checkMenu()
+            androidx.test.espresso.Espresso.pressBack()
             compose.onNode(hasSetTextAction()).performTextInput("holiday")
             compose.onNode(hasSetTextAction()).performImeAction()
             compose.onNodeWithText(folders).performClick()
@@ -109,8 +133,24 @@ class DevicePhotosScreenTest {
             val callsBeforeDevice = serverCalls
             compose.onNodeWithText(device).performClick()
             compose.waitUntil(15_000) { compose.onAllNodesWithText("BearStackDeviceTest").fetchSemanticsNodes().isNotEmpty() }
+            checkMenu(local=true)
+            compose.onNodeWithText(frame).assertIsNotEnabled()
+            if(canManage) {
+                compose.onNodeWithText(people).performClick()
+                assertEquals(1, peopleVisits)
+                checkMenu(local=true)
+            }
+            compose.onNodeWithText(settings).performClick()
+            compose.onNodeWithText(connection).performClick()
+            assertEquals(1, connectionChanges)
+            compose.onNodeWithText(setting).assertDoesNotExist()
             compose.onNodeWithText("BearStackDeviceTest").performClick()
             compose.waitUntil(15_000) { compose.onAllNodesWithContentDescription("bearstack-device-photo.jpg").fetchSemanticsNodes().isNotEmpty() }
+            checkMenu(local=true)
+            compose.onNodeWithText(frame).assertIsEnabled().performClick()
+            compose.waitUntil(15_000) { compose.onAllNodesWithTag("photo-viewer-image").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithTag("photo-viewer-image").performClick()
+            compose.onNodeWithContentDescription(close).performClick()
             compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
             compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
             compose.waitUntil(15_000) { compose.onAllNodesWithContentDescription("bearstack-device-photo.jpg").fetchSemanticsNodes().isNotEmpty() }

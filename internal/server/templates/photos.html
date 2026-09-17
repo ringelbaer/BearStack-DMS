@@ -106,6 +106,12 @@
         <a href="{{.PhotoFilter.RandomURL}}">Zufall</a>
         <a href="{{.PhotoFilter.FrameURL}}">Fotoframe</a>
         {{if .PhotoFilter.MapView}}<a href="{{.PhotoFilter.GalleryURL}}">Galerie</a>{{else if .PhotoFilter.MapAvailable}}<a href="{{.PhotoFilter.MapURL}}">Karte</a>{{end}}
+        {{if and .Auth.CanPhotosEdit .PhotoFilter.CanResetIgnoredFaces}}
+        <form method="post" action="/photos/faces/reset-ignored-directory" data-confirm="Alle ignorierten, unbenannten Gesichter in „{{.Photos.Path}}“ und seinen Unterordnern zurücksetzen? Benannte Gesichter bleiben unverändert. Die Aktion gilt unabhängig von Such- und Anzeigefiltern für den gesamten Ordner.">
+          <input type="hidden" name="path" value="{{.Photos.Path}}">
+          <button type="submit">Alle ignorierten Gesichter zurücksetzen</button>
+        </form>
+        {{end}}
       </nav>
     </details>
     {{end}}

@@ -121,7 +121,11 @@ class StartupTest {
                     withTimeout(5_000) { while(vm.photos!!.state.value.loading) delay(10) }
                     assertNotNull(vm.photos!!.state.value.error)
                     compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-                    compose.onNodeWithText("Lokale Fotos öffnen").performClick()
+                    compose.onNodeWithText("Einstellungen").performClick()
+                    compose.onNodeWithText("Lokale Fotoordner anzeigen").performClick()
+                    compose.onNodeWithText("Schließen").performClick()
+                    compose.onNodeWithText("Ordner").performClick()
+                    compose.onNodeWithText("Dieses Gerät").performClick()
                     waitForText("BearStackOfflineTest")
                 }
             } else if(initial == "new") {

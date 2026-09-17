@@ -63,6 +63,7 @@ func (s *Server) handlePhotos(w http.ResponseWriter, r *http.Request) {
 	}
 	s.render(w, r, "photos.html", PageData{
 		Title:            "Fotos",
+		Notice:           r.URL.Query().Get("notice"),
 		Active:           "photos",
 		Assets:           photoPageAssets(canEditPhotos),
 		Photos:           photoView,

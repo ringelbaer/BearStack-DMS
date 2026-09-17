@@ -443,15 +443,16 @@ func photoFilterFromRequest(r *http.Request, listing photos.Listing) PhotoFilter
 	}
 	sortOptions, sortLabel := photoSortOptions(base, listing.Sort)
 	filter := PhotoFilter{
-		Path:         listing.Path,
-		Query:        listing.Query,
-		MediaType:    listing.MediaType,
-		GPSOnly:      listing.GPSOnly,
-		Sort:         listing.Sort,
-		SortLabel:    sortLabel,
-		SortOptions:  sortOptions,
-		MapView:      q.Get("view") == "map" && mapAvailable,
-		MapAvailable: mapAvailable,
+		CanResetIgnoredFaces: photos.CanResetIgnoredDirectory(listing.Path),
+		Path:                 listing.Path,
+		Query:                listing.Query,
+		MediaType:            listing.MediaType,
+		GPSOnly:              listing.GPSOnly,
+		Sort:                 listing.Sort,
+		SortLabel:            sortLabel,
+		SortOptions:          sortOptions,
+		MapView:              q.Get("view") == "map" && mapAvailable,
+		MapAvailable:         mapAvailable,
 	}
 	filter.RandomURL = pathWithQuery("/photos/random", base)
 	if !photos.IsPeopleFolder(listing.Path) && listing.Query == "" {

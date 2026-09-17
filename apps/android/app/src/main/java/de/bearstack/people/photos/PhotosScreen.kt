@@ -44,12 +44,11 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoader, canManage: Boolean,
-    onPeople: () -> Unit, onConnection: () -> Unit, search: String, onSearchChange: (String) -> Unit,
-    onSettings: () -> Unit, onDevice: (() -> Unit)?, onLocal: () -> Unit) {
+    onPeople: () -> Unit, search: String, onSearchChange: (String) -> Unit,
+    onSettings: () -> Unit, onDevice: (() -> Unit)?) {
     val text=uiStrings()
     val state by controller.state.collectAsStateWithLifecycle()
     val tab = state.tab
-    var menu by remember(state.query, tab) { mutableStateOf(false) }
     var sortMenu by remember(state.query, tab) { mutableStateOf(false) }
     var mapOpen by rememberSaveable(state.query) {mutableStateOf(false)}
     val locale = LocalConfiguration.current.locales[0]
@@ -66,7 +65,7 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
             },actions={
                 if(tab==0) PhotoDateAction(controller,state)
                 Box {
-                    IconButton(onClick={menu=false;sortMenu=true},enabled=!state.loading) {
+                    IconButton(onClick={sortMenu=true},enabled=!state.loading) {
                         Icon(painterResource(R.drawable.ic_sort),stringResource(R.string.photos_sort))
                     }
                     DropdownMenu(sortMenu,{sortMenu=false}) {
@@ -78,15 +77,14 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
                         }
                     }
                 }
-                IconButton(onClick={sortMenu=false;menu=true}) { Icon(painterResource(R.drawable.ic_more_horiz),stringResource(R.string.photos_menu)) }
-                DropdownMenu(menu,{menu=false}) {
-                    if(state.peoplePath.isNotEmpty()) DropdownMenuItem(text={Text(stringResource(R.string.photos_directory_people))},onClick={menu=false;controller.open(PhotoQuery(path=state.peoplePath,sort="ascending_name"))},enabled=!state.loading)
-                    DropdownMenuItem(text={Text(stringResource(R.string.photos_map))},onClick={menu=false;mapOpen=true},enabled=!state.loading && !state.query.path.startsWith(".people"))
-                    DropdownMenuItem(text={Text(stringResource(R.string.photos_frame))},onClick={menu=false;controller.startFrame()},enabled=!state.loading && (!state.query.path.startsWith(".people") || state.query.path.count {it=='/'}==2))
-                    if(canManage) DropdownMenuItem(text={Text(stringResource(R.string.photos_people))},onClick={menu=false;onPeople()})
-                    DropdownMenuItem(text={Text(stringResource(R.string.connection_local_photos))},onClick={menu=false;onLocal()})
-                    DropdownMenuItem(text={Text(stringResource(R.string.photos_settings))},onClick={menu=false;onSettings()})
-                    DropdownMenuItem(text={Text(stringResource(R.string.photos_connection))},onClick={menu=false;onConnection()})
+                key(state.query, tab) {
+                    PhotosMenu(onSettings,
+                        onMap=({ mapOpen=true }).takeIf { !state.loading && !state.query.path.startsWith(".people") },
+                        onFrame=controller::startFrame.takeIf { !state.loading && (!state.query.path.startsWith(".people") || state.query.path.count {it=='/'}==2) },
+                        onPeople=onPeople.takeIf { canManage },
+                        onDirectoryPeople=({ controller.open(PhotoQuery(path=state.peoplePath,sort="ascending_name")) })
+                            .takeIf { state.peoplePath.isNotEmpty() && !state.loading },
+                        onOpen={ sortMenu=false })
                 }
             })
             if(tab==2) {
