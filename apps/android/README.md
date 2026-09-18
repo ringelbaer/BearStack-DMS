@@ -1,12 +1,33 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.17.2** (`versionCode 37`). Die Servergalerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.18.0** (`versionCode 38`). Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
 
 Ab App **0.12.0** liegen die Warteschlangen als einzelne, indizierte Room-Einträge vor. Das Upgrade auf Datenbankschema 4 übernimmt automatisch die bisherigen Listen einschließlich Reihenfolge, Kartenpositionen, übersprungener Gruppen und noch nicht gesendeter Ignorieraktionen. Offene Aktionsquittungen und Statistiken bleiben erhalten. Normales Weiterblättern und Zurückgehen lesen einzelne Einträge; die Wiederherstellung nach einem Neustart verarbeitet höchstens 256 Einträge je Leseblock. Die Daten bleiben nach Server, Datensatz und Konto getrennt.
 
+
+## Navigation und Fotoframe ab Android 0.18.0
+
+Die schwebende Leiste **Fotos · Ordner · Suchen** zeigt kleinere Icons links neben
+kompakten Beschriftungen. Die Berührungsflächen bleiben mindestens 48 dp hoch.
+**Lokale Fotos öffnen** entfällt im …-Menü; **Ordner → Dieses Gerät** sowie der
+lokale Einstieg beim Anmelden und Verbindungsaufbau bleiben verfügbar.
+**Personen verwalten** wechselt aus der Galerie in die Verwaltung;
+**Personenliste** öffnet dort die benannten Personen. Auch in dieser Liste und
+einer geöffneten Person enthält **…** die Aktionen **Zurück**, **Hilfe** und
+**Verbindung wechseln** sowie bei verfügbarer Servergalerie **Fotos**.
+
+In der großen Bildansicht, Diashow und im Fotoframe öffnet das **Zahnrad** direkt
+die Wiedergabeeinstellungen. Im Fotoframe lässt sich bei aktivierter Beschriftung
+zwischen **Dateiname** (Standard) und **Ordnername** wählen. Die Auswahl bleibt nach
+einem Neustart erhalten. BearStack **0.68.0** liefert den zentral formatierten
+Ordnernamen direkt mit jedem Katalogeintrag, auch beim Nachladen und bei gemischten
+Suchergebnissen. Ältere Server zeigen in dieser Einstellung „Ordnername nicht verfügbar“;
+Dateinamen bleiben auswählbar. Lokale Fotos nutzen den Anzeigenamen ihres Gerätealbums.
+Die Einzelmarkierung auf Karten ist nur noch 16 dp groß; anklickbare Marker behalten
+eine 48-dp-Berührungsfläche.
 
 ## Einstellbarer Thumbnail-Cache
 
@@ -40,8 +61,8 @@ Galerie benötigt für ihren Katalog weiterhin den Server; der Thumbnail-Cache s
 keine vollständige Offlinegalerie bereit.
 
 Optionsmenüs verwenden überall dasselbe horizontale **…** am rechten Rand ihrer
-Leiste. Beim Benennen stehen unten der **Stift links**, die **Hilfe mittig** und
-**… rechts**; auch die Aktionen einer Gesichtsauswahl öffnen sich über **… rechts**.
+Leiste. Wiedergabeeinstellungen verwenden ein **Zahnrad**. Beim Benennen stehen unten
+**… links**, die **Hilfe mittig** und der **Stift rechts**; auch die Aktionen einer Gesichtsauswahl öffnen sich über **… rechts**.
 TalkBack nennt weiterhin den jeweiligen Zweck, etwa „Weitere Optionen“ oder
 „Gruppenaktionen“. Sortierung und Zeitintervall behalten ihre eigenen Auswahlfelder.
 
@@ -86,7 +107,7 @@ Nachladen verwenden die bestehende Galerie.
 
 ## Hilfe unter Personen
 
-Ab App **0.12.1** öffnet **Hilfe** oben im Personenbereich einen scrollbaren Dialog,
+Ab App **0.12.1** öffnet **… → Hilfe** im Personenbereich einen scrollbaren Dialog,
 wie unter **Ähnliche Gruppen**. Dort stehen die Hinweise zu ×, Vergleichsfavoriten,
 Fotovorschau und Mehrfachauswahl sowie zur Unterstützung durch ältere Server.
 Die Hilfe ist in der Personenliste und in einer geöffneten Person erreichbar.

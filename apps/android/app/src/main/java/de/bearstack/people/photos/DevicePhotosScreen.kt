@@ -74,6 +74,7 @@ fun PhotosScreen(controller: PhotosController?, images: ImageLoader?, canManage:
     connecting: Boolean = false, connectionError: UiText? = null, onRetry: (() -> Unit)? = null) {
     val context = LocalContext.current
     val preferences = remember(context) { DevicePhotoPreferences(context) }
+    val localPlayback = remember(context) { PlaybackPreferences(context) }
     var enabled by remember { mutableStateOf(preferences.enabled) }
     var deviceOpen by rememberSaveable { mutableStateOf(startOnDevice || controller == null) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
@@ -100,7 +101,7 @@ fun PhotosScreen(controller: PhotosController?, images: ImageLoader?, canManage:
     val serverState = rememberSaveableStateHolder()
     LaunchedEffect(foreground, controller) { if (foreground) controller?.thumbnailCache?.refresh() }
     if(controller == null || images == null || deviceOpen) {
-        DevicePhotosScreen(access, foreground, revision, onAccess={ permission.launch(devicePhotoPermissions()) },
+        DevicePhotosScreen(access, foreground, revision, playback=controller?.playback ?: localPlayback, onAccess={ permission.launch(devicePhotoPermissions()) },
             onSettings={ settingsOpen = true }, onPeople=onPeople.takeIf { canManage },
             serverAvailable=controller != null, onLeave={ tab ->
                 deviceOpen = false
@@ -172,7 +173,7 @@ private fun DeviceAccessControls(access: DevicePhotoAccess, onAccess: () -> Unit
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, revision: Int,
-    onAccess: () -> Unit, onSettings: () -> Unit, onPeople: (() -> Unit)?, onLeave: (Int) -> Unit,
+    onAccess: () -> Unit, onSettings: () -> Unit, onPeople: (() -> Unit)?, onLeave: (Int) -> Unit, playback: PlaybackPreferences,
     serverAvailable: Boolean = true, connectionStatus: @Composable () -> Unit = {}) {
     var path by rememberSaveable { mutableStateOf("") }
     var title by rememberSaveable { mutableStateOf("") }
@@ -198,9 +199,9 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
     }
     val scope = rememberCoroutineScope()
     val active = foreground && access != DevicePhotoAccess.NONE
-    val local = remember(active, revision, changes) {
+    val local = remember(active, revision, changes, playback) {
         if(active) PhotosController(scope, DevicePhotosService(context.contentResolver), DevicePhotosService.SESSION,
-            initialQuery=PhotoQuery(path=path)) else null
+            initialQuery=PhotoQuery(path=path),playback=playback) else null
     }
     val images = remember(local) {
         local?.let { ImageLoader.Builder(context).diskCache(null)
@@ -228,12 +229,8 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
                 onFrame=local?.let { catalog -> catalog::startFrame.takeIf { state?.loading == false && state.media.isNotEmpty() } },
                 onPeople=onPeople)
         }
-    }) }, bottomBar={ if(serverAvailable) NavigationBar {
-        listOf(R.string.photos_title to R.drawable.ic_photos, R.string.photos_folders to R.drawable.ic_folder,
-            R.string.photos_search to R.drawable.ic_search).forEachIndexed { index, (label, icon) ->
-            NavigationBarItem(selected=index == 1, onClick={ onLeave(index) },
-                icon={ Icon(painterResource(icon), null) }, label={ Text(stringResource(label)) })
-        }
+    }) }, bottomBar={ if(serverAvailable) {
+        GalleryNavigation(1,onLeave)
     } }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             connectionStatus()

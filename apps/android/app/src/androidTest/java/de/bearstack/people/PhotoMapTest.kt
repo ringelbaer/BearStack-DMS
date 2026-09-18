@@ -75,6 +75,9 @@ class PhotoMapTest {
             }}
             compose.waitUntil(10_000) {viewport.get()!=null}
             compose.onNodeWithText("© OpenStreetMap contributors").assertIsDisplayed()
+            compose.onNodeWithTag("photo-map-pin",useUnmergedTree=true).assertWidthIsEqualTo(16.dp).assertHeightIsEqualTo(16.dp)
+            compose.onNodeWithContentDescription(if(isEnglish) "1 item at this location" else "1 Aufnahme an diesem Ort")
+                .assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)
             compose.onNodeWithContentDescription(if(isEnglish) "1 item at this location" else "1 Aufnahme an diesem Ort").performClick()
             assertEquals("berlin.jpg",selected.get())
             compose.onNodeWithContentDescription(if(isEnglish) "8 items at this location" else "8 Aufnahmen an diesem Ort").performClick()

@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import de.bearstack.people.data.remote.Photo
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,19 +20,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 data class PlaybackSettings(val seconds: Int = 0, val frameSeconds: Int = 0, val repeat: Boolean = true,
-    val frameFill: Boolean = false, val frameCaptions: Boolean = true)
+    val frameFill: Boolean = false, val frameCaptions: Boolean = true, val frameFolderName: Boolean = false)
+
+internal fun frameCaption(photo: Photo, settings: PlaybackSettings, unavailable: String): String =
+    if(settings.frameFolderName) photo.folderName.ifBlank { unavailable } else photo.name
 
 class PlaybackPreferences(context: Context) {
     private val store=context.applicationContext.getSharedPreferences("photo_playback",Context.MODE_PRIVATE)
     private val mutable=MutableStateFlow(PlaybackSettings(store.getInt("seconds",0),store.getInt("frame_seconds",0),
-        store.getBoolean("repeat",true),store.getBoolean("frame_fill",false),store.getBoolean("frame_captions",true)))
+        store.getBoolean("repeat",true),store.getBoolean("frame_fill",false),store.getBoolean("frame_captions",true),store.getBoolean("frame_folder_name",false)))
     val state=mutable.asStateFlow()
     fun save(settings: PlaybackSettings) {
         val value=settings.copy(seconds=if(settings.seconds==0) 0 else settings.seconds.coerceIn(3,300),
             frameSeconds=if(settings.frameSeconds==0) 0 else settings.frameSeconds.coerceIn(3,300))
         mutable.value=value
         store.edit().putInt("seconds",value.seconds).putInt("frame_seconds",value.frameSeconds).putBoolean("repeat",value.repeat)
-            .putBoolean("frame_fill",value.frameFill).putBoolean("frame_captions",value.frameCaptions).apply()
+            .putBoolean("frame_fill",value.frameFill).putBoolean("frame_captions",value.frameCaptions).putBoolean("frame_folder_name",value.frameFolderName).apply()
     }
 }
 
@@ -53,6 +59,16 @@ class PlaybackPreferences(context: Context) {
             if(frame) {
                 PlaybackSwitch(stringResource(R.string.photos_frame_fill),draft.frameFill) {draft=draft.copy(frameFill=it)}
                 PlaybackSwitch(stringResource(R.string.photos_frame_captions),draft.frameCaptions) {draft=draft.copy(frameCaptions=it)}
+                if(draft.frameCaptions) Column(Modifier.selectableGroup()) {
+                    listOf(false to R.string.photos_caption_filename,true to R.string.photos_caption_folder).forEach { (folder,label) ->
+                        Row(Modifier.fillMaxWidth().heightIn(min=48.dp).selectable(
+                            selected=draft.frameFolderName==folder,role=Role.RadioButton,
+                            onClick={draft=draft.copy(frameFolderName=folder)}),verticalAlignment=Alignment.CenterVertically) {
+                            RadioButton(selected=draft.frameFolderName==folder,onClick=null)
+                            Text(stringResource(label),Modifier.padding(start=8.dp))
+                        }
+                    }
+                }
             }
             Text(stringResource(R.string.photos_playback_help),style=MaterialTheme.typography.bodySmall)
         }},confirmButton={TextButton(onClick={onSave(if(frame) draft.copy(frameSeconds=interval) else draft.copy(seconds=interval));onDismiss()}) {Text(stringResource(R.string.photos_save))}},

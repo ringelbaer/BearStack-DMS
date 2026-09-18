@@ -242,3 +242,58 @@ func TestPhotoCatalogLibraryPaginationFallback(t *testing.T) {
 		}
 	}
 }
+
+func TestPhotoCatalogFolderNamesUseGalleryFormatting(t *testing.T) {
+	s := faceTestServer(t)
+	image, err := os.ReadFile(filepath.Join(s.photos.Root(), "one.jpg"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct{ path, want string }{
+		{"one.jpg", "Fotos"},
+		{"2026_07_15_Sommer_Urlaub/a.jpg", "Sommer Urlaub"},
+		{"Archiv/15.03.2024 - Schöne_Ausflüge/b.jpg", "Schöne Ausflüge"},
+		{"Mein_Album/c.jpg", "Mein Album"},
+	}
+	for _, test := range cases[1:] {
+		filename := filepath.Join(s.photos.Root(), filepath.FromSlash(test.path))
+		if err := os.MkdirAll(filepath.Dir(filename), 0750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filename, image, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := s.photos.RebuildIndex(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	w := labelRequest(s, "GET", "/api/photos/v1/browse?recursive=1&section=media", "reader", "")
+	var page photoCatalogPage
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &page) != nil {
+		t.Fatalf("browse: %d %s", w.Code, w.Body.String())
+	}
+	for _, test := range cases {
+		found := false
+		for _, media := range page.Media {
+			if media.Path == test.path {
+				found = true
+				if media.FolderName != test.want {
+					t.Errorf("browse %q: %q", test.path, media.FolderName)
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("missing %q", test.path)
+		}
+		w := labelRequest(s, "GET", "/api/photos/v1/media/info?path="+url.QueryEscape(test.path), "reader", "")
+		var info struct {
+			Media photoCatalogMedia `json:"media"`
+		}
+		if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &info) != nil {
+			t.Fatalf("info: %d %s", w.Code, w.Body.String())
+		}
+		if info.Media.FolderName != test.want || info.Media.Path != test.path {
+			t.Errorf("info %q: %+v", test.path, info.Media)
+		}
+	}
+}

@@ -1,6 +1,8 @@
 package de.bearstack.people.photos
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
@@ -16,11 +18,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
@@ -115,15 +119,24 @@ internal fun PhotoMap(bounds: PhotoMapBounds, markers: List<PhotoMapMarker>, mod
             val offset=Offset((size.width/2+dx*world).toFloat(),(size.height/2+(point.y-camera.y)*world).toFloat())
             if(positioned && offset.x>=0 && offset.x<=size.width && offset.y>=0 && offset.y<=size.height) {
                 val description=stringResource(if(marker.count==1) R.string.photos_map_marker_one else R.string.photos_map_marker,marker.count)
-                FilledTonalButton(onClick={
+                val activate: () -> Unit = {
                     val extent=marker.bounds
                     val coincident=extent!=null && extent.north-extent.south<1e-7 && kotlin.math.abs(extent.east-extent.west)<1e-7
                     if((marker.count==1 && marker.path.isNotBlank()) || (marker.count>1 && (coincident || camera.zoom>=18))) onMarker(marker)
                     else camera=MapCamera(point.x,point.y,(camera.zoom+2).coerceAtMost(18.0))
-                },shape=CircleShape,contentPadding=PaddingValues(0.dp),
-                    modifier=Modifier.offset {IntOffset((offset.x-24*density).roundToInt(),(offset.y-24*density).roundToInt())}
-                        .size(48.dp).semantics {contentDescription=description}) {
-                    Text(if(marker.count==1) "●" else "${marker.count}",style=MaterialTheme.typography.labelMedium,maxLines=1)
+                }
+                // Keep a generous touch target while exposing more of the map.
+                Box(Modifier.offset {IntOffset((offset.x-24*density).roundToInt(),(offset.y-24*density).roundToInt())}
+                    .size(48.dp).then(if(marker.count>1 || marker.path.isNotBlank()) Modifier.clickable(role=Role.Button,onClick=activate) else Modifier)
+                    .semantics {contentDescription=description},contentAlignment=Alignment.Center) {
+                    if(marker.count==1) Box(Modifier.size(16.dp).testTag("photo-map-pin")
+                        .background(MaterialTheme.colorScheme.primary,CircleShape)
+                        .border(2.dp,MaterialTheme.colorScheme.onPrimary,CircleShape))
+                    else Surface(shape=CircleShape,color=MaterialTheme.colorScheme.secondaryContainer) {
+                        Box(Modifier.defaultMinSize(minWidth=32.dp,minHeight=32.dp).padding(4.dp),contentAlignment=Alignment.Center) {
+                            Text("${marker.count}",style=MaterialTheme.typography.labelMedium,maxLines=1)
+                        }
+                    }
                 }
             }
         }

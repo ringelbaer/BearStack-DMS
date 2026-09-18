@@ -135,4 +135,7 @@
     <string name="photos_cache_loading">Pflichtbestand wird aktualisiert …</string>
     <string name="photos_cache_incomplete">Der Cache konnte nicht vollständig aktualisiert werden. Verbindung und freien Gerätespeicher prüfen.</string>
     <string name="photos_cache_unavailable">Der Thumbnail-Speicher ist nicht verfügbar. Freien Gerätespeicher prüfen und die App erneut öffnen.</string>
+    <string name="photos_caption_filename">Dateiname</string>
+    <string name="photos_caption_folder">Ordnername</string>
+    <string name="photos_folder_unavailable">Ordnername nicht verfügbar</string>
 </resources>

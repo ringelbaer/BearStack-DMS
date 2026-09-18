@@ -122,6 +122,8 @@ class DevicePhotosServiceTest {
         assertEquals(listOf("303.jpg", "302.jpg", "301.jpg"), pages.first().media.take(3).map { it.name })
         assertEquals(folder.previews.map { it.path }, pages.first().media.take(2).map { it.path })
         assertEquals((303L downTo 1).map { "$it.jpg" }, pages.flatMap { it.media }.map { it.name })
+        assertTrue(pages.flatMap { it.media }.all { it.folderName == folder.name })
+        assertEquals(folder.name,service.info(pages.last().media.last().path).folderName)
         assertEquals(1, provider.folderScans)
         assertEquals(provider.openedCursors, provider.closedCursors)
     }

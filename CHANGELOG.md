@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.68.0 / Android 0.18.0 – in Entwicklung
+
+- Android: „Lokale Fotos öffnen“ aus dem Verwaltungsmenü entfernt; Ordner → Dieses Gerät und der lokale Einstieg beim Anmelden bleiben verfügbar. „Personen verwalten“ und „Personenliste“ eindeutig getrennt; Personenliste und Personendetails bündeln Zurück, Hilfe und Verbindungswechsel im …-Menü.
+- Zahnrad statt … für Großbild-, Diashow- und Fotoframe-Einstellungen. Neue gespeicherte Fotoframe-Auswahl zwischen Dateiname und formatiertem Ordnername; ältere Server zeigen bei fehlendem Ordnernamen einen Hinweis, lokale Gerätefotos ihren Album-Anzeigenamen.
+- Kompaktere Navigation mit 18-dp-Icons links vom Text; Einzelmarkierungen auf Karten nur noch 16 dp. Berührungsflächen bleiben 48 dp groß, Paging und Caches bleiben erhalten.
+- Optionales Katalogfeld `folder_name` aus `photos.MediaFolderName`, ohne zusätzliche Datenbank- oder Netzwerkabfragen. README, Android-Dokumentation, Website und OpenAPI aktualisiert.
+- MINOR für die zusätzliche Einstellung und das kompatible API-Feld; Android `versionCode 38`. Keine Datenmigration.
+- Validierung: vollständige Go-Tests für Server, Fotoverwaltung und OpenAPI; 107 JVM-Tests, 36 Emulatorregressionen und beide abschließenden Layouttests erfolgreich. Lint, Debug-/Test-APK und Website gebaut; Navigation mit normaler und doppelter Schriftgröße visuell geprüft.
+
 ### BearStack 0.67.6 – in Entwicklung
 
 - Personenübersicht: Unter **Unbenannt** steht **Ignorieren** direkt in der Batch-Leiste, auch im Auswahlmodus. Je ausgewählter Kachel wird ausschließlich das angezeigte Gesicht gesammelt über den bestehenden Endpunkt ignoriert. Weitere Gesichter und Fotos bleiben erhalten.

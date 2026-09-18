@@ -37,6 +37,7 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
     val text=uiStrings()
     val person=state.selectedPerson
     var help by remember {mutableStateOf(false)}
+    var menu by remember {mutableStateOf(false)}
     var held by remember { mutableStateOf<Long?>(null) }
     var heldDismissed by remember { mutableStateOf(false) }
     var accessible by remember { mutableStateOf(false) }
@@ -46,7 +47,7 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
     val zoomDistance=with(LocalDensity.current) { 240.dp.toPx() }
     val zoomDrag: (Float) -> Unit = { zoom=zoomAfterDrag(zoom,it,zoomDistance) }
     val enabled=!state.busy && !state.unresolved && held==null
-    val browsing=enabled && !help && !state.naming && state.removeFace==null && state.batchConfirmation==null
+    val browsing=enabled && !menu && !help && !state.naming && state.removeFace==null && state.batchConfirmation==null
     val listState=rememberLazyListState()
     val gridState=rememberLazyGridState()
     LaunchedEffect(state.namedQuery) {listState.scrollToItem(0)}
@@ -74,11 +75,18 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
         else if(person!=null) vm.closePerson() else vm.closeDirectory()
     }
     Box(Modifier.fillMaxSize()) {
-        Scaffold(topBar={ TopAppBar(title={Text(text(R.string.people_directory),maxLines=1,overflow=TextOverflow.Ellipsis)},navigationIcon={
-            TextButton(onClick={if(state.selectedFaces.isNotEmpty()) vm.clearFaceSelection() else if(person!=null) vm.closePerson() else vm.closeDirectory()},enabled=browsing) { Text(text(R.string.photos_back)) }
-        },actions={
-            TextButton(onClick={help=true},enabled=held==null && !state.naming && state.removeFace==null && state.batchConfirmation==null) {Text(text(R.string.common_help))}
-            if(state.error!=null) TextButton(onClick=vm::switchConnection,enabled=!state.busy && held==null) { Text(text(R.string.connection_title)) }
+        Scaffold(topBar={ TopAppBar(title={Text(text(R.string.people_directory),maxLines=1,overflow=TextOverflow.Ellipsis)},actions={
+            OptionsMenu(menu,{menu=it},enabled=held==null && !state.naming && state.removeFace==null && state.batchConfirmation==null) {
+                DropdownMenuItem(text={Text(text(R.string.photos_back))},enabled=enabled,onClick={
+                    menu=false
+                    if(state.selectedFaces.isNotEmpty()) vm.clearFaceSelection() else if(person!=null) vm.closePerson() else vm.closeDirectory()
+                })
+                if(vm.photos!=null) DropdownMenuItem(text={Text(text(R.string.photos_title))},enabled=enabled,
+                    onClick={menu=false;vm.openGallery()})
+                DropdownMenuItem(text={Text(text(R.string.common_help))},onClick={menu=false;help=true})
+                DropdownMenuItem(text={Text(text(R.string.photos_connection))},enabled=!state.busy,
+                    onClick={menu=false;vm.switchConnection()})
+            }
         }) },bottomBar={
             if(person!=null && state.selectedFaces.isNotEmpty()) FaceBatchBar(state,browsing,vm)
         }) { padding ->

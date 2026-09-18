@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.67.6
+  version: 0.68.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -4294,6 +4294,9 @@ components:
           type: string
         name:
           type: string
+        folder_name:
+          type: string
+          description: Containing folder label formatted by the shared gallery rules (since 0.68.0). Removes date prefixes and replaces underscores; root media use Fotos. Clients must not derive labels from technical paths. Available in browse, map media and media info without extra requests.
         type:
           type: string
           enum:

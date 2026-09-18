@@ -11,7 +11,7 @@
     <string name="connection_connect">Verbinden</string>
     <string name="people_statistics">Statistik</string>
     <string name="people_labeling">Personen benennen</string>
-    <string name="people_directory">Personen verwalten</string>
+    <string name="people_directory">Personenliste</string>
     <string name="people_similar_groups">Ähnliche Gruppen</string>
     <string name="people_return_labeling">Zur Bearbeitung</string>
     <string name="people_review_skipped">Übersprungene bearbeiten (%1$d)</string>

@@ -117,7 +117,6 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
         Scaffold(topBar={ TopAppBar(title={Text(if(statistics) text(R.string.people_statistics) else text(R.string.people_labeling))},actions={
             OptionsMenu(menu,{menu=it}) {
                 if(vm.photos!=null) DropdownMenuItem(text={Text(stringResource(R.string.photos_title))},onClick={vm.openGallery();menu=false},enabled=enabled)
-                DropdownMenuItem(text={Text(text(R.string.connection_local_photos))},onClick={vm.openDevicePhotos();menu=false})
                 DropdownMenuItem(text={Text(text(R.string.people_directory))},onClick={vm.openDirectory();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(text(R.string.people_similar_groups))},onClick={vm.openMergeReview();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(if(statistics) text(R.string.people_return_labeling) else text(R.string.people_statistics))},onClick={statistics=!statistics;menu=false},enabled=enabled)

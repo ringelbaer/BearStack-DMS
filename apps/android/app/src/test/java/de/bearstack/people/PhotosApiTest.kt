@@ -9,6 +9,25 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PhotosApiTest {
+    @Test fun frameCaptionUsesServerLabelsAndNeverDerivesRawPathsOnOlderServers()=runBlocking {
+        var folder="\"folder_name\":\"Sommer Urlaub\","
+        val client=OkHttpClient.Builder().addInterceptor {chain ->
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body("""{"media":{"path":"2026_07_15_Sommer_Urlaub/a.jpg","name":"a.jpg",$folder"type":"image","mime":"image/jpeg","version":"1","modified":"2026-09-09T10:00:00Z","bytes":1,"width":1,"height":1}}""".toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        try {
+            val api=PhotosApi(client,"https://example.test/")
+            val settings=de.bearstack.people.photos.PlaybackSettings(frameFolderName=true)
+            val photo=api.info("2026_07_15_Sommer_Urlaub/a.jpg")
+            assertEquals("Sommer Urlaub",de.bearstack.people.photos.frameCaption(photo,settings,"Unavailable"))
+            assertEquals("a.jpg",de.bearstack.people.photos.frameCaption(photo,settings.copy(frameFolderName=false),"Unavailable"))
+            folder=""
+            val legacy=api.info(photo.path)
+            assertEquals("Unavailable",de.bearstack.people.photos.frameCaption(legacy,settings,"Unavailable"))
+            assertEquals(photo.path,legacy.path)
+        } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
+    }
+
     @Test fun peopleCountSortingRequiresAnExplicitSessionCapability()=runBlocking {
         var capability=""
         val client=OkHttpClient.Builder().addInterceptor {chain ->

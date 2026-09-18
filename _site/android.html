@@ -512,6 +512,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#navigation-und-fotoframe-ab-android-0180" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Navigation und Fotoframe ab Android 0.18.0
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
   <a href="#einstellbarer-thumbnail-cache" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -997,6 +1008,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#navigation-und-fotoframe-ab-android-0180" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Navigation und Fotoframe ab Android 0.18.0
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
   <a href="#einstellbarer-thumbnail-cache" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1340,11 +1362,29 @@
 
 
 <h1 id="bearstack-fotos-fur-android">BearStack Fotos für Android<a class="headerlink" href="#bearstack-fotos-fur-android" title="Permanent link">&para;</a></h1>
-<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.17.2</strong> (<code>versionCode 37</code>). Die Servergalerie benötigt
+<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.18.0</strong> (<code>versionCode 38</code>). Die Servergalerie benötigt
 <strong>BearStack 0.50.0</strong>, ein aktiviertes Fotomodul und <code>photos.read</code>. Personenverwaltung
 benötigt zusätzlich <code>photos.edit</code>; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.</p>
 <p>Ab App <strong>0.12.0</strong> liegen die Warteschlangen als einzelne, indizierte Room-Einträge vor. Das Upgrade auf Datenbankschema 4 übernimmt automatisch die bisherigen Listen einschließlich Reihenfolge, Kartenpositionen, übersprungener Gruppen und noch nicht gesendeter Ignorieraktionen. Offene Aktionsquittungen und Statistiken bleiben erhalten. Normales Weiterblättern und Zurückgehen lesen einzelne Einträge; die Wiederherstellung nach einem Neustart verarbeitet höchstens 256 Einträge je Leseblock. Die Daten bleiben nach Server, Datensatz und Konto getrennt.</p>
+<h2 id="navigation-und-fotoframe-ab-android-0180">Navigation und Fotoframe ab Android 0.18.0<a class="headerlink" href="#navigation-und-fotoframe-ab-android-0180" title="Permanent link">&para;</a></h2>
+<p>Die schwebende Leiste <strong>Fotos · Ordner · Suchen</strong> zeigt kleinere Icons links neben
+kompakten Beschriftungen. Die Berührungsflächen bleiben mindestens 48 dp hoch.
+<strong>Lokale Fotos öffnen</strong> entfällt im …-Menü; <strong>Ordner → Dieses Gerät</strong> sowie der
+lokale Einstieg beim Anmelden und Verbindungsaufbau bleiben verfügbar.
+<strong>Personen verwalten</strong> wechselt aus der Galerie in die Verwaltung;
+<strong>Personenliste</strong> öffnet dort die benannten Personen. Auch in dieser Liste und
+einer geöffneten Person enthält <strong>…</strong> die Aktionen <strong>Zurück</strong>, <strong>Hilfe</strong> und
+<strong>Verbindung wechseln</strong> sowie bei verfügbarer Servergalerie <strong>Fotos</strong>.</p>
+<p>In der großen Bildansicht, Diashow und im Fotoframe öffnet das <strong>Zahnrad</strong> direkt
+die Wiedergabeeinstellungen. Im Fotoframe lässt sich bei aktivierter Beschriftung
+zwischen <strong>Dateiname</strong> (Standard) und <strong>Ordnername</strong> wählen. Die Auswahl bleibt nach
+einem Neustart erhalten. BearStack <strong>0.68.0</strong> liefert den zentral formatierten
+Ordnernamen direkt mit jedem Katalogeintrag, auch beim Nachladen und bei gemischten
+Suchergebnissen. Ältere Server zeigen in dieser Einstellung „Ordnername nicht verfügbar“;
+Dateinamen bleiben auswählbar. Lokale Fotos nutzen den Anzeigenamen ihres Gerätealbums.
+Die Einzelmarkierung auf Karten ist nur noch 16 dp groß; anklickbare Marker behalten
+eine 48-dp-Berührungsfläche.</p>
 <h2 id="einstellbarer-thumbnail-cache">Einstellbarer Thumbnail-Cache<a class="headerlink" href="#einstellbarer-thumbnail-cache" title="Permanent link">&para;</a></h2>
 <p>Ab App <strong>0.16.0</strong> lässt sich unter <strong>… → Einstellungen → Thumbnail-Cache</strong> das
 Speicherbudget von <strong>64 bis 2048 MiB</strong> in 64-MiB-Schritten einstellen; Standard sind
@@ -1372,8 +1412,8 @@ Lokale Gerätefotos verwenden weiterhin ihren eigenen Arbeitsspeichercache. Die
 Galerie benötigt für ihren Katalog weiterhin den Server; der Thumbnail-Cache stellt
 keine vollständige Offlinegalerie bereit.</p>
 <p>Optionsmenüs verwenden überall dasselbe horizontale <strong>…</strong> am rechten Rand ihrer
-Leiste. Beim Benennen stehen unten der <strong>Stift links</strong>, die <strong>Hilfe mittig</strong> und
-<strong>… rechts</strong>; auch die Aktionen einer Gesichtsauswahl öffnen sich über <strong>… rechts</strong>.
+Leiste. Wiedergabeeinstellungen verwenden ein <strong>Zahnrad</strong>. Beim Benennen stehen unten
+<strong>… links</strong>, die <strong>Hilfe mittig</strong> und der <strong>Stift rechts</strong>; auch die Aktionen einer Gesichtsauswahl öffnen sich über <strong>… rechts</strong>.
 TalkBack nennt weiterhin den jeweiligen Zweck, etwa „Weitere Optionen“ oder
 „Gruppenaktionen“. Sortierung und Zeitintervall behalten ihre eigenen Auswahlfelder.</p>
 <h2 id="personen-unter-ordner-ansehen">Personen unter Ordner ansehen<a class="headerlink" href="#personen-unter-ordner-ansehen" title="Permanent link">&para;</a></h2>
@@ -1409,7 +1449,7 @@ zum ursprünglichen Ordner. Der Eintrag wird nur angezeigt, wenn der Server die
 Funktion anbietet. Lesen genügt; Suche, Sortierung, Datumsgruppen und seitenweises
 Nachladen verwenden die bestehende Galerie.</p>
 <h2 id="hilfe-unter-personen">Hilfe unter Personen<a class="headerlink" href="#hilfe-unter-personen" title="Permanent link">&para;</a></h2>
-<p>Ab App <strong>0.12.1</strong> öffnet <strong>Hilfe</strong> oben im Personenbereich einen scrollbaren Dialog,
+<p>Ab App <strong>0.12.1</strong> öffnet <strong>… → Hilfe</strong> im Personenbereich einen scrollbaren Dialog,
 wie unter <strong>Ähnliche Gruppen</strong>. Dort stehen die Hinweise zu ×, Vergleichsfavoriten,
 Fotovorschau und Mehrfachauswahl sowie zur Unterstützung durch ältere Server.
 Die Hilfe ist in der Personenliste und in einer geöffneten Person erreichbar.

@@ -18,7 +18,7 @@ data class Photo(val path: String, val name: String, val type: String, val mime:
     val modified: String, val captured: String?, val bytes: Long, val width: Int, val height: Int,
     val camera: String = "", val lens: String = "", val latitude: Double? = null, val longitude: Double? = null,
     val rating: Double? = null, val tags: List<String> = emptyList(), val keywords: List<String> = emptyList(),
-    val people: List<String> = emptyList(), val faceId: Long = 0) {
+    val people: List<String> = emptyList(), val faceId: Long = 0, val folderName: String = "") {
     val date: String get() = captured ?: modified
 }
 data class PhotoFolder(val path: String, val name: String, val date: String?, val count: Int,
@@ -215,7 +215,7 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
         o.optString("camera"),o.optString("lens"),o.optionalDouble("latitude"),o.optionalDouble("longitude"),
         o.optionalDouble("rating"),o.stringList("tags"),o.stringList("keywords"),
         ((o.optJSONArray("faces")?.objects {it.optString("Name")} ?: emptyList()) +
-            (o.optJSONArray("automatic_faces")?.objects {it.optString("name")} ?: emptyList())).distinct(),o.optLong("face_id"))
+            (o.optJSONArray("automatic_faces")?.objects {it.optString("name")} ?: emptyList())).distinct(),o.optLong("face_id"),o.optString("folder_name"))
     private fun post(o: JSONObject) = PhotoBlog(o.getString("path"),o.getString("name"),o.optionalString("date"),o.getString("modified"),o.optString("text"),o.optString("html"))
 }
 private fun JSONObject.optionalString(key: String): String? = if(isNull(key)) null else optString(key).takeIf { it.isNotBlank() }

@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.geometry.Offset
@@ -38,7 +39,7 @@ class PhotosScreenTest {
         val images=ImageLoader.Builder(context).build()
         val owner=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
         val photos=(listOf("first.jpg","second.jpg")+(2 until photoCount).map {"photo-$it.jpg"})
-            .map {Photo(it,it,"image","image/jpeg","1","2026-09-09T10:00:00Z",null,1024,400,300)}
+            .map {Photo(it,it,"image","image/jpeg","1","2026-09-09T10:00:00Z",null,1024,400,300,folderName=if(it=="first.jpg") "Sommer Urlaub" else "Fotos")}
         val api=object:PhotosService {
             var blogAttempts=0
             var infoAttempts=0
@@ -108,8 +109,23 @@ class PhotosScreenTest {
         val navigation=compose.onNodeWithTag("gallery-navigation")
         val gallery=compose.onNodeWithTag("photo-gallery")
         val labels=if(locale==Locale.GERMAN) listOf("Fotos","Ordner","Suchen") else listOf("Photos","Folders","Search")
+        compose.onRoot().captureToImage().asAndroidBitmap().let { shot ->
+            File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir,"gallery-navigation-$fontScale.png")
+                .outputStream().use {shot.compress(Bitmap.CompressFormat.PNG,100,it)}
+        }
         val bounds=navigation.getUnclippedBoundsInRoot()
+        if(fontScale==1f) assertTrue("Compact bar",bounds.bottom-bounds.top<=57.dp)
         labels.forEachIndexed { index,label ->
+            val icon=compose.onNodeWithTag("gallery-navigation-icon-$index",useUnmergedTree=true).getUnclippedBoundsInRoot()
+            val labelNode=compose.onNodeWithText(label,useUnmergedTree=true)
+            val labelBounds=labelNode.getUnclippedBoundsInRoot()
+            labelNode.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { action ->
+                val layout=mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+                action(layout)
+                assertEquals("Navigation label should stay on one line",1,layout.single().lineCount)
+            }
+            assertTrue("Icon must sit left of label",icon.right<=labelBounds.left)
+            assertEquals(18f,(icon.right-icon.left).value,.5f)
             compose.onNodeWithText(label).assertIsDisplayed().performClick()
             compose.waitUntil { !controller.state.value.loading && controller.state.value.tab==index }
             compose.onNodeWithText(label).assertIsSelected()
@@ -324,6 +340,25 @@ class PhotosScreenTest {
         compose.onNodeWithContentDescription("first.jpg").assertDoesNotExist()
         compose.onNodeWithContentDescription("Weitere Optionen").performClick()
         compose.onNodeWithText("Personen verwalten").assertDoesNotExist()
+    }
+    @Test fun frameCaptionChoiceUsesEachPhotosFormattedFolderAndCanBeCancelled() = screen(Locale.ENGLISH) {controller,_ ->
+        compose.onNodeWithContentDescription("More options").performClick()
+        compose.onNodeWithText("Start photo frame").performClick()
+        compose.waitUntil {controller.state.value.frame && controller.state.value.selected!=null}
+        compose.onNodeWithTag("photo-viewer-image").performClick()
+        compose.onNodeWithContentDescription("Photo frame settings").performClick()
+        compose.onNodeWithText("Folder name").performScrollTo().performClick()
+        compose.onNodeWithText("Cancel").performClick()
+        compose.onNodeWithContentDescription("Photo frame settings").performClick()
+        compose.onNodeWithText("File name").performScrollTo().assertIsSelected()
+        compose.onNodeWithText("Folder name").performScrollTo().performClick()
+        compose.onNodeWithText("Save").performClick()
+        compose.onNodeWithTag("photo-viewer-image").performClick()
+        compose.onNodeWithText("Sommer Urlaub").assertIsDisplayed()
+        compose.onNodeWithText("first.jpg").assertDoesNotExist()
+        compose.onNodeWithTag("photo-viewer-image").performTouchInput {swipeLeft()}
+        compose.waitUntil {controller.state.value.selected=="second.jpg"}
+        compose.onNodeWithText("Fotos").assertIsDisplayed()
     }
     @Test fun slideshowSettingsAdvanceOnlyAfterPlaybackStarts() = screen(Locale.ENGLISH) {_,_ ->
         compose.onNodeWithContentDescription("first.jpg").performClick()

@@ -128,7 +128,7 @@ internal class DevicePhotosService(private val resolver: ContentResolver) : Phot
         return Photo(ContentUris.withAppendedId(collection, cursor.getLong(0)).toString(),
             cursor.getString(1).orEmpty(), "image", cursor.getString(2) ?: "image/*",
             "$modified:${cursor.getLong(5)}", date(modified * 1000), captured.takeIf { it > 0 }?.let(::date),
-            cursor.getLong(5), cursor.getInt(6), cursor.getInt(7))
+            cursor.getLong(5), cursor.getInt(6), cursor.getInt(7),folderName=cursor.getString(8).orEmpty())
     }
 
     private suspend fun <T> read(block: (CancellationSignal) -> T): T = coroutineScope {
@@ -150,7 +150,7 @@ internal class DevicePhotosService(private val resolver: ContentResolver) : Phot
         val SESSION = PhotoSession("device", false, 240, 240, 1280, 2048, 5, 8)
         private val PHOTO_COLUMNS = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME,
             MediaStore.Images.Media.MIME_TYPE, MediaStore.Images.Media.DATE_MODIFIED, MediaStore.Images.Media.DATE_TAKEN,
-            MediaStore.Images.Media.SIZE, MediaStore.Images.Media.WIDTH, MediaStore.Images.Media.HEIGHT)
+            MediaStore.Images.Media.SIZE, MediaStore.Images.Media.WIDTH, MediaStore.Images.Media.HEIGHT, MediaStore.Images.Media.BUCKET_DISPLAY_NAME)
         private fun date(milliseconds: Long) = Instant.ofEpochMilli(milliseconds).atZone(ZoneId.systemDefault()).toOffsetDateTime().toString()
     }
 }

@@ -1,6 +1,14 @@
 # BearStack
 
-Aktuelle Version: **0.67.6** · Android-App: **0.17.2**.
+Aktuelle Version: **0.68.0** · Android-App: **0.18.0**.
+
+Android **0.18.0** vereinfacht die Menüs: „Personen verwalten“ und „Personenliste“
+sind eindeutig getrennt, die Personenliste nutzt ebenfalls **…**, lokale Fotos sind
+über **Ordner → Dieses Gerät** erreichbar. Ein **Zahnrad** öffnet die Einstellungen
+für Großbild, Diashow und Fotoframe. Dort lässt sich dauerhaft **Dateiname oder
+formatierter Ordnername** wählen (Ordnername ab Server **0.68.0**). Die schwebende
+Navigation hat kleinere Icons links vom Text und weniger Padding; Karten zeigen
+kleinere Einzelmarkierungen bei unverändert großen Berührungsflächen.
 
 **Android 0.17.2** lässt die Galerie-Navigation **Fotos · Ordner · Suchen** über dem Inhalt schweben. Das Raster scrollt hinter der Leiste weiter; die letzte Reihe bleibt vollständig erreichbar.
 

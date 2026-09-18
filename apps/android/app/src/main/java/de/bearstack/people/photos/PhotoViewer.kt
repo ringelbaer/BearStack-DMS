@@ -155,7 +155,7 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                                     if(current.type=="image") PhotoShareAction(current,controller.service,onShare={playing=false;controls=true})
                                     controller.downloads?.let {DownloadPhotoAction(current,it)}
                                     IconButton(onClick={infoOpen=true}) {Icon(painterResource(R.drawable.ic_info),stringResource(R.string.photos_info))}
-                                    if(!standalone) IconButton(onClick={settingsOpen=true}) {Icon(painterResource(R.drawable.ic_more_horiz),stringResource(if(frame) R.string.photos_frame_settings else R.string.photos_slideshow_settings))}
+                                    if(!standalone) IconButton(onClick={settingsOpen=true}) {Icon(painterResource(R.drawable.ic_settings),stringResource(if(frame) R.string.photos_frame_settings else R.string.photos_slideshow_settings))}
                                 })
                             controller.downloads?.let {PhotoDownloadStatus(it)}
                             if(!standalone && "media" in catalog.loadingSections) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -183,7 +183,7 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                     } else if(frame && settings.frameCaptions) {
                         Surface(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(20.dp),color=Color.Black.copy(alpha=.6f)) {
                             Column(Modifier.padding(horizontal=16.dp,vertical=8.dp),horizontalAlignment=Alignment.CenterHorizontally) {
-                                Text(current.name,maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.titleSmall)
+                                Text(frameCaption(current,settings,stringResource(R.string.photos_folder_unavailable)),maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.titleSmall)
                                 Text(photoDateLabel(current.date,locale),style=MaterialTheme.typography.bodySmall)
                             }
                         }

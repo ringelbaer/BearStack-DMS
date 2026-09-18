@@ -11,7 +11,7 @@
     <string name="connection_connect">Connect</string>
     <string name="people_statistics">Statistics</string>
     <string name="people_labeling">Name people</string>
-    <string name="people_directory">People</string>
+    <string name="people_directory">People list</string>
     <string name="people_similar_groups">Similar groups</string>
     <string name="people_return_labeling">Return to naming</string>
     <string name="people_review_skipped">Review skipped groups (%1$d)</string>

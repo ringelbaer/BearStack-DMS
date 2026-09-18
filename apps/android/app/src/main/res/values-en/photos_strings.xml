@@ -135,4 +135,7 @@
     <string name="photos_cache_loading">Updating required thumbnails…</string>
     <string name="photos_cache_incomplete">The cache could not be fully updated. Check your connection and available device storage.</string>
     <string name="photos_cache_unavailable">Thumbnail storage is unavailable. Check available device storage and reopen the app.</string>
+    <string name="photos_caption_filename">File name</string>
+    <string name="photos_caption_folder">Folder name</string>
+    <string name="photos_folder_unavailable">Folder name unavailable</string>
 </resources>

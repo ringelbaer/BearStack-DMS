@@ -100,18 +100,8 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
             }
         }
     },bottomBar={
-        Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal+WindowInsetsSides.Bottom))
-            .padding(horizontal=20.dp,vertical=8.dp),contentAlignment=Alignment.Center) {
-            Surface(shape=RoundedCornerShape(percent=50),shadowElevation=3.dp,modifier=Modifier.widthIn(max=440.dp).testTag("gallery-navigation")) {
-            NavigationBar(windowInsets=WindowInsets(0,0,0,0),containerColor=MaterialTheme.colorScheme.surfaceContainer) {
-                listOf(R.string.photos_title to R.drawable.ic_photos,R.string.photos_folders to R.drawable.ic_folder,R.string.photos_search to R.drawable.ic_search)
-                    .forEachIndexed { index,(label,icon) ->
-                        NavigationBarItem(selected=tab==index,onClick={
-                            if(tab!=index) { controller.open(PhotoQuery(query=if(index==2) search.trim() else "",recursive=index!=1),tab=index) }
-                        },icon={Icon(painterResource(icon),null)},label={Text(stringResource(label))})
-                    }
-            }
-            }
+        GalleryNavigation(tab) { index ->
+            if(tab!=index) controller.open(PhotoQuery(query=if(index==2) search.trim() else "",recursive=index!=1),tab=index)
         }
     }) { padding ->
         // Let the grid scroll behind the floating navigation. Its bottom inset is

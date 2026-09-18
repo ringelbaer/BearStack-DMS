@@ -29,12 +29,12 @@ data class PhotosState(val query: PhotoQuery = PhotoQuery(recursive=true), val t
 // Connection-scoped state: changing a folder, search or account cancels its
 // requests. Additional section pages never overwrite another section's data.
 class PhotosController(parent: CoroutineScope, val service: PhotosService, val session: PhotoSession,
-    application: android.content.Context? = null, initialQuery: PhotoQuery = PhotoQuery(recursive=true)) {
+    application: android.content.Context? = null, initialQuery: PhotoQuery = PhotoQuery(recursive=true),
+    val playback: PlaybackPreferences? = application?.let {PlaybackPreferences(it)}) {
     private val scope = CoroutineScope(parent.coroutineContext + SupervisorJob(parent.coroutineContext[Job]))
     private val mutable = MutableStateFlow(PhotosState())
     val state = mutable.asStateFlow()
     val downloads = application?.let {PhotoDownloads(it,scope,service)}
-    val playback = application?.let {PlaybackPreferences(it)}
     internal var thumbnailCache: de.bearstack.people.media.ThumbnailCache? = null
     private val application=application?.applicationContext
     private val preloader=this.application?.let {WifiOriginalPreloader(it,scope)}

@@ -37,7 +37,9 @@ class PeopleDirectoryTest {
             }
             idle(vm)
             compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-            compose.onNodeWithText("Personen verwalten").performClick()
+            compose.onNodeWithText("Lokale Fotos öffnen").assertDoesNotExist()
+            compose.onNodeWithText("Personen verwalten").assertDoesNotExist()
+            compose.onNodeWithText("Personenliste").performClick()
             idle(vm)
             if(openDetail) {compose.onNodeWithText("Anna").performClick();idle(vm)}
             test(vm,service)
@@ -47,6 +49,8 @@ class PeopleDirectoryTest {
 
     @Test fun helpIsAvailableInDirectoryAndClosesWithoutNavigation() = screen(openDetail=false) {vm,api ->
         compose.onNodeWithText("×: Zuordnung",substring=true).assertDoesNotExist()
+        compose.onNodeWithText("Hilfe").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
         compose.onNodeWithText("Hilfe").performClick()
         compose.onNodeWithText("×: Zuordnung",substring=true).assertIsDisplayed()
         compose.onNodeWithText("Schließen").performClick()
@@ -57,6 +61,8 @@ class PeopleDirectoryTest {
         compose.onNodeWithText("×: Zuordnung",substring=true).assertDoesNotExist()
         compose.onNodeWithText("Über die Checkboxen",substring=true).assertDoesNotExist()
         compose.onNodeWithTag("select-face-30").performScrollTo().performClick()
+        compose.onNodeWithText("Hilfe").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
         compose.onNodeWithText("Hilfe").performClick()
         compose.onNodeWithText("Über die Checkboxen",substring=true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Schließen").assertIsDisplayed().performClick()
@@ -83,6 +89,7 @@ class PeopleDirectoryTest {
         compose.onNodeWithText("Entfernen").performClick();idle(vm)
         compose.onNodeWithText("Noch keine benannten Personen vorhanden.").assertExists()
         assertEquals(4,api.commits);assertEquals("",api.people.getValue(4).name)
+        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
         compose.onNodeWithText("Zurück").performClick();idle(vm)
         compose.onNodeWithText("Personen benennen").assertExists()
         assertEquals(1L,vm.state.value.person!!.id)
@@ -138,6 +145,7 @@ class PeopleDirectoryTest {
         compose.onNodeWithText("Person umbenennen").performClick()
         compose.onNodeWithText("Name").performTextReplacement("Anderer Name")
         compose.onNodeWithText("Speichern").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
         compose.onNodeWithText("Zurück").performClick();idle(vm)
         compose.onNodeWithText("Keine Personen gefunden.").assertIsDisplayed()
         compose.onNodeWithText("Löschen").performClick()
