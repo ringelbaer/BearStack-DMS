@@ -1177,7 +1177,137 @@ async function testPeopleMergePrefersNamedSelection() {
   }
 }
 
+function frameFixture({ total = 605, hidden = false, delayPage = 0, video = false } = {}) {
+  const document = new TestDocument();
+  document.hidden = hidden;
+  const image = el("img", { "data-photo-frame-image": "" });
+  const movie = el("video", { "data-photo-frame-video": "", hidden: true });
+  let plays = 0, pauses = 0;
+  movie.pause = () => { pauses++; };
+  movie.play = () => { plays++; return Promise.resolve(); };
+  const title = el("span", { "data-photo-frame-title": "" });
+  const count = el("span", { "data-photo-frame-count": "" });
+  document.body.append(el("div", { "data-photo-frame": "", "data-photo-frame-items-url": "/photos/frame/items" }, [image, movie, title, count]));
+  const context = createContext(document);
+  const windowEvents = new Map();
+  context.addEventListener = (name, callback) => windowEvents.set(name, callback);
+  const requests = [];
+  let downloads = 0, aborted = 0, release;
+  context.Image = class extends TestElement {
+    constructor() { super("img"); }
+    set src(value) { this.setAttribute("src", value); downloads++; this.onload?.(); }
+  };
+  context.BearStack = { photos: {
+    applyPhotoItemDetails: (item, data) => Object.assign(item, data),
+    bestPhotoDisplaySrc: (item) => item.src,
+  } };
+  context.fetch = (url, options) => {
+    const page = Number(new URL(url).searchParams.get("page"));
+    requests.push(page);
+    const response = () => ({ ok: true, json: async () => ({ total, has_next: page * 200 < total,
+      media: Array.from({ length: Math.max(0, Math.min(200, total - (page - 1) * 200)) }, (_, i) => {
+        const id = (page - 1) * 200 + i;
+        return { title: String(id), type: video ? "video" : "image", src: "/image/" + id };
+      }) }) });
+    if (page !== delayPage) return Promise.resolve(response());
+    return new Promise((resolve, reject) => {
+      release = () => resolve(response());
+      options.signal.addEventListener("abort", () => { aborted++; reject(Object.assign(new Error("aborted"), { name: "AbortError" })); });
+    });
+  };
+  // Observe the actual frame array's peak size without retaining its entries.
+  vm.runInContext(`globalThis.framePeak = 0;
+    const arrayPrototype = Object.getPrototypeOf([]);
+    const originalPush = arrayPrototype.push;
+    arrayPrototype.push = function(...values) {
+      const length = originalPush.apply(this, values);
+      if (values[0]?.detailsLoaded) globalThis.framePeak = Math.max(globalThis.framePeak, length);
+      return length;
+    };`, context);
+  runScripts(context, ["app-photos-frame.js"]);
+  document.dispatchEvent({ type: "DOMContentLoaded" });
+  return { context, document, image, movie, title, count, requests,
+    downloads: () => downloads, aborted: () => aborted, plays: () => plays, pauses: () => pauses,
+    release: () => release(),
+    visibility(value) { document.hidden = value; document.dispatchEvent({ type: "visibilitychange" }); },
+    event(name) { windowEvents.get(name)(); },
+    async tick() { context.__runIntervals(); await new Promise(setImmediate); },
+  };
+}
+
+async function testPhotoFrameBoundsMemoryAndPreservesSequenceAcrossCycles() {
+  const f = frameFixture();
+  await new Promise(setImmediate);
+  const seen = [f.title.textContent];
+  for (let i = 1; i < 1220; i++) { await f.tick(); seen.push(f.title.textContent); }
+  assert.deepEqual(seen, Array.from({ length: 1220 }, (_, i) => String(i % 605)));
+  assert.ok(f.context.framePeak <= 400, `retained ${f.context.framePeak} items`);
+  assert.deepEqual(f.requests, [1, 2, 3, 4, 1, 2, 3, 4, 1]);
+  assert.equal(f.count.textContent, "10 von 605 Medien");
+}
+
+async function testPhotoFramePausesHiddenPagesAndResumesWithoutAdvancing() {
+  const f = frameFixture({ hidden: true, video: true });
+  await f.tick();
+  assert.equal(f.requests.length, 0);
+  f.visibility(false);
+  await new Promise(setImmediate);
+  assert.equal(f.title.textContent, "0");
+  const plays = f.plays();
+  f.visibility(true);
+  for (let i = 0; i < 20; i++) await f.tick();
+  assert.equal(f.requests.length, 1);
+  assert.equal(f.plays(), plays);
+  assert.ok(f.pauses() > 0);
+  f.visibility(false);
+  assert.equal(f.title.textContent, "0");
+  await f.tick();
+  assert.equal(f.title.textContent, "1");
+  f.event("pagehide");
+  await f.tick();
+  assert.equal(f.title.textContent, "1");
+  f.event("pageshow");
+  await f.tick();
+  assert.equal(f.title.textContent, "2");
+}
+
+async function testPhotoFrameWaitsForSlowPagesAndCancelsHiddenFetches() {
+  const f = frameFixture({ delayPage: 2 });
+  await new Promise(setImmediate);
+  for (let i = 0; i < 205; i++) await f.tick();
+  assert.equal(f.title.textContent, "199");
+  assert.deepEqual(f.requests, [1, 2]);
+  f.visibility(true);
+  await new Promise(setImmediate);
+  assert.equal(f.aborted(), 1);
+  const downloads = f.downloads();
+  for (let i = 0; i < 10; i++) await f.tick();
+  assert.equal(f.downloads(), downloads);
+  f.visibility(false);
+  await f.tick();
+  assert.deepEqual(f.requests, [1, 2, 2]);
+  f.release();
+  await new Promise(setImmediate);
+  assert.equal(f.title.textContent, "200");
+  await f.tick();
+  assert.equal(f.title.textContent, "201");
+}
+
+async function testPhotoFrameEmptyGalleryStopsAndInitializationIsIdempotent() {
+  const f = frameFixture({ total: 0 });
+  await new Promise(setImmediate);
+  f.document.dispatchEvent({ type: "DOMContentLoaded" });
+  for (let i = 0; i < 20; i++) await f.tick();
+  assert.deepEqual(f.requests, [1]);
+  assert.equal(f.downloads(), 0);
+  assert.equal(f.count.textContent, "Keine Medien");
+}
+
 const tests = [
+  testPhotoFrameEmptyGalleryStopsAndInitializationIsIdempotent,
+  testPhotoFrameBoundsMemoryAndPreservesSequenceAcrossCycles,
+  testPhotoFramePausesHiddenPagesAndResumesWithoutAdvancing,
+  testPhotoFrameWaitsForSlowPagesAndCancelsHiddenFetches,
   testPeopleMergePrefersNamedSelection,
   testPeopleRemembersPageAndHonorsExplicitFilters,
   testPeopleRefreshRetainsImagesWhenCountsChange,

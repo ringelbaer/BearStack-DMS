@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -483,6 +484,14 @@ func registerSQLiteFunctions() error {
 	registerSQLiteFunctionsOnce.Do(func() {
 		if err := sqlitefuncs.RegisterGermanFold(); err != nil {
 			registerSQLiteFunctionsErr = err
+			return
+		}
+		// Match folderNameLess, including Unicode case mapping (SQLite NOCASE is ASCII-only).
+		registerSQLiteFunctionsErr = sqlite.RegisterDeterministicScalarFunction("bearstack_folder_name_key", 1, func(_ *sqlite.FunctionContext, args []driver.Value) (driver.Value, error) {
+			value, _ := args[0].(string)
+			return strings.ToLower(value), nil
+		})
+		if registerSQLiteFunctionsErr != nil {
 			return
 		}
 		registerSQLiteFunctionsErr = sqlite.RegisterDeterministicScalarFunction("bearstack_stable_hash", 1, func(_ *sqlite.FunctionContext, args []driver.Value) (driver.Value, error) {

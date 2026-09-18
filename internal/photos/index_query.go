@@ -21,7 +21,10 @@ func (l *Library) listFromIndex(ctx context.Context, rel string, opts ListOption
 	if opts.Query == "" {
 		if !opts.Recursive && !opts.SkipFolders {
 			finishFolders := StartListTraceStep(ctx, "photos.index.folders", ListTraceString("path", rel))
-			listing.Folders, err = l.indexFolders(ctx, rel, opts.IncludeAdminOnly)
+			listing.foldersPaged, err = l.indexFolderPage(ctx, rel, opts, listing)
+			if err == nil && !listing.foldersPaged {
+				listing.Folders, err = l.indexFolders(ctx, rel, opts.IncludeAdminOnly)
+			}
 			finishFolders(ListTraceInt("count", len(listing.Folders)))
 			if err != nil {
 				return true, err

@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.68.1** · Android-App: **0.18.1**.
+Aktuelle Version: **0.68.2** · Android-App: **0.18.1**.
+
+**0.68.2** lädt native Ordnerseiten mit Namenssortierung direkt aus dem Index. Der Web-Fotoframe hält höchstens zwei Metadatenseiten vor und pausiert in ausgeblendeten Tabs. Komplexe Ordnersuchen und Datumssortierung behalten die bestehende Verarbeitung.
 
 **0.68.1 / Android 0.18.1** reduziert unnötige Gesichtsabfragen bei der Fotosuche, bündelt Zusatzdaten für Katalogbilder und Ordnervorschauen und prüft bereits gespeicherte Thumbnails beim Vorladen ohne erneutes Lesen der Bilddateien.
 

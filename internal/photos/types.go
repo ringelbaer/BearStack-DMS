@@ -132,6 +132,7 @@ type Listing struct {
 	Total            int
 	HasPrev          bool
 	HasNext          bool
+	foldersPaged     bool // Internal: folder count, order and page already resolved by SQL.
 	FolderTotal      int
 	FolderHasNext    bool
 	BlogHasNext      bool

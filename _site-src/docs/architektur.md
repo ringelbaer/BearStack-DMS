@@ -215,3 +215,7 @@ der Personenübersicht noch von der Navigation durch Gruppenbilder ab.
 ## Fotoabfragen ab 0.68.1
 
 Der nachgelagerte Foto-Suchfilter lädt automatische Gesichtsdaten nur bei Personenbedingungen. Die native Katalogantwort ergänzt Identität, Inhaltsrevision und Prüfstatus gemeinsam für Medien und Ordnervorschauen in Abfragen mit höchstens 200 unterschiedlichen Pfaden. Mehrfach vorkommende Bilder erhalten denselben Zustand; Berechtigungen und Antwortfelder bleiben unverändert.
+
+Ab **0.68.2** paginiert der native Katalog normale Ordner mit Namenssortierung bereits in SQLite. Sichtbarkeitsprüfung, Gesamtzahl und Seite stammen aus demselben Lesesnapshot. Unicode-Kleinschreibung und Pfad als zweites Sortierkriterium entsprechen der bestehenden Galerie; die sichtbaren Namen werden weiterhin zentral formatiert. Suchabfragen, Datum-/Zufallssortierung und unvollständige Sichtbarkeitszähler verwenden den bisherigen vollständigen Verarbeitungspfad. Es werden keine Schemaänderungen benötigt.
+
+Der Web-Fotoframe hält höchstens zwei Seiten mit jeweils 200 Metadateneinträgen sowie das aktuelle Medium vor. Verbrauchte Seiten werden freigegeben; nach dem letzten Medium beginnt die Abfrage wieder bei Seite 1. Ausgeblendete Seiten stoppen Timer und Wiedergabe und brechen laufende Metadatenabrufe ab. Beim Fortsetzen bleiben aktuelles Medium und Reihenfolge erhalten.

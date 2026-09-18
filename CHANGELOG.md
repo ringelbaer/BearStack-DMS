@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.68.2 – in Entwicklung
+
+- Native Ordnerseiten mit Namenssortierung direkt in SQLite paginieren; Gesamtzahl und Seite aus demselben Lesesnapshot. Unicode-Sortierung, zentrale Anzeigenamen, Sichtbarkeit und die virtuelle Personenkachel bleiben erhalten.
+- Komplexe Suchabfragen, Datum-/Zufallssortierung und unvollständige Sichtbarkeitszähler behalten den bisherigen Pfad; keine Schemaänderung.
+- Web-Fotoframe auf zwei Metadatenseiten begrenzt, verbrauchte Einträge freigegeben und neuer Durchlauf ab Seite 1. Ausgeblendete Seiten pausieren Wiedergabe und Laden; Rückkehr setzt am aktuellen Medium fort. Langsame Seiten überspringen keine Bilder.
+- Validierung: vollständige Go-Suite, JavaScript-/DOM-Tests, 31 Galerie-Browserszenarien und Website-Build erfolgreich. Ordnerregressionen vergleichen Seitengrenzen, Unicode, Datumspräfixe, Unterstriche, Verschachtelung, Rechte und virtuelle Ordner; Fotoframe-Regressionsläufe prüfen mehrere Zyklen, Speichergrenze, langsame Antworten, Abbruch und Fortsetzen.
+- Lokaler Vergleich bei 10.000 Ordnern: erste Namensseite rund 59 → 10 ms und 20,2 → 0,7 MiB Allokationen; tiefe Seite rund 49 → 19 ms. Synthetischer Benchmark, keine Produktionsmessung.
+- PATCH für Performance und Lebenszykluskorrekturen; Android bleibt 0.18.1. README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.68.1 / Android 0.18.1 – in Entwicklung
 
 - Fotosuche: automatische Gesichtsdaten im nachgelagerten Filter nur bei Personenbedingungen laden.

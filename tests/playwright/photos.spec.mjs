@@ -150,6 +150,9 @@ test("photo gallery loads and starts thumbnail queue", async ({ browser }) => {
 test("photo frame works without the gallery script", async ({ browser }) => {
   const { context, page } = await editorPage(browser);
   const errors = [];
+  const catalogRequests = [];
+  page.on("request", request => { if (request.url().includes("/photos/frame/items")) catalogRequests.push(request.url()); });
+  await page.clock.install();
   page.on("pageerror", (error) => errors.push(error.message));
   try {
     await page.route("**/static/app-photos.js*", (route) => route.fulfill({
@@ -162,6 +165,20 @@ test("photo frame works without the gallery script", async ({ browser }) => {
     await expect(image).toHaveAttribute("src", /public-a/);
     await expect(page.locator("[data-photo-frame-count]")).toHaveText("1 von 1 Medien");
     await expect.poll(() => image.evaluate((node) => node.complete && node.naturalWidth > 0)).toBe(true);
+    const initialRequests = catalogRequests.length;
+    await page.evaluate(() => {
+      Object.defineProperty(document, "hidden", { configurable: true, value: true });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await page.clock.runFor(30_000);
+    expect(catalogRequests).toHaveLength(initialRequests);
+    await page.evaluate(() => {
+      Object.defineProperty(document, "hidden", { configurable: true, value: false });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await page.clock.runFor(8_000);
+    await expect.poll(() => catalogRequests.length).toBeGreaterThan(initialRequests);
+    await expect(image).toHaveAttribute("src", /public-a/);
     expect(errors).toEqual([]);
   } finally {
     await context.close();

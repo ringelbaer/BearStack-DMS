@@ -247,15 +247,17 @@ func (l *Library) finishListing(ctx context.Context, opts ListOptions, listing *
 	finishDisplay := StartListTraceStep(ctx, "photos.library.display_names", ListTraceInt("folders", len(listing.Folders)), ListTraceInt("breadcrumbs", len(listing.Breadcrumbs)))
 	decorateListingDisplay(listing)
 	finishDisplay()
-	finishFolderSort := StartListTraceStep(ctx, "photos.library.sort_folders", ListTraceInt("count", len(listing.Folders)), ListTraceString("order", listing.Order), ListTraceString("sort", opts.Sort))
-	sortFolders(listing.Folders, listing.Order, opts.Sort)
-	finishFolderSort()
-	if opts.IncludePeopleFolders && listing.Path == "" && opts.Query == "" && !opts.Recursive && !opts.SkipFolders && l.index.available() {
-		listing.Folders = append([]Folder{{Name: "Personen", DisplayName: "Personen", Path: PeopleFolderPath, Virtual: true}}, listing.Folders...)
-	}
-	listing.FolderTotal = len(listing.Folders)
-	if opts.FolderPageSize > 0 {
-		listing.Folders, listing.FolderHasNext = listingPage(listing.Folders, opts.Page, opts.FolderPageSize)
+	if !listing.foldersPaged {
+		finishFolderSort := StartListTraceStep(ctx, "photos.library.sort_folders", ListTraceInt("count", len(listing.Folders)), ListTraceString("order", listing.Order), ListTraceString("sort", opts.Sort))
+		sortFolders(listing.Folders, listing.Order, opts.Sort)
+		finishFolderSort()
+		if opts.IncludePeopleFolders && listing.Path == "" && opts.Query == "" && !opts.Recursive && !opts.SkipFolders && l.index.available() {
+			listing.Folders = append([]Folder{{Name: "Personen", DisplayName: "Personen", Path: PeopleFolderPath, Virtual: true}}, listing.Folders...)
+		}
+		listing.FolderTotal = len(listing.Folders)
+		if opts.FolderPageSize > 0 {
+			listing.Folders, listing.FolderHasNext = listingPage(listing.Folders, opts.Page, opts.FolderPageSize)
+		}
 	}
 	for i, folder := range listing.Folders {
 		if folder.Virtual && folder.Path == PeopleFolderPath {

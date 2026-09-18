@@ -24,6 +24,10 @@ Das Fotomodul ist optional und nutzt einen directory-first Ansatz: BearStack imp
 
 Im Browser bietet auch **Zusammenführen und benennen/zuordnen** die Lupe für ähnliche benannte Personen. Sie prüft das erste Vergleichsgesicht; beim Benennen einer einzelnen Gruppe wird deren Vergleichsgesicht verwendet. Ein Treffer übernimmt die Zielperson mit Versionsprüfung für die atomare Zuordnung.
 
+## Web-Fotoframe ab 0.68.2
+
+Der Web-Fotoframe pausiert beim Wechsel in einen anderen Tab oder beim Verlassen der Seite. Beim Zurückkehren setzt er am aktuellen Medium fort. Große Sammlungen werden seitenweise abgespielt; nach dem letzten Medium beginnt die Diashow wieder von vorn. Der Metadatenspeicher bleibt dabei begrenzt. Langsam nachladende Seiten lassen das aktuelle Bild stehen, bis die nächsten Medien bereit sind.
+
 ## Ignorierte Gesichter eines Fotoordners zurücksetzen
 
 Ab **0.63.0** steht im **…**-Menü eines normalen Fotoordners die Funktion
