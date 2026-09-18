@@ -1324,6 +1324,48 @@ function testFamilyTreeLayoutPreservesPeopleAndGenerations() {
   assert.equal(crossGeneration.nodes.size, 3);
   assert.ok(crossGeneration.nodes.get(1).y < crossGeneration.nodes.get(3).y);
 }
+function testFamilyTreeLayoutAlignsUnequalBranchesAndOrdersSiblings() {
+  const people = [1, 2, 3, 4, 5, 6, 7, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109].map(id => ({id, name: `Person ${id}`, birth_date: id >= 100 ? `${2009 - (id - 100)}-01-01` : ""}));
+  const relations = [
+    {from: 1, to: 2, kind: "sibling"}, {from: 1, to: 3, kind: "mother"},
+    {from: 3, to: 4, kind: "marriage"}, {from: 2, to: 5, kind: "father"},
+    {from: 5, to: 6, kind: "marriage"}, {from: 5, to: 7, kind: "father"}, {from: 6, to: 7, kind: "mother"},
+    ...people.filter(person => person.id >= 100).flatMap(person => [{from: 3, to: person.id, kind: "mother"}, {from: 4, to: person.id, kind: "father"}])
+  ];
+  const result = familyTreeLayout.layout({people, relations}), center = id => result.nodes.get(id).x + familyTreeLayout.cardWidth / 2;
+  // Unequal branch widths must not pull a narrow family towards the page center.
+  assert.ok(Math.abs(center(1) - center(3)) < 5);
+  assert.ok(Math.abs(center(2) - center(5)) < 5);
+  assert.ok(Math.abs(center(7) - (center(5) + center(6)) / 2) < 5);
+  const children = people.filter(person => person.id >= 100).map(person => result.nodes.get(person.id)).sort((a,b) => a.x - b.x);
+  assert.deepEqual(children.map(person => person.id), [109,108,107,106,105,104,103,102,101,100]);
+  const childrenCenter = children.reduce((sum, person) => sum + center(person.id), 0) / children.length;
+  assert.ok(Math.abs(childrenCenter - (center(3) + center(4)) / 2) < 5);
+  for (const edge of relations.filter(edge => edge.kind === "mother" || edge.kind === "father")) {
+    assert.ok(result.nodes.get(edge.to).y - result.nodes.get(edge.from).y - familyTreeLayout.cardHeight >= 250);
+  }
+  const byRow = new Map();
+  result.nodes.forEach(person => { if (!byRow.has(person.y)) byRow.set(person.y, []); byRow.get(person.y).push(person); });
+  byRow.forEach(row => { row.sort((a,b) => a.x-b.x); row.slice(1).forEach((person, i) => assert.ok(person.x >= row[i].x + row[i].width + 30)); });
+  // SQL/input ordering must not rearrange the family on each visit.
+  assert.deepEqual(result, familyTreeLayout.layout({people: people.slice().reverse(), relations: relations.slice().reverse()}));
+}
+function testFamilyTreeLayoutKeepsCoParentsAndRemarriagesTogether() {
+  const people = [8, 3, 99, 5, 1, 44, 66].map(id => ({id, name: `Person ${id}`}));
+  const relations = [
+    {from: 8, to: 3, kind: "marriage"}, {from: 3, to: 99, kind: "marriage"},
+    {from: 8, to: 5, kind: "mother"}, {from: 3, to: 5, kind: "father"},
+    {from: 3, to: 1, kind: "father"}, {from: 99, to: 1, kind: "mother"},
+    {from: 44, to: 66, kind: "father"}, {from: 5, to: 66, kind: "mother"}
+  ];
+  const result = familyTreeLayout.layout({people, relations}), nodes = result.nodes;
+  for (const [a,b] of [[8,3],[3,99],[44,5]]) {
+    assert.equal(nodes.get(a).y, nodes.get(b).y);
+    assert.equal(Math.abs(nodes.get(a).x-nodes.get(b).x), familyTreeLayout.cardWidth+38);
+  }
+  assert.ok(nodes.get(66).y > nodes.get(44).y);
+  assert.equal(result.nodes.size, people.length);
+}
 function testFamilyTreeLayoutHandlesLongFamiliesWithoutRecursion() {
   const people = Array.from({length: 10000}, (_, i) => ({id: i + 1, name: `Person ${i + 1}`}));
   const relations = people.slice(1).map(person => ({from: person.id - 1, to: person.id, kind: "mother"}));
@@ -1336,6 +1378,8 @@ function testFamilyTreeLayoutHandlesLongFamiliesWithoutRecursion() {
 const tests = [
   testFamilyTreeLayoutPreservesPeopleAndGenerations,
   testFamilyTreeLayoutHandlesLongFamiliesWithoutRecursion,
+  testFamilyTreeLayoutAlignsUnequalBranchesAndOrdersSiblings,
+  testFamilyTreeLayoutKeepsCoParentsAndRemarriagesTogether,
   testPhotoFrameEmptyGalleryStopsAndInitializationIsIdempotent,
   testPhotoFrameBoundsMemoryAndPreservesSequenceAcrossCycles,
   testPhotoFramePausesHiddenPagesAndResumesWithoutAdvancing,

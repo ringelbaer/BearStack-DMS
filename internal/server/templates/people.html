@@ -73,9 +73,9 @@
 <a class="secondary-button" data-detail-gallery href="/photos?path=.people%2Fall%2F{{.People.PersonID}}">Fotos ansehen</a>
 {{if .Auth.CanPhotosEdit}}<button type="button" class="secondary-button" data-detail-select-all title="Alle Gesichter auf dieser Seite auswählen" hidden>Alle auswählen</button>{{end}}
 <details class="person-detail-more"><summary aria-label="Weitere Personenaktionen" title="Weitere Personenaktionen">{{template "more_icon"}}</summary><div class="person-detail-menu">
-<a class="secondary-button" data-detail-folders href="/photos/people/{{.People.PersonID}}/folder">Ordner-Pfade</a>
+<a data-detail-folders href="/photos/people/{{.People.PersonID}}/folder">Ordner-Pfade prüfen</a>
 <button type="button" class="secondary-button" data-person-details-open{{if not .People.Name}} hidden{{end}}>Stammdaten</button>
-<details class="people-display-menu" data-detail-display hidden><summary aria-label="Anzeigeeinstellungen" title="Anzeigeeinstellungen">Anzeige</summary><div class="people-display-options"><label>Thumbnailgröße <select data-detail-size aria-label="Thumbnailgröße"><option value="s">S</option><option value="m">M</option><option value="l">L</option></select></label><label><input type="checkbox" data-detail-paths> Ordnerpfad anzeigen</label></div></details>
+<details class="people-display-menu" data-detail-display hidden><summary aria-label="Anzeigeeinstellungen" title="Anzeigeeinstellungen">Anzeigeeinstellungen</summary><div class="people-display-options"><label>Thumbnailgröße <select data-detail-size aria-label="Thumbnailgröße"><option value="s">S</option><option value="m">M</option><option value="l">L</option></select></label><label><input type="checkbox" data-detail-paths> Ordnerpfad anzeigen</label></div></details>
 <button type="button" class="secondary-button person-detail-help-button" data-detail-help-open hidden>Hilfe</button>
 <nav aria-label="Weitere Ansichten"><a href="/photos">← Fotos</a>{{if .Auth.CanPhotosEdit}}<a href="/photos/people/groups">Gruppenbilder</a><a href="/photos/people/merge-suggestions">Ähnliche Gesichter</a>{{end}}{{if .Auth.CanPhotosManage}}<a href="/settings/photos/faces">Gesichtserkennung</a>{{end}}</nav>
 </div></details>

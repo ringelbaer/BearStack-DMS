@@ -127,7 +127,7 @@ trennt diese Auswahl als neue unbenannte Gruppe ab.
 
 **Alle auswählen** markiert nur die Gesichter der aktuellen Seite. Gesicht und
 Dateiname öffnen das vollständige Foto im Bildbetrachter. Das **⋯-Menü** bündelt
-**Stammdaten**, **Anzeige** und **Hilfe**; der Hilfedialog erklärt auch die
+**Ordner-Pfade prüfen**, **Stammdaten**, **Anzeigeeinstellungen** und **Hilfe**; der Hilfedialog erklärt auch die
 Vergleichssterne.
 
 ### Mit der Lupe passende Personen suchen
@@ -342,9 +342,15 @@ Unter der Überschrift stehen nur hinterlegte Stammdaten: Geburts- und Sterbedat
 Eltern, Geschwister und Ehen ohne Scheidungsdatum. Die vollständigen Stammdaten
 bleiben im Dialog bearbeitbar.
 
-**Ordner-Pfade** öffnet `/photos/people/{id}/folder`. Jeder exakte Ordner erscheint
+**Ordner-Pfade prüfen** öffnet `/photos/people/{id}/folder`. Jeder exakte Ordner erscheint
 einmal mit seinem vollständigen formatierten Galeriepfad und darunter höchstens
 acht Gesichtsvorschauen. Weitere Ordner folgen auf der nächsten Seite (40 pro Seite).
+
+**Alle neu zuweisen** öffnet das gemeinsame Personenmodal für den jeweiligen Ordner.
+Dort steht der vollständig formatierte Pfad zur Kontrolle; wähle eine vorhandene
+Person oder gib einen neuen Namen ein. **Abbrechen** schließt ohne Änderung.
+Escape schließt zunächst offene Suchvorschläge, danach den Dialog. Die Ordnerliste
+selbst enthält keine Suchfelder.
 
 Mit **Fotos bearbeiten** stehen folgende Aktionen für alle aktiven Gesichter der
 Person im jeweiligen Ordner bereit, auch für Gesichter außerhalb der Vorschau:
@@ -412,6 +418,10 @@ Ansicht unter `/photos/family-tree`:
 - Ein Klick zeigt Stammdaten, Personen-Tags und sämtliche direkten Verbindungen;
   bei Ehen auch hinterlegte Hochzeits- und Scheidungsdaten. Beziehungsschaltflächen
   führen direkt zur verbundenen Person, **Person und Fotos öffnen** zur Personenansicht.
+- Familienzweige richten sich an ihren Eltern und Kindern aus. Partner und gemeinsame
+  Eltern stehen zusammen; bei gleichwertiger Position bestimmen Geburtsdatum und
+  Name die Reihenfolge. Größere Abstände zwischen Generationen lassen den Linien
+  Raum. Lange Verbindungen innerhalb einer Generation laufen oberhalb der Karten.
 - Farben und Linien unterscheiden Eltern/Kinder, Geschwister, Ehen und geschiedene
   Ehen. Ausgangspersonen tragen eine Markierung. Eine frühere Ehe bleibt hier sichtbar,
   auch wenn sie in der kompakten Stammdatenzeile der Personenansicht ausgeblendet ist.

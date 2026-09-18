@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.1.0** · Android-App: **0.19.0**.
+Aktuelle Version: **1.1.1** · Android-App: **0.19.0**.
+
+Ab **1.1.1** öffnet **Alle neu zuweisen** in der Ordnerprüfung das gemeinsame Personenmodal; die Ordnerliste enthält keine dauerhaften Suchfelder mehr. Das Personenmenü bietet **Ordner-Pfade prüfen** als normalen Link und **Anzeigeeinstellungen**. Stammbäume ordnen Familienzweige anhand ihrer Eltern- und Kinderpositionen an, halten Partner zusammen und lassen mit größeren Generationenabständen mehr Platz für Verbindungslinien.
 
 Ab **1.1.0** lassen sich unter **Einstellungen → Stammbaum** bei aktiviertem Fotomodul Ausgangspersonen auswählen. Die interaktive Ansicht unter `/photos/family-tree` verfolgt alle hinterlegten Eltern-, Geschwister- und Eheverbindungen, einschließlich geschiedener Ehen, und fasst verbundene Ausgangspersonen zu einem Baum zusammen. Personen-Karten, Porträts, Stammdaten, Suche, Zoom und Scrollen erschließen auch große Familien. Ohne Auswahl entfallen Stammbaumansicht und deren Menüpunkte; der Einstellungspunkt bleibt zur Einrichtung verfügbar. Konfiguration erfordert `photos.manage`, Ansicht `photos.read`. Foto-Schema 39 speichert die Auswahl dauerhaft und übernimmt sie bei Personenzusammenführungen. [Bedienung und Grenzen](https://ringelbaer.github.io/BearStack-DMS/fotos-personen.html#stammbaume-einrichten-und-erkunden).
 

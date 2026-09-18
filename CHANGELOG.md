@@ -4,6 +4,16 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.1.1
+
+- Stammbaum: Familienzweige richten sich an den tatsächlichen Eltern- und Kinderpositionen aus. Partner und gemeinsame Eltern bleiben zusammen; stabile Geburts-/Namenssortierung ersetzt die ID-Reihenfolge. Generationenabstand von 250 auf 400 Pixel erhöht; längere horizontale Beziehungen verlaufen oberhalb der Karten.
+- Layout-Regressionen prüfen ungleich breite Familienzweige, chronologische Geschwister, gemeinsame Eltern ohne Eheeintrag, wiederholte Ehen, Kollisionsfreiheit und identische Ausgabe bei vertauschter Eingabereihenfolge. JavaScript-Suite, Stammbaum-Browserprüfung und Website-Build erfolgreich; verzweigter Testbaum mit 10.000 Personen lokal in rund 75 ms angeordnet.
+
+- Ordnerprüfung: **Alle neu zuweisen** verwendet das etablierte Personenmodal statt eines dauerhaften Suchfelds je Ordner. Ein gemeinsamer Dialog zeigt den formatierten Pfad und erlaubt vorhandene Personen oder neue Namen; die übrigen Ordneraktionen bleiben direkt erreichbar.
+- Personenmenü: **Ordner-Pfade prüfen** als normaler Menülink; **Anzeige** heißt jetzt **Anzeigeeinstellungen**.
+- README und Website aktualisiert; HTTP-Verträge bleiben unverändert.
+- Validierung: gezielte Go-Tests, JavaScript-Syntax-/DOM-Suite, Browserregressionen für Personenansicht und Ordneraktionen sowie Website-Build erfolgreich. Geprüft sind ein gemeinsamer Dialog, neue und vorhandene Zielpersonen, formatierte Stamm-/Datums-/Unterordnerpfade, Fokus-Rückkehr, Menügestaltung und 320-Pixel-Darstellung.
+
 ### BearStack 1.1.0
 
 - Neue Stammbaum-Einstellungen bei aktiviertem Fotomodul: bis zu 200 Ausgangspersonen auswählen. Verbundene ausgewählte Personen erzeugen einen gemeinsamen Baum; ohne Auswahl entfallen Ansicht und deren Navigation.

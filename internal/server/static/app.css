@@ -3868,8 +3868,8 @@ body.has-group-strip { padding-bottom: calc(158px + env(safe-area-inset-bottom))
 .person-detail-menu .person-tags-tools { display: flex; flex-direction: column; align-items: stretch; gap: .25rem; margin: 0; }
 .person-detail-menu .person-parents, .person-detail-menu .people-display-menu { position: static; width: 100%; margin: 0; }
 .person-detail-menu .person-parents-panel { position: static; width: 100%; padding: .5rem; box-shadow: none; }
-.person-detail-menu .people-display-menu > summary, .person-detail-menu .person-parents > summary, .person-detail-menu > button, .person-detail-menu .tag-select-trigger, .person-detail-menu nav > a { display: flex; align-items: center; justify-content: flex-start; width: 100%; min-height: 44px; padding: .5rem .65rem; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text); font-size: .85rem; font-weight: 500; cursor: pointer; list-style: none; }
-.person-detail-menu .people-display-menu > summary:hover, .person-detail-menu .person-parents > summary:hover, .person-detail-menu > button:hover, .person-detail-menu .tag-select-trigger:hover, .person-detail-menu nav > a:hover { background: var(--surface-2); text-decoration: none; }
+.person-detail-menu .people-display-menu > summary, .person-detail-menu .person-parents > summary, .person-detail-menu > button, .person-detail-menu .tag-select-trigger, .person-detail-menu > a, .person-detail-menu nav > a { display: flex; align-items: center; justify-content: flex-start; width: 100%; min-height: 44px; padding: .5rem .65rem; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text); font-size: .85rem; font-weight: 500; cursor: pointer; list-style: none; }
+.person-detail-menu .people-display-menu > summary:hover, .person-detail-menu .person-parents > summary:hover, .person-detail-menu > button:hover, .person-detail-menu .tag-select-trigger:hover, .person-detail-menu > a:hover, .person-detail-menu nav > a:hover { background: var(--surface-2); text-decoration: none; }
 .person-detail-menu .people-display-options { position: static; width: 100%; padding: .5rem .65rem; border: 0; box-shadow: none; }
 .person-detail-menu nav { border-top: 1px solid var(--line); margin-top: .4rem; padding-top: .4rem; }
 .app-dialog.person-detail-help-dialog { width: min(640px, calc(100vw - 32px)); max-width: calc(100vw - 32px); background: var(--surface); color: var(--text); max-height: calc(100dvh - 32px); overflow-y: auto; }
@@ -4038,3 +4038,7 @@ body.has-person-selection { padding-bottom: 150px; }
  .family-tree-controls > label, .family-tree-search { width: 100%; min-width: 0; }
  .family-tree-zoom { width: 100%; }
 }
+
+.person-folder-dialog .person-dialog-layout { grid-template-columns: minmax(0, 1fr); }
+.person-folder-dialog .person-dialog-photo { display: none; }
+.person-folder-dialog [data-folder-dialog-path] { overflow-wrap: anywhere; }

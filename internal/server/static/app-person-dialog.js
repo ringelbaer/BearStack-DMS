@@ -252,7 +252,10 @@
       var allowCreate = form.hasAttribute("data-person-create");
       var renameAction = form.dataset.renameAction || form.getAttribute("action");
       function validate(state) {
-        if (form.hasAttribute("data-person-restore")) {
+        if (form.hasAttribute("data-person-folder-selection")) {
+          form.querySelector("[data-person-submit]").textContent = "Alle neu zuweisen";
+          input.setCustomValidity(state.assigned || state.name ? "" : "Bitte einen Namen eingeben oder eine Person auswählen.");
+        } else if (form.hasAttribute("data-person-restore")) {
           form.querySelector("[data-person-submit]").textContent = state.assigned ? "Zuordnen und wiederherstellen" : "Benennen und wiederherstellen";
           input.setCustomValidity(state.assigned || state.name ? "" : "Bitte einen Namen eingeben oder eine Person auswählen.");
         } else if (form.hasAttribute("data-person-face-selection")) {

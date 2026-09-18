@@ -686,3 +686,13 @@ eine indizierte Existenzprüfung der Auswahl. Der Browser zeichnet Verbindungsli
 auf einer Canvas in Sichtbereichsgröße und baut nur die sichtbaren Personen-Karten
 auf. Suche und Stammdaten sind unabhängig vom Zoom erreichbar. Es werden keine
 externen Grafikdienste oder JavaScript-Bibliotheken geladen.
+
+
+Das Stammbaumlayout trennt Generationen von den kleineren Partner-/Elterneinheiten
+für die horizontale Anordnung. Begrenzte Durchläufe richten Einheiten an den
+wirklichen Eltern- und Kinderkoordinaten aus und lösen Kollisionen innerhalb einer
+Zeile. Zeilen werden nicht unabhängig zentriert; damit bleiben auch unterschiedlich
+breite Familienzweige ausgerichtet. Geburtsdatum, Name und zuletzt ID sorgen für
+stabile Gleichstände. Der Generationenabstand beträgt 400 Pixel bei 144 Pixel
+Kartenhöhe. Lange horizontale Verbindungen nutzen den Raum oberhalb der Karten.
+Das Layout durchläuft Familien iterativ und benötigt keine rekursive Ahnensuche.

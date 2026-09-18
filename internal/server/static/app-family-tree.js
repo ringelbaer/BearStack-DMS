@@ -78,13 +78,26 @@
       const parent = edge.kind === "mother" || edge.kind === "father";
       let ax = (from.x + from.width / 2) * scale - left, ay = (from.y + (parent ? from.height : from.height / 2)) * scale - top;
       let bx = (to.x + to.width / 2) * scale - left, by = (to.y + (parent ? 0 : to.height / 2)) * scale - top;
-      if (!parent && from.y === to.y) { ax = (from.x + (from.x < to.x ? from.width : 0)) * scale - left; bx = (to.x + (from.x < to.x ? 0 : to.width)) * scale - left; }
-      if (Math.max(ax, bx) < -80 || Math.min(ax, bx) > width + 80 || Math.max(ay, by) < -80 || Math.min(ay, by) > height + 80) return;
+      let lift = 0;
+      if (!parent && from.y === to.y) {
+        const distance = Math.abs(from.x - to.x), acrossCards = distance > from.width + 80;
+        if (acrossCards) {
+          // Distant siblings and former partners connect above their row instead
+          // of drawing through the intervening people. Zoom scales the whole arc.
+          ay = from.y * scale - top; by = to.y * scale - top;
+          lift = Math.min(128, 64 + distance * .04) * scale;
+        } else {
+          ax = (from.x + (from.x < to.x ? from.width : 0)) * scale - left;
+          bx = (to.x + (from.x < to.x ? 0 : to.width)) * scale - left;
+          lift = Math.min(40, distance * .16) * scale;
+        }
+      }
+      if (Math.max(ax, bx) < -80 || Math.min(ax, bx) > width + 80 || Math.max(ay, by) < -80 || Math.min(ay, by) - lift > height + 80) return;
       const highlighted = edge.from === selected || edge.to === selected;
       ctx.globalAlpha = selected && !highlighted ? .32 : .88; ctx.strokeStyle = colors[edge.kind]; ctx.lineWidth = highlighted ? 2.8 : 1.7;
       ctx.setLineDash(edge.divorce_date ? [7, 5] : edge.kind === "sibling" ? [3, 5] : []); ctx.beginPath(); ctx.moveTo(ax, ay);
       if (parent) { const middle = (ay + by) / 2; ctx.bezierCurveTo(ax, middle, bx, middle, bx, by); }
-      else { const lift = from.y === to.y ? -Math.min(65, Math.abs(bx - ax) * .16) : 0; ctx.bezierCurveTo(ax + (bx - ax) / 3, ay + lift, bx - (bx - ax) / 3, by + lift, bx, by); }
+      else { ctx.bezierCurveTo(ax + (bx - ax) / 3, ay - lift, bx - (bx - ax) / 3, by - lift, bx, by); }
       ctx.stroke();
       if (parent && scale >= .45) { ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(bx - 4, by - 7); ctx.lineTo(bx, by - 1); ctx.lineTo(bx + 4, by - 7); ctx.stroke(); }
     });

@@ -1590,7 +1590,7 @@ sich gemeinsam bearbeiten oder ignorieren. Ein leerer Name im Auswahldialog
 trennt diese Auswahl als neue unbenannte Gruppe ab.</p>
 <p><strong>Alle auswählen</strong> markiert nur die Gesichter der aktuellen Seite. Gesicht und
 Dateiname öffnen das vollständige Foto im Bildbetrachter. Das <strong>⋯-Menü</strong> bündelt
-<strong>Stammdaten</strong>, <strong>Anzeige</strong> und <strong>Hilfe</strong>; der Hilfedialog erklärt auch die
+<strong>Ordner-Pfade prüfen</strong>, <strong>Stammdaten</strong>, <strong>Anzeigeeinstellungen</strong> und <strong>Hilfe</strong>; der Hilfedialog erklärt auch die
 Vergleichssterne.</p>
 <h3 id="mit-der-lupe-passende-personen-suchen">Mit der Lupe passende Personen suchen<a class="headerlink" href="#mit-der-lupe-passende-personen-suchen" title="Permanent link">&para;</a></h3>
 <p>Die Lupe neben dem Namensfeld vergleicht das angezeigte Gesicht mit gespeicherten
@@ -1829,9 +1829,14 @@ Einstellungen und Hintergrundabgleich beschreibt die
 <p>Unter der Überschrift stehen nur hinterlegte Stammdaten: Geburts- und Sterbedatum,
 Eltern, Geschwister und Ehen ohne Scheidungsdatum. Die vollständigen Stammdaten
 bleiben im Dialog bearbeitbar.</p>
-<p><strong>Ordner-Pfade</strong> öffnet <code>/photos/people/{id}/folder</code>. Jeder exakte Ordner erscheint
+<p><strong>Ordner-Pfade prüfen</strong> öffnet <code>/photos/people/{id}/folder</code>. Jeder exakte Ordner erscheint
 einmal mit seinem vollständigen formatierten Galeriepfad und darunter höchstens
 acht Gesichtsvorschauen. Weitere Ordner folgen auf der nächsten Seite (40 pro Seite).</p>
+<p><strong>Alle neu zuweisen</strong> öffnet das gemeinsame Personenmodal für den jeweiligen Ordner.
+Dort steht der vollständig formatierte Pfad zur Kontrolle; wähle eine vorhandene
+Person oder gib einen neuen Namen ein. <strong>Abbrechen</strong> schließt ohne Änderung.
+Escape schließt zunächst offene Suchvorschläge, danach den Dialog. Die Ordnerliste
+selbst enthält keine Suchfelder.</p>
 <p>Mit <strong>Fotos bearbeiten</strong> stehen folgende Aktionen für alle aktiven Gesichter der
 Person im jeweiligen Ordner bereit, auch für Gesichter außerhalb der Vorschau:</p>
 <ul>
@@ -1886,6 +1891,10 @@ Ansicht unter <code>/photos/family-tree</code>:</p>
 <li>Ein Klick zeigt Stammdaten, Personen-Tags und sämtliche direkten Verbindungen;
   bei Ehen auch hinterlegte Hochzeits- und Scheidungsdaten. Beziehungsschaltflächen
   führen direkt zur verbundenen Person, <strong>Person und Fotos öffnen</strong> zur Personenansicht.</li>
+<li>Familienzweige richten sich an ihren Eltern und Kindern aus. Partner und gemeinsame
+  Eltern stehen zusammen; bei gleichwertiger Position bestimmen Geburtsdatum und
+  Name die Reihenfolge. Größere Abstände zwischen Generationen lassen den Linien
+  Raum. Lange Verbindungen innerhalb einer Generation laufen oberhalb der Karten.</li>
 <li>Farben und Linien unterscheiden Eltern/Kinder, Geschwister, Ehen und geschiedene
   Ehen. Ausgangspersonen tragen eine Markierung. Eine frühere Ehe bleibt hier sichtbar,
   auch wenn sie in der kompakten Stammdatenzeile der Personenansicht ausgeblendet ist.</li>
@@ -1958,7 +1967,7 @@ die Auswahl, sofern sie mehrere unabhängige Familien enthält.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.1.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.1.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
 
