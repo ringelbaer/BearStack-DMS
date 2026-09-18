@@ -39,8 +39,11 @@ class PhotosApiTest {
         try {
             val api=PhotosApi(client,"https://example.test/")
             assertFalse(api.session().peopleCountSort)
+            assertFalse(api.session().frameRandomSort)
             capability="\"people_count_sort\":true,"
             assertTrue(api.session().peopleCountSort)
+            capability="\"frame_random_sort\":true,"
+            assertTrue(api.session().frameRandomSort)
             capability="\"people_count_sort\":false,"
             assertFalse(api.session().peopleCountSort)
         } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}

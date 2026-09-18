@@ -93,11 +93,39 @@ func UndeletedUIDs(c *Client) ([]uint32, error) {
 	return c.UidSearch(criteria)
 }
 
-func FetchMessage(c *Client, uid uint32) (io.Reader, error) {
+func FetchMessage(c *Client, uid uint32, maxUploadBytes int64) (io.Reader, error) {
+	limit := uploadlimit.EnvelopeLimit(maxUploadBytes)
+	// A partial BODY fetch uses an int-sized length, including an overflow probe.
+	if limit >= int64(int(^uint(0)>>1)) {
+		return nil, ErrMessageTooLarge
+	}
+	metadata, err := fetchMessage(c, uid, []imap.FetchItem{imap.FetchUid, imap.FetchRFC822Size})
+	if err != nil {
+		return nil, err
+	}
+	if int64(metadata.Size) > limit {
+		return nil, ErrMessageTooLarge
+	}
+	// The IMAP library buffers literals before returning them. Bound the wire
+	// request too, instead of relying on the later MIME reader's size limit.
+	section := &imap.BodySectionName{Peek: true, Partial: []int{0, int(limit + 1)}}
+	msg, err := fetchMessage(c, uid, []imap.FetchItem{imap.FetchUid, section.FetchItem()})
+	if err != nil {
+		return nil, err
+	}
+	body := msg.GetBody(section)
+	if body == nil {
+		return nil, errors.New("IMAP-Nachricht hat keinen lesbaren Inhalt")
+	}
+	if int64(body.Len()) > limit {
+		return nil, ErrMessageTooLarge
+	}
+	return body, nil
+}
+
+func fetchMessage(c *Client, uid uint32, items []imap.FetchItem) (*imap.Message, error) {
 	seqset := new(imap.SeqSet)
 	seqset.AddNum(uid)
-	section := &imap.BodySectionName{Peek: true}
-	items := []imap.FetchItem{imap.FetchUid, section.FetchItem()}
 	messages := make(chan *imap.Message, 1)
 	done := make(chan error, 1)
 	go func() {
@@ -106,7 +134,9 @@ func FetchMessage(c *Client, uid uint32) (io.Reader, error) {
 
 	var msg *imap.Message
 	for candidate := range messages {
-		msg = candidate
+		if candidate != nil && candidate.Uid == uid {
+			msg = candidate
+		}
 	}
 	if err := <-done; err != nil {
 		return nil, err
@@ -114,11 +144,7 @@ func FetchMessage(c *Client, uid uint32) (io.Reader, error) {
 	if msg == nil {
 		return nil, errors.New("IMAP-Nachricht nicht gefunden")
 	}
-	body := msg.GetBody(section)
-	if body == nil {
-		return nil, errors.New("IMAP-Nachricht hat keinen lesbaren Inhalt")
-	}
-	return body, nil
+	return msg, nil
 }
 
 func DeleteMessage(c *Client, uid uint32) error {
@@ -191,6 +217,10 @@ func (r *limitReader) Read(p []byte) (int, error) {
 }
 
 func WalkAttachments(header textproto.MIMEHeader, body io.Reader, handlePDF func(Attachment) error, handleEML func(Attachment) error) error {
+	return walkAttachments(header, body, handlePDF, handleEML, 0)
+}
+
+func walkAttachments(header textproto.MIMEHeader, body io.Reader, handlePDF func(Attachment) error, handleEML func(Attachment) error, depth int) error {
 	mediaType, params := mailmime.MediaType(header)
 	body = mailmime.TransferReader(header, body)
 
@@ -202,6 +232,9 @@ func WalkAttachments(header textproto.MIMEHeader, body io.Reader, handlePDF func
 	}
 
 	if strings.HasPrefix(mediaType, "multipart/") {
+		if depth >= mailmime.MaxMultipartDepth {
+			return mailmime.ErrMultipartTooDeep
+		}
 		boundary := params["boundary"]
 		if boundary == "" {
 			return errors.New("Multipart-Mail ohne Boundary")
@@ -215,8 +248,8 @@ func WalkAttachments(header textproto.MIMEHeader, body io.Reader, handlePDF func
 			if err != nil {
 				return err
 			}
-			if err := WalkAttachments(part.Header, part, handlePDF, handleEML); err != nil {
-				_ = part.Close()
+			if err := walkAttachments(part.Header, part, handlePDF, handleEML, depth+1); err != nil {
+				// Part.Close drains the body; stop reading malformed mail immediately.
 				return err
 			}
 			if err := part.Close(); err != nil {

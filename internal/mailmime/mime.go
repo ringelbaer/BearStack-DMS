@@ -4,6 +4,7 @@ package mailmime
 
 import (
 	"encoding/base64"
+	"errors"
 	"io"
 	"mime"
 	"mime/quotedprintable"
@@ -14,6 +15,11 @@ import (
 	"golang.org/x/text/encoding/htmlindex"
 	"golang.org/x/text/transform"
 )
+
+// MaxMultipartDepth bounds the reader chain and recursion for untrusted mail.
+const MaxMultipartDepth = 32
+
+var ErrMultipartTooDeep = errors.New("E-Mail enthält zu viele verschachtelte MIME-Teile")
 
 func MediaType(header textproto.MIMEHeader) (string, map[string]string) {
 	contentType := strings.TrimSpace(header.Get("Content-Type"))

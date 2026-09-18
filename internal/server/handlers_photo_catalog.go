@@ -119,6 +119,7 @@ func (s *Server) handlePhotoCatalogSession(w http.ResponseWriter, r *http.Reques
 		"protocol": 1, "instance": identity.Instance, "dataset": identity.Dataset, "account": labelActor(r),
 		"can_manage_people": s.requestHasCapabilities(r, authCapPhotosEdit),
 		"people_count_sort": true,
+		"frame_random_sort": true,
 		"settings": map[string]int{"thumbnail_size": settings.ThumbnailSize, "folder_thumbnail_size": settings.FolderThumbnailSize,
 			"preview_size": settings.PreviewSize, "large_preview_size": settings.LargePreviewSize,
 			"slideshow_seconds": settings.SlideshowSeconds, "frame_seconds": settings.FrameSeconds},
@@ -151,7 +152,7 @@ func (s *Server) handlePhotoCatalog(w http.ResponseWriter, r *http.Request) {
 		sort = "descending_date"
 	}
 	countSort := (sort == "ascending_count" || sort == "descending_count") && photos.IsPeopleDirectory(q.Get("path"))
-	if !countSort && sort != "ascending_date" && sort != "descending_date" && sort != "ascending_name" && sort != "descending_name" {
+	if !countSort && sort != "ascending_date" && sort != "descending_date" && sort != "ascending_name" && sort != "descending_name" && sort != "random" {
 		_ = writeJSON(w, 400, map[string]string{"code": "invalid_sort"})
 		return
 	}

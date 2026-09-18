@@ -10,7 +10,7 @@ import (
 type mailbox interface {
 	Logout() error
 	UndeletedUIDs() ([]uint32, error)
-	FetchMessage(uint32) (io.Reader, error)
+	FetchMessage(uint32, int64) (io.Reader, error)
 	DeleteMessage(uint32) error
 }
 type imapMailbox struct{ client *mailimport.Client }
@@ -24,7 +24,7 @@ func openMailbox(settings document.MailImportSettings, readOnly bool) (mailbox, 
 }
 func (m imapMailbox) Logout() error                    { return m.client.Logout() }
 func (m imapMailbox) UndeletedUIDs() ([]uint32, error) { return mailimport.UndeletedUIDs(m.client) }
-func (m imapMailbox) FetchMessage(uid uint32) (io.Reader, error) {
-	return mailimport.FetchMessage(m.client, uid)
+func (m imapMailbox) FetchMessage(uid uint32, maxUploadBytes int64) (io.Reader, error) {
+	return mailimport.FetchMessage(m.client, uid, maxUploadBytes)
 }
 func (m imapMailbox) DeleteMessage(uid uint32) error { return mailimport.DeleteMessage(m.client, uid) }

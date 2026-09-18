@@ -215,7 +215,7 @@ func parseMessage(r io.Reader, tempDir string, maxBytes int64) (messageData, err
 		data.Date = strings.TrimSpace(msg.Header.Get("Date"))
 	}
 
-	if err := walkPart(textproto.MIMEHeader(msg.Header), msg.Body, &data, tempDir, maxBytes); err != nil {
+	if err := walkPart(textproto.MIMEHeader(msg.Header), msg.Body, &data, tempDir, maxBytes, 0); err != nil {
 		return messageData{}, err
 	}
 	if strings.TrimSpace(data.BodyText) == "" {
@@ -229,7 +229,7 @@ func parseMessage(r io.Reader, tempDir string, maxBytes int64) (messageData, err
 	return data, nil
 }
 
-func walkPart(header textproto.MIMEHeader, body io.Reader, data *messageData, tempDir string, maxBytes int64) error {
+func walkPart(header textproto.MIMEHeader, body io.Reader, data *messageData, tempDir string, maxBytes int64, depth int) error {
 	mediaType, params := mailmime.MediaType(header)
 	body = mailmime.TransferReader(header, body)
 	filename, disposition := mailmime.AttachmentFilename(header, params)
@@ -243,6 +243,9 @@ func walkPart(header textproto.MIMEHeader, body io.Reader, data *messageData, te
 	}
 
 	if strings.HasPrefix(mediaType, "multipart/") {
+		if depth >= mailmime.MaxMultipartDepth {
+			return mailmime.ErrMultipartTooDeep
+		}
 		boundary := params["boundary"]
 		if boundary == "" {
 			return errors.New("Multipart-EML ohne Boundary")
@@ -256,8 +259,7 @@ func walkPart(header textproto.MIMEHeader, body io.Reader, data *messageData, te
 			if err != nil {
 				return err
 			}
-			if err := walkPart(part.Header, part, data, tempDir, maxBytes); err != nil {
-				_ = part.Close()
+			if err := walkPart(part.Header, part, data, tempDir, maxBytes, depth+1); err != nil {
 				return err
 			}
 			if err := part.Close(); err != nil {

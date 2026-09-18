@@ -1,0 +1,1623 @@
+
+<!doctype html>
+<html lang="de" class="no-js">
+  <head>
+
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+
+        <meta name="description" content="Build, Signierung, Verbindung, API, Datenhaltung und Tests der Android-App.">
+
+
+        <meta name="author" content="BearStack">
+
+
+
+        <link rel="prev" href="./android.html">
+
+
+        <link rel="next" href="./installation.html">
+
+
+
+
+
+      <link rel="icon" href="./assets/images/bearstack.svg">
+      <meta name="generator" content="zensical-0.0.46">
+
+
+
+        <title>Android-App – Technik & Entwicklung - BearStack</title>
+
+
+
+
+
+
+      <link rel="stylesheet" href="./assets/stylesheets/modern/main.19d3147f.min.css">
+
+
+
+
+        <link rel="stylesheet" href="./assets/stylesheets/modern/palette.dfe2e883.min.css">
+
+
+
+
+
+
+
+
+
+
+
+
+      <link rel="stylesheet" href="./stylesheets/bearstack.css">
+
+    <script>__md_scope=new URL(".",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+
+
+
+
+
+  </head>
+
+
+
+
+
+
+
+
+
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="green">
+
+
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-label="Navigation"></label>
+    <div data-md-component="skip">
+
+
+        <a href="#android-app-technik-entwicklung" class="md-skip">
+          Zum Inhalt
+        </a>
+
+    </div>
+    <div data-md-component="announce">
+
+    </div>
+
+
+
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Kopfzeile">
+    <a href="./index.html" title="BearStack" class="md-header__button md-logo" aria-label="BearStack" data-md-component="logo">
+
+  <img src="./assets/images/bearstack.svg" alt="BearStack">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            BearStack
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+
+              Android-App – Technik & Entwicklung
+
+          </span>
+        </div>
+      </div>
+    </div>
+
+
+        <form class="md-header__option" data-md-component="palette">
+
+
+
+
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="green"  aria-label="Zum dunklen Modus wechseln"  type="radio" name="__palette" id="__palette_0">
+
+      <label class="md-header__button md-icon" title="Zum dunklen Modus wechseln" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+      </label>
+
+
+
+
+
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="green"  aria-label="Zum hellen Modus wechseln"  type="radio" name="__palette" id="__palette_1">
+
+      <label class="md-header__button md-icon" title="Zum hellen Modus wechseln" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </label>
+
+
+</form>
+
+
+
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+
+
+
+
+
+        <label class="md-header__button md-icon" for="__search" aria-label="Suche">
+
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Suche">
+  <button type="button" class="md-search__button">
+    Suche
+  </button>
+</div>
+
+
+    <div class="md-header__source">
+
+        <a href="https://github.com/ringelbaer/BearStack-DMS" title="Zum Repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ringelbaer/BearStack-DMS
+  </div>
+</a>
+
+    </div>
+  </nav>
+
+</header>
+
+    <div class="md-container" data-md-component="container">
+
+
+
+
+
+<nav class="md-tabs" aria-label="Hauptnavigation" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+
+
+
+
+
+
+    <li class="md-tabs__item">
+      <a href="./index.html" class="md-tabs__link">
+
+
+  Start
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+    <li class="md-tabs__item">
+      <a href="./dokumente.html" class="md-tabs__link">
+
+
+  Dokumente
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+      <li class="md-tabs__item">
+        <a href="./fotos.html" class="md-tabs__link">
+
+
+  Fotos
+
+        </a>
+      </li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./android.html" class="md-tabs__link">
+
+
+  Android-App
+
+        </a>
+      </li>
+
+
+
+
+
+
+
+
+
+    <li class="md-tabs__item">
+      <a href="./installation.html" class="md-tabs__link">
+
+
+  Installation
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+    <li class="md-tabs__item">
+      <a href="./benutzer-und-rechte.html" class="md-tabs__link">
+
+
+  Benutzer & Rechte
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+    <li class="md-tabs__item">
+      <a href="./architektur.html" class="md-tabs__link">
+
+
+  Architektur
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+    <li class="md-tabs__item">
+      <a href="./tests-und-audit.html" class="md-tabs__link">
+
+
+  Tests & Audit
+
+      </a>
+    </li>
+
+
+
+    </ul>
+  </div>
+</nav>
+
+
+
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+
+
+
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+
+
+
+
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./index.html" title="BearStack" class="md-nav__button md-logo" aria-label="BearStack" data-md-component="logo">
+
+  <img src="./assets/images/bearstack.svg" alt="BearStack">
+
+    </a>
+    BearStack
+  </label>
+
+    <div class="md-nav__source">
+      <a href="https://github.com/ringelbaer/BearStack-DMS" title="Zum Repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ringelbaer/BearStack-DMS
+  </div>
+</a>
+    </div>
+
+  <ul class="md-nav__list" data-md-scrollfix>
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./index.html" class="md-nav__link">
+
+
+
+  <span class="md-ellipsis">
+
+
+  Start
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./dokumente.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5M10 9H8M16 13H8M16 17H8"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Dokumente
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item md-nav__item--nested">
+
+
+
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+
+
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+
+
+
+  <span class="md-ellipsis">
+
+
+  Fotos
+
+
+  </span>
+
+
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+
+
+  Fotos
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./fotos.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-images" viewBox="0 0 24 24"><path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16"/><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><circle cx="13" cy="7" r="1" fill="currentColor"/><rect width="14" height="14" x="8" y="2" rx="2"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Anleitung
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./fotos-personen.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Personen & Gesichter
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./fotos-technik.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Einrichtung & Betrieb
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+          </ul>
+        </nav>
+
+    </li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+
+
+
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+
+
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+
+
+
+  <span class="md-ellipsis">
+
+
+  Android-App
+
+
+  </span>
+
+
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+
+
+  Android-App
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./android.html" class="md-nav__link">
+
+
+
+  <span class="md-ellipsis">
+
+
+  Anleitung
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item md-nav__item--active">
+
+
+
+
+
+
+
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+
+
+
+  <span class="md-ellipsis">
+
+
+  Technik & Entwicklung
+
+
+  </span>
+
+
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+
+      <a href="android-technik.html" class="md-nav__link md-nav__link--active">
+
+
+
+  <span class="md-ellipsis">
+
+
+  Technik & Entwicklung
+
+
+  </span>
+
+
+
+      </a>
+
+
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
+
+
+
+
+
+
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Inhaltsverzeichnis
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+
+        <li class="md-nav__item">
+  <a href="#bauen-und-installieren" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bauen und installieren
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#privaten-release-signieren" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Privaten Release signieren
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#verbindung-und-zertifikat" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Verbindung und Zertifikat
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#api-und-datenhaltung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        API und Datenhaltung
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="API und Datenhaltung">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#aktionen-revisionen-und-wiederanlauf" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Aktionen, Revisionen und Wiederanlauf
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#gesichtsabgleich" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gesichtsabgleich
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#speicher-und-ladeverhalten" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Speicher und Ladeverhalten
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Speicher und Ladeverhalten">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#metadatengrenzen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metadatengrenzen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#bild-und-dateicaches" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bild- und Dateicaches
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#karten-und-geometrien" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Karten und Geometrien
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tests
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#projektstruktur" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Projektstruktur
+      </span>
+    </span>
+  </a>
+
+</li>
+
+    </ul>
+
+</nav>
+
+    </li>
+
+
+
+
+          </ul>
+        </nav>
+
+    </li>
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./installation.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-play" viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Installation
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./benutzer-und-rechte.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Benutzer & Rechte
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./architektur.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-blocks" viewBox="0 0 24 24"><path d="M10 22V7a1 1 0 0 0-1-1H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 0 0-1-1H2"/><rect width="8" height="8" x="14" y="2" rx="1"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Architektur
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./tests-und-audit.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Tests & Audit
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+
+
+
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+
+
+
+
+
+
+
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+
+
+                  <div class="md-sidebar__inner">
+
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
+
+
+
+
+
+
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Inhaltsverzeichnis
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+
+        <li class="md-nav__item">
+  <a href="#bauen-und-installieren" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bauen und installieren
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#privaten-release-signieren" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Privaten Release signieren
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#verbindung-und-zertifikat" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Verbindung und Zertifikat
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#api-und-datenhaltung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        API und Datenhaltung
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="API und Datenhaltung">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#aktionen-revisionen-und-wiederanlauf" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Aktionen, Revisionen und Wiederanlauf
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#gesichtsabgleich" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gesichtsabgleich
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#speicher-und-ladeverhalten" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Speicher und Ladeverhalten
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Speicher und Ladeverhalten">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#metadatengrenzen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Metadatengrenzen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#bild-und-dateicaches" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bild- und Dateicaches
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#karten-und-geometrien" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Karten und Geometrien
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tests
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#projektstruktur" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Projektstruktur
+      </span>
+    </span>
+  </a>
+
+</li>
+
+    </ul>
+
+</nav>
+                  </div>
+                </div>
+              </div>
+
+
+
+            <div class="md-content" data-md-component="content">
+
+              <article class="md-content__inner md-typeset">
+
+
+
+
+
+
+<h1 id="android-app-technik-entwicklung">Android-App – Technik &amp; Entwicklung<a class="headerlink" href="#android-app-technik-entwicklung" title="Permanent link">&para;</a></h1>
+<p>Diese Referenz richtet sich an Betreiber und Entwickler. Die
+<a href="android.html">Android-Anleitung</a> erklärt Einrichtung und Bedienung vom ersten Start
+bis zur Personenverwaltung. Stand: App <strong>0.19.0</strong> (<code>versionCode 40</code>), BearStack <strong>0.69.0</strong>.</p>
+<h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
+<p>Öffne <code>apps/android/</code> in Android Studio als eigenes Projekt. Benötigt werden JDK 17
+oder 21 und das Android-SDK mit Plattform 36. Gradle Wrapper, Android Gradle Plugin
+und Kotlin sind im Projekt festgelegt; verwende den mitgelieferten Wrapper.
+Setze den SDK-Pfad über <code>ANDROID_HOME</code> oder eine ignorierte
+<code>apps/android/local.properties</code> mit <code>sdk.dir=…</code>.</p>
+<p>Vom Repository-Stamm aus:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># JVM-Tests, Lint und Debug-APK</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>./scripts/check-android.sh
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Auf einem verbundenen Testgerät installieren</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>adb<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>apps/android/app/build/outputs/apk/debug/app-debug.apk
+</span></code></pre></div>
+<p>Für einen reinen Build:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>apps/android/gradlew<span class="w"> </span>-p<span class="w"> </span>apps/android<span class="w"> </span>:app:assembleDebug
+</span></code></pre></div>
+<p>Die APKs werden lokal gebaut und nicht automatisch veröffentlicht. Go-, Web- und
+Docker-Builds benötigen kein Android-SDK; <code>apps/android</code> ist aus dem
+Docker-Buildkontext ausgeschlossen. Die App-ID lautet <code>de.bearstack.people</code>.</p>
+<h2 id="privaten-release-signieren">Privaten Release signieren<a class="headerlink" href="#privaten-release-signieren" title="Permanent link">&para;</a></h2>
+<p>Updates derselben App-ID benötigen denselben Signierschlüssel. Lege einen dauerhaften
+Schlüssel außerhalb des Repositories an und sichere ihn separat. Passwörter werden
+interaktiv eingegeben:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>keytool<span class="w"> </span>-genkeypair<span class="w"> </span>-v<span class="w"> </span>-keystore<span class="w"> </span>/sicherer/pfad/bearstack-android.jks<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>-alias<span class="w"> </span>bearstack<span class="w"> </span>-keyalg<span class="w"> </span>RSA<span class="w"> </span>-keysize<span class="w"> </span><span class="m">4096</span><span class="w"> </span>-validity<span class="w"> </span><span class="m">10000</span>
+</span></code></pre></div>
+<p>Der Release-Build verwendet diese Umgebungsvariablen:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Inhalt</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BEARSTACK_ANDROID_KEYSTORE</code></td>
+<td>Absoluter Pfad zur JKS-Datei.</td>
+</tr>
+<tr>
+<td><code>BEARSTACK_ANDROID_KEY_ALIAS</code></td>
+<td>Alias, beispielsweise <code>bearstack</code>.</td>
+</tr>
+<tr>
+<td><code>BEARSTACK_ANDROID_STORE_PASSWORD</code></td>
+<td>Passwort des Keystores.</td>
+</tr>
+<tr>
+<td><code>BEARSTACK_ANDROID_KEY_PASSWORD</code></td>
+<td>Passwort des Schlüssels.</td>
+</tr>
+</tbody>
+</table>
+<p>Passwörter beispielsweise mit <code>read -rs</code> einlesen und anschließend exportieren.</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>apps/android/gradlew<span class="w"> </span>-p<span class="w"> </span>apps/android<span class="w"> </span>:app:assembleRelease
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>adb<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>apps/android/app/build/outputs/apk/release/app-release.apk
+</span></code></pre></div>
+<p>Ohne Signiervariablen entsteht <code>app-release-unsigned.apk</code> zur Buildprüfung. Eine
+Debug-Installation hat einen anderen Schlüssel und muss vor dem ersten privaten
+Release deinstalliert werden; dabei gehen ihre lokalen Daten verloren.
+<code>apps/android/VERSION</code> und <code>versionCode</code> in <code>app/build.gradle.kts</code> werden für
+APK-Aktualisierungen gepflegt. Die Android-Version ist unabhängig von BearStack.</p>
+<h2 id="verbindung-und-zertifikat">Verbindung und Zertifikat<a class="headerlink" href="#verbindung-und-zertifikat" title="Permanent link">&para;</a></h2>
+<p>Die App verwendet HTTPS einschließlich optionalem Reverse-Proxy-Pfad. HTTP und
+automatische Weiterleitungen sind ausgeschlossen; einzutragen ist die endgültige
+HTTPS-Adresse. Vor der Anmeldung werden Serverprotokoll und anschließend die
+verfügbaren Funktionen und Rechte geprüft.</p>
+<p>Öffentlich vertrauenswürdige Zertifikate werden regulär geprüft. Bei einem
+selbstsignierten Blattzertifikat zeigt die App vor Übermittlung der Zugangsdaten
+den SHA-256-Fingerabdruck an. Ermittle ihn für die tatsächlich ausgelieferte
+Zertifikatsdatei:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>openssl<span class="w"> </span>x509<span class="w"> </span>-in<span class="w"> </span>/pfad/zum/server.crt<span class="w"> </span>-noout<span class="w"> </span>-fingerprint<span class="w"> </span>-sha256
+</span></code></pre></div>
+<p>Vergleiche alle Hexadezimalpaare. <strong>Abgeglichen und vertrauen</strong> bindet genau dieses
+Zertifikat an das Profil. Hostname und Gültigkeitszeitraum werden weiter geprüft.
+Eine IP-Adresse benötigt einen entsprechenden IP-Eintrag im Subject Alternative
+Name. Nach einem Zertifikatswechsel wird die Verbindung mit erneutem Abgleich
+eingerichtet. Private Ketten mit eigener CA werden nicht über diese Freigabe für
+selbstsignierte Blattzertifikate akzeptiert.</p>
+<p>Es gibt ein aktives Profil. Zugangsdaten und bestätigtes Zertifikat werden mit
+AES-GCM und einem Schlüssel im Android Keystore in <code>noBackupFilesDir</code> gespeichert.
+Backups und Gerätetransfers sind ausgeschlossen. Screenshots, Bildschirmaufnahmen
+und die Vorschau im App-Umschalter sind möglich.</p>
+<p>Debug-Builds protokollieren unter <code>BearStackConnection</code> nur Phase und Diagnosecode,
+keine vollständigen URLs, Exception-Texte, Benutzernamen oder Passwörter.
+<a href="android.html#probleme-beheben">Diagnosecodes und erste Prüfschritte</a> stehen in der Anleitung.</p>
+<h2 id="api-und-datenhaltung">API und Datenhaltung<a class="headerlink" href="#api-und-datenhaltung" title="Permanent link">&para;</a></h2>
+<p>Der verbindliche HTTP-Vertrag steht in
+<a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml"><code>openapi.yaml</code></a>.
+Die App verwendet HTTP Basic über HTTPS; Galerie und Personenverwaltung teilen
+sich die Foto-Dienste und Zugriffsregeln des Browsers.</p>
+<table>
+<thead>
+<tr>
+<th>API-Bereich</th>
+<th>Aufgabe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/api/photos/v1/</code></td>
+<td>Sitzung, Galerie, Datumssprung, Medieninformationen, Karten und Textbeiträge.</td>
+</tr>
+<tr>
+<td><code>/api/photos/labeling/v1/</code></td>
+<td>Personenlisten, Benennen, Zuordnen, Favoriten, Gruppenvergleiche und Aktionsquittungen.</td>
+</tr>
+<tr>
+<td><code>/photos/faces/{id}/suggestions</code></td>
+<td>Gesichtsabgleich mit bereits benannten Personen.</td>
+</tr>
+</tbody>
+</table>
+<p>Funktionen werden anhand von Serverfähigkeiten eingeblendet, etwa <code>named_people</code>,
+<code>merge_suggestions</code>, <code>merge_side_actions</code>, <code>merge_naming</code>, <code>named_face_batch</code> und
+<code>people_count_sort</code>. Die <a href="android.html#serverkompatibilitat">Kompatibilitätstabelle</a>
+nennt die zugehörigen Mindestversionen. Ältere Server behalten die jeweils
+unterstützten Bedienwege; fehlende Funktionen führen nicht zu einem Protokollwechsel.</p>
+<h3 id="aktionen-revisionen-und-wiederanlauf">Aktionen, Revisionen und Wiederanlauf<a class="headerlink" href="#aktionen-revisionen-und-wiederanlauf" title="Permanent link">&para;</a></h3>
+<p>Schreibaktionen tragen eine zufällige Aktions-ID, Datenbestandskennung und
+Quellrevision. Zuordnungen und Gruppenentscheidungen benötigen zusätzlich die
+Zielrevision; Gruppenvergleiche enthalten auch die Vorschlags-ID. Der Server
+speichert Änderung und Quittung in derselben SQLite-Transaktion. Quittungen sind
+kontogebunden; bestätigte Aktionen werden dadurch auch nach verlorenen Antworten
+nicht doppelt ausgeführt.</p>
+<p>Web- und Hintergrundänderungen erhöhen dieselben Revisionen. Ein Konflikt verlangt
+eine neue Benutzerentscheidung. <strong>Offene Aktion prüfen</strong> liest zuerst die Quittung
+und sendet nur bei fehlender Quittung denselben gespeicherten Auftrag erneut.
+Die Foto-Datenbank einschließlich Quittungen gemeinsam sichern und wiederherstellen.
+Das Löschen der Gesichtserkennungsdaten erzeugt eine neue Datenbestandskennung und
+beendet die Gültigkeit der bisherigen Quittungen.</p>
+<p>Room hält die aktuelle Gruppe und Bildseite, Durchgangsgrenze, übersprungene und
+abgetrennte Gruppen, offene Aktionen und bestätigte Statistikereignisse getrennt
+nach Instanz, Datenbestand und Konto. Das aktuelle Room-Schema <strong>4</strong> speichert die
+Warteschlangen als einzelne indizierte Einträge; Migrationen übernehmen vorhandene
+Reihenfolgen und offene Aktionen. Wiederherstellung liest höchstens 256 Einträge
+je Block, normales Blättern einzelne Einträge.</p>
+<p>Rücknahmetimer existieren nur im Arbeitsspeicher. Noch nicht gesendete Ignorieraktionen
+kehren bei Hintergrundwechsel oder Neustart in die Warteschlange zurück. Ein offener
+Namens- oder Duplikatdialog verzögert das Senden abgelaufener Ignorieraktionen, ohne
+die Rücknahmefrist zu verlängern. Bereits möglicherweise gesendete Aktionen werden
+über ihre Quittung geklärt. Dies ist keine allgemeine Offline-Warteschlange.</p>
+<h3 id="gesichtsabgleich">Gesichtsabgleich<a class="headerlink" href="#gesichtsabgleich" title="Permanent link">&para;</a></h3>
+<p>Die Lupe fordert NDJSON-Zwischenstände an; ältere passende Server können eine
+JSON-Antwort liefern. Es werden höchstens 20 Treffer und 64 KiB pro Zwischenstand
+verarbeitet. Im Speicher liegen nur die aktuelle Rangliste und der neueste wartende
+Zwischenstand. Ein fehlender Abschluss oder Übertragungsfehler verwirft vorläufige
+Treffer und erlaubt einen erneuten Versuch.</p>
+<p>Beim Vergleich zweier unbenannter Gruppen laufen höchstens zwei Abgleiche
+nacheinander: zuerst für die erste Gruppe, nur bei leerem Endergebnis für die zweite.
+Fertige Ergebnisse gelten für das aktuelle Paar; Gruppenwechsel oder bestätigte
+Einzelaktionen verwerfen sie. Ein Hintergrundwechsel bricht laufende Suchen ab;
+unvollständige Ergebnisse werden beim Fortsetzen neu ermittelt. Die Zuordnung
+lädt nur die aktuelle Zielperson nach und verwendet die bestehenden Revisionsprüfungen.</p>
+<h2 id="speicher-und-ladeverhalten">Speicher und Ladeverhalten<a class="headerlink" href="#speicher-und-ladeverhalten" title="Permanent link">&para;</a></h2>
+<p>Die Fotoframe-Einstellung <code>frame_random</code> wird lokal gespeichert. Die native Session
+meldet Unterstützung über <code>frame_random_sort</code>; fehlt die Fähigkeit, bleibt die
+bisherige Wiedergabe aktiv. Der Server verarbeitet <code>sort=random</code> über den bereits
+indexierten stabilen Zufallswert. Die Reihenfolge bleibt über Seitenwechsel und
+Wiederholungen hinweg gleich; es gibt keinen vollständigen Metadatenabruf.</p>
+<p>Bei Gerätefotos wird für den gewählten Ordner einmal eine primitive <code>LongArray</code>
+mit Bild-IDs gelesen und gemischt (8 Byte pro Bild, etwa 0,8 MB für 100.000 Fotos).
+Metadaten werden anschließend nur für die jeweils bis zu 96 IDs einer Seite
+abgefragt. Das funktioniert auch bei Anbietern ohne native Offset-Pagination.
+Schließen, Verbindungswechsel und Wechsel der Reihenfolge geben die ID-Liste frei.
+Der nächste Fotoframe-Start mischt Gerätefotos neu.</p>
+<h3 id="metadatengrenzen">Metadatengrenzen<a class="headerlink" href="#metadatengrenzen" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Bereich</th>
+<th>Seitengröße und Begrenzung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Galerie</td>
+<td>96 Medien, 24 Ordner und 20 Textzusammenfassungen je Seite; höchstens drei Seiten je Bereich.</td>
+</tr>
+<tr>
+<td>Ordnervorschauen</td>
+<td>Bis zu vier je normalem Ordner, bei virtuellen Personenordnern bis zu acht.</td>
+</tr>
+<tr>
+<td>Rückkehr aus dem Fotoframe</td>
+<td>Zusätzlich bleibt die vorherige Galerie innerhalb derselben Grenzen erhalten.</td>
+</tr>
+<tr>
+<td>Lokale Fotos</td>
+<td>96 Fotos beziehungsweise 24 Ordner je Seite; höchstens drei Seiten im Raster.</td>
+</tr>
+<tr>
+<td>Personenliste</td>
+<td>Bis zu 20 Personen je Anfrage; Namenssuche nach 250 ms Eingabepause.</td>
+</tr>
+<tr>
+<td>Gesichter einer benannten Person</td>
+<td>Bis zu 40 je Anfrage über einen Gesichts-ID-Cursor; ältere Server liefern Viererseiten.</td>
+</tr>
+<tr>
+<td>Benennungsdurchgang</td>
+<td>Bis zu 20 Gruppen je Metadatenseite; Anzeige in Viererseiten.</td>
+</tr>
+<tr>
+<td>Mehrfachauswahl</td>
+<td>Höchstens 500 Gesichter pro Aktion.</td>
+</tr>
+</tbody>
+</table>
+<p>Entfernte Galerie-Metadaten werden beim Zurückscrollen erneut geladen. Ansichts- und
+Kontowechsel brechen überholte Anfragen ab. Der native Katalog ergänzt Identität,
+Inhaltsrevision und Prüfstatus gemeinsam für Medien und Ordnervorschauen in
+Abfragen mit höchstens 200 unterschiedlichen Pfaden. Normale Ordnerseiten mit
+Namenssortierung werden direkt in SQLite paginiert; komplexe Suchen,
+Datumssortierung und unvollständige Sichtbarkeitszähler behalten den bisherigen Pfad.</p>
+<p>Der Datumssprung ermittelt Nachbartage über höchstens vier Bereichsabfragen und
+zählt die Einträge vor der Zielseite. Position und Ziel stammen aus derselben
+Lesetransaktion. Die App lädt danach die Zielseite, keine vollständige Medienliste.</p>
+<p>Lokale Ordner lesen nur Androids MediaStore. Je Ordner bleiben ein Zähler und
+höchstens zwei Vorschau-IDs erhalten. Abfragen laufen abbrechbar außerhalb des
+UI-Threads; Anbieter ohne native Seitengrenzen werden über Cursor gelesen.
+Reihenfolge ist die absteigende Medien-ID. Es gibt keine lokalen Uploads oder
+Serveranfragen für Gerätefotos.</p>
+<h3 id="bild-und-dateicaches">Bild- und Dateicaches<a class="headerlink" href="#bild-und-dateicaches" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Cache</th>
+<th>Grenze und Lebensdauer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Server-Galerie-Thumbnails</td>
+<td>Einstellbar 64–2048 MiB, Standard 256 MiB; der geschützte Pflichtbestand darf das Budget überschreiten.</td>
+</tr>
+<tr>
+<td>Große Vorschauen</td>
+<td>16 MiB Arbeitsspeicher; höchstens drei Minuten ab erfolgreichem Laden, ohne Verlängerung bei Zugriff. Kein Disk-Cache.</td>
+</tr>
+<tr>
+<td>Lokale Fotos</td>
+<td>16 MiB Arbeitsspeicher; beim Verlassen der lokalen Ansicht oder Hintergrundwechsel geleert.</td>
+</tr>
+<tr>
+<td>Vorbereitete Serverbilder zum Teilen</td>
+<td>Höchstens 256 MiB je Datei sowie acht Dateien und 512 MiB insgesamt; Bereinigung beim nächsten Teilen, auch für Dateien ab 24 Stunden.</td>
+</tr>
+<tr>
+<td>OpenStreetMap-Kartenbilder</td>
+<td>64 MiB HTTP-Cache; Cache-Header und bedingte Anfragen werden berücksichtigt.</td>
+</tr>
+</tbody>
+</table>
+<p>Galerie-Thumbnails liegen privat in <code>noBackupFilesDir</code>, getrennt nach Server,
+Instanz, Datenbestand, Konto, Bildversion und Vorschaugröße. Die neuesten 50
+ungefilterten Stream-Vorschauen und alle Vorschauen der ersten Ordnerebene sind
+geschützt. Beim Vorladen werden vorhandene Dateien nur anhand ihrer Metadaten
+geprüft; unveränderte Schutzlisten werden nicht erneut geschrieben. Die Nutzung
+beim Anzeigen bestimmt die Verdrängungsreihenfolge ungeschützter Einträge.</p>
+<p>Große Gesichtsvorschauen verwenden den serverseitigen Wert <code>large_preview_size</code>
+(Standard 3840 Pixel längste Kante); die App dekodiert mit einem Ziel von 2048 Pixeln.
+Ältere Server ohne diesen Modus liefern über denselben Endpunkt das Original.
+Die optionale Kennung <code>original_key</code> erlaubt verschiedenen Gesichtern desselben
+Fotos, ein dekodiertes Bild gemeinsam zu verwenden. Rahmen und Zoom werden separat
+gezeichnet. Bei Speicherdruck können Bilder vor Ablauf der drei Minuten verdrängt werden.</p>
+<p>Große Vorschauen werden nur über WLAN vorgeladen: in der Galerie höchstens die
+nächste Aufnahme, in Personenansichten die angezeigten Portraits nacheinander.
+Wechsel auf Mobilfunk oder in den Hintergrund bricht dies ab. Das eigenständige
+Vorladen der geschützten Galerie-Thumbnails darf dagegen mobile Daten nutzen.
+Ein ausdrücklicher Verbindungswechsel leert die Server-Bildcaches.</p>
+<p>Zum Teilen werden Serveroriginale ohne Bilddekodierung mit einem 64-KiB-Puffer
+übertragen. Fehler und Abbruch entfernen angefangene Dateien. Die empfangende App
+bekommt vorübergehenden Zugriff über einen FileProvider; lokale Fotos werden über
+ihre MediaStore-URI ohne zusätzliche Kopie freigegeben.</p>
+<h3 id="karten-und-geometrien">Karten und Geometrien<a class="headerlink" href="#karten-und-geometrien" title="Permanent link">&para;</a></h3>
+<p>Die App hält höchstens 289 Fotomarker je Ausschnitt, fordert bis zu 4.096
+Fotoroutenkoordinaten an und zeigt bis zu 256 GPX-Tracks mit gemeinsam höchstens
+8.192 Punkten. Die Trackliste hält zusätzlich zu ausgewählten Namen höchstens
+96 Einträge. Zwei GPX-Geometrieanfragen laufen gleichzeitig; überholte Anfragen
+werden abgebrochen. Abschnitte bleiben getrennt, auch an der Datumsgrenze.</p>
+<p>GPX-Dateien dürfen serverseitig höchstens 16 MiB und 100.000 Track-/Routenpunkte
+enthalten; der Parsercache ist auf 32 MiB begrenzt. Fehlende Indexdaten werden beim
+normalen Indexlauf ergänzt. Foto- und GPX-Routen verwenden gemeinsame Parser,
+Zugriffsprüfungen und Geometrie-Arbeitsplätze des Servers.</p>
+<p>Der Servercache für vollständig gruppierte Fotorouten liegt unter
+<code>&lt;Cache-Verzeichnis&gt;/photo-routes/v1/</code>: höchstens 256 JSON-Dateien und 512 MiB,
+zuzüglich temporärer Dateien bei atomarem Ersatz. Ordner, Medientyp,
+Gruppierungsradius und Sichtbarkeit bestimmen den Schlüssel; Zoomstufen verwenden
+dieselbe Grundlage. Suchrouten werden berechnet, aber nicht dauerhaft gespeichert.
+Revisionen invalidieren betroffene Routen bei Änderungen; Zugriffsprüfungen bleiben
+vor jedem Abruf aktiv. Details beschreibt die <a href="fotos-technik.html#karten-und-gpx">Kartenreferenz</a>.
+Kartenbilder lädt ein eigener Client ohne BearStack-Zugangsdaten.</p>
+<h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
+<p>Alle Befehle werden vom Repository-Stamm aus ausgeführt:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># JVM-Tests, Lint und Debug-APK</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>make<span class="w"> </span>test-android
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># JVM-Tests, Lint und minimierte Release-APK (R8)</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>make<span class="w"> </span>test-android-release
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Mit gestartetem Emulator: Compose, Gesten, Room, Keystore und Caches</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>apps/android/gradlew<span class="w"> </span>-p<span class="w"> </span>apps/android<span class="w"> </span>:app:connectedDebugAndroidTest
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Mit genau einem Testemulator und adb im PATH: echter temporärer Go-HTTPS-Server</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>make<span class="w"> </span>test-android-integration
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="c1"># Bedienung der minimierten App gegen einen temporären Go-Server</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>make<span class="w"> </span>test-android-release-integration
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="c1"># Serverseitige Verträge, Rechte, Revisionen und Rollback</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>make<span class="w"> </span>test-go
+</span></code></pre></div>
+<p>Die Tests decken unter anderem Navigation und große Schrift, Vorschaugesten,
+Tastatureingabe während Rücknahmefristen, Seitenwechsel, verlorene Antworten,
+Konflikte, Neustarts, Statistik und die Grenzen der Bildcaches ab. Cachetests
+prüfen auch echte HTTPS-Anfragezahlen, unveränderte Dateien beim erneuten Vorladen
+und Reparatur gelöschter oder beschädigter Einträge.</p>
+<p>Die HTTPS-Integration verwendet temporäre Daten, <code>127.0.0.1:18787</code> und <code>adb reverse</code>;
+sie greift auf keine installierte BearStack-Serverinstanz zu. Ohne Testadresse wird
+dieser zusätzliche instrumentierte Test übersprungen.</p>
+<p>Der Release-Smoke benötigt Python 3, adb und einen dedizierten Emulator. Er setzt
+dessen App-Daten vor und nach dem Lauf zurück; physische Geräte werden abgewiesen.
+Der Bericht liegt unter <code>app/build/reports/release-smoke.xml</code>. Nur
+<code>-Pbearstack.releaseSmoke=true</code> erlaubt ohne privaten Keystore eine Signierung mit
+dem lokalen Debug-Schlüssel. Die normale Produktionssignierung bleibt davon getrennt.</p>
+<p>Vor privater Verteilung die Bedienung zusätzlich auf dem eigenen Gerät prüfen,
+insbesondere TalkBack, Namensdialog/Tastatur und die Originalfoto-Vorschau.</p>
+<h2 id="projektstruktur">Projektstruktur<a class="headerlink" href="#projektstruktur" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>apps/android/
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  VERSION                 # eigenständige App-Version
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>  gradlew, gradlew.bat     # Build-Einstieg
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>  app/
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    schemas/              # exportierte Room-Schemata
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    src/main/java/de/bearstack/people/
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>      connection/         # Sitzung, TLS, Zertifikatsabgleich, Keystore
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>      data/local/         # Room-Zustand, Ereignisse, Statistik
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>      data/remote/        # JSON-Modelle und HTTP-Vertrag
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>      media/              # Bildcaches und Vorladen
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>      photos/             # Galerie, Gerätefotos, Karten und Wiedergabe
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>      people/             # Repository, ViewModel und Gestenregeln
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>      statistics/         # lokale Gesichts- und Gruppenzähler
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>      ui/                 # Compose-Oberfläche
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    src/test/             # JVM-Tests
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>    src/androidTest/      # Geräte- und Integrationstests
+</span></code></pre></div>
+<p><code>connection/AppSession.kt</code> verwaltet Anmeldung, Profil, HTTP-Client, Bildcaches und
+Galerie. <code>PeopleViewModel</code> verwaltet Personenwarteschlange und Aktionen. Die lokale
+Personendatenbank wird erst für eine Sitzung mit Personenrechten geöffnet. Ein
+Kontowechsel stoppt zuerst die Feature-Aufgaben und schließt dann die Sitzungsressourcen.
+Die Personenlogik liegt im Go-Backend unter <code>internal/photos</code>, HTTP-Adapter und
+Rechte unter <code>internal/server</code>.</p>
+<p>Für die Buildpflege: Die App verwendet <code>room-runtime</code> und den Room-Compiler;
+<code>room-ktx</code> und <code>ui-tooling-preview</code> sind keine zusätzlichen Abhängigkeiten. Vor einem
+Upgrade auf AGP 10 müssen die Legacy-DSL-/Kotlin-Optionen in <code>gradle.properties</code> und
+die kapt-Anbindung migriert werden. Die bestehenden Optionen gehören zum aktuellen
+Projektaufbau. Verbindlich sind die Gradle-Dateien im Repository.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+              </article>
+            </div>
+
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Zurück zum Seitenanfang
+</button>
+
+      </main>
+
+        <footer class="bs-footer" aria-label="Website-Footer">
+  <div class="bs-wrap bs-footer__inner">
+    <div>
+      <a class="bs-footer__brand" href="index.html">BearStack</a>
+      <p>Schlankes Archiv. Starke Funktion.</p>
+    </div>
+    <nav class="bs-footer__nav" aria-label="Footer-Navigation">
+      <a href="dokumente.html">Dokumente</a>
+      <a href="fotos.html">Fotos</a>
+      <a href="installation.html">Installation</a>
+      <a href="benutzer-und-rechte.html">Benutzer & Rechte</a>
+      <a href="architektur.html">Architektur</a>
+      <a href="tests-und-audit.html">Tests & Audit</a>
+      <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
+    </nav>
+    <p class="bs-footer__meta">BearStack 0.69.0 · Website gebaut mit Zensical</p>
+  </div>
+</footer>
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+
+
+
+
+
+      <script id="__config" type="application/json">{"annotate":null,"base":".","features":["navigation.tabs","navigation.top","toc.follow"],"search":"./assets/javascripts/workers/search.b6b7e04f.min.js","tags":null,"translations":{"clipboard.copied":"In Zwischenablage kopiert","clipboard.copy":"In Zwischenablage kopieren","search.result.more.one":"1 weiteres Suchergebnis auf dieser Seite","search.result.more.other":"# weitere Suchergebnisse auf dieser Seite","search.result.none":"Keine Suchergebnisse","search.result.one":"1 Suchergebnis","search.result.other":"# Suchergebnisse","search.result.placeholder":"Suchbegriff eingeben","search.result.term.missing":"Es fehlt","select.version":"Version auswählen"},"version":null}</script>
+
+
+      <script src="./assets/javascripts/bundle.ee611ef6.min.js"></script>
+
+
+  </body>
+</html>

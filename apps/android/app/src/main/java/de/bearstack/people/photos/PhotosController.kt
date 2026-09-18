@@ -34,6 +34,8 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     private val scope = CoroutineScope(parent.coroutineContext + SupervisorJob(parent.coroutineContext[Job]))
     private val mutable = MutableStateFlow(PhotosState())
     val state = mutable.asStateFlow()
+    private val localPlayback = MutableStateFlow(PlaybackSettings())
+    val playbackSettings = playback?.state ?: localPlayback.asStateFlow()
     val downloads = application?.let {PhotoDownloads(it,scope,service)}
     internal var thumbnailCache: de.bearstack.people.media.ThumbnailCache? = null
     private val application=application?.applicationContext
@@ -65,7 +67,8 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     init { open(initialQuery) }
     fun open(query: PhotoQuery, tab: Int = state.value.tab, frame: Boolean = false) {
         thumbnailCache?.refresh()
-        val resolvedQuery = normalizePhotoSort(query, tab, session.peopleCountSort)
+        val resolvedQuery = if(frame && playbackSettings.value.frameRandom && session.frameRandomSort) query.copy(sort="random")
+            else normalizePhotoSort(query, tab, session.peopleCountSort)
         val current = state.value
         val name = current.name.takeIf {current.query.path==resolvedQuery.path && it.isNotBlank()}
             ?: current.folders.firstOrNull {it.path==resolvedQuery.path}?.name
@@ -206,6 +209,14 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
         frameReturn=state.value.copy(loadingSections=emptySet(),selected=null) to gridPosition
         open(state.value.query.copy(recursive=true),frame=true)
     }
+    fun savePlaybackSettings(settings: PlaybackSettings) {
+        val orderChanged = playbackSettings.value.frameRandom != settings.frameRandom
+        if(playback != null) playback.save(settings) else localPlayback.value=settings
+        if(orderChanged && state.value.frame && session.frameRandomSort) {
+            service.clearPlaybackOrder()
+            open((frameReturn?.first?.query ?: state.value.query).copy(recursive=true),frame=true)
+        }
+    }
     fun closeViewer() {
         val saved=frameReturn
         if(state.value.frame && saved!=null) {
@@ -213,6 +224,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
             gridPosition=saved.second
             mutable.value=saved.first
             frameReturn=null
+            service.clearPlaybackOrder()
         } else mutable.update {it.copy(scrollToKey=it.selected?.let {path -> "photo:$path"},selected=null)}
     }
     fun closeBlog() { detailGeneration++;detail?.cancel(); mutable.update { it.copy(blog=null,blogLoading=false,blogError=null) } }
@@ -232,6 +244,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     }
     fun close() {
         generation++;scope.cancel();additional.clear();request=null;detail=null
+        service.clearPlaybackOrder()
         frameReturn=null;gridPosition=null;visibleKeys=emptySet();folderNames.clear();mutable.value=PhotosState()
     }
 }

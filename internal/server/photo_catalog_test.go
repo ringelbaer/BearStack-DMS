@@ -8,11 +8,71 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
 	"bearstack/internal/photos"
 )
+
+func TestPhotoCatalogRandomOrderPagesRemainStableAndPrivate(t *testing.T) {
+	s := faceTestServer(t)
+	root := s.photos.Root()
+	image, err := os.ReadFile(filepath.Join(root, "one.jpg"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, dir := range []string{"shuffle/child", "shuffle/private"} {
+		if err := os.MkdirAll(filepath.Join(root, dir), 0750); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 0; i < 210; i++ {
+		if err := os.WriteFile(filepath.Join(root, "shuffle/child", fmt.Sprintf("photo-%03d.jpg", i)), image, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(root, "shuffle/private/.adminonly"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "shuffle/private/secret.jpg"), image, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.photos.RebuildIndex(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var first []string
+	for pass := 0; pass < 2; pass++ {
+		var paths []string
+		seen := map[string]bool{}
+		for page := 1; page <= 3; page++ {
+			w := labelRequest(s, "GET", fmt.Sprintf("/api/photos/v1/browse?path=shuffle&recursive=1&type=image&section=media&sort=random&page=%d", page), "reader", "")
+			var result photoCatalogPage
+			if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &result) != nil {
+				t.Fatalf("page: %d %s", w.Code, w.Body.String())
+			}
+			if result.Total != 210 || result.HasNext != (page < 3) || len(result.Media) != min(96, 210-(page-1)*96) {
+				t.Fatalf("pagination: %+v", result)
+			}
+			for _, item := range result.Media {
+				if seen[item.Path] || !strings.HasPrefix(item.Path, "shuffle/child/") {
+					t.Fatalf("duplicate/private photo %s", item.Path)
+				}
+				seen[item.Path] = true
+				paths = append(paths, item.Path)
+			}
+		}
+		if pass == 0 {
+			first = paths
+			if sort.StringsAreSorted(paths) {
+				t.Fatal("random order is ordinary filename order")
+			}
+		} else if !reflect.DeepEqual(first, paths) {
+			t.Fatal("random order changed between page requests")
+		}
+	}
+}
 
 func TestPhotoCatalogFolderSearchContinuesBeyondFifty(t *testing.T) {
 	s := faceTestServer(t)
@@ -82,11 +142,12 @@ func TestPhotoCatalogReaderAndValidation(t *testing.T) {
 	for _, user := range []string{"reader", "editor", "manager"} {
 		w := labelRequest(s, "GET", "/api/photos/v1/session", user, "")
 		var result struct {
-			Protocol  int    `json:"protocol"`
-			CanManage bool   `json:"can_manage_people"`
-			Account   string `json:"account"`
+			Protocol    int    `json:"protocol"`
+			CanManage   bool   `json:"can_manage_people"`
+			Account     string `json:"account"`
+			FrameRandom bool   `json:"frame_random_sort"`
 		}
-		if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &result) != nil || result.Protocol != 1 || result.Account == "" || result.CanManage != (user != "reader") {
+		if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &result) != nil || result.Protocol != 1 || result.Account == "" || !result.FrameRandom || result.CanManage != (user != "reader") {
 			t.Fatalf("session %s: %d %s", user, w.Code, w.Body.String())
 		}
 	}

@@ -77,6 +77,8 @@ Läuft BearStack ohne Auth ausschließlich auf Loopback, muss das erste UI-Konto
 | `api_uploader` | `documents.upload` | Scanner, Automationen und Importjobs, die Dateien hochladen, aber keine Dokumente lesen sollen |
 | `custom` | nur explizit gewählte Einzelrechte | Delegierte Nutzerverwalter und eng zugeschnittene Spezialkonten |
 
+Ohne `documents.read` enthalten Upload-Duplikatmeldungen nur den selbst eingereichten Dateinamen. ID, ursprünglicher Dateiname und Link des vorhandenen Dokuments werden nur mit Leserecht zurückgegeben. Dokument-Tags und ihre Beschreibungen setzen ebenfalls Dokument-Leserecht voraus; reine Foto-Konten erhalten bei deaktiviertem Fotomodul auf `/tags` einen Fehler `403`.
+
 Die Rolle `admin` ist mehr als nur eine Summe sichtbarer Menüpunkte: Admin-only-Fotoordner mit `.adminonly` sind nur für Benutzer mit der Rolle `admin` zugänglich. Ein Benutzer mit einzeln gesetzten Vollrechten, aber ohne Rolle `admin`, sieht diese Inhalte nicht.
 
 ## Einzelrechte

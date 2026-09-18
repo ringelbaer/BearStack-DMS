@@ -15,12 +15,19 @@ import de.bearstack.people.text.UserIoFailure
 import kotlinx.coroutines.*
 import java.time.Instant
 import java.time.ZoneId
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.random.Random
 
 /** Read-only, foreground-scoped MediaStore catalog. No server client or filesystem traversal. */
-internal class DevicePhotosService(private val resolver: ContentResolver) : PhotosService {
+internal class DevicePhotosService(private val resolver: ContentResolver, private val random: Random = Random.Default) : PhotosService {
     private val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
     private var catalog: List<PhotoFolder>? = null
     private val buckets = mutableMapOf<String, Pair<String, String?>>()
+    private data class PlaybackOrder(val folder: String, val generation: Long, val ids: LongArray)
+    private val playbackGeneration = AtomicLong()
+    @Volatile private var playbackOrder: PlaybackOrder? = null
+
+    override fun clearPlaybackOrder() { playbackGeneration.incrementAndGet(); playbackOrder=null }
 
     override suspend fun session() = SESSION
     override fun thumbnail(photo: Photo, size: Int) = photo.path
@@ -41,6 +48,15 @@ internal class DevicePhotosService(private val resolver: ContentResolver) : Phot
                 if(bucket.second != null) " AND ${MediaStore.MediaColumns.VOLUME_NAME} = ?" else ""
             val args = listOfNotNull(bucket.first, bucket.second).toTypedArray()
             val offset = Math.multiplyExact(page - 1, 96)
+            if(query.sort == "random") {
+                val order = randomOrder(query.path, selection, args, signal)
+                val start = offset.coerceAtMost(order.size)
+                val ids = order.copyOfRange(start, (start.toLong()+96).coerceAtMost(order.size.toLong()).toInt())
+                val photos = randomPage(selection, args, ids, signal)
+                return@read PhotoPage(query.path, "", page, order.size, start.toLong()+96 < order.size, 0, false, false,
+                    photos, emptyList(), emptyList())
+            }
+            clearPlaybackOrder()
             val photos = queryPage(selection, args, offset, signal)
             PhotoPage(query.path, "", page, count, photos.size > 96, 0, false, false,
                 photos.take(96), emptyList(), emptyList())
@@ -58,6 +74,36 @@ internal class DevicePhotosService(private val resolver: ContentResolver) : Phot
     }
 
     fun folderName(path: String): String? = catalog?.firstOrNull { it.path == path }?.name
+
+    private fun randomOrder(folder: String, selection: String, args: Array<String>, signal: CancellationSignal): LongArray {
+        val generation = playbackGeneration.get()
+        playbackOrder?.takeIf {it.folder==folder && it.generation==generation}?.let {return it.ids}
+        // Only primitive IDs are retained (8 bytes per image), never a complete
+        // Photo catalog. Each metadata page below remains bounded to 96 images.
+        val ids = resolver.query(collection, arrayOf(MediaStore.Images.Media._ID), selection, args, PHOTO_ORDER, signal)?.use { cursor ->
+            val result = LongArray(cursor.count)
+            var count = 0
+            while(cursor.moveToNext()) {
+                signal.throwIfCanceled()
+                result[count++] = cursor.getLong(0)
+            }
+            if(count==result.size) result else result.copyOf(count)
+        } ?: throw UserIoFailure(UiText(R.string.photos_device_error))
+        ids.shuffle(random)
+        signal.throwIfCanceled()
+        if(playbackGeneration.get()==generation) playbackOrder=PlaybackOrder(folder,generation,ids)
+        return ids
+    }
+
+    private fun randomPage(selection: String, args: Array<String>, ids: LongArray, signal: CancellationSignal): List<Photo> {
+        if(ids.isEmpty()) return emptyList()
+        val selected = "$selection AND ${MediaStore.Images.Media._ID} IN (${ids.joinToString(",") {"?"}})"
+        val selectedArgs = args + ids.map {it.toString()}
+        val photos = resolver.query(collection, PHOTO_COLUMNS, selected, selectedArgs, PHOTO_ORDER, signal)?.use { readPhotos(it,signal) }
+            ?: throw UserIoFailure(UiText(R.string.photos_device_error))
+        val byPath = photos.associateBy {it.path}
+        return buildList {ids.forEach {id -> byPath[ContentUris.withAppendedId(collection,id).toString()]?.let(::add)}}
+    }
 
     private fun scanFolders(signal: CancellationSignal): List<PhotoFolder> {
         data class Bucket(val id: String, val volume: String?, val name: String, var count: Int = 0,
@@ -147,7 +193,7 @@ internal class DevicePhotosService(private val resolver: ContentResolver) : Phot
 
     companion object {
         private val PHOTO_ORDER = "${MediaStore.Images.Media._ID} DESC"
-        val SESSION = PhotoSession("device", false, 240, 240, 1280, 2048, 5, 8)
+        val SESSION = PhotoSession("device", false, 240, 240, 1280, 2048, 5, 8, frameRandomSort=true)
         private val PHOTO_COLUMNS = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME,
             MediaStore.Images.Media.MIME_TYPE, MediaStore.Images.Media.DATE_MODIFIED, MediaStore.Images.Media.DATE_TAKEN,
             MediaStore.Images.Media.SIZE, MediaStore.Images.Media.WIDTH, MediaStore.Images.Media.HEIGHT, MediaStore.Images.Media.BUCKET_DISPLAY_NAME)

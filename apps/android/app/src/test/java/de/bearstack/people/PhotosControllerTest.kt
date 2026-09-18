@@ -28,6 +28,63 @@ class PhotosControllerTest {
         override fun thumbnail(photo: Photo,size: Int)="https://example.test/thumbnail"
         override fun original(photo: Photo)="https://example.test/media"
     }
+    @Test fun randomFramePreservesFiltersPagesAndGalleryPosition()=runTest {
+        val fake=Fake().apply {handler={q,p,_ -> page(q,p,List(96) {photo("${q.sort}-${(p-1)*96+it}")},p<5).copy(total=480)}}
+        val original=PhotoQuery(path="Holiday",query="sea",gps=true,type="image",sort="ascending_date")
+        val controller=PhotosController(this,fake,session.copy(frameRandomSort=true),initialQuery=original)
+        runCurrent()
+        controller.more("media");runCurrent()
+        val gallery=controller.state.value
+        val position=de.bearstack.people.photos.GalleryPosition("photo:ascending_date-120",18)
+        controller.gridPosition=position
+        controller.savePlaybackSettings(de.bearstack.people.photos.PlaybackSettings(frameRandom=true))
+        controller.startFrame();runCurrent()
+        assertEquals(original.copy(recursive=true,sort="random"),controller.state.value.query)
+        assertEquals("random-0",controller.state.value.selected)
+        for(p in 2..5) {
+            controller.viewerAt(controller.state.value.media.last().path)
+            controller.more("media");runCurrent()
+            assertTrue(controller.state.value.media.size<=288)
+        }
+        assertEquals("random-383",controller.neighbour("random-384",-1)?.path)
+        assertEquals("random-0",controller.neighbour("random-479",1,repeat=true)?.path)
+        assertTrue(fake.requests.drop(2).all {it.first==original.copy(recursive=true,sort="random")})
+        controller.savePlaybackSettings(controller.playbackSettings.value.copy(frameRandom=false));runCurrent()
+        assertEquals(original.copy(recursive=true),controller.state.value.query)
+        controller.closeViewer()
+        assertEquals(gallery,controller.state.value)
+        assertEquals(position,controller.gridPosition)
+        controller.close()
+    }
+
+    @Test fun legacyServerKeepsNormalFrameEvenWhenRandomPreferenceWasSaved()=runTest {
+        val fake=Fake().apply {handler={q,p,_ -> page(q,p,listOf(photo("first")))}}
+        val controller=PhotosController(this,fake,session);runCurrent()
+        controller.savePlaybackSettings(de.bearstack.people.photos.PlaybackSettings(frameRandom=true))
+        controller.startFrame();runCurrent()
+        assertTrue(controller.state.value.frame)
+        assertTrue(fake.requests.all {it.first.sort=="descending_date"})
+        controller.close()
+    }
+
+    @Test fun changingFrameOrderCancelsOldPagesAndSettingsPersistDuringReload()=runTest {
+        val gate=CompletableDeferred<Unit>()
+        val fake=Fake().apply {handler={q,p,_ ->
+            if(p==2) withContext(NonCancellable) {gate.await()}
+            page(q,p,listOf(photo("${q.sort}-$p")),true)
+        }}
+        val controller=PhotosController(this,fake,session.copy(frameRandomSort=true));runCurrent()
+        controller.startFrame();runCurrent()
+        controller.more("media");runCurrent()
+        val selected=de.bearstack.people.photos.PlaybackSettings(frameRandom=true,frameSeconds=15,frameFolderName=true)
+        controller.savePlaybackSettings(selected);runCurrent()
+        gate.complete(Unit);runCurrent()
+        assertEquals(listOf("random-1"),controller.state.value.media.map {it.path})
+        assertEquals(selected,controller.playbackSettings.value)
+        controller.closeViewer();controller.startFrame();runCurrent()
+        assertEquals("random",controller.state.value.query.sort)
+        controller.close()
+    }
     @Test fun knownFolderTitlesSurviveLoadingSortingFailureAndBackNavigation()=runTest {
         val child=".people/all/7"
         val fake=Fake().apply {handler={q,p,_ ->

@@ -63,9 +63,9 @@ type uploadItem struct {
 
 type duplicateItem struct {
 	Filename         string `json:"filename"`
-	ExistingID       int64  `json:"existing_id"`
-	ExistingFilename string `json:"existing_filename"`
-	DocumentURL      string `json:"document_url"`
+	ExistingID       int64  `json:"existing_id,omitempty"`
+	ExistingFilename string `json:"existing_filename,omitempty"`
+	DocumentURL      string `json:"document_url,omitempty"`
 }
 
 type uploadErrorItem struct {
@@ -126,6 +126,11 @@ func (s *Server) processUpload(w http.ResponseWriter, r *http.Request, uploadWay
 		_ = part.Close()
 	}
 
+	if !authPermissionsForRequest(s, r).CanDocumentsRead {
+		for i, duplicate := range outcome.Duplicates {
+			outcome.Duplicates[i] = duplicateItem{Filename: duplicate.Filename}
+		}
+	}
 	return outcome
 }
 

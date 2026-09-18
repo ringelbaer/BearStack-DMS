@@ -4,6 +4,33 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### Dokumentation
+
+- Foto-Dokumentation vom ersten Galerieaufruf bis zu Suche, Tags, Karte und Fotoframe neu strukturiert. Eigene Anleitungen für Personen/Gesichter und Einrichtung/Betrieb trennen Arbeitsabläufe von Konfiguration, Ressourcenlimits und API-Referenz. Versionschronik und doppelte Android-Beschreibungen durch aktuelle Bedienhinweise und gezielte Verweise ersetzt; Website-Navigation und README aktualisiert.
+- Foto-Doku geprüft: Website-Build ohne Warnungen, 1.172 lokale Verweise ohne neue Fehler sowie alle drei Seiten in Chrome bei 1440 und 390 Pixeln Breite mit vollständiger Navigation und ohne horizontalen Seitenüberlauf.
+- Android-Anleitung nach Arbeitsabläufen neu aufgebaut: Einstieg und Verbindung, Orientierung, Galerie, lokale Fotos, Personenverwaltung, Einstellungen, Offlinebetrieb und Fehlerhilfe. Veraltete Menüpfade und widersprüchliche Bedienhinweise korrigiert; Kompatibilitätsangaben zentral zusammengefasst.
+- Technische Referenz für Build, Signierung, API, Datenhaltung, Speichergrenzen und Tests ergänzt. Android-README dient als Entwicklungsstart und verweist auf die gemeinsame Dokumentationsquelle; Website-Navigation und bestehende Verweise aktualisiert.
+- Validierung: Website-Build ohne Warnungen, 290 lokale Dokumentationsverweise geprüft sowie beide Seiten in Chrome bei 1440 und 390 Pixeln Breite ohne horizontalen Seitenüberlauf kontrolliert.
+- Reine Dokumentationsänderung ohne Versionssprung oder Änderung der App/API.
+
+### BearStack 0.69.0 / Android 0.19.0 – in Entwicklung
+
+- Fotoframe: gespeicherter Schalter **Zufällige Reihenfolge** im Zahnrad-Dialog; zunächst ausgeschaltet. Speichern startet die Wiedergabe mit der gewählten Reihenfolge neu. Filter und vorherige Galerieansicht bleiben erhalten.
+- Native Foto-API meldet `frame_random_sort` und akzeptiert `sort=random` über die vorhandene stabile Indexsortierung. Ältere Server behalten die normale Wiedergabe und zeigen einen deaktivierten Schalter mit Versionshinweis.
+- Gerätefotos werden über eine kompakte, temporäre Liste ihrer Bild-IDs gemischt. Metadaten bleiben auf 96 Fotos je Seite und drei Seiten im Viewer begrenzt; kein vollständiger Bild- oder Metadatenkatalog. Wiederholungen und Rückwärtsnavigation behalten die Reihenfolge, ein neuer Fotoframe-Start mischt Gerätefotos neu.
+- Regressionen für Paging, Sichtbarkeit, Wiederholung, Abbruch veralteter Abfragen, gespeicherte Einstellungen, Dialogbedienung und Geräteanbieter mit und ohne native Pagination ergänzt.
+- MINOR für die zusätzliche Einstellung und API-Fähigkeit; Android `versionCode 40`. README, Website und OpenAPI aktualisiert, keine Datenmigration.
+- Validierung: vollständige Go-Suite und 111 JVM-Tests, 15 Emulatorprüfungen für Gerätefotos, Einstellungen und Wiedergabe sowie Lint, Debug-/Test-APK und Website-Build erfolgreich. Schnelles Umschalten setzt den Viewer zuverlässig auf die neue Reihenfolge zurück; lokale Dokumentationsverweise ohne neue Fehler geprüft.
+
+### BearStack 0.68.3 – in Entwicklung
+
+- Upload-Antworten geben bei Duplikaten Dokument-ID, Bestandsdateiname und Dokumentlink nur noch mit `documents.read` zurück. Reine Upload-Konten erhalten weiterhin die Duplikatmeldung mit dem von ihnen eingereichten Dateinamen.
+- Dokument-Tags erfordern auch bei deaktiviertem Fotomodul Dokument-Leserecht. Der gemeinsame Tag-Handler lädt nur die jeweils erlaubten Bereiche; die Vorlage zeigt ohne Leserecht keine Dokument-Tags an.
+- IMAP-Abruf prüft die gemeldete Nachrichtengröße vor dem Download und fordert den Nachrichteninhalt begrenzt an. Das bisher erst bei der MIME-Verarbeitung greifende Größenlimit schützt damit bereits den Abruf über die puffernde IMAP-Bibliothek.
+- Mail-Import und EML-Archivierung begrenzen MIME-Verschachtelung auf 32 Container. Fehler brechen die Verarbeitung ab; abgewiesene Nachrichten werden nicht gelöscht, temporäre Archivdateien werden entfernt.
+- Regressionen für beide Upload-Endpunkte, Rollen und Zusatzrechte, Tag-Zugriff ohne Fotomodul, IMAP-Protokoll und Größen-Grenzwerte, MIME-Grenzwerte und Fehlerbereinigung ergänzt. PATCH ohne Datenmigration; README, Website und OpenAPI aktualisiert.
+- Validierung: `go test ./...` und gezielte Sicherheitsregressionen mit Race-Detector erfolgreich; Website ohne Build-Warnungen erzeugt, keine neuen defekten lokalen Dokumentationsverweise.
+
 ### BearStack 0.68.2 – in Entwicklung
 
 - Native Ordnerseiten mit Namenssortierung direkt in SQLite paginieren; Gesamtzahl und Seite aus demselben Lesesnapshot. Unicode-Sortierung, zentrale Anzeigenamen, Sichtbarkeit und die virtuelle Personenkachel bleiben erhalten.

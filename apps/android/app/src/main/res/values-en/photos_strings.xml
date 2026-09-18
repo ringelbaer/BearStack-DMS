@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="photos_frame_random">Random order</string>
+    <string name="photos_frame_random_unavailable">Random order requires BearStack 0.69.0 or later.</string>
     <string name="photos_directory_people">People in folder</string>
     <string name="photos_date_choose">Choose date</string>
     <string name="photos_date_jump">Jump to date</string>

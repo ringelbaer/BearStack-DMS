@@ -69,6 +69,8 @@ Konfiguriert wird der Import unter `Einstellungen -> E-Mail-Import`. Unterstütz
 
 Die Absenderliste kann leer bleiben oder einzelne Adressen und Domänen enthalten. Eine leere Liste verarbeitet alle Absender. Domänenregeln passen auch auf Subdomains; nicht erlaubte Absender werden abgelehnt, protokolliert und aus dem IMAP-Postfach gelöscht. Die Prüfung bezieht sich auf die Import-Nachricht im IMAP-Postfach. Erfolgreich verarbeitete E-Mails mit PDF- oder EML-Anhängen werden ebenfalls gelöscht, damit das Postfach als Eingangskorb funktioniert. E-Mails ohne verarbeitbare Anhänge bleiben unberührt.
 
+Die Größe einer Nachricht wird vor dem IMAP-Download geprüft; auch die angeforderte Inhaltsmenge ist begrenzt. Das bestehende Nachrichtenlimit beträgt das 20-Fache der konfigurierten Upload-Dateigröße und berücksichtigt Anhänge sowie Mail-Kodierung. Mail-Import und EML-Archivierung akzeptieren höchstens 32 verschachtelte MIME-Container. Nachrichten, die diese Grenzen überschreiten, werden als Fehler protokolliert und bleiben im Postfach.
+
 Alle Importläufe werden im Audit-Log sichtbar: erfolgreiche Importe, Duplikate, abgelehnte Absender, Verbindungstests und Fehler bekommen eigene Einträge. Die Verwaltung des Mail-Imports erfordert Systemverwaltungsrechte.
 
 ## Tags

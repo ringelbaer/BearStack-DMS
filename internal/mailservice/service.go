@@ -235,7 +235,7 @@ func (m *Service) CheckSettings(ctx context.Context, settings document.MailImpor
 }
 
 func (m *Service) importIMAPMessage(ctx context.Context, c mailbox, uid uint32, settings document.MailImportSettings) (MessageResult, error) {
-	body, err := c.FetchMessage(uid)
+	body, err := c.FetchMessage(uid, m.maxUploadBytes)
 	if err != nil {
 		return MessageResult{}, err
 	}

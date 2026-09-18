@@ -13,11 +13,83 @@ import (
 	"strings"
 	"testing"
 
+	"bearstack/internal/account"
 	"bearstack/internal/config"
 	"bearstack/internal/document"
 	"bearstack/internal/repository"
 	"bearstack/internal/storage"
 )
+
+func TestUploadDuplicateMetadataRequiresDocumentRead(t *testing.T) {
+	repo := openAuthSecurityRepository(t)
+	store, err := storage.New(filepath.Join(t.TempDir(), "documents"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server, err := New(config.Config{Addr: "127.0.0.1:0", DataDir: t.TempDir(), MaxUploadBytes: 1 << 20, Auth: config.AuthConfig{
+		Credentials: []config.AuthCredential{
+			{Username: "admin", Password: "secret", Role: account.RoleAdmin},
+			{Username: "uploader", Password: "secret", Role: account.RoleAPIUploader},
+			{Username: "custom", Password: "secret", Permissions: []string{account.PermissionDocumentsUpload}},
+			{Username: "reader-uploader", Password: "secret", Role: account.RoleAPIUploader, Permissions: []string{account.PermissionDocumentsRead}},
+		},
+	}}, repo, store, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := server.Handler()
+	content := []byte("%PDF-1.7\nprivate duplicate fixture")
+	upload := func(path, username, filename string) *httptest.ResponseRecorder {
+		t.Helper()
+		body, contentType := multipartUploadBody(t, "files", filename, content)
+		req := httptest.NewRequest(http.MethodPost, path, body)
+		req.SetBasicAuth(username, "secret")
+		req.Header.Set("Content-Type", contentType)
+		req.Header.Set("Accept", "application/json")
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("upload status = %d, body = %s", rec.Code, rec.Body.String())
+		}
+		return rec
+	}
+	var created uploadOutcome
+	if err := json.Unmarshal(upload("/api/upload", "admin", "confidential-original.pdf").Body.Bytes(), &created); err != nil || len(created.Uploaded) != 1 {
+		t.Fatalf("initial upload = %#v, error = %v", created, err)
+	}
+	for _, path := range []string{"/api/upload", "/upload"} {
+		for _, username := range []string{"uploader", "custom", "reader-uploader", "admin"} {
+			t.Run(path+"/"+username, func(t *testing.T) {
+				var result struct {
+					Duplicates []map[string]any `json:"duplicates"`
+				}
+				if err := json.Unmarshal(upload(path, username, "probe.pdf").Body.Bytes(), &result); err != nil || len(result.Duplicates) != 1 {
+					t.Fatalf("duplicate response = %#v, error = %v", result, err)
+				}
+				duplicate := result.Duplicates[0]
+				if duplicate["filename"] != "probe.pdf" {
+					t.Fatalf("submitted filename = %v", duplicate["filename"])
+				}
+				canRead := username == "reader-uploader" || username == "admin"
+				for _, field := range []string{"existing_id", "existing_filename", "document_url"} {
+					if _, present := duplicate[field]; present != canRead {
+						t.Errorf("%s present = %v, document read permission = %v", field, present, canRead)
+					}
+				}
+				if canRead && (duplicate["existing_id"] != float64(created.Uploaded[0].ID) || duplicate["existing_filename"] != "confidential-original.pdf") {
+					t.Errorf("reader duplicate metadata = %#v", duplicate)
+				}
+				req := httptest.NewRequest(http.MethodGet, created.Uploaded[0].DownloadURL, nil)
+				req.SetBasicAuth(username, "secret")
+				rec := httptest.NewRecorder()
+				handler.ServeHTTP(rec, req)
+				if !canRead && rec.Code != http.StatusForbidden {
+					t.Errorf("upload-only download status = %d", rec.Code)
+				}
+			})
+		}
+	}
+}
 
 func TestHandleUploadWebXHRStoresWebUploadWay(t *testing.T) {
 	ctx := context.Background()

@@ -1,0 +1,2371 @@
+
+<!doctype html>
+<html lang="de" class="no-js">
+  <head>
+
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+
+        <meta name="description" content="Fotomodul und Gesichtserkennung einrichten, Index und Caches betreiben sowie Daten und Zugriffe verwalten.">
+
+
+        <meta name="author" content="BearStack">
+
+
+
+        <link rel="prev" href="./fotos-personen.html">
+
+
+        <link rel="next" href="./android.html">
+
+
+
+
+
+      <link rel="icon" href="./assets/images/bearstack.svg">
+      <meta name="generator" content="zensical-0.0.46">
+
+
+
+        <title>Einrichtung und Betrieb - BearStack</title>
+
+
+
+
+
+
+      <link rel="stylesheet" href="./assets/stylesheets/modern/main.19d3147f.min.css">
+
+
+
+
+        <link rel="stylesheet" href="./assets/stylesheets/modern/palette.dfe2e883.min.css">
+
+
+
+
+
+
+
+
+
+
+
+
+      <link rel="stylesheet" href="./stylesheets/bearstack.css">
+
+    <script>__md_scope=new URL(".",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+
+
+
+
+
+  </head>
+
+
+
+
+
+
+
+
+
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="green">
+
+
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-label="Navigation"></label>
+    <div data-md-component="skip">
+
+
+        <a href="#einrichtung-und-betrieb" class="md-skip">
+          Zum Inhalt
+        </a>
+
+    </div>
+    <div data-md-component="announce">
+
+    </div>
+
+
+
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Kopfzeile">
+    <a href="./index.html" title="BearStack" class="md-header__button md-logo" aria-label="BearStack" data-md-component="logo">
+
+  <img src="./assets/images/bearstack.svg" alt="BearStack">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            BearStack
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+
+              Einrichtung und Betrieb
+
+          </span>
+        </div>
+      </div>
+    </div>
+
+
+        <form class="md-header__option" data-md-component="palette">
+
+
+
+
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="green"  aria-label="Zum dunklen Modus wechseln"  type="radio" name="__palette" id="__palette_0">
+
+      <label class="md-header__button md-icon" title="Zum dunklen Modus wechseln" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+      </label>
+
+
+
+
+
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="green"  aria-label="Zum hellen Modus wechseln"  type="radio" name="__palette" id="__palette_1">
+
+      <label class="md-header__button md-icon" title="Zum hellen Modus wechseln" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </label>
+
+
+</form>
+
+
+
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+
+
+
+
+
+        <label class="md-header__button md-icon" for="__search" aria-label="Suche">
+
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Suche">
+  <button type="button" class="md-search__button">
+    Suche
+  </button>
+</div>
+
+
+    <div class="md-header__source">
+
+        <a href="https://github.com/ringelbaer/BearStack-DMS" title="Zum Repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ringelbaer/BearStack-DMS
+  </div>
+</a>
+
+    </div>
+  </nav>
+
+</header>
+
+    <div class="md-container" data-md-component="container">
+
+
+
+
+
+<nav class="md-tabs" aria-label="Hauptnavigation" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+
+
+
+
+
+
+    <li class="md-tabs__item">
+      <a href="./index.html" class="md-tabs__link">
+
+
+  Start
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+    <li class="md-tabs__item">
+      <a href="./dokumente.html" class="md-tabs__link">
+
+
+  Dokumente
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./fotos.html" class="md-tabs__link">
+
+
+  Fotos
+
+        </a>
+      </li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      <li class="md-tabs__item">
+        <a href="./android.html" class="md-tabs__link">
+
+
+  Android-App
+
+        </a>
+      </li>
+
+
+
+
+
+
+
+
+
+    <li class="md-tabs__item">
+      <a href="./installation.html" class="md-tabs__link">
+
+
+  Installation
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+    <li class="md-tabs__item">
+      <a href="./benutzer-und-rechte.html" class="md-tabs__link">
+
+
+  Benutzer & Rechte
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+    <li class="md-tabs__item">
+      <a href="./architektur.html" class="md-tabs__link">
+
+
+  Architektur
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+    <li class="md-tabs__item">
+      <a href="./tests-und-audit.html" class="md-tabs__link">
+
+
+  Tests & Audit
+
+      </a>
+    </li>
+
+
+
+    </ul>
+  </div>
+</nav>
+
+
+
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+
+
+
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+
+
+
+
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./index.html" title="BearStack" class="md-nav__button md-logo" aria-label="BearStack" data-md-component="logo">
+
+  <img src="./assets/images/bearstack.svg" alt="BearStack">
+
+    </a>
+    BearStack
+  </label>
+
+    <div class="md-nav__source">
+      <a href="https://github.com/ringelbaer/BearStack-DMS" title="Zum Repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ringelbaer/BearStack-DMS
+  </div>
+</a>
+    </div>
+
+  <ul class="md-nav__list" data-md-scrollfix>
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./index.html" class="md-nav__link">
+
+
+
+  <span class="md-ellipsis">
+
+
+  Start
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./dokumente.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5M10 9H8M16 13H8M16 17H8"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Dokumente
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+
+
+
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+
+
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+
+
+
+  <span class="md-ellipsis">
+
+
+  Fotos
+
+
+  </span>
+
+
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+
+
+  Fotos
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./fotos.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-images" viewBox="0 0 24 24"><path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16"/><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><circle cx="13" cy="7" r="1" fill="currentColor"/><rect width="14" height="14" x="8" y="2" rx="2"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Anleitung
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./fotos-personen.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Personen & Gesichter
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item md-nav__item--active">
+
+
+
+
+
+
+
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Einrichtung & Betrieb
+
+
+  </span>
+
+
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+
+      <a href="fotos-technik.html" class="md-nav__link md-nav__link--active">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Einrichtung & Betrieb
+
+
+  </span>
+
+
+
+      </a>
+
+
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
+
+
+
+
+
+
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Inhaltsverzeichnis
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+
+        <li class="md-nav__item">
+  <a href="#fotomodul-aktivieren" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fotomodul aktivieren
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#berechtigungen-und-geschutzte-ordner" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Berechtigungen und geschützte Ordner
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#formate-und-metadaten" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Formate und Metadaten
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Formate und Metadaten">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#standardreihenfolge-eines-ordners" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Standardreihenfolge eines Ordners
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#index-und-hintergrundverarbeitung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Index und Hintergrundverarbeitung
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#vorschauen-und-caches" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Vorschauen und Caches
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Vorschauen und Caches">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#medienvorschauen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Medienvorschauen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#cache-statistik" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Cache-Statistik
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#gesichtsvorschauen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gesichtsvorschauen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#karten-und-gpx" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Karten und GPX
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Karten und GPX">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#fotorouten-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fotorouten-Cache
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#gesichtserkennung-einrichten" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gesichtserkennung einrichten
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Gesichtserkennung einrichten">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#mit-docker-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Mit Docker Compose
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#ohne-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ohne Compose
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#erkennung-steuern-und-ergebnisse-beurteilen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Erkennung steuern und Ergebnisse beurteilen
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Erkennung steuern und Ergebnisse beurteilen">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#ressourcen-und-fortschritt" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ressourcen und Fortschritt
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#referenzen-und-qualitat" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Referenzen und Qualität
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#zuordnungen-verbessern" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Zuordnungen verbessern
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#statistik-richtig-lesen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Statistik richtig lesen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#ordnerumzuge-und-aufbewahrung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ordnerumzüge und Aufbewahrung
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Ordnerumzüge und Aufbewahrung">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#ablauf-bei-fehlenden-ordnern" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ablauf bei fehlenden Ordnern
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#wann-die-zuordnung-eindeutig-ist" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Wann die Zuordnung eindeutig ist
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#geanderte-bilder-und-datenmigration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Geänderte Bilder und Datenmigration
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#daten-sichern-und-gesichtsdaten-loschen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Daten sichern und Gesichtsdaten löschen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#schnittstellen-und-technische-grenzen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Schnittstellen und technische Grenzen
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Schnittstellen und technische Grenzen">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#zufallsbild-einbinden" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Zufallsbild einbinden
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#galerie-personen-und-aktionen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Galerie, Personen und Aktionen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#begrenzte-arbeit-bei-groen-sammlungen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Begrenzte Arbeit bei großen Sammlungen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+    </ul>
+
+</nav>
+
+    </li>
+
+
+
+
+          </ul>
+        </nav>
+
+    </li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item md-nav__item--nested">
+
+
+
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+
+
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+
+
+
+  <span class="md-ellipsis">
+
+
+  Android-App
+
+
+  </span>
+
+
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+
+
+  Android-App
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./android.html" class="md-nav__link">
+
+
+
+  <span class="md-ellipsis">
+
+
+  Anleitung
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./android-technik.html" class="md-nav__link">
+
+
+
+  <span class="md-ellipsis">
+
+
+  Technik & Entwicklung
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+          </ul>
+        </nav>
+
+    </li>
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./installation.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-play" viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Installation
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./benutzer-und-rechte.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Benutzer & Rechte
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./architektur.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-blocks" viewBox="0 0 24 24"><path d="M10 22V7a1 1 0 0 0-1-1H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 0 0-1-1H2"/><rect width="8" height="8" x="14" y="2" rx="1"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Architektur
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./tests-und-audit.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Tests & Audit
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+
+
+
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+
+
+
+
+
+
+
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+
+
+                  <div class="md-sidebar__inner">
+
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
+
+
+
+
+
+
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Inhaltsverzeichnis
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+
+        <li class="md-nav__item">
+  <a href="#fotomodul-aktivieren" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fotomodul aktivieren
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#berechtigungen-und-geschutzte-ordner" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Berechtigungen und geschützte Ordner
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#formate-und-metadaten" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Formate und Metadaten
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Formate und Metadaten">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#standardreihenfolge-eines-ordners" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Standardreihenfolge eines Ordners
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#index-und-hintergrundverarbeitung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Index und Hintergrundverarbeitung
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#vorschauen-und-caches" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Vorschauen und Caches
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Vorschauen und Caches">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#medienvorschauen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Medienvorschauen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#cache-statistik" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Cache-Statistik
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#gesichtsvorschauen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gesichtsvorschauen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#karten-und-gpx" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Karten und GPX
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Karten und GPX">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#fotorouten-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fotorouten-Cache
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#gesichtserkennung-einrichten" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gesichtserkennung einrichten
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Gesichtserkennung einrichten">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#mit-docker-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Mit Docker Compose
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#ohne-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ohne Compose
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#erkennung-steuern-und-ergebnisse-beurteilen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Erkennung steuern und Ergebnisse beurteilen
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Erkennung steuern und Ergebnisse beurteilen">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#ressourcen-und-fortschritt" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ressourcen und Fortschritt
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#referenzen-und-qualitat" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Referenzen und Qualität
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#zuordnungen-verbessern" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Zuordnungen verbessern
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#statistik-richtig-lesen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Statistik richtig lesen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#ordnerumzuge-und-aufbewahrung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ordnerumzüge und Aufbewahrung
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Ordnerumzüge und Aufbewahrung">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#ablauf-bei-fehlenden-ordnern" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ablauf bei fehlenden Ordnern
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#wann-die-zuordnung-eindeutig-ist" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Wann die Zuordnung eindeutig ist
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#geanderte-bilder-und-datenmigration" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Geänderte Bilder und Datenmigration
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#daten-sichern-und-gesichtsdaten-loschen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Daten sichern und Gesichtsdaten löschen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#schnittstellen-und-technische-grenzen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Schnittstellen und technische Grenzen
+      </span>
+    </span>
+  </a>
+
+    <nav class="md-nav" aria-label="Schnittstellen und technische Grenzen">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#zufallsbild-einbinden" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Zufallsbild einbinden
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#galerie-personen-und-aktionen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Galerie, Personen und Aktionen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
+  <a href="#begrenzte-arbeit-bei-groen-sammlungen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Begrenzte Arbeit bei großen Sammlungen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
+</li>
+
+    </ul>
+
+</nav>
+                  </div>
+                </div>
+              </div>
+
+
+
+            <div class="md-content" data-md-component="content">
+
+              <article class="md-content__inner md-typeset">
+
+
+
+
+
+
+<h1 id="einrichtung-und-betrieb">Einrichtung und Betrieb<a class="headerlink" href="#einrichtung-und-betrieb" title="Permanent link">&para;</a></h1>
+<p>Diese Referenz richtet sich an Betreiber einer BearStack-Installation. Für die
+tägliche Benutzung gibt es die <a href="fotos.html">Foto-Anleitung</a> und die
+<a href="fotos-personen.html">Personenanleitung</a>. Die allgemeine Servereinrichtung steht
+unter <a href="installation.html">Installation</a>.</p>
+<h2 id="fotomodul-aktivieren">Fotomodul aktivieren<a class="headerlink" href="#fotomodul-aktivieren" title="Permanent link">&para;</a></h2>
+<p>Ein vorhandenes Fotoverzeichnis und ein getrenntes, beschreibbares Datenverzeichnis
+bereitstellen. Anschließend BearStack konfigurieren:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>BEARSTACK_PHOTOS_ENABLED=true
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>BEARSTACK_PHOTOS_DIR=/srv/photos
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>BEARSTACK_PHOTOS_DATA_DIR=/var/lib/bearstack/photos
+</span></code></pre></div>
+<p><code>BEARSTACK_PHOTOS_DIR</code> ist der bestehende Foto-Root. BearStack liest ihn, schreibt
+aber keine Tags, Vorschauen oder Gesichtsdaten hinein. Bei Containerbetrieb muss
+der konfigurierte Pfad innerhalb des Containers erreichbar sein.</p>
+<p><code>BEARSTACK_PHOTOS_DATA_DIR</code> enthält die erzeugten Daten, standardmäßig
+Thumbnail-Cache und <code>photos.db</code>. Bei Bedarf können <code>BEARSTACK_PHOTOS_CACHE_DIR</code>
+und <code>BEARSTACK_PHOTOS_DB_PATH</code> diese Pfade getrennt vorgeben. Die Foto-Datenbank
+ist unabhängig von der Dokumentenablage.</p>
+<p>BearStack neu starten und einem Benutzer <strong>Fotos lesen</strong> zuweisen. Danach
+erscheint <strong>Fotos</strong> in seiner Navigation. Unter <strong>Einstellungen → Fotos</strong> lassen
+sich Darstellung, Intervalle und Worker konfigurieren; dafür ist <strong>Fotos
+verwalten</strong> erforderlich. Mit <strong>Jetzt indexieren</strong> den Bestand erfassen und
+anschließend einen Ordner, ein Foto und dessen Informationen prüfen.</p>
+<h2 id="berechtigungen-und-geschutzte-ordner">Berechtigungen und geschützte Ordner<a class="headerlink" href="#berechtigungen-und-geschutzte-ordner" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Rolle</th>
+<th>Berechtigung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>photos_read</code></td>
+<td>Galerie, Suche, Medien, Vorschauen, Zufallsbild, Fotoframe und Personen ansehen.</td>
+</tr>
+<tr>
+<td><code>photos_editor</code></td>
+<td>Zusätzlich Foto-/Ordner-Tags und Personen bearbeiten.</td>
+</tr>
+<tr>
+<td><code>photos_manager</code></td>
+<td>Zusätzlich Fotoeinstellungen, Foto-Tag-Bibliothek, Index-/Thumbnail-Worker und Gesichtserkennung verwalten.</td>
+</tr>
+<tr>
+<td><code>admin</code></td>
+<td>Vollständige Verwaltung und Zugriff auf geschützte <code>.adminonly</code>-Ordner.</td>
+</tr>
+</tbody>
+</table>
+<p>Die Einzelrechte heißen <code>photos.read</code>, <code>photos.edit</code> und <code>photos.manage</code>.
+Die <a href="benutzer-und-rechte.html">vollständige Rechtematrix</a> beschreibt ihre Vergabe.</p>
+<p>Eine Datei namens <code>.adminonly</code> schützt einen Fotoordner. Auch ein Symlink mit
+diesem Namen schützt ihn, unabhängig davon, ob sein Ziel erreichbar ist.
+Lesefehler der Markierung geben den Ordner nicht öffentlich frei.</p>
+<p>Geschützte Inhalte bleiben an die Rolle <strong>admin</strong> gebunden. Auch für Admins sind
+sie in Galerie, Suche, Zufall, Fotoframe, Karte und Foto-Tag-Listen zunächst
+ausgeblendet; <strong>Galerie sortieren → Admin-only anzeigen</strong> schaltet sie für die
+aktuelle Sitzung ein. Direkte Medien- und Thumbnail-URLs erfordern weiterhin
+Adminrechte.</p>
+<p>Die automatische Gesichtserkennung und virtuelle Personengalerie schließen
+geschützte Fotos aus. Nachträgliche Schutzmarkierungen entfernen automatische
+Ergebnisse und Referenzen aus dem aktiven Bestand. Aktuelle Sichtbarkeitsprüfungen
+gelten auch beim Abruf vorhandener Vorschauen.</p>
+<p>Kann der Sichtbarkeitsabgleich beim Start einen indizierten Pfad wegen fehlender
+Rechte oder Symlinks nicht sicher prüfen, startet das Fotomodul nicht.
+Indexflags und Gesichtsdaten bleiben unverändert. Den gemeldeten Pfad und seine
+Rechte korrigieren und BearStack erneut starten.</p>
+<h2 id="formate-und-metadaten">Formate und Metadaten<a class="headerlink" href="#formate-und-metadaten" title="Permanent link">&para;</a></h2>
+<p>Die Galerie unterstützt unter anderem <code>jpg</code>, <code>jpeg</code>, <code>png</code>, <code>gif</code>, <code>webp</code>, <code>svg</code>,
+<code>mp4</code>, <code>webm</code>, <code>ogv</code> und <code>ogg</code>. JPEG, PNG und GIF erhalten Vorschauen bei Bedarf.
+Externe Werkzeuge wie <code>ffmpeg</code> und optional <code>vipsthumbnail</code> werden nur für die
+jeweiligen Medienfunktionen benötigt. Wiedergabe hängt außerdem von den Formaten
+ab, die der verwendete Browser unterstützt.</p>
+<p>Aus JPEGs liest BearStack EXIF-Aufnahmedatum und -zeit, Kamera und GPS sowie
+eingebettete Adobe/MWG-XMP-Gesichtsregionen. Zusätzlich werden Sidecars mit den
+Namen <code>photo.jpg.xmp</code>, <code>photo.jpg.XMP</code>, <code>photo.xmp</code> und <code>photo.XMP</code> berücksichtigt.</p>
+<p>XMP-Sidecars müssen reguläre Dateien von höchstens <strong>4 MiB</strong> sein. Symlinks,
+Spezialdateien, zu große oder beim Öffnen ausgetauschte Dateien werden
+übersprungen; die feste Grenze gilt auch während des Lesens. Das Foto bleibt
+ohne diese optionalen Metadaten verfügbar.</p>
+<p>Namen und normalisierte Gesichtsboxen liegen im Fotoindex. Sie sind über
+<code>person:</code> beziehungsweise <code>face:</code> suchbar, werden aber nicht zu Foto-Tags.
+Originale und Sidecars bleiben unverändert. Markdown-Blogtexte und GPX-Dateien
+können den Fotoordner ergänzen.</p>
+<h3 id="standardreihenfolge-eines-ordners">Standardreihenfolge eines Ordners<a class="headerlink" href="#standardreihenfolge-eines-ordners" title="Permanent link">&para;</a></h3>
+<p>Eine leere Steuerdatei im jeweiligen Ordner bestimmt dessen <strong>Ordnerstandard</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Datei</th>
+<th>Reihenfolge</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.order_descending_name.pg2conf</code></td>
+<td>Name absteigend.</td>
+</tr>
+<tr>
+<td><code>.order_ascending_name.pg2conf</code></td>
+<td>Name aufsteigend.</td>
+</tr>
+<tr>
+<td><code>.order_descending_date.pg2conf</code></td>
+<td>Datum absteigend.</td>
+</tr>
+<tr>
+<td><code>.order_ascending_date.pg2conf</code></td>
+<td>Datum aufsteigend.</td>
+</tr>
+<tr>
+<td><code>.order_random.pg2conf</code></td>
+<td>Zufällig.</td>
+</tr>
+</tbody>
+</table>
+<p>Die Dateien werden außerhalb von BearStack angelegt. Anzeigedatum und formatierter
+Ordnername werden aus dem Verzeichnisnamen abgeleitet; technische Pfade ändern
+sich dadurch nicht.</p>
+<h2 id="index-und-hintergrundverarbeitung">Index und Hintergrundverarbeitung<a class="headerlink" href="#index-und-hintergrundverarbeitung" title="Permanent link">&para;</a></h2>
+<p>Die beiden Foto-Worker sind standardmäßig <strong>ausgeschaltet</strong>. Ohne
+Thumbnail-Worker entstehen fehlende Vorschauen weiterhin bei Bedarf.</p>
+<table>
+<thead>
+<tr>
+<th>Worker</th>
+<th>Standard bei Aktivierung</th>
+<th>Aufgabe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Index-Worker</td>
+<td>Alle 60 Minuten, 250 ms Pause pro gescanntem Ordner.</td>
+<td>Bestand, Metadaten, Ordner, Blogs und GPX-Dateiindex aktualisieren.</td>
+</tr>
+<tr>
+<td>Thumbnail-Worker</td>
+<td>Alle 15 Minuten, bis zu 15 Thumbnails je Lauf, Parallelität 1.</td>
+<td>Fehlende Galerie-Thumbnails vorab erzeugen.</td>
+</tr>
+</tbody>
+</table>
+<p>Unter <strong>Einstellungen → Fotos</strong> lassen sich Intervalle und Pakete anpassen.
+<strong>Jetzt indexieren</strong> beziehungsweise <strong>Fehlende Thumbs jetzt erstellen</strong> startet
+die jeweilige Arbeit gezielt. Die Thumbnail-Parallelität begrenzt auch die
+Erzeugung beim ersten Abruf. Größere Galerieseiten und Vorschauen erhöhen
+Ladeaufwand und Speicherbedarf; für kleine Server mit den Vorgaben beginnen.</p>
+<p>Der Indexscan arbeitet ordnerweise, überspringt unveränderte Ordner anhand des
+Scanstands und nutzt eine niedrige I/O-Priorität, sofern unterstützt. Bei Stat-
+oder Blog-Lesefehlern bleibt der Index des betroffenen Ordners einschließlich
+manueller Tags erhalten; ein späterer Lauf versucht ihn erneut.</p>
+<p>Erfolgreiche vollständige Scans bestätigen fehlende Inhalte. Für deren
+Aufbewahrung gelten die <a href="#ordnerumzuge-und-aufbewahrung">Regeln für Ordnerumzüge</a>.
+Metadaten, Tags sowie Such- und Vorschauindizes werden je Löschpaket oder
+Teilbaum gemeinsam aktualisiert und bei Fehler oder Abbruch zurückgerollt.</p>
+<p>Foto-Tags und Volltextsuche werden gemeinsam geändert. Sammelaktionen sind atomar;
+parallele Änderungen und Indexscans erhalten den aktuellen Tagstand. Das globale
+Umbenennen oder Entfernen eines Tags bearbeitet über Tagindizes nur betroffene
+Medien, Ordner und Blogs.</p>
+<h2 id="vorschauen-und-caches">Vorschauen und Caches<a class="headerlink" href="#vorschauen-und-caches" title="Permanent link">&para;</a></h2>
+<h3 id="medienvorschauen">Medienvorschauen<a class="headerlink" href="#medienvorschauen" title="Permanent link">&para;</a></h3>
+<p>Ordnermosaike wählen Bilder bei <strong>20 %, 40 %, 60 % und 80 %</strong> der sichtbaren
+Bilder einschließlich Unterordnern. Grundlage ist die absteigende Datumsfolge
+nach Aufnahmezeit, ersatzweise Dateiänderungszeit; Bruchteile werden aufgerundet.
+Bei 100 Bildern sind es die Bilder 20, 40, 60 und 80.</p>
+<p>Ordner mit bis zu vier Bildern zeigen jedes höchstens einmal. Eine kleinere
+eingestellte Vorschauanzahl nutzt die ersten Positionen. Ordner ohne Bilder
+behalten Video-/Audiovorschauen. Ausgeblendete Admin-only-Bilder zählen in der
+öffentlichen Auswahl nicht mit. Die Zuordnung wird zwischengespeichert und bei
+Änderungen aktualisiert.</p>
+<p>Virtuelle Personen- und Tag-Ordner zeigen doppelt so viele Gesichtsvorschauen
+wie normale Ordner, also <strong>2 bis 8</strong>. Die Auswahl bevorzugt benannte aktive
+Personen mit den meisten unterschiedlichen sichtbaren Fotos. Aktive
+Stern-Favoriten bestimmen bevorzugt das Porträt; bei mehreren der mit der
+kleinsten Gesichts-ID. Die Vorschauen verwenden den Gesichts-Cache.</p>
+<p>Ein gültiger Thumbnail-Cachetreffer benötigt keinen SQLite-Schreibzugriff.
+Nur fehlende oder reparaturbedürftige Queue-Metadaten werden nachgetragen.
+Metadaten-Batchanfragen bündeln Foto- und Gesichtsabfragen sowie gemeinsame
+Rechteprüfungen, prüfen Dateistand, Sidecars und aktuelle Schutzmarkierungen aber
+weiterhin.</p>
+<h3 id="cache-statistik">Cache-Statistik<a class="headerlink" href="#cache-statistik" title="Permanent link">&para;</a></h3>
+<p>Anzahl und Größe der Thumbnail-Dateien werden beim Start und anschließend alle
+<strong>30 Minuten</strong> im Hintergrund gemessen, auch bei deaktivierter Erzeugung. Ein
+Seitenaufruf liest den letzten vollständigen Stand mit Messzeitpunkt und löst
+keinen Dateisystemdurchlauf aus.</p>
+<p>Vor der ersten Messung erscheint <strong>Thumbnail-Cache wird ermittelt</strong>. Fehler oder
+Abbruch erhalten den vorherigen Stand. Gleichzeitige Aktualisierungen teilen
+sich einen Durchlauf; temporäre Dateien und Symlinks zählen nicht mit.</p>
+<h3 id="gesichtsvorschauen">Gesichtsvorschauen<a class="headerlink" href="#gesichtsvorschauen" title="Permanent link">&para;</a></h3>
+<p>Der gemeinsame Datei-Cache liegt unter
+<code>BEARSTACK_PHOTOS_CACHE_DIR/faces/v1</code>. Weboberfläche und APIs verwenden daraus
+proportional eingepasste JPEGs in getrennten Größen von <strong>160 und 640 Pixeln</strong>.
+Hashbasierte Unterordner vermeiden große Einzelverzeichnisse; parallele Abrufe
+desselben Ausschnitts teilen sich die Erzeugung.</p>
+<p>Aktive Gesichtsvorschauen bleiben ohne feste Anzahl- oder Größenbegrenzung
+gespeichert. Beim Ignorieren erhalten vorhandene Vorschauen eine feste Frist
+von höchstens <strong>48 Stunden</strong>. Erneute Aufrufe oder wiederholtes Ignorieren
+verlängern sie nicht. Abgelaufene Dateien werden automatisch entfernt; ein
+späterer Abruf kann eine neue Vorschau mit neuer begrenzter Frist erzeugen.
+Die Gesichtsdaten und die Möglichkeit zum Wiederherstellen bleiben bestehen.
+Wiederherstellen hebt die Ablaufzeit der Vorschau auf.</p>
+<p>Die Bereinigung läuft unabhängig von der Gesichtserkennung in kleinen,
+indexgestützten Paketen und berücksichtigt Neustarts. Bestehende Vorschauen
+bleiben bei Updates erhalten; noch fehlende Cachezuordnungen werden fortsetzbar
+in Paketen von höchstens 100 Gesichtern ergänzt, ohne Originalbilder zu lesen.
+Geänderte Rendering-Schlüssel erneuern nur die angeforderte Größe beim Abruf;
+es gibt keinen pauschalen Neuaufbau und keine pauschale Löschung unbekannter
+Altdateien.</p>
+<p>Web-Vorschauen dürfen privat mit ETag/304 zwischengespeichert werden; Rechte,
+Sichtbarkeit und Quelle werden erneut geprüft. Benennen und AJAX-Aktualisierungen
+erhalten unveränderte Bildelemente. Für mehrere Gesichter desselben Fotos teilen
+sich Abrufe die ausgerichtete, verkleinerte Vorlage in einem Speicher-Cache von
+höchstens <strong>8 Bildern und 32 MiB</strong>. Datei- oder Sidecaränderungen ändern seinen
+Schlüssel. Kann ein geänderter Fingerabdruck nicht gespeichert werden, bricht
+der Abruf ab.</p>
+<h2 id="karten-und-gpx">Karten und GPX<a class="headerlink" href="#karten-und-gpx" title="Permanent link">&para;</a></h2>
+<p>Die Karte verwendet Fotokoordinaten und vorhandene GPX-Tracks. Die
+<strong>Foto-Track-Auflösung</strong> unter <strong>Einstellungen → Fotos</strong> gruppiert nahe Fotos in
+Stufen von <strong>500 m bis 10 km</strong>. Browser und Android verwenden dieselbe
+zeitlich-räumliche Routengruppierung. Auch Routen über die geografische
+Datumsgrenze (±180° Längengrad) werden bei der Aufbereitung berücksichtigt.</p>
+<p>Der reguläre Indexscan erfasst GPX-Dateien, ohne sie dabei vollständig zu parsen.
+Rechte und Pfade einschließlich Symlinks werden vor der Ausgabe geprüft. Die
+Trackauswahl arbeitet in begrenzten Indexpaketen; während eines noch unvollständigen
+Indexaufbaus bleibt ein Dateisystem-Fallback verfügbar.</p>
+<table>
+<thead>
+<tr>
+<th>Grenze</th>
+<th>Wert</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Größe einer GPX-Datei</td>
+<td>16 MiB.</td>
+</tr>
+<tr>
+<td>Eingelesene Track-/Routenpunkte je Datei</td>
+<td>100.000.</td>
+</tr>
+<tr>
+<td>Gleichzeitige Parser je Fotobibliothek</td>
+<td>1.</td>
+</tr>
+<tr>
+<td>Tracks je Kartenantwort</td>
+<td>Höchstens 256.</td>
+</tr>
+<tr>
+<td>Punkte je Kartenantwort</td>
+<td>Höchstens 250.000.</td>
+</tr>
+<tr>
+<td>GPX-Speicher-Cache</td>
+<td>32 MiB einschließlich Punktarrays und Eintragskosten.</td>
+</tr>
+</tbody>
+</table>
+<p>Zu große oder fehlerhafte Dateien werden übersprungen. Tracks, die das
+Antwortbudget überschreiten, werden ausgelassen. Lesen und Warten reagieren auf
+Anfrageabbruch; der Cache verdrängt die am längsten ungenutzten Tracks.</p>
+<p>Ein optionaler Kartenindex wird im Hintergrund aufgebaut. Währenddessen bleibt
+die Galerie bedienbar; Kartenanfragen warten abbrechbar auf den Index. Ein
+Fehler meldet die Karte als noch nicht verfügbar und erlaubt einen späteren
+Versuch. Große Sortierungen können temporäre Daten auf Datenträger auslagern.</p>
+<h3 id="fotorouten-cache">Fotorouten-Cache<a class="headerlink" href="#fotorouten-cache" title="Permanent link">&para;</a></h3>
+<p>Browser und native API teilen JSON-Dateien unter
+<code>&lt;Cache&gt;/photo-routes/v1/</code>. Die vollständige gruppierte Route wird pro Ordner,
+Radius, Medientyp und Sichtbarkeit gespeichert. Ausschnitt und Antwortlimit
+werden anschließend angewendet. Beliebige Textsuchen erhalten keinen dauerhaften
+Routencache.</p>
+<p>Transaktionale Indexrevisionen machen betroffene Routen nach Änderungen an GPS,
+Aufnahmezeit oder Sichtbarkeit ungültig. Ordnerumzüge berücksichtigen alte und
+neue Vorfahren sowie gelöschte Teilbäume. Änderungen außerhalb des Bereichs
+erhalten den Cache. Gleichzeitige Erzeugungen werden zusammengefasst; Dateien
+werden atomar mit versioniertem Format geschrieben.</p>
+<p>Die Browserroute umfasst die gesamte indexierte Auswahl. Für die HTML-Ausgabe
+werden höchstens <strong>8.192 gruppierte Orte</strong> dargestellt, bei längeren Routen über
+deren gesamte Länge vereinfacht. Anfang, Ende und ursprüngliche Zeit-/Fotozahlen
+der verbleibenden Orte bleiben erhalten. Die Cachedatei enthält weiterhin alle
+gruppierten Orte. Vor dem ersten vollständigen Indexlauf bleibt die direkte
+Berechnung aus dem Dateisystem verfügbar.</p>
+<p>Die native API begrenzt Kartenmarker auf 289, Tracklisten auf 32 Einträge je
+Cursorseite und einzelne Trackantworten auf 8.192 Koordinaten. Appseitige Speicher-
+und Darstellungsgrenzen stehen in der <a href="android-technik.html">Android-Referenz</a>.</p>
+<h2 id="gesichtserkennung-einrichten">Gesichtserkennung einrichten<a class="headerlink" href="#gesichtserkennung-einrichten" title="Permanent link">&para;</a></h2>
+<p>Die optionale automatische Erkennung ist standardmäßig ausgeschaltet. Sie läuft
+in einem separaten lokalen Dienst mit <strong>OpenCV, YuNet und SFace</strong>. Dieser hat
+weder Zugriff auf den Foto-Root noch auf die Datenbank. BearStack überträgt
+ausgerichtete JPEGs mit höchstens <strong>1.600 Pixeln</strong> Kantenlänge an ihn.</p>
+<p>Bilder bleiben in der eigenen Infrastruktur. Die Modelle werden bei Einrichtung
+oder Image-Build mit festen SHA-256-Prüfsummen geladen und beim Start geprüft;
+im laufenden Betrieb gibt es keine Modelldownloads.</p>
+<h3 id="mit-docker-compose">Mit Docker Compose<a class="headerlink" href="#mit-docker-compose" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Mit <code>openssl rand -hex 32</code> einen zufälligen gemeinsamen Token erzeugen.</li>
+<li>In <code>.env</code> <code>BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN</code> auf diesen Wert setzen.</li>
+<li>Das Fotomodul konfigurieren und
+   <code>docker compose --profile faces up -d --build</code> starten.</li>
+<li>Unter <strong>Einstellungen → Gesichtserkennung</strong> die Verarbeitung einschalten.
+   Dafür muss der Dienst erreichbar und kompatibel sein.</li>
+</ol>
+<p>Compose verwendet intern <code>http://faces:8091</code> ohne veröffentlichten Dienstport.
+Für eine eigene Dienstadresse stehen folgende Optionen zur Verfügung:</p>
+<table>
+<thead>
+<tr>
+<th>JSON-Feld unter <code>photos</code></th>
+<th>Umgebungsvariable</th>
+<th>Bedeutung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>face_service_url</code></td>
+<td><code>BEARSTACK_PHOTOS_FACE_SERVICE_URL</code></td>
+<td>HTTP(S)-Adresse des Erkennungsdienstes.</td>
+</tr>
+<tr>
+<td><code>face_service_token</code></td>
+<td><code>BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN</code></td>
+<td>Gemeinsamer geheimer Token mit mindestens 32 Zeichen.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ohne-compose">Ohne Compose<a class="headerlink" href="#ohne-compose" title="Permanent link">&para;</a></h3>
+<p>BearStack und der Erkennungsdienst können auf demselben Rechner direkt laufen.
+Voraussetzungen sind ein eingerichtetes Fotomodul, die BearStack-Quelldateien passend
+zur installierten Version, <strong>Python 3.12 oder neuer mit <code>venv</code></strong>, OpenSSL und curl.
+Eine GPU ist nicht erforderlich. Die folgenden Befehle werden im BearStack-Projektordner
+ausgeführt; für die Installation der Python-Pakete und Modelle wird Internetzugang benötigt.</p>
+<ol>
+<li>
+<p><strong>Python-Umgebung und Modelle installieren:</strong></p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>--version
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv-faces
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>.venv-faces/bin/python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--only-binary<span class="o">=</span>:all:<span class="w"> </span>-r<span class="w"> </span>services/faces/requirements.txt
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>.venv-faces/bin/python<span class="w"> </span>services/faces/download_models.py<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.local/share/bearstack-face-models&quot;</span>
+</span></code></pre></div>
+<p>Fehlt <code>venv</code>, das zur Python-Version passende Paket des Betriebssystems installieren
+(unter Debian/Ubuntu beispielsweise <code>python3-venv</code>). Das Downloadskript lädt die
+festgelegten Modelle samt Lizenzhinweisen und prüft ihre SHA-256-Prüfsummen.
+Die Modelldateien bleiben lokal erhalten; dieser Schritt ist nur bei der Einrichtung
+oder einem vorgesehenen Modellupdate nötig.</p>
+<p>Scheitert der Download unter macOS mit <code>CERTIFICATE_VERIFY_FAILED</code>, kann der
+Python-Installation ihr CA-Bundle fehlen. Ist <code>/etc/ssl/cert.pem</code> vorhanden,
+lässt sich das System-CA-Bundle für diesen Aufruf verwenden:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nv">SSL_CERT_FILE</span><span class="o">=</span>/etc/ssl/cert.pem<span class="w"> </span>.venv-faces/bin/python<span class="w"> </span>services/faces/download_models.py<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.local/share/bearstack-face-models&quot;</span>
+</span></code></pre></div>
+<p>TLS-Zertifikate und Modell-Prüfsummen werden dabei weiterhin geprüft.</p>
+</li>
+<li>
+<p><strong>Gemeinsamen Token erzeugen:</strong></p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> </span><span class="m">32</span>
+</span></code></pre></div>
+<p>Den erzeugten Wert in den folgenden Beispielen anstelle von <code>TOKEN_HIER_EINTRAGEN</code>
+verwenden. Erkennungsdienst und BearStack müssen denselben Token erhalten.</p>
+</li>
+<li>
+<p><strong>Erkennungsdienst in einem eigenen Terminal starten:</strong></p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_MODELS_DIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.local/share/bearstack-face-models&quot;</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_SERVICE_TOKEN</span><span class="o">=</span><span class="s1">&#39;TOKEN_HIER_EINTRAGEN&#39;</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_BIND</span><span class="o">=</span><span class="m">127</span>.0.0.1
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>.venv-faces/bin/python<span class="w"> </span>services/faces/server.py
+</span></code></pre></div>
+<p>Der Dienst lauscht auf <code>127.0.0.1:8091</code>. Er benötigt Leserechte auf die Modelle,
+aber keine Rechte auf Fotoverzeichnis oder BearStack-Datenbank. Das Terminal bleibt
+während des Betriebs geöffnet. Der Python-Dienst liest <code>.env</code> <strong>nicht</strong> automatisch;
+seine Variablen müssen in der Prozessumgebung gesetzt sein.</p>
+</li>
+<li>
+<p><strong>Erreichbarkeit in einem zweiten Terminal prüfen:</strong></p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BEARSTACK_FACE_SERVICE_TOKEN</span><span class="o">=</span><span class="s1">&#39;TOKEN_HIER_EINTRAGEN&#39;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>curl<span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--show-error<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$BEARSTACK_FACE_SERVICE_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>http://127.0.0.1:8091/health
+</span></code></pre></div>
+<p>Die JSON-Antwort muss <code>"ready": true</code>, <code>"protocol": 1</code> und die Modellkennung
+<code>yunet-2023mar-sface-2021dec-v1</code> enthalten. Bei HTTP 401 stimmt der Token nicht;
+bei einem Verbindungsfehler zuerst das Dienstterminal prüfen.</p>
+</li>
+<li>
+<p><strong>BearStack verbinden und neu starten:</strong> Die folgenden Werte in die von BearStack
+    gelesene <code>.env</code>-Datei beziehungsweise seine Prozessumgebung eintragen:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>BEARSTACK_PHOTOS_FACE_SERVICE_URL=http://127.0.0.1:8091
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>BEARSTACK_PHOTOS_FACE_SERVICE_TOKEN=TOKEN_HIER_EINTRAGEN
+</span></code></pre></div>
+<p>Bei der systemd-Beispielinstallation können stattdessen die Felder
+<code>face_service_url</code> und <code>face_service_token</code> im vorhandenen <code>photos</code>-Objekt in
+<code>/etc/bearstack/bearstack.json</code> ergänzt werden. Danach <code>sudo systemctl restart bearstack</code>
+ausführen. Die übrige Foto-Konfiguration beibehalten und die Datei mit dem Token
+nur für den Administrator und den jeweiligen Dienst lesbar halten.</p>
+</li>
+<li>
+<p><strong>Verarbeitung aktivieren:</strong> Als Foto-Verwalter unter <strong>Einstellungen → Gesichtserkennung</strong>
+    einschalten. Dort erscheinen Fortschritt und Fehler; die Ergebnisse stehen unter
+    <strong>Fotos → Personen verwalten</strong> bereit. Der vorhandene Fotobestand wird schrittweise verarbeitet.</p>
+</li>
+</ol>
+<p>Für dauerhaften Betrieb muss der Python-Prozess ebenfalls durch einen Dienstmanager
+wie systemd gestartet werden. Dabei einen absoluten Pfad zu <code>.venv-faces/bin/python</code>,
+<code>services/faces/server.py</code> und den Modellen verwenden sowie die drei Dienstvariablen
+aus Schritt 3 setzen. BearStack startet diesen Prozess nicht selbst. Die Begrenzungen
+auf einen halben CPU-Kern und 1 GiB RAM gelten nur für die Compose-Konfiguration;
+bei nativem Betrieb müssen entsprechende Ressourcenlimits im Dienstmanager gesetzt werden.
+Der einzelne Inferenzthread und die BearStack-Pausen gelten auch ohne Compose.</p>
+<h2 id="erkennung-steuern-und-ergebnisse-beurteilen">Erkennung steuern und Ergebnisse beurteilen<a class="headerlink" href="#erkennung-steuern-und-ergebnisse-beurteilen" title="Permanent link">&para;</a></h2>
+<h3 id="ressourcen-und-fortschritt">Ressourcen und Fortschritt<a class="headerlink" href="#ressourcen-und-fortschritt" title="Permanent link">&para;</a></h3>
+<p>Der Erkennungs-Worker verarbeitet standardmäßig <strong>100 Bilder pro Lauf</strong>, mit
+<strong>1 Sekunde Pause pro Bild</strong> und <strong>15 Minuten zwischen Läufen</strong>. Einstellbar sind
+1–1.000 Bilder, 100–60.000 ms Pause und 1–1.440 Minuten zwischen Läufen.
+Der Dienst nutzt einen Inferenzthread; Compose begrenzt ihn auf <strong>0,5 CPU-Kerne
+und 1 GiB RAM</strong>. Native Dienste brauchen eigene Ressourcenlimits.</p>
+<p>Der Erstlauf arbeitet die Sammlung schrittweise ab. Ist der separate Index-Worker
+aus, nutzt die Erkennung dessen Scanmechanismus stündlich. Anschließend entstehen
+Aufträge direkt bei Indexänderungen. Unveränderte Bilder, auch solche ohne
+erkannte Gesichter, werden nicht erneut analysiert. Fehler werden mit zunehmender
+Wartezeit bis zu fünfmal versucht und können manuell zurückgesetzt werden.
+Die persistente Warteschlange setzt nach Neustarts fort.</p>
+<p>Die Einstellungen trennen Status, Verarbeitung und Löschaktion. Das Status-Polling
+alle fünf Sekunden verwendet zuletzt indexierte Zähler statt eines globalen
+Dateisystemscans. Neue Schutzmarkierungen wirken hier nach dem nächsten Index-
+oder Sichtbarkeitsabgleich; konkrete Gesichtsabrufe prüfen den Schutz sofort.</p>
+<h3 id="referenzen-und-qualitat">Referenzen und Qualität<a class="headerlink" href="#referenzen-und-qualitat" title="Permanent link">&para;</a></h3>
+<p>Die Erkennung unterstützt JPEG, PNG, WebP und das erste GIF-Bild. Videos und SVG
+werden nicht analysiert; Bilder über <strong>40 Megapixel</strong> werden zur Speicherbegrenzung
+zurückgewiesen. Sehr kleine, verdeckte oder unscharfe Gesichter können fehlen.</p>
+<p>Ein zweiter Suchlauf mit höchstens <strong>320 Pixeln</strong> Kantenlänge ergänzt große
+Porträtgesichter, die in der 1.600-Pixel-Vorlage übersehen wurden. Für kleine
+Gesichter können bis zu <strong>acht Originalausschnitte</strong> nachanalysiert werden,
+jeweils höchstens 1.600 Pixel und zusammen <strong>16 MiB</strong>. Das Original wird dafür
+einmal zusätzlich dekodiert. Nur eindeutig wiedergefundene Regionen mit besserer
+Auflösung übernehmen den verbesserten Vektor; ein Fehler der optionalen
+Nachanalyse erhält das erste Ergebnis.</p>
+<p>Die Zielanzahl der <strong>Referenzen pro Person</strong> ist auf <strong>1 bis 100</strong> einstellbar,
+Standard <strong>30</strong>. Die Auswahl verteilt sich möglichst über mehrere Galerieordner.
+Innerhalb eines Ordners haben manuelle Zuordnungen Vorrang, danach die
+Erkennungssicherheit. Neue automatisch ausgewählte Referenzen benötigen bei
+vorhandenen Qualitätswerten mindestens <strong>48 Gesichtspixel</strong> und <strong>Schärfewert 20</strong>.
+Das sind technische Filter, keine Genauigkeitsgarantie. Ältere kompatible Dienste
+und gespeicherte Vektoren ohne diese Werte bleiben verwendbar.</p>
+<p>Alle aktiven Stern-Favoriten werden vollständig verglichen, auch oberhalb des
+Referenzlimits. Bei weniger Favoriten füllen weitere Gesichter bis zur Zielanzahl
+auf; bisher nicht vertretene Ordner haben Vorrang. Favoriten dürfen die
+Qualitätsauswahl übersteuern, niemals Sichtbarkeit oder einen veralteten
+Quellstand. Ignorierte, geschützte und manuell gezeichnete Gesichter dienen nicht
+als automatische Vergleichsreferenzen.</p>
+<p>Änderungen der Zielanzahl werden vor der nächsten Analyse in kurzen,
+fortsetzbaren Schritten übernommen. Die Referenzauswahl selbst führt keine
+Gruppen zusammen.</p>
+<h3 id="zuordnungen-verbessern">Zuordnungen verbessern<a class="headerlink" href="#zuordnungen-verbessern" title="Permanent link">&para;</a></h3>
+<p>Neue Gesichter werden zuerst mit <strong>benannten Gruppen</strong> verglichen. Nur ohne
+eindeutigen Treffer folgt ein eigener Vergleich mit <strong>unbenannten Gruppen</strong>.
+Pro Gruppe zählt die beste zulässige Referenz; der Mindestabstand bezieht sich
+auf eine andere Gruppe im selben Bereich.</p>
+<p>Im Expertenbereich sind drei Wertepaare einstellbar:</p>
+<table>
+<thead>
+<tr>
+<th>Abgleich</th>
+<th>Ähnlichkeit</th>
+<th>Mindestabstand</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Automatische Zuordnung bei der Erkennung</td>
+<td>0,55</td>
+<td>0,08</td>
+</tr>
+<tr>
+<td>Automatische Zuordnung im Hintergrund</td>
+<td>0,62</td>
+<td>0,10</td>
+</tr>
+<tr>
+<td>Vorschläge zur manuellen Prüfung</td>
+<td>0,45</td>
+<td>0,00</td>
+</tr>
+</tbody>
+</table>
+<p>Die Tabelle zeigt die Standardwerte. Zulässig sind <strong>0,4 bis 0,7</strong> für Ähnlichkeit
+und <strong>0,0 bis 0,2</strong> für Mindestabstand. Höhere Werte filtern strenger; die Werte
+sind keine Wahrscheinlichkeiten und lernen nicht automatisch aus Entscheidungen.
+Bei manuellen Vorschlägen erlaubt Abstand 0 mehrere Alternativen, ein positiver
+Abstand nur einen eindeutig besten Treffer.</p>
+<p><strong>Vorhandene Zuordnungen verbessern</strong> arbeitet mit gespeicherten Vektoren und
+benötigt keinen laufenden Erkennungsdienst. Der Hintergrundabgleich ist
+standardmäßig aktiviert und wird unter anderem nach Benennungen, manuellen
+Korrekturen, Referenzänderungen und erfolgreichen Analysepaketen vorgemerkt.
+<strong>Zuordnungen erneut prüfen</strong> startet eine neue Prüfung; <strong>Abgleich pausieren /
+fortsetzen</strong> erhält den Fortschritt. Cursor und Ergebnisse werden gemeinsam
+in Paketen von höchstens 100 Datensätzen mit zusätzlichem Zeitbudget gespeichert.</p>
+<p>Automatisch verschoben werden nur unbenannte, unbestätigte, nicht ignorierte
+und nicht favorisierte Gesichter zu ausdrücklich benannten Personen.
+Manuelle Trennungen bleiben erhalten. Eine im selben Foto bereits vorhandene
+Zielperson ist ausgeschlossen; unzureichende gemessene Qualität treibt keinen
+automatischen Nachabgleich an.</p>
+<p><strong>Unbenannte Gruppen automatisch zusammenführen</strong> ist zusätzlich und
+standardmäßig <strong>ausgeschaltet</strong>. Aktiviert kann sie die ganze unbenannte
+Quellgruppe atomar verbinden, zunächst mit benannten, danach mit unbenannten
+Gruppen. Für beide gelten die Hintergrundgrenzwerte. Gruppen mit manuellen
+Zuordnungen, Favoriten, ignorierten oder gezeichneten Gesichtern, ungeeigneten
+Merkmalen, geschützten Mitgliedern oder widersprechenden XMP-Namen sind als
+automatische Quellgruppe ausgeschlossen. Abgelehnte Paare, gemeinsame aktive
+Fotos, manuelle Trennungen und Familienkonflikte verhindern die Verbindung.
+Tags, Beziehungen und Ablehnungen gegenüber anderen Gruppen bleiben erhalten.</p>
+<p>Geänderte Grenzwerte oder das Umschalten der Gruppenoption verwerfen offene
+Vorschläge und planen einen neuen Abgleich. Ein pausierter Lauf bleibt pausiert;
+manuelle Entscheidungen und bereits erfolgte Zuordnungen werden nicht
+zurückgesetzt. Es erfolgt keine neue Bildanalyse.</p>
+<h3 id="statistik-richtig-lesen">Statistik richtig lesen<a class="headerlink" href="#statistik-richtig-lesen" title="Permanent link">&para;</a></h3>
+<p><strong>Bestehender Gruppe zugeordnet</strong>, <strong>Neue Gruppe gebildet</strong> und <strong>Zuordnungsanteil</strong>
+beschreiben die Entscheidung bei der Bildanalyse für aktuell vorhandene,
+nicht ignorierte Gesichter, einschließlich XMP-Zuordnungen.
+Der Anteil ist <code>zugeordnet / (zugeordnet + neu) × 100</code>, ohne Basis 0 %.</p>
+<p>Spätere manuelle Änderungen oder Hintergrundzuordnungen ändern diese ursprüngliche
+Einteilung nicht. Gelöschte und ignorierte Gesichter entfallen. Bei neuer Analyse
+wird die Entscheidung neu erfasst; übernommene Korrekturen behalten ihre Einteilung.
+Altbestände ohne gespeicherte Entscheidung stehen unter <strong>Noch nicht erfasst</strong>
+und zählen nicht zum Prozentwert.</p>
+<h2 id="ordnerumzuge-und-aufbewahrung">Ordnerumzüge und Aufbewahrung<a class="headerlink" href="#ordnerumzuge-und-aufbewahrung" title="Permanent link">&para;</a></h2>
+<p>Medien, Ordner, Markdown-Blogs und GPX-Dateien besitzen dauerhafte interne
+Identitäten. Umbenennen, Verschieben sowie Kopieren und späteres Löschen finden
+außerhalb von BearStack statt. Der nächste vollständige Indexlauf kann eindeutige
+Umzüge <strong>innerhalb desselben Foto-Roots</strong> zuordnen.</p>
+<p>Bei erfolgreicher Zuordnung bleiben Tags, Personen-/Gesichts-IDs und manuelle
+Entscheidungen erhalten. Vorhandene Gesichtsvorschauen und unveränderte
+Foto-/Video-Thumbnails werden wiederverwendet.</p>
+<h3 id="ablauf-bei-fehlenden-ordnern">Ablauf bei fehlenden Ordnern<a class="headerlink" href="#ablauf-bei-fehlenden-ordnern" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Den externen Umzug abschließen und einen vollständigen Indexlauf abwarten
+   oder unter <strong>Einstellungen → Fotos</strong> anstoßen.</li>
+<li><strong>Ordnerumzüge und aufbewahrte Fotodaten</strong> öffnen. Dort stehen erfasste Umzüge,
+   fehlende Einträge mit Ablaufdatum und der Fingerabdruckfortschritt.</li>
+<li>Falls keine eindeutige automatische Zuordnung möglich ist, die fehlende
+   Ordneridentität einem vorhandenen Ziel zuordnen und Konflikte prüfen.</li>
+</ol>
+<p>Fehlende Inhalte werden <strong>sieben Tage</strong> aufbewahrt und aus normalen Ansichten
+ausgeblendet. Scans und Neustarts verlängern die Frist nicht. Ein unvollständiger
+oder fehlgeschlagener Scan bestätigt keine Löschung; ein ausgefallener oder
+verdächtig leerer Root löst keine endgültige Bereinigung aus. Die endgültige
+Löschung betrifft nur BearStacks aufbewahrte Daten und Caches.</p>
+<h3 id="wann-die-zuordnung-eindeutig-ist">Wann die Zuordnung eindeutig ist<a class="headerlink" href="#wann-die-zuordnung-eindeutig-ist" title="Permanent link">&para;</a></h3>
+<p>Vergleichsdateien müssen unverändert an denselben relativen Pfaden liegen.
+Automatisch genügen mindestens <strong>zwei unterschiedliche, nichtleere
+SHA-256-Fingerabdrücke</strong> oder die eindeutige Übereinstimmung zweier
+Ein-Datei-Ordner. Identische Kopien bleiben eigenständig, solange beide existieren.</p>
+<p>Leere Ordner, fehlende historische Fingerabdrücke und mehrdeutige Kopien können
+eine manuelle Zuordnung benötigen. Unabhängige manuelle Änderungen am Ziel
+verhindern eine automatische Übernahme. Zusätzliche oder gelöschte Dateien
+schließen die Zuordnung nicht aus, wenn genug eindeutige Vergleichsdateien bleiben.
+Markdown/GPX und XMP werden unabhängig aktualisiert; ein Dateitypwechsel gilt als
+neuer Eintrag.</p>
+<h3 id="geanderte-bilder-und-datenmigration">Geänderte Bilder und Datenmigration<a class="headerlink" href="#geanderte-bilder-und-datenmigration" title="Permanent link">&para;</a></h3>
+<p>Ändern sich die Bytes eines Fotos am bisherigen Pfad, bleiben bestätigte
+Gesichtsdaten und Vorschauen zunächst erhalten. <strong>Foto geändert / Prüfen</strong>
+kennzeichnet sie, alte Embeddings dienen auch bei Favoriten nicht als Referenzen.
+Die <a href="fotos-personen.html#gesichter-geanderter-fotos-prufen">Quellenprüfung</a> benötigt
+<code>photos.edit</code>, die Ordnerverwaltung <code>photos.manage</code>.</p>
+<p>Personenzusammenführungen berücksichtigen auch aufbewahrte und durch Ordnerschutz
+verborgene Gesichter. Nach Rückkehr des Fotos gilt die Zuordnung zur verbleibenden
+Person. Aktuelle Rechte gelten ebenso für gespeicherte Vorschauen und Referenzen.
+Alte pfadbasierte URLs werden nach Umzügen nicht automatisch weitergeleitet.</p>
+<p>Migrationen erhalten vorhandene IDs und Cachedateien. SHA-256-Erfassung und
+Cacheinventar werden fortsetzbar aufgebaut; unveränderte Folgeläufe lesen keine
+Dateiinhalte, Galerieaufrufe berechnen keine vollständigen Hashes. Für noch nicht
+erfasste Altbestände ist automatische Wiedererkennung nicht zugesichert.
+Foto-Schema 37 synchronisiert aufbewahrte Spalten nach versionierten Migrationen;
+Umbenennungen, Entfernungen oder Typwechsel benötigen explizite Datenmigrationen.</p>
+<h2 id="daten-sichern-und-gesichtsdaten-loschen">Daten sichern und Gesichtsdaten löschen<a class="headerlink" href="#daten-sichern-und-gesichtsdaten-loschen" title="Permanent link">&para;</a></h2>
+<p>Den Foto-Root und BearStacks Foto-Datenbank getrennt in die Sicherung aufnehmen.
+Die Datenbank enthält auch Tags, erzeugte Gesichter, manuelle Korrekturen,
+Favoriten, Personenstammdaten und Aufbewahrungsstände. Sie ist nicht bloß ein
+beliebig ersetzbarer Vorschaubereich. Die allgemeinen
+<a href="installation.html">Betriebshinweise</a> ergänzen die Sicherung der übrigen Installation.</p>
+<p>Ein Index-Neuaufbau erhält Korrekturen unveränderter Bilder. Für ersetzte oder
+fehlende Quellen gelten die Prüf- und Aufbewahrungsregeln oben. Bei Modellwechseln
+werden manuelle Zuordnungen nur auf eindeutig wiedergefundene Regionen übertragen;
+unsichere Treffer bleiben getrennt. XMP und automatische Gesichter werden getrennt
+gespeichert, manuelle Zuordnungen haben Vorrang.</p>
+<p><strong>Pausieren oder Ausschalten</strong> der Erkennung erhält die bisherigen Ergebnisse.
+Die separate Löschaktion unter <strong>Einstellungen → Gesichtserkennung</strong> entfernt
+erzeugte Gesichtsdaten, Gruppen und Korrekturen und schaltet die Verarbeitung aus.
+Importierte XMP-Gesichtsdaten bleiben erhalten. Erforderlich sind <code>photos.manage</code>,
+die ausdrückliche Löschbestätigung und das aktuelle Passwort des angemeldeten
+Benutzers. Fehlende oder falsche Bestätigungen verändern nichts; wiederholte
+Fehlversuche werden gedrosselt.</p>
+<p>Merkmalsvektoren werden weder an den Browser ausgegeben noch in Logs geschrieben.</p>
+<h2 id="schnittstellen-und-technische-grenzen">Schnittstellen und technische Grenzen<a class="headerlink" href="#schnittstellen-und-technische-grenzen" title="Permanent link">&para;</a></h2>
+<p>Die vollständigen Verträge stehen in der
+<a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml">OpenAPI-Beschreibung</a>.
+Diese Übersicht ordnet die wichtigsten Schnittstellen ihren Aufgaben zu.</p>
+<h3 id="zufallsbild-einbinden">Zufallsbild einbinden<a class="headerlink" href="#zufallsbild-einbinden" title="Permanent link">&para;</a></h3>
+<p><code>GET /photos/random</code> liefert standardmäßig das Original direkt aus.
+<code>size=original</code> behält dieses Verhalten bei. Mit <code>size=ordner</code>, <code>size=galerie</code>,
+<code>size=gross</code> beziehungsweise <code>size=groß</code> oder <code>size=hd</code> wird die jeweilige
+konfigurierte Vorschaugröße verwendet. Authentifizierung und Sichtbarkeit gelten
+auch für diesen Abruf.</p>
+<p>Zusätzliche Response-Header liefern den Kontext:</p>
+<ul>
+<li><code>X-BearStack-Photo-Title</code> und <code>X-BearStack-Photo-Path</code></li>
+<li><code>X-BearStack-Photo-Folder-Path</code> und <code>X-BearStack-Photo-Folder-URL</code></li>
+<li><code>X-BearStack-Photo-Folder-Title</code></li>
+<li><code>Link: &lt;https://…/photos?…&gt;; rel="up"</code> als standardisierter Parent-Link</li>
+</ul>
+<h3 id="galerie-personen-und-aktionen">Galerie, Personen und Aktionen<a class="headerlink" href="#galerie-personen-und-aktionen" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Schnittstelle</th>
+<th>Zweck und Besonderheit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/photos/frame/items</code></td>
+<td>Paginiertes Nachladen für den Web-Fotoframe. Der Browser hält höchstens zwei Metadatenseiten; neue Durchläufe beginnen wieder auf Seite 1.</td>
+</tr>
+<tr>
+<td><code>/photos/people</code></td>
+<td>HTML und JSON verwenden dieselbe Sortierung: <code>name_asc/desc</code>, <code>count_asc/desc</code>, <code>folder_asc/desc</code>, <code>date_asc/desc</code>. Ungültige Werte liefern 400; die JSON-Seite enthält <code>sort</code>.</td>
+</tr>
+<tr>
+<td><code>GET /photos/faces?path=…</code></td>
+<td>Vorhandene Gesichter; ohne bisherige Analyse eine leere Liste. Benötigt <code>photos.edit</code>.</td>
+</tr>
+<tr>
+<td><code>POST /photos/faces/analyze</code></td>
+<td>Einzelnes Foto analysieren; Warten und Analyse zusammen höchstens zwei Minuten. Benötigt <code>photos.edit</code>, startet keinen globalen Lauf.</td>
+</tr>
+<tr>
+<td><code>GET /photos/faces/drawing-image</code> und <code>POST /photos/faces/manual</code></td>
+<td>Manuelle Gesichtsrahmen mit <code>photos.edit</code>, ohne Erkennungsdienst oder Hintergrundlauf.</td>
+</tr>
+<tr>
+<td><code>POST /photos/faces/unignore</code></td>
+<td>Mit <code>path</code> und <code>revision</code> alle ignorierten Gesichter eines Fotos wiederherstellen. Liefert die Anzahl; benötigt <code>photos.edit</code>.</td>
+</tr>
+<tr>
+<td><code>POST /photos/faces/reset-ignored-directory</code></td>
+<td>Mit <code>path</code> ignorierte unbenannte Gesichter eines zulässigen Ordnerteilbaums zurücksetzen. Benötigt <code>photos.edit</code>; JSON enthält <code>ok</code> und <code>restored</code>, Formulare erhalten eine Weiterleitung.</td>
+</tr>
+<tr>
+<td><code>GET /photos/faces/{id}/suggestions</code></td>
+<td>Vergleich mit benannten Referenzen; benötigt <code>photos.edit</code>, verändert keine Zuordnung. JSON oder <code>application/x-ndjson</code> mit abschließendem <code>done=true</code>.</td>
+</tr>
+<tr>
+<td><code>GET</code> / <code>PUT /api/photos/labeling/v1/faces/{id}/favorite</code></td>
+<td>Favorit lesen oder gezielt setzen; PUT mit <code>person_id</code> und booleschem <code>favorite</code>, benötigt <code>photos.edit</code>. Wiederholung schaltet nicht erneut um.</td>
+</tr>
+<tr>
+<td><code>/settings/photos/faces?format=json&amp;progress=1</code></td>
+<td>Kurzer Fortschrittsstand mit maximal fünf Sekunden geteiltem Zählercache, ohne globale Dateisystemprüfung oder einzelne Dateifehler.</td>
+</tr>
+</tbody>
+</table>
+<p>Die Ordner-Rücksetzung verwendet exakte indizierte Pfadgrenzen, auch bei <code>%</code> und
+<code>_</code>, und eine gemeinsame Transaktion für Gruppen und Referenzen. Sie dekodiert
+keine Bilder, funktioniert auch mit mehr als 500 betroffenen Gesichtern und kann
+ohne zusätzliche Änderungen wiederholt werden.</p>
+<p>Labeling-Seiten verwenden Cursorpagination mit Sichtbarkeitsprüfung in kleinen
+Paketen. Neue Schutzmarkierungen und entfallende XMP-Namen werden berücksichtigt.
+Personen-Tags und Stammdaten werden bei Bedarf geladen, statt jede Übersicht
+mit allen Beziehungen zu belasten.</p>
+<h3 id="begrenzte-arbeit-bei-groen-sammlungen">Begrenzte Arbeit bei großen Sammlungen<a class="headerlink" href="#begrenzte-arbeit-bei-groen-sammlungen" title="Permanent link">&para;</a></h3>
+<p>Der Lupenvergleich verwendet unveränderliche Referenzstände benannter Gruppen
+und blockiert während Vergleich und Streaming keine weiteren Änderungen oder
+Suchen. Er prüft alle passenden Gruppen und Favoriten; <strong>512 Gesichts-IDs sind
+eine Datenbankpaketgröße, kein Bestandslimit</strong>. Zwischenstände erscheinen höchstens
+alle 100 ms, das Endergebnis immer. Die Lupe startet keinen globalen Cache-Neuaufbau.
+Messungen beschreibt der <a href="tests-und-audit.html#performance-des-lupen-gesichtabgleichs">Performance-Bericht</a>.</p>
+<p>Gruppenbilder werden über einen Index in Pfadreihenfolge ausgewählt. Die
+Bilderleiste hält höchstens 96 Einträge im Browser, die Fotoansicht höchstens
+256 Gesichter. Die große Vorschau ist auf 1.600 Pixel begrenzt; fehlt ein
+passender Generator, steht das Original als Fallback bereit. Schreib- und
+Nachladeabrufe beim Ignorieren enden nach spätestens 20 Sekunden; unbestätigte
+Antworten führen zu einer Leseprüfung statt automatischer Wiederholung.</p>
+<p>Gesichtsketten werden in kleinen Vektorblöcken ohne bibliotheksweiten Graphen
+im Speicher gesucht. Pro Bibliothek läuft eine Suche mit höchstens 30 Sekunden.
+Benannte Gruppen sind weder Quellen noch Zwischenstationen; ignorierte,
+geschützte, gezeichnete oder ungeeignete Gesichter erzeugen keine Verbindungen.
+Geeignete Gesichter außerhalb des Referenzlimits können Verbindungen erzeugen,
+der Mindestabstand wird hier nicht angewendet. Abgelehnte Paare oder Gruppen mit
+gemeinsamem aktivem Foto bilden keine direkte Verbindung, können aber über
+andere Gruppen in derselben Prüfauswahl landen.</p>
+<p>Eine Kette darf höchstens 1.000 Gruppen umfassen; größere Ergebnisse werden
+abgewiesen, nicht gekürzt. Pro Auswahl sind höchstens 10.000 Abwahlen möglich,
+pro Durchlauf höchstens 10.000 ausgelassene Gruppen. Für die insgesamt zugeordneten
+Gesichter gilt nicht das übliche 500er-Limit einzelner Stapelaktionen.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+              </article>
+            </div>
+
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Zurück zum Seitenanfang
+</button>
+
+      </main>
+
+        <footer class="bs-footer" aria-label="Website-Footer">
+  <div class="bs-wrap bs-footer__inner">
+    <div>
+      <a class="bs-footer__brand" href="index.html">BearStack</a>
+      <p>Schlankes Archiv. Starke Funktion.</p>
+    </div>
+    <nav class="bs-footer__nav" aria-label="Footer-Navigation">
+      <a href="dokumente.html">Dokumente</a>
+      <a href="fotos.html">Fotos</a>
+      <a href="installation.html">Installation</a>
+      <a href="benutzer-und-rechte.html">Benutzer & Rechte</a>
+      <a href="architektur.html">Architektur</a>
+      <a href="tests-und-audit.html">Tests & Audit</a>
+      <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
+    </nav>
+    <p class="bs-footer__meta">BearStack 0.69.0 · Website gebaut mit Zensical</p>
+  </div>
+</footer>
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+
+
+
+
+
+      <script id="__config" type="application/json">{"annotate":null,"base":".","features":["navigation.tabs","navigation.top","toc.follow"],"search":"./assets/javascripts/workers/search.b6b7e04f.min.js","tags":null,"translations":{"clipboard.copied":"In Zwischenablage kopiert","clipboard.copy":"In Zwischenablage kopieren","search.result.more.one":"1 weiteres Suchergebnis auf dieser Seite","search.result.more.other":"# weitere Suchergebnisse auf dieser Seite","search.result.none":"Keine Suchergebnisse","search.result.one":"1 Suchergebnis","search.result.other":"# Suchergebnisse","search.result.placeholder":"Suchbegriff eingeben","search.result.term.missing":"Es fehlt","select.version":"Version auswählen"},"version":null}</script>
+
+
+      <script src="./assets/javascripts/bundle.ee611ef6.min.js"></script>
+
+
+  </body>
+</html>

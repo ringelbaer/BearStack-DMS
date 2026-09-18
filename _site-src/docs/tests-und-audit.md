@@ -36,6 +36,19 @@ Die wichtigsten Vorkehrungen entstehen direkt in der Anwendung:
 
 ## Tests
 
+### Sicherheitsprüfung 0.68.3
+
+Die Prüfung von Konfiguration, Authentifizierung, Datei- und Uploadzugriffen, Secrets, Logging und Fehlerbehandlung ergab vier konkrete Korrekturen:
+
+- **Upload-Duplikate:** Ohne `documents.read` enthielten Antworten bisher die ID und den ursprünglichen Namen eines vorhandenen Dokuments. `/upload` und `/api/upload` liefern diesen Konten jetzt nur den eingereichten Dateinamen als Duplikatmeldung. Leseberechtigte Konten erhalten weiterhin die Bestandsdaten.
+- **Dokument-Tags:** Bei deaktiviertem Fotomodul zeigte `/tags` reinen Foto-Konten Dokument-Tags samt Beschreibungen. Diese Anfragen werden jetzt mit `403` abgewiesen. Daten werden nur für erlaubte Bereiche geladen.
+- **IMAP-Größenlimit:** Die IMAP-Bibliothek puffert Nachrichten, bevor der bisherige MIME-Größencheck greifen konnte. BearStack prüft nun zunächst `RFC822.SIZE` und begrenzt anschließend den `BODY.PEEK`-Abruf. Überlange Nachrichten bleiben im Postfach.
+- **MIME-Verschachtelung:** Beide Mail-Parser akzeptieren höchstens 32 verschachtelte Multipart-Container. Die Grenze beschränkt Rekursion und ineinander geschachtelte Leser; ein Fehler beendet die Verarbeitung und bereinigt temporäre Archivdateien.
+
+Regressionstests prüfen Rollen und zusätzliche Leserechte, beide Upload-Endpunkte, Tag-Zugriff ohne Fotomodul, tatsächliche IMAP-Kommandos ohne Netzwerkzugriff, exakte Größen- und Verschachtelungsgrenzen sowie Abbruch und Dateibereinigung. Bestehende Tests sichern Login-Drosselung, Sitzungswiderruf, CSRF, Loopback-Zugriff, Pfad- und Symlink-Schutz sowie generische Fehlerantworten ab.
+
+### Weitere Regressionen
+
 Die Kettenprüfung (0.57.0) hat eigene Go- und Browserregressionen: Verzweigungen,
 Sprunggrenzen, benannte Zwischenstationen, abgelehnte Paare, Sichtbarkeit,
 Vorschlagsschwellen und Gesichter außerhalb des Referenzlimits. Eine Auswahl mit

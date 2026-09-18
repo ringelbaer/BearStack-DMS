@@ -1,776 +1,546 @@
+---
+title: Android-App – Anleitung
+description: BearStack Fotos einrichten, Bilder ansehen und Personen Schritt für Schritt verwalten.
+---
+
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.18.1** (`versionCode 39`). Die Servergalerie benötigt
-**BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
-benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
-beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
+Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
+Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
+auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.
 
-Ab App **0.12.0** liegen die Warteschlangen als einzelne, indizierte Room-Einträge vor. Das Upgrade auf Datenbankschema 4 übernimmt automatisch die bisherigen Listen einschließlich Reihenfolge, Kartenpositionen, übersprungener Gruppen und noch nicht gesendeter Ignorieraktionen. Offene Aktionsquittungen und Statistiken bleiben erhalten. Normales Weiterblättern und Zurückgehen lesen einzelne Einträge; die Wiederherstellung nach einem Neustart verarbeitet höchstens 256 Einträge je Leseblock. Die Daten bleiben nach Server, Datensatz und Konto getrennt.
+Diese Anleitung beschreibt **Android-App 0.19.0**. Beginne mit den
+[ersten Schritten](#erste-schritte); die folgenden Kapitel erklären die einzelnen
+Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
+es die [technische Referenz](android-technik.md).
 
+## Erste Schritte
 
-## Navigation und Fotoframe ab Android 0.18.0
+### Was du brauchst
 
-Die schwebende Leiste **Fotos · Ordner · Suchen** zeigt kleinere Icons links neben
-kompakten Beschriftungen. Die Berührungsflächen bleiben mindestens 48 dp hoch.
-**Lokale Fotos öffnen** entfällt im …-Menü; **Ordner → Dieses Gerät** sowie der
-lokale Einstieg beim Anmelden und Verbindungsaufbau bleiben verfügbar.
-**Personen verwalten** wechselt aus der Galerie in die Verwaltung;
-**Personenliste** öffnet dort die benannten Personen. Auch in dieser Liste und
-einer geöffneten Person enthält **…** die Aktionen **Zurück**, **Hilfe** und
-**Verbindung wechseln** sowie bei verfügbarer Servergalerie **Fotos**.
+- Ein Gerät mit **Android 8.0 oder neuer** und die BearStack-Fotos-APK.
+- Für Serverfotos: die **HTTPS-Adresse**, einen Benutzernamen und das zugehörige
+  Passwort. Die Adresse kann einen Reverse-Proxy-Pfad enthalten, etwa
+  `https://fotos.example.org/bearstack/`.
+- Einen BearStack-Server ab **0.50.0** mit aktiviertem Fotomodul und dem Recht
+  **Fotos lesen** (`photos.read`). Für die Personenverwaltung brauchst du zusätzlich
+  **Fotos bearbeiten** (`photos.edit`).
 
-In der großen Bildansicht, Diashow und im Fotoframe öffnet das **Zahnrad** direkt
-die Wiedergabeeinstellungen. Im Fotoframe lässt sich bei aktivierter Beschriftung
-zwischen **Dateiname** (Standard) und **Ordnername** wählen. Die Auswahl bleibt nach
-einem Neustart erhalten. BearStack **0.68.0** liefert den zentral formatierten
-Ordnernamen direkt mit jedem Katalogeintrag, auch beim Nachladen und bei gemischten
-Suchergebnissen. Ältere Server zeigen in dieser Einstellung „Ordnername nicht verfügbar“;
-Dateinamen bleiben auswählbar. Lokale Fotos nutzen den Anzeigenamen ihres Gerätealbums.
-Die Einzelmarkierung auf Karten ist nur noch 16 dp groß; anklickbare Marker behalten
-eine 48-dp-Berührungsfläche.
+Bitte die Person, die deinen Server betreibt, um APK, Adresse und Zugangsdaten.
+Die APK wird derzeit lokal gebaut; es gibt keine automatische Veröffentlichung.
+Wenn du sie selbst bauen möchtest, folge [Bauen und installieren](android-technik.md#bauen-und-installieren).
+Für lokale Gerätefotos brauchst du weder einen Server noch ein BearStack-Konto.
 
-## Einstellbarer Thumbnail-Cache
+### App installieren und verbinden
 
-Ab **0.18.1** prüft das Vorladen bereits gespeicherte Vorschauen anhand ihrer Dateimetadaten, ohne Bilddateien erneut vollständig zu lesen oder ihren Nutzungszeitpunkt zu verändern. Eine unveränderte Schutzliste wird nicht erneut geschrieben. Fehlende und gekürzte Dateien werden nachgeladen; beim Anzeigen erkannte beschädigte Bilder werden weiterhin verworfen.
+1. Öffne die bereitgestellte APK auf deinem Android-Gerät und führe die Installation
+   aus. Falls Android danach fragt, erlaube die Installation für die verwendete Quelle.
+2. Starte **BearStack Fotos**.
+3. Trage **HTTPS-Adresse**, **Benutzername** und **Passwort** ein und tippe auf **Verbinden**.
+   Verwende die endgültige Serveradresse: Die App folgt keinen Weiterleitungen und
+   unterstützt keine unverschlüsselten HTTP-Adressen.
+4. Bei einem selbstsignierten Zertifikat erscheint eine zusätzliche Prüfung.
+   Vergleiche den angezeigten SHA-256-Fingerabdruck mit dem Fingerabdruck, den dir
+   der Serverbetreiber nennt. Erst danach wählst du **Abgeglichen und vertrauen**.
+   [Details zur Zertifikatsprüfung](android-technik.md#verbindung-und-zertifikat).
+5. Nach erfolgreicher Anmeldung öffnet sich auf einem passenden Server die Galerie.
+   Tippe auf ein Foto, um es groß anzusehen; mit Android-Zurück gelangst du ins Raster.
 
-Ab App **0.16.0** lässt sich unter **… → Einstellungen → Thumbnail-Cache** das
-Speicherbudget von **64 bis 2048 MiB** in 64-MiB-Schritten einstellen; Standard sind
-**256 MiB**. Die Änderung gilt sofort und bleibt nach einem Neustart erhalten.
+Die App merkt sich eine Verbindung und meldet sich beim nächsten Start automatisch
+an. Eine andere Adresse oder ein anderes Konto richtest du in der Galerie unter
+**… → Einstellungen → Verbindung wechseln** ein.
 
-Die neuesten **50 Vorschaubilder des ungefilterten Fotostreams**, unabhängig von der
-aktuell gewählten Suche oder Sortierung, und sämtliche Vorschaubilder aller Ordner
-auf der **ersten Ebene** werden automatisch geladen und vor Verdrängung geschützt.
-Auch weitere Seiten der obersten Ordner werden berücksichtigt. Weniger als 50
-Stream-Einträge werden vollständig berücksichtigt. Der verbleibende Platz nimmt
-weitere besuchte Galerie-Thumbnails auf; bei Platzbedarf verschwinden die am
-längsten nicht verwendeten ungeschützten Vorschauen zuerst.
+### Ohne Server beginnen
 
-Der geschützte Bestand hat Vorrang: Benötigt er mehr Platz als eingestellt, wächst
-das effektive Mindestbudget entsprechend. Die Einstellungen zeigen Belegung,
-geschützte Größe und Ladefortschritt. Bei Netzwerk- oder Speicherfehlern erscheint
-ein Hinweis mit **Erneut versuchen**. Das Vorladen benötigt eine Serververbindung
-und kann auch mobile Daten verwenden. Es startet nach der Anmeldung; Öffnen einer
-Galerieansicht oder Rückkehr in den Vordergrund aktualisiert den Pflichtbestand,
-höchstens einmal pro Minute. Eine ausdrückliche Wiederholung ist sofort möglich.
+Tippe auf dem Anmelde- oder Ladebildschirm auf **Lokale Fotos öffnen**. Android
+fragt beim ersten Zugriff nach einer Fotofreigabe. Anschließend kannst du unter
+**Dieses Gerät** einen Fotoordner öffnen. Die Einzelheiten stehen unter
+[Lokale Fotoordner](#lokale-fotoordner).
 
-Die komprimierten Vorschauen liegen privat auf dem Gerät, außerhalb von Androids
-löschbarem Cache und ohne Backup oder Gerätetransfer. Sie überleben App-Neustarts.
-Serveradresse, Instanz, Datenbestand, Konto, Bildversion und Vorschaugröße trennen
-Cache-Einträge; ein ausdrücklich gewählter **Verbindungswechsel** löscht sie.
-Es werden keine Originaldateien oder großen Vollbildvorschauen dauerhaft gespeichert.
-Lokale Gerätefotos verwenden weiterhin ihren eigenen Arbeitsspeichercache. Die
-Galerie benötigt für ihren Katalog weiterhin den Server; der Thumbnail-Cache stellt
-keine vollständige Offlinegalerie bereit.
+## Orientierung in der App
 
-Optionsmenüs verwenden überall dasselbe horizontale **…** am rechten Rand ihrer
-Leiste. Wiedergabeeinstellungen verwenden ein **Zahnrad**. Beim Benennen stehen unten
-**… links**, die **Hilfe mittig** und der **Stift rechts**; auch die Aktionen einer Gesichtsauswahl öffnen sich über **… rechts**.
-TalkBack nennt weiterhin den jeweiligen Zweck, etwa „Weitere Optionen“ oder
-„Gruppenaktionen“. Sortierung und Zeitintervall behalten ihre eigenen Auswahlfelder.
+Die schwebende Leiste am unteren Rand wechselt zwischen den drei Galerieansichten:
 
-## Personen unter Ordner ansehen
+| Bereich | Dafür verwendest du ihn |
+| --- | --- |
+| **Fotos** | Den gesamten Serverbestand nach Datum durchsehen. |
+| **Ordner** | In der Verzeichnisstruktur, in Personengalerien oder unter **Dieses Gerät** navigieren. |
+| **Suchen** | Serverfotos und Ordner anhand von Suchbegriffen finden. |
 
-Ab App **0.13.0** mit BearStack **0.53.0** erscheint unter **Ordner** die virtuelle
-Kachel **Personen**. **Alle** und die belegten Foto-Tags führen zu Personengruppen,
-eine Person zu ihren nach Datum gruppierten Fotos. Zurück führt zum jeweiligen
-übergeordneten Ordner; verständliche Personen- und Tagnamen stehen im Titel.
-Ab App **0.15.1** steht der bekannte Name schon während des Ladens dort, auch nach
-Sortierwechseln und beim Zurückgehen. Unbekannte virtuelle Ziele zeigen eine
-verständliche Ladebeschriftung statt `.people`, `all`, kodierten Tags oder Personen-IDs.
-Die App merkt sich höchstens 256 Titel je Verbindung; zusätzliche Anfragen entfallen.
+Listen laden beim Scrollen automatisch nach. Bei einem Ladefehler steht
+**Erneut versuchen** direkt im betroffenen Bereich. Nach dem Schließen eines Fotos
+zeigt das Raster das zuletzt betrachtete Bild wieder an.
 
-Ab App **0.15.0** öffnet das separate Symbol **Sortieren** neben **Weitere Optionen**
-ein eigenes Menü mit markierter aktiver Sortierung. Im Fotostream **Fotos** und in
-Personengalerien stehen nur Datumssortierungen zur Wahl; normale Fotoordner bieten
-zusätzlich Name. Personenlisten bieten Name und mit BearStack **0.58.0** zusätzlich
-**Anzahl Bilder**, jeweils auf- und absteigend. Gezählt werden unterschiedliche
-sichtbare Fotos, bei **Personen im Ordner** nur im jeweiligen Ordner samt Unterordnern.
-Die Sortierung erfolgt serverseitig vor der Seitenaufteilung, Gleichstände nach Name
-und Personen-ID. Ältere Server ohne `people_count_sort` behalten die Namenssortierung.
+Die Symbole haben unterschiedliche Aufgaben:
 
-Normale Ordner berücksichtigen nun die serverseitige Einstellung für die Zahl der
-Vorschaubilder. Personen- und Tag-Kacheln zeigen doppelt so viele Gesichtsthumbnails
-(maximal acht), nach Fotoanzahl und mit Stern-Priorität. Die Anzeige nutzt den
-vorhandenen Bildcache. Ordnerseiten bleiben auf 24, Fotoseiten auf 96 Einträge
-begrenzt. `photos.read` genügt. Tags werden in der Web-Personenverwaltung vergeben.
-Auf älteren Servern bleibt die vorhandene Ordneransicht verfügbar; ältere Apps
-behalten auch nach dem Serverupdate ihre bisherigen Antworten mit zwei Vorschauen.
+| Symbol oder Menü | Bedeutung |
+| --- | --- |
+| **Sortieren** | Reihenfolge der aktuellen Galerie oder Personenübersicht wählen. |
+| **…** | Aktionen für die aktuelle Ansicht, etwa Karte, Fotoframe, Personenverwaltung oder Einstellungen. |
+| **Zahnrad** im Bildbetrachter oder Fotoframe | Anzeigedauer, Wiederholung und Wiedergabedarstellung einstellen. |
+| **… → Personen verwalten** in der Galerie | In den Bearbeitungsbereich zum Benennen und Zuordnen wechseln. |
+| **… → Personenliste** im Bearbeitungsbereich | Bereits benannte Personen suchen und bearbeiten. |
 
+Der Inhalt von **…** hängt von der Ansicht und deinen Rechten ab. In der
+Personenliste und in einer geöffneten Person liegen auch **Zurück**, **Hilfe** und
+**Verbindung wechseln** in diesem Menü. Beim Benennen hat die untere Aktionsleiste
+links **…** für Gruppenaktionen, mittig **?** für Hilfe und rechts den **Stift**.
 
-## Personen im aktuellen Fotoordner
-
-Ab App **0.14.0** und BearStack **0.55.0** öffnet **Weitere Optionen → Personen im
-Ordner** die Personen des aktuellen Fotoordners und seiner Unterordner. Fotoanzahl
-und Gesichtsvorschau beziehen sich auf diesen Bereich; beim Öffnen einer Person
-bleiben auch ihre Fotos darauf begrenzt. Zurück führt über die Personenübersicht
-zum ursprünglichen Ordner. Der Eintrag wird nur angezeigt, wenn der Server die
-Funktion anbietet. Lesen genügt; Suche, Sortierung, Datumsgruppen und seitenweises
-Nachladen verwenden die bestehende Galerie.
-
-## Hilfe unter Personen
-
-Ab App **0.12.1** öffnet **… → Hilfe** im Personenbereich einen scrollbaren Dialog,
-wie unter **Ähnliche Gruppen**. Dort stehen die Hinweise zu ×, Vergleichsfavoriten,
-Fotovorschau und Mehrfachauswahl sowie zur Unterstützung durch ältere Server.
-Die Hilfe ist in der Personenliste und in einer geöffneten Person erreichbar.
-Schließen oder Android-Zurück kehrt zur aktuellen Ansicht zurück und erhält die
-Gesichtsauswahl. Das Öffnen der Hilfe benötigt keine zusätzliche Serveranfrage.
-
-## Mehrfachauswahl in „Benannte Personen“
-
-Ab App **0.11.0** und BearStack **0.51.0** kannst du in einer geöffneten Person
-über die Checkbox oben links mehrere Gesichter auswählen. Die Auswahl bleibt beim
-Weiterscrollen und Nachladen erhalten; bis zu **500 Gesichter pro Aktion** sind möglich.
-Die feste Leiste zeigt die Auswahlanzahl, **Aufheben** und **…** rechts für die Aktionen.
-
-- **Auf unbenannt zurücksetzen** verschiebt die ausgewählten Gesichter nach Bestätigung
-  gemeinsam in eine neue unbenannte Gruppe und entfernt ihre Vergleichsfavoriten.
-- **Gruppe zuordnen** öffnet den vorhandenen Namensdialog. Ein neuer Name erstellt
-  eine Gruppe; ein Namensvorschlag ordnet die Auswahl einer vorhandenen Person zu.
-  Die Lupe gleicht das erste ausgewählte Gesicht mit benannten Personen ab.
-  Gleichnamige Personen lassen sich nach der vorhandenen Duplikatprüfung getrennt anlegen.
-- **Ignorieren** zeigt einen Bestätigungsdialog mit der Anzahl. Bestätigte Gesichter
-  verschwinden aus der Personenansicht und lassen sich im Browser unter **Ignoriert** wiederherstellen.
-
-Das **×** am Bild entfernt weiterhin nach Bestätigung **ein Gesicht aus seiner
-Personenzuordnung** und legt dafür eine neue unbenannte Gruppe an. Es ignoriert das
-Gesicht nicht. Keine dieser Aktionen löscht Fotos. Während einer Mehrfachauswahl
-sind ×, Vergleichsstern und das Umbenennen der ganzen Person gesperrt.
-Abbrechen eines Dialogs erhält die Auswahl; Zurück hebt zunächst die Auswahl auf.
-
-Die App sendet die ausgewählten IDs in einer einzigen atomaren Aktion mit
-Quellrevision und gegebenenfalls Zielrevision. Bei Konflikten wird die Auswahl
-verworfen und die Person aktualisiert; es ist eine neue Entscheidung erforderlich.
-Eine lokal gespeicherte Aktions-ID und die Serverquittung sichern verlorene Antworten
-und Prozessneustarts ab. **Offene Aktion prüfen** klärt den Ausgang, bevor weitere
-Änderungen möglich sind. Das Zurücksetzen merkt die neue Gruppe für das Benennen vor.
-Metadaten laden weiter in Paketen von 40; die Auswahl lädt keine zusätzlichen Bilder
-oder vollständigen Gruppen. Bestehende Rechte- und Sichtbarkeitsprüfungen gelten.
-Die Capability `named_face_batch` blendet die Funktion nur auf passenden Servern ein;
-ältere Server behalten die bisherige Einzelverwaltung. Keine Datenmigration.
-
-## Start und Offlinebetrieb
-
-Mit gespeicherten Verbindungsdaten startet die App mit einem Ladebildschirm im
-BearStack-Design und meldet sich automatisch an. Das Anmeldeformular erscheint erst
-bei der Einrichtung oder nach einem ausdrücklich gewählten Verbindungswechsel.
-**Lokale Fotos öffnen** führt schon während des Verbindungsaufbaus zu den Gerätefotos.
-Auch in der geöffneten Servergalerie ist dieser Einstieg jederzeit unter
-**Ordner → Dieses Gerät** erreichbar, etwa bei einem späteren Serverausfall. Die Kachel
-lässt sich unter **Weitere Optionen → Einstellungen → Lokale Fotoordner anzeigen** einschalten.
-
-Die automatische Serveranmeldung wartet höchstens acht Sekunden auf die
-Sitzungsaushandlung. Bei einem nicht erreichbaren oder fehlerhaften Server öffnet
-sich **Dieses Gerät** mit einem verständlichen Verbindungsfehler und **Erneut versuchen**.
-Auch ungültige Zugangsdaten oder ein geändertes Zertifikat sperren die lokalen Fotos
-nicht. Gespeicherte Zugangsdaten und die Zertifikatsbindung bleiben erhalten; ein
-neues Zertifikat wird niemals automatisch akzeptiert. Ein erneuter Verbindungsversuch
-lässt die lokale Ansicht geöffnet. Nach erfolgreicher Anmeldung stehen die Servertabs
-wieder bereit. Es gibt keine fortlaufenden automatischen Wiederholungen.
-
-Der lokale Einstieg funktioniert auch ohne eingerichteten Server und unabhängig
-vom Schalter für die lokale Kachel in der Servergalerie. Android muss den Fotozugriff
-freigeben; bei verweigerter Berechtigung bietet die App die Freigabe an. Ordner,
-Vorschauen, Vollbild, Zoom, Informationen und Teilen verwenden ausschließlich die
-lokalen Fotos. Galerie-Thumbnails bleiben im einstellbaren Cache gespeichert; für die
-Ordner- und Fotolisten sowie Originalfotos ist weiterhin eine Serververbindung nötig.
-
-Die Funktion **Gruppen manuell kombinieren** wurde aus der App entfernt.
-**Ähnliche Gruppen**, Benennen und Zuordnen bleiben verfügbar. Bereits gespeicherte,
-noch unbestätigte Gruppenaktionen älterer App-Stände werden weiterhin anhand ihrer
-Aktionsquittung aufgelöst.
-
-## Große Fotovorschau beim Halten eines Gesichts
-
-Beim Halten eines Gesichts lädt die App das ganze Foto als serverseitig verkleinerte
-Vorschau gemäß **`large_preview_size`** (Standard: 3840 Pixel längste Kante).
-Das gilt für Benennen, Personenverwaltung, „Ähnliche Gruppen“ und deren WLAN-Vorladen.
-Seitenverhältnis, Gesichtsmarkierung und Zoom bleiben erhalten; auf dem Handy wird
-weiterhin mit einem Dekodierziel von 2048 Pixeln gearbeitet. Der Server verwendet
-seinen vorhandenen WebP-Thumbnail-Cache. Ein neuer Abruf berücksichtigt den aktuellen
-Serverwert; bereits im App-Cache liegende Vorschauen behalten ihre Frist von höchstens
-drei Minuten. App und Server gemeinsam aktualisieren: ältere Server ohne diesen
-Vorschaumodus liefern über denselben Endpunkt weiterhin die Originaldatei.
-
-Ab BearStack **0.52.4** verwenden Personen-Übersichtskarten und die Treffer-Thumbnails im Benennen-Dialog in WebUI und Android ausschließlich sichtbare, aktive **Stern-Favoriten**, sofern die Gruppe welche besitzt. Bei mehreren Favoriten wird stabil der mit der kleinsten Gesichts-ID gezeigt. Ohne Favoriten bleibt die bisherige Bildauswahl erhalten. Das gilt auch für die Portraits der Lupentreffer; Personenerkennung, Vergleichsreferenzen, Such-Ausgangsgesichter und Trefferreihenfolge bleiben unverändert. Die Auswahl erfolgt serverseitig über den vorhandenen Favoritenindex, ohne zusätzliche Bildabrufe oder Datenmigration. Die Android-App erhält die korrigierten Portraits nach dem Serverupdate über die bestehenden Antworten.
-
-## Direkte Zuordnung in „Ähnliche Gruppen“
-
-Sind **beide Gruppen unbenannt**, startet unter **Ignorieren** und dem **Stift**
-ein gemeinsamer Lupenabgleich mit benannten Personen. Er verwendet zuerst
-das Vergleichsgesicht der **ersten Gruppe**. Bleibt deren vollständig abgeschlossener
-Abgleich ohne Treffer, folgt automatisch das Vergleichsgesicht der **zweiten Gruppe**.
-Eine gemeinsame Liste zeigt
-**Benennungsvorschläge für beide Gruppen** mit Referenzportrait, Namen und
-Gesichtsanzahl. Antippen ordnet **beide Gruppen gemeinsam** der gewählten Person zu,
-ohne Namensdialog. Nach der bestätigten Zuordnung folgt das nächste Paar.
-Ist mindestens eine Gruppe benannt oder wurde eine Seite bereits einzeln bearbeitet,
-gibt es keinen automatischen Abgleich und keine gemeinsame Trefferliste.
-
-Zwischenstände erscheinen bereits während des Abgleichs und sind sofort auswählbar.
-Ladezustand, leere Ergebnisse und Fehler stehen im gemeinsamen Bereich.
-**Erneut abgleichen** beziehungsweise **Erneut versuchen** wiederholt den Abgleich
-beginnend mit der ersten Gruppe, bei leerem Ergebnis anschließend mit der zweiten. Die Entscheidungsbuttons bleiben am unteren Bildschirmrand
-erreichbar; längere Trefferlisten scrollen mit dem Vergleichsbereich. Größere
-vertikale Abstände trennen Portraits, Gruppendetails und Aktionen; die gemeinsamen
-Benennungsvorschläge erhalten einen eigenen Abstand und großzügigere Trefferkarten.
-
-Pro Durchlauf laufen höchstens zwei Suchanfragen nacheinander mit bis zu 20 Treffern;
-bei einem Treffer der ersten Gruppe entfällt die zweite Anfrage.
-Der bestehende NDJSON-Transport hält nur die aktuelle Rangliste und den neuesten
-wartenden Zwischenstand; jede Nachricht bleibt auf 64 KiB begrenzt. Fertige Ergebnisse
-werden für das aktuelle Paar weiterverwendet, auch nach einem Namensdialog oder
-Hintergrundwechsel. Laufende Suchen werden bei Hintergrundwechsel, Verlassen der
-Ansicht oder während anderer Personenaktionen abgebrochen; unvollständige Treffer
-werden verworfen und beim Fortsetzen neu ermittelt. Fehler lösen keine automatischen
-Wiederholungsschleifen aus. Ein neues Paar oder eine bestätigte Einzelaktion verwirft
-die gemeinsame Liste.
-
-Die App lädt vor der Zuordnung ausschließlich die aktuelle Zielperson nach.
-Umbenannte oder entfernte Ziele und geänderte Revisionen einer der beiden Gruppen
-verlangen eine neue Entscheidung. Die vorhandene atomare Aktion `name_merge`
-prüft beide Gruppen sowie das Ziel und ordnet beide gemeinsam zu. Ihre Aktionsquittung
-sichert verlorene Antworten ab; eine Wiederholung schreibt nicht doppelt.
-Die Funktion benötigt die Server-Capability `merge_naming`.
-Der gemeinsame Stift zum Benennen beider Gruppen bleibt verfügbar.
-
-## Gesichtssuche beim Benennen
-
-Ab App **0.10.0** startet die **Lupe neben dem Namensfeld** im Benenn-Dialog einen Gesichtsabgleich mit bereits benannten Personen. Sie verwendet das erste Gesicht der angezeigten Seite beziehungsweise das Quellgesicht im Modus „Ähnliche Gruppen“; beim Stift einer einzelnen Seite deren Vergleichsgesicht. Die Treffer erscheinen schon während des Abgleichs in Ähnlichkeitsreihenfolge mit einem Stern-Favoriten als Portrait, falls vorhanden, sonst mit dem passenden Referenzportrait. Weitere Zwischenstände aktualisieren die Liste; der Ladehinweis bleibt bis zum Abschluss sichtbar. Treffer lassen sich bereits während der Suche auswählen. Antippen ordnet die aktuelle Gruppe zu; beim gemeinsamen Benennen zweier Gruppen werden beide zugeordnet. Die Suche selbst verändert nichts. Ladezustand, leere Trefferliste und Fehler werden angezeigt; erneutes Antippen wiederholt die Suche. Tippen im Namensfeld, Schließen des Dialogs oder Wechsel in den Hintergrund bricht sie ab. Das separate Umbenennen einer bereits benannten Person bleibt eine Namensänderung.
-
-Der Abgleich nutzt den vorhandenen Endpunkt `GET /photos/faces/{id}/suggestions` (BearStack ab 0.50.0), benötigt keine erneute Bilderkennung und liefert höchstens 20 Treffer. Die App fordert NDJSON-Streaming an, verarbeitet höchstens 64 KiB pro Zwischenstand und hält nur die aktuelle Trefferliste sowie den neuesten noch nicht angezeigten Zwischenstand im Speicher. Ein fehlender Abschluss oder ein Übertragungsfehler leert die vorläufigen Treffer und erlaubt einen erneuten Versuch. Ältere Server mit diesem Endpunkt können weiterhin eine einzelne JSON-Antwort liefern. Bei einem positiven Mindestabstand zwischen erstem und zweitem Treffer wartet auch der Server auf den vollständigen Abgleich. Im Namensdialog startet der Abgleich nur über die Lupe; im Vergleich „Ähnliche Gruppen“ automatisch zuerst anhand der ersten Gruppe und bei leerem Endergebnis anschließend der zweiten, sofern beide Gruppen unbenannt sind, als gemeinsamer Benennungsvorschlag für beide. Die App lädt die aktuelle Revision ausschließlich der ausgewählten Zielperson nach. Eine inzwischen umbenannte Zielperson erfordert eine neue Entscheidung; Zuordnungen behalten die vorhandenen Revisionsprüfungen und Aktionsquittungen. Ältere Server zeigen eine verständliche Fehlermeldung; die Namenssuche bleibt verfügbar.
+Die App folgt dem hellen oder dunklen Android-Design und unterstützt Deutsch und
+Englisch. Auf Android 13 oder neuer kannst du die Sprache unter
+**Android-Einstellungen → Apps → BearStack Fotos → Sprache** einzeln wählen.
+Auf älteren Geräten gilt die Systemsprache. Große Schrift und TalkBack werden
+unterstützt; längere Inhalte und Dialoge lassen sich scrollen.
 
 ## Galerie
 
-**Fotos** zeigt den gesamten Fotobestand nach Datum. Unter **Ordner** öffnest du die
-bekannte Verzeichnisstruktur; jede Kachel enthält die konfigurierte Zahl der Vorschauen und die Medienanzahl.
-**Suchen** nutzt die Browsersyntax, zum Beispiel `person:Anna` oder `tag:Urlaub`.
-Die Suche wird mit der Suchen-Taste der Tastatur gestartet.
+### Fotos finden und sortieren
 
-Die Ordnersuche hat keine Gesamtgrenze von 50 Treffern. Auch größere Ergebnisse
-werden vollständig und sortiert in Paketen von höchstens 24 Ordnern nachgeladen;
-Vorschaubilder werden erst für das jeweils angefragte Paket ermittelt.
+Öffne **Fotos** für den zeitlichen Überblick oder **Ordner** für einen bestimmten
+Teil deiner Sammlung. Ordnerkacheln zeigen Vorschauen und die Medienanzahl.
+Unter **Geschichten & Notizen** findest du vorhandene Markdown- und Textbeiträge;
+der vollständige Text wird beim Öffnen geladen.
 
-Die Galerie ist ein fortlaufendes Raster: Einfach weiterscrollen. Weitere Fotos,
-Ordner und Texte laden bereits vor dem sichtbaren Ende automatisch nach. Auch
-beim Zurückscrollen bleiben alle Inhalte erreichbar. Es gibt keine Seitenwechsel
-oder „Mehr laden“-Schaltflächen; bei einem Ladefehler erscheint **Erneut versuchen**.
+Unter **Suchen** gibst du einen Ausdruck ein und startest ihn mit der Suchen-Taste
+der Tastatur. Es gilt dieselbe [Fotosuche wie im Browser](fotos.md#fotos-suchen-und-filtern), beispielsweise:
 
-Ein Foto öffnet den Vollbildbetrachter. Wische zum nächsten Foto oder nutze die
-Vor-/Zurück-Schaltflächen. Mit zwei Fingern oder **Vergrößern** lässt sich das Bild
-vergrößern. **Informationen** lädt Dateiname, Pfad, Auflösung, Dateigröße sowie
-vorhandene Kamera- und GPS-Daten, Bewertung, Personen, Tags und Schlagwörter.
-Die Aufnahmezeit erscheint mit Sekunden und gespeicherter Zeitzone; ohne
-Aufnahmezeit wird die Änderungszeit ausdrücklich gekennzeichnet. Ladefehler
-lassen sich direkt im Informationsblatt über **Erneut versuchen** wiederholen. Markdown- und Textbeiträge stehen im jeweiligen
-Ordner unter **Geschichten & Notizen** und werden erst beim Öffnen vollständig geladen.
-Ladefehler erscheinen mit **Erneut versuchen** direkt in der Textansicht; leere
-Beiträge werden als leer angezeigt und beenden den Ladezustand.
+| Suchausdruck | Ergebnis |
+| --- | --- |
+| `person:Anna` | Fotos mit der Person Anna. |
+| `tag:Urlaub` | Fotos und passende Ordner mit dem Tag Urlaub. |
+| `file_name:IMG_1234` | Medien mit passendem Dateinamen. |
 
-**Weitere Optionen → Personen verwalten** führt zu den bisherigen Funktionen.
-Zurück aus dem Benennen-Bereich oder **… → Fotos** öffnet die Galerie.
-Galerie, Personenverwaltung, Hilfetexte und Fehlermeldungen stehen vollständig auf
-Deutsch und Englisch zur Verfügung. Die App folgt der Android-Sprache und dem
-System-Hell-/Dunkelmodus. Ab Android 13 lässt sich die Sprache auch einzeln unter
-**Android-Einstellungen → Apps → BearStack Fotos → Sprache** wählen; ältere Geräte
-verwenden die Systemsprache. Bereits sichtbare Fehler werden bei einem Sprachwechsel
-neu übersetzt, ohne die aktuelle Gruppe oder eine offene Aktion zu verlieren.
+Auch große Ordnersuchergebnisse werden beim Scrollen weitergeladen. Meldet der
+Server eine zu breite Suche, grenze den Suchausdruck weiter ein.
 
-Fehlermeldungen verwenden feste Meldungsschlüssel statt ungefilterter technischer
-Ausnahmetexte. Kamera-, Datei- und Personenbezeichnungen bleiben die Originaldaten.
-Ab App **0.17.2** schwebt die abgerundete Navigation für Fotos, Ordner und Suche
-über dem Galerieinhalt. Fotos, Ordner und Suchergebnisse scrollen hinter der Leiste
-weiter; die Zwischenräume bis zum Bildschirmrand bleiben durchsichtig. Ein
-scrollbarer Abstand am Listenende hält die letzte Reihe vollständig erreichbar.
-Die Leiste berücksichtigt die Systemnavigation und seitliche Displayausschnitte. Das Raster
-zeigt auf breiten Displays sechs statt drei Fotos pro Reihe. Bei großer Schrift
-erhalten Ordner im Hochformat die gesamte Breite für ihre Beschriftung. Das
-adaptive App-Symbol bleibt auch beim runden Android-Beschnitt vollständig sichtbar.
-
-### Foto ohne Bedienelemente ansehen
-
-Ab App **0.15.1** blendet ein Tipp auf ein geöffnetes Foto die oberen und unteren
-Bedienleisten sowie die Systemleisten aus. Ein weiterer Tipp blendet sie wieder ein.
-Das Bild behält dabei seine Größe und Position. Wischen wechselt weiterhin das Foto;
-ausgeblendete Leisten bleiben auch beim Bildwechsel verborgen. Zwei Finger vergrößern
-oder verkleinern das Foto; Verschieben im vergrößerten Bild schaltet keine Leisten um.
-Der bisherige Button **Vergrößern / Ganzes Foto** entfällt. TalkBack bietet weiterhin
-Zoom-/Zurücksetzen-Aktionen sowie Ein-/Ausblenden der Bedienelemente am Foto.
-Das gilt für Serverfotos, lokale Bilder und Fotos aus der Kartenauswahl.
+Über **Sortieren** wählst du Datum auf- oder absteigend. Normale Ordner bieten
+zusätzlich Name auf- oder absteigend. In Personengalerien werden Fotos nach Datum
+sortiert; Personenübersichten bieten Name und auf passenden Servern **Anzahl Bilder**.
+Die Bildanzahl zählt unterschiedliche sichtbare Fotos, nicht einzelne Gesichtsausschnitte.
 
 ### Zu einem Datum springen
 
-Im Tab **Fotos** öffnet das **Kalendersymbol links neben dem Dreipunkt-Menü** einen
-Datumswähler. Er startet beim gerade sichtbaren Datum. Du kannst einen Tag im Kalender
-wählen, über die Jahresauswahl weiter zurückgehen oder zur Texteingabe wechseln.
-**Zum Datum springen** setzt den Bilderstrom an den Anfang des passenden Tages.
-Gibt es dort keine Aufnahmen, wird der zeitlich nächste vorhandene Tag gewählt;
-bei gleichem Abstand der ältere. Daten vor oder nach dem Bestand führen zum ältesten
-beziehungsweise neuesten vorhandenen Tag.
+1. Öffne **Fotos** in der Reihenfolge **Datum: Neueste zuerst**.
+2. Tippe auf das **Kalendersymbol links neben …**.
+3. Wähle einen Tag. Du kannst auch die Jahresauswahl oder die Texteingabe verwenden.
+4. Bestätige mit **Zum Datum springen**.
 
-Danach kannst du wie gewohnt in beide Richtungen weiterscrollen. Der Datumswähler
-setzt keinen Filter. Maßgeblich ist der angezeigte Aufnahmetag mit gespeicherter
-Zeitzone, ersatzweise der Tag der Dateiänderung. **Abbrechen** im Kalender verändert
-nichts; auch die laufende Suche nach der Position lässt sich abbrechen. Fehler lassen
-sich direkt wiederholen, während der bisherige Bilderstrom erhalten bleibt. Ein Wechsel
-von Tab, Konto oder in den Hintergrund verwirft eine noch laufende Anfrage.
+Die Galerie springt zum Anfang dieses Tages. Gibt es dort keine Aufnahme, wählt sie
+den zeitlich nächsten vorhandenen Tag, bei gleichem Abstand den älteren. Der Sprung
+setzt keinen Filter: Du kannst anschließend in beide Richtungen weiterscrollen.
+Maßgeblich ist der Aufnahmetag mit gespeicherter Zeitzone, ersatzweise die Dateiänderung.
+Ordner, lokale Fotos und Suchergebnisse haben keinen solchen Datumssprung.
 
-App und Server benötigen mindestens **Android 0.10.0 /
-BearStack 0.50.0**. Der neue lesende Endpunkt `/api/photos/v1/browse/date` gilt für den
-ungefilterten, nach Datum absteigenden Stream im Tab Fotos. Er benötigt `photos.read`
-und einen aufgebauten Fotoindex. Ältere Server zeigen einen Aktualisierungshinweis.
-Ordner, lokale Fotoordner und Suchergebnisse behalten ihre bisherige Navigation.
+### Bilder groß ansehen und Informationen öffnen
 
-Der Server ermittelt Nachbartage mit höchstens vier Bereichsabfragen in den vorhandenen
-Datumsindizes und zählt die vorangehenden Indexeinträge für die Zielseite. Er lädt keine
-Originale oder vollständigen Medienlisten. Position und Ziel stammen aus derselben
-Lesetransaktion; die App lädt anschließend ausschließlich die Zielseite mit höchstens
-96 Einträgen. Normales Nachladen hält weiterhin höchstens drei Seiten. Wird das Ziel
-zwischen Positionsabfrage und Seitenabruf verschoben, lässt sich der Sprung wiederholen.
-Es gibt keine Schemaänderung oder zusätzliche Indexmigration.
+Tippe auf ein Foto und wische zum nächsten oder vorherigen Bild. Alternativ nutzt
+du die Vor-/Zurück-Schaltflächen. Zwei Finger vergrößern oder verkleinern das Bild;
+ein vergrößertes Bild lässt sich verschieben.
+
+Ein einfacher Tipp auf das Foto blendet Bedien- und Systemleisten aus, ein weiterer
+Tipp blendet sie wieder ein. Das gilt auch beim Bildwechsel. TalkBack bietet eigene
+Aktionen für Zoom, Zurücksetzen und das Ein-/Ausblenden der Bedienelemente.
+
+**Informationen** zeigt die vorhandenen Daten: Dateiname und Pfad, Auflösung,
+Dateigröße, Kamera, Aufnahmezeit samt Zeitzone, Bewertung, Personen, Tags,
+Schlagwörter und GPS-Position. Fehlt die Aufnahmezeit, ist die ersatzweise angezeigte
+Änderungszeit entsprechend bezeichnet. Ein Fehler beim Laden lässt sich im
+Informationsblatt über **Erneut versuchen** wiederholen.
 
 ### Einzelne Bilder teilen
 
-**Teilen** oben im Vollbildbetrachter öffnet die Android-App-Auswahl mit der
-Originaldatei des aktuell angezeigten Fotos, auch aus Karten und lokalen Fotoordnern.
-Die Diashow pausiert beim Antippen. Serverbilder werden erst dann über die bestehende
-HTTPS-Verbindung geladen. Ein Ladehinweis bietet **Abbrechen**; nach einem Fehler
-kannst du den Button erneut verwenden. Schließen, Bildwechsel und Wechsel in den
-Hintergrund brechen die Vorbereitung ab.
+Tippe im Vollbildbetrachter auf **Teilen** und wähle die empfangende Android-App.
+Geteilt wird die Originaldatei des aktuellen Fotos. Bei Serverfotos lädt BearStack
+sie zunächst herunter; diese Vorbereitung lässt sich abbrechen. Lokale Fotos
+werden direkt freigegeben. Die Diashow pausiert währenddessen.
 
-Die ausgewählte App erhält vorübergehenden Lesezugriff auf genau dieses Bild,
-keine BearStack-Zugangsdaten oder Serverlinks. Originaldateien enthalten weiterhin
-ihre gespeicherten Metadaten, gegebenenfalls einschließlich GPS. Lokale Fotos werden
-direkt über ihre MediaStore-URI geteilt, ohne Kopie, Upload oder zusätzliche Berechtigung.
-
-Serveroriginale werden ohne Bilddekodierung mit dem vorhandenen 64-KiB-Übertragungspuffer
-in einem privaten, ausschließlich für das Teilen freigegebenen Cache vorbereitet.
-Pro Bild sind bis zu 256 MiB möglich; größere Originale lassen sich über **Herunterladen**
-speichern. Fehler und Abbruch entfernen die angefangene Datei. Erfolgreich vorbereitete
-Dateien bleiben für die Empfänger-App verfügbar; vor dem nächsten Server-Share werden
-Dateien ab 24 Stunden sowie ältere Dateien oberhalb der Grenzen bereinigt. Einschließlich
-der laufenden Vorbereitung bleiben höchstens acht Dateien und 512 MiB im Cache.
-Es werden weder weitere Fotos vorgeladen noch alle Galerieeinträge durchsucht.
-
-### Lokale Fotoordner
-
-Ab Android **0.15.2** verwenden **Fotos**, **Ordner**, **Suchen** und **Dieses Gerät**
-dasselbe Dreipunkt-Menü mit **Karte**, **Fotoframe starten**, **Personen verwalten**
-(bei vorhandenen Rechten) und **Einstellungen**. Kontextabhängig kommt der bestehende
-Eintrag für die Personen des Serverordners hinzu. Nicht verfügbare Aktionen sind deaktiviert:
-Lokal gibt es keine Karte, Fotoframe ist in einem geöffneten Fotoordner verfügbar.
-**Verbindung wechseln** steht unter **Einstellungen**; der zusätzliche Menüeintrag
-**Lokale Fotos öffnen** entfällt.
-
-Unter **Weitere Optionen → Einstellungen → Lokale Fotoordner anzeigen** lässt sich
-zusätzlich **Ordner → Dieses Gerät** einschalten. Die Funktion ist standardmäßig aus
-und die Einstellung bleibt auf dem Gerät gespeichert. Unter dem Hauptordner stehen
-die von Android erkannten Fotoordner, beispielsweise Camera, Screenshots und Pictures,
-mit Medienanzahl und bis zu zwei Vorschauen. Ein Ordner öffnet seine Fotos im
-fortlaufenden Raster; Vollbild, Zoom, Diashow und lokale Dateiinformationen sind verfügbar.
-Bei aktiver Serververbindung führt Zurück über das Gerät wieder zur Servergalerie.
-Die Tabs Fotos und Suchen zeigen dann den Serverbestand. Ohne Serververbindung
-bleibt die lokale Navigation verfügbar; die Statusleiste bietet eine erneute Anmeldung.
-
-Beim ersten Aktivieren fragt Android nach Fotozugriff. Ab Android 14 kannst du auch
-nur einzelne Fotos freigeben; dann erscheinen ausschließlich diese Fotos und ihre
-Ordner. **Fotozugriff erlauben / Auswahl ändern** in den App-Einstellungen ermöglicht
-eine neue Auswahl. Bei dauerhaft abgelehntem Zugriff führt **Android-App-Einstellungen**
-zur Freigabe. Deaktivieren blendet das Gerät aus; vorhandene Android-Berechtigungen
-können separat dort entzogen werden.
-
-Die App liest ausschließlich den lokalen Android-Medienindex (MediaStore). Es gibt
-keinen Upload und keinen Serveraufruf für lokale Fotos. Videos, private App-Dateien
-und nicht im Medienindex enthaltene Ordner gehören nicht zu dieser Ansicht.
-SD-Karten-Fotoordner erscheinen, soweit Android sie bereitstellt; gleiche Ordnernamen
-auf unterschiedlichen Datenträgern bleiben getrennt. Lokale Bilder werden nur im
-Arbeitsspeicher mit maximal 16 MiB Bildcache gehalten, ohne Disk-Cache. Beim Verlassen
-der lokalen Ansicht oder Wechsel in den Hintergrund werden Anfragen abgebrochen
-und der lokale Bildcache geleert. Nach der Rückkehr werden Fotozugriff und Medienindex
-neu geprüft; Änderungen am Medienindex aktualisieren die offene Ansicht mit kurzer
-Verzögerung und schließen gegebenenfalls den Betrachter.
-
-Die Ordnerübersicht liest einmal pro geöffnetem beziehungsweise aktualisiertem
-Katalog nur IDs und Ordner-Metadaten, hält je Ordner einen Zähler und höchstens zwei
-Vorschau-IDs und lädt Ordner in Paketen von 24 nach. Kacheln und Ordnerinhalt verwenden
-dieselbe Reihenfolge nach absteigender Medien-ID: zuletzt in den Index aufgenommene
-Fotos zuerst. Fehlende oder ältere Aufnahmedaten verschieben neue Screenshots und
-Importe dadurch nicht mehr hinter ältere Fotos. Die Sortierung nutzt den eindeutigen
-Indexschlüssel und benötigt keine zusätzliche Metadatenabfrage. Fotos laden in Paketen von 96;
-das Raster hält höchstens drei Seiten. Die Abfragen laufen abbrechbar außerhalb
-des UI-Threads. Android-Anbieter ohne native Seitengrenzen verwenden einen Cursor
-zum angefragten Ausschnitt, weiterhin ohne die komplette Fotoliste in den App-Speicher
-zu übernehmen. Bilddekodierung erfolgt erst für sichtbare Vorschauen beziehungsweise
-den Betrachter und ist auf dessen Darstellungsgröße begrenzt.
-
-Die Berechtigungen folgen [Androids Regeln für vollständigen und ausgewählten Fotozugriff](https://developer.android.com/about/versions/14/changes/partial-photo-video-access).
-Die Server-API und die benötigte BearStack-Version bleiben unverändert. Diese
-MINOR-Erweiterung wurde mit App 0.10.0 / BearStack 0.50.0 eingeführt.
-
-### Karten
-
-**Weitere Optionen → Karte** zeigt die GPS-Aufnahmen des aktuellen Ordners
-inklusive Unterordnern oder der aktuellen Suche. Verschieben und Zwei-Finger-Zoom
-ändern den Ausschnitt; Plus/Minus und **Alle Orte anzeigen** sind ebenfalls verfügbar.
-Zahlen bündeln benachbarte Aufnahmen. Antippen vergrößert die Umgebung; ein einzelner
-Punkt öffnet die Aufnahme. Mehrere Aufnahmen am exakt gleichen Ort oder bei
-maximalem Zoom öffnen eine ebenfalls endlos scrollbare Fotoauswahl.
-Das Raster lädt automatisch nach und öffnet Fotos im gemeinsamen Vollbildbetrachter.
-In **Informationen** erscheint eine Karte zum Foto.
-
-**Ebenen → Fotoroute** verbindet die GPS-Orte der Fotos in zeitlicher Reihenfolge
-als gestrichelte Linie. Die aktive Suche und Typauswahl bleiben erhalten. Die
-serverseitige Foto-Track-Auflösung bestimmt die Gruppierung naher Orte. Die App
-lädt diese Ebene erst beim Einschalten und hält höchstens 4.096 Routenkoordinaten.
-Beim Zoomen wird die Geometrie für den Ausschnitt erneut geladen. Die Gruppierung
-verwendet immer den vollständigen passenden Bestand, bevor die Route zugeschnitten
-wird. Lange Routen können vereinfacht sein; Fehler sind direkt wiederholbar.
-
-**Ebenen → GPX-Tracks** öffnet die Trackauswahl für den Ordner samt Unterordnern.
-Bei einer Fotosuche stehen die Tracks der gesamten Sammlung zur Auswahl. Die Liste
-lädt beim Scrollen automatisch in beide Richtungen nach. Du kannst mehrere Tracks
-zugleich anzeigen; farbige Markierungen und die ausgewählten Namen helfen beim
-Vergleichen. Ein ausgewählter Track wird auf der Karte fokussiert. Das funktioniert
-auch ohne GPS-Fotos. Erneutes Antippen oder **Alle GPX-Tracks ausblenden** entfernt die
-Auswahl. Unlesbare Dateien werden in der Trackauswahl gemeldet und lassen sich erneut laden.
-
-Getrennte GPX-Abschnitte bleiben getrennt, auch an der Datumsgrenze. Lange Tracks
-werden für den sichtbaren Ausschnitt vereinfacht; beim Vergrößern lädt die App mehr
-Details. Bis zu 256 Tracks teilen sich ein Gesamtlimit von 8.192 dargestellten
-Punkten. Zwei GPX-Geometrie-Anfragen laufen gleichzeitig; beim Verschieben, Verlassen
-der Karte oder Ändern der Auswahl werden überholte Anfragen abgebrochen. Die
-Trackliste hält höchstens 96 Dateieinträge zusätzlich zu den ausgewählten Namen.
-
-Die lesenden Endpunkte `/api/photos/v1/map/tracks` und `/api/photos/v1/map/track`
-verwenden denselben GPX-Parser und den auf 32 MiB begrenzten Cache wie der Browser.
-GPX-Dateien dürfen höchstens 16 MiB und 100.000 Track-/Routenpunkte enthalten.
-Symbolische Links und als privat markierte Ordner werden ausgeschlossen. Schema 26
-legt einen Dateimetadatenindex an; vorhandene Installationen ergänzen ihn beim
-nächsten normalen Indexlauf. Bis dahin weist die App auf die noch unvollständige
-Trackliste hin. Vorhandene Fotokarten bleiben währenddessen verfügbar.
-Der lesende Endpunkt `/api/photos/v1/map/route` verwendet dieselbe Gruppierung wie
-der Browser und einen chronologischen Index mit normalisierten Zeitzonen. Die
-Serverantwort enthält Gesamtzahlen und höchstens 8.192 Koordinaten; die App fordert
-4.096 an. GPX und Fotorouten teilen sich serverseitig zwei Geometrie-Arbeitsplätze.
-Große Volltextsuchen können ihre Sortierung in temporäre Dateien auslagern.
-Komplexe Suchausdrücke melden ein zu breites Ergebnis ausdrücklich.
-
-Die vollständig gruppierte Route wird **auf dem Server** berechnet und als JSON
-unter `<Cache-Verzeichnis>/photo-routes/v1/` von Browserkarte und App gemeinsam
-wiederverwendet. Die App lädt nur
-zugeschnittene und vereinfachte Geometrie. Ordner samt Unterordnern, Medientyp,
-Gruppierungsradius und Sichtbarkeit bestimmen den Cache-Schlüssel. Suchabfragen
-werden berechnet, aber zunächst nicht dauerhaft gespeichert.
-
-Eine transaktionale Indexrevision erfasst Einfügen, Löschen sowie Änderungen an
-GPS, Aufnahme-/Änderungszeit, Ordnerzuordnung, Medientyp und Sichtbarkeit. Änderungen
-in Unterordnern invalidieren dadurch auch übergeordnete Routen. Foto-Schema 27 trennt
-diese Revisionen nach Ordner, Medientyp und Sichtbarkeit: unbeteiligte Routen bleiben
-warm; Verschieben und Löschen invalidieren weiterhin alle betroffenen Auswahlen.
-Ordnerzeitstempel
-sind keine Grundlage der Invalidierung. Vor jedem Abruf bleiben die aktuellen
-Zugriffsprüfungen aktiv; während der Berechnung geänderte Revisionen werden verworfen.
-
-Gleichzeitige Cache-Abrufe derselben Route teilen die nötige Neuberechnung. Erst wenn niemand mehr
-wartet, wird sie abgebrochen. Die vollständige JSON-Datei ersetzt die alte atomar;
-Format und Gruppierungsalgorithmus haben getrennte Versionsnummern. Unterschiedliche
-Zoomstufen und Punktlimits verwenden dieselbe Datei. Beschädigte Dateien werden
-neu erzeugt; bei nicht beschreibbarem Cache bleibt die direkte Berechnung möglich.
-Der Routencache hält höchstens 256 JSON-Dateien mit insgesamt 512 MiB. Für atomare
-Neuberechnungen kommen vorübergehend temporäre Dateien hinzu. Größere Routen
-bleiben vollständig berechenbar, werden aber nicht dauerhaft gespeichert. Dateien
-sind nur für den Serverbenutzer lesbar; HTTP-Antworten bleiben `private, no-store`.
-
-Kartenmarker, Fotoauswahl und Fotoroute prüfen die aktuellen Zugriffsregeln der
-betroffenen GPS-Ordner. Neu private Unterordner bleiben auch vor dem nächsten
-Indexlauf verborgen. Die Prüfung liest keine Originalbilder und arbeitet mit
-höchstens 256 Ordnern samt gemeinsam geprüften Vorfahren pro Paket.
-
-
-Die Karten-API bündelt alle passenden indexierten Aufnahmen in höchstens 289
-Markern pro Ausschnitt. Sie lädt keine vollständigen Fotolisten in den App-Speicher.
-Ist der Fotoindex noch nicht bereit, bietet die Ansicht erneutes Laden an.
-OpenStreetMap liefert nur die gerade sichtbaren Kartenbilder. Ein eigener Client
-ohne BearStack-Zugangsdaten nutzt einen auf 64 MiB begrenzten HTTP-Cache und beachtet
-Cache-Header sowie bedingte Anfragen. Die Quellenangabe bleibt auf der Karte sichtbar.
-
+Die empfangende App bekommt vorübergehenden Lesezugriff auf genau dieses Bild.
+Zugangsdaten und Serverlinks werden nicht weitergegeben. Im Original gespeicherte
+Metadaten bleiben erhalten, gegebenenfalls einschließlich GPS.
+Serverbilder dürfen zum Teilen bis zu **256 MiB** groß sein. Größere Dateien kannst
+du über **Original herunterladen** speichern.
 
 ### Original speichern
 
-Im Vollbild öffnet **Original herunterladen** Androids Speicherdialog. Wähle den
-Zielordner und Dateinamen. Die Originaldatei wird stückweise übertragen, ohne sie
-vollständig in den Arbeitsspeicher zu laden. Die Fortschrittsanzeige erlaubt
-Abbrechen; bei Fehler oder Abbruch wird versucht, die neu angelegte unvollständige
-Datei zu entfernen. Es wird keine allgemeine Speicherberechtigung verlangt.
+Wähle im Vollbild **Original herunterladen**. Im Android-Speicherdialog bestimmst
+du Zielordner und Dateinamen. Der Transfer zeigt seinen Fortschritt und lässt sich
+abbrechen. Bei Fehler oder Abbruch versucht die App, die angefangene Datei wieder
+zu entfernen. Eine allgemeine Speicherfreigabe ist dafür nicht erforderlich.
 
 ### Diashow und Fotoframe
 
-Im Vollbild startet die Wiedergabetaste die Diashow. **Diashow einstellen** bietet
-Anzeigedauern von 3 bis 300 Sekunden und eine Wiederholung am Ende. Die Zeit läuft
-erst nach dem Laden des Fotos; Informationen, Einstellungen, Zoom und der Wechsel
-in eine andere App pausieren die automatische Wiedergabe.
+Für eine Diashow öffnest du ein Foto und tippst auf die Wiedergabetaste. Über das
+**Zahnrad** öffnest du **Diashow einstellen**. Dort legst du eine Anzeigedauer von **3 bis 300 Sekunden**
+und **Am Ende wiederholen** fest. Die Zeit beginnt erst, wenn das Foto geladen ist.
 
-**Weitere Optionen → Fotoframe starten** spielt die Medien des aktuellen Ordners
-mit Unterordnern ab und berücksichtigt die aktive Suche bzw. Typauswahl. Im Frame blendet Antippen die Steuerung ein; Name/Datum und
-Bildschirmfüllung mit Beschnitt sind einstellbar. Zurück stellt die vorherige
-Galerie wieder her. Während der Wiedergabe bleibt der Bildschirm aktiv.
-Videos und Audio verwenden im Vollbild und im Frame den nativen Media3-Player
-und dieselbe HTTPS-Verbindung; nur die sichtbare Seite hält einen Decoder bereit.
-Die automatische Wiedergabe wartet bis zum Medienende. Auch eine einzelne Datei
-wird bei aktivierter Wiederholung erneut abgespielt; ohne Wiederholung stoppt
-die Wiedergabe am Ende. Informationen und Einstellungen pausieren auch manuell
-gestartete Medien. Die Einstellungen bleiben bei großer Schrift scrollbar.
+Für einen Bilderrahmen öffnest du in der Galerie **… → Fotoframe starten**. Der
+Fotoframe verwendet den aktuellen Ordner mit Unterordnern und berücksichtigt die
+aktive Suche beziehungsweise Typauswahl. Antippen blendet die Steuerung ein;
+Android-Zurück stellt die vorherige Galerie wieder her.
 
-Die API `/api/photos/v1/` verwendet dieselben Foto-Dienste, Suchregeln und
-Zugriffskontrollen wie der Browser. Seiten enthalten bis zu 96 Medien, 24 Ordner
-mit bis zu vier Vorschauen (virtuelle Personenordner bis zu acht) und 20 Textzusammenfassungen. Fotos und Texte werden
-bei Bedarf geladen; ein Ansichts- oder Kontowechsel bricht veraltete Anfragen ab.
-Die Übertragung erfolgt intern in begrenzten Datenpaketen, ohne sichtbare Seitengrenzen.
-Eine Galerieansicht hält pro Bereich höchstens 288 Medien,
-72 Ordner mit bis zu vier Vorschauen (virtuelle Personenordner bis zu acht) und 60 Textzusammenfassungen. Für die Rückkehr
-aus dem Fotoframe bleibt zusätzlich die vorherige Galerie mit denselben Grenzen
-erhalten. Entfernte Metadaten werden beim Zurückscrollen automatisch erneut geladen. Das sichtbare Element behält seine
-Position; Vollbild und Diashow wechseln auch über Seitengrenzen zum richtigen Foto.
-Ladefehler lassen sich am betroffenen Bereich wiederholen. Nach dem Schließen des
-Vollbilds zeigt das Raster das zuletzt betrachtete Foto; der Wechsel zur
-Personenverwaltung und zurück erhält die Galerieposition.
+Über das **Zahnrad** öffnest du **Fotoframe einstellen**. Dort kannst du zusätzlich festlegen:
 
-Vollbild und Frame laden über WLAN höchstens die nächste Aufnahme vor; Wechsel
-der Ansicht oder Verlust der WLAN-Verbindung brechen dieses Vorladen ab. Anzeige
-und Vorladen teilen sich den begrenzten Drei-Minuten-Speichercache, mit höchstens
-2048 Pixeln für die decodierte Vorschau. Der Bildcache liegt ausschließlich im
-begrenzten Arbeitsspeicher. Die App-ID
-`de.bearstack.people` bleibt für bestehende Installationen erhalten; der Bär im
-adaptiven Icon liegt jetzt innerhalb des runden Beschnitts.
+| Einstellung | Wirkung |
+| --- | --- |
+| **Zufällige Reihenfolge** | Spielt Server- oder Gerätefotos gemischt ab. Die Einstellung ist zunächst ausgeschaltet. |
+| **Bildschirm füllen (mit Beschnitt)** | Das Bild füllt den Bildschirm; dabei können Ränder abgeschnitten werden. |
+| **Name und Datum anzeigen** | Die Beschriftung wird eingeblendet. |
+| **Dateiname / Ordnername** | Wählt den Inhalt der Namenszeile. Der Ordnername wird nach den Galerieregeln formatiert. |
 
-## Bauen und installieren
+**Zufällige Reihenfolge** wird beim Speichern übernommen und startet den Fotoframe
+von vorn. Ausschalten verwendet wieder die normale Wiedergabereihenfolge. Ordner,
+Unterordner, Such- und Typfilter bleiben erhalten. Solange sich der Bestand nicht
+ändert, werden in einem Durchlauf alle Medien einmal abgespielt. Die Reihenfolge
+bleibt beim Nachladen und Wiederholen stabil; Serverfotos verwenden die feste
+Zufallssortierung des Index, Gerätefotos werden bei jedem neuen Fotoframe-Start
+neu gemischt. Serverfotos benötigen dafür **BearStack 0.69.0** oder neuer; auf
+älteren Servern ist der Schalter mit einem Hinweis deaktiviert. Gerätefotos
+benötigen keinen Server.
 
-`apps/android/` in Android Studio als eigenes Projekt öffnen. Voraussetzungen: JDK 17 oder 21 und Android-SDK mit Plattform 36. Das Projekt verwendet den Gradle Wrapper 9.6.0, AGP 9.4.0 und Kotlin 2.3.21. SDK-Pfad über `ANDROID_HOME` oder eine ignorierte `apps/android/local.properties` mit `sdk.dir=…` setzen.
+Die Auswahl bleibt nach einem Neustart erhalten. Der formatierte Serverordnername
+benötigt BearStack **0.68.0** oder neuer. Auf älteren Servern zeigt diese Einstellung
+„Ordnername nicht verfügbar“; du kannst weiter den Dateinamen verwenden. Lokale
+Fotos verwenden den Anzeigenamen ihres Gerätealbums.
 
-```sh
-./scripts/check-android.sh
-adb install -r apps/android/app/build/outputs/apk/debug/app-debug.apk
-```
+Videos und Audio werden im Serverbetrachter und Fotoframe bis zum Ende abgespielt.
+Erst danach wechselt die automatische Wiedergabe weiter. Wiederholung funktioniert
+auch bei einer einzelnen Datei. Informationen, Einstellungen, Fotozoom oder ein
+Wechsel in eine andere App pausieren die automatische Wiedergabe. Während der
+aktiven Wiedergabe bleibt der Bildschirm eingeschaltet.
 
-Alternativ im Android-Verzeichnis: `./gradlew :app:assembleDebug`. APKs werden lokal gebaut und nicht automatisch veröffentlicht. Go-, Web- und Docker-Builds benötigen kein Android-SDK. `apps/android` ist aus dem Docker-Buildkontext ausgeschlossen.
+### Karten
 
-## Verbindung und Zertifikat
+Öffne **… → Karte**, um GPS-Aufnahmen des aktuellen Ordners einschließlich
+Unterordnern oder der aktuellen Suche auf einer Karte zu sehen. Verschieben,
+Zwei-Finger-Zoom, Plus/Minus und **Alle Orte anzeigen** ändern den Ausschnitt.
 
-HTTPS-Adresse (gegebenenfalls mit Reverse-Proxy-Pfad), Benutzername und Passwort eingeben. Die App prüft Protokollversion und Fotoleserechte; Personenfunktionen werden nur bei passenden Bearbeitungsrechten angeboten. HTTP und automatische Weiterleitungen sind ausgeschlossen; bei einer Umleitung die endgültige HTTPS-Adresse verwenden.
+Eine Zahl bündelt mehrere benachbarte Aufnahmen. Tippe sie an, um näher heranzugehen.
+Ein einzelner Punkt öffnet das Foto. Aufnahmen am gleichen Ort oder bei maximalem
+Zoom erscheinen in einer Fotoauswahl, die du wie die Galerie durchblättern kannst.
+Auch die **Informationen** eines Fotos enthalten bei vorhandenen GPS-Daten eine Karte.
 
-Öffentlich vertrauenswürdige Zertifikate werden regulär geprüft. Bei einem selbstsignierten Serverzertifikat erscheint **vor Übermittlung der Zugangsdaten** dessen SHA-256-Fingerabdruck. Auf dem Server den Fingerabdruck der tatsächlich verwendeten Zertifikatsdatei ermitteln:
+Über **Ebenen** blendest du weitere Informationen ein:
 
-```sh
-openssl x509 -in /pfad/zum/server.crt -noout -fingerprint -sha256
-```
+- **Fotoroute** verbindet Fotoorte in zeitlicher Reihenfolge als gestrichelte Linie.
+  Die aktuelle Suche bleibt berücksichtigt. Lange Routen können vereinfacht sein.
+- **GPX-Tracks** öffnet eine Auswahl vorhandener Tracks. Wähle einen oder mehrere
+  Tracks; die Karte fokussiert den gewählten Track. Erneutes Antippen oder
+  **Alle GPX-Tracks ausblenden** entfernt die Auswahl. Tracks funktionieren auch ohne
+  GPS-Fotos. In einem Ordner stammen sie aus dessen Unterbaum, bei einer Fotosuche
+  aus der gesamten Sammlung.
 
-Alle Hexadezimalpaare vergleichen, anschließend „Abgeglichen und vertrauen“ wählen. Nur dieses Zertifikat wird für das Profil akzeptiert; Hostname und Gültigkeit bleiben verbindlich. Eine IP-Adresse funktioniert nur mit einem entsprechenden IP-Eintrag im Subject Alternative Name des Zertifikats. Bei einem Zertifikatswechsel die Verbindung erneut einrichten und den neuen Fingerabdruck prüfen. Private Zertifikatsketten mit eigener CA werden in Version 1 nicht als selbstsigniertes Blattzertifikat angeboten.
+Beim Vergrößern werden bei Bedarf mehr Details geladen. Unlesbare Tracks und
+Ladefehler werden in der Auswahl angezeigt und lassen sich erneut laden.
+Karten benötigen einen erreichbaren Server und Kartenbilder von OpenStreetMap.
+Für lokale Gerätefotos ist diese Kartenansicht nicht verfügbar.
 
-Es gibt ein aktives Profil. Zugangsdaten und bestätigtes Zertifikat werden mit AES-GCM unter einem Schlüssel im Android Keystore in `noBackupFilesDir` gespeichert. Backups und Gerätetransfers sind ausgeschlossen. Screenshots, Bildschirmaufnahmen und die Vorschau im App-Umschalter sind möglich. Die App schreibt keine Zugangsdaten in Logs. Galerie-Thumbnails werden im privaten, einstellbaren Thumbnail-Cache gespeichert. Große Vorschauen bleiben im begrenzten Arbeitsspeichercache; ein ausdrücklicher Verbindungswechsel leert beide Caches.
+### Personen unter Ordner ansehen
 
-## Ähnliche Gruppen
+Zum reinen Ansehen genügt **Fotos lesen**. Öffne **Ordner → Personen** und dann
+**Alle** oder einen angebotenen Foto-Tag. Eine Person öffnet ihre Fotos als Galerie.
+Die Personenkacheln zeigen bevorzugt ein favorisiertes Gesicht. Foto-Tags werden
+in der Web-Personenverwaltung vergeben.
 
-Die Android-Vergleichsansicht zeigt beide Portraits gleich groß und auf derselben Höhe direkt unter den Gruppenüberschriften. Ab App **0.12.3** öffnen die Personennamen direkt die zugehörige Detailansicht unter **Benannte Personen**, auch für neu benannte oder zugeordnete Gruppen. Zurück führt von dort zur Personenliste; die Benennungswarteschlange bleibt erhalten. **Zugeordnet: Name** nennt die Zielperson. Namen und Gesichtsanzahlen stehen in gemeinsamen Zeilen darunter; lange Namen oder Einzelaktionen verschieben die Bilder nicht. **Ignorieren** und **Benennen/Zuordnen** stehen kompakt nebeneinander unter der jeweiligen unbenannten Gruppe, mit mindestens 48 dp großen Touchflächen. Bei großer Schrift dürfen die Einzelaktionen umbrechen; bei wenig Platz lässt sich der Vergleichsbereich scrollen. Die gemeinsamen Entscheidungsbuttons bleiben unten sichtbar.
+In einem normalen Serverordner führt **… → Personen im Ordner** zu den Personen
+aus diesem Ordner und seinen Unterordnern. Auch die anschließend geöffneten Fotos
+bleiben auf diesen Bereich beschränkt. Zurück führt über die Personenübersicht
+wieder zum ursprünglichen Ordner. Die Einträge erscheinen nur, wenn der Server
+sie unterstützt; die [Kompatibilitätstabelle](#serverkompatibilitat) nennt die Mindeststände.
 
-Ab App **0.10.0** und BearStack **0.50.0** steht der Ähnlichkeitswert des aktuellen Paars klein und mittig über den Entscheidungsbuttons. Zwei Nachkommastellen, keine Prozentwahrscheinlichkeit; bei älteren Servern ohne Wert bleibt die Zeile ausgeblendet.
+## Lokale Fotoordner
 
-Ab **BearStack 0.50.0 / Android-App 0.10.0** erhalten ausschließlich **unbenannte Gruppen** auf jeder Vergleichsseite eigene Buttons **Ignorieren** und **Benennen/Zuordnen** (Stift). Jede Aktion betrifft alle aktiven Gesichter dieser einen Gruppe, nicht nur das angezeigte Portrait. Benannte Gruppen haben keine Einzelseitenbuttons. In der Android-App bleibt nach einer bestätigten Einzelaktion eine weitere unbenannte, unbearbeitete Seite bedienbar. Sobald beide Seiten bereits benannt, neu benannt, zugeordnet oder bestätigt ignoriert sind, erscheint automatisch das nächste Paar. Das gilt insbesondere, wenn eine Gruppe bereits benannt ist und die andere ignoriert oder benannt/zugeordnet wird. Bei verlorener Antwort erfolgt der Wechsel erst nach Klärung der Aktionsquittung. Scheitert das Laden des nächsten Paars, wiederholt **Erneut versuchen** nur den Abruf; die Einzelaktionen werden nicht erneut geschrieben. Solange eine unbearbeitete Seite übrig ist, ersetzt unten ausschließlich **Weiter** (App) beziehungsweise **Ausblenden** (Web) die gemeinsamen Entscheidungsbuttons samt gemeinsamem Stift. Abbrechen im Namensdialog verändert nichts.
+### Gerätefotos freigeben
 
-**Weiter** lädt das nächste Paar und überspringt das gerade bearbeitete Paar in beiden Richtungen. **Ausblenden** entfernt es aus der aktuellen Webansicht. Beides speichert keine Trennung und verbietet keinen späteren automatischen Abgleich. Einzelaktionen verwenden die bestehenden revisionsgeprüften Aktionen `ignore`, `name` und `assign`. Bei verlorener Antwort bleibt das Paar bis zur Klärung der Aktionsquittung gesperrt; anschließend kann die andere Seite bearbeitet werden. Die App zeigt die zusätzlichen Buttons nur bei Servern mit `merge_side_actions`. Die Vorschauen und der bestehende Cache werden weiterverwendet; es erfolgt keine neue Gesichtserkennung.
+Du erreichst lokale Fotos direkt beim App-Start über **Lokale Fotos öffnen**.
+In einer verbundenen Galerie aktivierst du unter
+**… → Einstellungen → Lokale Fotoordner anzeigen** die Kachel
+**Ordner → Dieses Gerät**. Diese Einstellung ist standardmäßig ausgeschaltet.
 
-Sind beide Gruppen unbenannt, erscheint in App und WebUI der **Stift – Zusammenführen und benennen/zuordnen**. Er öffnet die Namenssuche: einen neuen Namen speichern oder eine vorhandene Person auswählen, um beide Gruppen in einem Schritt zusammenzuführen und zu benennen beziehungsweise zuzuordnen. **Abbrechen** verändert nichts. Veränderte Gruppen oder Zielpersonen müssen erneut geprüft werden. Die App zeigt den Stift nur bei Servern mit `merge_naming` (ab BearStack 0.50.0); nach bestätigtem Speichern folgt das nächste Paar.
+1. Öffne **Dieses Gerät** und erlaube den von Android angefragten Fotozugriff.
+2. Auf Android 14 oder neuer kannst du auch nur ausgewählte Fotos freigeben.
+   Dann erscheinen ausschließlich diese Bilder und ihre Ordner.
+3. Öffne einen Ordner, beispielsweise Camera oder Screenshots, und tippe auf ein Foto.
 
-Ab App **0.9.0** und **BearStack 0.49.0** öffnet **… → Ähnliche Gruppen** jeweils eine einzelne Entscheidung. Zwei Portraits zeigen die tatsächlichen Vergleichsgesichter der Gruppen mit Namen und Gesichtsanzahl. Ab App **0.12.2** steht über jedem Portrait der enthaltende Ordner des Vergleichsfotos statt „Erste Gruppe“ oder „Zweite Gruppe“. Der Name stammt aus dem bereits geladenen, nach Galerieregeln aufbereiteten Bildpfad; fehlt dieser, bleibt die bisherige Gruppenbeschriftung. Es gibt keine scrollbare Vorschlagsliste; die Portraits passen sich der verfügbaren Breite an. Bei wenig Platz oder großer Schrift scrollt nur der aktuelle Vergleich, während die beiden Entscheidungsbuttons unten sichtbar bleiben.
+Die Auswahl änderst du über **Fotozugriff erlauben / Auswahl ändern** in den
+App-Einstellungen. Bei dauerhaft verweigertem Zugriff führt
+**Android-App-Einstellungen** zur Freigabe. Das Ausschalten der lokalen Kachel
+blendet sie aus; eine Android-Berechtigung entziehst du separat in den Systemeinstellungen.
 
-- **Zusammenführen:** Alle Gesichter der ersten Gruppe werden der zweiten zugeordnet. Favoriten bleiben erhalten. Ist die zweite Gruppe unbenannt, wird ein vorhandener Name der ersten übernommen.
-- Sind **beide Gruppen bereits benannt**, öffnet **Zusammenführen** eine zusätzliche Warnung mit beiden Namen, auch bei identischen Namen. Erst **Trotzdem zusammenführen** speichert; der Name der zweiten Gruppe bleibt erhalten. **Abbrechen** oder die Zurück-Taste lassen das Paar unverändert. Bei geänderten Gruppen ist eine neue Bestätigung nötig. Die Warnung benötigt keine zusätzlichen Serverabfragen.
-- **Getrennt lassen:** Die Trennung bleibt gespeichert und verhindert auch künftige automatische Zuordnungen zwischen diesen Gruppen.
-- Nach Serverbestätigung lädt automatisch das nächste Gruppenpaar. Wenn keine Vorschläge vorliegen, erscheint ein Hinweis mit „Aktualisieren“.
-- **Portrait halten und wischen:** Wie beim Benennen/Zuordnen erscheint die große Vorschau des ganzen Fotos mit Gesichtsmarkierung. Herunterwischen vergrößert zum Gesicht, Hochwischen verkleinert; Loslassen oder Abbrechen schließt die Vorschau. Beide Portraits bieten die TalkBack-Aktion „Originalfoto anzeigen“. Der vollständige Galeriepfad steht in der Originalvorschau; lange Pfade lassen sich dort lesen.
+### Was lokal verfügbar ist
 
-Während des Speicherns und bei einer ungeklärten Antwort sind weitere Entscheidungen gesperrt. „Offene Aktion prüfen“ klärt die dauerhaft gespeicherte Aktionsquittung, auch nach einem App-Neustart. Konflikte durch andere Bearbeitungen verlangen eine neue Prüfung. Schlägt erst das Nachladen fehl, wird ausschließlich der nächste Vorschlag neu geladen. Zurück führt zum Benennen; bei unveränderten Gruppen bleibt auch die bisherige Bildseite erhalten. Diese Entscheidungen erhöhen nicht die Statistik für erstmaliges Benennen/Zuordnen.
+Lokale Fotos unterstützen Raster, Vollbild, Zoom, Informationen, Teilen, Diashow
+und Fotoframe in einem geöffneten Fotoordner. Es gibt keinen Upload. Videos,
+private App-Dateien und Ordner außerhalb des Android-Medienindex gehören nicht zu
+dieser Ansicht. SD-Karten-Ordner erscheinen, soweit Android sie bereitstellt;
+gleichnamige Ordner verschiedener Datenträger bleiben getrennt.
 
-Der Server liest höchstens 20 gespeicherte Kandidaten und liefert nur ein Paar mit je einem Vergleichsgesicht. Der Paarabruf selbst startet keine Vektorsuche; bei zwei unbenannten Gruppen startet die App anschließend den gemeinsamen Lupenabgleich zuerst anhand der ersten Gruppe und bei leerem Endergebnis anschließend der zweiten. Auch Vergleichsgesichter weit hinten in großen Gruppen werden über den Gesichts-ID-Index abgerufen. Die bestehende Originalvorschau mit maximal 2048 Pixeln, Drei-Minuten-/16-MiB-Speichercache und seriellem WLAN-Vorladen wird wiederverwendet. Auf älteren Servern zeigt die App einen Hinweis auf BearStack 0.49.0; Benennen und Personenverwaltung bleiben verfügbar.
+Die zuletzt in den Android-Medienindex aufgenommenen Fotos stehen zuerst. Das
+entspricht den Ordnervorschauen und kann von der Reihenfolge nach Aufnahmedatum
+abweichen. Nach Änderungen am Medienbestand oder den Freigaben aktualisiert sich
+die Ansicht; ein inzwischen unzugängliches Foto wird geschlossen.
+
+Bei aktiver Verbindung zeigen **Fotos** und **Suchen** weiterhin den Serverbestand.
+Ohne Server bleiben die lokalen Ordner benutzbar; die Statusleiste bietet eine
+erneute Anmeldung an.
 
 ## Personen verwalten
 
-Ab App-Version **0.6.0** öffnet **… → Personen verwalten** die Liste aller benannten Personen mit Portrait und Gesichtsanzahl. Dieser Bereich benötigt **BearStack 0.43.0**; auf älteren Servern bleibt das bisherige Benennen verfügbar. Die Liste lädt jeweils höchstens 20 Personen in stabiler ID-Reihenfolge. Ab App **0.7.0** lädt die Liste beim Scrollen automatisch weitere Personen nach; „Aktualisieren“ übernimmt neu hinzugekommene Personen. Das Suchfeld durchsucht nach 250 ms Eingabepause den gesamten Serverbestand nach Namen, unabhängig von bereits geladenen Einträgen. Groß-/Kleinschreibung und deutsche Umlautschreibweisen werden tolerant behandelt. Ein Suchwechsel beginnt eine neue Trefferliste; verspätete Antworten ersetzen keine neuere Suche. Die Textsuche benötigt **BearStack 0.45.0**; ältere Server zeigen einen entsprechenden Hinweis.
+### Gruppe, Gesicht und Foto unterscheiden
 
-Eine Person antippen, um ihre Portraits im fortlaufenden Raster zu öffnen. Ab App **0.7.1** ist das „×“ zum Entfernen einer Zuordnung im Personenbereich kleiner; die Touchfläche bleibt mindestens 48 dp groß. Ab App 0.7.0 werden beim Scrollen automatisch weitere Bilder ergänzt; Seitenknöpfe entfallen im Personenbereich:
+Die Bearbeitung arbeitet mit **Gesichtern**, die der Server erkannt und zu
+**Personengruppen** zusammengefasst hat. Ein Foto kann mehrere Gesichter enthalten.
+Eine Gruppe kann Gesichter aus vielen Fotos enthalten und zunächst unbenannt sein.
+Benennen, Zuordnen oder Ignorieren ändert die Gesichtsdaten; es löscht keine Fotos.
 
-- **Person umbenennen:** Der neue Name gilt für die ganze Person. Existiert er bereits, muss das separate Speichern ausdrücklich bestätigt werden; Personen werden dadurch nicht zusammengeführt.
-- **× / Zuordnung entfernen:** Zunächst erscheint eine Bestätigung mit Personenname und Bildpfad. „Abbrechen“ schließt sie ohne Änderung; erst „Entfernen“ sendet den Auftrag. Nur das ausgewählte Gesicht wird in eine neue unbenannte Gruppe verschoben und seine Favorisierung aufgehoben. Die Originaldatei bleibt erhalten. Das funktioniert auch beim letzten Gesicht; die leere Person verschwindet dann aus der Liste. Zurückgesetzte Gesichter werden im Zuordnungsmodus nach der aktuellen Gruppe angeboten.
-- **☆ / ★:** Das Gesicht als Vergleichsbild favorisieren oder die Favorisierung aufheben, entsprechend der Favoritenfunktion im Web.
-- **Galeriesuche im Browser:** Öffnet die Galerie mit dem Personen-Namensfilter. Der Reverse-Proxy-Pfad bleibt erhalten. Der Browser verwendet seine eigene Anmeldung; App-Zugangsdaten werden nicht im Link übergeben. Gleichnamige Personen erscheinen gemeinsam entsprechend der Galeriesuche.
-- **Portrait halten und wischen:** Dieselbe Originalfoto-Vorschau wie im Zuordnungsmodus, mit Gesichtsmarkierung, Herunterwischen zum Vergrößern und Hochwischen zum Verkleinern. Loslassen oder Abbrechen schließt sie. Die TalkBack-Aktion „Originalfoto anzeigen“ bleibt ebenfalls verfügbar.
+Du brauchst **Fotos bearbeiten**. Öffne in der Galerie **… → Personen verwalten**.
+Für die Arbeit an bereits benannten Personen wechselst du dort über
+**… → Personenliste**. Unter **… → Fotos** gelangst du zur Galerie zurück.
 
-Umbenennen, Entfernen und Favorisieren werden erst nach Serverbestätigung angezeigt. Offene Schreibaktionen bleiben lokal gespeichert und werden über ihre Aktionsquittung geklärt. Änderungen an Gruppenzuordnung oder Namen durch andere Clients verlangen eine neue Entscheidung. Die aktuelle unbenannte Gruppe und ihre Bildseite bleiben beim Wechsel in den Personenbereich erhalten. Verwaltungsaktionen erhöhen nicht die Zähler für erstmaliges Benennen oder Zuordnen.
+### Zuordnungsmodus
 
-Die Liste verwendet ein Lazy-Layout; Portraits werden nur für sichtbare Einträge geladen. Personen-Metadaten und Sichtbarkeitsprüfungen erfolgen serverseitig in kleinen Paketen ohne Gesamtzählung. Das Raster stellt nur sichtbare Kacheln bereit. BearStack 0.45.0 liefert pro Anfrage bis zu 40 Gesichter über einen indexierten Gesichts-ID-Cursor; tiefes Scrollen benötigt keinen zunehmend großen Offset. Alte Server liefern weiterhin vier Gesichter je Anfrage, die App fügt sie ebenfalls fortlaufend an. Vor dem Anfügen werden Revision und Gesichtsanzahl geprüft; bei zwischenzeitlichen Änderungen wird neu geladen und eine Meldung angezeigt. Bestätigte Favoriten-, Namens- und Zuordnungsänderungen aktualisieren den geladenen Bestand anhand der atomaren Aktionsquittung, sodass Bilder und Scrollposition erhalten bleiben. Während eines Dialogs oder einer Originalvorschau wird nicht automatisch nachgeladen; Ladefehler lösen keine Endlosschleife aus. Ab App 0.8.0 werden große Fotovorschauen der angezeigten Portraits bei WLAN nacheinander vorgeladen; über Mobilfunk werden sie erst beim Öffnen der Vorschau geladen. Der vorhandene begrenzte Bildcache wird weiterverwendet. Änderungen aktualisieren den Gesichtssuchindex nur für betroffene Personen, sofern der Index aktuell ist.
+Die Ansicht **Personen benennen** zeigt bis zu vier Gesichtsausschnitte der aktuellen
+Gruppe. Bei größeren Gruppen blättern **Zurück** und **Weiter** durch die Bilder.
+Eine Benennung, Zuordnung oder Gruppen-Ignorieraktion betrifft die gesamte Gruppe,
+auch die gerade nicht sichtbaren Gesichter.
 
-Ab App **0.8.3** erscheinen **…**, **?** und **Stift** in der unteren Benennen-Aktionsleiste als gleich große, vertikal mittig ausgerichtete Symbole. Der Stift hat keinen sichtbaren Schaltflächenhintergrund mehr; die unsichtbaren Touchflächen bleiben jeweils 48 dp groß. In „Personen benennen“ beginnt der Inhalt direkt mit dem Gesichtsraster; „Unbenannte Person“ und die Bildanzahlzeile entfallen.
+1. Prüfe die Gesichter. Halte bei Bedarf ein Portrait, um das zugehörige ganze Foto
+   zu sehen; die [Fotovorschau](#groe-fotovorschau-beim-halten-eines-gesichts) ist unten erklärt.
+2. Tippe auf den **Stift** und gib einen Namen ein.
+3. Wähle einen Namensvorschlag, um die Gruppe einer vorhandenen Person zuzuordnen.
+   Mit **Speichern** benennst du die Gruppe neu. Bei einem bereits vorhandenen Namen
+   unterscheidet der Dialog zwischen Zuordnen und **Separat benennen**.
+4. Nach Serverbestätigung erscheint die nächste Gruppe.
 
-Ab App **0.8.2** hat der Favoritenstern im Personenbereich dieselbe Schriftgröße wie „×“ und keinen sichtbaren Schaltflächenhintergrund; die unsichtbare Touchfläche bleibt 48 dp groß.
+Wenn du eine Gruppe noch nicht sicher einordnen kannst, nutze diese Aktionen:
 
-Ab App **0.8.1** bleibt unten eine schlanke Aktionsleiste stehen: ab App **0.17.1** wieder links **…** für Ignorieren, Überspringen und dessen Rücknahme, mittig **?** für die scrollbar angezeigte Bedienhilfe und rechts der **Stift** zum Benennen. Die Leiste reserviert Platz unter dem Inhalt und berücksichtigt die Systemnavigation. Das obere Menü enthält die App-Navigation.
+| Geste in der Bearbeitungsansicht | Entsprechende Gruppenaktion |
+| --- | --- |
+| Nach links wischen | Gruppe für diesen Durchgang **überspringen**. |
+| Nach rechts wischen | Das letzte Überspringen zurücknehmen. |
+| Nach oben wischen | Die ganze Gruppe **ignorieren**, mit kurzer Rücknahmefrist. |
 
-## Zuordnungsmodus
+Dieselben Aktionen stehen unter **…** in der unteren Leiste. Bei langem Inhalt
+scrollt Hochwischen zunächst zum Ende; erst ein weiterer Wischer ignoriert die
+Gruppe. Gesten im Namensdialog oder in der Fotovorschau lösen keine Gruppenaktion aus.
 
-- Ab App-Version 0.5.2 bleibt der Platz für den Ladebalken dauerhaft reserviert. Gesichtsraster und Navigation behalten beim Ein- und Ausblenden ihre Position, auch in gescrollten Ansichten mit großer Schrift.
-- Unter jedem Gesichtsausschnitt und in der Originalfoto-Vorschau steht der vollständige Galeriepfad mit allen Ordnerebenen und Dateiname. Die Aufbereitung entspricht der Galerie, etwa `Fotos / 11.05.2026 · Urlaub / IMG_1234.jpg`. Lange Pfade werden umgebrochen statt abgeschnitten. Die Pfade kommen vom Server; diese Anzeige benötigt BearStack 0.34.0.
-- Das Grid zeigt bis zu vier **Gesichtsausschnitte**, keine ganzen Fotos. Bei größeren Gruppen blättern „Zurück“ und „Weiter“ durch Viererseiten. Benennen, Zuordnen und Ignorieren betreffen immer die gesamte Gruppe.
-- Wischen funktioniert auf Bildern, Zwischenräumen und dem freien Hintergrund der Bearbeitungsansicht. Links überspringt die Gruppe; rechts holt die zuletzt übersprungene Gruppe zurück; oben ignoriert sie mit Rücknahmefrist. Bei überlangem Inhalt scrollt Hochwischen zunächst zum Ende; ein weiterer Wischer nach oben ignoriert die Gruppe. Menü, Statistik, Namensdialog und Originalfoto-Vorschau lösen keine Wischaktionen aus.
-- Rechtswischen nimmt das letzte Überspringen im aktuellen Durchgang zurück, auch mehrfach und nach dem letzten Datensatz. Alternativ „Letztes Überspringen zurücknehmen“ unter … in der unteren Aktionsleiste wählen. Die bisherige Gruppe bleibt mit ihrer Bildseite zur weiteren Bearbeitung vorgemerkt. Zurückgeholte Gruppen werden erneut am Server geprüft; bereits bearbeitete oder entfernte Gruppen werden ausgelassen. Bei Verbindungsfehlern bleiben aktuelle Gruppe und Rücknahmemöglichkeit erhalten. Die zurückgenommene Überspringen-Zählung wird entfernt. Verlauf und vorgemerkte Gruppen bleiben nach einem App-Neustart erhalten; ein neuer Durchgang beginnt ohne Rücknahmeverlauf.
-- Einen Gesichtsausschnitt halten, um das ganze Foto als große Vorschau zu sehen, aus dem er stammt. Das Foto wird mit seinem ursprünglichen Seitenverhältnis vollständig eingepasst. Loslassen oder Abbruch schließt die Vorschau. Eine feine Bounding Box markiert das ausgewählte Gesicht. Bei weiter gedrücktem Finger vergrößert Herunterwischen zum Gesicht, Hochwischen verkleinert zurück zum ganzen Foto. Dabei wird weder ignoriert noch übersprungen. Der Zoom bleibt auf maximal 12-fache Vergrößerung begrenzt; die vom Server nach `large_preview_size` verkleinerte Vorschau wird einmal mit einem Dekodierziel von 2048 Pixeln geladen. Über die TalkBack-Aktion „Originalfoto anzeigen“ bleibt die Vorschau bis „Vorschau schließen“ geöffnet; dort stehen „Zum Gesicht vergrößern“ und „Ganzes Foto anzeigen“ als Aktionen bereit. Die Markierung benötigt die Gesichtskoordinaten aus BearStack 0.35.0; bei älteren Servern bleibt das Original ohne Markierung und Zoom sichtbar.
-- Der Stift öffnet das Namensfeld. Nach 250 ms Eingabepause erscheinen höchstens 20 Vorschläge. Einen Vorschlag antippen, um zuzuordnen; „Speichern“ benennt die aktuelle Gruppe. Bei einem bestehenden gleichen Namen wird zwischen Zuordnen und „Separat benennen“ unterschieden.
-- Das **×** links unten trennt genau dieses Gesicht in eine neue unbenannte Gruppe ab. Es ignoriert und löscht nichts. Die neue Gruppe folgt nach Abschluss der aktuellen Gruppe; mehrere Abtrennungen folgen ihrer Reihenfolge. Bei einem einzigen Gesicht entfällt das ×.
-- **Nach oben wischen:** die ganze Gruppe ignorieren. Die nächste Gruppe erscheint sofort. Eine klickbare Meldung am oberen Bildschirmrand bietet fünf Sekunden lang „Rückgängig“ an; die Ansicht bleibt währenddessen bedienbar. Bei mehreren rasch ignorierten Gruppen hat jede ihre eigene Frist, die Meldung nimmt jeweils die letzte noch rücknehmbare Gruppe zurück. Ab App-Version 0.5.3 wartet das Speichern nach Fristende, solange ein Namens- oder Duplikatdialog geöffnet ist. Die Meldung läuft weiterhin nach fünf Sekunden aus; Änderungen und Ausblenden der Meldung unterbrechen weder Texteingabe noch Fokus oder Tastatur. Nach dem Schließen des Dialogs werden wartende Schreibanfragen nacheinander ausgeführt. Beim Wechsel in den Hintergrund oder nach Prozessende kehren noch nicht gesendete Gruppen in die Warteschlange zurück.
-- **Nach links wischen:** lokal für den aktuellen Durchgang überspringen. Über „Übersprungene bearbeiten“ am Ende des Durchgangs werden diese Gruppen erneut angeboten. „Neuen Durchgang starten“ übernimmt inzwischen hinzugekommene Gruppen; übersprungene bleiben der ausdrücklichen Wiederaufnahme vorbehalten.
-- Ignorieren und Überspringen sind auch als beschriftete Menüaktionen verfügbar. Die Oberfläche unterstützt System-Hell-/Dunkelmodus und große Schrift; Inhalte und Dialoge sind scrollbar.
+Nach dem Ignorieren bietet die Meldung **Rückgängig** für **fünf Sekunden** eine
+Rücknahme an. Bei mehreren rasch ignorierten Gruppen gilt die Frist je Gruppe;
+die Meldung nimmt die letzte noch rücknehmbare Aktion zurück. Noch nicht gesendete
+Ignorieraktionen werden nach einem Hintergrundwechsel oder Neustart wieder angeboten.
 
-Benennen und Zuordnen schalten nach Serverbestätigung weiter. Ignorieren schaltet bereits während der Rücknahmefrist weiter. Bei abgelehntem Ignorieren wird die betroffene Gruppe zur erneuten Prüfung vorgemerkt; die aktuelle Gruppe bleibt erhalten. „Offene Aktion prüfen“ klärt zuerst die serverseitige Aktionsquittung und sendet nur bei fehlender Quittung denselben gespeicherten Auftrag erneut. Währenddessen sind weitere Entscheidungen gesperrt. Bei fehlenden Rechten oder falschen Zugangsdaten kann die Verbindung gewechselt und mit demselben Konto wiederhergestellt werden.
+Das **×** an einem Gesicht trennt nur dieses Gesicht in eine neue unbenannte Gruppe
+ab. Sie folgt nach Abschluss der aktuellen Gruppe. Bei einem einzigen Gesicht
+entfällt hier das ×. Ein neuer Durchgang übernimmt inzwischen hinzugekommene
+Gruppen; **Übersprungene bearbeiten** nimmt am Ende die zuvor ausgelassenen Gruppen
+gezielt wieder auf.
 
-Ändert die Weboberfläche oder Hintergrundverarbeitung inzwischen eine Gruppe, meldet die API `409`; die App lädt den aktuellen Stand und verlangt eine neue Entscheidung. Sie überträgt die alte Entscheidung nicht automatisch auf eine veränderte Gruppe. Eine Änderung an der Zielperson erfordert ebenfalls eine erneute Auswahl.
+### Große Fotovorschau beim Halten eines Gesichts
 
-## Verbindungsfehler eingrenzen
+Halte ein Portrait kurz gedrückt, um das ganze Foto mit markiertem Gesicht zu sehen.
+Solange du hältst, vergrößert Wischen nach unten zum Gesicht; Wischen nach oben
+verkleinert wieder. Loslassen schließt die Vorschau. Diese Bedienung gilt beim
+Benennen, in der Personenliste und unter **Ähnliche Gruppen**.
 
-Ab App-Version 0.4.1 erfolgt auch das Schließen von HTTPS-Verbindungen außerhalb des UI-Threads. Dadurch funktionieren Kontowechsel ohne verdeckende Android-Netzwerkfehler; abgelehnte Anmeldungen zeigen die konkrete Ursache auch im Zertifikatsdialog.
+TalkBack bietet **Originalfoto anzeigen**. Die Vorschau bleibt dann geöffnet, bis
+du **Vorschau schließen** verwendest; **Zum Gesicht vergrößern** und
+**Ganzes Foto anzeigen** ersetzen die Wischgesten. Der angezeigte Pfad hilft dir,
+das Bild in der Sammlung wiederzufinden. Die Vorschau verwendet auf aktuellen
+Servern ein verkleinertes Bild; zum Speichern des Originals nutze den Galeriebetrachter.
 
-Ab App-Version 0.1.1 zeigt die Fehlermeldung die Phase (HTTPS-Verbindungsprüfung, Anmeldung oder Serveranfrage) und einen Diagnosecode. `DNS` steht für fehlgeschlagene Namensauflösung, `CONNECT` für einen fehlgeschlagenen Verbindungsaufbau, `NO_ROUTE` für eine fehlende Route und `TIMEOUT` für eine Zeitüberschreitung. `TLS`, `TLS_IDENTITY`, `CERT_EXPIRED` und `CERT_NOT_YET_VALID` unterscheiden Zertifikatsprobleme. `NETWORK_PERMISSION` weist auf verweigerten Socket-Zugriff hin.
+### Gesichtssuche beim Benennen
 
-Bei einer LAN-Adresse dieselbe HTTPS-Adresse auf demselben Handy im Browser testen. Funktioniert der Zugriff nur außerhalb der App, die Netzwerkfreigabe und die appbezogenen VPN-Regeln prüfen. Eine Zeitüberschreitung allein beweist weder einen Zertifikats- noch einen Passwortfehler. Bei der ersten HTTPS-Prüfung werden keine Zugangsdaten gesendet; die Meldung über eine offene Aktion erscheint nur, wenn tatsächlich eine solche Aktion gespeichert ist.
+Die **Lupe neben dem Namensfeld** vergleicht das Ausgangsgesicht mit bereits
+benannten Personen. Treffer erscheinen mit Portrait und Namen und lassen sich
+bereits während des Abgleichs auswählen. Ein Stern-Favorit wird bevorzugt als
+Portrait verwendet. Die Suche allein ändert keine Zuordnung.
 
-Debug-Builds schreiben unter dem Logcat-Tag `BearStackConnection` ausschließlich Phase und Diagnosecode. Exception-Texte, vollständige URLs, Benutzernamen und Passwörter werden nicht protokolliert.
+Tippe einen Treffer an, um die Gruppe dieser Person zuzuordnen. Fehlt ein passender
+Treffer, kannst du weiter den Namen eingeben oder den Abgleich erneut starten.
+Tippen im Namensfeld, Schließen des Dialogs oder ein Hintergrundwechsel bricht eine
+laufende Suche ab. Beim bloßen Umbenennen einer schon benannten Person gibt es
+keinen Gesichtsabgleich.
 
-## Warteschlange und Statistik
+### Benannte Personen bearbeiten
 
-Room trennt lokalen Zustand nach Instanz, Datenbestand und Konto. Gespeichert werden aktueller Datensatz und Bildseite, Cursor mit fester oberer Gruppen-ID, abgetrennte und übersprungene Gruppen, ungeklärte Aktionen und bestätigte Ereignisse. Rücknahmetimer laufen ausschließlich im Arbeitsspeicher. Die IDs und Bildseiten vorläufig ignorierter Gruppen werden in Room gespeichert, damit sie nach einem Neustart wieder angeboten werden. Ungeklärte, möglicherweise bereits gesendete Aktionen werden zuerst über die Aktionsquittung aufgelöst. Es gibt keine allgemeine Offline-Warteschlange.
+Öffne **… → Personenliste**, suche nach einem Namen und tippe auf die Person.
+Die Suche berücksichtigt den gesamten Serverbestand, auch noch nicht geladene
+Einträge. Beim Scrollen werden weitere Personen beziehungsweise Gesichter geladen.
+**Aktualisieren** übernimmt neu hinzugekommene Personen.
 
-Die Statistik zählt **Gesichter und Gruppen**, jeweils heute (lokale Zeitzone) und insgesamt: Benannt, Zugeordnet, Ignoriert, Übersprungen. Serveraktionen zählen nach Bestätigung genau einmal pro Aktions-ID. Überspringen zählt einmal je Gruppe und Durchgang. Abtrennen hat keinen eigenen Statistikzähler. Die Zahlen sind gerätelokal; sie sind kein vollständiges Server-Audit. App-Daten löschen oder Deinstallation entfernt die lokalen Zahlen.
+| Aktion | Ergebnis |
+| --- | --- |
+| **Person umbenennen** | Ändert den Namen der ganzen Person. Ein gleicher vorhandener Name führt nicht automatisch zu einer Zusammenführung. |
+| **× / Zuordnung entfernen** | Verschiebt nach Bestätigung genau dieses Gesicht in eine neue unbenannte Gruppe und hebt seine Favorisierung auf. |
+| **☆ / ★** | Markiert ein Gesicht als Vergleichsfavorit oder nimmt die Markierung zurück. |
+| **Galeriesuche im Browser** | Öffnet eine Suche nach dem Personennamen. Der Browser benötigt seine eigene Anmeldung; gleichnamige Personen können gemeinsam erscheinen. |
 
-Ein Durchgang lädt Metadaten in Seiten von maximal 20 Gruppen. Jede Gruppe wird vor Anzeige erneut geprüft. Benannte, leere oder gelöschte Gruppen werden ausgelassen. Vier Bilder werden angezeigt, höchstens die nächste Viereransicht wird vorgeladen. Ab App 0.8.0 öffnet die Originalvorschau nach 250 ms Halten und schließt beim Loslassen. „Zurück“ und „Weiter“ erscheinen im Benennen-Modus nur bei mehr als vier Fotos. Große Fotovorschauen angezeigter Portraits werden bei aktiver WLAN-Verbindung nacheinander in den vorhandenen Cache vorgeladen, mit derselben begrenzten Dekodiergröße wie die Vorschau. Beim Verlassen der Ansicht, Wechsel auf Mobilfunk oder im App-Hintergrund wird das Vorladen abgebrochen. Der Arbeitsspeichercache für große Vorschauen ist auf 16 MiB begrenzt; große Vorschauen haben keinen Disk-Cache.
+Wird das letzte Gesicht entfernt, verschwindet die leere Person aus der Liste.
+Bestätigte Änderungen werden nach der Serverantwort angezeigt. Unter **… → Hilfe**
+findest du die Bedienhinweise auch direkt in der Personenliste und in einer geöffneten Person.
 
-Ab App **0.6.1** und BearStack **0.43.1** wird das dekodierte Foto (aktuell die große Vorschau) bis zu **drei Minuten ab erfolgreichem Laden** über unterschiedliche Gesichter desselben Fotos hinweg wiederverwendet, auch zwischen Zuordnungsmodus und Personenbereich. Weitere Aufrufe verlängern die Frist nicht. Die individuelle Bounding Box und der Zoom werden separat gezeichnet. Der gemeinsame LRU-Bildcache bleibt auf **16 MiB** begrenzt; bei Speicherdruck können Bilder früher verdrängt werden. Ein Verbindungswechsel leert ihn. Für diese großen Vorschauen gibt es keinen Disk-Cache. WLAN-Vorladen ab App 0.8.0 nutzt dieselben Cache-Schlüssel und dieselbe feste Frist. Eine bereits geöffnete Vorschau bleibt nach Fristablauf sichtbar; erneutes Öffnen lädt wieder vom Server. Auf älteren Servern gilt die Frist ebenfalls, die Wiederverwendung bleibt dort auf dieselbe Gesichts-URL beschränkt.
+### Mehrfachauswahl in „Benannte Personen“
 
-Der Server liefert dazu je Gesicht die optionale, undurchsichtige `original_key`-Kennung aus Originalpfad und indexierten Dateimetadaten. Unterschiedliche Gesichter und Personen desselben Fotos teilen diese Kennung; erkannte Dateiänderungen erzeugen eine neue Kennung. Anzeigeformatierte Pfade werden nicht als Cache-Schlüssel verwendet. Cachetreffer benötigen weder einen erneuten Bildabruf noch eine erneute Dekodierung; ein neuer Abruf nach Ablauf durchläuft wieder die serverseitigen Zugriffsprüfungen. HTTP-Antworten bleiben `private, no-store`; wiederverwendet wird ausschließlich das dekodierte Bild im App-Arbeitsspeicher.
+1. Öffne eine Person und wähle Gesichter über die Checkbox oben links in ihren Kacheln.
+   Die Auswahl bleibt beim Nachladen erhalten; höchstens **500 Gesichter pro Aktion**
+   sind möglich.
+2. Öffne **…** rechts in der Auswahlleiste.
+3. Wähle die gewünschte Aktion und prüfe gegebenenfalls den Bestätigungsdialog.
 
-## API und Datenmigration
+| Aktion | Wirkung auf die ausgewählten Gesichter |
+| --- | --- |
+| **Auf unbenannt zurücksetzen** | Bildet gemeinsam eine neue unbenannte Gruppe und entfernt ihre Vergleichsfavoriten. |
+| **Gruppe zuordnen** | Ordnet sie über den Namensdialog einer neuen oder vorhandenen Person zu. Die Lupe verwendet das erste ausgewählte Gesicht. |
+| **Ignorieren** | Entfernt sie nach Bestätigung aus der Personenansicht. Im Browser unter **Ignoriert** lassen sie sich wiederherstellen. |
 
-Der gemeinsame Vertrag steht in [`openapi.yaml`](https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml), unter `/api/photos/labeling/v1`. Anfragen verwenden HTTP Basic über HTTPS und JSON. Die Sitzung meldet `named_people` ab BearStack 0.43.0. `GET /people?after=…&upper=…` liefert benannte Personen; die Aktionen `rename`, `unassign` und `favorite` erweitern den bestehenden Aktionsendpunkt ohne Protokollwechsel. Ab BearStack 0.49.0 meldet die Sitzung `merge_suggestions`; `GET /merge-suggestions/next` liefert ein Paar oder `suggestion: null`. `accept_merge` und `reject_merge` am Aktionsendpunkt benötigen zusätzlich `suggestion_id`, `target_id` und `target_revision`. Operationen tragen eine zufällige ID, Datenbestandskennung, Quellrevision und bei Zuordnung oder Gruppenentscheidung eine Zielrevision. Die Antwort enthält tatsächliche Gesichtszahlen und betroffene Gruppen-IDs.
+Während der Auswahl sind ×, Vergleichsstern und Umbenennen der ganzen Person
+gesperrt. **Aufheben** leert die Auswahl; Android-Zurück hebt sie zunächst auf.
+Das Abbrechen eines Dialogs erhält die Auswahl. Hat sich die Person zwischenzeitlich
+geändert, wird sie aktualisiert und du musst die Auswahl neu treffen.
 
-Die Labeling-Tabellen bestehen seit Foto-Schema 19. BearStack 0.43.0 migriert kompatibel auf Schema 24 und ergänzt einen partiellen Index für benannte Personen; Namen, Gesichter, Revisionen und Quittungen bleiben erhalten. Das Room-Schema der App bleibt unverändert. Datenbanktrigger erhöhen Revisionen auch bei Web- und Hintergrundänderungen. Mutation und Quittung werden in derselben SQLite-Transaktion gespeichert. Quittungen sind kontogebunden und bleiben bis zum Löschen der Gesichtserkennungsdaten erhalten. Dieser Reset erzeugt eine neue Datenbestandskennung. Die Foto-Datenbank einschließlich dieser Tabellen gemeinsam sichern und wiederherstellen. Bestehende Web-Endpunkte bleiben erhalten; ausgeschlossene geschützte Fotos werden auch über diese API nicht angeboten.
+### Ähnliche Gruppen
 
-Die Anwendungssitzung liegt in `connection/AppSession.kt`: Anmeldung, gespeichertes Profil,
-Zertifikatsbestätigung, HTTP-Client, Bildcache und Galerie werden dort gemeinsam verwaltet.
-`PeopleViewModel` verwaltet die Personenwarteschlange und ihre Aktionen. Die Personendatenbank
-wird erst für eine Sitzung mit Personenrechten geöffnet; reine Lesekonten benötigen sie nicht. Gemeinsame
-Originalbild-Caches und WLAN-Vorlader liegen im Paket `media`. Kontowechsel stoppt
-zuerst die alten Feature-Aufgaben und schließt anschließend deren Sitzungsressourcen;
-eine fehlgeschlagene Anmeldung ersetzt keine bestehende Verbindung.
+Öffne im Personenbereich **… → Ähnliche Gruppen**. Die Ansicht zeigt ein Paar
+möglicherweise zusammengehöriger Gruppen mit je einem Vergleichsgesicht,
+Ordnerangabe, Namen und Gesichtsanzahl. Der Ähnlichkeitswert ist ein Vergleichswert,
+keine Prozentwahrscheinlichkeit. Prüfe bei Bedarf beide Portraits in der Fotovorschau.
 
-## Tests
+- **Zusammenführen** ordnet die Gesichter der ersten Gruppe der zweiten zu.
+  Favoriten bleiben erhalten. Ist die zweite unbenannt, wird ein vorhandener Name
+  der ersten übernommen.
+- Sind beide Gruppen benannt, musst du **Trotzdem zusammenführen** zusätzlich
+  bestätigen. Dabei bleibt der Name der zweiten Gruppe erhalten.
+- **Getrennt lassen** speichert die Trennung und verhindert auch künftige
+  automatische Zuordnungen zwischen diesen Gruppen.
 
-Die Thumbnail-Cachetests prüfen den geschützten Mindestbestand, LRU-Verdrängung,
-Größenänderungen, Neustarts, Bildversionen, getrennte Konten, beschädigte Dateien
-und fehlgeschlagene Schreibvorgänge. Eine Regression berücksichtigt 2400 Ordner der
-ersten Ebene über 100 Metadatenseiten. HTTPS-Tests prüfen die gemeinsame Nutzung
-paralleler Bildabrufe, den tatsächlichen Disk-/Arbeitsspeicherpfad von Coil,
-Antwortgrößen und Bildvalidierung sowie den Abbruch beim Verbindungswechsel.
-Die Menütests prüfen die rechte Position bei großer Schrift und die vorhandenen
-Aktionen auf Deutsch und Englisch; der Einstellungsregler wird auf dauerhafte
-Speicherung und Größenbegrenzung geprüft.
+Nach einer bestätigten Entscheidung erscheint das nächste Paar. Ein Personenname
+öffnet die zugehörige Detailansicht; die Benennungswarteschlange bleibt erhalten.
 
-Die leere Übergangsabhängigkeit `androidx.room:room-ktx` wird nicht mehr separat eingebunden. Ihre APIs liegen im bereits verwendeten `room-runtime:2.8.4`; Room-Compiler, Coroutines und Datenbankschema bleiben unverändert. Vor einem Upgrade auf AGP 10 müssen die Legacy-DSL-/Kotlin-Optionen in `gradle.properties` und die kapt-Anbindung migriert werden. Siehe [Room-Releases](https://developer.android.com/jetpack/androidx/releases/room) und [AGP-Migrationsplan](https://developer.android.com/build/releases/gradle-plugin-roadmap).
+**Nur eine Seite bearbeiten:** Unbenannte Gruppen haben eigene Buttons
+**Ignorieren** und **Benennen/Zuordnen**. Sie betreffen die ganze Gruppe dieser Seite.
+Solange eine unbenannte, unbearbeitete Seite übrig ist, bleibt sie bedienbar.
+**Weiter** überspringt dann das Paar, ohne eine dauerhafte Trennung zu speichern.
+Sobald beide Seiten bearbeitet oder benannt sind, erscheint das nächste Paar.
 
-```sh
-# JVM-Tests, Lint und Debug-APK
-make test-android
+**Beide unbenannten Gruppen gemeinsam benennen:** Der gemeinsame Stift öffnet den
+Namensdialog für beide Gruppen. Zusätzlich sucht die App automatisch nach einer
+passenden benannten Person: zuerst anhand der ersten Gruppe, bei leerem Endergebnis
+anhand der zweiten. Ein Treffer unter **Benennungsvorschläge für beide Gruppen**
+ordnet beide Gruppen gemeinsam zu. **Abbrechen** im Dialog verändert nichts;
+**Erneut abgleichen** startet die Suche erneut. Nach einer Einzelaktion entfällt
+die gemeinsame Trefferliste.
 
-# JVM-Tests, Lint und minimierte Release-APK (R8)
-make test-android-release
+### Offene Aktionen und geänderte Fotos
 
-# Release-UI-Smoke gegen die minimierte App und den temporären Go-Server
-make test-android-release-integration
+Bei einer verlorenen Serverantwort kann eine Änderung bereits gespeichert sein.
+Die App sperrt deshalb weitere Entscheidungen und bietet **Offene Aktion prüfen**
+an. Damit klärst du den Ausgang, auch nach einem App-Neustart, ohne dieselbe Aktion
+doppelt auszuführen. Wenn nur das Laden der nächsten Gruppe fehlschlägt, wiederholt
+**Erneut versuchen** ausschließlich diesen Abruf.
 
-# Mit gestartetem Emulator: Gesten, Room, Keystore
-apps/android/gradlew -p apps/android :app:connectedDebugAndroidTest
+Hat die Weboberfläche oder ein Hintergrundlauf inzwischen eine Gruppe verändert,
+lädt die App den neuen Stand. Du musst erneut entscheiden; eine alte Entscheidung
+wird nicht automatisch auf die geänderte Gruppe übertragen.
 
-# Mit genau einem gestarteten Emulator und adb im PATH:
-# isolierter echter Go-HTTPS-Server, Zertifikat, Aktionen, parallele Webänderung
-make test-android-integration
+**Foto geändert · im Web prüfen** bedeutet, dass das Original zu gespeicherten
+Gesichtsdaten geändert wurde. Die alte Gesichtsvorschau bleibt sichtbar, alte
+Rahmen werden auf dem neuen Foto nicht eingezeichnet. Prüfe Rahmen und Person
+zunächst in der Weboberfläche.
 
-# Server inkl. Revisionen, Rechte, geschützte Fotos, Rollback, >500 Gesichter
-make test-go
-```
+### Warteschlange und Statistik
 
-Compose-Regressionstests prüfen beim Vor- und Zurückblättern, dass Gesichtsraster und Navigation vor, während und nach dem Laden an derselben Position bleiben, auch bei doppelter Schriftgröße und gescrolltem Inhalt. Während des Ladens bleiben die Blätteraktionen gesperrt. Weitere Regressionen prüfen ablaufende Rücknahmen bei geöffnetem Namens- und Duplikatdialog, das anschließende Speichern jeder ursprünglichen Gruppe sowie die Wiederherstellung beim Hintergrundwechsel. Ein UI-Test ab Android 11 prüft außerdem Dialogidentität, Eingabefokus, sichtbare Bildschirmtastatur und weiteren Textinput beim Ändern und Ausblenden der Rückgängig-Meldung.
+Aktuelle Gruppe, Bildseite, übersprungene Gruppen und ungeklärte Aktionen werden
+auf dem Gerät für das jeweilige Konto aufbewahrt. Die App hat keine allgemeine
+Offline-Warteschlange für neue Personenentscheidungen.
 
-Cachetests prüfen tatsächliche HTTPS-Anfragezahlen und die Wiederverwendung desselben dekodierten Bitmaps für unterschiedliche Gesichter, den festen Drei-Minuten-Ablauf, Fehlerantworten, Cacheleeren, Speicherbegrenzung und alte Server ohne Bildkennung.
+**… → Statistik** zählt Gesichter und Gruppen für heute und insgesamt: Benannt,
+Zugeordnet, Ignoriert und Übersprungen. Bestätigte Serveraktionen zählen einmal;
+das Zurücknehmen eines Überspringens korrigiert dessen Zählung. Abtrennen und
+Gruppenvergleiche zählen nicht als erstmaliges Benennen. Die Statistik gilt nur für
+dieses Gerät; App-Daten löschen oder Deinstallation entfernt sie.
 
-Zusätzliche Regressionen prüfen die vollständige Personenliste über mehrere Seiten, Umbenennen, Favoritenwechsel, Entfernen des letzten Gesichts, große Schrift, Halten/Wischen/Abbruch und TalkBack-Vorschau. Repository- und ViewModel-Tests sichern verlorene Antworten, Konflikte und den Erhalt der Zuordnungswarteschlange ab. Der echte HTTPS-Integrationstest führt die neuen Verwaltungsaktionen gegen den Go-Server aus. Ab 0.7.0 prüfen zusätzliche Tests Textsuche jenseits der ersten Seite, verspätete Suchantworten, Bestätigen/Abbrechen, fortlaufendes Nachladen über 80 Gesichter, Scrollposition nach Favorisieren und Revisionskonflikte beim Anfügen.
+## Einstellungen und Offlinebetrieb
 
-Ab App 0.9.0 prüfen Regressionen einzelne Gruppenentscheidungen, sichtbare Buttons bei doppelter Schriftgröße, beide Portrait-Vorschauen, doppelte Klicks, Konflikte, verlorene Antworten und Fehler beim Nachladen. Repository-Neustarts erhalten offene Entscheidungen und die Benennen-Bildseite. Die HTTPS-Integration prüft beide Entscheidungen samt Originalen, Vorschaubildern und Quittungswiederholung gegen isolierte Go-Instanzen hinter URL-Präfixen. Servertests prüfen zusätzlich Sichtbarkeit, Rollback, Vergleichsgesichter jenseits der ersten Bildseite und gleichzeitiges Annehmen/Ablehnen.
+### Einstellbarer Thumbnail-Cache
 
-Der Release-Smoke benötigt Python 3, adb und einen dedizierten Testemulator. Er prüft
-Anmeldung, Galerie, Fotoinformationen, Profilwiederherstellung und Kontowechsel über
-die normale Oberfläche. Die Testwerkzeuge laufen außerhalb des App-Prozesses;
-R8 benötigt dafür keine Keep-Regeln oder zusätzlichen Testbibliotheken in der App.
-Der Lauf setzt die App-Daten im Testemulator vor und nach der Prüfung zurück und
-schreibt `app/build/reports/release-smoke.xml`. Physische Geräte werden abgewiesen.
+Unter **… → Einstellungen → Thumbnail-Cache** legst du **64 bis 2048 MiB**
+Speicherbudget fest; Standard sind **256 MiB**. Die Änderung gilt sofort und bleibt
+nach einem Neustart erhalten. Die Anzeige zeigt Belegung, geschützten Bestand und
+Ladefortschritt; bei Fehlern steht **Erneut versuchen** bereit.
 
-Nur `-Pbearstack.releaseSmoke=true` erlaubt ohne privaten Keystore eine Signierung
-mit dem lokalen Debug-Schlüssel. Normale Release-Builds behalten die konfigurierte
-Produktionssignierung. Die vollständigen Compose-/Repository-Gerätetests laufen
-über das Debug-Ziel; fehlende oder ausschließlich übersprungene Tests sowie
-Fehler werden zusätzlich anhand der XML-Ergebnisse zurückgewiesen.
+Automatisch geschützt sind die neuesten **50 Vorschauen des ungefilterten
+Fotostreams** und alle Ordnervorschauen der **ersten Ebene**, einschließlich weiterer
+Ordnerseiten. Der übrige Platz dient bereits besuchten Galerie-Thumbnails; länger
+nicht verwendete, ungeschützte Vorschauen werden zuerst verdrängt. Ist der
+Pflichtbestand größer als das eingestellte Budget, darf er dieses überschreiten.
 
-Der Integrationstest öffnet ausschließlich `127.0.0.1:18787`, nutzt temporäre Daten und führt `adb reverse` aus. Er greift auf keine installierte BearStack-Instanz zu. Ohne Testadresse wird dieser zusätzliche instrumentierte Test übersprungen.
+Das Vorladen beginnt nach der Anmeldung und wird beim Öffnen einer Galerie oder
+bei Rückkehr in den Vordergrund höchstens einmal pro Minute aktualisiert. Es kann
+**mobile Daten** verwenden. Davon getrennt werden große Vorschauen für die nächste
+Aufnahme beziehungsweise angezeigte Gesichter nur über **WLAN** vorgeladen.
 
-Vor einer privaten Verteilung zusätzlich die komplette Bedienung auf dem eigenen Gerät mit TalkBack prüfen, besonders Namensdialog/Tastatur und die Originalfoto-Vorschau. Ein Gerätewechsel, Energiesparmodus und herstellerspezifische Prozessbeendigung lassen sich nicht vollständig durch einen Emulator ersetzen.
+Der Thumbnail-Cache überlebt App-Neustarts und wird beim ausdrücklich gewählten
+**Verbindungswechsel** gelöscht. Originale und große Vollbildvorschauen werden nicht
+dauerhaft darin gespeichert. Die [technische Referenz](android-technik.md#speicher-und-ladeverhalten)
+erläutert Speichergrenzen und Dateiverwaltung.
 
-## Privaten Release signieren
+### Start und Offlinebetrieb
 
-Einen dauerhaften Signierschlüssel **außerhalb des Repositories** anlegen und separat sichern. Updates derselben App-ID benötigen denselben Schlüssel. Passwörter interaktiv eingeben:
+Bei gespeicherter Verbindung versucht die App beim Start automatisch die Anmeldung.
+Antwortet der Server nicht innerhalb von acht Sekunden oder schlägt die Anmeldung
+fehl, öffnet sich **Dieses Gerät** mit einem Fehlerhinweis und **Erneut versuchen**.
+Die lokale Ansicht bleibt während eines erneuten Versuchs geöffnet. Es gibt keine
+fortlaufende automatische Wiederholung; Zugangsdaten und Zertifikatsbindung bleiben
+erhalten. Ein geändertes Zertifikat wird nicht automatisch akzeptiert.
 
-```sh
-keytool -genkeypair -v -keystore /sicherer/pfad/bearstack-android.jks \
-  -alias bearstack -keyalg RSA -keysize 4096 -validity 10000
-```
+| Funktion | Ohne Server nutzbar? |
+| --- | --- |
+| Freigegebene Fotos auf **Dieses Gerät** ansehen und teilen | Ja. |
+| Serverordner und Serverfotos durchsuchen | Nein; der Katalog benötigt eine Verbindung. |
+| Serveroriginal öffnen, herunterladen oder neu zum Teilen vorbereiten | Benötigt eine Verbindung. |
+| Neue Personenentscheidungen speichern | Benötigt eine Verbindung. |
+| Gespeicherte Galerie-Thumbnails behalten | Ja; daraus entsteht aber keine vollständige Offlinegalerie. |
 
-Für den Build diese Umgebungsvariablen setzen (Passwörter beispielsweise mit `read -rs` interaktiv einlesen und anschließend exportieren):
+## Probleme beheben
 
-- `BEARSTACK_ANDROID_KEYSTORE`: absoluter Pfad zur JKS-Datei.
-- `BEARSTACK_ANDROID_KEY_ALIAS`: `bearstack`.
-- `BEARSTACK_ANDROID_STORE_PASSWORD` und `BEARSTACK_ANDROID_KEY_PASSWORD`.
+| Beobachtung | Was du prüfen kannst |
+| --- | --- |
+| Anmeldung schlägt fehl | HTTPS-Adresse einschließlich Proxy-Pfad, Benutzername und Passwort prüfen. Dieselbe Adresse auf demselben Gerät im Browser testen. |
+| Die Adresse leitet um | Die endgültige HTTPS-Zieladresse eintragen. |
+| Server ist nur außerhalb der App erreichbar | Android-Netzwerkfreigaben und appbezogene VPN-Regeln prüfen. |
+| Zertifikat wurde geändert | Den neuen Fingerabdruck beim Serverbetreiber prüfen und die Verbindung erneut einrichten. |
+| **Personen verwalten** fehlt | Das Konto benötigt zusätzlich **Fotos bearbeiten**. |
+| Personen, Karten oder Datumssprung fehlen | Serverversion, angebotene Funktionen und fertigen Fotoindex prüfen. |
+| Lokale Bilder fehlen | Fotozugriff und gegebenenfalls die Auswahl freigegebener Bilder prüfen. Nur Fotos aus Androids Medienindex werden angezeigt. |
+| Thumbnail-Cache belegt mehr als eingestellt | Der geschützte Pflichtbestand darf das Budget überschreiten. |
+| **Offene Aktion prüfen** erscheint | Zuerst die gespeicherte Aktion klären; danach weiterarbeiten. |
+| **Foto geändert · im Web prüfen** erscheint | Gesicht und Rahmen in der Weboberfläche prüfen. |
 
-```sh
-apps/android/gradlew -p apps/android :app:assembleRelease
-adb install -r apps/android/app/build/outputs/apk/release/app-release.apk
-```
+Fehlermeldungen nennen die Phase und einen Diagnosecode. **DNS** betrifft die
+Namensauflösung, **CONNECT** und **NO_ROUTE** den Verbindungsweg, **TIMEOUT** eine
+Zeitüberschreitung. **TLS**, **TLS_IDENTITY**, **CERT_EXPIRED** und
+**CERT_NOT_YET_VALID** betreffen Zertifikat, Serveridentität oder Gültigkeit.
+**NETWORK_PERMISSION** weist auf verweigerten Netzwerkzugriff hin. Eine
+Zeitüberschreitung allein sagt nichts über die Richtigkeit des Passworts aus.
+Weitere Prüfschritte stehen unter [Verbindung und Zertifikat](android-technik.md#verbindung-und-zertifikat).
 
-Ohne Signiervariablen entsteht eine **unsignierte** Release-APK (`app-release-unsigned.apk`) zur Buildprüfung. Eine Debug-Installation hat einen anderen Schlüssel; sie muss vor dem ersten privaten Release deinstalliert werden, wobei ihre lokalen Daten verloren gehen. Bei jeder APK-Aktualisierung `versionCode` erhöhen und `apps/android/VERSION` pflegen; die Android-Version wird unabhängig von BearStack geführt.
+## Serverkompatibilität
 
-## Struktur
+Die App blendet Funktionen nach den vom Server gemeldeten Fähigkeiten und Rechten
+ein. Für den vollständigen aktuellen Funktionsumfang verwende einen aktuellen
+Server; mit älteren Versionen können einzelne Einträge fehlen.
 
-```text
-apps/android/
-  VERSION                 # unabhängige App-Version
-  gradlew, gradlew.bat     # eigener Build-Einstieg
-  app/
-    schemas/              # exportiertes Room-Schema
-    src/main/java/de/bearstack/people/
-      connection/         # TLS, Zertifikatsabgleich, Keystore
-      data/local/         # Room-Zustand, Ereignisse, Statistikabfragen
-      data/remote/        # JSON-Modelle und HTTP-Vertrag
-      people/             # Repository, ViewModel, Gestenregeln
-      statistics/         # lokale Gesichts- und Gruppenzähler
-      ui/                 # Compose-Oberfläche und Gestaltung
-    src/test/             # JVM-Tests
-    src/androidTest/      # Emulator- und Go-Integrationstests
-```
+| Funktion | BearStack mindestens |
+| --- | --- |
+| Galerie, Datumssprung und Gesichtssuche über die Lupe | 0.50.0 |
+| Benannte Personen verwalten / nach Namen suchen | 0.43.0 / 0.45.0 |
+| Ähnliche Gruppen / zusätzliche Aktionen je Vergleichsseite | 0.49.0 / 0.50.0 |
+| Mehrfachauswahl bei benannten Personen | 0.51.0 |
+| Personen unter **Ordner** / **Personen im Ordner** | 0.53.0 / 0.55.0 |
+| Personen nach **Anzahl Bilder** sortieren | 0.58.0 |
+| Hinweis auf geänderte Gesichtsquellen | 0.65.0 |
+| Formatierter Serverordnername im Fotoframe | 0.68.0 |
+| Zufällige Reihenfolge im Fotoframe für Serverfotos | 0.69.0 |
 
-Die Personenlogik bleibt im Go-Backend unter `internal/photos`; HTTP-Adapter und Rechte liegen unter `internal/server`.
-
-## Geänderte Gesichtsquellen
-
-Ab Android **0.17.0** und BearStack **0.65.0** kennzeichnet „Foto geändert · im Web prüfen“ erhaltene Gesichtsdaten, deren Original geändert wurde. Die bisherige Gesichtsvorschau bleibt sichtbar. Alte Rahmen werden auf dem aktuellen Original nicht eingezeichnet. Rahmen und Person werden zunächst im Web geprüft; ungeprüfte Embeddings sind keine Erkennungsreferenzen.
+Build, Signierung, API, Datenhaltung und Tests beschreibt
+[Android-App – Technik & Entwicklung](android-technik.md). Die Versionshistorie
+steht im [Changelog](https://github.com/ringelbaer/BearStack-DMS/blob/main/CHANGELOG.md).

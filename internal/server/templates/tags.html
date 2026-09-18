@@ -27,7 +27,7 @@
 <div class="search-favorite-page tag-page tag-standalone">
   {{template "tags_photo_content" .}}
 </div>
-{{else}}
+{{else if $showDocumentTags}}
 <div class="search-favorite-page tag-page tag-standalone">
   {{template "tags_document_content" .}}
 </div>

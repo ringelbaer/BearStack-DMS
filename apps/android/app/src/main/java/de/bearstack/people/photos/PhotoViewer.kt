@@ -68,8 +68,7 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
     var zoomed by remember { mutableStateOf(false) }
     var readyPath by remember {mutableStateOf<String?>(null)}
     var mediaPlayingPath by remember {mutableStateOf<String?>(null)}
-    var localSettings by remember {mutableStateOf(PlaybackSettings())}
-    val settings=controller.playback?.state?.collectAsStateWithLifecycle()?.value ?: localSettings
+    val settings by controller.playbackSettings.collectAsStateWithLifecycle()
     val seconds=(if(frame) settings.frameSeconds.takeIf {it>0} ?: controller.session.frameSeconds
         else settings.seconds.takeIf {it>0} ?: controller.session.slideshowSeconds).coerceIn(3,300)
     val visibleKey by remember(pager) {derivedStateOf {
@@ -189,8 +188,8 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                         }
                     }
                 }
-                if(settingsOpen) PlaybackSettingsDialog(settings,seconds,frame,
-                    onSave={localSettings=it;controller.playback?.save(it)},onDismiss={settingsOpen=false})
+                if(settingsOpen) PlaybackSettingsDialog(settings,seconds,frame,controller.session.frameRandomSort,
+                    onSave=controller::savePlaybackSettings,onDismiss={settingsOpen=false})
                 if(infoOpen) PhotoInfoSheet(current,controller.service) {infoOpen=false}
             }
         }

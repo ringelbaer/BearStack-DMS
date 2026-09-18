@@ -30,7 +30,7 @@ import java.util.Locale
 
 class PhotosScreenTest {
     @get:Rule val compose=createComposeRule()
-    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, directoryPeople: Boolean = false, peopleCountSort: Boolean = true, photoCount: Int = 2, fontScale: Float = 1f, beforeBrowse: suspend (PhotoQuery)->Unit = {}, test: (PhotosController,PhotosService)->Unit) {
+    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, directoryPeople: Boolean = false, peopleCountSort: Boolean = true, frameRandomSort: Boolean = true, photoCount: Int = 2, fontScale: Float = 1f, beforeBrowse: suspend (PhotoQuery)->Unit = {}, test: (PhotosController,PhotosService)->Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext
         val context=app.createConfigurationContext(Configuration(app.resources.configuration).apply {setLocale(locale)})
         val file=File(app.cacheDir,"gallery-test.jpg")
@@ -43,7 +43,7 @@ class PhotosScreenTest {
         val api=object:PhotosService {
             var blogAttempts=0
             var infoAttempts=0
-            override suspend fun session()=PhotoSession("gallery-test",false,240,240,1280,2048,5,8,peopleCountSort)
+            override suspend fun session()=PhotoSession("gallery-test",false,240,240,1280,2048,5,8,peopleCountSort,frameRandomSort)
             override suspend fun browse(query: PhotoQuery,page: Int,section: String): PhotoPage {
                 beforeBrowse(query)
                 if(directoryPeople && query.path.startsWith(".people/f-")) {
@@ -67,7 +67,7 @@ class PhotosScreenTest {
                 val folders=if(!query.recursive && query.path.isEmpty()) listOf(PhotoFolder("Holiday","Holiday",null,2,false,0,photos)) else emptyList()
                 val blogs=if(query.path=="Holiday") listOf(PhotoBlog("Holiday/story.md","story.md",null,"2026-09-09T10:00:00Z")) else emptyList()
                 return PhotoPage(query.path,"",1,photos.size,false,folders.size,false,false,
-                    if(query.query.isNotEmpty()) photos.filter {it.name.contains(query.query)} else if(folders.isEmpty()) photos else emptyList(),folders,blogs,peoplePath=if(directoryPeople && query.path=="Holiday") ".people/f-SG9saWRheQ" else "")
+                    if(query.query.isNotEmpty()) photos.filter {it.name.contains(query.query)} else if(folders.isEmpty()) if(query.sort=="random") photos.reversed() else photos else emptyList(),folders,blogs,peoplePath=if(directoryPeople && query.path=="Holiday") ".people/f-SG9saWRheQ" else "")
             }
             override suspend fun info(path: String): Photo {
                 if(retryInfo && infoAttempts++==0) throw ApiFailure(404,"not_found",de.bearstack.people.text.UiText(R.string.error_missing))
@@ -86,7 +86,7 @@ class PhotosScreenTest {
             override fun original(photo: Photo)=file.toURI().toString()
         }
         lateinit var controller:PhotosController
-        compose.runOnUiThread {controller=PhotosController(owner,api,PhotoSession("gallery-test",false,240,240,1280,2048,5,8,peopleCountSort))}
+        compose.runOnUiThread {controller=PhotosController(owner,api,PhotoSession("gallery-test",false,240,240,1280,2048,5,8,peopleCountSort,frameRandomSort))}
         try {
             compose.setContent {
                 val registry = checkNotNull(LocalActivityResultRegistryOwner.current)
@@ -359,6 +359,39 @@ class PhotosScreenTest {
         compose.onNodeWithTag("photo-viewer-image").performTouchInput {swipeLeft()}
         compose.waitUntil {controller.state.value.selected=="second.jpg"}
         compose.onNodeWithText("Fotos").assertIsDisplayed()
+    }
+    @Test fun frameRandomOrderCanBeCancelledAndRestoresTheGallery() = screen(Locale.ENGLISH,photoCount=3) {controller,_ ->
+        val original=controller.state.value.query
+        compose.onNodeWithContentDescription("More options").performClick()
+        compose.onNodeWithText("Start photo frame").performClick()
+        compose.waitUntil {controller.state.value.selected=="first.jpg"}
+        compose.onNodeWithTag("photo-viewer-image").performClick()
+        compose.onNodeWithContentDescription("Photo frame settings").performClick()
+        compose.onNodeWithText("Random order").performScrollTo().assertIsOff().performClick()
+        compose.onNodeWithText("Cancel").performClick()
+        compose.onNodeWithContentDescription("Photo frame settings").performClick()
+        compose.onNodeWithText("Random order").performScrollTo().assertIsOff().performClick()
+        compose.onNodeWithText("Save").performClick()
+        compose.waitUntil {controller.state.value.query.sort=="random" && controller.state.value.selected=="photo-2.jpg"}
+        compose.onNodeWithTag("photo-viewer-image").performClick()
+        compose.onNodeWithContentDescription("Photo frame settings").performClick()
+        compose.onNodeWithText("Random order").performScrollTo().assertIsOn()
+        compose.onNodeWithText("Cancel").performClick()
+        compose.onNode(hasContentDescription("Close") and hasAnyAncestor(isDialog())).performClick()
+        compose.waitUntil {!controller.state.value.frame}
+        assertEquals(original,controller.state.value.query)
+        compose.onNodeWithContentDescription("More options").performClick()
+        compose.onNodeWithText("Start photo frame").performClick()
+        compose.waitUntil {controller.state.value.query.sort=="random" && controller.state.value.selected=="photo-2.jpg"}
+    }
+    @Test fun frameRandomOrderExplainsOlderServers() = screen(Locale.ENGLISH,frameRandomSort=false) {controller,_ ->
+        compose.onNodeWithContentDescription("More options").performClick()
+        compose.onNodeWithText("Start photo frame").performClick()
+        compose.waitUntil {controller.state.value.selected!=null}
+        compose.onNodeWithTag("photo-viewer-image").performClick()
+        compose.onNodeWithContentDescription("Photo frame settings").performClick()
+        compose.onNodeWithText("Random order").performScrollTo().assertIsNotEnabled().assertIsOff()
+        compose.onNodeWithText("Random order requires BearStack 0.69.0 or later.").performScrollTo().assertIsDisplayed()
     }
     @Test fun slideshowSettingsAdvanceOnlyAfterPlaybackStarts() = screen(Locale.ENGLISH) {_,_ ->
         compose.onNodeWithContentDescription("first.jpg").performClick()

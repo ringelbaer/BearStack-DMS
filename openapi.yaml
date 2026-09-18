@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 0.68.2
+  version: 0.69.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -706,7 +706,9 @@ paths:
           visible photos before pagination, restricted to the subtree for folder
           people. Equal counts sort by folded person name, then ID. Other paths
           reject count sorts with 400. Name sorts in people categories and lists
-          sort folder/person names.
+          sort folder/person names. Random sort requires frame_random_sort and
+          uses the indexed stable random order, so paging does not duplicate or
+          skip unchanged media. Existing filters and visibility restrictions apply.
         schema:
           type: string
           enum:
@@ -716,6 +718,7 @@ paths:
           - descending_name
           - ascending_count
           - descending_count
+          - random
           default: descending_date
       - name: type
         in: query
@@ -1745,6 +1748,8 @@ paths:
         Imports every file part as a document. Files exceeding the configured
         upload limit, unsupported file types and duplicates are reported per
         item. Requires the `documents.upload` capability.
+        Duplicate responses include existing document metadata only with
+        `documents.read`; upload-only accounts receive the submitted filename.
       requestBody:
         required: true
         content:
@@ -4435,6 +4440,10 @@ components:
           type: boolean
           default: false
           description: Supports ascending_count/descending_count for browse people directories; absent on older servers.
+        frame_random_sort:
+          type: boolean
+          default: false
+          description: Supports sort=random for paginated media playback; absent on servers older than 0.69.0.
         settings:
           type: object
           required:
@@ -5026,7 +5035,10 @@ components:
 
     DuplicateDocument:
       type: object
-      required: [filename, existing_id, existing_filename, document_url]
+      description: |
+        The submitted filename identifies the duplicate. Existing document
+        metadata is returned only to accounts with documents.read.
+      required: [filename]
       properties:
         filename:
           type: string
@@ -5034,10 +5046,13 @@ components:
           type: integer
           format: int64
           minimum: 1
+          description: Present only with documents.read.
         existing_filename:
           type: string
+          description: Present only with documents.read.
         document_url:
           type: string
+          description: Present only with documents.read.
 
     UploadError:
       type: object

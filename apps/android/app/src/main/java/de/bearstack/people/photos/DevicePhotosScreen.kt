@@ -248,7 +248,7 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
                     }
                 }
                 PhotoGallery(local, images, state)
-                state.selected?.let { PhotoViewer(local, images, state.media, it) }
+                state.selected?.let { path -> key(state.frame,state.query) { PhotoViewer(local, images, state.media, path) } }
             }
         }
     }

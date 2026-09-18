@@ -7,19 +7,32 @@ import (
 	"fmt"
 	"net/http"
 
+	"bearstack/internal/document"
 	"bearstack/internal/repository"
 )
 
 func (s *Server) handleTags(w http.ResponseWriter, r *http.Request) {
-	tags, err := s.repo.ListTags(r.Context())
-	if err != nil {
-		s.renderError(w, r, http.StatusInternalServerError, err)
+	permissions := authPermissionsForRequest(s, r)
+	showPhotoTags := s.photos != nil && (permissions.CanPhotosRead || permissions.CanPhotosManage)
+	if !permissions.CanDocumentsRead && !showPhotoTags {
+		s.renderForbidden(w, r)
 		return
 	}
-	photoTags, err := s.listPhotoTagViews(r)
-	if err != nil {
-		s.renderError(w, r, http.StatusInternalServerError, err)
-		return
+	var tags, photoTags []document.Tag
+	var err error
+	if permissions.CanDocumentsRead {
+		tags, err = s.repo.ListTags(r.Context())
+		if err != nil {
+			s.renderError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+	}
+	if showPhotoTags {
+		photoTags, err = s.listPhotoTagViews(r)
+		if err != nil {
+			s.renderError(w, r, http.StatusInternalServerError, err)
+			return
+		}
 	}
 	tagTab := "documents"
 	if s.photos != nil && r.URL.Query().Get("tab") == "photos" {

@@ -23,6 +23,7 @@ class DevicePhotosServiceTest {
         val captured: Long? = 1_700_000_000_000L + id * 1000)
     private class Provider(val entries: List<Entry>, val paging: Boolean = true) : ContentProvider() {
         var folderScans = 0
+        var idScans = 0
         var closedCursors = 0
         var openedCursors = 0
         var fail = false
@@ -36,6 +37,7 @@ class DevicePhotosServiceTest {
         override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int = error("must stay read-only")
         override fun query(uri: Uri, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor =
             query(uri, projection, Bundle().apply {
+                putString(ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
                 putString(ContentResolver.QUERY_ARG_SQL_SORT_ORDER, sortOrder)
                 putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, selectionArgs)
             }, null)
@@ -50,10 +52,15 @@ class DevicePhotosServiceTest {
             val columns = projection!!
             val folders = MediaStore.Images.Media.BUCKET_ID in columns
             if(folders) folderScans++
+            if(columns.contentEquals(arrayOf(MediaStore.Images.Media._ID))) idScans++
             val arguments = queryArgs?.getStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS)
             var matching = entries.filter { entry ->
                 (arguments == null || entry.bucket == arguments[0] && entry.volume == arguments.getOrNull(1)) &&
                     (uri.lastPathSegment == "media" || uri.lastPathSegment == entry.id.toString())
+            }
+            if(queryArgs?.getString(ContentResolver.QUERY_ARG_SQL_SELECTION).orEmpty().contains(" IN (")) {
+                val ids=arguments!!.drop(2).map {it.toLong()}.toSet()
+                matching=matching.filter {it.id in ids}
             }
             val order = queryArgs?.getString(ContentResolver.QUERY_ARG_SQL_SORT_ORDER).orEmpty()
             matching = if(order.startsWith(MediaStore.Images.Media.DATE_TAKEN))
@@ -106,6 +113,29 @@ class DevicePhotosServiceTest {
         assertTrue(first.folders.all { it.previews.size <= 2 })
         assertEquals(1, provider.folderScans)
         assertEquals(provider.openedCursors, provider.closedCursors)
+    }
+    @Test fun shuffledFramesKeepEveryImageAcrossPagesAndReleaseTheirOrder() = runBlocking {
+        for(paging in listOf(true,false)) {
+            val provider=Provider((1L..303).map {Entry(it,"1","Camera")},paging)
+            val service=DevicePhotosService(ContentResolver.wrap(provider),kotlin.random.Random(7))
+            val folder=service.browse(PhotoQuery()).folders.single()
+            val query=PhotoQuery(path=folder.path,sort="random")
+            val pages=(1..4).map {service.browse(query,it,"media")}
+            val names=pages.flatMap {it.media}.map {it.name}
+            assertEquals(listOf(96,96,96,15),pages.map {it.media.size})
+            assertEquals(listOf(true,true,true,false),pages.map {it.hasNext})
+            assertEquals((1..303).map {"$it.jpg"}.toSet(),names.toSet())
+            assertEquals(303,names.distinct().size)
+            assertNotEquals((303 downTo 1).map {"$it.jpg"},names)
+            assertTrue(pages.all {it.total==303})
+            assertEquals(pages.first().media,service.browse(query,1,"media").media)
+            assertEquals(1,provider.idScans)
+            service.clearPlaybackOrder()
+            assertNotEquals(pages.first().media,service.browse(query,1,"media").media)
+            assertEquals(2,provider.idScans)
+            assertEquals("303.jpg",service.browse(query.copy(sort="descending_date"),1,"media").media.first().name)
+            assertEquals(provider.openedCursors,provider.closedCursors)
+        }
     }
     @Test fun photoPagesAndInfoWorkWithNativePaging() = pages(true)
     @Test fun olderProvidersWithoutPagingNeverRepeatTheFirstPage() = pages(false)

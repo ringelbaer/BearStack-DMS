@@ -13,7 +13,8 @@ import java.util.concurrent.TimeUnit
 
 data class PhotoSession(val scope: String, val canManagePeople: Boolean, val thumbnailSize: Int,
     val folderThumbnailSize: Int, val previewSize: Int, val largePreviewSize: Int,
-    val slideshowSeconds: Int, val frameSeconds: Int, val peopleCountSort: Boolean = false)
+    val slideshowSeconds: Int, val frameSeconds: Int, val peopleCountSort: Boolean = false,
+    val frameRandomSort: Boolean = false)
 data class Photo(val path: String, val name: String, val type: String, val mime: String, val version: String,
     val modified: String, val captured: String?, val bytes: Long, val width: Int, val height: Int,
     val camera: String = "", val lens: String = "", val latitude: Double? = null, val longitude: Double? = null,
@@ -45,6 +46,7 @@ data class PhotoTrackGeometry(val path: String,val name: String,val bounds: Phot
 data class PhotoRouteData(val geometry: PhotoTrackGeometry,val totalMedia: Int,val radiusMeters: Int)
 
 interface PhotosService {
+    fun clearPlaybackOrder() {}
     suspend fun session(): PhotoSession
     suspend fun browse(query: PhotoQuery, page: Int = 1, section: String = ""): PhotoPage
     suspend fun locateDate(date: String): PhotoDatePosition =
@@ -91,7 +93,7 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
         return PhotoSession(scope,o.getBoolean("can_manage_people"),settings.getInt("thumbnail_size").coerceIn(80,640),
             settings.getInt("folder_thumbnail_size").coerceIn(80,640),settings.getInt("preview_size").coerceIn(640,2048),
             settings.getInt("large_preview_size").coerceIn(640,4096),settings.getInt("slideshow_seconds").coerceIn(3,300),
-            settings.getInt("frame_seconds").coerceIn(3,300),o.optBoolean("people_count_sort",false))
+            settings.getInt("frame_seconds").coerceIn(3,300),o.optBoolean("people_count_sort",false),o.optBoolean("frame_random_sort",false))
     }
     override suspend fun browse(query: PhotoQuery, page: Int, section: String): PhotoPage {
         val o = json("browse",mapOf("people" to "1","path" to query.path,"q" to query.query,"page" to "$page","section" to section,

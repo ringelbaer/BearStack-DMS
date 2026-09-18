@@ -15,13 +15,15 @@ import (
 )
 
 type fakeMailbox struct {
-	deleted   []uint32
-	loggedOut bool
+	deleted     []uint32
+	loggedOut   bool
+	fetchLimits []int64
 }
 
 func (m *fakeMailbox) Logout() error                    { m.loggedOut = true; return nil }
 func (m *fakeMailbox) UndeletedUIDs() ([]uint32, error) { return []uint32{1, 2, 3}, nil }
-func (m *fakeMailbox) FetchMessage(uid uint32) (io.Reader, error) {
+func (m *fakeMailbox) FetchMessage(uid uint32, maxUploadBytes int64) (io.Reader, error) {
+	m.fetchLimits = append(m.fetchLimits, maxUploadBytes)
 	if uid == 3 {
 		return nil, errors.New("fetch failed")
 	}
@@ -71,6 +73,9 @@ func TestImportOnlyDeletesSuccessfullyProcessedMail(t *testing.T) {
 	}
 	if !reflect.DeepEqual(box.deleted, []uint32{1}) || !box.loggedOut {
 		t.Fatalf("mailbox cleanup = %#v", box)
+	}
+	if !reflect.DeepEqual(box.fetchLimits, []int64{1 << 20, 1 << 20, 1 << 20}) {
+		t.Fatalf("IMAP fetch limits = %v", box.fetchLimits)
 	}
 	if !reflect.DeepEqual(importer.ways, []string{document.UploadWayMail, document.UploadWayMail}) {
 		t.Fatalf("upload ways = %v", importer.ways)

@@ -123,7 +123,7 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
                 contentPadding=PaddingValues(bottom=padding.calculateBottomPadding()+16.dp))
         }
     }
-    state.selected?.let { path -> PhotoViewer(controller,images,state.media,path) }
+    state.selected?.let { path -> key(state.frame,state.query) { PhotoViewer(controller,images,state.media,path) } }
     if(mapOpen) FolderMap(controller,images,state.query) {mapOpen=false}
     if(state.frame && state.selected==null) Dialog(onDismissRequest=controller::closeViewer,properties=DialogProperties(usePlatformDefaultWidth=false)) {
         Surface(Modifier.fillMaxSize()) {
