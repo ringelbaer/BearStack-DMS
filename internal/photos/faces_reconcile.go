@@ -288,6 +288,9 @@ func (l *Library) ReconcileFacesBatch(ctx context.Context, batchSize int) (FaceR
 
 func faceReconcileExclusions(ctx context.Context, tx *sql.Tx, path string, source int64) (map[int64]bool, error) {
 	excluded := map[int64]bool{source: true}
+	if err := folderExcludedPeople(ctx, tx, parentPath(path), excluded); err != nil {
+		return nil, err
+	}
 	rows, err := tx.QueryContext(ctx, `SELECT DISTINCT person_id FROM photo_faces WHERE path=? AND ignored=0`, path)
 	if err != nil {
 		return nil, err

@@ -104,6 +104,8 @@
       if (window.initializePersonPickers) window.initializePersonPickers(tagTools);
     }
     galleryLink.setAttribute("href", view.querySelector("[data-detail-gallery]").getAttribute("href"));
+    document.querySelector("[data-person-summary]").replaceWith(document.importNode(view.querySelector("[data-person-summary]"), true));
+    root.querySelector("[data-detail-folders]").setAttribute("href", view.querySelector("[data-detail-folders]").getAttribute("href"));
     root.dataset.personId = updated.dataset.personId; root.dataset.personName = updated.dataset.personName;
     document.querySelector("[data-detail-title]").textContent = updated.dataset.personName || "Unbenannt";
     document.querySelector("[data-detail-count]").textContent = view.querySelector("[data-detail-count]").textContent;

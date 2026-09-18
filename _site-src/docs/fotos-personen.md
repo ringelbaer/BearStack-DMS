@@ -336,35 +336,33 @@ Vektorsuche. Wurden Gruppen inzwischen verändert, ist eine erneute Prüfung nö
 Einstellungen und Hintergrundabgleich beschreibt die
 [Betriebsreferenz](fotos-technik.md#zuordnungen-verbessern).
 
-### Gesichtsketten gemeinsam prüfen
+### Stammdaten und Ordner einer Person
 
-**Ähnliche Gesichter → Gesichtsketten prüfen** sucht verbundene **unbenannte**
-Gruppen erst beim Öffnen oder Fortsetzen dieser Ansicht. Ein laufender
-Erkennungsdienst ist nicht nötig.
+Unter der Überschrift stehen nur hinterlegte Stammdaten: Geburts- und Sterbedatum,
+Eltern, Geschwister und Ehen ohne Scheidungsdatum. Die vollständigen Stammdaten
+bleiben im Dialog bearbeitbar.
 
-- **Maximale Sprünge**: 1 bis 5, Standard 2. A → F → Y sind zwei Sprünge;
-  Verzweigungen gehören ebenfalls zur Kette.
-- **Mindestähnlichkeit**: 0 bis 1 in Schritten von 0,01. Vorgabe ist die globale
-  Schwelle für manuelle Vorschläge, normalerweise 0,45.
-- **Durchlauf neu starten** übernimmt neue Werte und berücksichtigt übersprungene
-  Gruppen erneut. Die globale Einstellung wird dadurch nicht verändert.
+**Ordner-Pfade** öffnet `/photos/people/{id}/folder`. Jeder exakte Ordner erscheint
+einmal mit seinem vollständigen formatierten Galeriepfad und darunter höchstens
+acht Gesichtsvorschauen. Weitere Ordner folgen auf der nächsten Seite (40 pro Seite).
 
-Zunächst sind **alle aktiven Gesichter der gesamten Kette über alle Seiten**
-ausgewählt. Pro Seite werden 60 gezeigt. Unpassende Gesichter abwählen;
-**Seite auswählen/abwählen** betrifft nur die sichtbare Seite. Die Auswahlzahl
-zählt auch die anderen Seiten mit.
+Mit **Fotos bearbeiten** stehen folgende Aktionen für alle aktiven Gesichter der
+Person im jeweiligen Ordner bereit, auch für Gesichter außerhalb der Vorschau:
 
-**Auswahl zuordnen** öffnet den bekannten Dialog für einen vorhandenen oder neuen
-Namen. Ein leerer Name wird nicht gespeichert. Die ausgewählten Gesichter werden
-gemeinsam und manuell bestätigt zugeordnet; nicht ausgewählte und bereits
-benannte Gesichter bleiben unverändert. Personen-Tags und Familienbeziehungen
-der Ausgangsgruppen werden dabei nicht zusammengeführt.
+- **Alle neu zuweisen**: vorhandene Person wählen oder neuen Namen eingeben.
+- **Alle auf unbenannt setzen**: als neue unbenannte Gruppe abtrennen.
+- **Alle ignorieren**: aus den aktiven Ansichten und dem Abgleich entfernen.
+- **Pfad ausschließen und Gesichter auf unbenannt setzen**: abtrennen und weitere
+  Zuordnungen dieses exakten Ordners zur bisherigen Person dauerhaft sperren.
+- **Pfad wieder freigeben**: Sperre aufheben; keine automatische Rückzuweisung.
 
-Nach dem Speichern folgt die nächste Kette. **Kette überspringen** ändert keine
-Daten. **Suche anhalten** bricht die Suche ab. Bei mehr als **1.000 verbundenen
-Gruppen** eine höhere Mindestähnlichkeit oder weniger Sprünge wählen; die Kette
-wird nicht still gekürzt. Eine verlorene Speicherantwort lässt sich mit
-**Speicherung prüfen** klären, auch nach Neuladen im selben Browser-Tab.
+Unterordner sind eigenständige Pfade. Ausgeschlossene Pfade bleiben in dieser
+Ansicht sichtbar. Sammelaktionen sind atomar; bei zwischenzeitlichen Änderungen
+muss die Ansicht neu geladen werden. Manuelle und automatische Zuordnungen sowie
+Neuanalysen beachten die Sperren. Personenzusammenführungen übernehmen Sperren;
+Konflikte mit vorhandenen Gesichtern verhindern die gesamte Zusammenführung.
+
+Die frühere Gesichtskettenfunktion und ihre HTTP-Endpunkte entfallen ab 1.0.0.
 
 ## Gesichter geänderter Fotos prüfen
 

@@ -37,7 +37,6 @@ type Library struct {
 	faceImages      faceImageCache
 	faceRuntime     faceRuntime
 	faceSuggestions faceSuggestionCache
-	faceChainGate   chan struct{}
 	faceThumbnails  faceThumbnailCache
 	root            string
 	cacheDir        string

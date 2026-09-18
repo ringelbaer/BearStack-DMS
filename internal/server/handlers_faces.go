@@ -24,6 +24,10 @@ func faceID(raw string) (int64, error) {
 }
 func (s *Server) faceError(w http.ResponseWriter, r *http.Request, err error) {
 	status := http.StatusBadRequest
+	if photos.IsPersonFolderExcluded(err) {
+		err = photos.ErrPersonFolderExcluded
+		status = http.StatusConflict
+	}
 	if errors.Is(err, sql.ErrNoRows) {
 		status = http.StatusNotFound
 	}
@@ -84,6 +88,14 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 	}
 	data := PageData{Title: "Personen", Active: "photos", Assets: photoPageAssets(!result.IgnoredOnly && s.requestHasCapabilities(r, authCapPhotosEdit)), People: result, Notice: r.URL.Query().Get("notice")}
 	if id != 0 {
+		if result.Name != "" {
+			details, e := s.photos.PersonDetails(r.Context(), id)
+			if e != nil {
+				s.faceError(w, r, e)
+				return
+			}
+			data.PersonSummary = details.Summary()
+		}
 		data.PhotoSettings, err = s.photoSettings(r.Context())
 		if err != nil {
 			s.renderError(w, r, http.StatusInternalServerError, err)

@@ -1,0 +1,110 @@
+import { expect, test } from "@playwright/test";
+import { startBearStack, stopBearStack, freePort } from "./server-fixture.mjs";
+import http from "node:http";
+import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
+const model = "yunet-2023mar-sface-2021dec-v1";
+const token = "bearstack-test-service-token-000000";
+const png = await readFile(new URL("../../services/faces/tests/fixtures/astronaut.png", import.meta.url));
+const photoPaths = ["root.png", ...Array.from({length: 9}, (_, i) => `20240102_Family_Trip/${i}.png`), "20240102_Family_Trip/Nested_Folder/child.png"];
+let root, baseURL, app, service;
+
+test.beforeAll(async () => {
+  root = await mkdtemp(path.join(os.tmpdir(), "bearstack-faces-e2e-"));
+  const photos = path.join(root, "photos");
+  for (const name of photoPaths) {
+    const file = path.join(photos, name);
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, png);
+  }
+  let calls=0;
+  service=http.createServer((request,response)=>{
+    if(request.headers.authorization!=="Bearer "+token){response.writeHead(401);response.end();return;}
+    response.setHeader("Content-Type","application/json");
+    if(request.url==="/health"){response.end(JSON.stringify({ready:true,protocol:1,model}));return;}
+    request.resume();request.on("end",()=>{
+      const landscape=false; calls++;
+      const embedding=Array(128).fill(0);embedding[landscape?1:0]=1;
+      const bounds=landscape?{x:.3,y:.1,width:.4,height:.2}:{x:.35,y:.05,width:.25,height:.5};
+      response.end(JSON.stringify({model,faces:[{...bounds,confidence:.99,embedding}]}));
+    });
+  });
+  await new Promise(resolve=>service.listen(0,"127.0.0.1",resolve));
+  const appPort=await freePort();baseURL=`http://127.0.0.1:${appPort}`;
+  const config=path.join(root,"config.json");await writeFile(config,JSON.stringify({addr:`127.0.0.1:${appPort}`,data_dir:path.join(root,"data"),auth:{credentials:[{username:"admin",password:"secret",role:"admin"},{username:"manager",password:"secret",role:"photos_manager"},{username:"reader",password:"secret",role:"photos_read"}]},photos:{enabled:true,root_dir:photos,face_service_url:`http://127.0.0.1:${service.address().port}`,face_service_token:token}}));
+  app = await startBearStack({ configPath: config, baseURL }, { username: "manager", password: "secret" });
+});
+test.afterAll(async ({}, testInfo) => {
+  testInfo.setTimeout(75_000);
+  await stopBearStack(app);
+  if (service) await new Promise(resolve => service.close(resolve));
+  if (root) await rm(root, { recursive: true, force: true });
+});
+
+test("person folders format paths, preview eight faces and apply whole-folder actions", async ({ browser }) => {
+  test.setTimeout(90_000);
+  const context = await browser.newContext({ httpCredentials: { username: "manager", password: "secret" } });
+  try {
+    const page = await context.newPage(), errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    await page.goto(baseURL + "/login");
+    await page.getByLabel("Benutzername").fill("manager");
+    await page.locator('input[name="password"]').fill("secret");
+    await page.getByRole("button", { name: "Anmelden", exact: true }).click();
+    // Materialize every fixture photo; gallery folder previews index only a subset.
+    for (const file of photoPaths) {
+      expect((await context.request.get(baseURL + "/api/photos/v1/media/info?path=" + encodeURIComponent(file))).ok()).toBe(true);
+    }
+    const enabled = await context.request.post(baseURL + "/settings/photos/faces", { form: { enabled: "1", delay_millis: "100" }, headers: { Origin: baseURL } });
+    expect(enabled.ok()).toBe(true);
+    await expect.poll(async () => (await (await context.request.get(baseURL + "/settings/photos/faces?format=json")).json()).status.done, { timeout: 30000 }).toBe(11);
+    const person = (await (await context.request.get(baseURL + "/photos/people?format=json")).json()).people[0];
+    expect((await context.request.post(baseURL + `/photos/people/${person.id}/rename`, { form: { name: "Ada" }, headers: { Origin: baseURL } })).ok()).toBe(true);
+    await page.goto(baseURL + `/photos/people/${person.id}`);
+    await expect(page.locator("[data-person-summary]")).toBeHidden();
+    await page.getByLabel("Weitere Personenaktionen", { exact: true }).click();
+    await page.getByRole("button", { name: "Stammdaten", exact: true }).click();
+    const details = page.locator("[data-person-details-dialog]");
+    await details.locator('[name="birth_date"]').fill("1980-05-06");
+    await details.getByRole("button", { name: "Stammdaten speichern" }).click();
+    await expect(page.locator("[data-person-summary]")).toHaveText("Geboren: 06.05.1980");
+    await page.getByLabel("Weitere Personenaktionen", { exact: true }).click();
+    await page.getByRole("link", { name: "Ordner-Pfade", exact: true }).click();
+    const folders = page.locator("[data-person-folder]");
+    await expect(folders).toHaveCount(3);
+    await expect(folders.nth(0).locator("h2")).toHaveText("Fotos");
+    await expect(folders.nth(1).locator("h2")).toHaveText("Fotos / 02.01.2024 · Family Trip");
+    await expect(folders.nth(2).locator("h2")).toHaveText("Fotos / 02.01.2024 · Family Trip / Nested Folder");
+    await expect(folders.nth(1).locator("img")).toHaveCount(8);
+    for (const width of [320, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+    }
+    await folders.nth(1).getByRole("combobox").fill("Grace");
+    await folders.nth(1).getByRole("button", { name: "Alle neu zuweisen", exact: true }).click();
+    await expect(folders).toHaveCount(2);
+    let people = (await (await context.request.get(baseURL + "/photos/people?format=json")).json()).people;
+    const grace = people.find(p => p.name === "Grace");
+    expect(grace.count).toBe(9);
+    expect(people.find(p => p.id === person.id).count).toBe(2);
+    await page.goto(baseURL + `/photos/people/${grace.id}/folder`);
+    await folders.getByRole("combobox").fill("Ada");
+    await folders.getByRole("option", { name: /^Ada \(#/ }).click();
+    await folders.getByRole("button", { name: "Alle neu zuweisen", exact: true }).click();
+    await page.goto(baseURL + `/photos/people/${person.id}/folder`);
+    await expect(folders).toHaveCount(3);
+    await folders.nth(1).getByRole("button", { name: "Pfad ausschließen und Gesichter auf unbenannt setzen", exact: true }).click();
+    await expect(folders.nth(1).getByRole("button", { name: "Pfad wieder freigeben" })).toBeVisible();
+    await expect(folders.nth(1).locator("img")).toHaveCount(0);
+    await page.reload();
+    await folders.nth(1).getByRole("button", { name: "Pfad wieder freigeben" }).click();
+    await expect(folders).toHaveCount(2);
+    await folders.nth(1).getByRole("button", { name: "Alle auf unbenannt setzen", exact: true }).click();
+    await expect(folders).toHaveCount(1);
+    await folders.getByRole("button", { name: "Alle ignorieren", exact: true }).click();
+    await expect(page).toHaveURL(/\/photos\/people\?/);
+    expect(errors).toEqual([]);
+  } finally { await context.close(); }
+});

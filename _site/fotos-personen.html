@@ -794,10 +794,10 @@
       <ul class="md-nav__list">
 
           <li class="md-nav__item">
-  <a href="#gesichtsketten-gemeinsam-prufen" class="md-nav__link">
+  <a href="#stammdaten-und-ordner-einer-person" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Gesichtsketten gemeinsam prüfen
+        Stammdaten und Ordner einer Person
       </span>
     </span>
   </a>
@@ -1350,10 +1350,10 @@
       <ul class="md-nav__list">
 
           <li class="md-nav__item">
-  <a href="#gesichtsketten-gemeinsam-prufen" class="md-nav__link">
+  <a href="#stammdaten-und-ordner-einer-person" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Gesichtsketten gemeinsam prüfen
+        Stammdaten und Ordner einer Person
       </span>
     </span>
   </a>
@@ -1803,32 +1803,29 @@ In Android heißt die entsprechende Fortsetzung <strong>Weiter</strong>.</p>
 Vektorsuche. Wurden Gruppen inzwischen verändert, ist eine erneute Prüfung nötig.
 Einstellungen und Hintergrundabgleich beschreibt die
 <a href="fotos-technik.html#zuordnungen-verbessern">Betriebsreferenz</a>.</p>
-<h3 id="gesichtsketten-gemeinsam-prufen">Gesichtsketten gemeinsam prüfen<a class="headerlink" href="#gesichtsketten-gemeinsam-prufen" title="Permanent link">&para;</a></h3>
-<p><strong>Ähnliche Gesichter → Gesichtsketten prüfen</strong> sucht verbundene <strong>unbenannte</strong>
-Gruppen erst beim Öffnen oder Fortsetzen dieser Ansicht. Ein laufender
-Erkennungsdienst ist nicht nötig.</p>
+<h3 id="stammdaten-und-ordner-einer-person">Stammdaten und Ordner einer Person<a class="headerlink" href="#stammdaten-und-ordner-einer-person" title="Permanent link">&para;</a></h3>
+<p>Unter der Überschrift stehen nur hinterlegte Stammdaten: Geburts- und Sterbedatum,
+Eltern, Geschwister und Ehen ohne Scheidungsdatum. Die vollständigen Stammdaten
+bleiben im Dialog bearbeitbar.</p>
+<p><strong>Ordner-Pfade</strong> öffnet <code>/photos/people/{id}/folder</code>. Jeder exakte Ordner erscheint
+einmal mit seinem vollständigen formatierten Galeriepfad und darunter höchstens
+acht Gesichtsvorschauen. Weitere Ordner folgen auf der nächsten Seite (40 pro Seite).</p>
+<p>Mit <strong>Fotos bearbeiten</strong> stehen folgende Aktionen für alle aktiven Gesichter der
+Person im jeweiligen Ordner bereit, auch für Gesichter außerhalb der Vorschau:</p>
 <ul>
-<li><strong>Maximale Sprünge</strong>: 1 bis 5, Standard 2. A → F → Y sind zwei Sprünge;
-  Verzweigungen gehören ebenfalls zur Kette.</li>
-<li><strong>Mindestähnlichkeit</strong>: 0 bis 1 in Schritten von 0,01. Vorgabe ist die globale
-  Schwelle für manuelle Vorschläge, normalerweise 0,45.</li>
-<li><strong>Durchlauf neu starten</strong> übernimmt neue Werte und berücksichtigt übersprungene
-  Gruppen erneut. Die globale Einstellung wird dadurch nicht verändert.</li>
+<li><strong>Alle neu zuweisen</strong>: vorhandene Person wählen oder neuen Namen eingeben.</li>
+<li><strong>Alle auf unbenannt setzen</strong>: als neue unbenannte Gruppe abtrennen.</li>
+<li><strong>Alle ignorieren</strong>: aus den aktiven Ansichten und dem Abgleich entfernen.</li>
+<li><strong>Pfad ausschließen und Gesichter auf unbenannt setzen</strong>: abtrennen und weitere
+  Zuordnungen dieses exakten Ordners zur bisherigen Person dauerhaft sperren.</li>
+<li><strong>Pfad wieder freigeben</strong>: Sperre aufheben; keine automatische Rückzuweisung.</li>
 </ul>
-<p>Zunächst sind <strong>alle aktiven Gesichter der gesamten Kette über alle Seiten</strong>
-ausgewählt. Pro Seite werden 60 gezeigt. Unpassende Gesichter abwählen;
-<strong>Seite auswählen/abwählen</strong> betrifft nur die sichtbare Seite. Die Auswahlzahl
-zählt auch die anderen Seiten mit.</p>
-<p><strong>Auswahl zuordnen</strong> öffnet den bekannten Dialog für einen vorhandenen oder neuen
-Namen. Ein leerer Name wird nicht gespeichert. Die ausgewählten Gesichter werden
-gemeinsam und manuell bestätigt zugeordnet; nicht ausgewählte und bereits
-benannte Gesichter bleiben unverändert. Personen-Tags und Familienbeziehungen
-der Ausgangsgruppen werden dabei nicht zusammengeführt.</p>
-<p>Nach dem Speichern folgt die nächste Kette. <strong>Kette überspringen</strong> ändert keine
-Daten. <strong>Suche anhalten</strong> bricht die Suche ab. Bei mehr als <strong>1.000 verbundenen
-Gruppen</strong> eine höhere Mindestähnlichkeit oder weniger Sprünge wählen; die Kette
-wird nicht still gekürzt. Eine verlorene Speicherantwort lässt sich mit
-<strong>Speicherung prüfen</strong> klären, auch nach Neuladen im selben Browser-Tab.</p>
+<p>Unterordner sind eigenständige Pfade. Ausgeschlossene Pfade bleiben in dieser
+Ansicht sichtbar. Sammelaktionen sind atomar; bei zwischenzeitlichen Änderungen
+muss die Ansicht neu geladen werden. Manuelle und automatische Zuordnungen sowie
+Neuanalysen beachten die Sperren. Personenzusammenführungen übernehmen Sperren;
+Konflikte mit vorhandenen Gesichtern verhindern die gesamte Zusammenführung.</p>
+<p>Die frühere Gesichtskettenfunktion und ihre HTTP-Endpunkte entfallen ab 1.0.0.</p>
 <h2 id="gesichter-geanderter-fotos-prufen">Gesichter geänderter Fotos prüfen<a class="headerlink" href="#gesichter-geanderter-fotos-prufen" title="Permanent link">&para;</a></h2>
 <p>Wenn sich der Inhalt eines Fotos am bisherigen Pfad ändert, zeigt BearStack
 <strong>Foto geändert / Prüfen</strong>. Die letzten bestätigten Gesichtsdaten und Vorschauen
@@ -1898,7 +1895,7 @@ unter <a href="fotos-technik.html#daten-sichern-und-gesichtsdaten-loschen">Einri
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.69.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.0.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
 

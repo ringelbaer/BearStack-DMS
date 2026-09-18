@@ -12,10 +12,11 @@ type PageData struct {
 	PhotoIdentities         photos.PhotoIdentityStatus
 	FaceSourceReview        photos.FaceSourceReview
 	FaceSourceReviews       []photos.RecognizedFace
-	FaceChainSimilarity     float64
 	FaceMergeSuggestions    []photos.FaceMergeSuggestion
 	GroupPhotos             photos.GroupPhotosPage
 	People                  photos.PeoplePage
+	PersonSummary           string
+	PersonFolders           photos.PersonFolderPage
 	FaceSettings            FaceSettingsView
 	AppName                 string
 	AppVersion              string

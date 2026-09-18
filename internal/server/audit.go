@@ -468,8 +468,8 @@ func auditActionTarget(r *http.Request) (string, string) {
 		return "Zusammenführungsvorschlag " + r.PathValue("action"), idAuditTarget("Vorschlag", r.PathValue("id"))
 	case "POST /photos/people/groups/ignore":
 		return "Unbenannte Gesichter im Gruppenbild ignorieren", ""
-	case "POST /photos/people/chains/assign":
-		return "Ausgewählte Gesichter einer Ähnlichkeitskette zuordnen", ""
+	case "POST /photos/people/{id}/folder":
+		return "Personenordner bearbeiten", idAuditTarget("Person", r.PathValue("id"))
 	case "POST /settings/photos/identities/{id}":
 		return "Fotoaufbewahrung und Ordnerzuordnung ändern", idAuditTarget("Eintrag", r.PathValue("id"))
 	case "POST /photos/faces/{id}/review":

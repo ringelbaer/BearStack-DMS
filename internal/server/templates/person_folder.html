@@ -1,0 +1,21 @@
+{{define "person_folder.html"}}
+{{template "head" .}}
+<section class="page-head"><div><h1>Ordner: {{if .PersonFolders.Name}}{{.PersonFolders.Name}}{{else}}Unbenannt{{end}}</h1><p>Jeder Pfad erscheint einmal. Aktionen gelten für alle aktiven Gesichter dieser Person im exakten Ordner, ohne Unterordner.</p></div>{{if .PersonFolders.HasFaces}}<a class="secondary-button" href="/photos/people/{{.PersonFolders.PersonID}}">← Person</a>{{end}}<a class="secondary-button" href="/photos/people">Alle Personen</a></section>
+{{range .PersonFolders.Folders}}
+<section class="person-folder" data-person-folder>
+<h2>{{.DisplayPath}}</h2>
+<div class="person-folder-faces">{{range .FaceIDs}}<img loading="lazy" width="96" height="96" src="/photos/faces/{{.}}/thumbnail" alt="Gesicht">{{end}}</div>
+<p>{{if .Excluded}}Für diese Person ausgeschlossen. Neue Zuordnungen sind gesperrt.{{else}}{{.Count}} Gesichter{{end}}</p>
+{{if $.Auth.CanPhotosEdit}}
+<form method="post" action="/photos/people/{{$.PersonFolders.PersonID}}/folder" data-person-folder-form>
+<input type="hidden" name="directory" value="{{.Directory}}"><input type="hidden" name="revision" value="{{$.PersonFolders.Revision}}">
+{{if .Excluded}}<button name="action" value="include">Pfad wieder freigeben</button>{{else}}
+<div class="person-picker-field" data-person-picker><label>Zielperson <input name="name" maxlength="200" role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" data-person-search placeholder="Person suchen oder neuen Namen eingeben"></label><input type="hidden" name="target" data-person-target><div class="person-picker-popup" data-person-popup hidden><div role="listbox" data-person-options></div><p role="status" data-person-feedback></p></div></div>
+<div class="person-folder-actions"><button name="action" value="move">Alle neu zuweisen</button><button name="action" value="unnamed">Alle auf unbenannt setzen</button><button name="action" value="ignore">Alle ignorieren</button><button name="action" value="exclude">Pfad ausschließen und Gesichter auf unbenannt setzen</button></div>
+{{end}}</form>{{end}}
+</section>
+{{else}}<p>Keine Ordner vorhanden.</p>{{end}}
+<nav class="pagination" aria-label="Ordnerseiten">{{if gt .PersonFolders.Page 1}}<a class="secondary-button" href="?page={{prevPage .PersonFolders.Page}}">Zurück</a>{{end}}<span>Seite {{.PersonFolders.Page}}</span>{{if .PersonFolders.HasNext}}<a class="secondary-button" href="?page={{nextPage .PersonFolders.Page}}">Weiter</a>{{end}}</nav>
+{{if .Auth.CanPhotosEdit}}<script src="{{assetURL "/static/app-person-picker.js"}}" defer></script><script src="{{assetURL "/static/app-person-folder.js"}}" defer></script>{{end}}
+{{template "foot" .}}
+{{end}}

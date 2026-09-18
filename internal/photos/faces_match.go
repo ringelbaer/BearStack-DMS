@@ -265,6 +265,13 @@ func (l *Library) CommitFaceResult(ctx context.Context, j FaceJob, result facere
 	}
 	retainedIDs := map[int64]bool{}
 	used := map[int64]bool{}
+	blocked := map[int64]bool{}
+	if err := folderExcludedPeople(ctx, tx, media.Directory, blocked); err != nil {
+		return err
+	}
+	for person := range blocked {
+		used[person] = true
+	}
 	var named map[int64]bool
 	matchPerson := func(vector []float32) (int64, error) {
 		// Share one ID lookup across all detections in this photo. XMP names
@@ -375,6 +382,11 @@ detections:
 					}
 				}
 			}
+		}
+		if blocked[person] {
+			person = 0
+			manual = false
+			favorite = false
 		}
 		if person == 0 && !ignored && !xmpConflict {
 			person, err = matchPerson(d.Embedding)

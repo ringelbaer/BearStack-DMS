@@ -28,8 +28,10 @@ func (l *Library) reconcileFaceGroup(ctx context.Context, tx *sql.Tx, source, fa
 	rows, err := tx.QueryContext(ctx, `SELECT b.person_id FROM
  (SELECT DISTINCT path FROM photo_faces WHERE person_id=? AND ignored=0) a
  JOIN photo_faces b ON b.path=a.path AND b.ignored=0
+ UNION SELECT e.person_id FROM person_folder_exclusions e JOIN photo_faces f ON f.directory=e.directory WHERE f.person_id=?
+ UNION SELECT f.person_id FROM photo_faces f JOIN person_folder_exclusions e ON e.directory=f.directory WHERE e.person_id=?
  UNION SELECT target_id FROM photo_face_merge_suggestions WHERE source_id=? AND rejected=1
- UNION SELECT source_id FROM photo_face_merge_suggestions WHERE target_id=? AND rejected=1`, source, source, source)
+ UNION SELECT source_id FROM photo_face_merge_suggestions WHERE target_id=? AND rejected=1`, source, source, source, source, source)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -156,7 +158,7 @@ func mergeAutomaticFaceGroupTx(ctx context.Context, tx *sql.Tx, source, target i
 		return 0, err
 	}
 	if err := mergePersonFamilyTx(ctx, tx, source, target); err != nil {
-		if !errors.Is(err, ErrParentMerge) && !errors.Is(err, ErrPersonDetailsMerge) {
+		if !errors.Is(err, ErrParentMerge) && !errors.Is(err, ErrPersonDetailsMerge) && !IsPersonFolderExcluded(err) {
 			return 0, err
 		}
 		_, rollbackErr := tx.ExecContext(ctx, `ROLLBACK TO automatic_face_group; RELEASE automatic_face_group`)

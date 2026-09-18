@@ -138,7 +138,7 @@
       var response = await fetch("/photos/people/" + encodeURIComponent(personID) + "/details", { method: "PUT", credentials: "same-origin", redirect: "error", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(input), signal: controller.signal });
       var result = await response.json();
       if (!response.ok || result.ok !== true) throw new Error(result.error || "Stammdaten konnten nicht gespeichert werden.");
-      root.querySelector("[data-detail-status]").textContent = "Stammdaten gespeichert."; dialog.close();
+      window.location.reload();
     } catch (error) {
       status.textContent = error.name === "AbortError" || error instanceof TypeError ? "Speicherstatus unklar. Bitte die Stammdaten neu laden und prüfen." : error.message;
       reload.hidden = false;

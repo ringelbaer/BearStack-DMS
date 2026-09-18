@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.0.0
+
+- BREAKING: Gesichtsketten einschließlich WebUI, JavaScript, Suche, Sammelzuordnung und dokumentierter HTTP-Endpunkte entfernt. Andere Personenansichten bleiben verfügbar. Erster inkompatibler HTTP-Vertragswechsel in 0.x, daher 1.0.0.
+- Personenansicht: Stammdatenzeile direkt unter der Überschrift, ausschließlich hinterlegte Werte und ungeschiedene Ehen.
+- Neue Ordneransicht `/photos/people/{id}/folder`: eindeutige vollständige Galeriepfade, bis zu acht Gesichtsvorschauen pro Ordner, 40 Ordner pro Seite und atomare Sammelaktionen für alle aktiven Gesichter im exakten Ordner.
+- Personenbezogene Pfadsperren verhindern manuelle und automatische Neuzuordnungen. Ausschließen setzt bestehende aktive Gesichter unbenannt; Sperren können wieder aufgehoben werden und werden bei konfliktfreien Personenzusammenführungen übernommen.
+- Automatische Migration auf Foto-Schema 38 mit indizierten Ordnersperren und Datenbank-Schutz gegen gesperrte Zuordnungen.
+- Validierung: vollständige Go-Suite, gezielte Race-Tests, JavaScript-Syntax- und DOM-Prüfungen, Browserregressionen für Personenansicht und Ordneraktionen sowie Website-Build erfolgreich. Regressionen prüfen unter anderem mehr als 500 Gesichter, acht Vorschauen, formatierte Pfade, Rechte, CSRF, veraltete Revisionen, atomaren Rollback, Neuanalyse, Hintergrundabgleich, Migration und Neustart.
+
 ### BearStack 0.69.1
 
 - PATCH: Web-Diashow lädt die nächste Galerie-Seite automatisch nach und endet erst am Ende der Medienauswahl. Filter, Sortierung und Vollbild bleiben erhalten; der Speicherbedarf bleibt auf eine Medienseite begrenzt.

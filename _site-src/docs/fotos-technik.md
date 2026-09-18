@@ -651,16 +651,11 @@ passender Generator, steht das Original als Fallback bereit. Schreib- und
 Nachladeabrufe beim Ignorieren enden nach spätestens 20 Sekunden; unbestätigte
 Antworten führen zu einer Leseprüfung statt automatischer Wiederholung.
 
-Gesichtsketten werden in kleinen Vektorblöcken ohne bibliotheksweiten Graphen
-im Speicher gesucht. Pro Bibliothek läuft eine Suche mit höchstens 30 Sekunden.
-Benannte Gruppen sind weder Quellen noch Zwischenstationen; ignorierte,
-geschützte, gezeichnete oder ungeeignete Gesichter erzeugen keine Verbindungen.
-Geeignete Gesichter außerhalb des Referenzlimits können Verbindungen erzeugen,
-der Mindestabstand wird hier nicht angewendet. Abgelehnte Paare oder Gruppen mit
-gemeinsamem aktivem Foto bilden keine direkte Verbindung, können aber über
-andere Gruppen in derselben Prüfauswahl landen.
-
-Eine Kette darf höchstens 1.000 Gruppen umfassen; größere Ergebnisse werden
-abgewiesen, nicht gekürzt. Pro Auswahl sind höchstens 10.000 Abwahlen möglich,
-pro Durchlauf höchstens 10.000 ausgelassene Gruppen. Für die insgesamt zugeordneten
-Gesichter gilt nicht das übliche 500er-Limit einzelner Stapelaktionen.
+Die Personenordneransicht liest 40 Pfade pro Seite und höchstens acht Vorschau-IDs
+je Pfad über einen Index auf Person, Ordner und Status. Originalbilder werden für
+Vorschauen nicht dekodiert. Sammelaktionen prüfen die Revision und alle betroffenen
+Quelldateien und schreiben in einer Transaktion, unabhängig von der Vorschauzahl.
+Foto-Schema 38 ergänzt exakte personenbezogene Ordnersperren. Datenbank-Trigger
+verhindern verbotene Neuzuordnungen; Erkennung und Hintergrundabgleich filtern
+solche Ziele bereits vor der Kandidatenauswahl. Sperren bleiben beim Zurücksetzen
+von Gesichtsergebnissen erhalten und werden bei Personenzusammenführungen übernommen.

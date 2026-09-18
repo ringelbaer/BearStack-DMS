@@ -52,7 +52,6 @@ func New(root, cacheDir, dbPath string, pageSize int) (*Library, error) {
 		pageSize = defaultPageSize
 	}
 	library := &Library{
-		faceChainGate:  make(chan struct{}, 1),
 		faceImageGate:  make(chan struct{}, 1),
 		faceThumbnails: faceThumbnailCache{dir: filepath.Join(absCache, "faces", "v1"), root: absRoot},
 		root:           absRoot,

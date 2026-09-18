@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.69.1** · Android-App: **0.19.0**.
+Aktuelle Version: **1.0.0** · Android-App: **0.19.0**.
+
+Ab **1.0.0** zeigt die Personenansicht hinterlegte Stammdaten unter der Überschrift; geschiedene Ehen bleiben auf den Stammdatendialog beschränkt. **Ordner-Pfade** (`/photos/people/{id}/folder`) listet jeden vollständigen formatierten Ordnerpfad einmal mit bis zu acht Gesichtern. Alle aktiven Gesichter der Person im jeweiligen exakten Ordner lassen sich gemeinsam neu zuweisen, unbenannt setzen oder ignorieren. **Pfad ausschließen** setzt sie unbenannt und sperrt weitere Zuordnungen zur bisherigen Person; **Pfad wieder freigeben** hebt die Sperre auf. Unterordner werden separat behandelt. Die Gesichtskettenfunktion und ihre dokumentierten HTTP-Endpunkte wurden entfernt; dafür gilt gemäß SemVer der Wechsel von 0.x auf 1.0.0. Foto-Schema 38 wird automatisch migriert.
 
 **Android 0.19.0 / BearStack 0.69.0:** Im Fotoframe unter **Zahnrad → Zufällige Reihenfolge** die Wiedergabereihenfolge umstellen. Die Auswahl wird gespeichert und funktioniert für Server- und Gerätefotos. Serverfotos nutzen die stabile Zufallssortierung des Index; lokale Fotos eine gemischte Liste ihrer IDs. Die Galerie behält beim Schließen ihre ursprüngliche Ansicht.
 
@@ -48,8 +50,6 @@ Ab **0.63.0** bietet das Dreipunkt-Menü eines Fotoordners ab Ebene 2 **Alle ign
 
 Android **0.15.2** vereinheitlicht das Dreipunkt-Menü unter **Fotos**, **Ordner**, **Suchen** und **Dieses Gerät**. **Verbindung wechseln** steht unter **Einstellungen**, lokale Fotos sind über **Ordner → Dieses Gerät** erreichbar. Lokale Ordner zeigen zuletzt in den Medienindex aufgenommene Fotos zuerst, passend zu ihren Kachelvorschauen und auch ohne Aufnahmedatum.
 
-Ab **0.62.0** lässt sich unter **Gesichtsketten prüfen** die **Mindestähnlichkeit** von 0 bis 1 für den Durchlauf einstellen. Höhere Werte verlangen ähnlichere Gesichter. **Durchlauf neu starten** übernimmt den Wert und berücksichtigt übersprungene Gruppen erneut. Vorgabe ist die globale Schwelle für manuelle Vorschläge; diese bleibt unverändert.
-
 Die Personenansicht zeigt Personen-Tags direkt neben dem Namen. **Stammdaten** steht im Mehr-Menü im selben Stil wie **Anzeige** und **Hilfe**.
 
 Unter **Ähnliche Gesichter** zeigt ab **0.61.2** jedes Vergleichsbild seinen Ordnernamen. Ein Klick aufs Bild öffnet das vollständige Foto in der Lightbox; nur der Personenname öffnet die Personengruppe.
@@ -65,8 +65,6 @@ Ab **0.60.0** öffnet **⋯ → Stammdaten** in der Detailansicht einer benannte
 Ab **0.59.0** ergänzt **Personen-Tags ergänzen** unter `/photos/people` gemeinsame Tags bei den markierten Personen. Der bekannte Tag-Dialog bietet vorhandene und neue Tags; bisherige Personen-Tags bleiben erhalten, Foto-Tags bleiben unverändert. Die Auswahl wird atomar gespeichert und benötigt **Fotos bearbeiten**.
 
 Android **0.15.0** bündelt die Sortierung in einem eigenen **Sortieren**-Menü neben den weiteren Optionen. **Fotos** bietet nur Datum auf-/absteigend; normale Ordner zusätzlich Name. Personenlisten bieten Name und ab BearStack **0.58.0** auch **Anzahl Bilder** auf-/absteigend. Die Bildanzahl berücksichtigt unterschiedliche sichtbare Fotos und bei **Personen im Ordner** nur den aktuellen Ordner samt Unterordnern. Der Server sortiert vor der Seitenaufteilung; ältere Server bleiben mit Namenssortierung nutzbar.
-
-Ab **0.57.0** öffnet **Ähnliche Gesichter → Gesichtsketten prüfen** die gemeinsame Prüfung verbundener unbenannter Gruppen. Die Suche startet erst beim Öffnen dieser Ansicht. Ein bis fünf Sprünge sind einstellbar (Standard zwei); A → F → Y entspricht zwei Sprüngen. Alle aktiven Gesichter erscheinen mit Ordnernamen und sind über alle Seiten hinweg vorausgewählt. Unpassende Gesichter abwählen und die Auswahl im gewohnten Personendialog einem vorhandenen oder neuen Namen zuordnen. Danach folgt die nächste Kette; **Kette überspringen** lässt sie für diesen Durchlauf aus. Benannte Gruppen werden nicht einbezogen, ihre bestehenden Gesichter behalten ihre Zuordnung.
 
 Unter **Fotos → Personen** und in Android unter **Ordner → Personen** lassen sich Personen bequem ansehen: **Alle** oder einen zugewiesenen Foto-Tag öffnen, danach die Person. Ab **0.57.1** zeigt **Alle** (`/photos?path=.people%2Fall`) ausschließlich benannte Personen; Anzahl, Seitenaufteilung und Vorschauen berücksichtigen denselben Filter. Ihre Fotos erscheinen in der normalen, nach Datum gruppierten und sortierbaren Galerie. Mit der Berechtigung **Fotos bearbeiten** führt **Person bearbeiten** aus der Personengalerie direkt zur Bearbeitungsansicht dieser Person. Ab **0.57.3** berücksichtigt auch die Hauptkachel **Personen** bei Anzahl und Vorschauen ausschließlich benannte aktive Personen. Die Personen- und Tag-Kacheln zeigen doppelt so viele Gesichtsvorschauen wie normale Ordner, zuerst Personen mit den meisten unterschiedlichen sichtbaren Bildern; Stern-Favoriten bestimmen das Porträt. **Personen verwalten** bleibt unter `/photos/people`: Die Suche lässt sich mit dem zum Suchfeld gleich hohen **×-Button** zurücksetzen, und in der Personendetailansicht lassen sich **Personen-Tags** vergeben. Die Tags gelten für die Gruppe, unabhängig von den Tags ihrer Bilder. Beim Zusammenführen bleiben alle Tags erhalten. Foto-Schema 32 migriert die Zuordnungen automatisch.
 
