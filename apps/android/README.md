@@ -1,6 +1,6 @@
 # BearStack Fotos für Android
 
-Native App für Android 8.0 oder neuer, App-Version **0.18.0** (`versionCode 38`). Die Servergalerie benötigt
+Native App für Android 8.0 oder neuer, App-Version **0.18.1** (`versionCode 39`). Die Servergalerie benötigt
 **BearStack 0.50.0**, ein aktiviertes Fotomodul und `photos.read`. Personenverwaltung
 benötigt zusätzlich `photos.edit`; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.
@@ -30,6 +30,8 @@ Die Einzelmarkierung auf Karten ist nur noch 16 dp groß; anklickbare Marker beh
 eine 48-dp-Berührungsfläche.
 
 ## Einstellbarer Thumbnail-Cache
+
+Ab **0.18.1** prüft das Vorladen bereits gespeicherte Vorschauen anhand ihrer Dateimetadaten, ohne Bilddateien erneut vollständig zu lesen oder ihren Nutzungszeitpunkt zu verändern. Eine unveränderte Schutzliste wird nicht erneut geschrieben. Fehlende und gekürzte Dateien werden nachgeladen; beim Anzeigen erkannte beschädigte Bilder werden weiterhin verworfen.
 
 Ab App **0.16.0** lässt sich unter **… → Einstellungen → Thumbnail-Cache** das
 Speicherbudget von **64 bis 2048 MiB** in 64-MiB-Schritten einstellen; Standard sind

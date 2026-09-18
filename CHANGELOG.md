@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.68.1 / Android 0.18.1 – in Entwicklung
+
+- Fotosuche: automatische Gesichtsdaten im nachgelagerten Filter nur bei Personenbedingungen laden.
+- Native Foto-API: Inhaltsrevision, Identität und Prüfstatus gemeinsam für Medien und Ordnervorschauen in deduplizierten 200er-Abfragen ergänzen.
+- Android: vorhandene Thumbnails beim Vorladen nur anhand von Dateimetadaten prüfen; unveränderte Schutzlisten nicht erneut schreiben. Anzeige-LRU, Cache-Reparatur und Download-Koaleszierung bleiben erhalten.
+- Validierung: vollständige Go-Tests für Fotos, Server und API-Verträge; JVM-Tests, Android-Lint, Debug-/Test-Build, sechs Cache-Emulatortests und Website-Build erfolgreich. Regressionen prüfen Abfragebudgets, doppelte Pfade, Prüfstatus, unveränderte Cache-Dateien und Reparatur.
+- PATCH für Performance-Optimierungen; Android `versionCode 39`. Keine API- oder Datenmigration. README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 0.68.0 / Android 0.18.0 – in Entwicklung
 
 - Android: „Lokale Fotos öffnen“ aus dem Verwaltungsmenü entfernt; Ordner → Dieses Gerät und der lokale Einstieg beim Anmelden bleiben verfügbar. „Personen verwalten“ und „Personenliste“ eindeutig getrennt; Personenliste und Personendetails bündeln Zurück, Hilfe und Verbindungswechsel im …-Menü.

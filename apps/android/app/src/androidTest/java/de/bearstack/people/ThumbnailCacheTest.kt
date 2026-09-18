@@ -119,8 +119,10 @@ class ThumbnailCacheTest {
     @Test fun warmerPinsAllRequiredImagesAndFailedMetadataRetainsPreviousManifest() = runBlocking {
         scenario { server, client, directory, scope ->
             var fail = false
+            val metadataCalls = java.util.concurrent.atomic.AtomicInteger()
             val service = object : PhotosService by unused {
                 override suspend fun browse(query: PhotoQuery, page: Int, section: String): PhotoPage {
+                    metadataCalls.incrementAndGet()
                     if (fail) throw IOException("offline")
                     val photo = Photo("photo", "photo", "image", "image/png", "1", "2026-09-17", null, 100, 64, 32)
                     return PhotoPage("", "", 1, 1, false, 1, false, false,
@@ -137,11 +139,25 @@ class ThumbnailCacheTest {
                 withTimeout(5000) { while (cache.state.value.usage.pinnedEntries != 2 || cache.state.value.syncing) delay(10) }
                 assertEquals(2, cache.state.value.usage.requiredEntries)
                 assertTrue(cache.state.value.usage.bytes > 1)
+                // A second warm pass must neither download nor touch image/pin files.
+                val files = directory.listFiles()!!.filter { it.isFile }
+                files.forEach { assertTrue(it.setLastModified(1000)) }
+                cache.refresh(force = true)
+                withTimeout(5000) { while (metadataCalls.get() < 4 || cache.state.value.syncing) delay(10) }
+                assertEquals(2, server.requestCount)
+                files.forEach { assertEquals(1000L, it.lastModified()) }
+                val missing = files.first { it.name != "pins" }
+                assertTrue(missing.delete())
+                server.enqueue(MockResponse().setHeader("Content-Type", "image/png").setBody(Buffer().write(image())))
+                cache.refresh(force = true)
+                withTimeout(5000) { while (metadataCalls.get() < 6 || cache.state.value.syncing) delay(10) }
+                assertTrue(missing.isFile)
+                assertEquals(3, server.requestCount)
                 fail = true
                 cache.refresh(force = true)
                 withTimeout(5000) { while (!cache.state.value.failed || cache.state.value.syncing) delay(10) }
                 assertEquals(2, disk.usage().pinnedEntries)
-                assertEquals(2, server.requestCount)
+                assertEquals(3, server.requestCount)
             } finally { cache.close() }
         }
     }

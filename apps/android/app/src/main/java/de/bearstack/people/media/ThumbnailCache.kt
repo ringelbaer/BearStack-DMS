@@ -98,7 +98,7 @@ internal class ThumbnailCache(private val disk: ThumbnailDiskCache, private val 
                 // Serial warming leaves two slots for foreground image requests.
                 for (thumbnail in required.values) {
                     ensureActive()
-                    try { load(thumbnail) }
+                    try { if (!disk.contains(thumbnail.key)) load(thumbnail) }
                     catch (e: CancellationException) { throw e }
                     catch (_: Exception) { publish(failed = true) }
                 }

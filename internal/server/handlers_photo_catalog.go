@@ -193,15 +193,14 @@ func (s *Server) handlePhotoCatalog(w http.ResponseWriter, r *http.Request) {
 	if !photos.IsPeopleFolder(listing.Path) && !opts.Recursive && opts.Query == "" {
 		out.PeoplePath = photos.DirectoryPeoplePath(listing.Path)
 	}
-	if err = s.photos.AddContentStates(r.Context(), listing.Media); err != nil {
+	groups := make([][]photos.Media, 1, 1+len(listing.Folders))
+	groups[0] = listing.Media
+	for i := range listing.Folders {
+		groups = append(groups, listing.Folders[i].Previews)
+	}
+	if err = s.photos.AddContentStates(r.Context(), groups...); err != nil {
 		s.catalogError(w, err)
 		return
-	}
-	for i := range listing.Folders {
-		if err = s.photos.AddContentStates(r.Context(), listing.Folders[i].Previews); err != nil {
-			s.catalogError(w, err)
-			return
-		}
 	}
 	for _, item := range listing.Media {
 		out.Media = append(out.Media, catalogMedia(item))

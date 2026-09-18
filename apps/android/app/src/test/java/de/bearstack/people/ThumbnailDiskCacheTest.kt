@@ -63,6 +63,29 @@ class ThumbnailDiskCacheTest {
         assertEquals(0, cache.usage().pinnedEntries)
     }
 
+    @Test fun warmChecksPreserveFilesAndRecencyButRejectMissingAndTruncatedEntries() {
+        val cache = ThumbnailDiskCache(temp.root, 32)
+        val keys = setOf(key("a"), key("b"))
+        cache.protect(keys)
+        keys.forEach { cache.write(it, ByteArray(8)) }
+        val manifest = File(temp.root, "pins")
+        manifest.setLastModified(1000)
+        keys.forEach { File(temp.root, it).setLastModified(1000) }
+        repeat(3) {
+            cache.protect(keys)
+            keys.forEach { assertTrue(cache.contains(it)) }
+        }
+        assertEquals(1000L, manifest.lastModified())
+        keys.forEach { assertEquals(1000L, File(temp.root, it).lastModified()) }
+        File(temp.root, key("a")).delete()
+        File(temp.root, key("b")).writeBytes(ByteArray(2))
+        keys.forEach { assertFalse(cache.contains(it)) }
+        assertEquals(0L, cache.usage().bytes)
+        assertEquals(0, cache.usage().pinnedEntries)
+        cache.write(key("a"), ByteArray(8))
+        assertTrue(cache.contains(key("a")))
+    }
+
     @Test fun oversizedDiscretionaryEntryDoesNotFlushUsefulEntries() {
         val cache = ThumbnailDiskCache(temp.root, 8)
         cache.write(key("small"), ByteArray(4)); cache.write(key("large"), ByteArray(9))

@@ -530,7 +530,9 @@ func (l *Library) automaticFacesBatch(ctx context.Context, paths []string, media
 			}
 			query = `SELECT e.id,e.path,e.revision,EXISTS(SELECT 1 FROM photo_faces r WHERE r.entity_id=e.id AND r.needs_review=1),` + strings.Join(cols, ",") + ` FROM photo_entities e JOIN media_index m ON m.path=e.path AND m.type=e.kind LEFT JOIN photo_faces f ON f.path=m.path AND f.ignored=0 AND m.admin_only=0 LEFT JOIN photo_people p ON p.id=f.person_id WHERE e.missing_since=0 AND e.path IN (` + strings.TrimRight(strings.Repeat("?,", len(args)), ",") + `) ORDER BY f.id`
 		}
+		finish := StartListTraceStep(ctx, "photos.faces.batch", ListTraceInt("paths", len(args)))
 		rows, err := l.index.db.QueryContext(ctx, query, args...)
+		finish()
 		if err != nil {
 			return nil, err
 		}

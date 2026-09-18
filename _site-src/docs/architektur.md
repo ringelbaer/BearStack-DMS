@@ -211,3 +211,7 @@ Das Webmodul `app-person-dialog.js` kapselt Personensuche, Formularübermittlung
 Fokusführung. Die aufrufende Ansicht stellt ihren Ladezustand und eine asynchrone
 Aktualisierungsfunktion bereit. Dadurch hängt der Dialog weder von der Auswahlleiste
 der Personenübersicht noch von der Navigation durch Gruppenbilder ab.
+
+## Fotoabfragen ab 0.68.1
+
+Der nachgelagerte Foto-Suchfilter lädt automatische Gesichtsdaten nur bei Personenbedingungen. Die native Katalogantwort ergänzt Identität, Inhaltsrevision und Prüfstatus gemeinsam für Medien und Ordnervorschauen in Abfragen mit höchstens 200 unterschiedlichen Pfaden. Mehrfach vorkommende Bilder erhalten denselben Zustand; Berechtigungen und Antwortfelder bleiben unverändert.

@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **0.68.0** · Android-App: **0.18.0**.
+Aktuelle Version: **0.68.1** · Android-App: **0.18.1**.
+
+**0.68.1 / Android 0.18.1** reduziert unnötige Gesichtsabfragen bei der Fotosuche, bündelt Zusatzdaten für Katalogbilder und Ordnervorschauen und prüft bereits gespeicherte Thumbnails beim Vorladen ohne erneutes Lesen der Bilddateien.
 
 Android **0.18.0** vereinfacht die Menüs: „Personen verwalten“ und „Personenliste“
 sind eindeutig getrennt, die Personenliste nutzt ebenfalls **…**, lokale Fotos sind

@@ -140,13 +140,17 @@ func (l *Library) indexMediaPostFilter(ctx context.Context, opts indexMediaOptio
 		return nil, 0, err
 	}
 	rows.Close()
-	paths := make([]string, len(candidates))
-	for i := range candidates {
-		paths[i] = candidates[i].Path
-	}
-	auto, err := l.automaticFacesBatch(ctx, paths)
-	if err != nil {
-		return nil, 0, err
+	hasPerson := queryHasPerson(opts.Query)
+	var auto map[string][]RecognizedFace
+	if hasPerson {
+		paths := make([]string, len(candidates))
+		for i := range candidates {
+			paths[i] = candidates[i].Path
+		}
+		auto, err = l.automaticFacesBatch(ctx, paths)
+		if err != nil {
+			return nil, 0, err
+		}
 	}
 	for _, row := range candidates {
 		scanned++
@@ -155,7 +159,7 @@ func (l *Library) indexMediaPostFilter(ctx context.Context, opts indexMediaOptio
 			return nil, 0, errPhotoSearchTooBroad
 		}
 		original := row
-		if queryHasPerson(opts.Query) {
+		if hasPerson {
 			var faces []Face
 			_ = json.Unmarshal([]byte(row.Faces), &faces)
 			for _, f := range auto[row.Path] {

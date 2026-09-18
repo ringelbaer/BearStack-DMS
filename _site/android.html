@@ -1362,7 +1362,7 @@
 
 
 <h1 id="bearstack-fotos-fur-android">BearStack Fotos für Android<a class="headerlink" href="#bearstack-fotos-fur-android" title="Permanent link">&para;</a></h1>
-<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.18.0</strong> (<code>versionCode 38</code>). Die Servergalerie benötigt
+<p>Native App für Android 8.0 oder neuer, App-Version <strong>0.18.1</strong> (<code>versionCode 39</code>). Die Servergalerie benötigt
 <strong>BearStack 0.50.0</strong>, ein aktiviertes Fotomodul und <code>photos.read</code>. Personenverwaltung
 benötigt zusätzlich <code>photos.edit</code>; die bisherigen Abläufe und lokalen Daten bleiben
 beim Update erhalten. Auf älteren Servern bleibt der bisherige Personenbereich verfügbar.</p>
@@ -1386,6 +1386,7 @@ Dateinamen bleiben auswählbar. Lokale Fotos nutzen den Anzeigenamen ihres Gerä
 Die Einzelmarkierung auf Karten ist nur noch 16 dp groß; anklickbare Marker behalten
 eine 48-dp-Berührungsfläche.</p>
 <h2 id="einstellbarer-thumbnail-cache">Einstellbarer Thumbnail-Cache<a class="headerlink" href="#einstellbarer-thumbnail-cache" title="Permanent link">&para;</a></h2>
+<p>Ab <strong>0.18.1</strong> prüft das Vorladen bereits gespeicherte Vorschauen anhand ihrer Dateimetadaten, ohne Bilddateien erneut vollständig zu lesen oder ihren Nutzungszeitpunkt zu verändern. Eine unveränderte Schutzliste wird nicht erneut geschrieben. Fehlende und gekürzte Dateien werden nachgeladen; beim Anzeigen erkannte beschädigte Bilder werden weiterhin verworfen.</p>
 <p>Ab App <strong>0.16.0</strong> lässt sich unter <strong>… → Einstellungen → Thumbnail-Cache</strong> das
 Speicherbudget von <strong>64 bis 2048 MiB</strong> in 64-MiB-Schritten einstellen; Standard sind
 <strong>256 MiB</strong>. Die Änderung gilt sofort und bleibt nach einem Neustart erhalten.</p>
@@ -2025,7 +2026,7 @@ Fehler werden zusätzlich anhand der XML-Ergebnisse zurückgewiesen.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 0.67.6 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 0.68.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

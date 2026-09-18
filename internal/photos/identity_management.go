@@ -255,21 +255,35 @@ func (l *Library) backfillPhotoIdentities(ctx context.Context, after int64) (int
 	return after, nil
 }
 
-// AddContentStates joins only the requested page against indexed identity data.
+// AddContentStates joins the requested media and preview groups in shared batches.
 // It never reads originals or walks thumbnail directories.
-func (l *Library) AddContentStates(ctx context.Context, items []Media) error {
+func (l *Library) AddContentStates(ctx context.Context, groups ...[]Media) error {
 	if l == nil || !l.index.available() {
 		return nil
 	}
-	for start := 0; start < len(items); start += 200 {
-		end := min(start+200, len(items))
-		args := make([]any, 0, end-start)
-		positions := map[string][]int{}
-		for i := start; i < end; i++ {
-			args = append(args, items[i].Path)
-			positions[items[i].Path] = append(positions[items[i].Path], i)
+	positions := map[string][]*Media{}
+	paths := []string{}
+	for _, items := range groups {
+		for i := range items {
+			path := items[i].Path
+			if path == "" { // Virtual face previews have no media identity.
+				continue
+			}
+			if _, exists := positions[path]; !exists {
+				paths = append(paths, path)
+			}
+			positions[path] = append(positions[path], &items[i])
 		}
+	}
+	for start := 0; start < len(paths); start += 200 {
+		end := min(start+200, len(paths))
+		args := make([]any, end-start)
+		for i, path := range paths[start:end] {
+			args[i] = path
+		}
+		finish := StartListTraceStep(ctx, "photos.identity.content_states_batch", ListTraceInt("paths", len(args)))
 		rows, err := l.index.db.QueryContext(ctx, `SELECT id,path,revision,EXISTS(SELECT 1 FROM photo_faces f WHERE f.entity_id=e.id AND f.needs_review=1) FROM photo_entities e WHERE missing_since=0 AND kind IN('image','video','audio') AND path IN (`+strings.TrimRight(strings.Repeat("?,", len(args)), ",")+`)`, args...)
+		finish()
 		if err != nil {
 			return err
 		}
@@ -281,10 +295,10 @@ func (l *Library) AddContentStates(ctx context.Context, items []Media) error {
 				rows.Close()
 				return err
 			}
-			for _, i := range positions[path] {
-				items[i].EntityID = id
-				items[i].ContentRevision = rev
-				items[i].NeedsReview = review
+			for _, item := range positions[path] {
+				item.EntityID = id
+				item.ContentRevision = rev
+				item.NeedsReview = review
 			}
 		}
 		err = rows.Err()

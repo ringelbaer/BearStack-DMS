@@ -58,6 +58,15 @@ internal class ThumbnailDiskCache(private val directory: File, budget: Long) {
     @Synchronized fun usage() = ThumbnailCacheUsage(bytes, pinnedBytes, entries.size,
         pinnedEntries, pins.size, budget)
 
+    /** Validate a warm entry without reading its body or changing display recency. */
+    @Synchronized fun contains(key: String): Boolean {
+        checkOpen(); require(validKey(key))
+        val length = entries[key] ?: return false
+        val file = File(directory, key)
+        if (!file.isFile || file.length() != length) { remove(key); return false }
+        return true
+    }
+
     @Synchronized fun read(key: String): ByteArray? {
         checkOpen(); require(validKey(key))
         val length = entries[key] ?: return null
@@ -86,6 +95,7 @@ internal class ThumbnailDiskCache(private val directory: File, budget: Long) {
 
     @Synchronized fun protect(keys: Set<String>) {
         checkOpen(); require(keys.all(::validKey))
+        if (keys == pins) return
         atomicWrite(File(directory, "pins"), keys.joinToString("\n").toByteArray(Charsets.UTF_8), sync = true)
         // Newly released pins become ordinary LRU entries; existing LRU order is retained.
         (pins - keys).forEach { key -> entries[key]?.let { evictable[key] = it } }
