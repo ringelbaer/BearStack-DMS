@@ -391,3 +391,50 @@ auch Filter, ignorierte Gesichter und Ordnerschutz prüfen.
 Originalfotos und XMP-Sidecars werden durch diese Arbeit nicht verändert.
 Sicherung, Aufbewahrung und das gezielte Löschen erzeugter Gesichtsdaten stehen
 unter [Einrichtung und Betrieb](fotos-technik.md#daten-sichern-und-gesichtsdaten-loschen).
+
+## Stammbäume einrichten und erkunden
+
+Bei aktiviertem Fotomodul öffnet ein Konto mit **Fotos verwalten** unter
+**Einstellungen → Stammbaum** die Auswahl der Ausgangspersonen. Suche benannte
+Personen, wähle die passenden Vorschläge und speichere die Auswahl. Bis zu
+200 Ausgangspersonen sind möglich. Verbundene Ausgangspersonen gehören zum
+selben Stammbaum; unabhängige Familien erscheinen getrennt in der Familienauswahl.
+
+BearStack verfolgt sämtliche gespeicherten Eltern-, Kinder-, Geschwister- und
+Eheverbindungen in beide Richtungen. Auch geschiedene und wiederholte Ehen zählen
+als Familienverbindung. Es werden keine Verwandtschaften aus Namen oder Bildern
+abgeleitet. Änderungen an den Stammdaten erscheinen beim nächsten Öffnen der Ansicht.
+
+Mit **Fotos lesen** öffnet **Stammbaum** in der Hauptnavigation die grafische
+Ansicht unter `/photos/family-tree`:
+
+- Personen-Karten zeigen Porträt, Namen sowie vorhandene Geburts- und Sterbedaten.
+- Ein Klick zeigt Stammdaten, Personen-Tags und sämtliche direkten Verbindungen;
+  bei Ehen auch hinterlegte Hochzeits- und Scheidungsdaten. Beziehungsschaltflächen
+  führen direkt zur verbundenen Person, **Person und Fotos öffnen** zur Personenansicht.
+- Farben und Linien unterscheiden Eltern/Kinder, Geschwister, Ehen und geschiedene
+  Ehen. Ausgangspersonen tragen eine Markierung. Eine frühere Ehe bleibt hier sichtbar,
+  auch wenn sie in der kompakten Stammdatenzeile der Personenansicht ausgeblendet ist.
+- Mit **+ / −**, **100 %** und **Alles anzeigen** passt du den Zoom an. Die freie
+  Fläche lässt sich mit der Maus ziehen; Scrollleisten und Touch-Scrollen bewegen
+  die Ansicht. **Strg + Mausrad** zoomt am Mauszeiger.
+- Die Personensuche findet auch gerade nicht sichtbare Karten. Mit der Tastatur
+  wählst du einen Treffer über Enter; im fokussierten Stammbaum scrollen die
+  Pfeiltasten, **+ / −** zoomen und **0** zeigt alles.
+
+Ohne ausgewählte Ausgangsperson gibt es keine Stammbaumansicht und keinen Link
+dorthin. Der Einstellungspunkt bleibt zur Einrichtung verfügbar. **Auswahl leeren**
+und **Auswahl speichern** deaktivieren die Ansicht. Die Auswahl bleibt über Neustarts
+bestehen und wird bei Zusammenführungen auf die Zielperson übertragen.
+
+Private, unbenannte oder ausschließlich ignorierte Personen erscheinen nicht und
+werden auch nicht als Verbindung zu weiteren Verwandten verwendet. Eine bereits
+gewählte, später nicht mehr verfügbare Person bleibt in den Einstellungen ohne
+Namensausgabe entfernbar. Sind alle Ausgangspersonen nicht mehr verfügbar, zeigt
+die Ansicht einen entsprechenden Hinweis.
+
+Bei großen Familien werden nur die sichtbaren Karten aufgebaut; in der Übersicht
+vereinfachen sich die Karten. Pro Abruf gelten 10.000 geprüfte Personen und 50.000
+Verbindungen sowie 30 Sekunden Ladezeit als Grenzen. Überschreitet die Auswahl eine
+Grenze, erscheint ein Fehler statt eines unvollständigen Baums. Verkleinere dann
+die Auswahl, sofern sie mehrere unabhängige Familien enthält.

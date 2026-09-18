@@ -1,0 +1,24 @@
+{{define "family_tree.html"}}
+{{template "head" .}}
+<section class="page-head"><div><p class="family-tree-eyebrow">Menschen &amp; Verbindungen</p><h1>Stammbäume</h1><p>Deine Familiengeschichte, verbunden durch die hinterlegten Stammdaten.</p></div>{{if .Auth.CanPhotosManage}}<a class="secondary-button" href="/settings/photos/family-tree">Ausgangspersonen wählen</a>{{end}}</section>
+<section class="family-tree-app" data-family-tree>
+<p role="status" data-tree-status>Stammbäume werden geladen …</p><button type="button" class="secondary-button" data-tree-retry hidden>Erneut laden</button>
+<div class="family-tree-controls" data-tree-controls hidden>
+<label>Familie <select data-tree-select aria-label="Stammbaum auswählen"></select></label>
+<div class="family-tree-search"><label>Person im Stammbaum suchen <input type="search" data-tree-search autocomplete="off" aria-controls="tree-search-results"></label><ul id="tree-search-results" data-tree-search-results hidden></ul></div>
+<div class="family-tree-zoom" role="group" aria-label="Zoom"><button type="button" class="secondary-button" data-tree-zoom-out aria-label="Verkleinern">−</button><output data-tree-zoom>100 %</output><button type="button" class="secondary-button" data-tree-zoom-in aria-label="Vergrößern">+</button><button type="button" class="secondary-button" data-tree-fit>Alles anzeigen</button><button type="button" class="secondary-button" data-tree-reset>100 %</button></div>
+</div>
+<div class="family-tree-layout" data-tree-layout hidden>
+<div class="family-tree-viewport" data-tree-viewport tabindex="0" role="region" aria-label="Stammbaum: mit Pfeiltasten scrollen, mit Plus und Minus zoomen" aria-describedby="tree-help">
+<div class="family-tree-world" data-tree-world><canvas data-tree-canvas aria-hidden="true"></canvas><div data-tree-cards></div></div>
+</div>
+<aside class="family-tree-inspector" data-tree-inspector aria-label="Person und Stammdaten"><h2>Eine Person auswählen</h2><p>Wähle eine Personenkarte oder nutze die Suche, um sämtliche hinterlegten Daten und Beziehungen zu sehen.</p></aside>
+</div>
+<div class="family-tree-legend" data-tree-legend hidden><span class="tree-parent-key">Eltern → Kind</span><span class="tree-sibling-key">Geschwister</span><span class="tree-marriage-key">Ehe</span><span class="tree-divorce-key">Geschiedene Ehe</span><span class="tree-root-key">Ausgangsperson</span></div>
+<p id="tree-help" class="muted">Scrollen oder die freie Fläche mit der Maus ziehen. Zoom mit + / − oder Strg + Mausrad. Bei kleinen Zoomstufen vereinfacht sich die Übersicht; über die Suche lässt sich jede Person direkt öffnen. Verbindungen zeigen ausschließlich gespeicherte Beziehungen.</p>
+<noscript><p>Für die interaktive Stammbaumansicht ist JavaScript erforderlich.</p></noscript>
+</section>
+<script src="{{assetURL "/static/app-family-tree-layout.js"}}" defer></script>
+<script src="{{assetURL "/static/app-family-tree.js"}}" defer></script>
+{{template "foot" .}}
+{{end}}

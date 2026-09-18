@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -47,6 +47,97 @@ tags:
     description: Tags, custom fields and virtual folders.
 
 paths:
+  /settings/photos/family-tree:
+    get:
+      tags: [Photos]
+      operationId: getPhotoFamilyTreeSettings
+      summary: Read selected family tree roots
+      description: |
+        Since 1.1.0. Requires photos.manage and the photo module. This configuration
+        page remains available with no selected roots. Responses are private, no-store.
+        Unavailable selected people retain their ID but have an empty name and available=false.
+      parameters:
+        - in: query
+          name: format
+          schema: {type: string, enum: [json]}
+      responses:
+        '200':
+          description: Selection and revision; HTML by default, JSON with format=json.
+          content:
+            text/html:
+              schema: {type: string}
+            application/json:
+              schema: {$ref: '#/components/schemas/PhotoFamilyTreeSettings'}
+        '401': {description: Authentication required.}
+        '403': {description: Missing photos.manage capability.}
+        '404': {description: Photo module disabled.}
+    post:
+      tags: [Photos]
+      operationId: setPhotoFamilyTreeSettings
+      summary: Replace the family tree root selection atomically
+      description: |
+        Requires photos.manage and same-origin form protection. Select up to 200
+        distinct named, visible people. Previously selected unavailable people may
+        be retained or removed. Omit person_id to disable all trees and view links.
+        Revision protects against concurrent saves and person merges/deletions.
+        Selection persists across restarts and transfers when people are merged.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [revision]
+              properties:
+                revision: {type: integer, format: int64, minimum: 1}
+                person_id:
+                  type: array
+                  maxItems: 200
+                  uniqueItems: true
+                  items: {type: integer, format: int64, minimum: 1}
+            encoding:
+              person_id: {style: form, explode: true}
+      responses:
+        '303': {description: Saved; redirects to settings.}
+        '400': {description: Invalid selection or revision, malformed form, or form exceeding 64 KiB.}
+        '401': {description: Authentication required.}
+        '403': {description: Missing photos.manage or invalid origin.}
+        '404': {description: Photo module disabled.}
+        '409': {description: Selection changed; reload before saving.}
+  /photos/family-tree:
+    get:
+      tags: [Photos]
+      operationId: getPhotoFamilyTrees
+      summary: View configured family trees or fetch their connected graphs
+      description: |
+        Since 1.1.0. Requires photos.read and configured roots. Traverses all stored
+        parent/child, sibling and marriage links in both directions, including divorced
+        and repeated marriages. Connected selected people share one tree; people and
+        relationships appear once per component. Parent links point from parent to child.
+        Names, birth/death dates, person tags and a visible portrait ID are included.
+        Only named people with active public faces are traversed; live private folders
+        and private imported names cannot expose a person or bridge to other relatives.
+        Empty trees means all selected roots are currently unavailable. Data is read
+        from a consistent snapshot without image analysis. Responses are private, no-store.
+        Work is bounded by 10,000 candidate people, 50,000 relationships and 30 seconds
+        across all selected families. Exceeding limits produces an error, never partial trees.
+      parameters:
+        - in: query
+          name: format
+          schema: {type: string, enum: [json]}
+      responses:
+        '200':
+          description: Interactive HTML by default, graph data with format=json.
+          content:
+            text/html:
+              schema: {type: string}
+            application/json:
+              schema: {$ref: '#/components/schemas/PhotoFamilyTreePage'}
+        '401': {description: Authentication required.}
+        '403': {description: Missing photos.read capability.}
+        '404': {description: Photo module disabled or no selected roots.}
+        '422': {description: Graph exceeds the person or relationship limit.}
+        '503': {description: Graph loading exceeded its time limit; retry later.}
   /settings/photos/identities:
     get:
       tags: [Photos]
@@ -5513,6 +5604,70 @@ components:
       properties:
         id: {type: integer, format: int64, minimum: 1}
         spouse: {$ref: '#/components/schemas/PhotoPersonParent'}
+        wedding_date: {$ref: '#/components/schemas/PhotoPersonDate'}
+        divorce_date: {$ref: '#/components/schemas/PhotoPersonDate'}
+    PhotoFamilyTreeSettings:
+      type: object
+      required: [revision, roots]
+      properties:
+        revision: {type: integer, format: int64, minimum: 1}
+        roots:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+            required: [id, name, available]
+            properties:
+              id: {type: integer, format: int64, minimum: 1}
+              name: {type: string}
+              available: {type: boolean}
+    PhotoFamilyTreePage:
+      type: object
+      required: [trees]
+      properties:
+        trees:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+            required: [id, roots, people, relations]
+            properties:
+              id: {type: integer, format: int64, minimum: 1, description: Lowest selected person ID in this component.}
+              roots:
+                type: array
+                minItems: 1
+                maxItems: 200
+                uniqueItems: true
+                items: {type: integer, format: int64, minimum: 1}
+              people:
+                type: array
+                minItems: 1
+                maxItems: 10000
+                items: {$ref: '#/components/schemas/PhotoFamilyTreePerson'}
+              relations:
+                type: array
+                maxItems: 50000
+                items: {$ref: '#/components/schemas/PhotoFamilyTreeRelation'}
+    PhotoFamilyTreePerson:
+      type: object
+      required: [id, name, birth_date, death_date, face_id, tags]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        name: {type: string, minLength: 1}
+        birth_date: {$ref: '#/components/schemas/PhotoPersonDate'}
+        death_date: {$ref: '#/components/schemas/PhotoPersonDate'}
+        face_id: {type: integer, format: int64, minimum: 1}
+        tags:
+          type: array
+          items: {type: string}
+    PhotoFamilyTreeRelation:
+      type: object
+      required: [id, from, to, kind]
+      properties:
+        id: {type: integer, format: int64, minimum: 0, description: Marriage record ID; zero for parent and sibling links.}
+        from: {type: integer, format: int64, minimum: 1}
+        to: {type: integer, format: int64, minimum: 1}
+        kind: {type: string, enum: [mother, father, sibling, marriage]}
         wedding_date: {$ref: '#/components/schemas/PhotoPersonDate'}
         divorce_date: {$ref: '#/components/schemas/PhotoPersonDate'}
     PhotoPersonDetails:

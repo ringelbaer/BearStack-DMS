@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.0.0** · Android-App: **0.19.0**.
+Aktuelle Version: **1.1.0** · Android-App: **0.19.0**.
+
+Ab **1.1.0** lassen sich unter **Einstellungen → Stammbaum** bei aktiviertem Fotomodul Ausgangspersonen auswählen. Die interaktive Ansicht unter `/photos/family-tree` verfolgt alle hinterlegten Eltern-, Geschwister- und Eheverbindungen, einschließlich geschiedener Ehen, und fasst verbundene Ausgangspersonen zu einem Baum zusammen. Personen-Karten, Porträts, Stammdaten, Suche, Zoom und Scrollen erschließen auch große Familien. Ohne Auswahl entfallen Stammbaumansicht und deren Menüpunkte; der Einstellungspunkt bleibt zur Einrichtung verfügbar. Konfiguration erfordert `photos.manage`, Ansicht `photos.read`. Foto-Schema 39 speichert die Auswahl dauerhaft und übernimmt sie bei Personenzusammenführungen. [Bedienung und Grenzen](https://ringelbaer.github.io/BearStack-DMS/fotos-personen.html#stammbaume-einrichten-und-erkunden).
 
 Ab **1.0.0** zeigt die Personenansicht hinterlegte Stammdaten unter der Überschrift; geschiedene Ehen bleiben auf den Stammdatendialog beschränkt. **Ordner-Pfade** (`/photos/people/{id}/folder`) listet jeden vollständigen formatierten Ordnerpfad einmal mit bis zu acht Gesichtern. Alle aktiven Gesichter der Person im jeweiligen exakten Ordner lassen sich gemeinsam neu zuweisen, unbenannt setzen oder ignorieren. **Pfad ausschließen** setzt sie unbenannt und sperrt weitere Zuordnungen zur bisherigen Person; **Pfad wieder freigeben** hebt die Sperre auf. Unterordner werden separat behandelt. Die Gesichtskettenfunktion und ihre dokumentierten HTTP-Endpunkte wurden entfernt; dafür gilt gemäß SemVer der Wechsel von 0.x auf 1.0.0. Foto-Schema 38 wird automatisch migriert.
 

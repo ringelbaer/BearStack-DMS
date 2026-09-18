@@ -2,6 +2,7 @@
 package server
 
 var photoRouteSpecs = []routeSpec{
+	{pattern: "GET /photos/family-tree", capabilities: authCapPhotosRead, handler: (*Server).handleFamilyTree},
 	{pattern: "GET /photos/faces/review", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceSourceReviews},
 	{pattern: "GET /photos/faces/{id}/review", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceSourceReview},
 	{pattern: "POST /photos/faces/{id}/review", capabilities: authCapPhotosEdit, handler: (*Server).handleFaceSourceReview},

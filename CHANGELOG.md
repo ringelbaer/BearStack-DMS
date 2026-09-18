@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.1.0
+
+- Neue Stammbaum-Einstellungen bei aktiviertem Fotomodul: bis zu 200 Ausgangspersonen auswählen. Verbundene ausgewählte Personen erzeugen einen gemeinsamen Baum; ohne Auswahl entfallen Ansicht und deren Navigation.
+- Vollständige Suche in beiden Richtungen durch hinterlegte Eltern-, Geschwister- und Eheverbindungen, einschließlich geschiedener und wiederholter Ehen. Stammdaten, Personen-Tags und Porträts sind in der grafischen Ansicht verfügbar.
+- Interaktive Personen-Karten, Beziehungslinien, Suche, Detailbereich, Zoom, Mausziehen und native Scrollfunktion. Große Stammbäume zeichnen nur sichtbare Karten; kleine Zoomstufen zeigen eine vereinfachte Übersicht.
+- Automatische Migration auf Foto-Schema 39. Auswahl bleibt über Neustarts und Personenzusammenführungen erhalten; Revisionen schützen gleichzeitige Änderungen. Konfiguration benötigt `photos.manage`, Ansicht `photos.read`; private Personen werden auch als indirekte Verbindung ausgeschlossen.
+- Begrenzte, indizierte Graphsuche ohne Bildanalyse: maximal 10.000 Personen und 50.000 Beziehungen pro Abruf, mit Zeitlimit und ausdrücklichem Fehler statt unvollständiger Bäume. README, Website und OpenAPI ergänzt.
+- Validierung: vollständige Go-Suite, gezielte Race-Tests, JavaScript-Syntax-/DOM-Tests und Website-Build erfolgreich. Browserprüfung mit Desktop und Mobilansicht, Porträts, Zoom, Scrollen, Suche, Ladefehler/Wiederholung und 2.000 Personen. Regressionen sichern Migration, Neustart, Zusammenführung/Rollback, Sichtbarkeit, Rechte, CSRF, Revisionen und Größenlimit; das Layout verarbeitet 10.000 Generationen ohne Rekursion.
+
 ### BearStack 1.0.0
 
 - BREAKING: Gesichtsketten einschließlich WebUI, JavaScript, Suche, Sammelzuordnung und dokumentierter HTTP-Endpunkte entfernt. Andere Personenansichten bleiben verfügbar. Erster inkompatibler HTTP-Vertragswechsel in 0.x, daher 1.0.0.

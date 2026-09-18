@@ -245,7 +245,7 @@ func TestPersonFolderSchemaMigration(t *testing.T) {
 	}
 	defer reopened.Close()
 	var version int
-	if err := reopened.index.db.QueryRow(`SELECT version FROM schema_migrations WHERE component='photos'`).Scan(&version); err != nil || version != 38 {
+	if err := reopened.index.db.QueryRow(`SELECT version FROM schema_migrations WHERE component='photos'`).Scan(&version); err != nil || version != photoSchemaVersion {
 		t.Fatalf("migration: %d %v", version, err)
 	}
 	faces, err := reopened.AutomaticFaces(context.Background(), "a.jpg")

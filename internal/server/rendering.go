@@ -362,6 +362,9 @@ func (s *Server) withRenderSettings(r *http.Request, data PageData) PageData {
 		data.CustomPDFPreviewEnabled = s.customPDFPreviewForRequest(principal)
 	}
 	data.PhotoModuleEnabled = s.photos != nil
+	if data.PhotoModuleEnabled && data.Auth.CanPhotosRead {
+		data.FamilyTreeEnabled, _ = s.photos.FamilyTreeEnabled(ctx)
+	}
 	if data.AppName == "" {
 		data.AppName = defaultAppName
 		if s.repo != nil {

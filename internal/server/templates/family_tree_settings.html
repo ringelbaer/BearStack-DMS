@@ -1,0 +1,21 @@
+{{define "family_tree_settings.html"}}
+{{template "head" .}}
+<section class="page-head"><div><h1>Einstellungen</h1></div>{{if .FamilyTreeEnabled}}<a class="secondary-button" href="/photos/family-tree">Stammbäume ansehen</a>{{end}}</section>
+{{if .Notice}}<div class="notice">{{.Notice}}</div>{{end}}
+<section class="panel settings-panel"><div class="settings-tabs">
+{{template "settings-tab-list" .}}
+<section class="settings-tab-panel" aria-labelledby="family-tree-settings-title">
+<header class="settings-section-head"><h2 id="family-tree-settings-title">Stammbaum</h2><p>Wähle die Ausgangspersonen deiner Familien. Alle hinterlegten Eltern-, Geschwister- und Eheverbindungen werden in beide Richtungen verfolgt, einschließlich geschiedener Ehen. Verbundene Personen teilen einen Stammbaum.</p></header>
+<form method="post" action="/settings/photos/family-tree" class="settings-form" data-family-tree-settings>
+<input type="hidden" name="revision" value="{{.FamilyTreeSettings.Revision}}">
+<div class="person-picker-field" data-person-picker><label>Person hinzufügen <input role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" data-person-search placeholder="Benannte Person suchen"></label><input type="hidden" data-person-target><div class="person-picker-popup" data-person-popup hidden><div role="listbox" data-person-options></div><p role="status" data-person-feedback></p></div></div>
+<p class="muted">Bis zu 200 Ausgangspersonen. Ohne Auswahl werden keine Stammbäume und keine Links zur Stammbaumansicht angezeigt. Geschützte Personen und deren Verbindungen werden nicht ausgegeben.</p>
+<ul class="family-tree-root-list" data-tree-roots>{{range .FamilyTreeSettings.Roots}}<li data-root-id="{{.ID}}"><input type="hidden" name="person_id" value="{{.ID}}"><span>{{if .Available}}{{.Name}}{{else}}Nicht verfügbare Person (#{{.ID}}){{end}}</span><button type="button" class="secondary-button" data-tree-remove aria-label="Ausgangsperson entfernen">Entfernen</button></li>{{end}}</ul>
+<p role="status" data-tree-settings-status></p>
+<div class="settings-actions"><button>Auswahl speichern</button><button type="button" class="secondary-button" data-tree-clear>Auswahl leeren</button></div>
+<noscript><p>Bitte JavaScript aktivieren, um Personen hinzuzufügen oder zu entfernen.</p></noscript>
+</form></section></div></section>
+<script src="{{assetURL "/static/app-person-picker.js"}}" defer></script>
+<script src="{{assetURL "/static/app-family-tree-settings.js"}}" defer></script>
+{{template "foot" .}}
+{{end}}

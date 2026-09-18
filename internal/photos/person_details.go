@@ -388,6 +388,9 @@ func validatePersonRelationLimits(ctx context.Context, tx *sql.Tx, ids []int64) 
 }
 
 func mergePersonFamilyTx(ctx context.Context, tx *sql.Tx, source, target int64) error {
+	if err := mergeFamilyTreeRootTx(ctx, tx, source, target); err != nil {
+		return err
+	}
 	if err := mergePersonFolderExclusionsTx(ctx, tx, source, target); err != nil {
 		return err
 	}

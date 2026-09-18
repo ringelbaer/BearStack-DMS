@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
+import familyTreeLayout from "../internal/server/static/app-family-tree-layout.js";
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
@@ -1303,7 +1304,38 @@ async function testPhotoFrameEmptyGalleryStopsAndInitializationIsIdempotent() {
   assert.equal(f.count.textContent, "Keine Medien");
 }
 
+function testFamilyTreeLayoutPreservesPeopleAndGenerations() {
+  const people = Array.from({length: 8}, (_, i) => ({id: i + 1, name: `Person ${i + 1}`}));
+  const relations = [
+    {from: 1, to: 3, kind: "mother"}, {from: 2, to: 3, kind: "father"},
+    {from: 1, to: 2, kind: "marriage"}, {from: 3, to: 4, kind: "sibling"},
+    {from: 4, to: 5, kind: "mother"}, {from: 6, to: 7, kind: "marriage"},
+    {from: 7, to: 8, kind: "marriage"}, {from: 6, to: 8, kind: "sibling"}
+  ];
+  const tree = {people, relations}, result = familyTreeLayout.layout(tree);
+  assert.equal(result.nodes.size, people.length);
+  assert.equal(result.nodes.get(1).y, result.nodes.get(2).y);
+  assert.equal(result.nodes.get(3).y, result.nodes.get(4).y);
+  for (const edge of relations.filter(edge => edge.kind === "mother" || edge.kind === "father")) assert.ok(result.nodes.get(edge.from).y < result.nodes.get(edge.to).y);
+  const nodes = Array.from(result.nodes.values());
+  for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) assert.ok(nodes[i].y !== nodes[j].y || Math.abs(nodes[i].x - nodes[j].x) >= familyTreeLayout.cardWidth);
+  assert.deepEqual(result, familyTreeLayout.layout(tree));
+  const crossGeneration = familyTreeLayout.layout({people: people.slice(0, 3), relations: [{from: 1, to: 2, kind: "mother"}, {from: 2, to: 3, kind: "father"}, {from: 1, to: 3, kind: "marriage"}]});
+  assert.equal(crossGeneration.nodes.size, 3);
+  assert.ok(crossGeneration.nodes.get(1).y < crossGeneration.nodes.get(3).y);
+}
+function testFamilyTreeLayoutHandlesLongFamiliesWithoutRecursion() {
+  const people = Array.from({length: 10000}, (_, i) => ({id: i + 1, name: `Person ${i + 1}`}));
+  const relations = people.slice(1).map(person => ({from: person.id - 1, to: person.id, kind: "mother"}));
+  const result = familyTreeLayout.layout({people, relations});
+  assert.equal(result.nodes.size, 10000);
+  assert.ok(Number.isFinite(result.width) && Number.isFinite(result.height));
+  assert.ok(result.nodes.get(9999).y < result.nodes.get(10000).y);
+}
+
 const tests = [
+  testFamilyTreeLayoutPreservesPeopleAndGenerations,
+  testFamilyTreeLayoutHandlesLongFamiliesWithoutRecursion,
   testPhotoFrameEmptyGalleryStopsAndInitializationIsIdempotent,
   testPhotoFrameBoundsMemoryAndPreservesSequenceAcrossCycles,
   testPhotoFramePausesHiddenPagesAndResumesWithoutAdvancing,

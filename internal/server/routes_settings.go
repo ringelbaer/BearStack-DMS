@@ -26,6 +26,8 @@ var settingsRouteSpecs = []routeSpec{
 }
 
 var photoSettingsRouteSpecs = []routeSpec{
+	{pattern: "GET /settings/photos/family-tree", capabilities: authCapPhotosManage, handler: (*Server).handleFamilyTreeSettings},
+	{pattern: "POST /settings/photos/family-tree", capabilities: authCapPhotosManage, handler: (*Server).handleFamilyTreeSettings},
 	{pattern: "GET /settings/photos/identities", capabilities: authCapPhotosManage, handler: (*Server).handlePhotoIdentities},
 	{pattern: "POST /settings/photos/identities/{id}", capabilities: authCapPhotosManage, handler: (*Server).handleResolvePhotoIdentity},
 

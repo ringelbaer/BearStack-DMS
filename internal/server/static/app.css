@@ -3983,3 +3983,58 @@ body.has-person-selection { padding-bottom: 150px; }
 .person-folder-faces, .person-folder-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .person-folder-faces img { object-fit: cover; border-radius: .5rem; }
 .person-folder-actions { margin-top: .75rem; }
+
+/* Family trees: bounded viewport rendering, native scrolling and readable cards. */
+.family-tree-app { --tree-parent: #287a89; --tree-sibling: #927335; --tree-marriage: #b66a86; --tree-mini: #b3c6cd; --tree-mini-text: #142c35; }
+.family-tree-eyebrow { margin: 0 0 .35rem; text-transform: uppercase; letter-spacing: .12em; font-size: .72rem; font-weight: 700; color: var(--muted); }
+.family-tree-root-list { list-style: none; padding: 0; display: grid; gap: .6rem; }
+.family-tree-root-list li { display: flex; align-items: center; gap: 1rem; padding: .7rem; border: 1px solid var(--line); border-radius: .7rem; }
+.family-tree-root-list li span { flex: 1; overflow-wrap: anywhere; }
+.family-tree-controls:not([hidden]) { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; margin-bottom: 1rem; }
+.family-tree-controls label { display: grid; gap: .35rem; font-size: .85rem; }
+.family-tree-controls select { max-width: min(100%, 340px); }
+.family-tree-search { position: relative; flex: 1 1 220px; }
+.family-tree-search input { width: 100%; }
+.family-tree-search ul { position: absolute; top: 100%; left: 0; right: 0; z-index: 8; max-height: 300px; overflow: auto; list-style: none; padding: .4rem; margin: .25rem 0; background: var(--surface); border: 1px solid var(--line); border-radius: .65rem; box-shadow: 0 12px 30px #0002; }
+.family-tree-search button { display: block; width: 100%; text-align: left; background: transparent; color: var(--text); border: 0; }
+.family-tree-zoom { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+.family-tree-zoom output { min-width: 62px; text-align: center; font-variant-numeric: tabular-nums; }
+.family-tree-layout:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) 290px; border: 1px solid var(--line); border-radius: 1rem; overflow: hidden; background: var(--surface); box-shadow: 0 12px 36px #00000008; }
+.family-tree-viewport { position: relative; overflow: auto; height: min(72vh, 820px); min-height: 420px; background-color: var(--bg); background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 22px 22px; overscroll-behavior: contain; }
+.family-tree-world { position: relative; min-width: 100%; min-height: 100%; }
+.family-tree-world canvas { position: absolute; pointer-events: none; }
+.family-tree-card { position: absolute; transform-origin: top left; width: 250px; height: 144px; display: flex; flex-direction: column; gap: .45rem; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--text); text-align: left; box-shadow: 0 4px 16px #00000010; transition: box-shadow .15s, opacity .15s; }
+.family-tree-card:hover { background: var(--surface); box-shadow: 0 6px 24px #0002; }
+.family-tree-card.is-root { border: 2px solid var(--tree-parent); }
+.family-tree-card.is-selected { outline: 3px solid var(--tree-parent); outline-offset: 4px; }
+.family-tree-card.is-dimmed { opacity: .62; }
+.family-tree-card-heading { display: flex; gap: .7rem; align-items: center; width: 100%; }
+.family-tree-card-heading img { border-radius: 13px; object-fit: cover; flex-shrink: 0; }
+.family-tree-card-heading strong { font-size: .94rem; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.family-tree-card-dates { display: flex; flex-wrap: wrap; gap: .15rem .6rem; font-size: .77rem; color: var(--muted); }
+.family-tree-root-badge { font-size: .65rem; font-weight: 600; color: var(--tree-parent); letter-spacing: .05em; margin-top: auto; }
+.family-tree-inspector { padding: 1.25rem; border-left: 1px solid var(--line); max-height: min(72vh, 820px); overflow: auto; }
+.family-tree-inspector > img { object-fit: cover; border-radius: 18px; margin-bottom: .75rem; }
+.family-tree-inspector h2 { margin-top: .25rem; overflow-wrap: anywhere; }
+.family-tree-inspector h3 { font-size: .85rem; margin: 1.4rem 0 .65rem; }
+.family-tree-inspector > a { margin-top: .9rem; }
+.family-tree-facts { display: grid; grid-template-columns: auto 1fr; gap: .3rem .8rem; font-size: .85rem; }
+.family-tree-facts dt { color: var(--muted); }
+.family-tree-facts dd { margin: 0; }
+.family-tree-tags { display: flex; gap: .3rem; flex-wrap: wrap; }
+.family-tree-relation { display: flex; flex-direction: column; align-items: start; gap: .25rem; width: 100%; margin-bottom: .5rem; padding: .7rem; text-align: left; background: var(--bg); border: 1px solid var(--line); color: var(--text); border-radius: .65rem; }
+.family-tree-relation span, .family-tree-relation small { font-size: .75rem; color: var(--muted); }
+.family-tree-relation strong { overflow-wrap: anywhere; }
+.family-tree-legend:not([hidden]) { display: flex; flex-wrap: wrap; gap: .7rem 1.3rem; margin-top: 1rem; font-size: .8rem; color: var(--muted); }
+.family-tree-legend span::before { content: ""; display: inline-block; vertical-align: middle; width: 22px; margin-right: .4rem; border-top: 3px solid var(--tree-parent); }
+.family-tree-legend .tree-sibling-key::before { border-color: var(--tree-sibling); border-top-style: dotted; }
+.family-tree-legend .tree-marriage-key::before, .family-tree-legend .tree-divorce-key::before { border-color: var(--tree-marriage); }
+.family-tree-legend .tree-divorce-key::before { border-top-style: dashed; }
+.family-tree-legend .tree-root-key::before { height: 12px; border: 2px solid var(--tree-parent); border-radius: 3px; }
+@media (max-width: 850px) {
+ .family-tree-layout:not([hidden]) { grid-template-columns: minmax(0, 1fr); }
+ .family-tree-inspector { border-left: 0; border-top: 1px solid var(--line); max-height: 340px; }
+ .family-tree-viewport { height: 60vh; min-height: 360px; }
+ .family-tree-controls > label, .family-tree-search { width: 100%; min-width: 0; }
+ .family-tree-zoom { width: 100%; }
+}

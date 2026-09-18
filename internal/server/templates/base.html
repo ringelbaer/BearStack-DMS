@@ -27,7 +27,7 @@
       <a href="/folders" class="{{if eq .Active "folders"}}active{{end}}">Ordner</a>
       {{if .DocumentCloudEnabled}}<a href="/cloud" class="{{if eq .Active "cloud"}}active{{end}}">Wolke</a>{{end}}
       {{end}}
-      {{if and .PhotoModuleEnabled .Auth.CanPhotosRead}}<a href="/photos" class="{{if eq .Active "photos"}}active{{end}}">Fotos</a>{{end}}
+      {{if and .PhotoModuleEnabled .Auth.CanPhotosRead}}<a href="/photos" class="{{if eq .Active "photos"}}active{{end}}">Fotos</a>{{if .FamilyTreeEnabled}}<a href="/photos/family-tree" class="{{if eq .Active "family-tree"}}active{{end}}">Stammbaum</a>{{end}}{{end}}
     </nav>
     {{if .SystemMenuVisible}}
     <details class="system-menu">

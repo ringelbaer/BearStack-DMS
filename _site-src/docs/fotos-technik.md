@@ -659,3 +659,30 @@ Foto-Schema 38 ergänzt exakte personenbezogene Ordnersperren. Datenbank-Trigger
 verhindern verbotene Neuzuordnungen; Erkennung und Hintergrundabgleich filtern
 solche Ziele bereits vor der Kandidatenauswahl. Sperren bleiben beim Zurücksetzen
 von Gesichtsergebnissen erhalten und werden bei Personenzusammenführungen übernommen.
+
+
+### Stammbäume
+
+Foto-Schema 39 ergänzt eine revisionsgeschützte Auswahl der Ausgangspersonen.
+`GET /settings/photos/family-tree?format=json` liefert Auswahl und Revision;
+`POST /settings/photos/family-tree` ersetzt sie atomar mit `revision` und wiederholten
+`person_id`-Formularfeldern. Beide erfordern `photos.manage`. Ohne `person_id`
+wird die Ansicht deaktiviert. Zusammenführungen übertragen die Auswahl innerhalb
+derselben Transaktion; konkurrierende Änderungen liefern 409.
+
+`GET /photos/family-tree?format=json` benötigt `photos.read` und liefert die
+zusammenhängenden Stammbäume als Personen und gerichtete Eltern- beziehungsweise
+ungerichtete Geschwister-/Eheverbindungen. Ohne Auswahl liefert der Endpunkt 404.
+Alle Ehe-Datensätze einschließlich Scheidungen bleiben erhalten. Die Graphsuche
+liest einen konsistenten Datenbankstand und folgt beiden Richtungen über bestehende
+Endpunktindizes in Paketen von höchstens 200 Personen. Sie verarbeitet keine Bilder
+oder Gesichtsvektoren. Live-Verzeichnisschutz und Herkunft importierter Namen werden
+geprüft; versteckte Personen können keine Brücke zwischen öffentlichen Personen bilden.
+
+Die gemeinsame Grenze beträgt 10.000 geprüfte Personen und 50.000 Beziehungen;
+bei Überschreitung folgt 422, bei mehr als 30 Sekunden 503. Es gibt keine stille
+Kürzung. Antworten sind `private, no-store`. Die Navigation verwendet lediglich
+eine indizierte Existenzprüfung der Auswahl. Der Browser zeichnet Verbindungslinien
+auf einer Canvas in Sichtbereichsgröße und baut nur die sichtbaren Personen-Karten
+auf. Suche und Stammdaten sind unabhängig vom Zoom erreichbar. Es werden keine
+externen Grafikdienste oder JavaScript-Bibliotheken geladen.

@@ -9,6 +9,8 @@ import (
 )
 
 type PageData struct {
+	FamilyTreeEnabled       bool
+	FamilyTreeSettings      photos.FamilyTreeSettings
 	PhotoIdentities         photos.PhotoIdentityStatus
 	FaceSourceReview        photos.FaceSourceReview
 	FaceSourceReviews       []photos.RecognizedFace
