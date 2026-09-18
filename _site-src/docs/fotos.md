@@ -172,8 +172,12 @@ Android-App beschreibt [Diashow und Fotoframe](android.md#diashow-und-fotoframe)
 
 ### Diashow
 
-Die Diashow im Bildbetrachter spielt die geöffnete Medienauswahl ab und endet
-beim letzten Medium. Das Intervall wird unter **Einstellungen → Fotos →
+Die Diashow im Bildbetrachter lädt am Seitenende automatisch die nächste
+Galerie-Seite mit denselben Filtern und derselben Sortierung. Sie endet beim
+letzten Medium der letzten Seite. Der Bildbetrachter bleibt dabei geöffnet, auch
+im Vollbild; es wird nur eine Medienseite vorgehalten. Beim Schließen erscheint
+die ursprüngliche Galerie. Bei Ladefehlern stoppt die Diashow mit einem Hinweis
+und kann über **Start** erneut versuchen, die nächste Seite zu laden. Das Intervall wird unter **Einstellungen → Fotos →
 Slideshow Sekunden** eingestellt; zulässig sind **2 bis 60 Sekunden**.
 
 ### Fotoframe

@@ -42,6 +42,8 @@
     var zoomResetButton = dialog.querySelector("[data-photo-zoom-reset]");
     var current = 0;
     var slideshow = 0;
+    var nextPageURL = "";
+    var pageRequest = null;
     var pointerStart = null;
     var pinchState = null;
     var activeTouchPointers = new Map();
@@ -606,8 +608,8 @@
       current = index;
       prevButton.disabled = current === 0;
       nextButton.disabled = current === items.length - 1;
-      slideshowButton.disabled = nextButton.disabled;
-      if (nextButton.disabled) stopSlideshow();
+      slideshowButton.disabled = nextButton.disabled && !nextPageURL;
+      if (slideshowButton.disabled) stopSlideshow();
       var item = items[current];
       if (faceOverlayItem !== item) clearFaceOverlay();
       if (title) title.textContent = item.title;
@@ -683,6 +685,9 @@
     }
 
     function open(index) {
+      stopSlideshow();
+      itemsCollected = false;
+      nextPageURL = nextPage(document, window.location.href);
       ensureItemsCollected();
       if (!items.length) return;
       show(index);
@@ -699,13 +704,58 @@
       });
     }
 
+    function nextPage(root, baseURL) {
+      var link = root.querySelector("[data-photo-next-page]");
+      if (!link) return "";
+      var url = new URL(link.getAttribute("href"), baseURL);
+      return url.origin === window.location.origin ? url.href : "";
+    }
+
+    function advanceSlideshow() {
+      if (pageRequest || !dialog.open) return;
+      if (current + 1 < items.length) {
+        show(current + 1);
+        return;
+      }
+      if (!nextPageURL) { stopSlideshow(); return; }
+      var controller = new AbortController();
+      var requestedURL = nextPageURL;
+      pageRequest = controller;
+      window.fetch(requestedURL, { signal: controller.signal, credentials: "same-origin" })
+        .then(function (response) {
+          if (!response.ok || response.redirected) throw new Error("Fotoseite nicht verfügbar");
+          return response.text();
+        }).then(function (html) {
+          if (pageRequest !== controller || !slideshow || !dialog.open) return;
+          var page = new DOMParser().parseFromString(html, "text/html");
+          var nextGallery = page.querySelector("[data-photo-gallery]");
+          var nextItems = nextGallery ? collectItems(nextGallery) : [];
+          if (!nextItems.length) throw new Error("Fotoseite enthält keine Medien");
+          // Keep only one page; the original gallery remains available on close.
+          items = nextItems;
+          nextPageURL = nextPage(page, requestedURL);
+          if (nextPageURL === requestedURL) nextPageURL = "";
+          pageRequest = null;
+          window.clearInterval(slideshow);
+          slideshow = window.setInterval(advanceSlideshow, slideshowDelay);
+          show(0);
+        }).catch(function () {
+          if (pageRequest !== controller) return;
+          stopSlideshow();
+          if (title) title.textContent = (items[current].title || "Foto") + " – Nächste Seite konnte nicht geladen werden. Diashow erneut starten.";
+        });
+    }
+
     function stopSlideshow() {
+      if (pageRequest) pageRequest.abort();
+      pageRequest = null;
       if (slideshow) window.clearInterval(slideshow);
       slideshow = 0;
       slideshowButton.textContent = "Start";
     }
 
     function closeLightbox() {
+      itemsCollected = false;
       stopSlideshow();
       if (typeof dialog.close === "function") {
         dialog.close();
@@ -753,7 +803,7 @@
         stopSlideshow();
         return;
       }
-      slideshow = window.setInterval(function () { show(current + 1); }, slideshowDelay);
+      slideshow = window.setInterval(advanceSlideshow, slideshowDelay);
       slideshowButton.textContent = "Stop";
     });
     if (zoomInButton) {
@@ -786,6 +836,7 @@
       });
     }
     dialog.addEventListener("close", function () {
+      itemsCollected = false;
       stopSlideshow();
       setInfoPanel(false);
       setControlsVisible(false);

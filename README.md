@@ -1,8 +1,10 @@
 # BearStack
 
-Aktuelle Version: **0.69.0** · Android-App: **0.19.0**.
+Aktuelle Version: **0.69.1** · Android-App: **0.19.0**.
 
 **Android 0.19.0 / BearStack 0.69.0:** Im Fotoframe unter **Zahnrad → Zufällige Reihenfolge** die Wiedergabereihenfolge umstellen. Die Auswahl wird gespeichert und funktioniert für Server- und Gerätefotos. Serverfotos nutzen die stabile Zufallssortierung des Index; lokale Fotos eine gemischte Liste ihrer IDs. Die Galerie behält beim Schließen ihre ursprüngliche Ansicht.
+
+**0.69.1:** Die Web-Diashow lädt am Seitenende automatisch die nächste Galerie-Seite mit denselben Filtern und derselben Sortierung und endet erst beim letzten Medium. Beim Schließen bleibt die ursprüngliche Galerie erhalten.
 
 Die [Foto-Anleitung](_site-src/docs/fotos.md) führt vom ersten Galerieaufruf über Suche und Tags zu Karte und Fotoframe. [Personen und Gesichter](_site-src/docs/fotos-personen.md) erklärt die Bearbeitung; [Einrichtung und Betrieb](_site-src/docs/fotos-technik.md) bündelt Serverkonfiguration, Worker, Caches und Datensicherung.
 

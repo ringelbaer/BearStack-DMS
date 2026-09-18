@@ -350,7 +350,7 @@
     {{else}}
     <span>Seite {{.Photos.Page}}{{if gt $photoPageCount 0}} von {{$photoPageCount}}{{end}}</span>
     {{end}}
-    {{if .PhotoFilter.NextURL}}<a class="secondary-button" href="{{.PhotoFilter.NextURL}}">Weiter</a>{{else}}<span></span>{{end}}
+    {{if .PhotoFilter.NextURL}}<a class="secondary-button" data-photo-next-page href="{{.PhotoFilter.NextURL}}">Weiter</a>{{else}}<span></span>{{end}}
   </div>
   <div class="pagination-summary">{{if gt .Photos.Total 0}}{{if .Photos.PeopleDirectory}}{{len .Photos.Folders}} von {{.Photos.Total}} Ordner{{else}}{{len .Photos.Media}} von {{.Photos.Total}} Medien{{end}}{{else}}0 Medien{{end}}</div>
 </nav>

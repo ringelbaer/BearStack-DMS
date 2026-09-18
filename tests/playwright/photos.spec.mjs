@@ -398,6 +398,113 @@ test("photo lightbox stops at both ends and finishes the slideshow", async ({ br
   }
 });
 
+async function useSinglePhotoPages(page, context) {
+  await page.goto(`${fixture.baseURL}/settings/photos`);
+  const form = await page.locator('form[action="/settings/photos"]').evaluate((node) => Object.fromEntries(new FormData(node)));
+  async function save(values) {
+    const response = await context.request.post(`${fixture.baseURL}/settings/photos`, {
+      form: values, headers: { Origin: fixture.baseURL },
+    });
+    expect(response.ok()).toBeTruthy();
+  }
+  await save({ ...form, photo_page_size: "1" });
+  return () => save(form);
+}
+
+test("slideshow loads successive pages and restores the original gallery on reopen", async ({ browser }) => {
+  const { context, page } = await adminPage(browser);
+  const restoreSettings = await useSinglePhotoPages(page, context);
+  try {
+    await page.goto(`${fixture.baseURL}/photos?type=image&sort=ascending_name`);
+    const firstCard = page.locator("[data-photo-item] .photo-card-button").first();
+    await firstCard.click();
+    const lightbox = page.locator("[data-photo-lightbox]");
+    const title = lightbox.locator("[data-photo-title]");
+    const firstTitle = await title.textContent();
+    const slideshow = lightbox.locator("[data-photo-slideshow]");
+    await expect(slideshow).toBeEnabled();
+    await page.clock.install();
+    await slideshow.focus();
+    await slideshow.press("Enter");
+    const responsePromise = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.pathname === "/photos" && url.searchParams.get("page") === "2";
+    });
+    await page.clock.fastForward(60_000);
+    const response = await responsePromise;
+    const url = new URL(response.url());
+    expect(url.searchParams.get("type")).toBe("image");
+    expect(url.searchParams.get("sort")).toBe("ascending_name");
+    await expect(page.locator("[data-photo-item]")).toHaveCount(1);
+    await expect(title).not.toHaveText(firstTitle);
+    await expect(lightbox).toBeVisible();
+    // There are only a few fixture images; run through every remaining page.
+    for (let index = 0; index < 20 && await slideshow.textContent() === "Stop"; index += 1) {
+      const previousTitle = await title.textContent();
+      await page.clock.fastForward(60_000);
+      await expect(title).not.toHaveText(previousTitle);
+    }
+    await expect(slideshow).toHaveText("Start");
+    await expect(slideshow).toBeDisabled();
+    await page.keyboard.press("Escape");
+    await firstCard.click();
+    await expect(title).toHaveText(firstTitle);
+    await expect(slideshow).toBeEnabled();
+  } finally {
+    await restoreSettings();
+    await context.close();
+  }
+});
+
+for (const action of ["stop", "close", "failure"]) {
+  test(`slideshow page loading handles ${action}`, async ({ browser }) => {
+    const { context, page } = await adminPage(browser);
+    const restoreSettings = await useSinglePhotoPages(page, context);
+    try {
+      await page.goto(`${fixture.baseURL}/photos?type=image&sort=ascending_name`);
+      await page.locator("[data-photo-item] .photo-card-button").first().click();
+      const lightbox = page.locator("[data-photo-lightbox]");
+      const title = lightbox.locator("[data-photo-title]");
+      const originalTitle = await title.textContent();
+      const slideshow = lightbox.locator("[data-photo-slideshow]");
+      let release;
+      const gate = new Promise((resolve) => { release = resolve; });
+      let requests = 0;
+      await page.route(/\/photos\?.*page=2/, async (route) => {
+        requests += 1;
+        await gate;
+        await route.fulfill({ status: 503, body: "Unavailable" });
+      });
+      await page.clock.install();
+      await slideshow.focus();
+      await slideshow.press("Enter");
+      await page.clock.fastForward(60_000);
+      await expect.poll(() => requests).toBe(1);
+      await page.clock.fastForward(60_000);
+      expect(requests).toBe(1);
+      if (action === "stop") await slideshow.press("Enter");
+      if (action === "close") await page.keyboard.press("Escape");
+      release();
+      await expect(slideshow).toHaveText("Start");
+      if (action === "failure") {
+        await expect(title).toContainText("Nächste Seite konnte nicht geladen werden");
+        await expect(slideshow).toBeEnabled();
+        await page.unroute(/\/photos\?.*page=2/);
+        await slideshow.press("Enter");
+        await page.clock.fastForward(60_000);
+        await expect(title).not.toContainText("Nächste Seite konnte nicht geladen werden");
+        await expect(title).not.toHaveText(originalTitle);
+      } else {
+        await expect(title).toHaveText(originalTitle);
+      }
+      if (action === "close") await expect(lightbox).not.toBeVisible();
+    } finally {
+      await restoreSettings();
+      await context.close();
+    }
+  });
+}
+
 test("photo lightbox works without the gallery script and uses host callbacks", async ({ browser }) => {
   const { context, page } = await editorPage(browser);
   const errors = [];

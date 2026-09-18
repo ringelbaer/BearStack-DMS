@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 0.69.1
+
+- PATCH: Web-Diashow lädt die nächste Galerie-Seite automatisch nach und endet erst am Ende der Medienauswahl. Filter, Sortierung und Vollbild bleiben erhalten; der Speicherbedarf bleibt auf eine Medienseite begrenzt.
+- Stoppen und Schließen brechen laufende Seitenabfragen ab. Ladefehler pausieren die Wiedergabe mit einem Hinweis und erlauben einen erneuten Start. Die ursprüngliche Galerie bleibt beim Schließen erhalten.
+- README und Website aktualisiert; keine API- oder Datenformatänderung.
+- Validierung: Go-Tests für Server und Fotos, JavaScript-DOM-Suite, sechs gezielte Browser-Regressionen einschließlich Seitenwechsel, Abbruch und erneutem Start nach Ladefehler sowie Website-Build erfolgreich.
+
 ### Dokumentation
 
 - Foto-Dokumentation vom ersten Galerieaufruf bis zu Suche, Tags, Karte und Fotoframe neu strukturiert. Eigene Anleitungen für Personen/Gesichter und Einrichtung/Betrieb trennen Arbeitsabläufe von Konfiguration, Ressourcenlimits und API-Referenz. Versionschronik und doppelte Android-Beschreibungen durch aktuelle Bedienhinweise und gezielte Verweise ersetzt; Website-Navigation und README aktualisiert.
