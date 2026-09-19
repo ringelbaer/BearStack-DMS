@@ -82,7 +82,7 @@ class LocalizationTest {
         compose.waitUntil(10_000) {compose.onAllNodesWithText("Total: 5 faces · 1 group").fetchSemanticsNodes().isNotEmpty()}
         compose.onNodeWithText("Total: 5 faces · 1 group").assertIsDisplayed()
         compose.onNodeWithContentDescription("More options").performClick()
-        compose.onNodeWithText("People").performClick();idle(vm)
+        compose.onNodeWithText("People list").performClick();idle(vm)
         compose.onNodeWithText("Search people").assertIsDisplayed()
         compose.onNodeWithText("Ada").performClick();idle(vm)
         compose.onNodeWithText("1 face").assertIsDisplayed()

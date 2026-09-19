@@ -104,6 +104,7 @@ type labelPeopleScope int
 const (
 	labelPeopleUnnamed labelPeopleScope = iota
 	labelPeopleNamed
+	labelPeopleNamedWithFolders
 	labelPeopleAll
 )
 
@@ -114,11 +115,18 @@ func (scope labelPeopleScope) predicates() (candidates, names string) {
 	switch scope {
 	case labelPeopleUnnamed:
 		return `(p.name='' OR (p.manual_name=0 AND p.name_source<>''))`, `p.name=''`
-	case labelPeopleNamed:
+	case labelPeopleNamed, labelPeopleNamedWithFolders:
 		return `p.name<>''`, `p.name<>''`
 	default:
 		return `1=1`, `1=1`
 	}
+}
+
+func (scope labelPeopleScope) exists() string {
+	if scope == labelPeopleNamedWithFolders {
+		return `(` + labelExists + ` OR EXISTS(SELECT 1 FROM person_folder_exclusions e WHERE e.person_id=p.id))`
+	}
+	return labelExists
 }
 
 func labelPeopleNameFilter(query string) (string, []any) {
@@ -131,7 +139,7 @@ func labelPeopleNameFilter(query string) (string, []any) {
 func (s *photoIndexStore) labelPeopleIDs(ctx context.Context, after, upper int64, scope labelPeopleScope, query string) ([]int64, error) {
 	candidates, _ := scope.predicates()
 	filter, queryArgs := labelPeopleNameFilter(query)
-	rows, err := s.db.QueryContext(ctx, `SELECT p.id FROM photo_people p WHERE `+candidates+` AND p.id>? AND p.id<=? AND `+labelExists+filter+` ORDER BY p.id LIMIT 21`, append([]any{after, upper}, queryArgs...)...)
+	rows, err := s.db.QueryContext(ctx, `SELECT p.id FROM photo_people p WHERE `+candidates+` AND p.id>? AND p.id<=? AND `+scope.exists()+filter+` ORDER BY p.id LIMIT 21`, append([]any{after, upper}, queryArgs...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -157,11 +165,14 @@ func (s *photoIndexStore) labelPeople(ctx context.Context, ids []int64, scope la
 	args = append(args, queryArgs...)
 	args = append(args, limit)
 	columns := labelPreviewColumns
+	if scope == labelPeopleNamedWithFolders {
+		columns = `p.id,p.name,r.revision,(SELECT count(*) FROM photo_faces f WHERE f.person_id=p.id AND f.ignored=0),coalesce(` + personPortraitSQL + `,0)`
+	}
 	if scope == labelPeopleUnnamed {
 		// Queue identities also seed naming searches; do not change their source face.
 		columns = labelColumns
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT `+columns+labelFrom+` WHERE p.id IN (`+sqlutil.Placeholders(len(ids))+`) AND `+names+` AND `+labelExists+filter+` ORDER BY p.id LIMIT ?`, args...)
+	rows, err := s.db.QueryContext(ctx, `SELECT `+columns+labelFrom+` WHERE p.id IN (`+sqlutil.Placeholders(len(ids))+`) AND `+names+` AND `+scope.exists()+filter+` ORDER BY p.id LIMIT ?`, args...)
 	if err != nil {
 		return nil, err
 	}

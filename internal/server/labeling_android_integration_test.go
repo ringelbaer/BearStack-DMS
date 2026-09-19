@@ -57,6 +57,8 @@ func TestAndroidLabelingFixture(t *testing.T) {
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/", s.Handler())
+	foldersServer, _ := groupPhotoServerFixture(t)
+	mux.Handle("/folders/", http.StripPrefix("/folders", foldersServer.Handler()))
 	galleryServer := faceTestServer(t)
 	if err := os.WriteFile(filepath.Join(galleryServer.photos.Root(), "story.md"), []byte("# Gallery story\nA read-only gallery."), 0600); err != nil {
 		t.Fatal(err)

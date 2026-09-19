@@ -7,7 +7,7 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.19.0** (`versionCode 40`), BearStack **0.69.0**.
+bis zur Personenverwaltung. Stand: App **0.20.0** (`versionCode 41`), BearStack **1.2.0**.
 
 ## Bauen und installieren
 
@@ -116,10 +116,29 @@ sich die Foto-Dienste und Zugriffsregeln des Browsers.
 | `/photos/faces/{id}/suggestions` | Gesichtsabgleich mit bereits benannten Personen. |
 
 Funktionen werden anhand von Serverfähigkeiten eingeblendet, etwa `named_people`,
-`merge_suggestions`, `merge_side_actions`, `merge_naming`, `named_face_batch` und
+`merge_suggestions`, `merge_side_actions`, `merge_naming`, `named_face_batch`, `person_folders` und
 `people_count_sort`. Die [Kompatibilitätstabelle](android.md#serverkompatibilitat)
 nennt die zugehörigen Mindestversionen. Ältere Server behalten die jeweils
 unterstützten Bedienwege; fehlende Funktionen führen nicht zu einem Protokollwechsel.
+
+### Native Ordnerprüfung
+
+`GET /api/photos/labeling/v1/people/{id}/folders?page=1` liefert höchstens 40 exakte
+Ordner und acht Gesichter pro Ordner. Die App hält nur die aktuelle Seite. Anzeigen
+verwenden ausschließlich `display_path`; `directory` bleibt unverändert im Auftrag.
+Vorschauen enthalten die vorhandenen Original-Cachekennungen, Gesichtsrahmen und
+Prüfmarkierungen. Die bekannte Bildansicht nutzt dieselben geschützten
+Thumbnail-/Originalendpunkte und lädt Originale nur im begrenzten bestehenden Cache.
+
+`folder_move`, `folder_unnamed`, `folder_ignore`, `folder_exclude` und `folder_include`
+verwenden den bestehenden `people/{id}/actions`-Endpunkt und die persistente
+Room-Auftragsablage. Die gemeinsame Serverimplementierung für Web und Android
+ändert den ganzen exakten Ordner atomar, ohne eine vollständige Gesichtsliste an
+den Client zu übertragen. Quittung und Änderung werden zusammen geschrieben;
+Wiederholungen prüfen die Quittung vor der inzwischen geänderten Quellrevision.
+Die Neuzuweisung an eine vorhandene Person prüft zusätzlich deren Revision.
+Die Personenliste fordert `include_excluded=1` an, damit benannte Personen mit
+ausschließlich sichtbaren Sperren nach einem Neustart wieder erreichbar bleiben.
 
 ### Aktionen, Revisionen und Wiederanlauf
 

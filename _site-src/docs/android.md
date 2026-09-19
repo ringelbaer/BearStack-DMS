@@ -9,7 +9,7 @@ Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.
 
-Diese Anleitung beschreibt **Android-App 0.19.0**. Beginne mit den
+Diese Anleitung beschreibt **Android-App 0.20.0**. Beginne mit den
 [ersten Schritten](#erste-schritte); die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die [technische Referenz](android-technik.md).
@@ -378,6 +378,36 @@ Wird das letzte Gesicht entfernt, verschwindet die leere Person aus der Liste.
 Bestätigte Änderungen werden nach der Serverantwort angezeigt. Unter **… → Hilfe**
 findest du die Bedienhinweise auch direkt in der Personenliste und in einer geöffneten Person.
 
+### Ordner-Pfade prüfen
+
+Öffne eine Person und wähle **… → Ordner-Pfade prüfen**. Der Eintrag ist auch beim
+Benennen einer unbenannten Gruppe verfügbar. Benötigt werden BearStack **1.2.0**
+oder neuer und **Fotos bearbeiten**; bei älteren Servern ist der Eintrag deaktiviert.
+
+Jeder vollständige, wie in der Galerie formatierte Ordnerpfad erscheint einmal.
+Die Ansicht enthält **40 Ordner pro Seite** und höchstens **acht Gesichtsvorschauen
+je Ordner**. Wische die Vorschauen seitlich. Halte ein Gesicht gedrückt und ziehe
+zum Vergrößern wie gewohnt nach oben oder unten. Die Originalansicht zeigt den
+Fotopfad und den passenden Gesichtsrahmen; TalkBack bietet **Originalfoto anzeigen**.
+
+| Aktion | Wirkung |
+| --- | --- |
+| **Alle neu zuweisen** | Öffnet den gemeinsamen Namensdialog mit Suche nach vorhandenen Personen, Gesichtssuche und Eingabe eines neuen eindeutigen Namens. |
+| **Alle auf unbenannt setzen** | Verschiebt die Gesichter gemeinsam in eine neue unbenannte Gruppe und entfernt ihre Vergleichsfavoriten. |
+| **Alle ignorieren** | Ignoriert alle aktiven Gesichter dieser Person im Ordner. |
+| **Pfad ausschließen und Gesichter auf unbenannt setzen** | Setzt die Gesichter unbenannt und sperrt neue manuelle sowie automatische Zuordnungen zu dieser Person im Ordner. |
+| **Pfad wieder freigeben** | Hebt die Sperre auf; bestehende unbenannte Gesichter werden nicht automatisch zurückverschoben. |
+
+Alle Aktionen gelten für **sämtliche aktiven Gesichter der Person im exakten
+Ordner**, auch bei mehr als acht Vorschauen oder 500 Gesichtern. Unterordner und
+andere Personen bleiben unverändert. Ausschlüsse bleiben auch ohne aktive Gesichter erreichbar. Benannte Personen
+mit ausschließlich gesperrten Pfaden stehen weiter in der Personenliste als
+**Ausgeschlossene Pfade** und öffnen direkt die Ordnerprüfung. Änderungen verlangen eine
+Bestätigung beziehungsweise die ausdrückliche Zielauswahl. Bei einem
+Revisionskonflikt wird die Liste aktualisiert und eine neue Entscheidung benötigt.
+Nach einem Verbindungsabbruch löst **Offene Aktion prüfen** die gespeicherte Aktion
+über ihre Quittung auf. **Zurück** aktualisiert die vorherige Personenansicht.
+
 ### Mehrfachauswahl in „Benannte Personen“
 
 1. Öffne eine Person und wähle Gesichter über die Checkbox oben links in ihren Kacheln.
@@ -535,6 +565,7 @@ Server; mit älteren Versionen können einzelne Einträge fehlen.
 | Benannte Personen verwalten / nach Namen suchen | 0.43.0 / 0.45.0 |
 | Ähnliche Gruppen / zusätzliche Aktionen je Vergleichsseite | 0.49.0 / 0.50.0 |
 | Mehrfachauswahl bei benannten Personen | 0.51.0 |
+| Native Ordnerprüfung mit Vergrößerung, Sammelaktionen und Pfadsperren | 1.2.0 |
 | Personen unter **Ordner** / **Personen im Ordner** | 0.53.0 / 0.55.0 |
 | Personen nach **Anzahl Bilder** sortieren | 0.58.0 |
 | Hinweis auf geänderte Gesichtsquellen | 0.65.0 |

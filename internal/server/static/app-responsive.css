@@ -345,6 +345,8 @@
     text-align: center;
   }
 
+  .person-folder-pagination { flex-direction: row; }
+
   .pagination-nav,
   .pagination-size label {
     justify-content: center;
@@ -1179,6 +1181,7 @@
   }
 
   .filters.people-search-fields {
+    --control-height: 44px;
     gap: 8px;
     padding: 10px;
   }
@@ -1192,10 +1195,11 @@
   .people-sort-control { display: grid; flex: 1 1 200px; gap: 4px; }
 
   .people-search-fields > button {
-    min-height: 44px;
-    padding: 8px;
+    padding: 0 8px;
     font-size: .8rem;
   }
+
+  .person-folder-pagination > .secondary-button { min-height: 44px; }
 
   .people-filter-tabs { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 6px; width: 100%; }
   .people-filter-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }

@@ -58,6 +58,7 @@ fun PeopleApp(vm: PeopleViewModel) {
             else if (state.restoring) StartupScreen(vm::openDevicePhotos)
             else if (!state.connected) ConnectionScreen(state,vm)
             else if(state.mergeReview) MergeReviewScreen(state,vm)
+            else if(state.folderReview) PersonFoldersScreen(state,vm)
             else if(state.directory) PeopleDirectoryScreen(state,vm)
             else LabelingScreen(state,vm)
             if(state.undoIgnores.isNotEmpty()) key(state.naming) { IgnoreUndoToast(state.undoIgnores.size,vm::undoIgnore) }
@@ -117,6 +118,8 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
         Scaffold(topBar={ TopAppBar(title={Text(if(statistics) text(R.string.people_statistics) else text(R.string.people_labeling))},actions={
             OptionsMenu(menu,{menu=it}) {
                 if(vm.photos!=null) DropdownMenuItem(text={Text(stringResource(R.string.photos_title))},onClick={vm.openGallery();menu=false},enabled=enabled)
+                if(state.person!=null) DropdownMenuItem(text={Text(text(R.string.people_folders_title))},
+                    onClick={menu=false;vm.openPersonFolders()},enabled=enabled && state.personFoldersSupported)
                 DropdownMenuItem(text={Text(text(R.string.people_directory))},onClick={vm.openDirectory();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(text(R.string.people_similar_groups))},onClick={vm.openMergeReview();menu=false},enabled=enabled)
                 DropdownMenuItem(text={Text(if(statistics) text(R.string.people_return_labeling) else text(R.string.people_statistics))},onClick={statistics=!statistics;menu=false},enabled=enabled)
@@ -300,13 +303,17 @@ internal fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Bool
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) { focus.requestFocus(); keyboard?.show() }
-    AlertDialog(onDismissRequest=vm::closeNaming,title={Text(if(state.duplicates.isNotEmpty()) text(R.string.people_name_exists) else if(state.mergeNamingSide!=null) text(R.string.people_merge_side_name) else if(state.mergeReview) text(R.string.people_merge_name) else if(state.batchNaming) text(R.string.people_batch_assign) else if(state.directory) text(R.string.people_rename) else text(R.string.people_name_person))},
+    AlertDialog(onDismissRequest=vm::closeNaming,title={Text(if(state.duplicates.isNotEmpty()) text(R.string.people_name_exists) else if(state.mergeNamingSide!=null) text(R.string.people_merge_side_name) else if(state.mergeReview) text(R.string.people_merge_name) else if(state.folderReview) text(R.string.people_folders_move) else if(state.batchNaming) text(R.string.people_batch_assign) else if(state.directory) text(R.string.people_rename) else text(R.string.people_name_person))},
         properties=DialogProperties(usePlatformDefaultWidth=false),modifier=Modifier.fillMaxWidth().padding(16.dp).imePadding(),
         text={ Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            if(state.folderReview) state.folderSelection?.let { folder ->
+                Text(text.photoPath(folder.displayPath))
+                Text(text(R.string.people_folders_scope))
+            }
             if(state.batchNaming) Text(text(R.string.people_batch_scope,state.selectedFaces.size))
             if(state.mergeNamingSide!=null) Text(text(R.string.people_merge_side_scope))
             OutlinedTextField(state.name,vm::nameChanged,label={Text(text(R.string.people_name))},singleLine=true,enabled=enabled,
-                trailingIcon={if(!state.directory || state.batchNaming) IconButton(onClick={keyboard?.hide();vm.findFaceMatches()},enabled=enabled && !state.faceSearching) {
+                trailingIcon={if(!state.directory || state.batchNaming || state.folderReview) IconButton(onClick={keyboard?.hide();vm.findFaceMatches()},enabled=enabled && !state.faceSearching) {
                     Icon(painterResource(R.drawable.ic_search),text(R.string.people_face_search),modifier=Modifier.size(24.dp))
                 }},
                 modifier=Modifier.fillMaxWidth().focusRequester(focus),keyboardOptions=KeyboardOptions(imeAction=ImeAction.Done),
@@ -328,9 +335,9 @@ internal fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Bool
                     }
                 }
             }
-            if(state.duplicates.isNotEmpty()) Text(if(state.directory && !state.batchNaming) text(R.string.people_duplicate_rename) else text(R.string.people_duplicate_assign))
-            (if(state.directory && !state.batchNaming) emptyList() else state.duplicates.ifEmpty { state.suggestions }).forEach { person ->
-                Surface(onClick={vm.assign(person)},enabled=enabled && (!state.batchNaming || person.id!=state.selectedPerson?.id),shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surfaceContainer) {
+            if(state.duplicates.isNotEmpty()) Text(if(state.directory && !state.batchNaming && !state.folderReview) text(R.string.people_duplicate_rename) else text(R.string.people_duplicate_assign))
+            (if(state.directory && !state.batchNaming && !state.folderReview) emptyList() else state.duplicates.ifEmpty { state.suggestions }).forEach { person ->
+                Surface(onClick={vm.assign(person)},enabled=enabled && (!state.batchNaming || person.id!=state.selectedPerson?.id) && (!state.folderReview || person.id!=state.folderSource?.id),shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surfaceContainer) {
                     Row(Modifier.fillMaxWidth().padding(8.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                         vm.images?.let { AsyncImage(vm.image(person.faceId),null,imageLoader=it,modifier=Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))) }
                         Column(Modifier.weight(1f)) { Text(person.name);Text(text(R.string.people_face_count_id,text.faces(person.count),person.id),style=MaterialTheme.typography.bodySmall) }
@@ -342,7 +349,7 @@ internal fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Bool
                 TextButton(onClick=vm::retry,enabled=!state.busy) { Text(text(R.string.people_check_pending)) }
                 TextButton(onClick=vm::switchConnection,enabled=!state.busy) { Text(text(R.string.connection_check)) }
             }
-        } },confirmButton={ TextButton(onClick={vm.submitName(state.duplicates.isNotEmpty())},enabled=enabled && state.name.isNotBlank()) {
-            Text(if(state.duplicates.isNotEmpty()) text(R.string.people_name_separately) else text(R.string.photos_save))
+        } },confirmButton={ TextButton(onClick={vm.submitName(state.duplicates.isNotEmpty())},enabled=enabled && state.name.isNotBlank() && (!state.folderReview || state.duplicates.isEmpty())) {
+            Text(if(state.duplicates.isNotEmpty() && !state.folderReview) text(R.string.people_name_separately) else text(R.string.photos_save))
         } },dismissButton={ TextButton(onClick=vm::closeNaming,enabled=enabled) { Text(text(R.string.photos_cancel)) } })
 }

@@ -48,6 +48,8 @@ die automatische Verarbeitung ist standardmäßig ausgeschaltet.
 und **Benannt** zur Verfügung. Der Wechsel zu **Unbenannt** oder **Ignoriert**
 verwirft den Suchtext. Über **×** am Suchfeld lässt sich eine Namenssuche
 zurücksetzen, ohne Filter und Sortierung zu verlieren.
+Suchfeld, **×** und **Suchen** sind gleich hoch ausgerichtet; auf Mobilgeräten
+sind die Bedienelemente mindestens 44 Pixel hoch.
 
 ### Personen sortieren
 
@@ -342,9 +344,13 @@ Unter der Überschrift stehen nur hinterlegte Stammdaten: Geburts- und Sterbedat
 Eltern, Geschwister und Ehen ohne Scheidungsdatum. Die vollständigen Stammdaten
 bleiben im Dialog bearbeitbar.
 
-**Ordner-Pfade prüfen** öffnet `/photos/people/{id}/folder`. Jeder exakte Ordner erscheint
+**Ordner-Pfade prüfen** öffnet `/photos/people/{id}/folder`. Ab Android 0.20.0 mit
+BearStack 1.2.0 steht die [vollständige native Ordnerprüfung](android.md#ordner-pfade-prufen)
+mit der bekannten Gesichtsvergrößerung auch in der App bereit. Jeder exakte Ordner erscheint
 einmal mit seinem vollständigen formatierten Galeriepfad und darunter höchstens
 acht Gesichtsvorschauen. Weitere Ordner folgen auf der nächsten Seite (40 pro Seite).
+Die zentrierte Seitennavigation zeigt die Seitenzahl mit Abstand zu **Zurück**
+und **Weiter** und bleibt auch auf schmalen Bildschirmen bedienbar.
 
 **Alle neu zuweisen** öffnet das gemeinsame Personenmodal für den jeweiligen Ordner.
 Dort steht der vollständig formatierte Pfad zur Kontrolle; wähle eine vorhandene

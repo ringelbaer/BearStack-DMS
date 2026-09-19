@@ -9,7 +9,7 @@ import (
 )
 
 func (l *Library) LabelSession(ctx context.Context) (LabelSession, error) {
-	out := LabelSession{Protocol: 1, FaceFavorites: true, NamedPeople: true, NamedSearch: true, MergeSuggestions: true, MergeNaming: true, ManualMerge: true, MergeSideActions: true, NamedFaceBatch: true}
+	out := LabelSession{Protocol: 1, PersonFolders: true, FaceFavorites: true, NamedPeople: true, NamedSearch: true, MergeSuggestions: true, MergeNaming: true, ManualMerge: true, MergeSideActions: true, NamedFaceBatch: true}
 	err := l.index.labelIdentity(ctx, &out)
 	return out, err
 }
@@ -71,7 +71,7 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 		return out, ErrLabelInvalid
 	}
 	switch a.Action {
-	case "name", "assign", "detach", "ignore", "rename", "unassign", "favorite", "accept_merge", "reject_merge", "name_merge", "merge_groups", "name_groups", "unassign_faces", "assign_faces", "name_faces", "ignore_faces":
+	case "folder_move", "folder_unnamed", "folder_ignore", "folder_exclude", "folder_include", "name", "assign", "detach", "ignore", "rename", "unassign", "favorite", "accept_merge", "reject_merge", "name_merge", "merge_groups", "name_groups", "unassign_faces", "assign_faces", "name_faces", "ignore_faces":
 	default:
 		return out, ErrLabelInvalid
 	}
@@ -103,6 +103,15 @@ func (l *Library) ApplyLabelAction(ctx context.Context, actor string, id int64, 
 	}{id, a})
 	sum := sha256.Sum256(encoded)
 	fingerprint := hex.EncodeToString(sum[:])
+	if strings.HasPrefix(a.Action, "folder_") {
+		if err := validateLabelFolderAction(a, name); err != nil {
+			return out, err
+		}
+		return l.applyPersonFolderAction(ctx, id, PersonFolderAction{Directory: *a.Directory, Action: strings.TrimPrefix(a.Action, "folder_"), Revision: a.Revision, TargetID: a.TargetID, TargetRevision: a.TargetRevision, Name: name}, actor, &a, fingerprint)
+	}
+	if a.Directory != nil {
+		return out, ErrLabelInvalid
+	}
 	visibilityFilter := `p.id IN (?,?,?)`
 	visibilityArgs := []any{id, a.TargetID, a.AssignID}
 	if manualMerge {

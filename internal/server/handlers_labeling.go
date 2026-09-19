@@ -24,7 +24,9 @@ func (s *Server) labelError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, photos.ErrLabelNameExists):
 		status, code = 409, "name_exists"
-	case photos.IsPersonFolderExcluded(err), errors.Is(err, photos.ErrLabelConflict), errors.Is(err, photos.ErrParentMerge), errors.Is(err, photos.ErrPersonDetailsMerge):
+	case photos.IsPersonFolderExcluded(err):
+		status, code = 409, "folder_excluded"
+	case errors.Is(err, photos.ErrLabelConflict), errors.Is(err, photos.ErrParentMerge), errors.Is(err, photos.ErrPersonDetailsMerge):
 		status, code = 409, "conflict"
 	case errors.Is(err, photos.ErrLabelInvalid):
 		status, code = 400, "invalid"
@@ -91,7 +93,11 @@ func (s *Server) handleLabelList(w http.ResponseWriter, r *http.Request, named b
 			s.labelError(w, r, photos.ErrLabelInvalid)
 			return
 		}
-		out, err = s.photos.LabelNamedPeople(r.Context(), after, upper, q)
+		if r.URL.Query().Get("include_excluded") == "1" {
+			out, err = s.photos.LabelNamedPeopleWithFolders(r.Context(), after, upper, q)
+		} else {
+			out, err = s.photos.LabelNamedPeople(r.Context(), after, upper, q)
+		}
 	} else {
 		out, err = s.photos.LabelCandidates(r.Context(), after, upper)
 	}
@@ -275,4 +281,20 @@ func (s *Server) labelingFace(w http.ResponseWriter, r *http.Request) (photos.Re
 		return photos.RecognizedFace{}, false
 	}
 	return face, true
+}
+
+func (s *Server) handleLabelPersonFolders(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
+	id, err := faceID(r.PathValue("id"))
+	page, pageErr := labelInt(r, "page", 1000000)
+	if err != nil || pageErr != nil || (r.URL.Query().Has("page") && page == 0) {
+		s.labelError(w, r, photos.ErrLabelInvalid)
+		return
+	}
+	result, err := s.photos.LabelPersonFolders(r.Context(), id, int(max(1, page)))
+	if err != nil {
+		s.labelError(w, r, err)
+		return
+	}
+	_ = writeJSON(w, http.StatusOK, result)
 }

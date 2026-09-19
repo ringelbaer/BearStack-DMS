@@ -15,7 +15,7 @@ import org.json.JSONObject
 
 data class Session(val instance: String, val dataset: String, val account: String, val upper: Long,
     val namedPeople: Boolean = false, val namedSearch: Boolean = false, val mergeSuggestions: Boolean = false, val mergeNaming: Boolean = false,
-    val mergeSideActions: Boolean = false, val namedFaceBatch: Boolean = false) {
+    val mergeSideActions: Boolean = false, val namedFaceBatch: Boolean = false, val personFolders: Boolean = false) {
     val scope: String get() = JSONObject().put("instance", instance).put("dataset", dataset).put("account", account).toString()
 }
 data class Person(val id: Long, val name: String, val revision: Long, val count: Long, val faceId: Long,
@@ -32,6 +32,7 @@ class ApiFailure(val status: Int, val code: String, message: String,
     override val userText: UiText = when {
         status==401 -> UiText(R.string.error_auth)
         status==403 -> UiText(R.string.error_people_permission)
+        code=="folder_excluded" -> UiText(R.string.people_folders_target_excluded)
         code=="name_exists" -> UiText(R.string.error_name_exists)
         status==409 -> UiText(R.string.error_group_changed)
         else -> UiText(R.string.error_server,status)
@@ -39,7 +40,11 @@ class ApiFailure(val status: Int, val code: String, message: String,
     constructor(status: Int,code: String,text: UiText):this(status,code,"API failure ($status)",text)
 }
 
+data class PersonFolder(val directory: String, val displayPath: String, val count: Long, val excluded: Boolean, val preview: Person)
+data class PersonFolderPage(val personId: Long, val name: String, val revision: Long, val page: Int, val hasNext: Boolean, val folders: List<PersonFolder>)
+
 interface LabelingService {
+    suspend fun personFolders(id: Long, page: Int): PersonFolderPage = throw ApiFailure(404,"not_found",UiText(R.string.people_folders_version))
     suspend fun session(): Session
     suspend fun candidates(after: Long, upper: Long): Candidates
     suspend fun namedPeople(after: Long, upper: Long): Candidates = throw ApiFailure(404,"not_found",UiText(R.string.error_people_version))
@@ -66,15 +71,15 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
     fun gallery(name: String): String = server.resolve("photos")!!.newBuilder()
         // The gallery tokenizer concatenates quoted segments; backslashes are literal.
         .addQueryParameter("q", "person:\"${name.replace("\"", "\"'\"'\"")}\"").build().toString()
-    private suspend fun json(path: String, query: Map<String,String> = emptyMap(), body: String? = null): JSONObject {
+    private suspend fun json(path: String, query: Map<String,String> = emptyMap(), body: String? = null, maximum: Long = 256 * 1024L): JSONObject {
         val url = base.resolve(path)!!.newBuilder().apply { query.forEach { (k,v) -> addQueryParameter(k,v) } }.build()
         val request = Request.Builder().url(url).apply { body?.let { post(it.toRequestBody("application/json".toMediaType())) } }.build()
-        return client.json(request, 256 * 1024L) { status, code ->
+        return client.json(request, maximum) { status, code ->
             when(status) {
                 401 -> UiText(R.string.error_auth)
                 403 -> UiText(R.string.error_people_permission)
                 404 -> UiText(R.string.error_people_missing)
-                409 -> if (code == "name_exists") UiText(R.string.error_name_exists) else UiText(R.string.error_group_changed)
+                409 -> if(code=="folder_excluded") UiText(R.string.people_folders_target_excluded) else if (code == "name_exists") UiText(R.string.error_name_exists) else UiText(R.string.error_group_changed)
                 else -> UiText(R.string.error_server,status)
             }
         }
@@ -83,18 +88,35 @@ class LabelingApi(val client: OkHttpClient, address: String) : LabelingService {
     override suspend fun session(): Session {
         val o = json("session")
         requireMessage(o.getInt("protocol") == 1 && o.getBoolean("can_manage"),R.string.error_people_protocol)
-        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"),o.optBoolean("merge_naming"),o.optBoolean("merge_side_actions"),o.optBoolean("named_face_batch"))
+        return Session(o.getString("instance"),o.getString("dataset"),o.getString("account"),o.getLong("upper_id"),o.optBoolean("named_people"),o.optBoolean("named_search"),o.optBoolean("merge_suggestions"),o.optBoolean("merge_naming"),o.optBoolean("merge_side_actions"),o.optBoolean("named_face_batch"),o.optBoolean("person_folders"))
+    }
+    override suspend fun personFolders(id: Long, page: Int): PersonFolderPage {
+        require(id > 0 && page > 0)
+        val o=json("people/$id/folders",mapOf("page" to "$page"),maximum=4*1024*1024L)
+        val personId=o.getLong("person_id")
+        require(personId==id && o.getInt("page")==page)
+        val folders=o.getJSONArray("folders")
+        require(folders.length()<=40)
+        return PersonFolderPage(personId,o.getString("name"),o.getLong("revision"),page,o.getBoolean("has_next"),
+            List(folders.length()) { index ->
+                val f=folders.getJSONObject(index)
+                val faces=f.optJSONArray("faces") ?: org.json.JSONArray()
+                require(faces.length()<=8)
+                val preview=person(JSONObject().put("id",id).put("name",o.getString("name")).put("revision",o.getLong("revision"))
+                    .put("count",f.getLong("count")).put("face_id",if(faces.length()>0) faces.getJSONObject(0).getLong("id") else 0).put("faces",faces))
+                PersonFolder(f.getString("directory"),f.getString("display_path"),f.getLong("count"),f.getBoolean("excluded"),preview)
+            })
     }
     override suspend fun candidates(after: Long, upper: Long): Candidates {
         val o = json("candidates", mapOf("after" to "$after", "upper" to "$upper"))
         return Candidates(people(o),o.getLong("next"),o.getBoolean("has_next"))
     }
     override suspend fun namedPeople(after: Long, upper: Long): Candidates {
-        val o = json("people", mapOf("after" to "$after", "upper" to "$upper"))
+        val o = json("people", mapOf("after" to "$after", "upper" to "$upper", "include_excluded" to "1"))
         return Candidates(people(o),o.getLong("next"),o.getBoolean("has_next"))
     }
     override suspend fun searchPeople(after: Long, upper: Long, q: String): Candidates {
-        val o=json("people",mapOf("after" to "$after","upper" to "$upper","q" to q))
+        val o=json("people",mapOf("after" to "$after","upper" to "$upper","q" to q,"include_excluded" to "1"))
         return Candidates(people(o),o.getLong("next"),o.getBoolean("has_next"))
     }
     override suspend fun personFaces(id: Long, offset: Int, after: Long): Person = person(json("people/$id",

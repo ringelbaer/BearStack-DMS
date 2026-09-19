@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="people_folders_title">Ordner-Pfade prüfen</string>
+    <string name="people_folders_version">Ordner-Pfade prüfen benötigt BearStack ab 1.2.0.</string>
+    <string name="people_folders_scope">Aktionen gelten für alle aktiven Gesichter dieser Person im exakten Ordner, ohne Unterordner. Angezeigt werden bis zu acht Vorschauen.</string>
+    <string name="people_folders_excluded">Für diese Person ausgeschlossen. Neue Zuordnungen sind gesperrt.</string>
+    <string name="people_folders_move">Alle neu zuweisen</string>
+    <string name="people_folders_unnamed">Alle auf unbenannt setzen</string>
+    <string name="people_folders_ignore">Alle ignorieren</string>
+    <string name="people_folders_exclude">Pfad ausschließen und Gesichter auf unbenannt setzen</string>
+    <string name="people_folders_include">Pfad wieder freigeben</string>
+    <string name="people_folders_include_help">Neue Zuordnungen zu dieser Person sind wieder erlaubt. Bereits unbenannte Gesichter werden nicht automatisch zurückverschoben.</string>
+    <string name="people_folders_exclude_help">Alle aktiven Gesichter dieser Person im exakten Ordner werden unbenannt. Manuelle und automatische Neuzuordnungen zu dieser Person bleiben gesperrt, bis du den Pfad wieder freigibst. Unterordner bleiben unverändert.</string>
+    <string name="people_folders_empty">Keine Ordner vorhanden.</string>
+    <string name="people_folders_page">Seite %1$d</string>
+    <string name="people_folders_next">Weiter</string>
+    <string name="people_folders_confirm">Bestätigen</string>
+    <string name="people_folders_unnamed_person">Unbenannt</string>
+    <string name="people_folders_help">Prüfe die vollständigen Ordnerpfade und Gesichtsvorschauen. Halte ein Gesicht gedrückt und ziehe nach oben oder unten, um das Original wie gewohnt zu vergrößern. TalkBack bietet „Originalfoto anzeigen“. Wische die Vorschauen seitlich. Aktionen betreffen alle aktiven Gesichter dieser Person im exakten Ordner, auch mehr als acht; Unterordner und andere Personen sind ausgenommen. Neuzuweisung erlaubt vorhandene Personen oder einen neuen Namen. Ausschließen setzt die Gesichter unbenannt und sperrt künftige Zuordnungen; Freigeben hebt nur die Sperre auf. Die Liste enthält 40 Ordner pro Seite.</string>
+    <string name="people_folders_target_excluded">Der Pfad ist für die Zielperson ausgeschlossen. Gib ihn dort zuerst wieder frei.</string>
+    <string name="people_folders_excluded_only">Ausgeschlossene Pfade</string>
+</resources>

@@ -18,6 +18,55 @@ import org.junit.Test
 
 /** Runs only against the disposable Go fixture, never against a configured user instance. */
 class ServerIntegrationTest {
+    @Test fun nativeFolderActionsAndOriginalsAgainstRealGoServer() = runBlocking {
+        val root=InstrumentationRegistry.getArguments().getString("labelingUrl")
+        assumeTrue("Optional Go integration fixture",root=="https://127.0.0.1:18787/")
+        val offer=Connections.inspect(root!!)!!
+        val address=root+"folders/"
+        val client=Connections.client(Profile(address,"editor","secret",offer.encoded))
+        val db=Room.inMemoryDatabaseBuilder(InstrumentationRegistry.getInstrumentation().targetContext,LabelingDatabase::class.java).build()
+        try {
+            val api=LabelingApi(client,address)
+            val session=api.session();assertTrue(session.personFolders)
+            val repo=PeopleRepository(db,api,session)
+            val candidates=api.candidates(0,session.upper).people
+            val source=api.person(candidates.first().id)
+            val target=api.person(candidates.last().id)
+            repo.prepare(target,"name",name="Folder Target");repo.resolve()
+            suspend fun act(person: Person,action: String,name: String="",targetPerson: Person?=null): Receipt {
+                val page=api.personFolders(person.id,1)
+                assertEquals("Fotos",page.folders.single().displayPath)
+                repo.prepare(person.copy(revision=page.revision),"folder_$action",name=name,target=targetPerson,directory=page.folders.single().directory)
+                val pending=repo.pending()!!
+                val result=repo.resolve()!!
+                assertEquals(result,api.action(pending.source,pending.body))
+                assertEquals(result,api.receipt(pending.operation,session.dataset))
+                return result
+            }
+            val page=api.personFolders(source.id,1)
+            val preview=page.folders.single().preview
+            assertTrue(preview.faces.isNotEmpty());assertNotNull(preview.faceBounds[preview.faces.first()])
+            assertNotNull(preview.originalKeys[preview.faces.first()]);assertTrue(preview.facePaths.getValue(preview.faces.first()).startsWith("Fotos / "))
+            withContext(Dispatchers.IO) {
+                for(url in listOf(api.image(preview.faces.first()),api.original(preview.faces.first()))) {
+                    client.newCall(Request.Builder().url(url).build()).execute().use {response ->
+                        assertEquals(200,response.code);assertTrue(response.body!!.bytes().isNotEmpty())
+                    }
+                }
+            }
+            val named=act(source,"move",name="Folder New")
+            val reset=act(api.person(named.target),"unnamed")
+            val moved=act(api.person(reset.newId),"move",targetPerson=api.person(target.id))
+            val excluded=act(api.person(moved.target),"exclude")
+            val exclusions=api.personFolders(target.id,1)
+            assertTrue(exclusions.folders.single().excluded);assertTrue(exclusions.folders.single().preview.faces.isEmpty())
+            val zero=api.searchPeople(0,api.session().upper,"Folder Target").people.single()
+            assertEquals(0L,zero.count)
+            act(zero,"include")
+            val ignored=act(api.person(excluded.newId),"ignore")
+            assertEquals(excluded.faces,ignored.faces)
+        } finally {db.close();Connections.close(client)}
+    }
     @Test fun nativeGalleryReadOnlyAgainstRealGoServerBehindPrefix() = runBlocking {
         val root=InstrumentationRegistry.getArguments().getString("labelingUrl")
         assumeTrue("Optional Go integration fixture",root=="https://127.0.0.1:18787/")

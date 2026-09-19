@@ -7,6 +7,7 @@ var ErrLabelInvalid = errors.New("ungültige Benennungsaktion")
 var ErrLabelNameExists = errors.New("Name bereits vorhanden")
 
 type LabelSession struct {
+	PersonFolders    bool   `json:"person_folders"`
 	NamedFaceBatch   bool   `json:"named_face_batch"`
 	MergeSideActions bool   `json:"merge_side_actions"`
 	ManualMerge      bool   `json:"manual_merge"`
@@ -52,6 +53,7 @@ type LabelCandidates struct {
 	HasNext bool          `json:"has_next"`
 }
 type LabelAction struct {
+	Directory      *string         `json:"directory,omitempty"`
 	FaceIDs        []int64         `json:"face_ids,omitempty"`
 	Groups         []LabelGroupRef `json:"groups,omitempty"`
 	AssignID       int64           `json:"assign_id,omitempty"`

@@ -83,13 +83,14 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
         return person
     }
     suspend fun prepare(person: Person, action: String, name: String = "", target: Person? = null, face: Long = 0,
-        allowDuplicate: Boolean = false, favorite: Boolean? = null, suggestionId: Long? = null, assignment: Person? = null, faces: Set<Long> = emptySet()) {
+        allowDuplicate: Boolean = false, favorite: Boolean? = null, suggestionId: Long? = null, assignment: Person? = null, faces: Set<Long> = emptySet(), directory: String? = null) {
         checkMessage(pending() == null,R.string.error_pending_first)
         val operation = UUID.randomUUID().toString()
         val body = JSONObject().put("operation_id",operation).put("dataset",session.dataset).put("revision",person.revision)
             .put("action",action).put("name",name).put("allow_duplicate",allowDuplicate).put("face_id",face)
             .put("target_id",target?.id ?: 0).put("target_revision",target?.revision ?: 0)
             .apply {
+                if(directory!=null) put("directory",directory)
                 if(faces.isNotEmpty()) put("face_ids",JSONArray(faces.sorted()))
                 if(favorite!=null) put("favorite",favorite)
                 if(suggestionId!=null) put("suggestion_id",suggestionId)
@@ -108,7 +109,8 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
                 val eventAction=if(receipt.action=="name_groups") "name" else if(receipt.action=="name_merge") {
                     if(JSONObject(pending.body).optLong("assign_id")!=0L) "assign" else "name"
                 } else when(receipt.action) {
-                    "name_faces" -> "name"; "assign_faces" -> "assign"; "ignore_faces" -> "ignore"
+                    "name_faces" -> "name"; "assign_faces" -> "assign"; "ignore_faces", "folder_ignore" -> "ignore"
+                    "folder_move" -> if(JSONObject(pending.body).optLong("target_id")>0) "assign" else "name"
                     else -> receipt.action
                 }
                 val inserted = dao.event(Event(scope,receipt.operation,eventAction,receipt.faces,receipt.groups,receipt.at))
@@ -129,7 +131,7 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
         if(receipt.action=="merge_groups" || receipt.action=="name_groups") {
             dao.removePeople(scope,merged.toList())
             if(receipt.action=="merge_groups") append(QueueKind.Detached,receipt.target)
-        } else if(receipt.action in setOf("detach","unassign","unassign_faces")) {
+        } else if(receipt.action in setOf("detach","unassign","unassign_faces","folder_unnamed","folder_exclude")) {
             append(QueueKind.Detached,receipt.newId)
         }
         if(receipt.action=="ignore") dao.removeEntry(scope,QueueKind.Staged,receipt.source)

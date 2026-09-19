@@ -963,6 +963,17 @@
 </li>
 
           <li class="md-nav__item">
+  <a href="#ordner-pfade-prufen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ordner-Pfade prüfen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#mehrfachauswahl-in-benannte-personen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1540,6 +1551,17 @@
 </li>
 
           <li class="md-nav__item">
+  <a href="#ordner-pfade-prufen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Ordner-Pfade prüfen
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#mehrfachauswahl-in-benannte-personen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1671,7 +1693,7 @@
 <p>Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.</p>
-<p>Diese Anleitung beschreibt <strong>Android-App 0.19.0</strong>. Beginne mit den
+<p>Diese Anleitung beschreibt <strong>Android-App 0.20.0</strong>. Beginne mit den
 <a href="#erste-schritte">ersten Schritten</a>; die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die <a href="android-technik.html">technische Referenz</a>.</p>
@@ -2081,6 +2103,54 @@ Einträge. Beim Scrollen werden weitere Personen beziehungsweise Gesichter gelad
 <p>Wird das letzte Gesicht entfernt, verschwindet die leere Person aus der Liste.
 Bestätigte Änderungen werden nach der Serverantwort angezeigt. Unter <strong>… → Hilfe</strong>
 findest du die Bedienhinweise auch direkt in der Personenliste und in einer geöffneten Person.</p>
+<h3 id="ordner-pfade-prufen">Ordner-Pfade prüfen<a class="headerlink" href="#ordner-pfade-prufen" title="Permanent link">&para;</a></h3>
+<p>Öffne eine Person und wähle <strong>… → Ordner-Pfade prüfen</strong>. Der Eintrag ist auch beim
+Benennen einer unbenannten Gruppe verfügbar. Benötigt werden BearStack <strong>1.2.0</strong>
+oder neuer und <strong>Fotos bearbeiten</strong>; bei älteren Servern ist der Eintrag deaktiviert.</p>
+<p>Jeder vollständige, wie in der Galerie formatierte Ordnerpfad erscheint einmal.
+Die Ansicht enthält <strong>40 Ordner pro Seite</strong> und höchstens <strong>acht Gesichtsvorschauen
+je Ordner</strong>. Wische die Vorschauen seitlich. Halte ein Gesicht gedrückt und ziehe
+zum Vergrößern wie gewohnt nach oben oder unten. Die Originalansicht zeigt den
+Fotopfad und den passenden Gesichtsrahmen; TalkBack bietet <strong>Originalfoto anzeigen</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Aktion</th>
+<th>Wirkung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Alle neu zuweisen</strong></td>
+<td>Öffnet den gemeinsamen Namensdialog mit Suche nach vorhandenen Personen, Gesichtssuche und Eingabe eines neuen eindeutigen Namens.</td>
+</tr>
+<tr>
+<td><strong>Alle auf unbenannt setzen</strong></td>
+<td>Verschiebt die Gesichter gemeinsam in eine neue unbenannte Gruppe und entfernt ihre Vergleichsfavoriten.</td>
+</tr>
+<tr>
+<td><strong>Alle ignorieren</strong></td>
+<td>Ignoriert alle aktiven Gesichter dieser Person im Ordner.</td>
+</tr>
+<tr>
+<td><strong>Pfad ausschließen und Gesichter auf unbenannt setzen</strong></td>
+<td>Setzt die Gesichter unbenannt und sperrt neue manuelle sowie automatische Zuordnungen zu dieser Person im Ordner.</td>
+</tr>
+<tr>
+<td><strong>Pfad wieder freigeben</strong></td>
+<td>Hebt die Sperre auf; bestehende unbenannte Gesichter werden nicht automatisch zurückverschoben.</td>
+</tr>
+</tbody>
+</table>
+<p>Alle Aktionen gelten für <strong>sämtliche aktiven Gesichter der Person im exakten
+Ordner</strong>, auch bei mehr als acht Vorschauen oder 500 Gesichtern. Unterordner und
+andere Personen bleiben unverändert. Ausschlüsse bleiben auch ohne aktive Gesichter erreichbar. Benannte Personen
+mit ausschließlich gesperrten Pfaden stehen weiter in der Personenliste als
+<strong>Ausgeschlossene Pfade</strong> und öffnen direkt die Ordnerprüfung. Änderungen verlangen eine
+Bestätigung beziehungsweise die ausdrückliche Zielauswahl. Bei einem
+Revisionskonflikt wird die Liste aktualisiert und eine neue Entscheidung benötigt.
+Nach einem Verbindungsabbruch löst <strong>Offene Aktion prüfen</strong> die gespeicherte Aktion
+über ihre Quittung auf. <strong>Zurück</strong> aktualisiert die vorherige Personenansicht.</p>
 <h3 id="mehrfachauswahl-in-benannte-personen">Mehrfachauswahl in „Benannte Personen“<a class="headerlink" href="#mehrfachauswahl-in-benannte-personen" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Öffne eine Person und wähle Gesichter über die Checkbox oben links in ihren Kacheln.
@@ -2308,6 +2378,10 @@ Server; mit älteren Versionen können einzelne Einträge fehlen.</p>
 <td>0.51.0</td>
 </tr>
 <tr>
+<td>Native Ordnerprüfung mit Vergrößerung, Sammelaktionen und Pfadsperren</td>
+<td>1.2.0</td>
+</tr>
+<tr>
 <td>Personen unter <strong>Ordner</strong> / <strong>Personen im Ordner</strong></td>
 <td>0.53.0 / 0.55.0</td>
 </tr>
@@ -2380,7 +2454,7 @@ steht im <a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/CHANGELO
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.1.1 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.2.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

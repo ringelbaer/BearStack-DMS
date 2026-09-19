@@ -206,6 +206,20 @@ for (const javaScriptEnabled of [true, false]) {
     await login(page);
     await page.goto(baseURL + "/photos/people?known=1&q=missing&page=2&sort=count_desc");
     await expect(page.locator("a.person-card")).toHaveCount(0);
+    for (const width of [320, 390, 640, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const input = await page.locator('input[name="q"]').boundingBox();
+      const reset = await page.getByRole("link", { name: "Personensuche zurücksetzen" }).boundingBox();
+      const search = await page.getByRole("button", { name: "Suchen", exact: true }).boundingBox();
+      for (const button of [reset, search]) {
+        expect(Math.abs(button.height - input.height)).toBeLessThanOrEqual(1);
+        expect(Math.abs(button.y - input.y)).toBeLessThanOrEqual(1);
+        if (width <= 640) expect(button.height).toBeGreaterThanOrEqual(44);
+      }
+      expect(reset.x).toBeGreaterThanOrEqual(input.x + input.width + 5);
+      expect(search.x).toBeGreaterThanOrEqual(reset.x + reset.width + 7);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+    }
     await page.getByRole("link", { name: "Personensuche zurücksetzen" }).click();
     await expect(page.locator('input[name="q"]')).toHaveValue("");
     await expect(page.locator('input[name="filter"]')).toHaveValue("known");

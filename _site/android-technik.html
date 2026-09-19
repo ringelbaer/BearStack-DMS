@@ -763,6 +763,17 @@
       <ul class="md-nav__list">
 
           <li class="md-nav__item">
+  <a href="#native-ordnerprufung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Native Ordnerprüfung
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#aktionen-revisionen-und-wiederanlauf" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1075,6 +1086,17 @@
       <ul class="md-nav__list">
 
           <li class="md-nav__item">
+  <a href="#native-ordnerprufung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Native Ordnerprüfung
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#aktionen-revisionen-und-wiederanlauf" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1194,7 +1216,7 @@
 <h1 id="android-app-technik-entwicklung">Android-App – Technik &amp; Entwicklung<a class="headerlink" href="#android-app-technik-entwicklung" title="Permanent link">&para;</a></h1>
 <p>Diese Referenz richtet sich an Betreiber und Entwickler. Die
 <a href="android.html">Android-Anleitung</a> erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App <strong>0.19.0</strong> (<code>versionCode 40</code>), BearStack <strong>0.69.0</strong>.</p>
+bis zur Personenverwaltung. Stand: App <strong>0.20.0</strong> (<code>versionCode 41</code>), BearStack <strong>1.2.0</strong>.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
 <p>Öffne <code>apps/android/</code> in Android Studio als eigenes Projekt. Benötigt werden JDK 17
 oder 21 und das Android-SDK mit Plattform 36. Gradle Wrapper, Android Gradle Plugin
@@ -1309,10 +1331,26 @@ sich die Foto-Dienste und Zugriffsregeln des Browsers.</p>
 </tbody>
 </table>
 <p>Funktionen werden anhand von Serverfähigkeiten eingeblendet, etwa <code>named_people</code>,
-<code>merge_suggestions</code>, <code>merge_side_actions</code>, <code>merge_naming</code>, <code>named_face_batch</code> und
+<code>merge_suggestions</code>, <code>merge_side_actions</code>, <code>merge_naming</code>, <code>named_face_batch</code>, <code>person_folders</code> und
 <code>people_count_sort</code>. Die <a href="android.html#serverkompatibilitat">Kompatibilitätstabelle</a>
 nennt die zugehörigen Mindestversionen. Ältere Server behalten die jeweils
 unterstützten Bedienwege; fehlende Funktionen führen nicht zu einem Protokollwechsel.</p>
+<h3 id="native-ordnerprufung">Native Ordnerprüfung<a class="headerlink" href="#native-ordnerprufung" title="Permanent link">&para;</a></h3>
+<p><code>GET /api/photos/labeling/v1/people/{id}/folders?page=1</code> liefert höchstens 40 exakte
+Ordner und acht Gesichter pro Ordner. Die App hält nur die aktuelle Seite. Anzeigen
+verwenden ausschließlich <code>display_path</code>; <code>directory</code> bleibt unverändert im Auftrag.
+Vorschauen enthalten die vorhandenen Original-Cachekennungen, Gesichtsrahmen und
+Prüfmarkierungen. Die bekannte Bildansicht nutzt dieselben geschützten
+Thumbnail-/Originalendpunkte und lädt Originale nur im begrenzten bestehenden Cache.</p>
+<p><code>folder_move</code>, <code>folder_unnamed</code>, <code>folder_ignore</code>, <code>folder_exclude</code> und <code>folder_include</code>
+verwenden den bestehenden <code>people/{id}/actions</code>-Endpunkt und die persistente
+Room-Auftragsablage. Die gemeinsame Serverimplementierung für Web und Android
+ändert den ganzen exakten Ordner atomar, ohne eine vollständige Gesichtsliste an
+den Client zu übertragen. Quittung und Änderung werden zusammen geschrieben;
+Wiederholungen prüfen die Quittung vor der inzwischen geänderten Quellrevision.
+Die Neuzuweisung an eine vorhandene Person prüft zusätzlich deren Revision.
+Die Personenliste fordert <code>include_excluded=1</code> an, damit benannte Personen mit
+ausschließlich sichtbaren Sperren nach einem Neustart wieder erreichbar bleiben.</p>
 <h3 id="aktionen-revisionen-und-wiederanlauf">Aktionen, Revisionen und Wiederanlauf<a class="headerlink" href="#aktionen-revisionen-und-wiederanlauf" title="Permanent link">&para;</a></h3>
 <p>Schreibaktionen tragen eine zufällige Aktions-ID, Datenbestandskennung und
 Quellrevision. Zuordnungen und Gruppenentscheidungen benötigen zusätzlich die
@@ -1600,7 +1638,7 @@ Projektaufbau. Verbindlich sind die Gradle-Dateien im Repository.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.1.1 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.2.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
 

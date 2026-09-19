@@ -81,6 +81,8 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
                     menu=false
                     if(state.selectedFaces.isNotEmpty()) vm.clearFaceSelection() else if(person!=null) vm.closePerson() else vm.closeDirectory()
                 })
+                if(person!=null) DropdownMenuItem(text={Text(text(R.string.people_folders_title))},enabled=enabled && state.personFoldersSupported,
+                    onClick={menu=false;vm.openPersonFolders()})
                 if(vm.photos!=null) DropdownMenuItem(text={Text(text(R.string.photos_title))},enabled=enabled,
                     onClick={menu=false;vm.openGallery()})
                 DropdownMenuItem(text={Text(text(R.string.common_help))},onClick={menu=false;help=true})
@@ -117,11 +119,11 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
                             Surface(onClick={vm.openPerson(p)},enabled=browsing,shape=RoundedCornerShape(16.dp),color=MaterialTheme.colorScheme.surfaceContainer) {
                                 Row(Modifier.fillMaxWidth().padding(12.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(16.dp)) {
                                     Box(Modifier.size(72.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
-                                        vm.images?.let { AsyncImage(vm.image(p.faceId),null,imageLoader=it,modifier=Modifier.fillMaxSize()) }
+                                        vm.images?.takeIf {p.faceId>0}?.let { AsyncImage(vm.image(p.faceId),null,imageLoader=it,modifier=Modifier.fillMaxSize()) }
                                     }
                                     Column(Modifier.weight(1f)) {
                                         Text(p.name,style=MaterialTheme.typography.titleMedium)
-                                        Text(text(R.string.people_face_count_id,text.faces(p.count),p.id),style=MaterialTheme.typography.bodySmall)
+                                        Text(if(p.count==0L) text(R.string.people_folders_excluded_only) else text(R.string.people_face_count_id,text.faces(p.count),p.id),style=MaterialTheme.typography.bodySmall)
                                     }
                                 }
                             }

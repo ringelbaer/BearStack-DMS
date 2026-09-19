@@ -1,6 +1,10 @@
 # BearStack
 
-Aktuelle Version: **1.1.1** · Android-App: **0.19.0**.
+Aktuelle Version: **1.2.0** · Android-App: **0.20.0**.
+
+**Android 0.20.0 / BearStack 1.2.0:** **Ordner-Pfade prüfen** ist vollständig nativ verfügbar: formatierte Ordnerpfade, bis zu acht Gesichter mit gewohnter Halte-/Zoomvorschau und 40 Ordner pro Seite. Alle Gesichter im exakten Ordner lassen sich neu zuweisen, unbenannt setzen, ignorieren oder per Pfadsperre ausschließen; Sperren können wieder aufgehoben werden. Gespeicherte Aktionsquittungen schützen auch bei Verbindungsabbrüchen vor doppelten Änderungen. [Android-Anleitung](https://ringelbaer.github.io/BearStack-DMS/android.html#ordner-pfade-prufen).
+
+Ab **1.1.2** zeigt die Ordnerprüfung eine zentrierte Seitennavigation mit Abstand zwischen Seitenzahl und Buttons. In der Personensuche sind Suchfeld, Zurücksetzen und Suchen gleich hoch, auch auf schmalen Bildschirmen.
 
 Ab **1.1.1** öffnet **Alle neu zuweisen** in der Ordnerprüfung das gemeinsame Personenmodal; die Ordnerliste enthält keine dauerhaften Suchfelder mehr. Das Personenmenü bietet **Ordner-Pfade prüfen** als normalen Link und **Anzeigeeinstellungen**. Stammbäume ordnen Familienzweige anhand ihrer Eltern- und Kinderpositionen an, halten Partner zusammen und lassen mit größeren Generationenabständen mehr Platz für Verbindungslinien.
 

@@ -4,6 +4,24 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.2.0 / Android 0.20.0
+
+- Android: **Ordner-Pfade prüfen** im Menü benannter und unbenannter Personen. Native Liste mit formatierten vollständigen Pfaden, 40 Ordnern pro Seite und maximal acht Gesichtsvorschauen je Ordner.
+- Gewohnte Originalvergrößerung per Gedrückthalten und Ziehen, Gesichtsmarkierung, formatierter Fotopfad, Bildcache und TalkBack-Aktion. Geänderte Bildquellen zeigen keine veralteten Gesichtsrahmen.
+- Benannte Personen mit ausschließlich ausgeschlossenen Pfaden bleiben in der nativen Personenliste erreichbar und öffnen direkt die Ordnerprüfung; geschützte Pfade und Namen bleiben verborgen.
+- Alle Ordneraktionen integriert: vorhandener Person oder neuem Namen zuweisen, unbenannt setzen, ignorieren, Pfad ausschließen und wieder freigeben. Aktionen erfassen alle aktiven Gesichter der Person im exakten Ordner, auch über 500; Unterordner bleiben separat.
+- Neue native Fähigkeit `person_folders`, begrenzter Ordnerendpunkt und atomare `folder_*`-Aktionen mit Quell-/Zielrevisionen, Datenbestandsprüfung und kontogebundenen Quittungen. Offene Aktionen werden bei Wiederanlauf sicher aufgelöst; ältere Server behalten die bisherige Bedienung.
+- MINOR für die zusätzliche native Funktion und kompatible API-Erweiterung; Android `versionCode 41`, keine Datenmigration. README, Android-Anleitung, technische Referenz, Website und OpenAPI aktualisiert.
+- Validierung: vollständige Go-Suite, gezielte Race-/HTTP-/OpenAPI-Tests, 115 JVM-Tests, 34 Android-Gerätetests einschließlich vier Tests gegen den isolierten Go-HTTPS-Server, Android-Lint ohne Fehler, Debug-/Test-APK, zwei Ordner-Browserregressionen und Website-Build erfolgreich. Geprüft sind mehr als 500 Gesichter, atomarer Quittungs-Rollback, gleichzeitige Wiederholung, veraltete Revisionen, Pfadsperren, Datenschutz, Seitenwechsel, Wiederanlauf, große Schrift sowie Halte-/Zoom- und TalkBack-Vorschauen; 357 lokale Dokumentationsverweise ohne Fehler.
+
+### BearStack 1.1.2
+
+- Ordnerprüfung: Seitennavigation zentriert und mit klaren Abständen zwischen Seitenzahl, Zurück und Weiter; auf Mobilgeräten bleiben die Elemente nebeneinander, bei Platzmangel umbrechend.
+- Personensuche: Suchfeld, Zurücksetzen und Suchen gleich hoch ausgerichtet; mobile Bedienelemente mindestens 44 Pixel hoch.
+- PATCH für Layoutkorrekturen ohne zusätzliche Abfragen oder JavaScript. README, Website und OpenAPI-Version aktualisiert; HTTP-Verträge unverändert.
+- OpenAPI: bestehende Fehlerbeschreibung der Stammbaum-Einstellungen korrekt in Anführungszeichen gesetzt, damit enthaltene Kommas keine zusätzlichen YAML-Felder erzeugen.
+- Validierung: gezielte Go- und OpenAPI-Tests, vier Browserregressionen und Website-Build erfolgreich. Geprüft sind Suchfeld-/Buttonhöhen von 320 bis 1440 Pixeln mit und ohne JavaScript sowie Abstand, Zentrierung und Navigation auf erster, mittlerer und letzter Ordnerseite.
+
 ### BearStack 1.1.1
 
 - Stammbaum: Familienzweige richten sich an den tatsächlichen Eltern- und Kinderpositionen aus. Partner und gemeinsame Eltern bleiben zusammen; stabile Geburts-/Namenssortierung ersetzt die ID-Reihenfolge. Generationenabstand von 250 auf 400 Pixel erhöht; längere horizontale Beziehungen verlaufen oberhalb der Karten.

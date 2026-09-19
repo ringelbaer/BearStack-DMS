@@ -135,3 +135,67 @@ test("person folders format paths, preview eight faces and apply whole-folder ac
     expect(errors).toEqual([]);
   } finally { await context.close(); }
 });
+
+test("folder pagination keeps spaced controls on first, middle and last pages", async ({ browser }) => {
+  test.setTimeout(90_000);
+  const context = await browser.newContext({ httpCredentials: { username: "manager", password: "secret" } });
+  try {
+    // A real three-page result exercises every combination of navigation links.
+    for (let i = 0; i < 81; i++) {
+      const name = `Paging_${String(i).padStart(3, "0")}/photo.png`;
+      const file = path.join(root, "photos", name);
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, png);
+      expect((await context.request.get(baseURL + "/api/photos/v1/media/info?path=" + encodeURIComponent(name))).ok()).toBe(true);
+    }
+    expect((await context.request.post(baseURL + "/settings/photos/faces", { form: { enabled: "1", delay_millis: "100" }, headers: { Origin: baseURL } })).ok()).toBe(true);
+    await expect.poll(async () => {
+      const result = await (await context.request.get(baseURL + "/settings/photos/faces?format=json")).json();
+      return result.status.done;
+    }, { timeout: 45000 }).toBe(photoPaths.length + 81);
+    const people = [];
+    for (let current = 1, total = 1; current <= total; current++) {
+      const result = await (await context.request.get(baseURL + `/photos/people?format=json&page=${current}`)).json();
+      people.push(...result.people);
+      total = result.total_pages;
+    }
+    const person = people[0];
+    // Explicit assignment keeps pagination independent of recognition grouping.
+    for (let start = 1; start < people.length; start += 60) {
+      const sources = people.slice(start, start + 60);
+      const data = new URLSearchParams({ target: String(person.id) });
+      for (const source of sources.slice(1)) data.append("person_id", String(source.id));
+      expect((await context.request.post(baseURL + `/photos/people/${sources[0].id}/merge`, {
+        data: data.toString(), headers: { Origin: baseURL, Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
+      })).ok()).toBe(true);
+    }
+    const page = await context.newPage();
+    await page.goto(baseURL + "/login");
+    await page.getByLabel("Benutzername").fill("manager");
+    await page.locator('input[name="password"]').fill("secret");
+    await page.getByRole("button", { name: "Anmelden", exact: true }).click();
+    await page.goto(baseURL + `/photos/people/${person.id}/folder`);
+    const navigation = page.getByRole("navigation", { name: "Ordnerseiten" });
+    for (const current of [1, 2, 3]) {
+      await expect(navigation.locator('[aria-current="page"]')).toHaveText(`Seite ${current}`);
+      await expect(navigation.getByRole("link", { name: "Zurück", exact: true })).toHaveCount(current > 1 ? 1 : 0);
+      await expect(navigation.getByRole("link", { name: "Weiter", exact: true })).toHaveCount(current < 3 ? 1 : 0);
+      for (const width of [320, 640, 768, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        const controls = await navigation.locator(":scope > *").all();
+        const boxes = await Promise.all(controls.map(control => control.boundingBox()));
+        for (let i = 1; i < boxes.length; i++) {
+          expect(boxes[i].x - boxes[i - 1].x - boxes[i - 1].width).toBeGreaterThanOrEqual(11);
+          expect(Math.abs(boxes[i].y + boxes[i].height / 2 - boxes[0].y - boxes[0].height / 2)).toBeLessThanOrEqual(1);
+        }
+        const last = boxes.at(-1);
+        const bounds = await navigation.boundingBox();
+        expect(Math.abs((boxes[0].x + last.x + last.width) / 2 - bounds.x - bounds.width / 2)).toBeLessThanOrEqual(1);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+      }
+      if (current < 3) await navigation.getByRole("link", { name: "Weiter", exact: true }).click();
+    }
+    await navigation.getByRole("link", { name: "Zurück", exact: true }).click();
+    await expect(navigation.locator('[aria-current="page"]')).toHaveText("Seite 2");
+  } finally { await context.close(); }
+});

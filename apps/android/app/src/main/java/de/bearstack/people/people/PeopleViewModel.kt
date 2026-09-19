@@ -26,6 +26,9 @@ data class PeopleState(
     val faceMatches: List<FaceMatch> = emptyList(), val faceSearching: Boolean = false, val faceSearchDone: Boolean = false,
     val duplicates: List<Person> = emptyList(), val undoIgnores: List<Long> = emptyList(), val unresolved: Boolean = false,
     val stats: List<Statistics> = emptyList(), val skipped: Int = 0, val canGoBack: Boolean = false,
+    val personFoldersSupported: Boolean = false, val folderReview: Boolean = false, val folderSource: Person? = null,
+    val folderPage: PersonFolderPage? = null, val folderRequestedPage: Int = 1, val folderReady: Boolean = false,
+    val folderSelection: PersonFolder? = null, val folderConfirmation: String? = null,
     val directory: Boolean = false, val namedPeople: List<Person> = emptyList(),
     val namedDirty: Boolean = false, val namedCursor: Long = 0, val namedUpper: Long = 0, val namedHasNext: Boolean = false,
     val selectedPerson: Person? = null, val namedQuery: String = "", val loadedNamedQuery: String = "",
@@ -73,7 +76,7 @@ class PeopleViewModel private constructor(application: Application, private val 
         if (initialRepository == null) restoreConnection()
         else {
             repository=initialRepository
-            update { it.copy(connected=true) }
+            update { it.copy(connected=true,personFoldersSupported=initialRepository.session.personFolders) }
             collectStatistics()
             initialRepository.resolve()
             initialRepository.restoreIgnores()
@@ -91,16 +94,17 @@ class PeopleViewModel private constructor(application: Application, private val 
                 if (e is ApiFailure && (e.status == 409 || (e.status == 404 && state.value.mergePendingSide!=null))) {
                     if (e.code == "name_exists") {
                         runCatching { repository?.api?.suggestions(state.value.name, true) }.getOrNull()?.let { names ->
-                            update { it.copy(naming=true,duplicates=names.filterNot { p -> it.directory && !it.mergeReview && !it.batchNaming && p.id==it.selectedPerson?.id }) }
+                            update { it.copy(naming=true,duplicates=names.filterNot { p -> it.directory && !it.mergeReview && !it.batchNaming && !it.folderReview && p.id==it.selectedPerson?.id }) }
                         }
                     } else {
                         // A changed source or target always requires a new explicit decision.
-                        update { it.copy(naming=false,duplicates=emptyList(),suggestions=emptyList(),removeFace=null,batchNaming=false,batchConfirmation=null,selectedFaces=emptySet()) }
+                        update { it.copy(naming=false,duplicates=emptyList(),suggestions=emptyList(),removeFace=null,batchNaming=false,batchConfirmation=null,selectedFaces=emptySet(),folderSelection=null,folderConfirmation=null,folderReady=false) }
                         runCatching {
                             val repo = repository ?: return@runCatching
                             if (repo.api.session().scope != repo.scope) {
                                 clearConnection(); update { it.copy(error=UiText(R.string.error_scope_changed)) }
                             } else if(state.value.mergeReview) loadMergeSuggestion()
+                            else if(state.value.folderReview) loadPersonFolders(1)
                             else if(state.value.directory) refreshSelectedPerson() else loadNext()
                         }
                     }
@@ -137,7 +141,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     private suspend fun attachPeople() {
         val active = session.active ?: return
         repository = active.peopleSession?.let { PeopleRepository(db, active.people, it) }
-        update { it.copy(connected=true,restoring=false,savedConnection=true,certificate=null,showGallery=photos!=null,canManagePeople=repository!=null) }
+        update { it.copy(connected=true,restoring=false,savedConnection=true,certificate=null,showGallery=photos!=null,canManagePeople=repository!=null,personFoldersSupported=active.peopleSession?.personFolders==true) }
         if (repository == null) return
         collectStatistics()
         val pending = repository!!.pending()
@@ -193,7 +197,7 @@ class PeopleViewModel private constructor(application: Application, private val 
         val current=state.value
         val person=if(current.mergeReview) current.mergeSuggestion?.let {
             if(face in it.source.faces) it.source else it.target
-        } else if(current.directory) current.selectedPerson else current.person
+        } else if(current.folderReview) current.folderPage?.folders?.firstOrNull {face in it.preview.faces}?.preview else if(current.directory) current.selectedPerson else current.person
         return person?.originalKeys?.get(face)?.let { "${repository?.scope}:large-preview:$it" }
     }
     suspend fun prefetchOriginals(faces: List<Long>) {
@@ -370,19 +374,19 @@ class PeopleViewModel private constructor(application: Application, private val 
         loadMergeSuggestion()
     }
     fun startNaming() { if(editable()) { cancelFaceSearch(); update { it.copy(naming=true,batchNaming=false,name=if(it.directory) it.selectedPerson?.name.orEmpty() else "",suggestions=emptyList(),duplicates=emptyList()) } } }
-    fun closeNaming() { if(editable()) { search?.cancel(); cancelFaceSearch(); update { it.copy(naming=false,batchNaming=false,mergeNamingSide=null,suggestions=emptyList(),duplicates=emptyList()) } } }
+    fun closeNaming() { if(editable()) { search?.cancel(); cancelFaceSearch(); update { it.copy(naming=false,batchNaming=false,mergeNamingSide=null,folderSelection=null,suggestions=emptyList(),duplicates=emptyList()) } } }
     fun nameChanged(name: String) {
         if (!editable()) return
         cancelFaceSearch()
         update { it.copy(name=name,suggestions=emptyList(),duplicates=emptyList()) }
         search?.cancel()
-        if (name.isBlank() || (state.value.directory && !state.value.mergeReview && !state.value.batchNaming)) return
+        if (name.isBlank() || (state.value.directory && !state.value.mergeReview && !state.value.batchNaming && !state.value.folderReview)) return
         search = viewModelScope.launch {
             delay(250)
             try {
                 val results = repository!!.api.suggestions(name)
                 ensureActive()
-                update { if(it.naming && it.name == name && !it.faceSearching && !it.faceSearchDone) it.copy(suggestions=results.filterNot { p -> it.batchNaming && p.id==it.selectedPerson?.id }) else it }
+                update { if(it.naming && it.name == name && !it.faceSearching && !it.faceSearchDone) it.copy(suggestions=results.filterNot { p -> (it.batchNaming && p.id==it.selectedPerson?.id) || (it.folderReview && p.id==it.folderSource?.id) }) else it }
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { update { it.copy(error=message(e)) } }
         }
@@ -394,8 +398,8 @@ class PeopleViewModel private constructor(application: Application, private val 
     }
     fun findFaceMatches() {
         val s=state.value
-        if(!editable() || !s.naming || (s.directory && !s.batchNaming) || s.faceSearching) return
-        val person=(if(s.batchNaming) s.selectedPerson else if(s.mergeReview) s.mergeNamingSide?.let {mergeSide(it)} ?: s.mergeSuggestion?.source else s.person) ?: return
+        if(!editable() || !s.naming || (s.directory && !s.batchNaming && !s.folderReview) || s.faceSearching) return
+        val person=(if(s.folderReview) s.folderSelection?.preview else if(s.batchNaming) s.selectedPerson else if(s.mergeReview) s.mergeNamingSide?.let {mergeSide(it)} ?: s.mergeSuggestion?.source else s.person) ?: return
         val face=if(s.batchNaming) s.selectedFaces.minOrNull() ?: return else person.faces.firstOrNull() ?: person.faceId
         if(face<=0) return
         val repo=repository ?: return
@@ -428,22 +432,23 @@ class PeopleViewModel private constructor(application: Application, private val 
             // through the existing revision-checked, receipted assignment flow.
             val target=repository!!.api.person(match.id)
             if(target.name!=match.name || target.name.isBlank()) throw ApiFailure(409,"conflict",UiText(R.string.error_group_changed))
-            if(state.value.mergeReview) nameMerge(target=target) else if(state.value.batchNaming) manageFaces("assign_faces",target=target) else mutate("assign",target=target)
+            if(state.value.folderReview) manageFolder("move",target=target) else if(state.value.mergeReview) nameMerge(target=target) else if(state.value.batchNaming) manageFaces("assign_faces",target=target) else mutate("assign",target=target)
         }
     }
     fun submitName(allowDuplicate: Boolean = false) { if(editable() && state.value.name.isNotBlank()) task {
         search?.cancel(); cancelFaceSearch()
-        if (!allowDuplicate) {
+        if (!allowDuplicate || state.value.folderReview) {
             val duplicates = repository!!.api.suggestions(state.value.name.trim(),true)
-                .filterNot { state.value.directory && !state.value.mergeReview && !state.value.batchNaming && it.id==state.value.selectedPerson?.id }
+                .filterNot { state.value.directory && !state.value.mergeReview && !state.value.batchNaming && !state.value.folderReview && it.id==state.value.selectedPerson?.id }
             if (duplicates.isNotEmpty()) { update { it.copy(duplicates=duplicates) }; return@task }
         }
-        if(state.value.mergeReview) nameMerge(name=state.value.name.trim(),allowDuplicate=allowDuplicate)
+        if(state.value.folderReview) manageFolder("move",name=state.value.name.trim())
+        else if(state.value.mergeReview) nameMerge(name=state.value.name.trim(),allowDuplicate=allowDuplicate)
         else if(state.value.batchNaming) manageFaces("name_faces",name=state.value.name.trim(),allowDuplicate=allowDuplicate)
         else if(state.value.directory) manage("rename",name=state.value.name.trim(),allowDuplicate=allowDuplicate)
         else mutate("name",name=state.value.name.trim(),allowDuplicate=allowDuplicate)
     } }
-    fun assign(target: Person) { if(editable()) task { search?.cancel(); cancelFaceSearch(); if(state.value.mergeReview) nameMerge(target=target) else if(state.value.batchNaming) manageFaces("assign_faces",target=target) else if(!state.value.directory) mutate("assign",target=target) } }
+    fun assign(target: Person) { if(editable()) task { search?.cancel(); cancelFaceSearch(); if(state.value.folderReview) manageFolder("move",target=target) else if(state.value.mergeReview) nameMerge(target=target) else if(state.value.batchNaming) manageFaces("assign_faces",target=target) else if(!state.value.directory) mutate("assign",target=target) } }
     fun detach(face: Long) { if(editable()) task { mutate("detach",face=face) } }
     fun openDirectory() { if(editable() && !state.value.naming) task {
         update { it.copy(directory=true,selectedPerson=null,removeFace=null,selectedFaces=emptySet(),batchNaming=false,batchConfirmation=null,namedPeople=emptyList(),namedHasNext=false) }
@@ -481,7 +486,13 @@ class PeopleViewModel private constructor(application: Application, private val 
         } catch(e: CancellationException) {throw e}
         catch(e: Exception) {if(state.value.namedQuery==query) throw e}
     }
-    fun openPerson(person: Person) { if(editable()) task {
+    fun openPerson(person: Person) {
+        if(editable() && person.count==0L && state.value.personFoldersSupported) {
+            update {it.copy(selectedPerson=person)}
+            openPersonFolders()
+            return
+        }
+        if(editable()) task {
         directorySearch?.cancel()
         update { it.copy(selectedPerson=person.copy(faces=emptyList(),offset=0),removeFace=null,selectedFaces=emptySet(),batchNaming=false,batchConfirmation=null) }
         refreshSelectedPerson()
@@ -526,6 +537,79 @@ class PeopleViewModel private constructor(application: Application, private val 
         update { it.copy(directory=false,selectedPerson=null,removeFace=null,selectedFaces=emptySet(),batchNaming=false,batchConfirmation=null,error=null) }
         loadNext()
     } }
+    fun openPersonFolders() {
+        val source=if(state.value.directory) state.value.selectedPerson else state.value.person
+        if(!editable() || state.value.naming || source==null) return
+        task {
+            val repo=repository ?: return@task
+            val fresh=repo.api.session()
+            requireMessage(fresh.scope==repo.scope,R.string.error_scope_changed)
+            requireMessage(fresh.personFolders,R.string.people_folders_version)
+            directorySearch?.cancel(); search?.cancel(); cancelFaceSearch()
+            update {it.copy(folderReview=true,folderSource=source,folderPage=null,folderSelection=null,folderConfirmation=null,
+                folderReady=false,folderRequestedPage=1,selectedFaces=emptySet())}
+            loadPersonFolders(1)
+        }
+    }
+    private suspend fun loadPersonFolders(page: Int) {
+        val source=state.value.folderSource ?: return
+        update {it.copy(folderReady=false,folderRequestedPage=page)}
+        val result=try {repository!!.api.personFolders(source.id,page)}
+            catch(e: ApiFailure) {
+                if(e.status!=404) throw e
+                PersonFolderPage(source.id,source.name,source.revision,1,false,emptyList())
+            }
+        update {it.copy(folderPage=result,folderReady=true,folderSelection=null,folderConfirmation=null,
+            folderSource=source.copy(name=result.name,revision=result.revision))}
+    }
+    fun personFolderPage(page: Int) {
+        val current=state.value
+        val old=current.folderPage ?: return
+        if(!editable() || !current.folderReview || current.naming || current.folderConfirmation!=null || page<1 ||
+            (page!=old.page && page!=old.page-1 && !(page==old.page+1 && old.hasNext))) return
+        task {loadPersonFolders(page)}
+    }
+    fun requestFolderAction(folder: PersonFolder, action: String) {
+        val current=state.value
+        if(!editable() || !current.folderReady || !current.folderReview || current.naming || current.folderConfirmation!=null ||
+            folder !in current.folderPage?.folders.orEmpty() ||
+            action !in (if(folder.excluded) listOf("include") else listOf("move","unnamed","ignore","exclude"))) return
+        search?.cancel(); cancelFaceSearch()
+        update {it.copy(folderSelection=folder,folderConfirmation=if(action=="move") null else action,
+            naming=action=="move",name="",suggestions=emptyList(),duplicates=emptyList(),error=null)}
+    }
+    fun cancelFolderAction() {if(editable()) update {it.copy(folderSelection=null,folderConfirmation=null)}}
+    fun confirmFolderAction() {
+        val action=state.value.folderConfirmation ?: return
+        if(editable()) task {manageFolder(action)}
+    }
+    private suspend fun manageFolder(action: String, name: String = "", target: Person? = null) {
+        val current=state.value
+        val folder=current.folderSelection ?: return
+        val source=current.folderSource ?: return
+        val page=current.folderPage ?: return
+        val repo=repository ?: return
+        checkMessage(current.folderReady && folder in page.folders,R.string.error_person_changed)
+        repo.prepare(source.copy(revision=page.revision),"folder_$action",name=name,target=target,directory=folder.directory)
+        update {it.copy(unresolved=true)}
+        repo.resolve()
+        update {it.copy(unresolved=false)}
+        completeFolderAction()
+    }
+    private suspend fun completeFolderAction() {
+        update {it.copy(naming=false,folderSelection=null,folderConfirmation=null,folderReady=false,namedDirty=true,suggestions=emptyList(),duplicates=emptyList())}
+        loadPersonFolders(1)
+    }
+    fun closePersonFolders() {
+        if(!editable() || state.value.naming || state.value.folderConfirmation!=null) return
+        task {
+            update {it.copy(folderReview=false,folderSource=null,folderPage=null,folderSelection=null,folderReady=false)}
+            if(state.value.directory) {
+                refreshSelectedPerson()
+                if(state.value.selectedPerson==null) loadNamedPeople(true)
+            } else loadNext()
+        }
+    }
     fun requestUnassign(face: Long) {
         val person=state.value.selectedPerson ?: return
         if(editable() && !state.value.naming && state.value.selectedFaces.isEmpty() && face in person.faces) update {it.copy(removeFace=face,removeRevision=person.revision)}
@@ -722,7 +806,11 @@ class PeopleViewModel private constructor(application: Application, private val 
             repo.restoreIgnores(except=ignoreJobs.keys+undoRequests)
         }
         update { it.copy(unresolved=false,naming=if(receipt!=null && (receipt.source==it.person?.id || receipt.source==it.selectedPerson?.id)) false else it.naming) }
-        if(state.value.mergeReview) {
+        if(state.value.folderReview) {
+            if(receipt!=null && receipt.action.startsWith("folder_")) completeFolderAction()
+            else loadPersonFolders(state.value.folderRequestedPage)
+        }
+        else if(state.value.mergeReview) {
             if(receipt!=null && body!=null && state.value.mergePendingSide!=null) completeMergeSide(receipt,body)
             else if(state.value.mergeSideResults.isEmpty()) loadMergeSuggestion()
         }

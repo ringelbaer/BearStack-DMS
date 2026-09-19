@@ -29,7 +29,7 @@ class UiStrings(private val resources: Resources) {
     fun groups(count: Number): String = resources.getQuantityString(R.plurals.people_groups,if(count.toLong()==1L)1 else 2,count.toLong())
     // The labeling API includes the browser's fixed German root breadcrumb.
     // Only that app label changes; source filenames and folder labels are kept.
-    fun photoPath(path: String): String = if(path.startsWith("Fotos / ")) invoke(R.string.photos_title)+" / "+path.removePrefix("Fotos / ") else path
+    fun photoPath(path: String): String = if(path=="Fotos") invoke(R.string.photos_title) else if(path.startsWith("Fotos / ")) invoke(R.string.photos_title)+" / "+path.removePrefix("Fotos / ") else path
     fun date(instant: String): String = runCatching {
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(resources.configuration.locales[0])
             .withZone(ZoneId.systemDefault()).format(Instant.parse(instant))

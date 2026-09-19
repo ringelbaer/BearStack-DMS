@@ -3,10 +3,12 @@ package photos
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"bearstack/internal/searchtext"
 	"modernc.org/sqlite"
@@ -43,11 +45,12 @@ func setupPersonFolderSchema(ctx context.Context, db *sql.DB) error {
 }
 
 type PersonFolder struct {
-	Directory   string  `json:"directory"`
-	DisplayPath string  `json:"display_path"`
-	FaceIDs     []int64 `json:"face_ids"`
-	Count       int     `json:"count"`
-	Excluded    bool    `json:"excluded"`
+	Faces       []LabelFace `json:"faces,omitempty"`
+	Directory   string      `json:"directory"`
+	DisplayPath string      `json:"display_path"`
+	FaceIDs     []int64     `json:"face_ids"`
+	Count       int         `json:"count"`
+	Excluded    bool        `json:"excluded"`
 }
 type PersonFolderPage struct {
 	PersonID int64          `json:"person_id"`
@@ -62,6 +65,15 @@ type PersonFolderPage struct {
 // Paging bounds thumbnails and HTML even for people spanning thousands of folders.
 // The covering person/directory index serves both grouping and each eight-face preview.
 func (l *Library) PersonFolders(ctx context.Context, id int64, page int) (PersonFolderPage, error) {
+	return l.personFolders(ctx, id, page, false)
+}
+
+// LabelPersonFolders includes bounded original-preview metadata in the same snapshot.
+func (l *Library) LabelPersonFolders(ctx context.Context, id int64, page int) (PersonFolderPage, error) {
+	return l.personFolders(ctx, id, page, true)
+}
+
+func (l *Library) personFolders(ctx context.Context, id int64, page int, previews bool) (PersonFolderPage, error) {
 	out := PersonFolderPage{PersonID: id, Page: max(1, page), Folders: []PersonFolder{}}
 	if err := l.refreshPersonIDsVisibility(ctx, id); err != nil {
 		return out, err
@@ -137,16 +149,28 @@ func (l *Library) PersonFolders(ctx context.Context, id int64, page int) (Person
 		if f.Excluded {
 			continue
 		}
-		rows, err := tx.QueryContext(ctx, `SELECT f.id FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.directory=? AND f.ignored=0 AND m.admin_only=0 ORDER BY f.id LIMIT 8`, id, f.Directory)
+		columns := "f.id"
+		if previews {
+			columns = `f.id,f.path,f.x,f.y,f.width,f.height,f.favorite,f.needs_review,f.source_revision,m.size_bytes,m.mod_time_unix_nano,coalesce((SELECT revision FROM photo_entities e WHERE e.id=f.entity_id),0)`
+		}
+		rows, err := tx.QueryContext(ctx, `SELECT `+columns+` FROM photo_faces f JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.directory=? AND f.ignored=0 AND m.admin_only=0 ORDER BY f.id LIMIT 8`, id, f.Directory)
 		if err != nil {
 			return out, err
 		}
 		for rows.Next() {
-			var fid int64
-			if err = rows.Scan(&fid); err != nil {
+			var row indexedLabelFace
+			if previews {
+				err = rows.Scan(&row.Face.ID, &row.Path, &row.Face.Bounds.X, &row.Face.Bounds.Y, &row.Face.Bounds.Width, &row.Face.Bounds.Height, &row.Face.Favorite, &row.Face.NeedsReview, &row.Face.SourceRevision, &row.Size, &row.Modified, &row.ContentRevision)
+			} else {
+				err = rows.Scan(&row.Face.ID)
+			}
+			if err != nil {
 				break
 			}
-			f.FaceIDs = append(f.FaceIDs, fid)
+			f.FaceIDs = append(f.FaceIDs, row.Face.ID)
+			if previews {
+				f.Faces = append(f.Faces, presentLabelFace(row))
+			}
 		}
 		if err == nil {
 			err = rows.Err()
@@ -160,68 +184,115 @@ func (l *Library) PersonFolders(ctx context.Context, id int64, page int) (Person
 }
 
 type PersonFolderAction struct {
-	Directory string
-	Action    string
-	Revision  int64
-	TargetID  int64
-	Name      string
+	Directory      string
+	Action         string
+	Revision       int64
+	TargetRevision int64
+	TargetID       int64
+	Name           string
+}
+
+func validateLabelFolderAction(a LabelAction, name string) error {
+	if a.Directory == nil || a.AllowDuplicate || a.FaceID != 0 || a.Favorite != nil ||
+		a.AssignID != 0 || a.AssignRevision != 0 || a.SuggestionID != 0 {
+		return ErrLabelInvalid
+	}
+	if a.Action == "folder_move" {
+		if (a.TargetID > 0 && (a.TargetRevision <= 0 || name != "")) || (a.TargetID == 0 && a.TargetRevision != 0) {
+			return ErrLabelInvalid
+		}
+	} else if a.TargetID != 0 || a.TargetRevision != 0 || name != "" {
+		return ErrLabelInvalid
+	}
+	return nil
 }
 
 // ApplyPersonFolderAction changes the entire exact directory atomically, independent
 // of the preview limit. The revision prevents acting on a stale person selection.
 func (l *Library) ApplyPersonFolderAction(ctx context.Context, id int64, a PersonFolderAction) error {
+	_, err := l.applyPersonFolderAction(ctx, id, a, "", nil, "")
+	return err
+}
+
+// Native and web writes share validation and mutation. Native receipts commit
+// with the mutation; replay is checked before consulting the changed source.
+func (l *Library) applyPersonFolderAction(ctx context.Context, id int64, a PersonFolderAction, actor string, label *LabelAction, fingerprint string) (LabelReceipt, error) {
+	out := LabelReceipt{SourceID: id}
+
 	if id <= 0 || a.Revision <= 0 || a.TargetID < 0 || (a.Directory != "" && (path.Clean(a.Directory) != a.Directory || strings.HasPrefix(a.Directory, "/") || a.Directory == ".." || strings.HasPrefix(a.Directory, "../"))) {
-		return ErrLabelInvalid
+		return out, ErrLabelInvalid
 	}
 	switch a.Action {
 	case "move", "unnamed", "ignore", "exclude", "include":
 	default:
-		return ErrLabelInvalid
+		return out, ErrLabelInvalid
 	}
 	name, err := normalizedPersonName(a.Name)
 	if err != nil {
-		return err
+		return out, err
 	}
 	if a.Action == "move" && (a.TargetID == id || (a.TargetID == 0 && name == "")) {
-		return ErrLabelInvalid
+		return out, ErrLabelInvalid
 	}
 	if err = l.refreshPersonIDsVisibility(ctx, id, a.TargetID); err != nil {
-		return err
+		return out, err
 	}
 	l.faceRuntime.mu.Lock()
 	defer l.faceRuntime.mu.Unlock()
 	tx, err := l.index.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return out, err
 	}
 	defer tx.Rollback()
 	if _, err = tx.ExecContext(ctx, `UPDATE photo_labeling_identity SET id=id WHERE id=1`); err != nil {
-		return err
+		return out, err
+	}
+	if label != nil {
+		var dataset string
+		if err = tx.QueryRowContext(ctx, `SELECT dataset FROM photo_labeling_identity WHERE id=1`).Scan(&dataset); err != nil {
+			return out, err
+		}
+		if dataset != label.Dataset {
+			return out, ErrLabelConflict
+		}
+		var previous, receipt string
+		err = tx.QueryRowContext(ctx, `SELECT fingerprint,result FROM photo_labeling_actions WHERE actor=? AND operation_id=?`, actor, label.OperationID).Scan(&previous, &receipt)
+		if err == nil {
+			if previous != fingerprint {
+				return out, ErrLabelConflict
+			}
+			err = json.Unmarshal([]byte(receipt), &out)
+			return out, err
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return out, err
+		}
+		out.OperationID, out.Action, out.At = label.OperationID, label.Action, time.Now().Unix()
 	}
 	var revision int64
 	if err = tx.QueryRowContext(ctx, `SELECT revision FROM photo_person_revisions WHERE person_id=?`, id).Scan(&revision); err != nil {
-		return err
+		return out, err
 	}
 	if revision != a.Revision {
-		return ErrLabelConflict
+		return out, ErrLabelConflict
 	}
 	if newFaceDirectoryVisibility(l.root).private(a.Directory) {
-		return ErrAdminOnly()
+		return out, ErrAdminOnly()
 	}
 	if a.Action == "include" {
 		result, err := tx.ExecContext(ctx, `DELETE FROM person_folder_exclusions WHERE person_id=? AND directory=?`, id, a.Directory)
 		if err != nil {
-			return err
+			return out, err
 		}
 		n, _ := result.RowsAffected()
 		if n != 1 {
-			return ErrLabelConflict
+			return out, ErrLabelConflict
 		}
 	} else {
 		// Stream source fingerprints instead of collecting arbitrarily many face IDs.
 		rows, err := tx.QueryContext(ctx, `SELECT DISTINCT f.path,m.size_bytes,m.mod_time_unix_nano,m.xmp_fingerprint,m.admin_only FROM photo_faces f LEFT JOIN media_index m ON m.path=f.path WHERE f.person_id=? AND f.directory=? AND f.ignored=0`, id, a.Directory)
 		if err != nil {
-			return err
+			return out, err
 		}
 		count := 0
 		for rows.Next() {
@@ -255,19 +326,28 @@ func (l *Library) ApplyPersonFolderAction(ctx context.Context, id int64, a Perso
 		}
 		rows.Close()
 		if err != nil {
-			return err
+			return out, err
 		}
 		if count == 0 {
-			return ErrLabelConflict
+			return out, ErrLabelConflict
 		}
 		target := a.TargetID
 		if a.Action == "move" && target > 0 {
 			var valid bool
 			if err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM photo_people p WHERE id=? AND name<>'' AND `+visiblePersonSQL+`)`, target).Scan(&valid); err != nil {
-				return err
+				return out, err
 			}
 			if !valid {
-				return ErrLabelInvalid
+				return out, ErrLabelInvalid
+			}
+			if label != nil {
+				var targetRevision int64
+				if err = tx.QueryRowContext(ctx, `SELECT revision FROM photo_person_revisions WHERE person_id=?`, target).Scan(&targetRevision); err != nil {
+					return out, err
+				}
+				if targetRevision != a.TargetRevision {
+					return out, ErrLabelConflict
+				}
 			}
 		}
 		if a.Action == "unnamed" || a.Action == "exclude" || (a.Action == "move" && target == 0) {
@@ -276,55 +356,76 @@ func (l *Library) ApplyPersonFolderAction(ctx context.Context, id int64, a Perso
 			} else {
 				var exists bool
 				if err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM photo_people WHERE name_fold=?)`, searchtext.GermanFold(name)).Scan(&exists); err != nil {
-					return err
+					return out, err
 				}
 				if exists {
-					return ErrLabelNameExists
+					return out, ErrLabelNameExists
 				}
 			}
 			result, err := tx.ExecContext(ctx, `INSERT INTO photo_people(name,name_fold,manual_name) VALUES(?,?,1)`, name, searchtext.GermanFold(name))
 			if err != nil {
-				return err
+				return out, err
 			}
 			target, err = result.LastInsertId()
+			out.NewID = target
 			if err != nil {
-				return err
+				return out, err
 			}
 		}
+		var changed sql.Result
 		if a.Action == "ignore" {
-			_, err = tx.ExecContext(ctx, `UPDATE photo_faces SET ignored=1,manual=1 WHERE person_id=? AND directory=? AND ignored=0`, id, a.Directory)
+			changed, err = tx.ExecContext(ctx, `UPDATE photo_faces SET ignored=1,manual=1 WHERE person_id=? AND directory=? AND ignored=0`, id, a.Directory)
 		} else {
 			favorite := ""
 			if a.Action == "unnamed" || a.Action == "exclude" {
 				favorite = ",favorite=0"
 			}
-			_, err = tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=?,manual=1`+favorite+` WHERE person_id=? AND directory=? AND ignored=0`, target, id, a.Directory)
+			changed, err = tx.ExecContext(ctx, `UPDATE photo_faces SET person_id=?,manual=1`+favorite+` WHERE person_id=? AND directory=? AND ignored=0`, target, id, a.Directory)
 		}
 		if err != nil {
-			return err
+			return out, err
+		}
+		out.Faces, err = changed.RowsAffected()
+		if err != nil {
+			return out, err
+		}
+		if a.Action == "move" {
+			out.TargetID = target
 		}
 		if a.Action == "exclude" {
 			if _, err = tx.ExecContext(ctx, `INSERT INTO person_folder_exclusions VALUES(?,?)`, id, a.Directory); err != nil {
-				return err
+				return out, err
 			}
 		}
 		if target > 0 {
 			if err = refreshFaceReferencesTx(ctx, tx, target); err != nil {
-				return err
+				return out, err
 			}
 		}
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE photo_person_revisions SET revision=revision+1 WHERE person_id=?`, id); err != nil {
-		return err
+		return out, err
 	}
 	if _, err = refreshFaceMutationTx(ctx, tx, map[int64]bool{id: true}); err != nil {
-		return err
+		return out, err
+	}
+	if label != nil {
+		if err = tx.QueryRowContext(ctx, `SELECT coalesce((SELECT revision FROM photo_person_revisions WHERE person_id=?),0)`, id).Scan(&out.SourceRevision); err != nil {
+			return out, err
+		}
+		encoded, err := json.Marshal(out)
+		if err != nil {
+			return out, err
+		}
+		if _, err = tx.ExecContext(ctx, `INSERT INTO photo_labeling_actions VALUES(?,?,?,?)`, actor, label.OperationID, fingerprint, string(encoded)); err != nil {
+			return out, err
+		}
 	}
 	if err = tx.Commit(); err != nil {
-		return err
+		return out, err
 	}
 	l.faceRuntime.graph = nil
-	return nil
+	return out, nil
 }
 
 func folderExcludedPeople(ctx context.Context, tx faceRowsQuery, directory string, excluded map[int64]bool) error {

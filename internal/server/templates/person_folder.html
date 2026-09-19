@@ -14,7 +14,7 @@
 {{end}}</form>{{end}}
 </section>
 {{else}}<p>Keine Ordner vorhanden.</p>{{end}}
-<nav class="pagination" aria-label="Ordnerseiten">{{if gt .PersonFolders.Page 1}}<a class="secondary-button" href="?page={{prevPage .PersonFolders.Page}}">Zurück</a>{{end}}<span>Seite {{.PersonFolders.Page}}</span>{{if .PersonFolders.HasNext}}<a class="secondary-button" href="?page={{nextPage .PersonFolders.Page}}">Weiter</a>{{end}}</nav>
+<nav class="pagination person-folder-pagination" aria-label="Ordnerseiten">{{if gt .PersonFolders.Page 1}}<a class="secondary-button" href="?page={{prevPage .PersonFolders.Page}}">Zurück</a>{{end}}<span aria-current="page">Seite {{.PersonFolders.Page}}</span>{{if .PersonFolders.HasNext}}<a class="secondary-button" href="?page={{nextPage .PersonFolders.Page}}">Weiter</a>{{end}}</nav>
 {{if .Auth.CanPhotosEdit}}{{template "person_edit_dialog" .}}<noscript><p>Für die Neuzuweisung bitte JavaScript aktivieren.</p></noscript><script src="{{assetURL "/static/app-person-picker.js"}}" defer></script><script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script><script src="{{assetURL "/static/app-person-folder.js"}}" defer></script>{{end}}
 {{template "foot" .}}
 {{end}}

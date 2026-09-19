@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="people_folders_title">Check folder paths</string>
+    <string name="people_folders_version">Checking folder paths requires BearStack 1.2.0 or later.</string>
+    <string name="people_folders_scope">Actions apply to all active faces of this person in this exact folder, excluding subfolders. Up to eight previews are shown.</string>
+    <string name="people_folders_excluded">Excluded for this person. New assignments are blocked.</string>
+    <string name="people_folders_move">Reassign all</string>
+    <string name="people_folders_unnamed">Set all to unnamed</string>
+    <string name="people_folders_ignore">Ignore all</string>
+    <string name="people_folders_exclude">Exclude path and set faces to unnamed</string>
+    <string name="people_folders_include">Allow path again</string>
+    <string name="people_folders_include_help">New assignments to this person will be allowed again. Faces already set to unnamed will not be moved back automatically.</string>
+    <string name="people_folders_exclude_help">All active faces of this person in this exact folder will become unnamed. Manual and automatic assignments to this person stay blocked until you allow the path again. Subfolders remain unchanged.</string>
+    <string name="people_folders_empty">No folders available.</string>
+    <string name="people_folders_page">Page %1$d</string>
+    <string name="people_folders_next">Next</string>
+    <string name="people_folders_confirm">Confirm</string>
+    <string name="people_folders_unnamed_person">Unnamed</string>
+    <string name="people_folders_help">Review full folder paths and face previews. Hold a face and drag up or down to zoom the original as usual. TalkBack offers “Show original photo”. Swipe previews horizontally. Actions affect all active faces of this person in the exact folder, including more than eight; subfolders and other people are excluded. Reassign to an existing person or a new name. Excluding a path makes faces unnamed and blocks future assignments; allowing it again only removes the block. Each page contains 40 folders.</string>
+    <string name="people_folders_target_excluded">This path is excluded for the target person. Allow the path for that person first.</string>
+    <string name="people_folders_excluded_only">Excluded paths</string>
+</resources>
