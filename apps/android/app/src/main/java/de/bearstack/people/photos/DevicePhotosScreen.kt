@@ -43,6 +43,7 @@ import de.bearstack.people.R
 import de.bearstack.people.data.remote.PhotoQuery
 import de.bearstack.people.text.uiStrings
 import de.bearstack.people.text.UiText
+import kotlinx.coroutines.CancellationException
 
 internal enum class DevicePhotoAccess { NONE, SELECTED, FULL }
 // The explicit SDK argument keeps permission decisions testable across Android versions.
@@ -180,7 +181,7 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
     var changes by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
     // Debounce bursts (camera writes, imports). The observer exists only while this
-    // catalog is open and foregrounded; a new foreground always creates a fresh catalog.
+    // catalog is open and foregrounded; resume also revalidates its contents.
     DisposableEffect(context, foreground, access) {
         val handler = Handler(Looper.getMainLooper())
         val update = Runnable { changes++ }
@@ -198,10 +199,22 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
         }
     }
     val scope = rememberCoroutineScope()
-    val active = foreground && access != DevicePhotoAccess.NONE
-    val local = remember(active, revision, changes, playback) {
-        if(active) PhotosController(scope, DevicePhotosService(context.contentResolver), DevicePhotosService.SESSION,
+    var service by remember(context, access) { mutableStateOf(DevicePhotosService(context.contentResolver)) }
+    val local = remember(access, service, playback) {
+        if(access != DevicePhotoAccess.NONE) PhotosController(scope, service, DevicePhotosService.SESSION,
             initialQuery=PhotoQuery(path=path),playback=playback) else null
+    }
+    LaunchedEffect(foreground, access, revision, changes) {
+        if(foreground && access != DevicePhotoAccess.NONE) {
+            try {
+                if(local?.state?.value?.error != null) service = DevicePhotosService(context.contentResolver)
+                else service.refreshed()?.let { service = it }
+            }
+            catch(e: CancellationException) { throw e }
+            // Let the regular catalog load display a localized provider/permission
+            // error instead of retaining media that could no longer be accessible.
+            catch(_: Exception) { service = DevicePhotosService(context.contentResolver) }
+        }
     }
     val images = remember(local) {
         local?.let { ImageLoader.Builder(context).diskCache(null)

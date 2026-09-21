@@ -1,6 +1,10 @@
 # BearStack
 
-Aktuelle Version: **1.2.0** · Android-App: **0.20.0**.
+Aktuelle Version: **1.2.1** · Android-App: **0.20.1**.
+
+**Android 0.20.1 / BearStack 1.2.1:** Unter **Dieses Gerät** bleibt nach dem Teilen die Großansicht des aktuellen Fotos geöffnet. Auch die Rasterposition bleibt bei unverändertem Medienbestand nach einem App-Wechsel erhalten. Änderungen an Medien oder Fotofreigaben werden bei der Rückkehr weiterhin geprüft.
+
+Download-Erfolgsmeldungen blenden sich nach fünf Sekunden automatisch aus; Android-Bedienungshilfen können diese Anzeigezeit verlängern.
 
 **Android 0.20.0 / BearStack 1.2.0:** **Ordner-Pfade prüfen** ist vollständig nativ verfügbar: formatierte Ordnerpfade, bis zu acht Gesichter mit gewohnter Halte-/Zoomvorschau und 40 Ordner pro Seite. Alle Gesichter im exakten Ordner lassen sich neu zuweisen, unbenannt setzen, ignorieren oder per Pfadsperre ausschließen; Sperren können wieder aufgehoben werden. Gespeicherte Aktionsquittungen schützen auch bei Verbindungsabbrüchen vor doppelten Änderungen. [Android-Anleitung](https://ringelbaer.github.io/BearStack-DMS/android.html#ordner-pfade-prufen).
 

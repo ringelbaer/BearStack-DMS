@@ -5,6 +5,8 @@ import de.bearstack.people.R
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.os.Build
+import android.view.accessibility.AccessibilityManager
 import de.bearstack.people.data.remote.Photo
 import de.bearstack.people.data.remote.PhotosService
 import kotlinx.coroutines.*
@@ -23,15 +25,26 @@ class PhotoDownloads(context: Context, private val scope: CoroutineScope, privat
     val state=mutable.asStateFlow()
     var pending: Photo? = null
     private var task: Job? = null
+    private var statusTask: Job? = null
     fun save(photo: Photo, uri: Uri) {
         if(state.value.active || !scope.isActive) return
+        statusTask?.cancel()
         mutable.value=PhotoDownloadState(name=photo.name,active=true)
         task=scope.launch {
             try {
                 val bytes=service.download(photo,{resolver.openOutputStream(uri,"w") ?: throw UserIoFailure(UiText(R.string.error_download_target))}) { received,total ->
                     mutable.update {it.copy(received=received,total=total)}
                 }
-                mutable.update {it.copy(active=false,complete=true,received=bytes)}
+                val completed = state.value.copy(active=false,complete=true,received=bytes)
+                mutable.value = completed
+                statusTask = scope.launch {
+                    val accessibility = context.getSystemService(AccessibilityManager::class.java)
+                    val timeout = if(Build.VERSION.SDK_INT >= 29)
+                        accessibility?.getRecommendedTimeoutMillis(5000, AccessibilityManager.FLAG_CONTENT_TEXT) ?: 5000
+                        else 5000
+                    delay(timeout.toLong())
+                    mutable.compareAndSet(completed, PhotoDownloadState())
+                }
             } catch(e: CancellationException) {
                 try {removeIncomplete(uri)} finally {mutable.value=PhotoDownloadState()}
                 throw e

@@ -9,7 +9,7 @@ Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.
 
-Diese Anleitung beschreibt **Android-App 0.20.0**. Beginne mit den
+Diese Anleitung beschreibt **Android-App 0.20.1**. Beginne mit den
 [ersten Schritten](#erste-schritte); die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die [technische Referenz](android-technik.md).
@@ -154,6 +154,11 @@ Geteilt wird die Originaldatei des aktuellen Fotos. Bei Serverfotos lädt BearSt
 sie zunächst herunter; diese Vorbereitung lässt sich abbrechen. Lokale Fotos
 werden direkt freigegeben. Die Diashow pausiert währenddessen.
 
+Nach dem Teilen oder Abbrechen der App-Auswahl bleibt das aktuelle Foto in der
+Großansicht geöffnet, auch unter **Dieses Gerät**. Beim Schließen kehrst du im
+Raster zum aktuellen Bild zurück. Das gilt, solange Medienbestand und Fotozugriff
+unverändert bleiben.
+
 Die empfangende App bekommt vorübergehenden Lesezugriff auf genau dieses Bild.
 Zugangsdaten und Serverlinks werden nicht weitergegeben. Im Original gespeicherte
 Metadaten bleiben erhalten, gegebenenfalls einschließlich GPS.
@@ -161,6 +166,9 @@ Serverbilder dürfen zum Teilen bis zu **256 MiB** groß sein. Größere Dateien
 du über **Original herunterladen** speichern.
 
 ### Original speichern
+
+Die Bestätigung nach einem erfolgreichen Download verschwindet automatisch nach
+fünf Sekunden; ein längeres Zeitlimit deiner Android-Bedienungshilfen wird beachtet.
 
 Wähle im Vollbild **Original herunterladen**. Im Android-Speicherdialog bestimmst
 du Zielordner und Dateinamen. Der Transfer zeigt seinen Fortschritt und lässt sich

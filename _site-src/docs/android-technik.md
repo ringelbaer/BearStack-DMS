@@ -7,7 +7,7 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.20.0** (`versionCode 41`), BearStack **1.2.0**.
+bis zur Personenverwaltung. Stand: App **0.20.1** (`versionCode 42`), BearStack **1.2.1**.
 
 ## Bauen und installieren
 
@@ -229,13 +229,22 @@ UI-Threads; Anbieter ohne native Seitengrenzen werden über Cursor gelesen.
 Reihenfolge ist die absteigende Medien-ID. Es gibt keine lokalen Uploads oder
 Serveranfragen für Gerätefotos.
 
+Beim Teilen und bei App-Wechseln bleiben der lokale Controller, das geöffnete Foto
+und die Rasterposition erhalten. Die Rückkehr prüft weiterhin die Berechtigung
+und liest den erreichbaren MediaStore-Bestand abbrechbar außerhalb des UI-Threads.
+Ein SHA-256-Fingerabdruck der gestreamten Metadaten erkennt auch geänderte
+Teilfreigaben bei gleicher Fotoanzahl und unveränderten Ordnervorschauen. Nur ein
+geänderter oder nicht mehr lesbarer Bestand ersetzt den Katalog. Der neue
+Katalog übernimmt das Abfrageergebnis ohne zweiten Scan; gespeichert bleiben
+weiterhin nur Ordnerzähler, zwei Vorschau-IDs je Ordner und der Fingerabdruck.
+
 ### Bild- und Dateicaches
 
 | Cache | Grenze und Lebensdauer |
 | --- | --- |
 | Server-Galerie-Thumbnails | Einstellbar 64–2048 MiB, Standard 256 MiB; der geschützte Pflichtbestand darf das Budget überschreiten. |
 | Große Vorschauen | 16 MiB Arbeitsspeicher; höchstens drei Minuten ab erfolgreichem Laden, ohne Verlängerung bei Zugriff. Kein Disk-Cache. |
-| Lokale Fotos | 16 MiB Arbeitsspeicher; beim Verlassen der lokalen Ansicht oder Hintergrundwechsel geleert. |
+| Lokale Fotos | 16 MiB Arbeitsspeicher; beim Verlassen der lokalen Ansicht, geändertem Medienbestand oder geänderter Zugriffsberechtigung geleert. App-Wechsel erhalten den Cache. |
 | Vorbereitete Serverbilder zum Teilen | Höchstens 256 MiB je Datei sowie acht Dateien und 512 MiB insgesamt; Bereinigung beim nächsten Teilen, auch für Dateien ab 24 Stunden. |
 | OpenStreetMap-Kartenbilder | 64 MiB HTTP-Cache; Cache-Header und bedingte Anfragen werden berücksichtigt. |
 

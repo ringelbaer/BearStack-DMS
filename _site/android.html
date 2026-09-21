@@ -1693,7 +1693,7 @@
 <p>Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.</p>
-<p>Diese Anleitung beschreibt <strong>Android-App 0.20.0</strong>. Beginne mit den
+<p>Diese Anleitung beschreibt <strong>Android-App 0.20.1</strong>. Beginne mit den
 <a href="#erste-schritte">ersten Schritten</a>; die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die <a href="android-technik.html">technische Referenz</a>.</p>
@@ -1867,12 +1867,18 @@ Informationsblatt über <strong>Erneut versuchen</strong> wiederholen.</p>
 Geteilt wird die Originaldatei des aktuellen Fotos. Bei Serverfotos lädt BearStack
 sie zunächst herunter; diese Vorbereitung lässt sich abbrechen. Lokale Fotos
 werden direkt freigegeben. Die Diashow pausiert währenddessen.</p>
+<p>Nach dem Teilen oder Abbrechen der App-Auswahl bleibt das aktuelle Foto in der
+Großansicht geöffnet, auch unter <strong>Dieses Gerät</strong>. Beim Schließen kehrst du im
+Raster zum aktuellen Bild zurück. Das gilt, solange Medienbestand und Fotozugriff
+unverändert bleiben.</p>
 <p>Die empfangende App bekommt vorübergehenden Lesezugriff auf genau dieses Bild.
 Zugangsdaten und Serverlinks werden nicht weitergegeben. Im Original gespeicherte
 Metadaten bleiben erhalten, gegebenenfalls einschließlich GPS.
 Serverbilder dürfen zum Teilen bis zu <strong>256 MiB</strong> groß sein. Größere Dateien kannst
 du über <strong>Original herunterladen</strong> speichern.</p>
 <h3 id="original-speichern">Original speichern<a class="headerlink" href="#original-speichern" title="Permanent link">&para;</a></h3>
+<p>Die Bestätigung nach einem erfolgreichen Download verschwindet automatisch nach
+fünf Sekunden; ein längeres Zeitlimit deiner Android-Bedienungshilfen wird beachtet.</p>
 <p>Wähle im Vollbild <strong>Original herunterladen</strong>. Im Android-Speicherdialog bestimmst
 du Zielordner und Dateinamen. Der Transfer zeigt seinen Fortschritt und lässt sich
 abbrechen. Bei Fehler oder Abbruch versucht die App, die angefangene Datei wieder
@@ -2454,7 +2460,7 @@ steht im <a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/CHANGELO
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.2.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.2.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

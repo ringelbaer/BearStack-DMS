@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 class DevicePhotosServiceTest {
     private data class Entry(val id: Long, val bucket: String, val name: String, val volume: String = "external_primary",
         val captured: Long? = 1_700_000_000_000L + id * 1000)
-    private class Provider(val entries: List<Entry>, val paging: Boolean = true) : ContentProvider() {
+    private class Provider(var entries: List<Entry>, val paging: Boolean = true) : ContentProvider() {
         var folderScans = 0
         var idScans = 0
         var closedCursors = 0
@@ -114,6 +114,31 @@ class DevicePhotosServiceTest {
         assertEquals(1, provider.folderScans)
         assertEquals(provider.openedCursors, provider.closedCursors)
     }
+    @Test fun unchangedCatalogKeepsItsSessionButChangedGrantsAndMetadataReplaceIt() = runBlocking {
+        val entries = (1L..300).map { Entry(it, "1", "Camera") }
+        val provider = Provider(entries)
+        val service = DevicePhotosService(ContentResolver.wrap(provider))
+        val folder = service.browse(PhotoQuery()).folders.single()
+        assertNull(service.refreshed())
+        // Same count and preview IDs, but a different selection in the middle.
+        // Comparing folder tiles alone would retain a photo whose grant was lost.
+        provider.entries = entries.filter { it.id != 100L } + Entry(0, "1", "Camera")
+        val refreshed = checkNotNull(service.refreshed())
+        val scans = provider.folderScans
+        assertEquals(folder, refreshed.browse(PhotoQuery()).folders.single())
+        assertEquals(scans, provider.folderScans) // Reuse the scan that detected the change.
+        val query = PhotoQuery(path=folder.path)
+        assertFalse((1..4).flatMap { refreshed.browse(query, it, "media").media }.any { it.name == "100.jpg" })
+        assertNull(refreshed.refreshed())
+        provider.entries = provider.entries.map { if(it.id == 101L) it.copy(captured=1L) else it }
+        assertNotNull(refreshed.refreshed())
+        provider.entries = emptyList()
+        assertTrue(checkNotNull(refreshed.refreshed()).browse(PhotoQuery()).folders.isEmpty())
+        provider.fail = true
+        try { service.refreshed(); fail("expected denied access") }
+        catch(e: Exception) { assertEquals(R.string.photos_device_permission, (e as DescribedFailure).userText.resource) }
+        assertEquals(provider.openedCursors, provider.closedCursors)
+    }
     @Test fun shuffledFramesKeepEveryImageAcrossPagesAndReleaseTheirOrder() = runBlocking {
         for(paging in listOf(true,false)) {
             val provider=Provider((1L..303).map {Entry(it,"1","Camera")},paging)
@@ -194,5 +219,19 @@ class DevicePhotosServiceTest {
         withContext(Dispatchers.IO) { assertTrue(provider.entered.await(5, TimeUnit.SECONDS)) }
         withTimeout(3000) { task.cancelAndJoin() }
         assertEquals(0L, provider.cancelled.count)
+    }
+    @Test fun cancellingRevalidationPreservesThePreviousSnapshot() = runBlocking {
+        val provider = Provider(listOf(Entry(1, "1", "Camera")))
+        val service = DevicePhotosService(ContentResolver.wrap(provider))
+        val before = service.browse(PhotoQuery())
+        provider.block = true
+        val task = launch { service.refreshed() }
+        withContext(Dispatchers.IO) { assertTrue(provider.entered.await(5, TimeUnit.SECONDS)) }
+        withTimeout(3000) { task.cancelAndJoin() }
+        assertEquals(0L, provider.cancelled.count)
+        provider.block = false
+        assertEquals(before, service.browse(PhotoQuery()))
+        assertEquals(1, provider.folderScans)
+        assertEquals(provider.openedCursors, provider.closedCursors)
     }
 }

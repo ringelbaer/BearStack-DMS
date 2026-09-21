@@ -15,14 +15,16 @@ import de.bearstack.people.text.UserIoFailure
 import kotlinx.coroutines.*
 import java.time.Instant
 import java.time.ZoneId
+import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
 
-/** Read-only, foreground-scoped MediaStore catalog. No server client or filesystem traversal. */
+/** Read-only, screen-scoped MediaStore catalog. No server client or filesystem traversal. */
 internal class DevicePhotosService(private val resolver: ContentResolver, private val random: Random = Random.Default) : PhotosService {
     private val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-    private var catalog: List<PhotoFolder>? = null
-    private val buckets = mutableMapOf<String, Pair<String, String?>>()
+    private data class Catalog(val folders: List<PhotoFolder>, val buckets: Map<String, Pair<String, String?>>,
+        val revision: ByteArray)
+    @Volatile private var catalog: Catalog? = null
     private data class PlaybackOrder(val folder: String, val generation: Long, val ids: LongArray)
     private val playbackGeneration = AtomicLong()
     @Volatile private var playbackOrder: PlaybackOrder? = null
@@ -36,13 +38,14 @@ internal class DevicePhotosService(private val resolver: ContentResolver, privat
 
     override suspend fun browse(query: PhotoQuery, page: Int, section: String): PhotoPage = read { signal ->
         require(page > 0)
-        val folders = catalog ?: scanFolders(signal).also { catalog = it }
+        val current = catalog ?: scanFolders(signal).also { catalog = it }
+        val folders = current.folders
         if(query.path.isEmpty()) {
             val start = ((page - 1).toLong() * 24).coerceAtMost(folders.size.toLong()).toInt()
             PhotoPage("", "", page, 0, false, folders.size, start + 24 < folders.size, false,
                 emptyList(), folders.subList(start, (start + 24).coerceAtMost(folders.size)), emptyList())
         } else {
-            val bucket = buckets[query.path] ?: throw UserIoFailure(UiText(R.string.error_missing))
+            val bucket = current.buckets[query.path] ?: throw UserIoFailure(UiText(R.string.error_missing))
             val count = folders.first { it.path == query.path }.count
             val selection = MediaStore.Images.Media.BUCKET_ID + " = ?" +
                 if(bucket.second != null) " AND ${MediaStore.MediaColumns.VOLUME_NAME} = ?" else ""
@@ -73,7 +76,18 @@ internal class DevicePhotosService(private val resolver: ContentResolver, privat
         } ?: throw UserIoFailure(UiText(R.string.photos_device_error))
     }
 
-    fun folderName(path: String): String? = catalog?.firstOrNull { it.path == path }?.name
+    fun folderName(path: String): String? = catalog?.folders?.firstOrNull { it.path == path }?.name
+
+    // Revalidate the accessible MediaStore rows on resume, including changes to
+    // Android's selected-photo grant. Keep the viewer, paging window and image
+    // loader when nothing changed. A changed catalog is reused without a second
+    // scan and never mutates the snapshot used by in-flight page requests.
+    suspend fun refreshed(): DevicePhotosService? = read { signal ->
+        val previous = catalog ?: return@read null
+        val current = scanFolders(signal)
+        if(previous.revision.contentEquals(current.revision)) null
+        else DevicePhotosService(resolver, random).also { it.catalog = current }
+    }
 
     private fun randomOrder(folder: String, selection: String, args: Array<String>, signal: CancellationSignal): LongArray {
         val generation = playbackGeneration.get()
@@ -105,32 +119,39 @@ internal class DevicePhotosService(private val resolver: ContentResolver, privat
         return buildList {ids.forEach {id -> byPath[ContentUris.withAppendedId(collection,id).toString()]?.let(::add)}}
     }
 
-    private fun scanFolders(signal: CancellationSignal): List<PhotoFolder> {
+    private fun scanFolders(signal: CancellationSignal): Catalog {
         data class Bucket(val id: String, val volume: String?, val name: String, var count: Int = 0,
             val previews: MutableList<Photo> = mutableListOf())
-        val columns = mutableListOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.BUCKET_ID,
-            MediaStore.Images.Media.BUCKET_DISPLAY_NAME)
+        val columns = (listOf(MediaStore.Images.Media.BUCKET_ID) + PHOTO_COLUMNS).toMutableList()
         if(Build.VERSION.SDK_INT >= 29) columns += MediaStore.MediaColumns.VOLUME_NAME
         val found = linkedMapOf<String, Bucket>()
-        // One streaming metadata pass; retain only counts and two thumbnail IDs per folder.
+        val revision = MessageDigest.getInstance("SHA-256")
+        // One streaming metadata pass; retain only counts, two thumbnail IDs per
+        // folder and a fixed-size digest, never every image's metadata or ID.
         resolver.query(collection, columns.toTypedArray(), null, null, PHOTO_ORDER, signal)?.use { cursor ->
             while(cursor.moveToNext()) {
                 signal.throwIfCanceled()
-                val id = cursor.getString(1) ?: continue
-                val volume = if(Build.VERSION.SDK_INT >= 29) cursor.getString(3) else null
+                for(column in columns.indices) {
+                    revision.update(cursor.getString(column).orEmpty().toByteArray(Charsets.UTF_8))
+                    revision.update(0.toByte())
+                }
+                val id = cursor.getString(0) ?: continue
+                val volume = if(Build.VERSION.SDK_INT >= 29) cursor.getString(columns.lastIndex) else null
                 val key = "${volume.orEmpty()}:$id"
-                val bucket = found.getOrPut(key) { Bucket(id, volume, cursor.getString(2).orEmpty().ifBlank { id }) }
+                val bucket = found.getOrPut(key) { Bucket(id, volume,
+                    cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.BUCKET_DISPLAY_NAME)).orEmpty().ifBlank { id }) }
                 bucket.count++
                 if(bucket.previews.size < 2) bucket.previews += Photo(
-                    ContentUris.withAppendedId(collection, cursor.getLong(0)).toString(), bucket.name,
+                    ContentUris.withAppendedId(collection, cursor.getLong(1)).toString(), bucket.name,
                     "image", "image/*", "", "", null, 0, 0, 0)
             }
         } ?: throw UserIoFailure(UiText(R.string.photos_device_error))
-        buckets.clear()
-        return found.map { (key, bucket) ->
+        val buckets = mutableMapOf<String, Pair<String, String?>>()
+        val folders = found.map { (key, bucket) ->
             buckets[key] = bucket.id to bucket.volume
             PhotoFolder(key, bucket.name, null, bucket.count, false, 0, bucket.previews)
         }.sortedWith(compareBy<PhotoFolder> { it.name.lowercase(java.util.Locale.ROOT) }.thenBy { it.path })
+        return Catalog(folders, buckets, revision.digest())
     }
 
     private fun queryPage(selection: String, args: Array<String>, offset: Int, signal: CancellationSignal): List<Photo> {

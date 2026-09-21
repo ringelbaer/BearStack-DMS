@@ -1216,7 +1216,7 @@
 <h1 id="android-app-technik-entwicklung">Android-App – Technik &amp; Entwicklung<a class="headerlink" href="#android-app-technik-entwicklung" title="Permanent link">&para;</a></h1>
 <p>Diese Referenz richtet sich an Betreiber und Entwickler. Die
 <a href="android.html">Android-Anleitung</a> erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App <strong>0.20.0</strong> (<code>versionCode 41</code>), BearStack <strong>1.2.0</strong>.</p>
+bis zur Personenverwaltung. Stand: App <strong>0.20.1</strong> (<code>versionCode 42</code>), BearStack <strong>1.2.1</strong>.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
 <p>Öffne <code>apps/android/</code> in Android Studio als eigenes Projekt. Benötigt werden JDK 17
 oder 21 und das Android-SDK mit Plattform 36. Gradle Wrapper, Android Gradle Plugin
@@ -1456,6 +1456,14 @@ höchstens zwei Vorschau-IDs erhalten. Abfragen laufen abbrechbar außerhalb des
 UI-Threads; Anbieter ohne native Seitengrenzen werden über Cursor gelesen.
 Reihenfolge ist die absteigende Medien-ID. Es gibt keine lokalen Uploads oder
 Serveranfragen für Gerätefotos.</p>
+<p>Beim Teilen und bei App-Wechseln bleiben der lokale Controller, das geöffnete Foto
+und die Rasterposition erhalten. Die Rückkehr prüft weiterhin die Berechtigung
+und liest den erreichbaren MediaStore-Bestand abbrechbar außerhalb des UI-Threads.
+Ein SHA-256-Fingerabdruck der gestreamten Metadaten erkennt auch geänderte
+Teilfreigaben bei gleicher Fotoanzahl und unveränderten Ordnervorschauen. Nur ein
+geänderter oder nicht mehr lesbarer Bestand ersetzt den Katalog. Der neue
+Katalog übernimmt das Abfrageergebnis ohne zweiten Scan; gespeichert bleiben
+weiterhin nur Ordnerzähler, zwei Vorschau-IDs je Ordner und der Fingerabdruck.</p>
 <h3 id="bild-und-dateicaches">Bild- und Dateicaches<a class="headerlink" href="#bild-und-dateicaches" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1475,7 +1483,7 @@ Serveranfragen für Gerätefotos.</p>
 </tr>
 <tr>
 <td>Lokale Fotos</td>
-<td>16 MiB Arbeitsspeicher; beim Verlassen der lokalen Ansicht oder Hintergrundwechsel geleert.</td>
+<td>16 MiB Arbeitsspeicher; beim Verlassen der lokalen Ansicht, geändertem Medienbestand oder geänderter Zugriffsberechtigung geleert. App-Wechsel erhalten den Cache.</td>
 </tr>
 <tr>
 <td>Vorbereitete Serverbilder zum Teilen</td>
@@ -1638,7 +1646,7 @@ Projektaufbau. Verbindlich sind die Gradle-Dateien im Repository.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.2.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.2.1 · Website gebaut mit Zensical</p>
   </div>
 </footer>
 

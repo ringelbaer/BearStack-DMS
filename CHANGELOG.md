@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.2.1 / Android 0.20.1
+
+- Die Erfolgsmeldung nach einem Original-Download verschwindet nach fünf Sekunden; längere Android-Bedienungshilfe-Zeitlimits werden berücksichtigt. Neue Downloads ersetzen den alten Meldungstimer, gespeicherte Dateien bleiben erhalten.
+- Android **Dieses Gerät**: Teilen aus der Großansicht und Rückkehr aus einer anderen App erhalten das aktuelle Foto und die Rasterposition, sofern Medienbestand und Freigaben unverändert sind. Der Teilen-Dialog verwirft den lokalen Controller und Bildcache nicht mehr.
+- Medienbestand und Teilfreigaben werden bei der Rückkehr weiterhin abbrechbar geprüft. Ein Fingerabdruck der gestreamten Metadaten erkennt auch geänderte Fotos außerhalb der Ordnervorschauen; ein geänderter Katalog wird ohne zweiten Scan übernommen. Gelöschte oder nicht mehr zugängliche Fotos werden weiterhin geschlossen.
+- PATCH für die Lebenszykluskorrektur; Android `versionCode 42`, keine Migration oder Änderung der HTTP-Verträge. README, Android-Dokumentation, Website und OpenAPI-Version aktualisiert.
+- Validierung: 115 JVM-Tests und 32 Android-Emulatortests erfolgreich, Android-Lint ohne Fehler, Debug-/Test-APK und Website gebaut; 257 lokale Android-Dokumentationsverweise geprüft. Regressionen decken den echten System-Teilen-Dialog, vollständige Hintergrundwechsel beim 130. Foto, erhaltene Rasterposition, Löschung während des Hintergrundwechsels, geänderte Teilfreigaben bei gleichen Ordnervorschauen sowie Abbruch der Bestandsprüfung ab.
+
 ### BearStack 1.2.0 / Android 0.20.0
 
 - Android: **Ordner-Pfade prüfen** im Menü benannter und unbenannter Personen. Native Liste mit formatierten vollständigen Pfaden, 40 Ordnern pro Seite und maximal acht Gesichtsvorschauen je Ordner.

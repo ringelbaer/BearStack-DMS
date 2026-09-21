@@ -53,6 +53,10 @@ class PhotoDownloadStorageTest {
                 if(mode=="success") {
                     assertTrue(downloads.state.value.complete)
                     resolver.openInputStream(uri)!!.use {assertArrayEquals(byteArrayOf(1,2,3),it.readBytes())}
+                    withTimeout(8000) { while(downloads.state.value.complete) delay(25) }
+                    assertEquals("", downloads.state.value.name)
+                    // Expiring the notification must never remove the saved original.
+                    resolver.openInputStream(uri)!!.use {assertArrayEquals(byteArrayOf(1,2,3),it.readBytes())}
                 } else resolver.query(uri,null,null,null,null).use {assertTrue(it==null || it.count==0)}
             } finally {scope.cancel();resolver.delete(uri,null,null)}
         }

@@ -1,7 +1,11 @@
 # BearStack Fotos für Android
 
 Native Android-App für BearStack-Galerie, lokale Fotos und Personenverwaltung.
-App-Version **0.20.0** (`versionCode 41`), Android **8.0 oder neuer**.
+App-Version **0.20.1** (`versionCode 42`), Android **8.0 oder neuer**.
+
+Nach dem Teilen eines Gerätefotos bleibt die Großansicht geöffnet. Beim Schließen
+kehrt die Galerie zum aktuellen Bild zurück; unveränderte lokale Medien behalten
+auch nach einem App-Wechsel ihre Rasterposition.
 
 ## Dokumentation
 
