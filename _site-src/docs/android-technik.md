@@ -7,12 +7,12 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.22.1** (`versionCode 45`), BearStack **1.5.0**.
+bis zur Personenverwaltung. Stand: App **0.22.2** (`versionCode 46`), BearStack **1.6.0**.
 
 ## Bauen und installieren
 
 Öffne `apps/android/` in Android Studio als eigenes Projekt. Benötigt werden JDK 17
-oder 21 und das Android-SDK mit Plattform 36. Gradle Wrapper, Android Gradle Plugin
+oder 21 und das Android-SDK mit Plattform 37. Gradle Wrapper, Android Gradle Plugin
 und Kotlin sind im Projekt festgelegt; verwende den mitgelieferten Wrapper.
 Setze den SDK-Pfad über `ANDROID_HOME` oder eine ignorierte
 `apps/android/local.properties` mit `sdk.dir=…`.
@@ -327,6 +327,23 @@ Kartenbilder lädt ein eigener Client ohne BearStack-Zugangsdaten.
 
 ## Tests
 
+Lint-Warnungen brechen den Build ab (`warningsAsErrors`), sowohl für Debug als auch
+Release. Mengenangaben verwenden deutsche und englische Pluralressourcen; Tests
+prüfen null, eins und mehrere Elemente. Das Galerieraster richtet sich nach der
+Fenstergröße; der Scrollgriff berechnet seinen Fortschritt als abgeleiteten Zustand.
+
+Eng begrenzte, im Quelltext begründete Ausnahmen gelten für mengenunabhängige
+Beschriftungen, die Sprachwahl ab API 33 und den eigenen TLS-TrustManager.
+Dieser prüft Systemvertrauen beziehungsweise das ausdrücklich bestätigte, gültige
+Serverzertifikat; OkHttp prüft weiterhin den Hostnamen. TLS-Tests prüfen auch,
+dass ein geändertes Zertifikat vor dem Senden von Zugangsdaten abgewiesen wird.
+
+`compileSdk` ist 37, `targetSdk` bleibt bewusst 36. Ein Zielwechsel auf API 37
+benötigt zuerst den Berechtigungsablauf für lokale Server einschließlich Ablehnung
+und erneutem Versuch. Deshalb ist nur diese konkrete `OldTargetApi`-Meldung
+ausgenommen. Hintergrund ist die neue
+[Android-17-Berechtigung für lokale Netzwerke](https://developer.android.com/about/versions/17/behavior-changes-17#local-network-permission).
+
 Alle Befehle werden vom Repository-Stamm aus ausgeführt:
 
 ```sh
@@ -396,8 +413,8 @@ Kontowechsel stoppt zuerst die Feature-Aufgaben und schließt dann die Sitzungsr
 Die Personenlogik liegt im Go-Backend unter `internal/photos`, HTTP-Adapter und
 Rechte unter `internal/server`.
 
-Für die Buildpflege: Die App verwendet `room-runtime` und den Room-Compiler;
-`room-ktx` und `ui-tooling-preview` sind keine zusätzlichen Abhängigkeiten. Vor einem
-Upgrade auf AGP 10 müssen die Legacy-DSL-/Kotlin-Optionen in `gradle.properties` und
-die kapt-Anbindung migriert werden. Die bestehenden Optionen gehören zum aktuellen
-Projektaufbau. Verbindlich sind die Gradle-Dateien im Repository.
+Für die Buildpflege: Die App verwendet das in AGP integrierte Kotlin und KSP für
+den Room-Compiler. Das exportierte Datenbankschema bleibt unverändert.
+`room-ktx` und `ui-tooling-preview` sind keine zusätzlichen Abhängigkeiten.
+Release-Builds verkleinern Code und Ressourcen gemeinsam. Compose-Gerätetests
+verwenden die aktuelle v2-Testregel. Verbindlich sind die Gradle-Dateien im Repository.

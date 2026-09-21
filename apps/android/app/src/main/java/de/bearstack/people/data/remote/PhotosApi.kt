@@ -185,7 +185,7 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
         // have no total call deadline, but retain connection/read timeouts.
         return streamingClient.readResponse(Request.Builder().url(original(photo)).build(),waitForClose=true) { response, active ->
             if(response.code!=200) throw ApiFailure(response.code,"download_failed",UiText(R.string.error_download_status,response.code))
-            val body=response.body ?: throw UserIoFailure(UiText(R.string.error_response_empty))
+            val body=response.body
             val mime=body.contentType()?.let {"${it.type}/${it.subtype}"}
             if(mime!=photo.mime && mime!="application/octet-stream") throw UserIoFailure(UiText(R.string.error_download_mime))
             if(!active()) throw UserIoFailure(UiText(R.string.error_download_cancelled))

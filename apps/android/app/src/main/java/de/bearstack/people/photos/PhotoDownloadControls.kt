@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,7 +43,7 @@ import de.bearstack.people.data.remote.Photo
                 if(state.total>0) LinearProgressIndicator(progress={(state.received.toDouble()/state.total).toFloat().coerceIn(0f,1f)},modifier=Modifier.fillMaxWidth())
                 else LinearProgressIndicator(Modifier.fillMaxWidth())
             }
-            state.complete -> Text(if(state.requestedCount>1) stringResource(R.string.photos_selection_saved,state.savedCount)
+            state.complete -> Text(if(state.requestedCount>1) pluralStringResource(R.plurals.photos_selection_saved,state.savedCount,state.savedCount)
                 else stringResource(R.string.photos_downloaded,state.name),style=MaterialTheme.typography.bodySmall)
             else -> Text(state.error?.let {text(it)}.orEmpty(),color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)
         }

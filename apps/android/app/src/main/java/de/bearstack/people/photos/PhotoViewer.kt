@@ -228,7 +228,7 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
     var attempt by remember(photo.path) { mutableIntStateOf(0) }
     LaunchedEffect(active) { zoom=1f;pan=Offset.Zero;if(active) onZoomed(false) }
     LaunchedEffect(active,loading,failed) {if(active) onReady(!loading && !failed)}
-    val transform=rememberTransformableState { scale,delta,_ ->
+    val transform=rememberTransformableState { _,scale,delta,_ ->
         zoom=(zoom*scale).coerceIn(1f,6f)
         val maxX=size.width*(zoom-1)/2f;val maxY=size.height*(zoom-1)/2f
         pan=Offset((pan.x+delta.x).coerceIn(-maxX,maxX),(pan.y+delta.y).coerceIn(-maxY,maxY))

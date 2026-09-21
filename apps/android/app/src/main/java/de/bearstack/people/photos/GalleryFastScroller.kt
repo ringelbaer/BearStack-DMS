@@ -34,9 +34,12 @@ import kotlin.math.roundToInt
     var dragging by remember {mutableStateOf(false)}
     var dragFraction by remember {mutableFloatStateOf(0f)}
     var visible by remember {mutableStateOf(false)}
-    val position=grid.layoutInfo.visibleItemsInfo.firstNotNullOfOrNull {galleryItemPosition(state,it.key.toString())} ?: 0
-    val atEnd=!grid.canScrollForward && grid.layoutInfo.visibleItemsInfo.any {galleryItemPosition(state,it.key.toString())==count-1}
-    val fraction=if(atEnd) 1f else position.toFloat()/(count-1)
+    val fraction by remember(grid,state,count) {derivedStateOf {
+        val items=grid.layoutInfo.visibleItemsInfo
+        val position=items.firstNotNullOfOrNull {galleryItemPosition(state,it.key.toString())} ?: 0
+        val atEnd=!grid.canScrollForward && items.any {galleryItemPosition(state,it.key.toString())==count-1}
+        if(atEnd) 1f else position.toFloat()/(count-1)
+    }}
     val currentFraction by rememberUpdatedState(fraction)
     val label=stringResource(R.string.photos_fast_scroll)
     LaunchedEffect(grid.isScrollInProgress,dragging,state.seekLoading) {

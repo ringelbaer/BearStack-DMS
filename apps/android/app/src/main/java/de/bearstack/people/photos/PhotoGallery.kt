@@ -9,6 +9,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -22,12 +24,13 @@ import de.bearstack.people.data.remote.*
 import de.bearstack.people.text.*
 
 @Composable
-internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, state: PhotosState, modifier: Modifier = Modifier.fillMaxSize(),
+internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, state: PhotosState, modifier: Modifier = Modifier,
     onDevice: (() -> Unit)? = null, contentPadding: PaddingValues = PaddingValues(bottom=16.dp),
     fastScroll: Boolean = state.tab!=0 || state.query.path.isNotEmpty() || controller.service is DevicePhotosService) {
     val configuration=LocalConfiguration.current
     val locale=configuration.locales[0]
-    val columns=if(configuration.screenWidthDp>=600) 12 else 6
+    val windowWidth=with(LocalDensity.current) {LocalWindowInfo.current.containerSize.width.toDp()}
+    val columns=if(windowWidth>=600.dp) 12 else 6
     val folderSpan=if(columns==6 && configuration.fontScale>=1.5f) 6 else 3
     key(state.query,state.frame,state.jumpRevision) {
         val rows=remember(state.mediaPages,state.folderPages,state.blogPages,state.pageErrors,onDevice!=null) {
@@ -92,7 +95,7 @@ internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, sta
             val index=rows.indexOfFirst {it.key==target}
             if(index>=0) {grid.scrollToItem(index);controller.scrollConsumed()}
         }
-        Column(modifier) {
+        Column(modifier.fillMaxSize()) {
         PhotoSelectionActions(controller, state)
         Box(Modifier.fillMaxWidth().weight(1f)) {
         LazyVerticalGrid(columns=GridCells.Fixed(columns),state=grid,modifier=Modifier.fillMaxSize().testTag("photo-gallery"),

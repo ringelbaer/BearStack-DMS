@@ -67,7 +67,7 @@ class DevicePhotosServiceTest {
                 matching.sortedWith(compareByDescending<Entry> { it.captured }.thenByDescending { it.id })
             else matching.sortedByDescending { it.id }
             val limited = paging && queryArgs?.containsKey(ContentResolver.QUERY_ARG_LIMIT) == true
-            if(limited) matching = matching.drop(queryArgs!!.getInt(ContentResolver.QUERY_ARG_OFFSET))
+            if(limited) matching = matching.drop(queryArgs.getInt(ContentResolver.QUERY_ARG_OFFSET))
                 .take(queryArgs.getInt(ContentResolver.QUERY_ARG_LIMIT))
             openedCursors++
             return object : MatrixCursor(columns) {

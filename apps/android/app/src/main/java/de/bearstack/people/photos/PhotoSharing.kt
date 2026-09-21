@@ -3,6 +3,7 @@ package de.bearstack.people.photos
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import androidx.core.net.toUri
 import android.net.Uri
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
@@ -38,7 +39,7 @@ internal class PhotoSharing(context: Context, private val service: PhotosService
                 ensureActive()
                 if(service is DevicePhotosService) {
                     // Recheck current access and accept only this catalog's MediaStore image URIs.
-                    Uri.parse(service.info(photo.path).path)
+                    service.info(photo.path).path.toUri()
                 } else {
                     if(photo.bytes > cache.maxFileBytes) throw UserIoFailure(UiText(R.string.photos_share_too_large))
                     val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(photo.mime) ?: "img"

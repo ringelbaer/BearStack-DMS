@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import de.bearstack.people.R
@@ -67,7 +68,7 @@ internal suspend fun deleteDevicePhotos(context: Context, service: DevicePhotosS
     }
     confirm?.let { selected -> AlertDialog(onDismissRequest={confirm=null},
         title={Text(stringResource(R.string.photos_delete))},
-        text={Text(stringResource(R.string.photos_delete_confirm, selected.size))},
+        text={Text(pluralStringResource(R.plurals.photos_delete_confirm,selected.size,selected.size))},
         dismissButton={TextButton(onClick={confirm=null}) {Text(stringResource(R.string.photos_cancel))}},
         confirmButton={TextButton(onClick={
             confirm=null;busy=true;error=false;controller.localMutation(true)

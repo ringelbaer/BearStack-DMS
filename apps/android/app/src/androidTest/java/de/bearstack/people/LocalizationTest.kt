@@ -8,7 +8,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
@@ -111,6 +111,38 @@ class LocalizationTest {
         compose.onNodeWithText("Keep separate").performClick();idle(vm)
         compose.onNodeWithText("No similar groups right now.").assertIsDisplayed()
         assertEquals(1,api.commits)
+    }
+
+    @Test fun quantitiesUseSingularOnlyForOneInBothLanguages() {
+        val app=InstrumentationRegistry.getInstrumentation().targetContext
+        for(locale in listOf(Locale.GERMAN,Locale.ENGLISH)) {
+            val resources=app.createConfigurationContext(Configuration(app.resources.configuration).apply {setLocale(locale)}).resources
+            val text=UiStrings(resources)
+            val german=locale==Locale.GERMAN
+            for(count in listOf(0,1,2)) {
+                val seconds=if(german) if(count==1) "Sekunde" else "Sekunden" else if(count==1) "second" else "seconds"
+                assertEquals("$count $seconds",text.quantity(R.plurals.photos_seconds,count,count))
+                val marker=if(german) if(count==1) "Aufnahme" else "Aufnahmen" else if(count==1) "item" else "items"
+                assertEquals("$count $marker "+if(german) "an diesem Ort" else "at this location",
+                    text.quantity(R.plurals.photos_map_marker,count,count))
+                val medium=if(german) if(count==1) "Medium" else "Medien" else if(count==1) "item" else "items"
+                assertTrue(text.quantity(R.plurals.photos_route_summary,count,count,25).startsWith("$count $medium ·"))
+                assertEquals(if(german) "$count $medium gespeichert" else if(count==1) "1 media item saved" else "$count media saved",
+                    text.quantity(R.plurals.photos_selection_saved,count,count))
+                val image=if(german) if(count==1) "Bild" else "Bilder" else if(count==1) "image" else "images"
+                assertTrue(text.quantity(R.plurals.photos_delete_confirm,count,count).contains("$count $image "))
+                val thumbnail=if(german) if(count==1) "Vorschau" else "Vorschauen" else if(count==1) "thumbnail" else "thumbnails"
+                assertTrue(text.quantity(R.plurals.photos_cache_usage,count,10,5,0,count).endsWith("$count $thumbnail)"))
+                val face=if(german) if(count==1) "ausgewählte Gesicht" else "ausgewählten Gesichter" else if(count==1) "selected face" else "selected faces"
+                for(resource in listOf(R.plurals.people_batch_scope,R.plurals.people_batch_ignore_confirmation,R.plurals.people_batch_reset_confirmation)) {
+                    val displayed=text.quantity(resource,count,count)
+                    assertTrue(displayed,displayed.contains("$count $face "))
+                }
+                val undo=text.quantity(R.plurals.people_undo_last_ignore,count,count)
+                if(count==1) assertEquals(if(german) "Gruppe ignoriert · Rückgängig" else "Group ignored · Undo",undo)
+                else assertTrue(undo.startsWith("$count "+if(german) "Gruppen" else "groups"))
+            }
+        }
     }
 
     @Test fun errorFormattingPluralRulesAndLocaleConfigCoverBothLanguages() {

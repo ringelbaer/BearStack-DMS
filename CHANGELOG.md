@@ -4,6 +4,26 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.6.0
+
+- **Ähnliche Gruppen**: unbenannte Gesichter erhalten zuerst bis zu drei passende benannte Personen als Vorschläge. Nur ohne zulässigen benannten Treffer folgen unbenannte Gruppen. Mindestähnlichkeit und Mindestabstand gelten weiter; der Abstand wird innerhalb des jeweiligen Bereichs geprüft.
+- Web und Android zeigen gespeicherte Paare mit benannten Personen vor rein unbenannten Paaren, jeweils nach Ähnlichkeit und Vorschlags-ID sortiert. Die Priorität gilt vor dem Seitenlimit. Bereits gespeicherte unbenannte Vorschläge bleiben verfügbar; **Zuordnungen erneut prüfen** startet die neue Kandidatenauswahl.
+- Abgelehnte Paare und gemeinsame aktive Fotos werden vor der Vorschlagsauswahl ausgeschlossen. Vorhandene Vektorbewertungen werden wiederverwendet; die Anzeige verwendet den bestehenden Score-Index und startet keinen Abgleich.
+- MINOR für die erweiterte Vergleichslogik; Android bleibt bei 0.22.2. README, Website und OpenAPI aktualisiert; bestehende Aktionsformate und automatische Einzelzuordnungen unverändert.
+- Validiert: vollständige Go-Tests der Foto- und Serverpakete, gezielte Race- und OpenAPI-Tests sowie vier Playwright-Abläufe erfolgreich. Regressionen prüfen benannte Treffer vor stärkeren unbenannten Gruppen, Grenzwerte und Mehrdeutigkeit, Sichtbarkeit, Ablehnungen, gemeinsame Fotos, Seitenlimits und Android-Fortsetzung. Indexnutzung und ausbleibende zusätzliche Prüfung unbenannter Referenzen abgesichert; Website gebaut und 514 lokale Links geprüft.
+
+### BearStack 1.5.1 / Android 0.22.2
+
+- Web: „Gruppe ignorieren“ unter **Ähnliche Gruppen** bricht innerhalb des Buttons um, auch bei schmalen Kacheln und vergrößerter Schrift. Kein Überlauf auf den benachbarten Stift; Teil des bereits vorgesehenen PATCH 1.5.1.
+- Web-Validierung: Überlauf vor der Korrektur bei 768 px reproduziert; vier Playwright-Tests für Einzelaktionen, Benennung, Zusammenführungsbestätigung und Nachladen erfolgreich. Layout bei 320, 390, 768, 1024 und 1440 px sowie 100 % und 200 % Schriftgröße geprüft; Website erfolgreich gebaut.
+- Android-Lint: echte Pluralressourcen für Mengenangaben in Deutsch und Englisch, ungenutzte Ressourcen entfernt, Standard-Modifier und Fensterbreite im Galerieraster korrigiert. Der Scrollgriff liest Layoutänderungen über einen abgeleiteten Zustand und vermeidet dadurch unnötige Neuberechnungen.
+- Build: Gradle und Bibliotheken aktualisiert, AGP-eigenes Kotlin und KSP statt kapt, Release-Ressourcenverkleinerung aktiviert. Launcher-Icon mit monochromer Ebene; Compose-Tests verwenden die v2-Testregel. Das Room-Schema bleibt unverändert.
+- Release-Smoke: aktuellen Kontowechsel über Einstellungen und deutsche Dezimalkommas berücksichtigen, vor Texteingaben den Fokus abwarten und vorübergehend fehlende UI-Snapshots beim Neustart innerhalb des bestehenden Zeitlimits erneut abrufen.
+- Lint-Warnungen sind für Debug und Release Buildfehler. Nur begründete lokale Ausnahmen für mengenunabhängige Texte, Sprachwahl ab API 33, den getesteten TLS-TrustManager und `targetSdk 36`; `compileSdk 37`. API 37 als Ziel benötigt zuerst einen vollständigen LAN-Berechtigungsablauf für selbst gehostete Server.
+- PATCH für Darstellungs-, Performance- und Buildkorrekturen; Android `versionCode 46`. README, Android-Dokumentation, Website und OpenAPI-Version aktualisiert; HTTP-Verträge unverändert.
+- Validiert: Debug- und Release-Lint ohne Fehler oder Warnungen, je 120 JVM-Tests erfolgreich. 225 unterschiedliche Gerätetests einschließlich vier Tests gegen den temporären Go-HTTPS-Server nach Gesamtlauf und gezielten Nachprüfungen erfolgreich. Abgedeckt sind deutsche/englische Pluralregeln, TLS-Pinning, Datenbankmigrationen, Caches, Scrollen, Großansicht und Systemdialoge. Veraltete UI-Testannahmen an Menünavigation, Vorladen und deutsche/englische Android-Medienprovider angepasst. OpenAPI-Vertragstests, Website-Build und 79 lokale Dokumentationslinks geprüft.
+- Release-Smoke der lokal test-signierten, mit R8 und Ressourcenverkleinerung gebauten APK erfolgreich: HTTPS-Anmeldung, Galerie, Fotoinformationen, verschlüsselte Sitzungswiederherstellung, Kontowechsel, Rechte und Abmeldung.
+
 ### BearStack 1.5.0
 
 - Web-Personenverwaltung: gemeinsame Bereichsnavigation und Rückwege, separate Anzeigeeinstellungen sowie einheitliche Auswahlleisten und Kachelauswahl in Übersicht, Personendetails und ignorierten Gesichtern. Auswahl bleibt auf die aktuelle Seite begrenzt.

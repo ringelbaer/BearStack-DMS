@@ -1,6 +1,7 @@
 package de.bearstack.people.text
 
 import android.content.res.Resources
+import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -25,6 +26,8 @@ class UiStrings(private val resources: Resources) {
         resources.getString(resource,*arguments)
     operator fun invoke(message: UiText): String = invoke(message.resource,
         *message.arguments.map {if(it is UiText) invoke(it) else it}.toTypedArray())
+    fun quantity(@PluralsRes resource: Int, count: Int, vararg arguments: Any): String =
+        resources.getQuantityString(resource,count,*arguments)
     fun faces(count: Number): String = resources.getQuantityString(R.plurals.people_faces,if(count.toLong()==1L)1 else 2,count.toLong())
     fun groups(count: Number): String = resources.getQuantityString(R.plurals.people_groups,if(count.toLong()==1L)1 else 2,count.toLong())
     // The labeling API includes the browser's fixed German root breadcrumb.

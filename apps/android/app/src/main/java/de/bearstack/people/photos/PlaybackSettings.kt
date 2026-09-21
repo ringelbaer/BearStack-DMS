@@ -1,5 +1,6 @@
 package de.bearstack.people.photos
 
+import androidx.core.content.edit
 import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -35,9 +37,9 @@ class PlaybackPreferences(context: Context) {
         val value=settings.copy(seconds=if(settings.seconds==0) 0 else settings.seconds.coerceIn(3,300),
             frameSeconds=if(settings.frameSeconds==0) 0 else settings.frameSeconds.coerceIn(3,300))
         mutable.value=value
-        store.edit().putInt("seconds",value.seconds).putInt("frame_seconds",value.frameSeconds).putBoolean("repeat",value.repeat)
+        store.edit { putInt("seconds",value.seconds).putInt("frame_seconds",value.frameSeconds).putBoolean("repeat",value.repeat)
             .putBoolean("frame_fill",value.frameFill).putBoolean("frame_captions",value.frameCaptions).putBoolean("frame_folder_name",value.frameFolderName)
-            .putBoolean("frame_random",value.frameRandom).apply()
+            .putBoolean("frame_random",value.frameRandom) }
     }
 }
 
@@ -50,10 +52,10 @@ class PlaybackPreferences(context: Context) {
         text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.photos_interval))
             Box {
-                OutlinedButton(onClick={menu=true}) {Text(stringResource(R.string.photos_seconds,interval))}
+                OutlinedButton(onClick={menu=true}) {Text(pluralStringResource(R.plurals.photos_seconds,interval,interval))}
                 DropdownMenu(menu,{menu=false}) {
                     listOf(3,5,8,10,15,30,60,120,300).forEach {value ->
-                        DropdownMenuItem(text={Text(stringResource(R.string.photos_seconds,value))},onClick={interval=value;menu=false})
+                        DropdownMenuItem(text={Text(pluralStringResource(R.plurals.photos_seconds,value,value))},onClick={interval=value;menu=false})
                     }
                 }
             }

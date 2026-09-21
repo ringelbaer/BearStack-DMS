@@ -3,7 +3,7 @@ package de.bearstack.people
 import android.util.Base64
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.*
 import androidx.media3.common.Player
 import androidx.media3.ui.PlayerView
@@ -72,7 +72,8 @@ class PhotoMediaPlayerTest {
         }
         compose.waitUntil(20_000) {ends.get()>=2}
         // Showing the native player controls also exposes the frame actions.
-        compose.runOnUiThread {view.showController()}
+        compose.runOnUiThread {view.setControllerAnimationEnabled(false);view.hideController();view.showController()}
+        compose.waitUntil(5_000) {compose.onAllNodesWithContentDescription("Photo frame settings").fetchSemanticsNodes().isNotEmpty()}
         compose.onNodeWithContentDescription("Photo frame settings").performClick()
         compose.onNodeWithText("Repeat at the end").performClick()
         compose.onNodeWithText("Save").performClick()

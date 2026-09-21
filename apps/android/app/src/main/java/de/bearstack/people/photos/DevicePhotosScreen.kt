@@ -2,6 +2,7 @@ package de.bearstack.people.photos
 
 import android.Manifest
 import android.annotation.SuppressLint
+import androidx.core.content.edit
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -66,7 +67,7 @@ internal class DevicePhotoPreferences(context: Context) {
     private val store = context.applicationContext.getSharedPreferences("device_photos", Context.MODE_PRIVATE)
     var enabled: Boolean
         get() = store.getBoolean("enabled", false)
-        set(value) { store.edit().putBoolean("enabled", value).apply() }
+        set(value) { store.edit { putBoolean("enabled", value) } }
 }
 
 @Composable

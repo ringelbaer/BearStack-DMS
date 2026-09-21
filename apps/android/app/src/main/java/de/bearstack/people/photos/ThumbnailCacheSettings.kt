@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.bearstack.people.R
@@ -27,7 +28,7 @@ import kotlin.math.roundToInt
     state?.let {
         val used = (it.usage.bytes + MIB - 1) / MIB
         val protected = (it.usage.pinnedBytes + MIB - 1) / MIB
-        Text(stringResource(R.string.photos_cache_usage, used, protected, it.usage.pinnedEntries, it.usage.requiredEntries))
+        Text(pluralStringResource(R.plurals.photos_cache_usage, it.usage.requiredEntries, used, protected, it.usage.pinnedEntries, it.usage.requiredEntries))
         if (it.usage.pinnedBytes > it.usage.budget)
             Text(stringResource(R.string.photos_cache_minimum, protected))
         if (it.syncing) {

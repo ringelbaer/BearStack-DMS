@@ -20,7 +20,7 @@ import org.json.JSONObject
 // owns the authenticated client; neither API follows URLs from JSON responses.
 internal suspend fun OkHttpClient.json(request: Request, maxBytes: Long,
     errorMessage: (Int, String) -> UiText): JSONObject = readResponse(request) { response, _ ->
-    val source = (response.body ?: throw UserIoFailure(UiText(R.string.error_response_empty))).source()
+    val source = response.body.source()
     if (source.request(maxBytes + 1)) throw UserIoFailure(UiText(R.string.error_response_size))
     val text = source.readUtf8()
     if (!response.isSuccessful) {

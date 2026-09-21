@@ -185,7 +185,7 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                         matches?.let { result ->
                             Box(Modifier.fillMaxWidth().padding(top=16.dp)) {
                                 MergeFaceMatchList(result,enabled,vm.images,vm::image,
-                                    onAssign=vm::assignMergeFaceMatch,onRetry={search?.retry()})
+                                    onAssign=vm::assignMergeFaceMatch,onRetry={search.retry()})
                             }
                         }
                     }

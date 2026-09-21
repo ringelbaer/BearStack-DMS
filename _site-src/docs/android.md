@@ -9,7 +9,7 @@ Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.
 
-Diese Anleitung beschreibt **Android-App 0.22.1**. Beginne mit den
+Diese Anleitung beschreibt **Android-App 0.22.2**. Beginne mit den
 [ersten Schritten](#erste-schritte); die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die [technische Referenz](android-technik.md).
@@ -476,6 +476,10 @@ geändert, wird sie aktualisiert und du musst die Auswahl neu treffen.
 möglicherweise zusammengehöriger Gruppen mit je einem Vergleichsgesicht,
 Ordnerangabe, Namen und Gesichtsanzahl. Der Ähnlichkeitswert ist ein Vergleichswert,
 keine Prozentwahrscheinlichkeit. Prüfe bei Bedarf beide Portraits in der Fotovorschau.
+
+Ab BearStack **1.6.0** sucht der Server für unbenannte Gesichter zuerst passende
+benannte Personen. Nur ohne passenden benannten Treffer folgen unbenannte
+Gruppen. Vorhandene Vorschläge mit einer benannten Person erscheinen zuerst.
 
 - **Zusammenführen** ordnet die Gesichter der ersten Gruppe der zweiten zu.
   Favoriten bleiben erhalten. Ist die zweite unbenannt, wird ein vorhandener Name

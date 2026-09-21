@@ -197,7 +197,7 @@ class PeopleRepository(private val db: LabelingDatabase, val api: LabelingServic
                     for(kind in listOf(QueueKind.Resume,QueueKind.Remaining,QueueKind.Detached,QueueKind.Skipped)) {
                         dao.removeEntry(scope,kind,previous.person)
                     }
-                    save(before.copy(current=previous.person,page=person!!.offset))
+                    save(before.copy(current=previous.person,page=person.offset))
                     dao.undoSkipEvent(scope,"skip:${before.pass}:${previous.person}")
                 } else save(before)
             }

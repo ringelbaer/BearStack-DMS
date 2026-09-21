@@ -3491,7 +3491,7 @@ label span {
 .face-merge-pair .person-photo-button { width: 100%; min-height: 44px; padding: 0; }
 .face-merge-side-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 .face-merge-side-actions button { min-height: 44px; min-width: 44px; padding: 8px; }
-.face-merge-side-actions [data-merge-ignore] { flex: 1 1 90px; }
+.face-merge-side-actions [data-merge-ignore] { flex: 1 1 90px; white-space: normal; overflow-wrap: anywhere; }
 .face-merge-side-actions [data-merge-side-name] { padding: 0; }
 .face-merge-side-actions[hidden] { display: none; }
 .face-merge-dismiss { min-height: 44px; margin-top: auto; }

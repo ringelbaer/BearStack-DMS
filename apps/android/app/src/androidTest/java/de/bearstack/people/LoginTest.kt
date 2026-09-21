@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import de.bearstack.people.connection.ProfileStore
 import de.bearstack.people.data.local.LabelingDatabase
 import de.bearstack.people.people.PeopleViewModel

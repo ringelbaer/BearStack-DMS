@@ -50,7 +50,7 @@ class ServerIntegrationTest {
             withContext(Dispatchers.IO) {
                 for(url in listOf(api.image(preview.faces.first()),api.original(preview.faces.first()))) {
                     client.newCall(Request.Builder().url(url).build()).execute().use {response ->
-                        assertEquals(200,response.code);assertTrue(response.body!!.bytes().isNotEmpty())
+                        assertEquals(200,response.code);assertTrue(response.body.bytes().isNotEmpty())
                     }
                 }
             }
@@ -97,7 +97,7 @@ class ServerIntegrationTest {
             assertTrue(blog.html.contains("<h2>Gallery story</h2>"))
             withContext(Dispatchers.IO) {
                 client.newCall(Request.Builder().url(api.original(photo)).header("Range","bytes=0-9").build()).execute().use {
-                    assertEquals(206,it.code);assertEquals(10,it.body!!.bytes().size)
+                    assertEquals(206,it.code);assertEquals(10,it.body.bytes().size)
                 }
             }
             try { LabelingApi(client,address).session();fail("reader allowed to edit people") }
@@ -124,7 +124,7 @@ class ServerIntegrationTest {
                         for(url in listOf(api.image(person.faceId),api.original(person.faceId))) {
                             client.newCall(Request.Builder().url(url).build()).execute().use {
                                 assertEquals(200,it.code);assertEquals(if(url==api.original(person.faceId)) "image/webp" else "image/jpeg",it.header("Content-Type"))
-                                assertTrue(it.body!!.bytes().isNotEmpty())
+                                assertTrue(it.body.bytes().isNotEmpty())
                             }
                         }
                     }
@@ -156,11 +156,11 @@ class ServerIntegrationTest {
             assertEquals(5L,first.count);assertEquals(4,first.faces.size)
             assertEquals(1,repo.page(4).faces.size)
             val image=withContext(Dispatchers.IO) {client.newCall(Request.Builder().url(api.image(first.faces[0],true)).build()).execute().use {
-                assertEquals("image/jpeg",it.header("Content-Type"));it.body!!.bytes()
+                assertEquals("image/jpeg",it.header("Content-Type"));it.body.bytes()
             }}
             assertTrue(image.size>100)
             val original=withContext(Dispatchers.IO) {client.newCall(Request.Builder().url(api.original(first.faces[0])).build()).execute().use {
-                assertEquals(200,it.code);assertEquals("image/webp",it.header("Content-Type"));it.body!!.bytes()
+                assertEquals(200,it.code);assertEquals("image/webp",it.header("Content-Type"));it.body.bytes()
             }}
             val dimensions=BitmapFactory.Options().apply {inJustDecodeBounds=true}
             BitmapFactory.decodeByteArray(original,0,original.size,dimensions)

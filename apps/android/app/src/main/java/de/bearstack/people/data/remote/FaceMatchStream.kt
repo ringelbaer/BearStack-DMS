@@ -18,7 +18,7 @@ private const val MAX_FACE_MATCH_BYTES = 64 * 1024L
 // so a busy UI cannot accumulate results or block the server's reference cache.
 internal fun OkHttpClient.faceMatchUpdates(request: Request): Flow<List<FaceMatch>> = channelFlow {
     readResponse(request) { response, active ->
-        val body = response.body ?: throw UserIoFailure(UiText(R.string.error_response_empty))
+        val body = response.body
         val source = body.source()
         val streaming = body.contentType()?.let { it.type == "application" && it.subtype == "x-ndjson" } == true
         if (!response.isSuccessful || !streaming) {

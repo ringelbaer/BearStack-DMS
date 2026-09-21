@@ -24,10 +24,8 @@
     <string name="error_search_broad">Bitte grenze die Suche weiter ein.</string>
     <string name="error_people_protocol">Inkompatible API oder fehlende Personenrechte.</string>
     <string name="error_photos_protocol">Inkompatible Galerie-API.</string>
-    <string name="error_response_empty">Leere Serverantwort</string>
     <string name="error_response_size">Serverantwort überschreitet das Größenlimit</string>
     <string name="error_response_invalid">Ungültige Serverantwort. Bitte erneut versuchen.</string>
-    <string name="error_download">Download fehlgeschlagen</string>
     <string name="error_download_status">Download fehlgeschlagen (%1$d).</string>
     <string name="error_download_mime">Der Server hat keine passende Mediendatei geliefert.</string>
     <string name="error_download_cancelled">Download abgebrochen</string>

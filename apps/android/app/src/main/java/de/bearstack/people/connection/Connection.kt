@@ -2,6 +2,7 @@ package de.bearstack.people.connection
 
 import de.bearstack.people.text.*
 import de.bearstack.people.R
+import android.annotation.SuppressLint
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -52,6 +53,9 @@ object Connections {
         init(null as KeyStore?)
     }.trustManagers.filterIsInstance<X509TrustManager>().single()
 
+    // Delegates to system trust or an explicitly approved, valid leaf certificate.
+    // OkHttp still verifies hostnames; TlsTest covers rejection and credential isolation.
+    @SuppressLint("CustomX509TrustManager")
     internal fun trust(pinned: String = "", offer: ((X509Certificate) -> Unit)? = null): X509TrustManager {
         val system = systemTrust()
         return object : X509TrustManager {

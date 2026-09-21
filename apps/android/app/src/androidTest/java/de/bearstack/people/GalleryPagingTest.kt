@@ -6,7 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
 import coil.ImageLoader
 import de.bearstack.people.data.remote.*
@@ -29,10 +29,12 @@ class GalleryPagingTest {
         compose.waitUntil(10_000) {!controller.state.value.loading}
         compose.onNodeWithTag("photo-gallery").performTouchInput {swipeUp()}
         compose.onNodeWithTag("gallery-fast-scroll").assertIsDisplayed()
-            .performSemanticsAction(SemanticsActions.SetProgress) {it(.85f)}
+        // The preceding swipe may prefetch page 2. Only the seek must skip intermediates.
+        val requestsBeforeSeek=compose.runOnIdle {api.requests.size}
+        compose.onNodeWithTag("gallery-fast-scroll").performSemanticsAction(SemanticsActions.SetProgress) {it(.85f)}
         compose.waitUntil(10_000) {controller.state.value.mediaPages.firstPage==5}
         compose.onNodeWithContentDescription("image-407").assertIsDisplayed()
-        assertFalse(api.requests.any {it.second in 2..4})
+        assertFalse(api.requests.drop(requestsBeforeSeek).any {it.second in 2..4})
         compose.mainClock.advanceTimeBy(2000)
         compose.onNodeWithTag("gallery-fast-scroll").assertDoesNotExist()
     }

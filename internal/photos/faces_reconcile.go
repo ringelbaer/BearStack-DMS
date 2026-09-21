@@ -143,7 +143,7 @@ func (l *Library) ReconcileFacesBatch(ctx context.Context, batchSize int) (FaceR
 	affected := map[int64]bool{}
 	thresholds := l.matchingThresholds()
 	var named map[int64]bool
-	if haveCandidates && thresholds.ReconcileUnnamedGroups {
+	if haveCandidates {
 		named, err = faceNamedPeople(ctx, tx)
 		if err != nil {
 			return state, err
@@ -214,7 +214,12 @@ func (l *Library) ReconcileFacesBatch(ctx context.Context, batchSize int) (FaceR
 		if err != nil {
 			return state, err
 		}
-		candidates, err := l.facePersonCandidates(ctx, tx, vector, excluded, 3)
+		ranked, err := l.faceRuntime.rankFacePersons(ctx, vector, excluded)
+		if err != nil {
+			return state, err
+		}
+		// Automatic reassignment keeps its global score and margin rules.
+		candidates, err := l.validateFacePersonCandidates(ctx, tx, vector, ranked, 3)
 		if err != nil {
 			return state, err
 		}
@@ -241,13 +246,11 @@ func (l *Library) ReconcileFacesBatch(ctx context.Context, batchSize int) (FaceR
 			reassigned++
 			continue
 		}
-		for index, candidate := range candidates {
-			if candidate.score < thresholds.SuggestionSimilarity {
-				break
-			}
-			if !reviewCandidateAllowed(candidates, index, thresholds.SuggestionMargin) {
-				continue
-			}
+		suggestions, err := l.faceReconciliationSuggestions(ctx, tx, person, vector, ranked, named)
+		if err != nil {
+			return state, err
+		}
+		for _, candidate := range suggestions {
 			evidence = append(evidence, faceSuggestionEvidence{source: person, target: candidate.person, face: f.id, targetFace: candidate.face, score: candidate.score})
 		}
 	}
@@ -284,6 +287,64 @@ func (l *Library) ReconcileFacesBatch(ctx context.Context, batchSize int) (FaceR
 		l.syncFaceMutation(ctx, affected, revision, committedRevision)
 	}
 	return l.FaceReconciliationStatus(ctx)
+}
+
+// Reuse the automatic assignment's ranking without rescoring all references.
+// Named people get the first three review slots. Only when none qualifies do we
+// validate unnamed groups; margins compare distinct people in the same scope.
+func (l *Library) faceReconciliationSuggestions(ctx context.Context, tx faceRowsQuery, source int64, vector []float32, ranked []facePersonCandidate, named map[int64]bool) ([]facePersonCandidate, error) {
+	// Rejected pairs and groups sharing a photo cannot be merged. Filter them
+	// before selecting the top three so they cannot block a valid fallback.
+	rows, err := tx.QueryContext(ctx, `SELECT target_id FROM photo_face_merge_suggestions WHERE source_id=? AND rejected=1
+ UNION SELECT source_id FROM photo_face_merge_suggestions WHERE target_id=? AND rejected=1
+ UNION SELECT b.person_id FROM (SELECT DISTINCT path FROM photo_faces WHERE person_id=? AND ignored=0) a
+ JOIN photo_faces b ON b.path=a.path AND b.ignored=0`, source, source, source)
+	if err != nil {
+		return nil, err
+	}
+	excluded := make(map[int64]bool)
+	for rows.Next() {
+		var person int64
+		if err := rows.Scan(&person); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		excluded[person] = true
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	thresholds := l.matchingThresholds()
+	for _, scope := range []facePersonScope{facePersonsNamed, facePersonsUnconfirmedUnnamed} {
+		if scope == facePersonsNamed && len(named) == 0 {
+			continue
+		}
+		scoped := make([]facePersonCandidate, 0, len(ranked))
+		for _, candidate := range ranked {
+			if !excluded[candidate.person] && named[candidate.person] == (scope == facePersonsNamed) {
+				scoped = append(scoped, candidate)
+			}
+		}
+		candidates, err := l.validateFaceCandidatesInScope(ctx, tx, &l.faceRuntime, vector, scoped, 3, scope)
+		if err != nil {
+			return nil, err
+		}
+		var result []facePersonCandidate
+		for index, candidate := range candidates {
+			if candidate.score < thresholds.SuggestionSimilarity {
+				break
+			}
+			if reviewCandidateAllowed(candidates, index, thresholds.SuggestionMargin) {
+				result = append(result, candidate)
+			}
+		}
+		if len(result) > 0 {
+			return result, nil
+		}
+	}
+	return nil, nil
 }
 
 func faceReconcileExclusions(ctx context.Context, tx *sql.Tx, path string, source int64) (map[int64]bool, error) {

@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,7 +86,7 @@ internal fun MapTrackSheet(tracks: MapTracks,route: MapPhotoRoute?=null,onClose:
                         TextButton(onClick=route::refresh) {Text(stringResource(R.string.photos_retry))}
                     }
                     routeState.data?.let {data ->
-                        Text(stringResource(R.string.photos_route_summary,data.totalMedia,data.radiusMeters),style=MaterialTheme.typography.bodySmall)
+                        Text(pluralStringResource(R.plurals.photos_route_summary,data.totalMedia,data.totalMedia,data.radiusMeters),style=MaterialTheme.typography.bodySmall)
                     }
                     HorizontalDivider(Modifier.padding(vertical=12.dp))
                 }

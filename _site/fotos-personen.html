@@ -1830,6 +1830,13 @@ Dialog und Wiederherstellen in dieser Ansicht benötigen JavaScript.</p>
 <p><strong>Ähnliche Gruppen</strong> zeigt gespeicherte Vorschläge zum Zusammenführen.
 Das Foto anklicken, um es vollständig zu sehen; der Personenname öffnet die
 Gruppe. Der angezeigte Ähnlichkeitswert ist keine Wahrscheinlichkeit.</p>
+<p>Ab BearStack <strong>1.6.0</strong> sucht der Hintergrundabgleich für ein unbenanntes Gesicht
+zuerst passende <strong>benannte Personen</strong>. Nur wenn kein benannter Treffer die
+Grenzwerte erfüllt, werden unbenannte Gruppen vorgeschlagen. Vorhandene Paare
+mit mindestens einer benannten Person stehen zuerst; innerhalb beider Bereiche
+entscheidet die Ähnlichkeit. Das gilt auch in Android.</p>
+<p>Die Beschriftung <strong>Gruppe ignorieren</strong> bricht bei wenig Platz oder vergrößerter
+Schrift innerhalb des Buttons um. Der Stift daneben bleibt separat bedienbar.</p>
 <table>
 <thead>
 <tr>
@@ -2014,7 +2021,7 @@ die Auswahl, sofern sie mehrere unabhängige Familien enthält.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.5.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.6.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
 

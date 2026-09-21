@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="photos_frame_random">Zufällige Reihenfolge</string>
     <string name="photos_frame_random_unavailable">Zufällige Reihenfolge benötigt BearStack 0.69.0 oder neuer.</string>
     <string name="photos_directory_people">Personen im Ordner</string>
@@ -54,12 +54,16 @@
     <string name="photos_location">Aufnahmeort</string>
     <string name="photos_details">%1$d × %2$d · %3$s</string>
     <string name="photos_loading">Wird geladen …</string>
-    <string name="photos_of">%1$d von %2$d</string>
+    <!-- Current position and total, not a quantity-dependent noun. -->
+    <string name="photos_of" tools:ignore="PluralsCandidate">%1$d von %2$d</string>
     <string name="photos_frame">Fotoframe starten</string>
     <string name="photos_slideshow_settings">Diashow einstellen</string>
     <string name="photos_frame_settings">Fotoframe einstellen</string>
     <string name="photos_interval">Anzeigedauer pro Foto</string>
-    <string name="photos_seconds">%1$d Sekunden</string>
+    <plurals name="photos_seconds">
+        <item quantity="one">%1$d Sekunde</item>
+        <item quantity="other">%1$d Sekunden</item>
+    </plurals>
     <string name="photos_repeat">Am Ende wiederholen</string>
     <string name="photos_frame_fill">Bildschirm füllen (mit Beschnitt)</string>
     <string name="photos_frame_captions">Name und Datum anzeigen</string>
@@ -75,7 +79,10 @@
     <string name="photos_map_zoom_in">Karte vergrößern</string>
     <string name="photos_map_zoom_out">Karte verkleinern</string>
     <string name="photos_map_fit">Alle Orte anzeigen</string>
-    <string name="photos_map_marker">%1$d Aufnahmen an diesem Ort</string>
+    <plurals name="photos_map_marker">
+        <item quantity="one">%1$d Aufnahme an diesem Ort</item>
+        <item quantity="other">%1$d Aufnahmen an diesem Ort</item>
+    </plurals>
     <string name="photos_map_retry">Kartenbilder erneut laden</string>
     <string name="photos_map_help">Verschiebe die Karte oder ziehe sie mit zwei Fingern auf. Tippe auf eine Zahl zum Vergrößern und auf einen einzelnen Punkt zum Öffnen der Aufnahme. Unterordner sind enthalten.</string>
     <string name="photos_map_index_pending">Die Karte wartet auf den Fotoindex. Versuche es in Kürze erneut.</string>
@@ -89,7 +96,6 @@
         <item quantity="one">1 Aufnahme an diesem Ort</item>
         <item quantity="other">%1$d Aufnahmen an diesem Ort</item>
     </plurals>
-    <string name="photos_map_marker_one">1 Aufnahme an diesem Ort</string>
     <string name="photos_text_empty">Dieser Beitrag enthält keinen Text.</string>
     <string name="photos_map_layers">Ebenen</string>
     <string name="photos_tracks_title">GPX-Tracks</string>
@@ -115,7 +121,10 @@
     <string name="photos_route_title">Fotoroute</string>
     <string name="photos_route_help">Verbindet die GPS-Orte deiner Fotos in zeitlicher Reihenfolge. Die Fotoroute ist gestrichelt.</string>
     <string name="photos_route_error">Die Fotoroute konnte nicht geladen werden.</string>
-    <string name="photos_route_summary">%1$d Medien · Ortsgruppen innerhalb von %2$d m</string>
+    <plurals name="photos_route_summary">
+        <item quantity="one">%1$d Medium · Ortsgruppen innerhalb von %2$d m</item>
+        <item quantity="other">%1$d Medien · Ortsgruppen innerhalb von %2$d m</item>
+    </plurals>
     <string name="photos_sort_newest">Datum: Neueste zuerst</string>
     <string name="photos_sort_oldest">Datum: Älteste zuerst</string>
     <string name="photos_sort_name_asc">Name: A–Z</string>
@@ -132,7 +141,10 @@
     <string name="photos_cache_title">Thumbnail-Cache</string>
     <string name="photos_cache_size">Speicherbudget: %1$d MiB</string>
     <string name="photos_cache_help">Die neuesten 50 Stream-Vorschauen und die Vorschauen aller Ordner der ersten Ebene bleiben gespeichert. Der übrige Platz wird nach letzter Nutzung verwaltet. Der Pflichtbestand hat Vorrang vor dem Budget.</string>
-    <string name="photos_cache_usage">Belegt: %1$d MiB · geschützt: %2$d MiB (%3$d von %4$d Vorschauen)</string>
+    <plurals name="photos_cache_usage">
+        <item quantity="one">Belegt: %1$d MiB · geschützt: %2$d MiB (%3$d von %4$d Vorschau)</item>
+        <item quantity="other">Belegt: %1$d MiB · geschützt: %2$d MiB (%3$d von %4$d Vorschauen)</item>
+    </plurals>
     <string name="photos_cache_minimum">Der geschützte Bestand benötigt mindestens %1$d MiB.</string>
     <string name="photos_cache_loading">Pflichtbestand wird aktualisiert …</string>
     <string name="photos_cache_incomplete">Der Cache konnte nicht vollständig aktualisiert werden. Verbindung und freien Gerätespeicher prüfen.</string>

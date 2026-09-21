@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 1.5.0
+  version: 1.6.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -1522,7 +1522,9 @@ paths:
       summary: Read one similar-group decision with both matching portraits
       description: |
         Since 0.49.0; requires photos.edit and session.merge_suggestions.
-        Reads at most 20 cached candidates in descending score / ascending ID order;
+        Reads at most 20 cached candidates. Since 1.6.0, pairs with at least one
+        named person come first, then unnamed pairs; each tier uses descending
+        score / ascending ID order. Selection happens before the candidate limit;
         never starts vector matching. Returns one currently visible pair or null.
         Each group's faces contains exactly its matching witness, including bounds,
         display_path and original_key. Revisions describe the displayed groups.
@@ -3102,7 +3104,13 @@ paths:
       summary: Review similar person groups
       description: >-
         Requires photos.edit. HTML by default; format=json returns up to 60 cached
-        suggestions ordered by score. Page views never run vector matching. Current
+        suggestions. Since 1.6.0, pairs with at least one named person come first,
+        then unnamed pairs; each tier uses descending score / ascending ID order.
+        The background matcher selects up to three eligible named targets per
+        unnamed face, falling back to unnamed targets only if no named target
+        meets suggestion similarity and within-tier margin thresholds.
+        Previously cached unnamed pairs remain available.
+        Page views never run vector matching. Current
         visibility and group revisions are checked. Suggestions include unconfirmed
         unnamed fragments; similarity is not an identity probability.
         When both groups are named, the WebUI asks for additional confirmation

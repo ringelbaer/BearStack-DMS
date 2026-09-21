@@ -3,6 +3,7 @@ package de.bearstack.people.photos
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.database.Cursor
+import androidx.core.net.toUri
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -221,7 +222,7 @@ internal class DevicePhotosService(private val resolver: ContentResolver, privat
 }
 
 internal fun devicePhotoUri(path: String): Uri {
-    val uri = Uri.parse(path)
+    val uri = path.toUri()
     val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
     require(uri.scheme == "content" && uri.authority == collection.authority &&
         uri.pathSegments.dropLast(1) == collection.pathSegments && uri.lastPathSegment?.toLongOrNull() != null &&

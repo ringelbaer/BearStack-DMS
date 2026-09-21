@@ -29,7 +29,7 @@ fun IgnoreUndoToast(count: Int, onUndo: () -> Unit) {
                     liveRegion=LiveRegionMode.Polite
                     role=Role.Button
                 }) {
-                Text(if(count==1) text(R.string.people_undo_ignore) else text(R.string.people_undo_last_ignore,count),
+                Text(text.quantity(R.plurals.people_undo_last_ignore,count,count),
                     modifier=Modifier.padding(horizontal=20.dp,vertical=14.dp))
             }
         }

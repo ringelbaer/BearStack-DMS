@@ -338,6 +338,15 @@ Dialog und Wiederherstellen in dieser Ansicht benötigen JavaScript.
 Das Foto anklicken, um es vollständig zu sehen; der Personenname öffnet die
 Gruppe. Der angezeigte Ähnlichkeitswert ist keine Wahrscheinlichkeit.
 
+Ab BearStack **1.6.0** sucht der Hintergrundabgleich für ein unbenanntes Gesicht
+zuerst passende **benannte Personen**. Nur wenn kein benannter Treffer die
+Grenzwerte erfüllt, werden unbenannte Gruppen vorgeschlagen. Vorhandene Paare
+mit mindestens einer benannten Person stehen zuerst; innerhalb beider Bereiche
+entscheidet die Ähnlichkeit. Das gilt auch in Android.
+
+Die Beschriftung **Gruppe ignorieren** bricht bei wenig Platz oder vergrößerter
+Schrift innerhalb des Buttons um. Der Stift daneben bleibt separat bedienbar.
+
 | Entscheidung | Folge |
 | --- | --- |
 | **Zusammenführen** | Die Gruppen werden verbunden. Bei zwei bereits benannten Gruppen ist eine zusätzliche Bestätigung nötig; der Name der zweiten Gruppe bleibt erhalten. |

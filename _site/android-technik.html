@@ -1238,10 +1238,10 @@
 <h1 id="android-app-technik-entwicklung">Android-App – Technik &amp; Entwicklung<a class="headerlink" href="#android-app-technik-entwicklung" title="Permanent link">&para;</a></h1>
 <p>Diese Referenz richtet sich an Betreiber und Entwickler. Die
 <a href="android.html">Android-Anleitung</a> erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App <strong>0.22.1</strong> (<code>versionCode 45</code>), BearStack <strong>1.5.0</strong>.</p>
+bis zur Personenverwaltung. Stand: App <strong>0.22.2</strong> (<code>versionCode 46</code>), BearStack <strong>1.6.0</strong>.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
 <p>Öffne <code>apps/android/</code> in Android Studio als eigenes Projekt. Benötigt werden JDK 17
-oder 21 und das Android-SDK mit Plattform 36. Gradle Wrapper, Android Gradle Plugin
+oder 21 und das Android-SDK mit Plattform 37. Gradle Wrapper, Android Gradle Plugin
 und Kotlin sind im Projekt festgelegt; verwende den mitgelieferten Wrapper.
 Setze den SDK-Pfad über <code>ANDROID_HOME</code> oder eine ignorierte
 <code>apps/android/local.properties</code> mit <code>sdk.dir=…</code>.</p>
@@ -1582,6 +1582,20 @@ Revisionen invalidieren betroffene Routen bei Änderungen; Zugriffsprüfungen bl
 vor jedem Abruf aktiv. Details beschreibt die <a href="fotos-technik.html#karten-und-gpx">Kartenreferenz</a>.
 Kartenbilder lädt ein eigener Client ohne BearStack-Zugangsdaten.</p>
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
+<p>Lint-Warnungen brechen den Build ab (<code>warningsAsErrors</code>), sowohl für Debug als auch
+Release. Mengenangaben verwenden deutsche und englische Pluralressourcen; Tests
+prüfen null, eins und mehrere Elemente. Das Galerieraster richtet sich nach der
+Fenstergröße; der Scrollgriff berechnet seinen Fortschritt als abgeleiteten Zustand.</p>
+<p>Eng begrenzte, im Quelltext begründete Ausnahmen gelten für mengenunabhängige
+Beschriftungen, die Sprachwahl ab API 33 und den eigenen TLS-TrustManager.
+Dieser prüft Systemvertrauen beziehungsweise das ausdrücklich bestätigte, gültige
+Serverzertifikat; OkHttp prüft weiterhin den Hostnamen. TLS-Tests prüfen auch,
+dass ein geändertes Zertifikat vor dem Senden von Zugangsdaten abgewiesen wird.</p>
+<p><code>compileSdk</code> ist 37, <code>targetSdk</code> bleibt bewusst 36. Ein Zielwechsel auf API 37
+benötigt zuerst den Berechtigungsablauf für lokale Server einschließlich Ablehnung
+und erneutem Versuch. Deshalb ist nur diese konkrete <code>OldTargetApi</code>-Meldung
+ausgenommen. Hintergrund ist die neue
+<a href="https://developer.android.com/about/versions/17/behavior-changes-17#local-network-permission">Android-17-Berechtigung für lokale Netzwerke</a>.</p>
 <p>Alle Befehle werden vom Repository-Stamm aus ausgeführt:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># JVM-Tests, Lint und Debug-APK</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>make<span class="w"> </span>test-android
@@ -1640,11 +1654,11 @@ Personendatenbank wird erst für eine Sitzung mit Personenrechten geöffnet. Ein
 Kontowechsel stoppt zuerst die Feature-Aufgaben und schließt dann die Sitzungsressourcen.
 Die Personenlogik liegt im Go-Backend unter <code>internal/photos</code>, HTTP-Adapter und
 Rechte unter <code>internal/server</code>.</p>
-<p>Für die Buildpflege: Die App verwendet <code>room-runtime</code> und den Room-Compiler;
-<code>room-ktx</code> und <code>ui-tooling-preview</code> sind keine zusätzlichen Abhängigkeiten. Vor einem
-Upgrade auf AGP 10 müssen die Legacy-DSL-/Kotlin-Optionen in <code>gradle.properties</code> und
-die kapt-Anbindung migriert werden. Die bestehenden Optionen gehören zum aktuellen
-Projektaufbau. Verbindlich sind die Gradle-Dateien im Repository.</p>
+<p>Für die Buildpflege: Die App verwendet das in AGP integrierte Kotlin und KSP für
+den Room-Compiler. Das exportierte Datenbankschema bleibt unverändert.
+<code>room-ktx</code> und <code>ui-tooling-preview</code> sind keine zusätzlichen Abhängigkeiten.
+Release-Builds verkleinern Code und Ressourcen gemeinsam. Compose-Gerätetests
+verwenden die aktuelle v2-Testregel. Verbindlich sind die Gradle-Dateien im Repository.</p>
 
 
 
@@ -1693,7 +1707,7 @@ Projektaufbau. Verbindlich sind die Gradle-Dateien im Repository.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.5.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.6.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
 

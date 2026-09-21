@@ -8,7 +8,7 @@ import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.lifecycle.Lifecycle
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
@@ -41,10 +41,11 @@ class DevicePhotoSharingTest {
         compose.onNode(hasText("Löschen") and hasClickAction()).performClick()
         val automation=InstrumentationRegistry.getInstrumentation().uiAutomation
         compose.waitUntil(10_000) {
-            automation.rootInActiveWindow?.packageName?.toString()?.startsWith("com.android.providers.media")==true
+            automation.rootInActiveWindow?.packageName?.toString() in setOf(
+                "com.android.providers.media", "com.android.providers.media.module", "com.google.android.providers.media.module")
         }
         // Declining Android's request must preserve both files and the selection.
-        val deny=listOf("Don't allow", "Cancel", "Deny").flatMap {
+        val deny=listOf("Don't allow", "Cancel", "Deny", "Nicht zulassen", "Abbrechen", "Ablehnen").flatMap {
             automation.rootInActiveWindow.findAccessibilityNodeInfosByText(it)
         }.first {it.isClickable}
         assertTrue(deny.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK))
@@ -53,9 +54,9 @@ class DevicePhotoSharingTest {
         compose.onNodeWithContentDescription("Löschen").performClick()
         compose.onNode(hasText("Löschen") and hasClickAction()).performClick()
         compose.waitUntil(10_000) {
-            listOf("Delete", "Allow").any {text -> automation.rootInActiveWindow?.findAccessibilityNodeInfosByText(text)?.any {it.isClickable}==true}
+            listOf("Delete", "Allow", "Löschen", "Zulassen").any {text -> automation.rootInActiveWindow?.findAccessibilityNodeInfosByText(text)?.any {it.isClickable}==true}
         }
-        val button=listOf("Delete", "Allow").flatMap {automation.rootInActiveWindow.findAccessibilityNodeInfosByText(it)}.first {it.isClickable}
+        val button=listOf("Delete", "Allow", "Löschen", "Zulassen").flatMap {automation.rootInActiveWindow.findAccessibilityNodeInfosByText(it)}.first {it.isClickable}
         assertTrue(button.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK))
         compose.waitUntil(10_000) {automation.rootInActiveWindow?.packageName?.toString()==compose.activity.packageName}
         compose.waitUntil(15_000) {compose.onAllNodesWithContentDescription("share-157.jpg").fetchSemanticsNodes().isNotEmpty() &&

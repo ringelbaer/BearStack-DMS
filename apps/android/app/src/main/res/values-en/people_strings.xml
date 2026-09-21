@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="connection_certificate_title">Verify server certificate</string>
     <string name="connection_certificate_help">Compare this SHA-256 fingerprint with the certificate on your BearStack server. Credentials are sent only after confirmation.</string>
     <string name="connection_certificate_validity">%1$s\nValid until %2$s</string>
@@ -55,7 +55,6 @@
     <string name="people_no_named">No named people yet.</string>
     <string name="people_no_results">No people found.</string>
     <string name="people_more_people">More people load as you scroll.</string>
-    <string name="people_face_count">%1$d faces</string>
     <string name="people_browser_unavailable">No browser is available to open the gallery search.</string>
     <string name="people_browser_search">Search gallery in browser</string>
     <string name="people_manage_help">×: remove assignment after confirmation. ★: favorite. Hold to see the original photo; swipe down while holding to zoom in, or up to zoom out.</string>
@@ -80,13 +79,16 @@
     <string name="people_merge_help">Check whether both groups show the same person. Merge assigns all faces from the first group to the second. Keep separate saves this decision and prevents future automatic assignments between these groups.</string>
     <string name="people_merge_next_help">After each saved decision, the next pair of groups appears.</string>
     <string name="people_merge_preview_help">Hold a portrait for 250 ms to see the original photo. While holding, swipe down to zoom to the face or up to zoom out. Release to close the preview.</string>
-    <string name="people_zoom_percent">Zoom %1$d percent</string>
+    <!-- Percent is an invariant unit in both supported languages. -->
+    <string name="people_zoom_percent" tools:ignore="PluralsCandidate">Zoom %1$d percent</string>
     <string name="people_zoom_face">Zoom to face</string>
     <string name="people_show_whole">Show whole photo</string>
     <string name="people_original">Original photo</string>
     <string name="people_original_error">The original photo could not be loaded. Close the preview or release and hold again.</string>
-    <string name="people_undo_ignore">Group ignored · Undo</string>
-    <string name="people_undo_last_ignore">%1$d groups ignored · Undo last</string>
+    <plurals name="people_undo_last_ignore">
+        <item quantity="one">Group ignored · Undo</item>
+        <item quantity="other">%1$d groups ignored · Undo last</item>
+    </plurals>
     <string name="statistics_help">Only confirmed actions count. Statistics are stored locally for this account and dataset.</string>
     <string name="statistics_named">Named</string>
     <string name="statistics_assigned">Assigned</string>
@@ -128,19 +130,30 @@
     <string name="people_merge_match_assign">Assign both groups to %1$s</string>
     <string name="people_merge_matches_help">When both groups are unnamed, a shared face search starts using the first group’s comparison face. If the completed search has no matches, the second group is checked next. Tap a match to assign both groups to that person. Matches can be selected while the search is running. Match again refreshes the shared list.</string>
     <string name="people_batch_limit">You can select up to 500 faces at a time.</string>
-    <string name="people_select_face">Select face %1$d</string>
+    <!-- The number identifies a face; it is not a quantity. -->
+    <string name="people_select_face" tools:ignore="PluralsCandidate">Select face %1$d</string>
     <string name="people_batch_assign">Assign to group</string>
-    <string name="people_batch_scope">Only the %1$d selected faces will be assigned. Enter a new name or choose an existing person.</string>
+    <plurals name="people_batch_scope">
+        <item quantity="one">Only the %1$d selected face will be assigned. Enter a new name or choose an existing person.</item>
+        <item quantity="other">Only the %1$d selected faces will be assigned. Enter a new name or choose an existing person.</item>
+    </plurals>
     <string name="people_batch_help">Use the checkboxes to select up to 500 faces, including while scrolling. Under Actions you can reset them to unnamed, assign them to a group or ignore them together.</string>
     <string name="people_batch_version">Multiple selection requires BearStack 0.51.0 or later.</string>
-    <string name="people_batch_selected">%1$d selected</string>
+    <!-- This abbreviated selection label is identical for all quantities in German and English. -->
+    <string name="people_batch_selected" tools:ignore="PluralsCandidate">%1$d selected</string>
     <string name="people_batch_clear">Clear</string>
     <string name="people_batch_actions">Actions</string>
     <string name="people_batch_reset">Reset to unnamed</string>
     <string name="people_batch_ignore">Ignore</string>
     <string name="people_batch_ignore_title">Ignore selected faces?</string>
     <string name="people_batch_reset_title">Reset selected faces?</string>
-    <string name="people_batch_ignore_confirmation">The %1$d selected faces will be ignored and hidden from this view. Photos are kept. You can restore the faces under “Ignored” in the browser.</string>
-    <string name="people_batch_reset_confirmation">The %1$d selected faces will be moved together into a new unnamed group. Their reference favorites will be cleared. Photos are kept.</string>
+    <plurals name="people_batch_ignore_confirmation">
+        <item quantity="one">The %1$d selected face will be ignored and hidden from this view. The photo is kept. You can restore the face under “Ignored” in the browser.</item>
+        <item quantity="other">The %1$d selected faces will be ignored and hidden from this view. Photos are kept. You can restore the faces under “Ignored” in the browser.</item>
+    </plurals>
+    <plurals name="people_batch_reset_confirmation">
+        <item quantity="one">The %1$d selected face will be moved into a new unnamed group. Its reference favorite will be cleared. The photo is kept.</item>
+        <item quantity="other">The %1$d selected faces will be moved together into a new unnamed group. Their reference favorites will be cleared. Photos are kept.</item>
+    </plurals>
     <string name="people_source_review">Photo changed · review on the web</string>
 </resources>

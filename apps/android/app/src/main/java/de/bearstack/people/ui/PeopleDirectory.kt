@@ -4,7 +4,7 @@ import de.bearstack.people.text.*
 import de.bearstack.people.R
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -144,7 +144,7 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
                                 OutlinedButton(onClick={
                                     vm.gallery(person.name)?.let { url ->
                                         try {
-                                            context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE))
+                                            context.startActivity(Intent(Intent.ACTION_VIEW,url.toUri()).addCategory(Intent.CATEGORY_BROWSABLE))
                                             browserError=null
                                         } catch(_: ActivityNotFoundException) { browserError=UiText(R.string.people_browser_unavailable) }
                                     }
@@ -233,7 +233,7 @@ internal fun FaceBatchConfirmation(action: String, count: Int, enabled: Boolean,
     AlertDialog(onDismissRequest={if(dismissEnabled) onCancel()},
         title={Text(text(if(ignoring) R.string.people_batch_ignore_title else R.string.people_batch_reset_title))},
         text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-            Text(text(if(ignoring) R.string.people_batch_ignore_confirmation else R.string.people_batch_reset_confirmation,count))
+            Text(text.quantity(if(ignoring) R.plurals.people_batch_ignore_confirmation else R.plurals.people_batch_reset_confirmation,count,count))
         }},confirmButton={TextButton(onClick=onConfirm,enabled=enabled) {
             Text(text(if(ignoring) R.string.people_batch_ignore else R.string.people_batch_reset))
         }},dismissButton={TextButton(onClick=onCancel,enabled=dismissEnabled) {Text(text(R.string.photos_cancel))}})

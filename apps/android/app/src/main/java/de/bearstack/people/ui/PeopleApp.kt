@@ -310,7 +310,7 @@ internal fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Bool
                 Text(text.photoPath(folder.displayPath))
                 Text(text(R.string.people_folders_scope))
             }
-            if(state.batchNaming) Text(text(R.string.people_batch_scope,state.selectedFaces.size))
+            if(state.batchNaming) Text(text.quantity(R.plurals.people_batch_scope,state.selectedFaces.size,state.selectedFaces.size))
             if(state.mergeNamingSide!=null) Text(text(R.string.people_merge_side_scope))
             OutlinedTextField(state.name,vm::nameChanged,label={Text(text(R.string.people_name))},singleLine=true,enabled=enabled,
                 trailingIcon={if(!state.directory || state.batchNaming || state.folderReview) IconButton(onClick={keyboard?.hide();vm.findFaceMatches()},enabled=enabled && !state.faceSearching) {

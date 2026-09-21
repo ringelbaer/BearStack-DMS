@@ -843,6 +843,5 @@ class PeopleViewModel private constructor(application: Application, private val 
         CoroutineScope(Dispatchers.IO).launch {
             try { resources?.close() } finally { if (database.isInitialized()) database.value.close() }
         }
-        super.onCleared()
     }
 }

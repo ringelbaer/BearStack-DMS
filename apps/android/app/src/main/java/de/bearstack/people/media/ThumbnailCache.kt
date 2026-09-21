@@ -1,5 +1,6 @@
 package de.bearstack.people.media
 
+import androidx.core.content.edit
 import android.content.Context
 import android.graphics.BitmapFactory
 import coil.ImageLoader
@@ -29,7 +30,7 @@ internal class ThumbnailPreferences(context: Context) {
     private val store = context.applicationContext.getSharedPreferences("thumbnail_cache", Context.MODE_PRIVATE)
     var sizeMiB: Int
         get() = store.getInt("size_mib", 256).coerceIn(64, 2048)
-        set(value) { store.edit().putInt("size_mib", value.coerceIn(64, 2048)).apply() }
+        set(value) { store.edit { putInt("size_mib", value.coerceIn(64, 2048)) } }
 }
 
 internal data class CachedThumbnail(val url: String, val revision: String) {
@@ -67,7 +68,7 @@ internal class ThumbnailCache(private val disk: ThumbnailDiskCache, private val 
             val bytes = downloads.withPermit {
                 client.readResponse(Request.Builder().url(data.url).build()) { response, _ ->
                     if (response.code != 200) throw IOException("Thumbnail HTTP ${response.code}")
-                    val body = response.body ?: throw IOException("Empty thumbnail")
+                    val body = response.body
                     if (body.contentType()?.type != "image") throw IOException("Invalid thumbnail type")
                     val source = body.source()
                     if (source.request(THUMBNAIL_MAX_BYTES + 1)) throw IOException("Thumbnail too large")

@@ -135,23 +135,37 @@ test("individual actions affect only unnamed sides and retain the pair until hid
     await expect(first.locator("[data-merge-ignore]")).toHaveCount(2);
     await expect(second.locator("[data-merge-ignore]")).toHaveCount(1);
     await expect(second.locator('[data-side-name="Existing"] .face-merge-side-actions button')).toHaveCount(0);
-    for (const width of [320,390,1440]) {
+    for (const width of [320,390,768,1024,1440]) {
       await page.setViewportSize({ width, height: 900 });
-      for (const button of await cards.locator("button:visible").all()) {
-        const box=await button.boundingBox(); expect(box.height).toBeGreaterThanOrEqual(44);
-        const bounds=await button.locator("xpath=ancestor::section[1]").boundingBox();
-        expect(box.x).toBeGreaterThanOrEqual(bounds.x-1); expect(box.x+box.width).toBeLessThanOrEqual(bounds.x+bounds.width+1);
+      for (const fontSize of ["100%", "200%"]) {
+        await page.evaluate(size => { document.documentElement.style.fontSize = size; }, fontSize);
+        await cards.locator("button").evaluateAll((buttons, size) => {
+          for (const button of buttons) button.style.fontSize = size;
+        }, fontSize);
+        for (const button of await cards.locator("button:visible").all()) {
+          const box=await button.boundingBox(); expect(box.height).toBeGreaterThanOrEqual(44);
+          const bounds=await button.locator("xpath=ancestor::section[1]").boundingBox();
+          expect(box.x).toBeGreaterThanOrEqual(bounds.x-1); expect(box.x+box.width).toBeLessThanOrEqual(bounds.x+bounds.width+1);
+        }
+        for (const button of await cards.locator("[data-merge-ignore]").all()) {
+          expect(await button.evaluate(element => {
+            const text = document.createRange(); text.selectNodeContents(element);
+            const bounds = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            const left = bounds.left + element.clientLeft + parseFloat(style.paddingLeft);
+            const right = bounds.left + element.clientLeft + element.clientWidth - parseFloat(style.paddingRight);
+            return [...text.getClientRects()].every(rect => rect.left >= left - 1 && rect.right <= right + 1
+              && rect.top >= bounds.top && rect.bottom <= bounds.bottom);
+          }), `Buttontext bei ${width}px und ${fontSize} Schriftgröße`).toBe(true);
+        }
+        expect(await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+        if (width === 320) await page.screenshot({path:path.join(os.tmpdir(),`bearstack-merge-sides-320-${fontSize}.png`),fullPage:true});
       }
-      for (const button of await cards.locator("[data-merge-ignore]").all()) {
-        expect(await button.evaluate(element => {
-          const text = document.createRange(); text.selectNodeContents(element);
-          const style = getComputedStyle(element);
-          return element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - text.getBoundingClientRect().width;
-        })).toBeGreaterThanOrEqual(-1);
-      }
-      expect(await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
-      if (width === 320) await page.screenshot({path:path.join(os.tmpdir(),"bearstack-merge-sides-320.png"),fullPage:true});
     }
+    await page.evaluate(() => { document.documentElement.style.removeProperty("font-size"); });
+    await cards.locator("button").evaluateAll(buttons => {
+      for (const button of buttons) button.style.removeProperty("font-size");
+    });
     await page.evaluate(() => { window.mergeSideMarker="same document"; });
     const firstSide=first.locator("[data-merge-side]").first(), otherSide=first.locator("[data-merge-side]").last();
     const ignoredID=Number(await firstSide.getAttribute("data-merge-side")), otherID=Number(await otherSide.getAttribute("data-merge-side"));

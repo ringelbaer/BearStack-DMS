@@ -38,15 +38,23 @@ def nodes(tree, *labels):
 def wait_for(find, description):
     deadline = time.monotonic() + 35
     last = None
+    snapshot_error = None
     while time.monotonic() < deadline:
-        last = hierarchy()
+        try:
+            last = hierarchy()
+        except (subprocess.CalledProcessError, ET.ParseError) as error:
+            # The accessibility root can temporarily disappear during activity
+            # restarts. Retry within the same deadline; persistent errors still fail.
+            snapshot_error = error
+            time.sleep(0.3)
+            continue
         found = find(last)
         if found:
             return found
         time.sleep(0.3)
-    visible = [(node.get("text"), node.get("content-desc")) for node in last.iter("node")
+    visible = [(node.get("text"), node.get("content-desc")) for node in (last.iter("node") if last is not None else [])
                if node.get("text") or node.get("content-desc")]
-    raise AssertionError(f"Missing {description}; visible: {visible}")
+    raise AssertionError(f"Missing {description}; visible: {visible}") from snapshot_error
 
 
 def tap(node):
@@ -67,6 +75,11 @@ def login(address, account):
         fields = wait_for(lambda tree: [node for node in tree.iter("node")
                           if node.get("class") == "android.widget.EditText"], "login fields")
         tap(fields[index])
+        # Touch injection can return before Compose has focused the field.
+        # Wait before sending keys so input is not lost during a keyboard transition.
+        wait_for(lambda tree: [node for position, node in enumerate(
+            node for node in tree.iter("node") if node.get("class") == "android.widget.EditText")
+            if position == index and node.get("focused") == "true"], "focused login field")
         shell("input", "text", value)
         shell("input", "keyevent", "KEYCODE_BACK")
     click("Verbinden", "Connect")
@@ -91,7 +104,9 @@ def run(address):
         shell("input", "keyevent", "KEYCODE_BACK")
         click("one.jpg")
         click("Informationen", "Information")
-        wait_for(lambda tree: [node for node in tree.iter("node") if "52.5" in node.get("text", "")],
+        # GPS values follow the device locale (decimal comma in German).
+        wait_for(lambda tree: [node for node in tree.iter("node")
+                              if re.search(r"\b52[.,]50*\s*,\s*13[.,]40*\b", node.get("text", ""))],
                  "GPS information from the fixture")
         print("PASS release: viewer and server photo information", flush=True)
         shell("am", "force-stop", PACKAGE)
@@ -99,10 +114,12 @@ def run(address):
         wait_for(lambda tree: nodes(tree, "one.jpg"), "restored gallery session")
         print("PASS release: encrypted profile and session restoration", flush=True)
         click("Weitere Optionen", "More options")
+        click("Einstellungen", "Settings")
         click("Verbindung wechseln", "Switch connection")
         login(address, "manager")
         click("Weitere Optionen", "More options")
         wait_for(lambda tree: nodes(tree, "Personen verwalten", "Manage people"), "manager permissions")
+        click("Einstellungen", "Settings")
         click("Verbindung wechseln", "Switch connection")
         wait_for(lambda tree: nodes(tree, "Verbinden", "Connect"), "signed-out screen")
         print("PASS release: account switch, permissions and sign-out", flush=True)

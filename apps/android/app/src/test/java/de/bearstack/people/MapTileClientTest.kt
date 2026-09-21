@@ -27,7 +27,7 @@ class MapTileClientTest {
             repeat(2) {
                 client.newCall(Request.Builder().url("https://tile.openstreetmap.org/3/4/2.png")
                     .header("Authorization","Bearer test-secret").header("Cookie","account=test-secret").header("Proxy-Authorization","test-secret").build())
-                    .execute().use {assertEquals(200,it.code);assertEquals("tile",it.body!!.string())}
+                    .execute().use {assertEquals(200,it.code);assertEquals("tile",it.body.string())}
             }
             assertEquals(calls,server.requestCount)
             val request=server.takeRequest()

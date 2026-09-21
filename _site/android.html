@@ -1737,7 +1737,7 @@
 <p>Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.</p>
-<p>Diese Anleitung beschreibt <strong>Android-App 0.22.1</strong>. Beginne mit den
+<p>Diese Anleitung beschreibt <strong>Android-App 0.22.2</strong>. Beginne mit den
 <a href="#erste-schritte">ersten Schritten</a>; die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die <a href="android-technik.html">technische Referenz</a>.</p>
@@ -2270,6 +2270,9 @@ geändert, wird sie aktualisiert und du musst die Auswahl neu treffen.</p>
 möglicherweise zusammengehöriger Gruppen mit je einem Vergleichsgesicht,
 Ordnerangabe, Namen und Gesichtsanzahl. Der Ähnlichkeitswert ist ein Vergleichswert,
 keine Prozentwahrscheinlichkeit. Prüfe bei Bedarf beide Portraits in der Fotovorschau.</p>
+<p>Ab BearStack <strong>1.6.0</strong> sucht der Server für unbenannte Gesichter zuerst passende
+benannte Personen. Nur ohne passenden benannten Treffer folgen unbenannte
+Gruppen. Vorhandene Vorschläge mit einer benannten Person erscheinen zuerst.</p>
 <ul>
 <li><strong>Zusammenführen</strong> ordnet die Gesichter der ersten Gruppe der zweiten zu.
   Favoriten bleiben erhalten. Ist die zweite unbenannt, wird ein vorhandener Name
@@ -2534,7 +2537,7 @@ steht im <a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/CHANGELO
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.5.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.6.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

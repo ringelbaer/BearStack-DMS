@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="connection_certificate_title">Serverzertifikat prüfen</string>
     <string name="connection_certificate_help">Vergleiche diesen SHA-256-Fingerabdruck mit dem Zertifikat auf deinem BearStack-Server. Erst danach werden Zugangsdaten gesendet.</string>
     <string name="connection_certificate_validity">%1$s\nGültig bis %2$s</string>
@@ -55,7 +55,6 @@
     <string name="people_no_named">Noch keine benannten Personen vorhanden.</string>
     <string name="people_no_results">Keine Personen gefunden.</string>
     <string name="people_more_people">Weitere Personen werden beim Scrollen geladen.</string>
-    <string name="people_face_count">%1$d Gesichter</string>
     <string name="people_browser_unavailable">Kein Browser zum Öffnen der Galeriesuche verfügbar.</string>
     <string name="people_browser_search">Galeriesuche im Browser</string>
     <string name="people_manage_help">×: Zuordnung nach Bestätigung entfernen. ★: Favorisieren. Halten: Originalfoto; dabei runterwischen zum Vergrößern, hoch zum Verkleinern.</string>
@@ -80,13 +79,16 @@
     <string name="people_merge_help">Prüfe, ob beide Gruppen dieselbe Person zeigen. Zusammenführen ordnet alle Gesichter der ersten Gruppe der zweiten zu. Getrennt lassen speichert die Trennung und verhindert künftige automatische Zuordnungen zwischen diesen Gruppen.</string>
     <string name="people_merge_next_help">Nach jeder gespeicherten Entscheidung erscheint das nächste Gruppenpaar.</string>
     <string name="people_merge_preview_help">Portrait 250 ms halten: Originalfoto anzeigen. Dabei nach unten wischen zum Gesicht vergrößern, nach oben zum Verkleinern. Loslassen schließt die Vorschau.</string>
-    <string name="people_zoom_percent">Vergrößerung %1$d Prozent</string>
+    <!-- Percent is an invariant unit in both supported languages. -->
+    <string name="people_zoom_percent" tools:ignore="PluralsCandidate">Vergrößerung %1$d Prozent</string>
     <string name="people_zoom_face">Zum Gesicht vergrößern</string>
     <string name="people_show_whole">Ganzes Foto anzeigen</string>
     <string name="people_original">Originalfoto</string>
     <string name="people_original_error">Originalfoto konnte nicht geladen werden. Vorschau schließen oder loslassen und erneut halten.</string>
-    <string name="people_undo_ignore">Gruppe ignoriert · Rückgängig</string>
-    <string name="people_undo_last_ignore">%1$d Gruppen ignoriert · Letzte rückgängig</string>
+    <plurals name="people_undo_last_ignore">
+        <item quantity="one">Gruppe ignoriert · Rückgängig</item>
+        <item quantity="other">%1$d Gruppen ignoriert · Letzte rückgängig</item>
+    </plurals>
     <string name="statistics_help">Nur bestätigte Aktionen zählen. Die Zahlen werden lokal für dieses Konto und diesen Datenbestand gespeichert.</string>
     <string name="statistics_named">Benannt</string>
     <string name="statistics_assigned">Zugeordnet</string>
@@ -128,19 +130,30 @@
     <string name="people_merge_match_assign">Beide Gruppen der Person %1$s zuordnen</string>
     <string name="people_merge_matches_help">Sind beide Gruppen unbenannt, startet ein gemeinsamer Gesichtsabgleich anhand des Vergleichsgesichts der ersten Gruppe. Bleibt der abgeschlossene Abgleich ohne Treffer, wird anschließend die zweite Gruppe geprüft. Tippe auf einen Treffer, um beide Gruppen dieser Person zuzuordnen. Treffer sind bereits während des Abgleichs wählbar. Erneut abgleichen aktualisiert die gemeinsame Liste.</string>
     <string name="people_batch_limit">Du kannst höchstens 500 Gesichter auf einmal auswählen.</string>
-    <string name="people_select_face">Gesicht %1$d auswählen</string>
+    <!-- The number identifies a face; it is not a quantity. -->
+    <string name="people_select_face" tools:ignore="PluralsCandidate">Gesicht %1$d auswählen</string>
     <string name="people_batch_assign">Gruppe zuordnen</string>
-    <string name="people_batch_scope">Nur die %1$d ausgewählten Gesichter werden zugeordnet. Gib einen neuen Namen ein oder wähle eine vorhandene Person.</string>
+    <plurals name="people_batch_scope">
+        <item quantity="one">Nur das %1$d ausgewählte Gesicht wird zugeordnet. Gib einen neuen Namen ein oder wähle eine vorhandene Person.</item>
+        <item quantity="other">Nur die %1$d ausgewählten Gesichter werden zugeordnet. Gib einen neuen Namen ein oder wähle eine vorhandene Person.</item>
+    </plurals>
     <string name="people_batch_help">Über die Checkboxen kannst du bis zu 500 Gesichter auswählen, auch beim Weiterscrollen. Unter Aktionen kannst du sie gemeinsam auf unbenannt zurücksetzen, einer Gruppe zuordnen oder ignorieren.</string>
     <string name="people_batch_version">Mehrfachauswahl benötigt BearStack 0.51.0 oder neuer.</string>
-    <string name="people_batch_selected">%1$d ausgewählt</string>
+    <!-- This abbreviated selection label is identical for all quantities in German and English. -->
+    <string name="people_batch_selected" tools:ignore="PluralsCandidate">%1$d ausgewählt</string>
     <string name="people_batch_clear">Aufheben</string>
     <string name="people_batch_actions">Aktionen</string>
     <string name="people_batch_reset">Auf unbenannt zurücksetzen</string>
     <string name="people_batch_ignore">Ignorieren</string>
     <string name="people_batch_ignore_title">Ausgewählte Gesichter ignorieren?</string>
     <string name="people_batch_reset_title">Ausgewählte Gesichter zurücksetzen?</string>
-    <string name="people_batch_ignore_confirmation">Die %1$d ausgewählten Gesichter werden ignoriert und aus dieser Ansicht ausgeblendet. Die Fotos bleiben erhalten. Du kannst die Gesichter im Browser unter „Ignoriert“ wiederherstellen.</string>
-    <string name="people_batch_reset_confirmation">Die %1$d ausgewählten Gesichter werden gemeinsam in eine neue unbenannte Gruppe verschoben. Ihre Vergleichsfavoriten werden aufgehoben. Die Fotos bleiben erhalten.</string>
+    <plurals name="people_batch_ignore_confirmation">
+        <item quantity="one">Das %1$d ausgewählte Gesicht wird ignoriert und aus dieser Ansicht ausgeblendet. Das Foto bleibt erhalten. Du kannst das Gesicht im Browser unter „Ignoriert“ wiederherstellen.</item>
+        <item quantity="other">Die %1$d ausgewählten Gesichter werden ignoriert und aus dieser Ansicht ausgeblendet. Die Fotos bleiben erhalten. Du kannst die Gesichter im Browser unter „Ignoriert“ wiederherstellen.</item>
+    </plurals>
+    <plurals name="people_batch_reset_confirmation">
+        <item quantity="one">Das %1$d ausgewählte Gesicht wird in eine neue unbenannte Gruppe verschoben. Sein Vergleichsfavorit wird aufgehoben. Das Foto bleibt erhalten.</item>
+        <item quantity="other">Die %1$d ausgewählten Gesichter werden gemeinsam in eine neue unbenannte Gruppe verschoben. Ihre Vergleichsfavoriten werden aufgehoben. Die Fotos bleiben erhalten.</item>
+    </plurals>
     <string name="people_source_review">Foto geändert · im Web prüfen</string>
 </resources>

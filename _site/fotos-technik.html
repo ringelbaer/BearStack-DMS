@@ -2118,6 +2118,18 @@ und <strong>0,0 bis 0,2</strong> für Mindestabstand. Höhere Werte filtern stre
 sind keine Wahrscheinlichkeiten und lernen nicht automatisch aus Entscheidungen.
 Bei manuellen Vorschlägen erlaubt Abstand 0 mehrere Alternativen, ein positiver
 Abstand nur einen eindeutig besten Treffer.</p>
+<p>Ab <strong>1.6.0</strong> werden für <strong>Ähnliche Gruppen</strong> pro unbenanntem Gesicht zuerst bis
+zu drei passende benannte Personen ausgewählt. Nur wenn keine davon die
+Vorschlagsgrenzwerte erfüllt, folgen bis zu drei unbenannte Gruppen. Der
+Mindestabstand wird jeweils innerhalb desselben Bereichs geprüft, auch gegen
+den zweitbesten Treffer unterhalb der Ähnlichkeitsgrenze. Abgelehnte Paare,
+gemeinsame aktive Fotos, Ordnerausschlüsse und ungültige Referenzen bleiben
+ausgeschlossen. Die Regeln für automatische Einzelzuordnungen bleiben bestehen.</p>
+<p>Web und Android lesen gespeicherte Paare mit mindestens einer benannten Person
+zuerst, danach rein unbenannte Paare; innerhalb beider Bereiche gilt absteigende
+Ähnlichkeit und bei Gleichstand die Vorschlags-ID. Bereits gespeicherte
+unbenannte Vorschläge bleiben erhalten. Die neue Auswahl gilt beim nächsten
+Hintergrundabgleich; <strong>Zuordnungen erneut prüfen</strong> stößt ihn ausdrücklich an.</p>
 <p><strong>Vorhandene Zuordnungen verbessern</strong> arbeitet mit gespeicherten Vektoren und
 benötigt keinen laufenden Erkennungsdienst. Der Hintergrundabgleich ist
 standardmäßig aktiviert und wird unter anderem nach Benennungen, manuellen
@@ -2396,7 +2408,7 @@ Das Layout durchläuft Familien iterativ und benötigt keine rekursive Ahnensuch
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.5.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.6.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
 

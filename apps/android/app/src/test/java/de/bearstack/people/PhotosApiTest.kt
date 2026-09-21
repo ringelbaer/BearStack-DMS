@@ -91,7 +91,7 @@ class PhotosApiTest {
             val target=api.locateDate("2026-06-11")
             assertEquals(321,target.page);assertEquals("2026-06-12",target.date)
             assertEquals("/proxy/api/photos/v1/browse/date",request!!.url.encodedPath)
-            assertEquals("2026-06-11",request!!.url.queryParameter("date"))
+            assertEquals("2026-06-11",request.url.queryParameter("date"))
             body="""{"path":"a","date":"2026-02-30","page":0}"""
             try {api.locateDate("2026-06-11");fail("invalid date position accepted")}
             catch(_:IllegalArgumentException) {}
@@ -113,8 +113,8 @@ class PhotosApiTest {
             assertEquals(200000,route.totalMedia);assertEquals(150000,route.geometry.totalPoints)
             assertTrue(route.geometry.simplified);assertEquals(2,route.geometry.segments.single().size)
             assertEquals("/proxy/api/photos/v1/map/route",request!!.url.encodedPath)
-            assertEquals("tag:sea",request!!.url.queryParameter("q"));assertEquals("image",request!!.url.queryParameter("type"))
-            assertEquals("4096",request!!.url.queryParameter("points"))
+            assertEquals("tag:sea",request.url.queryParameter("q"));assertEquals("image",request.url.queryParameter("type"))
+            assertEquals("4096",request.url.queryParameter("points"))
         } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
     }
     @Test fun infoKeepsSourceTimeRatingAndNamesFromBothMetadataFormats() = runBlocking {
@@ -169,8 +169,8 @@ class PhotosApiTest {
             assertEquals(5,data.total);assertEquals(2,data.markers.size)
             assertEquals("",data.markers.first().path);assertEquals("trip/a & b.jpg",data.markers.last().path)
             assertEquals("/proxy/api/photos/v1/map",request!!.url.encodedPath)
-            assertEquals("trip & beach",request!!.url.queryParameter("path"));assertEquals("tag:Meer",request!!.url.queryParameter("q"))
-            assertEquals("-170.0",request!!.url.queryParameter("east"));assertEquals("image",request!!.url.queryParameter("type"))
+            assertEquals("trip & beach",request.url.queryParameter("path"));assertEquals("tag:Meer",request.url.queryParameter("q"))
+            assertEquals("-170.0",request.url.queryParameter("east"));assertEquals("image",request.url.queryParameter("type"))
         } finally {client.dispatcher.executorService.shutdown();client.connectionPool.evictAll()}
     }
     @Test fun readerSessionAndAllRequestsKeepProxyPrefixAndEncodePaths() = runBlocking {

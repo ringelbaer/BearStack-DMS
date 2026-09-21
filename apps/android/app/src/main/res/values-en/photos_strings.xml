@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="photos_frame_random">Random order</string>
     <string name="photos_frame_random_unavailable">Random order requires BearStack 0.69.0 or later.</string>
     <string name="photos_directory_people">People in folder</string>
@@ -54,12 +54,16 @@
     <string name="photos_location">Location</string>
     <string name="photos_details">%1$d × %2$d · %3$s</string>
     <string name="photos_loading">Loading …</string>
-    <string name="photos_of">%1$d of %2$d</string>
+    <!-- Current position and total, not a quantity-dependent noun. -->
+    <string name="photos_of" tools:ignore="PluralsCandidate">%1$d of %2$d</string>
     <string name="photos_frame">Start photo frame</string>
     <string name="photos_slideshow_settings">Slideshow settings</string>
     <string name="photos_frame_settings">Photo frame settings</string>
     <string name="photos_interval">Time per photo</string>
-    <string name="photos_seconds">%1$d seconds</string>
+    <plurals name="photos_seconds">
+        <item quantity="one">%1$d second</item>
+        <item quantity="other">%1$d seconds</item>
+    </plurals>
     <string name="photos_repeat">Repeat at the end</string>
     <string name="photos_frame_fill">Fill screen (crop photos)</string>
     <string name="photos_frame_captions">Show name and date</string>
@@ -75,7 +79,10 @@
     <string name="photos_map_zoom_in">Zoom in</string>
     <string name="photos_map_zoom_out">Zoom out</string>
     <string name="photos_map_fit">Show all locations</string>
-    <string name="photos_map_marker">%1$d items at this location</string>
+    <plurals name="photos_map_marker">
+        <item quantity="one">%1$d item at this location</item>
+        <item quantity="other">%1$d items at this location</item>
+    </plurals>
     <string name="photos_map_retry">Retry map tiles</string>
     <string name="photos_map_help">Drag the map or pinch to zoom. Tap a number to zoom in and a single point to open the item. Subfolders are included.</string>
     <string name="photos_map_index_pending">The map is waiting for the photo index. Try again shortly.</string>
@@ -89,7 +96,6 @@
         <item quantity="one">1 item at this location</item>
         <item quantity="other">%1$d items at this location</item>
     </plurals>
-    <string name="photos_map_marker_one">1 item at this location</string>
     <string name="photos_text_empty">This post contains no text.</string>
     <string name="photos_map_layers">Layers</string>
     <string name="photos_tracks_title">GPX tracks</string>
@@ -115,7 +121,10 @@
     <string name="photos_route_title">Photo route</string>
     <string name="photos_route_help">Connects the GPS locations of your photos in chronological order. The photo route uses a dashed line.</string>
     <string name="photos_route_error">The photo route could not be loaded.</string>
-    <string name="photos_route_summary">%1$d items · places grouped within %2$d m</string>
+    <plurals name="photos_route_summary">
+        <item quantity="one">%1$d item · places grouped within %2$d m</item>
+        <item quantity="other">%1$d items · places grouped within %2$d m</item>
+    </plurals>
     <string name="photos_sort_newest">Date: Newest first</string>
     <string name="photos_sort_oldest">Date: Oldest first</string>
     <string name="photos_sort_name_asc">Name: A–Z</string>
@@ -132,7 +141,10 @@
     <string name="photos_cache_title">Thumbnail cache</string>
     <string name="photos_cache_size">Storage budget: %1$d MiB</string>
     <string name="photos_cache_help">The latest 50 stream thumbnails and previews of all top-level folders stay stored. Remaining space is managed by last use. Required thumbnails take priority over the budget.</string>
-    <string name="photos_cache_usage">Used: %1$d MiB · protected: %2$d MiB (%3$d of %4$d thumbnails)</string>
+    <plurals name="photos_cache_usage">
+        <item quantity="one">Used: %1$d MiB · protected: %2$d MiB (%3$d of %4$d thumbnail)</item>
+        <item quantity="other">Used: %1$d MiB · protected: %2$d MiB (%3$d of %4$d thumbnails)</item>
+    </plurals>
     <string name="photos_cache_minimum">Protected thumbnails require at least %1$d MiB.</string>
     <string name="photos_cache_loading">Updating required thumbnails…</string>
     <string name="photos_cache_incomplete">The cache could not be fully updated. Check your connection and available device storage.</string>

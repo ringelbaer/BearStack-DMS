@@ -1,11 +1,18 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="photos_fast_scroll">Fast scroll through the list</string>
     <string name="photos_selection_start">Select multiple media</string>
     <string name="photos_selection_close">Clear selection</string>
-    <string name="photos_selection_count">%1$d / %2$d selected</string>
+    <!-- Position/count label has identical grammar for every quantity. -->
+    <string name="photos_selection_count" tools:ignore="PluralsCandidate">%1$d / %2$d selected</string>
     <string name="photos_selection_save">Save selection</string>
-    <string name="photos_selection_saved">%1$d media saved</string>
+    <plurals name="photos_selection_saved">
+        <item quantity="one">%1$d media item saved</item>
+        <item quantity="other">%1$d media saved</item>
+    </plurals>
     <string name="photos_delete">Delete</string>
-    <string name="photos_delete_confirm">Permanently delete %1$d images from this device? This cannot be undone.</string>
+    <plurals name="photos_delete_confirm">
+        <item quantity="one">Permanently delete %1$d image from this device? This cannot be undone.</item>
+        <item quantity="other">Permanently delete %1$d images from this device? This cannot be undone.</item>
+    </plurals>
     <string name="photos_delete_error">Some images could not be deleted. Check photo access and try again.</string>
 </resources>

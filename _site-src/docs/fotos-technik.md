@@ -463,6 +463,20 @@ sind keine Wahrscheinlichkeiten und lernen nicht automatisch aus Entscheidungen.
 Bei manuellen Vorschlägen erlaubt Abstand 0 mehrere Alternativen, ein positiver
 Abstand nur einen eindeutig besten Treffer.
 
+Ab **1.6.0** werden für **Ähnliche Gruppen** pro unbenanntem Gesicht zuerst bis
+zu drei passende benannte Personen ausgewählt. Nur wenn keine davon die
+Vorschlagsgrenzwerte erfüllt, folgen bis zu drei unbenannte Gruppen. Der
+Mindestabstand wird jeweils innerhalb desselben Bereichs geprüft, auch gegen
+den zweitbesten Treffer unterhalb der Ähnlichkeitsgrenze. Abgelehnte Paare,
+gemeinsame aktive Fotos, Ordnerausschlüsse und ungültige Referenzen bleiben
+ausgeschlossen. Die Regeln für automatische Einzelzuordnungen bleiben bestehen.
+
+Web und Android lesen gespeicherte Paare mit mindestens einer benannten Person
+zuerst, danach rein unbenannte Paare; innerhalb beider Bereiche gilt absteigende
+Ähnlichkeit und bei Gleichstand die Vorschlags-ID. Bereits gespeicherte
+unbenannte Vorschläge bleiben erhalten. Die neue Auswahl gilt beim nächsten
+Hintergrundabgleich; **Zuordnungen erneut prüfen** stößt ihn ausdrücklich an.
+
 **Vorhandene Zuordnungen verbessern** arbeitet mit gespeicherten Vektoren und
 benötigt keinen laufenden Erkennungsdienst. Der Hintergrundabgleich ist
 standardmäßig aktiviert und wird unter anderem nach Benennungen, manuellen

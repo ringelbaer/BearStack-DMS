@@ -12,6 +12,23 @@ import org.junit.Test
 import java.util.concurrent.TimeUnit
 
 class TlsTest {
+    @Test fun pinnedClientRejectsChangedCertificateBeforeSendingCredentials() = runBlocking {
+        val approved=HeldCertificate.Builder().addSubjectAlternativeName("localhost").build()
+        val changed=HeldCertificate.Builder().addSubjectAlternativeName("localhost").build()
+        val server=MockWebServer()
+        server.useHttps(HandshakeCertificates.Builder().heldCertificate(changed).build().sslSocketFactory(),false)
+        server.start()
+        val pin=android.util.Base64.encodeToString(approved.certificate.encoded,android.util.Base64.NO_WRAP)
+        val client=Connections.client(Profile(server.url("/").toString(),"user","password",pin))
+        try {
+            server.enqueue(MockResponse().setResponseCode(200))
+            try {
+                client.newCall(Request.Builder().url(server.url("/")).build()).execute().use {fail("changed certificate accepted")}
+            } catch(_: javax.net.ssl.SSLException) { }
+            assertEquals(0,server.requestCount)
+        } finally {Connections.close(client);server.close()}
+    }
+
     @Test fun certificateProbeSendsNoAuthorizationAndPinnedClientDoesNotFollowRedirects() = runBlocking {
         val cert=HeldCertificate.Builder().addSubjectAlternativeName("localhost").build()
         val server=MockWebServer()

@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -62,7 +63,7 @@ internal fun PhotoMap(bounds: PhotoMapBounds, markers: List<PhotoMapMarker>, mod
     var retry by remember {mutableIntStateOf(0)}
     val failures=remember {mutableStateMapOf<String,Boolean>()}
     val viewportCallback by rememberUpdatedState(onViewport)
-    val transform=rememberTransformableState { zoom, pan, _ ->
+    val transform=rememberTransformableState { _, zoom, pan, _ ->
         camera=camera.move(pan.x.toDouble(),pan.y.toDouble(),zoom.toDouble(),tilePixels)
     }
     LaunchedEffect(size,bounds) {
@@ -118,7 +119,7 @@ internal fun PhotoMap(bounds: PhotoMapBounds, markers: List<PhotoMapMarker>, mod
             val dx=((point.x-camera.x+.5)%1+1)%1-.5
             val offset=Offset((size.width/2+dx*world).toFloat(),(size.height/2+(point.y-camera.y)*world).toFloat())
             if(positioned && offset.x>=0 && offset.x<=size.width && offset.y>=0 && offset.y<=size.height) {
-                val description=stringResource(if(marker.count==1) R.string.photos_map_marker_one else R.string.photos_map_marker,marker.count)
+                val description=pluralStringResource(R.plurals.photos_map_marker,marker.count,marker.count)
                 val activate: () -> Unit = {
                     val extent=marker.bounds
                     val coincident=extent!=null && extent.north-extent.south<1e-7 && kotlin.math.abs(extent.east-extent.west)<1e-7

@@ -1,8 +1,14 @@
 # BearStack
 
-Aktuelle Version: **1.5.0** · Android-App: **0.22.1**.
+Aktuelle Version: **1.6.0** · Android-App: **0.22.2**.
+
+**BearStack 1.6.0:** Für **Ähnliche Gruppen** werden unbenannte Gesichter zuerst mit benannten Personen abgeglichen. Nur ohne passenden benannten Treffer entstehen Vorschläge zu unbenannten Gruppen. Web und Android zeigen vorhandene Paare mit benannten Personen zuerst. [Details](_site-src/docs/fotos-technik.md#zuordnungen-verbessern).
+
+**BearStack 1.5.1:** Unter **Ähnliche Gruppen** bleibt „Gruppe ignorieren“ auch in schmalen Kacheln und bei vergrößerter Schrift vollständig im Button lesbar.
 
 **BearStack 1.5.0:** Die Web-Personenverwaltung bietet gemeinsame Navigation, einheitliche Auswahlleisten und klar benannte Aktionen für Gruppen und einzelne Gesichter. Ignorierte Gesichter lassen sich gemeinsam wiederherstellen oder zuordnen; die Prüfung geänderter Fotos führt direkt zum nächsten offenen Gesicht.
+
+**Android 0.22.2:** Korrigierte Einzahl-/Mehrzahltexte, fensterabhängiges Galerieraster und weniger Neuberechnungen beim Scrollen. Der Build verwendet KSP und Ressourcenverkleinerung für Releases. Begründete Lint-Ausnahmen stehen in der [technischen Referenz](_site-src/docs/android-technik.md#tests).
 
 **Android 0.22.1:** Die Großansicht deckt bei eingeblendeten Bedienelementen auch die Bereiche der Android-Status- und Navigationsleiste vollständig ab. Das Bild scheint dort nicht mehr oberhalb oder unterhalb der Menüleisten durch.
 

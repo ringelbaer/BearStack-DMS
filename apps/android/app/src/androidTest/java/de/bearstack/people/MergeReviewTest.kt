@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -273,7 +273,8 @@ class MergeReviewTest {
         val ignore=compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertIsDisplayed().getUnclippedBoundsInRoot()
         val pencil=compose.onNodeWithContentDescription("Erste Gruppe benennen/zuordnen").assertIsDisplayed().getUnclippedBoundsInRoot()
         assertEquals(ignore.top.value,pencil.top.value,1f)
-        assertTrue(ignore.height>=48.dp && pencil.height>=48.dp && pencil.width>=48.dp)
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithContentDescription("Erste Gruppe benennen/zuordnen").assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
         assertTrue(ignore.right<=pencil.left)
         assertTrue(ignore.top>portrait.bottom)
         compose.onNodeWithText("Zusammenführen").assertIsDisplayed()
@@ -381,9 +382,11 @@ class MergeReviewTest {
         assertEquals(listOf(40L),vm.state.value.selectedPerson!!.faces)
         assertTrue(vm.state.value.batchFaces)
         assertTrue(api.directoryQueries.isEmpty())
+        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
         compose.onNodeWithText("Zurück").performClick();idle(vm)
         assertNull(vm.state.value.selectedPerson)
         assertEquals(setOf(4L,6L),vm.state.value.namedPeople.map {it.id}.toSet())
+        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
         compose.onNodeWithText("Zurück").performClick();idle(vm)
         assertFalse(vm.state.value.directory)
         val after=runBlocking {db.dao().state(api.session.scope)}!!

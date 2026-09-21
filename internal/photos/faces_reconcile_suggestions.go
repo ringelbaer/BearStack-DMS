@@ -91,6 +91,8 @@ const faceMergeSuggestionSelect = `SELECT s.id,s.source_id,s.target_id,s.source_
  JOIN media_index sm ON sm.path=sf.path AND sm.admin_only=0 JOIN media_index tm ON tm.path=tf.path AND tm.admin_only=0
  WHERE s.rejected=0 AND s.model=(SELECT model FROM photo_face_state WHERE id=1)`
 
+const faceMergeSuggestionPriorityOrder = ` AND (sp.name<>'' OR tp.name<>'')=? ORDER BY s.score DESC,s.id LIMIT ?`
+
 func scanFaceMergeSuggestion(row interface{ Scan(...any) error }) (FaceMergeSuggestion, error) {
 	var s FaceMergeSuggestion
 	err := row.Scan(&s.ID, &s.SourceID, &s.TargetID, &s.SourceRevision, &s.TargetRevision, &s.SourceFaceID, &s.TargetFaceID, &s.SourceName, &s.TargetName, &s.Score, &s.SourcePath, &s.TargetPath,
@@ -116,21 +118,33 @@ func (l *Library) faceMergeSuggestions(ctx context.Context, limit int, excluded 
 			filter += ` AND NOT ((s.source_id=? AND s.target_id=?) OR (s.source_id=? AND s.target_id=?))`
 			args = append(args, excluded[0], excluded[1], excluded[1], excluded[0])
 		}
-		args = append(args, limit)
-		rows, err := l.index.db.QueryContext(ctx, faceMergeSuggestionSelect+filter+` ORDER BY s.score DESC,s.id LIMIT ?`, args...)
-		if err != nil {
-			return nil, err
-		}
-		defer rows.Close()
 		out := []FaceMergeSuggestion{}
-		for rows.Next() {
-			s, err := scanFaceMergeSuggestion(rows)
+		// Read each priority separately so the score index supplies the order;
+		// do not sort the entire suggestion cache by a computed name flag.
+		for _, named := range []bool{true, false} {
+			queryArgs := append(append([]any{}, args...), named, limit-len(out))
+			rows, err := l.index.db.QueryContext(ctx, faceMergeSuggestionSelect+filter+faceMergeSuggestionPriorityOrder, queryArgs...)
 			if err != nil {
 				return nil, err
 			}
-			out = append(out, s)
+			for rows.Next() {
+				s, err := scanFaceMergeSuggestion(rows)
+				if err != nil {
+					rows.Close()
+					return nil, err
+				}
+				out = append(out, s)
+			}
+			err = rows.Err()
+			rows.Close()
+			if err != nil {
+				return nil, err
+			}
+			if len(out) == limit {
+				break
+			}
 		}
-		return out, rows.Err()
+		return out, nil
 	}
 	out, err := read(nil)
 	if err != nil || len(out) == 0 {

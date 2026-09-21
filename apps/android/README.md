@@ -1,7 +1,12 @@
 # BearStack Fotos für Android
 
 Native Android-App für BearStack-Galerie, lokale Fotos und Personenverwaltung.
-App-Version **0.22.1** (`versionCode 45`), Android **8.0 oder neuer**.
+App-Version **0.22.2** (`versionCode 46`), Android **8.0 oder neuer**.
+
+Einzahl-/Mehrzahltexte sind in Deutsch und Englisch korrigiert. Das Galerieraster
+verwendet die Fenstergröße, der Scrollgriff vermeidet unnötige Neuberechnungen.
+Lint-Warnungen brechen Debug- und Release-Builds ab; begründete Ausnahmen und die
+KSP-Buildkonfiguration stehen in der technischen Referenz.
 
 Die Großansicht verwendet deckende Leisten einschließlich der Android-Systemabstände;
 das Bild läuft bei eingeblendeten Bedienelementen nicht über die Menüleisten hinaus.
@@ -34,7 +39,7 @@ Gesichtsvergrößerung und Sammelaktionen benötigt BearStack ab **1.2.0**. Die 
 ## Entwicklungsstart
 
 `apps/android/` als eigenes Projekt in Android Studio öffnen. JDK 17 oder 21 und
-Android-SDK-Plattform 36 bereitstellen; den SDK-Pfad über `ANDROID_HOME` oder eine
+Android-SDK-Plattform 37 bereitstellen; den SDK-Pfad über `ANDROID_HOME` oder eine
 ignorierte `local.properties` mit `sdk.dir=…` angeben. Den mitgelieferten Gradle
 Wrapper verwenden.
 
