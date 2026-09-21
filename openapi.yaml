@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 1.6.0
+  version: 1.7.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -2412,16 +2412,21 @@ paths:
         excluded directories, ordered by technical path. Display paths use the
         central gallery formatting. Forty folders per page, at most eight active
         face IDs per folder. Protected directories are omitted. Cache-Control private, no-store.
+        Since 1.7.0, format=fragment returns only the server-rendered folder list and
+        pagination, without scripts. If the current last page is empty, it returns
+        page one. If the person has no visible folders or no longer exists, the
+        fragment is a generic empty view with status 200 and no person details;
+        the full HTML and JSON views retain their 404 behavior.
       parameters:
         - name: page
           in: query
           schema: {type: integer, minimum: 1, maximum: 1000000, default: 1}
         - name: format
           in: query
-          schema: {type: string, enum: [json]}
+          schema: {type: string, enum: [json, fragment]}
       responses:
         '200':
-          description: HTML view or folder page.
+          description: Full HTML view, HTML fragment or JSON folder page.
           content:
             text/html:
               schema: {type: string}
@@ -2453,6 +2458,12 @@ paths:
         including reanalysis and identity merges. Compatible merges inherit exclusions;
         conflicting merges fail atomically. Original fingerprints are checked before
         changing faces. Cache-Control private, no-store.
+        Since 1.7.0, Accept application/json returns status 200 with ok=true after
+        commit, without redirecting. Other requests retain the 303 redirect.
+        The WebUI refreshes only the folder fragment and its revisions, remains
+        on the current page when possible, and never automatically repeats a write.
+        After a conflict, lost response or failed refresh, read the current view
+        before explicitly choosing another action. Errors retain their HTML bodies.
       requestBody:
         required: true
         content:
@@ -2467,6 +2478,15 @@ paths:
                 target: {type: integer, format: int64, minimum: 0}
                 name: {type: string, maxLength: 200}
       responses:
+        '200':
+          description: Committed action, when Accept requests application/json.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok: {type: boolean, enum: [true]}
         '303':
           description: Redirect to the refreshed folder view after the committed action.
           headers:

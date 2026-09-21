@@ -73,21 +73,33 @@
     bars.forEach(function (bar) { observer.observe(bar); });
   }
   reserveSelectionSpace();
-  document.querySelectorAll(".people-menu, .people-display-menu, .group-photo-help, .person-detail-more").forEach(function (menu) {
-    function fitMenu() {
-      if (!menu.open) return;
-      var panel = menu.querySelector(":scope > .people-menu-panel, :scope > .people-display-options, :scope > .group-photo-help-content, :scope > .person-detail-menu");
-      if (!panel) return;
-      panel.style.transform = "";
-      var box = panel.getBoundingClientRect(), edge = document.documentElement.clientWidth - 16;
-      var shift = box.left < 16 ? 16 - box.left : box.right > edge ? edge - box.right : 0;
-      panel.style.transform = "translateX(" + shift + "px)";
+  // Delegate menu events so replaced folder rows work without retaining old DOM.
+  var menuSelector = ".people-menu, .people-display-menu, .group-photo-help, .person-detail-more";
+  function fitMenu(menu) {
+    if (!menu.open) return;
+    var panel = menu.querySelector(":scope > .people-menu-panel, :scope > .people-display-options, :scope > .group-photo-help-content, :scope > .person-detail-menu");
+    if (!panel) return;
+    panel.style.transform = "";
+    var box = panel.getBoundingClientRect(), edge = document.documentElement.clientWidth - 16;
+    var shift = box.left < 16 ? 16 - box.left : box.right > edge ? edge - box.right : 0;
+    panel.style.transform = "translateX(" + shift + "px)";
+  }
+  document.addEventListener("toggle", function (event) {
+    if (event.target.matches(menuSelector)) fitMenu(event.target);
+  }, true);
+  window.addEventListener("resize", function () {
+    document.querySelectorAll(menuSelector).forEach(fitMenu);
+  });
+  document.addEventListener("keydown", function (event) {
+    var menu = event.target.closest(menuSelector);
+    if (menu && menu.open && event.key === "Escape" && !event.defaultPrevented) {
+      menu.open = false; menu.querySelector("summary").focus(); event.preventDefault(); event.stopPropagation();
     }
-    menu.addEventListener("toggle", fitMenu);
-    window.addEventListener("resize", fitMenu);
-    menu.addEventListener("keydown", function (event) {
-      if (event.key === "Escape" && !event.defaultPrevented) { menu.open = false; menu.querySelector("summary").focus(); event.preventDefault(); event.stopPropagation(); }
+  }, true);
+  document.addEventListener("click", function (event) {
+    if (event.target.closest("dialog")) return;
+    document.querySelectorAll(menuSelector).forEach(function (menu) {
+      if (menu.open && !menu.contains(event.target)) menu.open = false;
     });
-    document.addEventListener("click", function (event) { if (menu.open && !menu.contains(event.target) && !event.target.closest("dialog")) menu.open = false; });
   });
 }());

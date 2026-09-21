@@ -1,6 +1,10 @@
 # BearStack
 
-Aktuelle Version: **1.6.0** · Android-App: **0.22.2**.
+Aktuelle Version: **1.7.0** · Android-App: **0.22.2**.
+
+**BearStack 1.7.0:** Aktionen unter **Ordner-Pfade prüfen** aktualisieren die Ordnerliste ohne Seitenreload. Zuordnen, Unbenannt setzen, Ignorieren, Sperren und Freigeben übernehmen dabei die aktuellen Revisionen. Bei Verbindungsproblemen erlaubt **Ansicht aktualisieren** einen neuen Leseversuch ohne Wiederholung der Schreibaktion.
+
+**BearStack 1.6.1:** Das Menü **Weitere Gesichtsaktionen** bleibt innerhalb der Foto-Infoleiste vollständig sichtbar und überlagert die darunterliegenden Bedienelemente.
 
 **BearStack 1.6.0:** Für **Ähnliche Gruppen** werden unbenannte Gesichter zuerst mit benannten Personen abgeglichen. Nur ohne passenden benannten Treffer entstehen Vorschläge zu unbenannten Gruppen. Web und Android zeigen vorhandene Paare mit benannten Personen zuerst. [Details](_site-src/docs/fotos-technik.md#zuordnungen-verbessern).
 

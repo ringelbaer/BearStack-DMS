@@ -42,6 +42,10 @@ func (s *Server) handlePersonFolder(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+		if wantsJSON(r) {
+			_ = writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+			return
+		}
 		destination := "/photos/people/" + strconv.FormatInt(id, 10) + "/folder"
 		if _, err := s.photos.PersonFolders(r.Context(), id, 1); errors.Is(err, sql.ErrNoRows) {
 			destination = "/photos/people"
@@ -50,6 +54,20 @@ func (s *Server) handlePersonFolder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result, err := s.photos.PersonFolders(r.Context(), id, boundedInt(r.URL.Query().Get("page"), 1, 1, 1000000))
+	if r.URL.Query().Get("format") == "fragment" {
+		if err == nil && result.Page > 1 && len(result.Folders) == 0 && !result.HasNext {
+			result, err = s.photos.PersonFolders(r.Context(), id, 1)
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			result, err = photos.PersonFolderPage{PersonID: id, Page: 1}, nil
+		}
+		if err != nil {
+			s.faceError(w, r, err)
+			return
+		}
+		s.renderPartial(w, r, "person_folder_content", PageData{PersonFolders: result})
+		return
+	}
 	if err != nil {
 		s.faceError(w, r, err)
 		return

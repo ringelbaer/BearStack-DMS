@@ -108,8 +108,49 @@ test("person folders format paths, preview eight faces and apply whole-folder ac
     }
     await folders.nth(1).getByRole("button", { name: /Gesichter zuordnen/ }).click();
     await assignment.getByRole("combobox").fill("Grace");
+    await page.evaluate(() => { window.folderDocumentMarker = "original"; });
+    let writes = 0, releaseWrite;
+    const pendingWrite = new Promise(resolve => { releaseWrite = resolve; });
+    await page.route(baseURL + `/photos/people/${person.id}/folder`, async route => {
+      writes++;
+      await route.fetch();
+      await pendingWrite;
+      await route.abort();
+    }, {times:1});
     await assignment.getByRole("button", { name: /Gesichter zuordnen/ }).click();
+    await expect.poll(() => writes).toBe(1);
+    await assignment.locator("form").evaluate(form => form.requestSubmit());
+    releaseWrite();
+    await expect(assignment.locator("[data-person-dialog-status]")).toContainText("nicht bestätigt");
+    await expect(assignment.locator("[data-person-submit]")).toBeDisabled();
+    await assignment.getByRole("button", {name:"Abbrechen", exact:true}).click();
+    await expect(folders).toHaveCount(3);
+    await page.route(/\/folder\?.*format=fragment/, route => route.fulfill({status:503, body:"unavailable"}), {times:1});
+    await page.getByRole("button", {name:"Ansicht aktualisieren", exact:true}).click();
+    await expect(page.locator("[data-folder-status]")).toContainText("konnte nicht aktualisiert");
+    await expect(folders).toHaveCount(3);
+    await expect(folders.nth(0).getByRole("button", {name:/Gesichter zuordnen/})).toBeDisabled();
+    // A stalled read times out without replacing the old list or repeating POST.
+    await page.clock.install();
+    let releaseRead, readStarted = false;
+    const delayedRead = new Promise(resolve => { releaseRead = resolve; });
+    await page.route(/\/folder\?.*format=fragment/, async route => {
+      readStarted = true;
+      await delayedRead;
+      await route.fulfill({status:200, body:"late response"}).catch(() => {});
+    }, {times:1});
+    await page.getByRole("button", {name:"Ansicht aktualisieren", exact:true}).click();
+    await expect.poll(() => readStarted).toBe(true);
+    await page.clock.fastForward(30001);
+    await expect(page.locator("[data-folder-status]")).toContainText("konnte nicht aktualisiert");
+    releaseRead();
+    await expect(folders).toHaveCount(3);
+    await page.getByRole("button", {name:"Ansicht aktualisieren", exact:true}).click();
     await expect(folders).toHaveCount(2);
+    expect(writes).toBe(1);
+    expect(await page.evaluate(() => window.folderDocumentMarker)).toBe("original");
+    await expect(folders.nth(0).locator("h2")).toHaveText("Fotos");
+    await expect(folders.nth(1).locator("h2")).toHaveText("Fotos / 02.01.2024 · Family Trip / Nested Folder");
     let people = (await (await context.request.get(baseURL + "/photos/people?format=json")).json()).people;
     const grace = people.find(p => p.name === "Grace");
     expect(grace.count).toBe(9);
@@ -120,17 +161,38 @@ test("person folders format paths, preview eight faces and apply whole-folder ac
     await assignment.getByRole("option", { name: /„Ada“ als Ziel wählen/ }).click();
     await expect(assignment).toBeVisible();
     await assignment.getByRole("button", { name: "Gesichter zuordnen", exact: true }).click();
-    await expect(page).toHaveURL(/\/photos\/people\?/);
+    await expect(folders).toHaveCount(0);
+    await expect(page).toHaveURL(baseURL + `/photos/people/${grace.id}/folder`);
+    await expect(page.getByRole("link", {name:"Zur Personenübersicht", exact:true})).toBeVisible();
     await page.goto(baseURL + `/photos/people/${person.id}/folder`);
     await expect(folders).toHaveCount(3);
+    await page.evaluate(() => { window.folderDocumentMarker = "actions"; });
+    // A real concurrent rename invalidates every old folder revision.
+    expect((await context.request.post(baseURL + `/photos/people/${person.id}/rename`, {
+      form:{name:"Ada aktualisiert"}, headers:{Origin:baseURL}
+    })).ok()).toBe(true);
+    await folders.nth(1).getByText("Weitere Ordneraktionen", {exact:true}).click();
+    await folders.nth(1).getByRole("button", {name:"Pfad ausschließen und Zuordnungen auflösen", exact:true}).click();
+    await page.locator("[data-app-dialog-confirm]").click();
+    await expect(page.locator("[data-folder-status]")).toContainText("inzwischen geändert");
+    await expect(folders).toHaveCount(3);
+    await page.getByRole("button", {name:"Ansicht aktualisieren", exact:true}).click();
+    await expect(page.locator("[data-folder-refresh]")).toBeHidden();
+    await expect(page.locator("[data-folder-heading]")).toHaveText("Ordner: Ada aktualisiert");
     await folders.nth(1).getByText("Weitere Ordneraktionen", {exact:true}).click();
     await folders.nth(1).getByRole("button", { name: "Pfad ausschließen und Zuordnungen auflösen", exact: true }).click();
     await page.locator("[data-app-dialog-confirm]").click();
     await expect(folders.nth(1).getByRole("button", { name: "Pfad wieder freigeben" })).toBeVisible();
     await expect(folders.nth(1).locator("img")).toHaveCount(0);
-    await page.reload();
+    expect(await page.evaluate(() => window.folderDocumentMarker)).toBe("actions");
+    await expect(folders.nth(1).locator("h2")).toHaveText("Fotos / 02.01.2024 · Family Trip");
+    await page.route(/\/folder\?.*format=fragment/, route => route.fulfill({status:503, body:"unavailable"}), {times:1});
     await folders.nth(1).getByRole("button", { name: "Pfad wieder freigeben" }).click();
     await page.locator("[data-app-dialog-confirm]").click();
+    await expect(page.locator("[data-folder-status]")).toContainText("Ordneraktion gespeichert, aber");
+    await expect(folders).toHaveCount(3);
+    await expect(folders.nth(1).getByRole("button", {name:"Pfad wieder freigeben"})).toBeDisabled();
+    await page.getByRole("button", {name:"Ansicht aktualisieren", exact:true}).click();
     await expect(folders).toHaveCount(2);
     await folders.nth(1).getByText("Weitere Ordneraktionen",{exact:true}).click();
     await folders.nth(1).getByRole("button", { name: /Gesichter auf unbenannt setzen/ }).click();
@@ -139,7 +201,9 @@ test("person folders format paths, preview eight faces and apply whole-folder ac
     await folders.getByText("Weitere Ordneraktionen",{exact:true}).click();
     await folders.getByRole("button", { name: /Gesichter ignorieren/ }).click();
     await page.locator("[data-app-dialog-confirm]").click();
-    await expect(page).toHaveURL(/\/photos\/people\?/);
+    await expect(folders).toHaveCount(0);
+    await expect(page).toHaveURL(baseURL + `/photos/people/${person.id}/folder`);
+    expect(await page.evaluate(() => window.folderDocumentMarker)).toBe("actions");
     expect(errors).toEqual([]);
   } finally { await context.close(); }
 });
@@ -205,5 +269,28 @@ test("folder pagination keeps spaced controls on first, middle and last pages", 
     }
     await navigation.getByRole("link", { name: "Zurück", exact: true }).click();
     await expect(navigation.locator('[aria-current="page"]')).toHaveText("Seite 2");
+    const folders = page.locator("[data-person-folder]");
+    const nextPage = await (await context.request.get(baseURL + `/photos/people/${person.id}/folder?format=json&page=3`)).json();
+    const replacement = nextPage.folders[0];
+    await page.evaluate(() => { window.folderDocumentMarker = "page two"; });
+    await folders.first().getByText("Weitere Ordneraktionen", {exact:true}).click();
+    await folders.first().getByRole("button", {name:/Gesichter ignorieren/}).click();
+    await page.locator("[data-app-dialog-confirm]").click();
+    await expect(folders.last().locator("h2")).toHaveText(replacement.display_path);
+    await expect(folders).toHaveCount(40);
+    await expect(navigation.locator('[aria-current="page"]')).toHaveText("Seite 2");
+    expect(await page.evaluate(() => window.folderDocumentMarker)).toBe("page two");
+    // Newly inserted rows use delegated actions and server-formatted dialog paths.
+    const more = folders.last().locator(".people-menu");
+    await more.locator("summary").click();
+    await more.locator("summary").press("Escape");
+    await expect(more).not.toHaveAttribute("open", "");
+    await expect(more.locator("summary")).toBeFocused();
+    await more.locator("summary").click();
+    await page.locator("h1").click();
+    await expect(more).not.toHaveAttribute("open", "");
+    await folders.last().getByRole("button", {name:/Gesichter zuordnen/}).click();
+    await expect(page.locator("[data-folder-dialog-path]")).toHaveText(replacement.display_path);
+    await page.getByRole("button", {name:"Abbrechen", exact:true}).click();
   } finally { await context.close(); }
 });

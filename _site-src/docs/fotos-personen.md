@@ -201,7 +201,9 @@ Erkennung. Die Rückmeldung nennt die Anzahl wiederhergestellter Gesichter.
 
 Ein Foto öffnen und die Info-Seitenleiste anzeigen. Mit Bearbeitungsrecht bietet
 die Gesichtsleiste diese Aktionen. **Weitere Gesichtsaktionen** bündelt die seltenen
-Aktionen zur Neuanalyse, Wiederherstellung und Aktualisierung:
+Aktionen zur Neuanalyse, Wiederherstellung und Aktualisierung. Das Menü bleibt
+innerhalb der Info-Seitenleiste und liegt über den darunterliegenden
+Bedienelementen; bei wenig Höhe lässt sich die Info-Seitenleiste scrollen:
 
 | Aktion | Wirkung |
 | --- | --- |
@@ -397,8 +399,20 @@ Person im jeweiligen Ordner bereit, auch für Gesichter außerhalb der Vorschau:
 - **Pfad wieder freigeben**: Sperre aufheben; keine automatische Rückzuweisung.
 
 Unterordner sind eigenständige Pfade. Ausgeschlossene Pfade bleiben in dieser
-Ansicht sichtbar. Sammelaktionen sind atomar; bei zwischenzeitlichen Änderungen
-muss die Ansicht neu geladen werden. Manuelle und automatische Zuordnungen sowie
+Ansicht sichtbar. Ab **1.7.0** laufen diese Aktionen im Hintergrund, ohne die
+Seite neu zu laden. Die Ordnerliste, Vorschauen und Revisionen werden gemeinsam
+aktualisiert; die aktuelle Seite bleibt nach Möglichkeit erhalten. Entfällt die
+letzte Seite, erscheint Seite 1. Ohne verbleibende Ordner bleibt eine leere Ansicht
+mit Rückweg zur Personenübersicht stehen.
+
+Sammelaktionen sind atomar. Bei zwischenzeitlichen Änderungen, einer verlorenen
+Antwort oder fehlgeschlagenem Nachladen bleibt die bisherige Liste sichtbar.
+**Ansicht aktualisieren** liest den aktuellen Stand, ohne die Schreibaktion zu
+wiederholen. Danach eine gewünschte weitere Aktion ausdrücklich neu auswählen.
+Ohne JavaScript behalten die übrigen Ordneraktionen ihre Formularweiterleitung;
+**Gesichter zuordnen …** benötigt JavaScript.
+
+Manuelle und automatische Zuordnungen sowie
 Neuanalysen beachten die Sperren. Personenzusammenführungen übernehmen Sperren;
 Konflikte mit vorhandenen Gesichtern verhindern die gesamte Zusammenführung.
 

@@ -4,6 +4,20 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.7.0
+
+- Personen-Ordneransicht: Zuordnen, Unbenannt setzen, Ignorieren, Ausschließen und Freigeben funktionieren ohne vollständigen Seitenreload. Nur die serverseitig formatierte Ordnerliste mit aktuellen Revisionen, Vorschauen und Seitennavigation wird erneuert; entfallene Personen zeigen eine leere Ansicht mit Rückweg.
+- Hintergrundanfragen haben ein Zeitlimit. Während einer Aktion werden weitere Schreibzugriffe gesperrt; Konflikte, verlorene Antworten und fehlgeschlagenes Nachladen lassen die bisherige Ansicht stehen und bieten **Ansicht aktualisieren**. Kein automatisches Wiederholen einer Schreibaktion.
+- Menüs reagieren auch in neu eingefügten Ordnerzeilen auf Escape und Außenklicks; gemeinsame Ereignisbehandlung vermeidet zurückgehaltene alte DOM-Elemente. Pro Aktualisierung bleiben höchstens 40 Ordner mit je acht Vorschauen geladen.
+- MINOR für die neue Bedienung und kompatible API-Erweiterungen: GET `format=fragment`, POST mit `Accept: application/json` und Erfolg `{ok:true}`. Formulare ohne JSON-Anforderung behalten ihre Weiterleitung. Android bleibt bei 0.22.2; README, Website und OpenAPI aktualisiert.
+- Validiert: vollständige Foto- und Server-Go-Tests, gezielte Formular-/OpenAPI-Vertragstests und elf Browserabläufe erfolgreich. Abgedeckt sind alle fünf Aktionen ohne Dokumentwechsel, echte Revisionskonflikte, verlorene Schreibantworten, fehlgeschlagenes und zeitlich abgebrochenes Nachladen, leere Ansichten, 40er-Seiten mit neuen Zeilen, zentrale Pfadformatierung und Tastaturbedienung dynamischer Menüs. Website erfolgreich gebaut.
+
+### BearStack 1.6.1
+
+- Fotogroßansicht: **Weitere Gesichtsaktionen** wird an der gesamten Aktionsleiste ausgerichtet und auf deren Breite begrenzt. Das Menü wird links nicht mehr abgeschnitten; die Aktionsleiste liegt über den übrigen Info-Bedienelementen.
+- PATCH für die Layoutkorrektur; Android bleibt bei 0.22.2. README, Website und OpenAPI-Version aktualisiert.
+- Validiert: Abschneiden vor der Korrektur bei 390 px reproduziert; Menügrenzen und Trefferprüfung der Bedienelemente bei 320, 390, 1024 und 1440 px erfolgreich. Neun Foto-Info-Browsertests nach Anpassung zweier Abläufe zum Schließen des überlagernden Menüs erfolgreich; OpenAPI-Vertragstests und Website-Build bestanden.
+
 ### BearStack 1.6.0
 
 - **Ähnliche Gruppen**: unbenannte Gesichter erhalten zuerst bis zu drei passende benannte Personen als Vorschläge. Nur ohne zulässigen benannten Treffer folgen unbenannte Gruppen. Mindestähnlichkeit und Mindestabstand gelten weiter; der Abstand wird innerhalb des jeweiligen Bereichs geprüft.

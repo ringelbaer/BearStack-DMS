@@ -585,6 +585,7 @@ for (const failure of ["lost response", "refresh failed"]) {
       expect(updated).toHaveLength(1);
       expect(updated[0]).toMatchObject({ id: face.id, name: "", ignored: false });
       expect(updated[0].person_id).not.toBe(face.person_id);
+      await lightbox.getByLabel("Weitere Gesichtsaktionen", {exact:true}).click();
       await lightbox.locator("[data-person-edit]").click();
       await expect(unname).toBeHidden();
       expect(writes).toBe(1);
@@ -643,6 +644,29 @@ test("recognize one photo and name faces inside its info panel", async ({ browse
   if (!await lightbox.locator(".photo-face-more").evaluate(el=>el.open)) await lightbox.getByLabel("Weitere Gesichtsaktionen", {exact:true}).click();
   await analyze.click();
   await expect(lightbox.locator(".photo-info-face")).toHaveCount(1);
+  for (const width of [320, 390, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 844 });
+    const more = lightbox.locator(".photo-face-more");
+    const menu = more.locator(".people-menu-panel");
+    await actions.scrollIntoViewIfNeeded();
+    if (!await more.evaluate(element => element.open)) await more.locator("summary").click();
+    const panelBox = await lightbox.locator(".photo-info-panel").boundingBox();
+    const menuBox = await menu.boundingBox();
+    expect(menuBox.x, `menu left at ${width}px`).toBeGreaterThanOrEqual(panelBox.x);
+    expect(menuBox.x + menuBox.width, `menu right at ${width}px`).toBeLessThanOrEqual(panelBox.x + panelBox.width);
+    for (const button of await menu.locator("button").all()) {
+      await button.scrollIntoViewIfNeeded();
+      expect(await button.evaluate(element => {
+        const box = element.getBoundingClientRect();
+        return element.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+      }), `menu button is unobstructed at ${width}px`).toBe(true);
+    }
+    if (width === 1440) await lightbox.locator(".photo-info-panel").screenshot({path:"/tmp/bearstack-photo-face-menu.png"});
+    await more.locator("summary").press("Escape");
+    await expect(more).not.toHaveAttribute("open", "");
+    await expect(lightbox).toBeVisible();
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await lightbox.locator("[data-person-edit]").click();
   const modal = page.locator("[data-person-dialog]");
   await expect(modal).toBeVisible();

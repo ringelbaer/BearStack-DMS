@@ -37,10 +37,13 @@ func TestPersonFoldersHTTPPermissionsRevisionAndForms(t *testing.T) {
 	for _, tc := range []struct {
 		user string
 		code int
-	}{{"", 401}, {"reader", 403}, {"editor", 303}} {
+	}{{"", 401}, {"reader", 403}, {"editor", 200}} {
 		w := faceRequest(s, "POST", endpoint, tc.user, form)
 		if w.Code != tc.code {
 			t.Fatalf("%s %d %s", tc.user, w.Code, w.Body.String())
+		}
+		if tc.user == "editor" && (!strings.Contains(w.Body.String(), `"ok":true`) || w.Header().Get("Location") != "") {
+			t.Fatalf("JSON action redirected: %s", w.Body.String())
 		}
 	}
 	if w := faceRequest(s, "POST", endpoint, "editor", form); w.Code != 409 {
@@ -63,6 +66,35 @@ func TestPersonFoldersHTTPPermissionsRevisionAndForms(t *testing.T) {
 	other, err := s.photos.Face(context.Background(), group.Faces[1].ID)
 	if err != nil || other.PersonID != group.Faces[1].PersonID {
 		t.Fatalf("unrelated face: %+v %v", other, err)
+	}
+	for _, user := range []string{"reader", "editor"} {
+		w = labelRequest(s, "GET", endpoint+"?format=fragment&page=9", user, "")
+		body := w.Body.String()
+		if w.Code != 200 || !strings.Contains(body, `data-person-folder-content data-page="1"`) ||
+			!strings.Contains(body, "<h2>Fotos</h2>") || strings.Contains(body, "<script") ||
+			(strings.Contains(body, "data-person-folder-form") != (user == "editor")) {
+			t.Fatalf("fragment for %s: %d %s", user, w.Code, body)
+		}
+	}
+	// Non-JavaScript forms retain the redirect contract.
+	p, err = s.photos.PersonFolders(context.Background(), id, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	form.Set("revision", fmt.Sprint(p.Revision))
+	form.Set("action", "include")
+	r = httptest.NewRequest("POST", endpoint, strings.NewReader(form.Encode()))
+	r.SetBasicAuth("editor", "secret")
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Set("Accept", "text/html")
+	w = httptest.NewRecorder()
+	s.Handler().ServeHTTP(w, r)
+	if w.Code != 303 || !strings.HasPrefix(w.Header().Get("Location"), "/photos/people") {
+		t.Fatalf("HTML form: %d %s", w.Code, w.Body.String())
+	}
+	w = labelRequest(s, "GET", endpoint+"?format=fragment", "editor", "")
+	if w.Code != 200 || !strings.Contains(w.Body.String(), "Keine Ordner vorhanden.") || strings.Contains(w.Body.String(), "data-person-folder-form") {
+		t.Fatalf("empty fragment: %d %s", w.Code, w.Body.String())
 	}
 }
 

@@ -3789,7 +3789,7 @@ body:has(.people-merge:not([hidden])) .people-pagination { padding-bottom: 150px
 
 .photo-face-tools { display: grid; gap: 8px; margin-block: 12px; }
 .photo-face-tools[hidden] { display: none; }
-.photo-face-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.photo-face-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; position: relative; z-index: 8; }
 .photo-face-actions > button { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; min-width: 44px; padding: 0; }
 .photo-face-actions > [aria-pressed="true"] { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
 .photo-face-symbol { display: grid; place-items: center; flex: 0 0 32px; height: 44px; }
@@ -4110,3 +4110,5 @@ body:has(.people-selection-bar:not([hidden])) { padding-bottom: max(240px, calc(
 :is([data-people-overview], .person-detail-grid, .group-photo-faces) :is(.person-ignore-button, [data-detail-ignore-face]) { color: var(--muted); border-color: var(--line); }
 :is([data-people-overview], .person-detail-grid, .group-photo-faces) :is(.person-edit-button, [data-detail-edit-face]) { color: var(--primary); }
 .photo-face-more > summary { width: 44px; height: 44px; padding: 0; }
+.photo-face-more { position: static; }
+.photo-face-more > .people-menu-panel { width: min(320px, 100%); }
