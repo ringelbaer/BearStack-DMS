@@ -21,6 +21,13 @@ import java.io.ByteArrayOutputStream
 @SdkSuppress(minSdkVersion=29)
 class DevicePhotoSharingTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+    @Test fun localFastScrollerJumpsAcrossMetadataPages() = photos { _ ->
+        compose.onNodeWithTag("photo-gallery").performTouchInput {swipeUp()}
+        compose.onNodeWithTag("gallery-fast-scroll").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.SetProgress) {it(.8f)}
+        compose.waitUntil(10_000) {compose.onAllNodesWithContentDescription("share-32.jpg").fetchSemanticsNodes().isNotEmpty()}
+        compose.onNodeWithContentDescription("share-32.jpg").performClick()
+        compose.onNodeWithText("128 von 160").assertIsDisplayed()
+    }
     @SdkSuppress(minSdkVersion=30)
     @Test fun localMultiSelectionRequiresConfirmationAndSystemApproval() = photos { uris ->
         compose.onNodeWithContentDescription("share-159.jpg").performTouchInput {longClick()}

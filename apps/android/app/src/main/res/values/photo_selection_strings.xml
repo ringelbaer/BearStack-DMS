@@ -1,4 +1,5 @@
 <resources>
+    <string name="photos_fast_scroll">Schnell durch die Liste scrollen</string>
     <string name="photos_selection_start">Mehrere Medien auswählen</string>
     <string name="photos_selection_close">Auswahl beenden</string>
     <string name="photos_selection_count">%1$d / %2$d ausgewählt</string>

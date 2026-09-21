@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
 import coil.ImageLoader
@@ -20,6 +22,36 @@ import java.io.IOException
 
 class GalleryPagingTest {
     @get:Rule val compose=createComposeRule()
+    @Test fun fastScrollerSkipsPagesInAlbumsAndStaysAbsentFromThePhotoStream()=screen {controller,api ->
+        compose.onNodeWithTag("photo-gallery").performTouchInput {swipeUp()}
+        compose.onNodeWithTag("gallery-fast-scroll").assertDoesNotExist()
+        compose.runOnUiThread {controller.open(PhotoQuery(path="Album"),tab=1)}
+        compose.waitUntil(10_000) {!controller.state.value.loading}
+        compose.onNodeWithTag("photo-gallery").performTouchInput {swipeUp()}
+        compose.onNodeWithTag("gallery-fast-scroll").assertIsDisplayed()
+            .performSemanticsAction(SemanticsActions.SetProgress) {it(.85f)}
+        compose.waitUntil(10_000) {controller.state.value.mediaPages.firstPage==5}
+        compose.onNodeWithContentDescription("image-407").assertIsDisplayed()
+        assertFalse(api.requests.any {it.second in 2..4})
+        compose.mainClock.advanceTimeBy(2000)
+        compose.onNodeWithTag("gallery-fast-scroll").assertDoesNotExist()
+    }
+    @Test fun draggingTheGripSeeksAndFolderListsAlsoReachTheirEnd()=screen {controller,_ ->
+        compose.runOnUiThread {controller.open(PhotoQuery(path="Album"),tab=1)}
+        compose.waitUntil(10_000) {!controller.state.value.loading}
+        compose.onNodeWithTag("photo-gallery").performTouchInput {swipeUp()}
+        compose.onNodeWithTag("gallery-fast-scroll").performTouchInput {
+            down(center);moveBy(Offset(0f,500f),delayMillis=150);up()
+        }
+        compose.waitUntil(10_000) {controller.state.value.mediaPages.firstPage>1}
+        assertTrue(controller.state.value.media.size<=288)
+        compose.runOnUiThread {controller.open(PhotoQuery(),tab=1)}
+        compose.waitUntil(10_000) {!controller.state.value.loading}
+        compose.onNodeWithTag("photo-gallery").performTouchInput {swipeUp()}
+        compose.onNodeWithTag("gallery-fast-scroll").performSemanticsAction(SemanticsActions.SetProgress) {it(1f)}
+        compose.waitUntil(10_000) {controller.state.value.folderPages.lastPage==5}
+        compose.onNodeWithText("Folder 119").assertIsDisplayed()
+    }
     private val session=PhotoSession("paging",true,240,240,1280,2048,3,3)
     private fun photo(index: Int)=Photo("image-$index","image-$index","image","image/jpeg","1",
         "2026-09-09T10:00:00Z",null,100,80,80)
@@ -231,7 +263,10 @@ class GalleryPagingTest {
         compose.onNodeWithContentDescription("image-95").assertIsDisplayed()
         assertEquals(96,controller.state.value.media.size)
         api.failPage=0
-        compose.onNodeWithText("Erneut versuchen").performScrollTo().assertIsDisplayed().performClick()
+        // Align the error row above the floating navigation, which overlays the
+        // bottom of the grid and can otherwise receive a coordinate-based tap.
+        scroll("error-media")
+        compose.onNodeWithText("Erneut versuchen").assertIsDisplayed().performClick()
         compose.waitUntil(10_000) {controller.state.value.mediaPages.lastPage==2}
         compose.onNodeWithContentDescription("image-95").assertIsDisplayed()
         assertEquals(listOf(1,2,2),api.requests.map {it.second})

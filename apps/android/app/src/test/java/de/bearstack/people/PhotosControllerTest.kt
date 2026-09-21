@@ -11,6 +11,52 @@ import org.junit.Test
 class PhotosControllerTest {
     private val session=PhotoSession("scope",false,320,320,1280,2048,5,8)
     private fun photo(path: String)=Photo(path,path,"image","image/jpeg","1","2026-09-09T10:00:00Z",null,10,100,100)
+    @Test fun openingAVisiblePhotoCancelsAnOutstandingSeek() = runTest {
+        val gate=CompletableDeferred<Unit>()
+        val fake=Fake().apply {handler={q,p,_ ->
+            if(p==2) withContext(NonCancellable) {gate.await()}
+            page(q,p,List(96) {photo("${(p-1)*96+it}")},true).copy(total=480)
+        }}
+        val controller=PhotosController(this,fake,session);runCurrent()
+        controller.seekGallery(150);runCurrent()
+        controller.select("0")
+        gate.complete(Unit);runCurrent()
+        assertEquals("0",controller.state.value.selected)
+        assertEquals(1,controller.state.value.mediaPages.firstPage)
+        assertFalse(controller.state.value.seekLoading)
+        controller.close()
+    }
+    @Test fun fastSeekLoadsOnlyTheTargetPageAndPreservesSelectionOnFailure() = runTest {
+        val fake=Fake().apply {handler={q,p,_ ->page(q,p,List(96) {photo("${(p-1)*96+it}")},true).copy(total=1_000_000)}}
+        val controller=PhotosController(this,fake,session)
+        runCurrent();controller.toggleSelection(controller.state.value.media.first())
+        controller.seekGallery(900_000);runCurrent()
+        assertEquals(listOf(1,9376),fake.requests.map {it.second})
+        assertEquals(96,controller.state.value.media.size)
+        assertEquals("photo:900000",controller.state.value.scrollToKey)
+        assertEquals(setOf("0"),controller.state.value.selection.keys)
+        val before=controller.state.value.media
+        fake.handler={_,_,_ ->throw java.io.IOException("offline")}
+        controller.seekGallery(50_000);runCurrent()
+        assertEquals(before,controller.state.value.media)
+        assertFalse(controller.state.value.seekLoading)
+        assertNotNull(controller.state.value.error)
+        controller.close()
+    }
+    @Test fun newerSeekSupersedesAnUncooperativeOldResponse() = runTest {
+        val gate=CompletableDeferred<Unit>()
+        val fake=Fake().apply {handler={q,p,_ ->
+            if(p==10) withContext(NonCancellable) {gate.await()}
+            page(q,p,List(96) {photo("${(p-1)*96+it}")},true).copy(total=10_000)
+        }}
+        val controller=PhotosController(this,fake,session);runCurrent()
+        controller.seekGallery(900);runCurrent()
+        controller.seekGallery(250);runCurrent()
+        gate.complete(Unit);runCurrent()
+        assertEquals("photo:250",controller.state.value.scrollToKey)
+        assertEquals(3,controller.state.value.mediaPages.firstPage)
+        controller.close()
+    }
     @Test fun selectionSurvivesPageEvictionIsBoundedAndClearsOnNavigation() = runTest {
         val fake=Fake().apply {handler={q,p,_ -> page(q,p,List(96) {photo("${(p-1)*96+it}")},p<5).copy(total=480)}}
         val controller=PhotosController(this,fake,session)

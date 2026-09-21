@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.4.0 / Android 0.22.0
+
+- Ziehbarer Scrollgriff am rechten Rand begrenzter Thumbnail-Listen: erscheint beim Scrollen und verschwindet nach kurzer Ruhe. Für Ordner, Suche, Karten-Auswahl und Gerätefotos; im Fotostream ausgeblendet. Position auch mit TalkBack veränderbar.
+- Direkter Sprung zur Zielseite statt Laden aller Zwischenbilder, begrenzte Abfragerate beim Ziehen, Abbruch überholter Anfragen und Erhalt der vorhandenen Ansicht bei Fehlern. Auswahl und Metadatengrenzen bleiben erhalten.
+- MINOR für die neue Bedienfunktion; Android `versionCode 44`, README, Website und OpenAPI-Version aktualisiert. Keine neuen HTTP-Endpunkte.
+- Validierung: 120 JVM-Tests, elf Emulator-Pagingtests und ein zusätzlicher Sprung über lokale MediaStore-Seiten erfolgreich; Android-Lint ohne Fehler. Geprüft sind eine Million Einträge ohne Zwischenabrufe, veraltete Antworten, Fehlererhalt, Öffnen eines Bildes während eines Sprungs, Ziehen, Ausblenden und die Fotostream-Ausnahme. APK und Website gebaut.
+
 ### BearStack 1.3.0 / Android 0.21.0
 
 - Mehrfachauswahl in den Medienrastern einschließlich Suche, Personenordnern und Karten-Trefferlisten: langes Drücken startet den Modus, kurze Tipps toggeln die Markierung. Bis zu 100 ausgewählte Medien bleiben unabhängig vom begrenzten Seitenfenster erhalten.

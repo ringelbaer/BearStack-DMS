@@ -9,7 +9,7 @@ Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.
 
-Diese Anleitung beschreibt **Android-App 0.21.0**. Beginne mit den
+Diese Anleitung beschreibt **Android-App 0.22.0**. Beginne mit den
 [ersten Schritten](#erste-schritte); die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die [technische Referenz](android-technik.md).
@@ -146,6 +146,15 @@ Dateigröße, Kamera, Aufnahmezeit samt Zeitzone, Bewertung, Personen, Tags,
 Schlagwörter und GPS-Position. Fehlt die Aufnahmezeit, ist die ersatzweise angezeigte
 Änderungszeit entsprechend bezeichnet. Ein Fehler beim Laden lässt sich im
 Informationsblatt über **Erneut versuchen** wiederholen.
+
+### Schnell durch Listen scrollen
+
+Beim Scrollen durch eine begrenzte Thumbnail-Liste erscheint rechts ein Griff mit
+zwei Pfeilen. Ziehe ihn nach oben oder unten, um schnell zu einer anderen Stelle
+zu springen. Nach kurzer Ruhe verschwindet er wieder. Das gilt für Ordner,
+Suchergebnisse, Karten-Treffer und **Dieses Gerät**. Im unbegrenzten Fotostream
+unter **Fotos** wird er nicht angezeigt. TalkBack kann die Position am Griff
+ebenfalls verändern.
 
 ### Mehrfachauswahl
 

@@ -14,7 +14,8 @@ data class PhotosState(val query: PhotoQuery = PhotoQuery(recursive=true), val t
     val frame: Boolean = false, val blogLoading: Boolean = false, val blogError: UiText? = null,
     val scrollToKey: String? = null, val dateLoading: Boolean = false, val jumpDate: String? = null,
     val dateError: UiText? = null, val jumpRevision: Long = 0,
-    val selecting: Boolean = false, val selection: Map<String,Photo> = emptyMap(), val localMutation: Boolean = false) {
+    val selecting: Boolean = false, val selection: Map<String,Photo> = emptyMap(), val localMutation: Boolean = false,
+    val folderTotal: Int = 0, val seekLoading: Boolean = false) {
     val media get() = mediaPages.items
     val folders get() = folderPages.items
     val blogs get() = blogPages.items
@@ -89,7 +90,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
                     selected=if(frame) page.media.firstOrNull()?.path else null,
                     mediaPages=PhotoPages.media().add(1,page.media,page.hasNext),
                     folderPages=PhotoPages.folders().add(1,page.folders,page.folderHasNext),
-                    blogPages=PhotoPages.blogs().add(1,page.blogs,page.blogHasNext),total=page.total,name=page.name.ifBlank {name},parent=page.parent,peoplePath=page.peoplePath)
+                    blogPages=PhotoPages.blogs().add(1,page.blogs,page.blogHasNext),total=page.total,folderTotal=page.folderTotal,name=page.name.ifBlank {name},parent=page.parent,peoplePath=page.peoplePath)
                 }
             } catch(e: CancellationException) { throw e }
             catch(e: Exception) { if(generation==expected) mutable.update { it.copy(loading=false,error=failureText(e)) } }
@@ -141,7 +142,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     fun retryPage(section: String) { state.value.pageErrors[section]?.let {loadSection(section,it.previous)} }
     private fun loadSection(section: String, previous: Boolean, reset: Boolean = false): Job? {
         val current = state.value
-        if(current.loading || current.dateLoading) return null
+        if(current.loading || current.dateLoading || current.seekLoading) return null
         if(section in current.loadingSections) return additional[section]
         val window=current.section(section)
         if(!reset && if(previous) !window.hasPrevious else !window.hasNext) return null
@@ -157,7 +158,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
                 mutable.update {
                     when(section) {
                         "media" -> it.copy(mediaPages=it.mediaPages.add(pageNumber,page.media,page.hasNext,reset,protectedKeys(it,section)),total=page.total)
-                        "folders" -> it.copy(folderPages=it.folderPages.add(pageNumber,page.folders,page.folderHasNext,reset,protectedKeys(it,section)))
+                        "folders" -> it.copy(folderPages=it.folderPages.add(pageNumber,page.folders,page.folderHasNext,reset,protectedKeys(it,section)),folderTotal=page.folderTotal)
                         else -> it.copy(blogPages=it.blogPages.add(pageNumber,page.blogs,page.blogHasNext,reset,protectedKeys(it,section)))
                     }.copy(loadingSections=it.loadingSections-section)
                 }
@@ -194,6 +195,10 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     }
     fun scrollConsumed() { mutable.update {it.copy(scrollToKey=null)} }
     fun select(path: String?) {
+        if(state.value.seekLoading) {
+            generation++;request?.cancel()
+            mutable.update {it.copy(seekLoading=false)}
+        }
         cancelDateJump()
         mutable.update {if(path==null || it.media.any {photo -> photo.path==path}) it.copy(selected=path) else it}
     }
@@ -207,6 +212,43 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
     }
     fun clearSelection() { mutable.update {it.copy(selecting=false,selection=emptyMap())} }
     fun localMutation(active: Boolean) { mutable.update {it.copy(localMutation=active)} }
+    // Jump directly to one bounded page; never fetch all intervening pages.
+    fun seekGallery(position: Int) {
+        val current=state.value
+        if(current.loading || current.selected!=null || current.frame) return
+        val target=gallerySeekTarget(current,position) ?: return
+        val window=current.section(target.section)
+        val offset=target.index-(window.firstPage-1)*window.pageSize
+        val prefix=if(target.section=="media") "photo:" else "folder:"
+        val known=window.keys.getOrNull(offset)?.let {prefix+it}
+        generation++
+        request?.cancel();dateRequest?.cancel();additional.values.forEach {it.cancel()};additional.clear()
+        val expected=generation
+        mutable.update {it.copy(seekLoading=known==null,dateLoading=false,loadingSections=emptySet(),
+            pageErrors=it.pageErrors-target.section,error=null,scrollToKey=known)}
+        if(known!=null) return
+        request=scope.launch {
+            try {
+                val number=target.index/window.pageSize+1
+                val page=service.browse(current.query,number,target.section)
+                validate(page,number)
+                if(generation!=expected) return@launch
+                rememberNames(page)
+                mutable.update {
+                    if(target.section=="media") {
+                        val index=(target.index%window.pageSize).coerceAtMost(page.media.lastIndex)
+                        it.copy(mediaPages=PhotoPages.media().add(number,page.media,page.hasNext),total=page.total,
+                            seekLoading=false,scrollToKey=page.media.getOrNull(index)?.let {photo -> "photo:${photo.path}"})
+                    } else {
+                        val index=(target.index%window.pageSize).coerceAtMost(page.folders.lastIndex)
+                        it.copy(folderPages=PhotoPages.folders().add(number,page.folders,page.folderHasNext),folderTotal=page.folderTotal,
+                            seekLoading=false,scrollToKey=page.folders.getOrNull(index)?.let {folder -> "folder:${folder.path}"})
+                    }
+                }
+            } catch(e: CancellationException) {throw e}
+            catch(e: Exception) {if(generation==expected) mutable.update {it.copy(seekLoading=false,error=failureText(e))}}
+        }
+    }
     suspend fun prefetch(photo: Photo?, images: coil.ImageLoader) {
         val context=application ?: return
         if(photo==null || photo.type!="image") return
@@ -216,7 +258,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
         catch(_: Exception) { /* Optional prefetch never interrupts viewing. */ }
     }
     fun startFrame() {
-        if(state.value.loading || state.value.dateLoading || state.value.frame) return
+        if(state.value.loading || state.value.dateLoading || state.value.seekLoading || state.value.frame) return
         frameReturn=state.value.copy(loadingSections=emptySet(),selected=null) to gridPosition
         open(state.value.query.copy(recursive=true),frame=true)
     }

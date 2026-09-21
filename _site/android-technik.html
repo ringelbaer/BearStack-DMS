@@ -1216,7 +1216,7 @@
 <h1 id="android-app-technik-entwicklung">Android-App – Technik &amp; Entwicklung<a class="headerlink" href="#android-app-technik-entwicklung" title="Permanent link">&para;</a></h1>
 <p>Diese Referenz richtet sich an Betreiber und Entwickler. Die
 <a href="android.html">Android-Anleitung</a> erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App <strong>0.21.0</strong> (<code>versionCode 43</code>), BearStack <strong>1.3.0</strong>.</p>
+bis zur Personenverwaltung. Stand: App <strong>0.22.0</strong> (<code>versionCode 44</code>), BearStack <strong>1.4.0</strong>.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
 <p>Öffne <code>apps/android/</code> in Android Studio als eigenes Projekt. Benötigt werden JDK 17
 oder 21 und das Android-SDK mit Plattform 36. Gradle Wrapper, Android Gradle Plugin
@@ -1451,6 +1451,13 @@ Datumssortierung und unvollständige Sichtbarkeitszähler behalten den bisherige
 <p>Der Datumssprung ermittelt Nachbartage über höchstens vier Bereichsabfragen und
 zählt die Einträge vor der Zielseite. Position und Ziel stammen aus derselben
 Lesetransaktion. Die App lädt danach die Zielseite, keine vollständige Medienliste.</p>
+<p>Der Scrollgriff nutzt die vorhandenen Gesamtzahlen für Ordner und Medien. Ziehen
+erzeugt höchstens alle 100 ms einen Zielabruf; Loslassen übernimmt die letzte
+Position sofort. Ein Sprung fragt direkt die betreffende Seite ab, ohne Seiten
+dazwischen zu laden. Neuere Sprünge brechen ältere Abfragen ab und ignorieren
+verspätete Antworten. Bei Fehlern bleibt das bisherige Seitenfenster erhalten.
+Die bestehenden Grenzen von drei Seiten sowie die Mehrfachauswahl bleiben bestehen.
+Der unbegrenzte Fotostream bietet keinen Scrollgriff.</p>
 <p>Lokale Ordner lesen nur Androids MediaStore. Je Ordner bleiben ein Zähler und
 höchstens zwei Vorschau-IDs erhalten. Abfragen laufen abbrechbar außerhalb des
 UI-Threads; Anbieter ohne native Seitengrenzen werden über Cursor gelesen.
@@ -1659,7 +1666,7 @@ Projektaufbau. Verbindlich sind die Gradle-Dateien im Repository.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.3.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.4.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
 

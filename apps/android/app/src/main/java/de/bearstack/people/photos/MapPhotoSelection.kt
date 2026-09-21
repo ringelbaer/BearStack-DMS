@@ -45,12 +45,12 @@ internal fun MapPhotoSelection(controller: PhotosController,images: ImageLoader,
                     IconButton(onClick=onClose) {Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_back))}
                 })
                 Box(Modifier.fillMaxWidth().height(3.dp)) {
-                    if(state.loading || state.loadingSections.isNotEmpty()) LinearProgressIndicator(Modifier.fillMaxSize())
+                    if(state.loading || state.seekLoading || state.loadingSections.isNotEmpty()) LinearProgressIndicator(Modifier.fillMaxSize())
                 }
                 if(state.error!=null) TextButton(onClick={selection.open(state.query)}) {
                     Text(stringResource(R.string.photos_map_error)+" "+stringResource(R.string.photos_retry))
                 }
-                PhotoGallery(selection,images,state,Modifier.fillMaxWidth().weight(1f))
+                PhotoGallery(selection,images,state,Modifier.fillMaxWidth().weight(1f),fastScroll=true)
             }
         }
         state.selected?.let {path ->PhotoViewer(selection,images,state.media,path)}

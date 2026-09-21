@@ -110,7 +110,7 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
             start=padding.calculateStartPadding(layoutDirection),top=padding.calculateTopPadding(),
             end=padding.calculateEndPadding(layoutDirection))).consumeWindowInsets(padding)) {
             PhotoDateStatus(controller,state)
-            Box(Modifier.fillMaxWidth().height(3.dp)) { if(state.loading || state.loadingSections.isNotEmpty()) LinearProgressIndicator(Modifier.fillMaxSize()) }
+            Box(Modifier.fillMaxWidth().height(3.dp)) { if(state.loading || state.seekLoading || state.loadingSections.isNotEmpty()) LinearProgressIndicator(Modifier.fillMaxSize()) }
             state.error?.let { error ->
                 Surface(color=MaterialTheme.colorScheme.errorContainer) {
                     Row(Modifier.fillMaxWidth().padding(12.dp),verticalAlignment=Alignment.CenterVertically) {

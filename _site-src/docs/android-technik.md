@@ -7,7 +7,7 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.21.0** (`versionCode 43`), BearStack **1.3.0**.
+bis zur Personenverwaltung. Stand: App **0.22.0** (`versionCode 44`), BearStack **1.4.0**.
 
 ## Bauen und installieren
 
@@ -222,6 +222,14 @@ Datumssortierung und unvollständige Sichtbarkeitszähler behalten den bisherige
 Der Datumssprung ermittelt Nachbartage über höchstens vier Bereichsabfragen und
 zählt die Einträge vor der Zielseite. Position und Ziel stammen aus derselben
 Lesetransaktion. Die App lädt danach die Zielseite, keine vollständige Medienliste.
+
+Der Scrollgriff nutzt die vorhandenen Gesamtzahlen für Ordner und Medien. Ziehen
+erzeugt höchstens alle 100 ms einen Zielabruf; Loslassen übernimmt die letzte
+Position sofort. Ein Sprung fragt direkt die betreffende Seite ab, ohne Seiten
+dazwischen zu laden. Neuere Sprünge brechen ältere Abfragen ab und ignorieren
+verspätete Antworten. Bei Fehlern bleibt das bisherige Seitenfenster erhalten.
+Die bestehenden Grenzen von drei Seiten sowie die Mehrfachauswahl bleiben bestehen.
+Der unbegrenzte Fotostream bietet keinen Scrollgriff.
 
 Lokale Ordner lesen nur Androids MediaStore. Je Ordner bleiben ein Zähler und
 höchstens zwei Vorschau-IDs erhalten. Abfragen laufen abbrechbar außerhalb des

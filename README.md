@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.3.0** · Android-App: **0.21.0**.
+Aktuelle Version: **1.4.0** · Android-App: **0.22.0**.
+
+**Android 0.22.0:** Beim Scrollen erscheint rechts ein ziehbarer Scrollgriff für Ordner, Suchergebnisse, Karten-Treffer und lokale Fotos. Er springt direkt zur gewünschten Stelle und blendet sich nach kurzer Ruhe aus. Im unbegrenzten Fotostream bleibt er ausgeblendet.
 
 **Android 0.21.0:** Medien im Raster lange drücken, weitere mit kurzen Tipps markieren. Bis zu 100 Medien lassen sich gemeinsam teilen; Servermedien zusätzlich in einen gewählten Zielordner speichern. Unter **Dieses Gerät** können Bilder nach Bestätigung gelöscht werden, auch einzeln in der Großansicht. Serveroriginale bleiben schreibgeschützt.
 

@@ -252,7 +252,7 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
                 if(access == DevicePhotoAccess.SELECTED) Text(stringResource(R.string.photos_device_selected),
                     Modifier.fillMaxWidth().clickable(onClick=onAccess).padding(12.dp), style=MaterialTheme.typography.bodySmall)
                 Box(Modifier.fillMaxWidth().height(3.dp)) {
-                    if(state.loading || state.loadingSections.isNotEmpty()) LinearProgressIndicator(Modifier.fillMaxSize())
+                    if(state.loading || state.seekLoading || state.loadingSections.isNotEmpty()) LinearProgressIndicator(Modifier.fillMaxSize())
                 }
                 state.error?.let { error ->
                     Row(Modifier.padding(12.dp), verticalAlignment=Alignment.CenterVertically) {

@@ -23,7 +23,8 @@ import de.bearstack.people.text.*
 
 @Composable
 internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, state: PhotosState, modifier: Modifier = Modifier.fillMaxSize(),
-    onDevice: (() -> Unit)? = null, contentPadding: PaddingValues = PaddingValues(bottom=16.dp)) {
+    onDevice: (() -> Unit)? = null, contentPadding: PaddingValues = PaddingValues(bottom=16.dp),
+    fastScroll: Boolean = state.tab!=0 || state.query.path.isNotEmpty() || controller.service is DevicePhotosService) {
     val configuration=LocalConfiguration.current
     val locale=configuration.locales[0]
     val columns=if(configuration.screenWidthDp>=600) 12 else 6
@@ -93,7 +94,8 @@ internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, sta
         }
         Column(modifier) {
         PhotoSelectionActions(controller, state)
-        LazyVerticalGrid(columns=GridCells.Fixed(columns),state=grid,modifier=Modifier.fillMaxWidth().weight(1f).testTag("photo-gallery"),
+        Box(Modifier.fillMaxWidth().weight(1f)) {
+        LazyVerticalGrid(columns=GridCells.Fixed(columns),state=grid,modifier=Modifier.fillMaxSize().testTag("photo-gallery"),
             horizontalArrangement=Arrangement.spacedBy(2.dp),verticalArrangement=Arrangement.spacedBy(2.dp),contentPadding=contentPadding) {
             items(rows,key={it.key},span={GridItemSpan(when(it) {
                 is GalleryRow.Folder -> folderSpan; is GalleryRow.Media -> 2; else -> maxLineSpan
@@ -140,6 +142,10 @@ internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, sta
                     }
                 }
             }
+        }
+        if(fastScroll) GalleryFastScroller(grid,state,contentPadding.calculateBottomPadding()) {
+            pageAnchor=null;controller.seekGallery(it)
+        }
         }
         }
     }

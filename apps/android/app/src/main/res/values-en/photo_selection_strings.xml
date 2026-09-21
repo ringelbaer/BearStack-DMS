@@ -1,4 +1,5 @@
 <resources>
+    <string name="photos_fast_scroll">Fast scroll through the list</string>
     <string name="photos_selection_start">Select multiple media</string>
     <string name="photos_selection_close">Clear selection</string>
     <string name="photos_selection_count">%1$d / %2$d selected</string>
