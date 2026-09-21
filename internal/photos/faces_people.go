@@ -260,16 +260,22 @@ func (l *Library) RenamePerson(ctx context.Context, id int64, name string) error
 // RestoreFaces restores only still-ignored faces; stale submissions cannot move
 // a face that has already been restored or assigned elsewhere.
 func (l *Library) RestoreFaces(ctx context.Context, ids []int64, target int64, name string) error {
-	return l.editFaces(ctx, ids, target, false, name, true)
+	return l.editFaces(ctx, ids, target, false, name, true, false)
+}
+
+// RestoreFacesSeparately restores each ignored face into its own unnamed group.
+// The whole batch is validated and committed atomically.
+func (l *Library) RestoreFacesSeparately(ctx context.Context, ids []int64) error {
+	return l.editFaces(ctx, ids, 0, false, "", true, true)
 }
 
 // EditFaces is atomic: either all selected faces can be edited, or none are changed.
 // target=0 creates a new group; ignore=true marks reversible false detections.
 func (l *Library) EditFaces(ctx context.Context, ids []int64, target int64, ignore bool, name string) error {
-	return l.editFaces(ctx, ids, target, ignore, name, false)
+	return l.editFaces(ctx, ids, target, ignore, name, false, false)
 }
 
-func (l *Library) editFaces(ctx context.Context, ids []int64, target int64, ignore bool, name string, restore bool) error {
+func (l *Library) editFaces(ctx context.Context, ids []int64, target int64, ignore bool, name string, restore, separate bool) error {
 	if len(ids) == 0 || len(ids) > 500 {
 		return errors.New("1 bis 500 Gesichter auswählen")
 	}
@@ -303,7 +309,7 @@ func (l *Library) editFaces(ctx context.Context, ids []int64, target int64, igno
 		return err
 	}
 	defer tx.Rollback()
-	if !ignore {
+	if !ignore && !separate {
 		if target == 0 {
 			res, e := tx.ExecContext(ctx, `INSERT INTO photo_people(name,name_fold,manual_name) VALUES(?,?,1)`, name, searchtext.GermanFold(name))
 			if e != nil {
@@ -319,6 +325,17 @@ func (l *Library) editFaces(ctx context.Context, ids []int64, target int64, igno
 		affected[target] = true
 	}
 	for _, id := range ids {
+		if separate {
+			res, e := tx.ExecContext(ctx, `INSERT INTO photo_people(name,name_fold,manual_name) VALUES('','',1)`)
+			if e != nil {
+				return e
+			}
+			target, err = res.LastInsertId()
+			if err != nil {
+				return err
+			}
+			affected[target] = true
+		}
 		if ignore {
 			_, err = tx.ExecContext(ctx, `UPDATE photo_faces SET ignored=1,manual=1 WHERE id=?`, id)
 		} else {

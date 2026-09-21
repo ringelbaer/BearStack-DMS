@@ -5,8 +5,8 @@
   var modal = dialog.querySelector("form"), opener, submitting = false;
   dialog.classList.add("person-folder-dialog");
   modal.dataset.personFolderSelection = "";
-  dialog.querySelector("#person-dialog-title").textContent = "Gesichter im Ordner neu zuweisen";
-  dialog.querySelector("#overview-person-hint").textContent = "Alle aktiven Gesichter dieser Person im angezeigten Ordner werden neu zugewiesen, ohne Unterordner. Wähle eine vorhandene Person oder gib einen neuen Namen ein.";
+  dialog.querySelector("#person-dialog-title").textContent = "Gesichter im Ordner zuordnen";
+  dialog.querySelector("#overview-person-hint").textContent = "Alle aktiven Gesichter dieser Person im angezeigten Ordner werden zugeordnet, ohne Unterordner. Wähle eine vorhandene Person oder gib einen neuen Namen ein.";
   dialog.querySelectorAll("[data-person-face-match], [data-person-dialog-ignore], [data-person-dialog-unname]").forEach(function (button) { button.hidden = true; });
   var path = document.createElement("p");
   path.dataset.folderDialogPath = "";
@@ -42,9 +42,19 @@
         dialog.showModal();
       });
     }
-    form.addEventListener("submit", function (event) {
-      if (submitting) { event.preventDefault(); return; }
+    var confirmed = false;
+    form.addEventListener("submit", async function (event) {
+      if (confirmed) { confirmed = false; return; }
+      event.preventDefault();
+      if (submitting) return;
+      var action = event.submitter;
+      if (!action) return;
       submitting = true;
+      var folder = form.closest("[data-person-folder]").querySelector("h2").textContent;
+      var message = action.textContent + " in „" + folder + "“? Die Aktion betrifft nur diese Person im exakten Ordner, ohne Unterordner.";
+      if (action.value === "exclude") message += " Auch neue Zuordnungen zu dieser Person werden dort gesperrt.";
+      if (await showAppConfirm(message, "Ordneraktion bestätigen")) { confirmed = true; form.requestSubmit(action); }
+      else submitting = false;
     });
   });
   window.addEventListener("pageshow", function () { submitting = false; });

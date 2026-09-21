@@ -119,7 +119,7 @@
   });
   dialog.querySelectorAll("[data-person-details-close]").forEach(function (button) { button.addEventListener("click", function () { if (!saving) dialog.close(); }); });
   dialog.addEventListener("cancel", function (event) { if (saving) event.preventDefault(); });
-  dialog.addEventListener("close", function () { if (request) request.abort(); request = null; closePickers(dialog); more.querySelector("summary").focus({ preventScroll: true }); });
+  dialog.addEventListener("close", function () { if (request) request.abort(); request = null; closePickers(dialog); root.querySelector("[data-person-details-open]").focus({ preventScroll: true }); });
   reload.addEventListener("click", load);
   dialog.querySelectorAll("[data-person-details-add]").forEach(function (button) {
     button.addEventListener("click", function () { var row = addRow(button.dataset.personDetailsAdd); if (row) row.querySelector("[data-person-search]").focus(); });

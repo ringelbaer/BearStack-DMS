@@ -101,7 +101,7 @@
         if (allowCreate && query && !faceMatch) items.push({ id: 0, name: query, create: true });
         var fragment = document.createDocumentFragment();
         items.forEach(function (person, index) {
-          var key = JSON.stringify(person);
+          var key = JSON.stringify(person) + (options.actionLabel ? options.actionLabel(person) : "");
           var option = previous.get(key);
           if (option) {
             option.id = list.id + "-" + index;
@@ -118,6 +118,7 @@
           var label = document.createElement("span");
           label.textContent = person.create ? "Neu anlegen: „" + person.name + "“" : (person.name || "Unbenannt") + " (#" + person.id + ", " +
             person.count + (person.count === 1 ? " Foto)" : " Fotos)");
+          if (options.actionLabel && !person.create) label.textContent = options.actionLabel(person) + " · " + person.count + (person.count === 1 ? " Foto" : " Fotos");
           if (options.showThumbnails && !person.create && Number.isSafeInteger(person.face_id) && person.face_id > 0) {
             var thumbnail = document.createElement("img");
             thumbnail.className = "person-picker-thumbnail";

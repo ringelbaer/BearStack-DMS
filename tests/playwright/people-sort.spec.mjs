@@ -76,7 +76,7 @@ test("sorting resets the page, persists through details and matches global serve
   await page.locator('.people-pagination a[rel="next"]').click();
   await expect(page.getByRole("combobox", { name: "Sortieren", exact: true })).toHaveValue("date_desc");
   await page.locator("a.person-card").first().click();
-  await page.getByRole("link", { name: "← Alle Personen", exact: true }).click();
+  await page.getByRole("link", { name: "Alle Personen", exact: true }).click();
   await expect(page).toHaveURL(/page=2.*sort=date_desc|sort=date_desc.*page=2/);
   await page.goto(baseURL + "/photos/people");
   await expect(page).toHaveURL(/page=2.*sort=date_desc|sort=date_desc.*page=2/);
@@ -195,7 +195,7 @@ test("favorite portraits appear in overview and naming choices without changing 
   await page.goto(baseURL + "/photos/people?filter=unknown");
   await page.locator(".person-overview-card [data-person-edit]").first().click();
   await dialog.getByRole("combobox").fill("Zoe");
-  await expect(dialog.getByRole("option", { name: /^Zoe/ }).locator("img")).toHaveAttribute("src", `/photos/faces/${favorite}/thumbnail`);
+  await expect(dialog.getByRole("option", { name: /„Zoe“ als Ziel wählen/ }).locator("img")).toHaveAttribute("src", `/photos/faces/${favorite}/thumbnail`);
   await dialog.getByRole("button", { name: "Abbrechen", exact: true }).click();
   await context.close();
 });
@@ -288,7 +288,6 @@ test("named groups can choose, follow and clear existing parents", async ({ brow
     expect(response.ok()).toBe(true);
   }
   await page.goto(`${baseURL}/photos/people/${child.id}`);
-  await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
   await page.getByRole("button",{name:"Stammdaten",exact:true}).click();
   await expect(page.locator("[data-person-details-fields]")).toBeVisible();
   await page.getByRole("combobox",{name:"Mutter",exact:true}).fill("Mutter Beispiel");
@@ -297,8 +296,7 @@ test("named groups can choose, follow and clear existing parents", async ({ brow
   await page.getByRole("option",{name:/^Vater Beispiel/}).click();
   await page.getByRole("button",{name:"Stammdaten speichern",exact:true}).click();
   await expect(page.locator("[data-person-details-dialog]")).not.toBeVisible();
-  await expect(page.locator("[data-detail-status]")).toContainText("Stammdaten gespeichert");
-  await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
+  await expect(page.locator("[data-person-summary]")).toContainText("Mutter Beispiel");
   await page.getByRole("button",{name:"Stammdaten",exact:true}).click();
   await expect(page.locator("[data-person-details-fields]")).toBeVisible();
   await expect(page.getByRole("combobox",{name:"Mutter",exact:true})).toHaveValue(`Mutter Beispiel (#${parents[0].id})`);
@@ -404,7 +402,7 @@ test("person records support multiple relatives, reciprocal marriages, cancellat
   for(let i=0;i<5;i++) expect((await context.request.post(baseURL+`/photos/people/${persons[i].id}/rename`,{form:{name:names[i]},headers:{Origin:baseURL,Accept:"application/json"}})).ok()).toBe(true);
   const endpoint=baseURL+`/photos/people/${persons[0].id}/details`;
   const details=async id=>(await (await context.request.get(baseURL+`/photos/people/${id}/details`)).json());
-  const open=async()=>{await page.getByLabel("Weitere Personenaktionen",{exact:true}).click();await page.getByRole("button",{name:"Stammdaten",exact:true}).click();await expect(page.locator("[data-person-details-fields]")).toBeVisible();};
+  const open=async()=>{await page.getByRole("button",{name:"Stammdaten",exact:true}).click();await expect(page.locator("[data-person-details-fields]")).toBeVisible();};
   const dialog=page.locator("[data-person-details-dialog]");
   const choose=async(row,name)=>{await row.locator("[data-person-search]").fill(name);await row.getByRole("option").filter({hasText:name}).click();};
   try {
@@ -446,7 +444,7 @@ test("person records support multiple relatives, reciprocal marriages, cancellat
     await expect(dialog.locator('[data-relation="marriage"]').first().getByLabel("Scheidungsdatum",{exact:true})).toBeVisible();
     await expect(dialog.locator('[data-relation="marriage"]').last().getByLabel("Scheidungsdatum",{exact:true})).toBeHidden();
     await dialog.getByLabel("Geburtsdatum",{exact:true}).fill("1961-01-01");await page.keyboard.press("Escape");expect((await details(persons[0].id)).birth_date).toBe("1960-02-29");
-    await expect(page.getByLabel("Weitere Personenaktionen",{exact:true})).toBeFocused();
+    await expect(page.getByRole("button",{name:"Stammdaten",exact:true})).toBeFocused();
     await open();
     const change={revision:saved.revision,birth_date:"1962-01-01",death_date:saved.death_date,sibling_ids:saved.siblings.map(p=>p.id),marriages:saved.marriages.map(m=>({id:m.id,spouse_id:m.spouse.id,wedding_date:m.wedding_date,divorce_date:m.divorce_date}))};
     expect((await context.request.put(endpoint,{data:change,headers:{Origin:baseURL}})).ok()).toBe(true);
@@ -459,7 +457,7 @@ test("person records support multiple relatives, reciprocal marriages, cancellat
     expect((await details(removedSibling)).siblings).toHaveLength(0);expect((await details(persons[3].id)).marriages).toHaveLength(0);
     const reader=await browser.newContext({httpCredentials:{username:"reader",password:"secret"}});const readerPage=await reader.newPage();
     await login(readerPage,"reader");
-    await readerPage.goto(baseURL+`/photos/people/${persons[0].id}`);await readerPage.getByLabel("Weitere Personenaktionen",{exact:true}).click();await readerPage.getByRole("button",{name:"Stammdaten",exact:true}).click();
+    await readerPage.goto(baseURL+`/photos/people/${persons[0].id}`);await readerPage.getByRole("button",{name:"Stammdaten",exact:true}).click();
     await expect(readerPage.getByLabel("Geburtsdatum",{exact:true})).toHaveValue("1962-01-01");await expect(readerPage.locator("[data-person-details-save]")).toHaveCount(0);
     await expect(readerPage.getByLabel("Sterbedatum",{exact:true})).toHaveValue("2020-01-01");
     await expect(readerPage.getByLabel("Scheidungsdatum",{exact:true})).toBeHidden();
@@ -544,6 +542,7 @@ test("unnamed selection survives failed actions and refreshes existing and new t
   let succeed = false;
   await page.route("**/photos/people/*/merge", route => route.fulfill({ status: succeed ? 200 : 500, json: succeed ? { ok: true } : { error: "test failure" } }));
   await page.locator("[data-people-merge-button]").click();
+  await page.locator("[data-app-dialog-confirm]").click();
   await expect(page.locator("[data-people-status]")).toContainText("HTTP 500");
   await expect(page.locator("[data-person-select]:checked")).toHaveCount(2);
   await page.evaluate(() => { window.retainedPeopleImage = document.querySelector(".person-overview-card img"); });
@@ -556,6 +555,7 @@ test("unnamed selection survives failed actions and refreshes existing and new t
   await page.route("**/photos/people?*format=json*", route => route.fulfill({ json: data }));
   succeed = true;
   await page.locator("[data-people-merge-button]").click();
+  await page.locator("[data-app-dialog-confirm]").click();
   await expect(page.locator("[data-people-status]")).toHaveText("Personen zusammengeführt.");
   expect(await page.evaluate(() => window.retainedPeopleImage === document.querySelector(".person-overview-card img"))).toBe(true);
   await expect(cards.first().locator("[data-person-count]")).toHaveText("9 Fotos");
@@ -617,7 +617,7 @@ test("batch ignore submits only selected portraits and preserves remaining faces
     const data = await (await context.request.get(page.url() + "&format=json")).json();
     selectedPeople = data.people.slice(0, 2);
     expect(selectedPeople[0].id).toBe(group.id);
-    const button = page.getByRole("button", { name: "Ignorieren", exact: true });
+    const button = page.locator("[data-people-ignore-button]");
     await expect(button).toBeHidden();
     await page.locator("[data-people-selection-mode]").click();
     for (const person of selectedPeople) await page.locator(`[data-person-id="${person.id}"] img`).click();

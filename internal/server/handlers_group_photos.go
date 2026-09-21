@@ -89,7 +89,7 @@ func (s *Server) handleGroupPhotos(w http.ResponseWriter, r *http.Request) {
 		_ = writeJSON(w, http.StatusOK, page)
 		return
 	}
-	s.render(w, r, "group_photos.html", PageData{Title: "Gruppenbilder", Active: "photos", GroupPhotos: page})
+	s.render(w, r, "group_photos.html", PageData{PeopleSection: "groups", Title: "Gruppenbilder", Active: "photos", GroupPhotos: page})
 }
 
 func (s *Server) handleGroupPhotoIgnore(w http.ResponseWriter, r *http.Request) {

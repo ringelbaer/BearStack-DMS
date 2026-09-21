@@ -165,3 +165,40 @@ func TestRestoreIgnoredFacesIsAtomicAndClearsTheOldName(t *testing.T) {
 		t.Fatalf("restore assignment: %+v", assigned)
 	}
 }
+
+func TestRestoreFacesSeparatelyKeepsUnrelatedPeopleApartAndRejectsStaleBatch(t *testing.T) {
+	ctx := context.Background()
+	l := faceLibrary(t, "a.jpg", "b.jpg", "c.jpg")
+	for _, axis := range []int{0, 1, 2} {
+		finishFace(t, l, axis)
+	}
+	var ids []int64
+	for _, path := range []string{"a.jpg", "b.jpg", "c.jpg"} {
+		faces, err := l.AutomaticFaces(ctx, path)
+		if err != nil || len(faces) != 1 {
+			t.Fatal(faces, err)
+		}
+		ids = append(ids, faces[0].ID)
+	}
+	if err := l.EditFaces(ctx, ids[:2], 0, true, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.RestoreFacesSeparately(ctx, ids); !errors.Is(err, ErrLabelConflict) {
+		t.Fatalf("stale batch: %v", err)
+	}
+	for _, id := range ids[:2] {
+		face, _ := l.Face(ctx, id)
+		if !face.Ignored {
+			t.Fatal("partial restore", face)
+		}
+	}
+	if err := l.RestoreFacesSeparately(ctx, ids[:2]); err != nil {
+		t.Fatal(err)
+	}
+	a, _ := l.Face(ctx, ids[0])
+	b, _ := l.Face(ctx, ids[1])
+	c, _ := l.Face(ctx, ids[2])
+	if a.Ignored || b.Ignored || a.Name != "" || b.Name != "" || a.PersonID == b.PersonID || a.PersonID == c.PersonID || b.PersonID == c.PersonID {
+		t.Fatalf("unrelated faces grouped: %+v %+v %+v", a, b, c)
+	}
+}

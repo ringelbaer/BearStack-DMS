@@ -111,3 +111,89 @@ func TestPhotoIdentityRoutesPermissionsReviewAndContract(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestFaceReviewHTMLContinuesAndWrapsOnlyPendingFaces(t *testing.T) {
+	s := faceTestServer(t)
+	ctx := context.Background()
+	if err := s.photos.PrepareFaceQueue(ctx, facerec.Model); err != nil {
+		t.Fatal(err)
+	}
+	job, err := s.photos.NextFaceJob(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	vector := make([]float32, 128)
+	vector[0] = 1
+	if err = s.photos.CommitFaceResult(ctx, job, facerec.Result{Model: facerec.Model, Faces: []facerec.Detection{
+		{X: .1, Y: .1, Width: .2, Height: .2, Confidence: .99, Embedding: vector},
+		{X: .6, Y: .6, Width: .2, Height: .2, Confidence: .99, Embedding: vector},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	file, err := os.OpenFile(filepath.Join(s.photos.Root(), "one.jpg"), os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = file.WriteString("changed")
+	file.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.photos.RebuildIndex(ctx); err != nil {
+		t.Fatal(err)
+	}
+	pending, err := s.photos.PendingFaceReviews(ctx, 0)
+	if err != nil || len(pending) != 2 {
+		t.Fatal(pending, err)
+	}
+	// Starting with the last pending face must wrap to the earlier one.
+	for _, index := range []int{1, 0} {
+		id := pending[index].ID
+		review, err := s.photos.FaceSourceReview(ctx, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		form := url.Values{"revision": {review.Revision}, "x": {"0.1"}, "y": {"0.1"}, "width": {"0.2"}, "height": {"0.2"}, "name": {"Ada"}, "next": {"1"}}
+		route := "/photos/faces/" + strconv.FormatInt(id, 10) + "/review"
+		req := httptest.NewRequest("POST", route, strings.NewReader(form.Encode()))
+		req.SetBasicAuth("editor", "secret")
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Origin", "http://example.com")
+		recorder := httptest.NewRecorder()
+		s.Handler().ServeHTTP(recorder, req)
+		if recorder.Code != 303 {
+			t.Fatal(recorder.Code, recorder.Body.String())
+		}
+		destination, err := url.Parse(recorder.Header().Get("Location"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "/photos/faces/review"
+		if index == 1 {
+			want = "/photos/faces/" + strconv.FormatInt(pending[0].ID, 10) + "/review"
+		}
+		if destination.Path != want {
+			t.Fatalf("next location: %s, want %s", destination.Path, want)
+		}
+	}
+}
+
+func TestReviewPagesUseFormattedPhotoPaths(t *testing.T) {
+	templates, err := parseTemplates()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"photo.jpg", "2026_07_15_Holiday/photo.jpg", "2026/2026_07_15_Holiday/Nested_Folder/photo.jpg"} {
+		face := photos.RecognizedFace{ID: 1, PersonID: 2, Path: path, NeedsReview: true}
+		data := PageData{PeopleSection: "review", FaceSourceReview: photos.FaceSourceReview{Face: face}, FaceSourceReviews: []photos.RecognizedFace{face}}
+		for _, page := range []string{"face_source_review.html", "face_source_reviews.html"} {
+			var output strings.Builder
+			if err := templates.ExecuteTemplate(&output, page, data); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(output.String(), photos.MediaDisplayPath(path)) {
+				t.Fatalf("%s misses formatted path %s", page, path)
+			}
+		}
+	}
+}

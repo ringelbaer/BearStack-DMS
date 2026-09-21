@@ -7,7 +7,7 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.22.1** (`versionCode 45`), BearStack **1.4.1**.
+bis zur Personenverwaltung. Stand: App **0.22.1** (`versionCode 45`), BearStack **1.5.0**.
 
 ## Bauen und installieren
 

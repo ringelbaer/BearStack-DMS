@@ -72,7 +72,7 @@ func (s *Server) handleFaceSourceReviews(w http.ResponseWriter, r *http.Request)
 		_ = writeJSON(w, http.StatusOK, map[string]any{"faces": items})
 		return
 	}
-	s.render(w, r, "face_source_reviews.html", PageData{Title: "Geänderte Fotos prüfen", Active: "photos", FaceSourceReviews: items, Notice: r.URL.Query().Get("notice")})
+	s.render(w, r, "face_source_reviews.html", PageData{PeopleSection: "review", Title: "Geänderte Fotos prüfen", Active: "photos", FaceSourceReviews: items, Notice: r.URL.Query().Get("notice")})
 }
 
 func (s *Server) handleFaceSourceReview(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +92,7 @@ func (s *Server) handleFaceSourceReview(w http.ResponseWriter, r *http.Request) 
 			_ = writeJSON(w, http.StatusOK, data)
 			return
 		}
-		s.render(w, r, "face_source_review.html", PageData{Title: "Gesicht am geänderten Foto prüfen", Active: "photos", FaceSourceReview: data})
+		s.render(w, r, "face_source_review.html", PageData{PeopleSection: "review", Title: "Gesicht am geänderten Foto prüfen", Active: "photos", FaceSourceReview: data})
 		return
 	}
 	if !s.parseFaceForm(w, r) {
@@ -149,6 +149,16 @@ func (s *Server) handleFaceSourceReview(w http.ResponseWriter, r *http.Request) 
 	if wantsJSON(r) {
 		_ = writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 		return
+	}
+	if r.PostForm.Get("next") == "1" {
+		pending, nextErr := s.photos.PendingFaceReviews(ctx, id)
+		if nextErr == nil && len(pending) == 0 {
+			pending, nextErr = s.photos.PendingFaceReviews(ctx, 0)
+		}
+		if nextErr == nil && len(pending) > 0 {
+			redirectWithNotice(w, r, "/photos/faces/"+strconv.FormatInt(pending[0].ID, 10)+"/review", "Gesicht bestätigt.")
+			return
+		}
 	}
 	redirectWithNotice(w, r, "/photos/faces/review", "Gesicht bestätigt. Nur frisch berechnete, geeignete Merkmale werden für die Erkennung verwendet.")
 }

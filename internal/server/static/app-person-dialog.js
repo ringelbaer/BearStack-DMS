@@ -6,7 +6,7 @@
   function createEditButton(label) {
     var edit = document.createElement("button");
     edit.type = "button"; edit.className = "person-edit-button secondary-button";
-    edit.dataset.personEdit = ""; edit.title = "Benennen / zuordnen";
+    edit.dataset.personEdit = ""; edit.title = label;
     var icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     icon.setAttribute("viewBox", "0 0 24 24"); icon.setAttribute("width", "16"); icon.setAttribute("height", "16");
     icon.setAttribute("aria-hidden", "true"); icon.setAttribute("fill", "none");
@@ -123,7 +123,7 @@
       dialogForm.dataset.renameAction = "/photos/people/" + encodeURIComponent(ids[0]) + "/rename";
       dialogForm.querySelectorAll("input, button").forEach(function (control) { control.disabled = false; });
       dialogStatus.textContent = "";
-      personDialog.querySelector("#person-dialog-title").textContent = ids.length > 1 ? ids.length + " Gruppen benennen oder zuordnen" : "Person benennen oder zuordnen";
+      personDialog.querySelector("#person-dialog-title").textContent = ids.length > 1 ? ids.length + " Gruppen benennen oder zusammenführen" : "Gruppe benennen oder zusammenführen";
       personDialog.querySelector("#overview-person-hint").textContent = ids.length > 1 ? "Alle markierten Gruppen werden unter dem neuen Namen oder mit der ausgewählten Person zusammengeführt." : "Ein neuer Name benennt diese Gruppe. Eine vorhandene Person auswählen, um die gesamte Gruppe mit ihr zusammenzuführen.";
       dialogForm.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: ids.length === 1 ? card.dataset.personName : "" } }));
       if (options.configureDialog) options.configureDialog({ dialog: personDialog, form: dialogForm, card: faceCard });
@@ -138,6 +138,11 @@
       var ignoreCards = sourceCard ? [sourceCard] : ids.map(function (id) { return personSurface.querySelector('[data-person-id="' + id + '"]'); });
       ignoreRequest = options.getIgnoreRequest ? options.getIgnoreRequest(ignoreCards) : null;
       ignoreButton.disabled = !ignoreRequest;
+      ignoreButton.hidden = !ignoreRequest;
+      if (ignoreRequest) {
+        var ignoredIDs = ignoreRequest.body.getAll("face_id");
+        ignoreButton.textContent = ignoredIDs.length > 1 ? ignoredIDs.length + " Gesichter ignorieren" : "Gesicht ignorieren";
+      }
       ignoreButton.title = ignoreRequest ? (ids.length > 1 ? "Angezeigte Gesichter der ausgewählten Gruppen ignorieren" : "Angezeigtes Gesicht ignorieren") : "Nur unbenannte, aktive Gesichter können hier ignoriert werden";
     }
     personSurface.addEventListener("click", function (event) {
@@ -253,7 +258,7 @@
       var renameAction = form.dataset.renameAction || form.getAttribute("action");
       function validate(state) {
         if (form.hasAttribute("data-person-folder-selection")) {
-          form.querySelector("[data-person-submit]").textContent = "Alle neu zuweisen";
+          form.querySelector("[data-person-submit]").textContent = "Gesichter zuordnen";
           input.setCustomValidity(state.assigned || state.name ? "" : "Bitte einen Namen eingeben oder eine Person auswählen.");
         } else if (form.hasAttribute("data-person-restore")) {
           form.querySelector("[data-person-submit]").textContent = state.assigned ? "Zuordnen und wiederherstellen" : "Benennen und wiederherstellen";
@@ -266,7 +271,7 @@
           input.setCustomValidity(state.assigned || state.name ? "" : "Bitte einen Namen eingeben oder eine Person auswählen.");
         } else if (allowCreate) {
           if (renameAction) form.action = state.assigned ? renameAction.replace(/\/rename$/, "/merge") : renameAction;
-          form.querySelector("[data-person-submit]").textContent = state.assigned ? "Gruppen zusammenführen" : (Number(form.dataset.personCount) > 1 ? "Benennen und zusammenführen" : "Benennen");
+          form.querySelector("[data-person-submit]").textContent = state.assigned ? "Mit „" + state.targetName + "“ zusammenführen" : (Number(form.dataset.personCount) > 1 ? "Benennen und zusammenführen" : "Benennen");
           input.setCustomValidity(Number(form.dataset.personCount) > 1 && !state.assigned && !state.name ? "Bitte einen Namen eingeben oder eine Person auswählen." : "");
         } else {
           input.setCustomValidity(state.target && (state.target !== "0" || !input.required) ? "" : "Bitte eine Person aus den Vorschlägen auswählen.");
@@ -274,11 +279,21 @@
       }
       var picker = window.BearStackPersonPicker.bind(form, {
         allowCreate: allowCreate,
+        actionLabel: form.hasAttribute("data-person-modal") ? function (person) {
+          if (form.hasAttribute("data-person-manual-create")) return "Gesicht erstellen und „" + person.name + "“ zuordnen";
+          if (form.hasAttribute("data-person-restore")) return "„" + person.name + "“ zuordnen und wiederherstellen";
+          if (form.hasAttribute("data-person-face-selection")) return "„" + person.name + "“ zuordnen";
+          return "„" + person.name + "“ als Ziel wählen";
+        } : null,
         showThumbnails: form.hasAttribute("data-person-modal"),
         context: function () { return { faceID: form.dataset.personFaceId, exclude: form.dataset.personExclude,
           suggestionsURL: form.dataset.personSuggestionsUrl }; },
         onChange: validate,
-        onChoose: function () { if (form.hasAttribute("data-person-modal")) form.requestSubmit(); }
+        onChoose: function () {
+          // Whole groups and folders need an explicit, labelled final action.
+          if (form.hasAttribute("data-person-modal") && !form.hasAttribute("data-person-folder-selection") &&
+              (form.hasAttribute("data-person-face-selection") || form.hasAttribute("data-person-restore") || form.hasAttribute("data-person-manual-create"))) form.requestSubmit();
+        }
       });
       form.addEventListener("person-picker-reset", function (event) {
         renameAction = form.dataset.renameAction;

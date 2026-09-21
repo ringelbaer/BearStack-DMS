@@ -162,7 +162,7 @@ test("stored face reconciliation works offline with responsive merge review and 
       await page.setViewportSize({ width, height: 900 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `settings overflow at ${width}px`).toBeLessThanOrEqual(1);
     }
-    await page.getByRole("link", { name: "Zusammenführungsvorschläge", exact: true }).click();
+    await page.getByRole("link", { name: "Ähnliche Gruppen", exact: true }).click();
     const cards = page.locator(".face-merge-suggestion");
     await expect(cards).toHaveCount(2);
     for (const score of await cards.locator(".face-merge-score").all()) {
@@ -235,7 +235,7 @@ test("stored face reconciliation works offline with responsive merge review and 
     await expect(page.locator("[data-merge-status]")).toContainText("Personengruppen haben sich geändert");
     await expect(page.locator("[data-merge-suggestions]")).toHaveAttribute("aria-busy", "false");
     expect(await page.evaluate(() => window.mergePageMarker)).toBe("same document");
-    await expect(page.getByRole("heading", { name: "Ähnliche Personengruppen", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ähnliche Gruppen", exact: true })).toBeVisible();
 
     await page.goto(settingsURL);
     await page.getByRole("button", { name: "Zuordnungen erneut prüfen", exact: true }).click();
@@ -247,7 +247,7 @@ test("stored face reconciliation works offline with responsive merge review and 
     await cards.getByRole("button", { name: "Getrennt lassen", exact: true }).click();
     await expect(cards).toHaveCount(0);
     await expect(page.locator(".notice")).toHaveText("Die Gruppen bleiben getrennt.");
-    await expect(page.locator("[data-merge-suggestions]")).toContainText("Aktuell keine Zusammenführungsvorschläge");
+    await expect(page.locator("[data-merge-suggestions]")).toContainText("Aktuell keine Vorschläge für ähnliche Gruppen");
     expect(await page.evaluate(() => window.mergePageMarker)).toBe("reject document");
     // A new pass must respect the explicit rejection, even with the service off.
     await page.goto(settingsURL);

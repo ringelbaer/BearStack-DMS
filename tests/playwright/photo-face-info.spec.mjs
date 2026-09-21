@@ -129,7 +129,7 @@ test("draw and name missing faces with mouse, touch and keyboard without inferen
   await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: touchBounds.x + touchBounds.width * .6, y: touchBounds.y + touchBounds.height * .6 }] });
   await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await drawing.getByRole("combobox", { name: "Name", exact: true }).fill("Erika");
-  const erika = drawing.getByRole("option").filter({ hasText: "Erika (#" });
+  const erika = drawing.getByRole("option").filter({ hasText: "Gesicht erstellen und „Erika“ zuordnen" });
   await expect(erika.locator(".person-picker-thumbnail")).toBeVisible();
   await erika.scrollIntoViewIfNeeded();
   const optionBounds = await erika.boundingBox();
@@ -463,7 +463,7 @@ test("renaming an already named face in photo info never changes its siblings", 
     // Choosing an existing person by keyboard also moves only the clicked face.
     await editSelected();
     await input.fill("Vera");
-    await expect(modal.getByRole("option", { name: /^Vera \(#/ })).toBeVisible();
+    await expect(modal.getByRole("option", { name: /„Vera“ zuordnen/ })).toBeVisible();
     await input.press("ArrowDown"); await input.press("Enter");
     await expect(modal).not.toBeVisible();
     expect((await get("m.png")).faces.find(face => face.id === selected)).toMatchObject({ name: "Vera", person_id: target });
@@ -577,6 +577,7 @@ for (const failure of ["lost response", "refresh failed"]) {
       await expect(modal.locator("[data-person-submit]")).toBeDisabled();
       await modal.getByRole("button", { name: "Abbrechen", exact: true }).click();
       await expect(lightbox.locator("[data-person-edit]")).toBeDisabled();
+      await lightbox.getByLabel("Weitere Gesichtsaktionen", {exact:true}).click();
       await lightbox.getByRole("button", { name: "Gesichter aktualisieren", exact: true }).click();
       await expect(lightbox.locator(".photo-info-face")).toContainText("Unbenannt");
       await expect(lightbox.locator("[data-person-edit]")).toBeEnabled();
@@ -609,8 +610,8 @@ test("recognize one photo and name faces inside its info panel", async ({ browse
   const analyze = lightbox.getByRole("button", { name: "Gesichter erkennen und zuordnen" });
   const refresh = lightbox.getByRole("button", { name: "Gesichter aktualisieren", exact: true });
   const actions = lightbox.getByRole("group", { name: "Gesichtsfunktionen" });
-  const controls = [actions.getByRole("img", { name: "Gesichter", exact: true }), analyze,
-    actions.getByRole("button", { name: "Gesicht einrahmen", exact: true }), actions.getByRole("button", { name: "Beschriftete Gesichtsrahmen anzeigen", exact: true }), actions.getByRole("button", { name: "Alle ignorierten Gesichter dieses Fotos wiederherstellen", exact:true }), refresh];
+  const controls = [actions.getByRole("img", { name: "Gesichter", exact: true }),
+    actions.locator("[data-photo-face-draw]"), actions.locator("[data-photo-face-toggle]"), actions.getByLabel("Weitere Gesichtsaktionen", {exact:true})];
   for (const width of [320, 1024, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await actions.scrollIntoViewIfNeeded();
@@ -629,14 +630,17 @@ test("recognize one photo and name faces inside its info panel", async ({ browse
     }
   }
   await actions.screenshot({ path: "/tmp/bearstack-face-action-row.png" });
+  await actions.getByLabel("Weitere Gesichtsaktionen", {exact:true}).click();
   const callsBeforeRefresh = inferenceCalls;
   await refresh.click();
   await expect(lightbox.locator("[data-photo-face-status]")).toHaveText("Keine aktiven Gesichter gefunden.");
   expect(inferenceCalls).toBe(callsBeforeRefresh);
   await page.route("**/photos/faces/analyze", route => route.fulfill({ status: 502, json: { error: "Dienst nicht erreichbar" } }), { times: 1 });
+  if (!await lightbox.locator(".photo-face-more").evaluate(el=>el.open)) await lightbox.getByLabel("Weitere Gesichtsaktionen", {exact:true}).click();
   await analyze.click();
   await expect(lightbox.locator("[data-photo-face-status]")).toHaveText("Dienst nicht erreichbar");
   await expect(analyze).toBeEnabled();
+  if (!await lightbox.locator(".photo-face-more").evaluate(el=>el.open)) await lightbox.getByLabel("Weitere Gesichtsaktionen", {exact:true}).click();
   await analyze.click();
   await expect(lightbox.locator(".photo-info-face")).toHaveCount(1);
   await lightbox.locator("[data-person-edit]").click();
@@ -659,9 +663,11 @@ test("recognize one photo and name faces inside its info panel", async ({ browse
   await page.locator('[data-photo-path="b.png"] .photo-card-button').click();
   await lightbox.locator("[data-photo-info-toggle]").press("Enter");
   await expect(lightbox.locator("[data-photo-face-status]")).toHaveText("Keine aktiven Gesichter gefunden.");
+  if (!await lightbox.locator(".photo-face-more").evaluate(el=>el.open)) await lightbox.getByLabel("Weitere Gesichtsaktionen", {exact:true}).click();
   await analyze.click();
   await expect(lightbox.locator(".photo-info-face")).toContainText("Daria");
   // Reanalysis preserves explicit naming; no global face worker is needed.
+  if (!await lightbox.locator(".photo-face-more").evaluate(el=>el.open)) await lightbox.getByLabel("Weitere Gesichtsaktionen", {exact:true}).click();
   await analyze.click();
   await expect(lightbox.locator("[data-photo-face-status]")).toBeEmpty();
   await expect(lightbox.locator(".photo-info-face")).toContainText("Daria");
@@ -736,6 +742,7 @@ test("info bar unignores only this photo, preserving names and handling stale or
     await page.goto(baseURL+"/photos");await page.locator('[data-photo-path="g.png"] .photo-card-button').click();
     const lightbox=page.locator("[data-photo-lightbox]");
     await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    await lightbox.getByLabel("Weitere Gesichtsaktionen", {exact:true}).click();
     const restore=lightbox.getByRole("button",{name:"Alle ignorierten Gesichter dieses Fotos wiederherstellen",exact:true});
     const refresh=lightbox.getByRole("button",{name:"Gesichter aktualisieren",exact:true});
     await expect(restore).toBeEnabled();await expect(lightbox.locator(".photo-info-face")).toHaveCount(1);
@@ -770,6 +777,7 @@ test("info bar unignores only this photo, preserving names and handling stale or
     await lightbox.getByRole("button",{name:"Foto schließen",exact:true}).press("Enter");
     await page.locator('[data-photo-path="h.png"] .photo-card-button').click();
     if(!await lightbox.locator("[data-photo-face-tools]").isVisible()) await lightbox.locator("[data-photo-info-toggle]").press("Enter");
+    if (!await lightbox.locator(".photo-face-more").evaluate(el=>el.open)) await lightbox.getByLabel("Weitere Gesichtsaktionen", {exact:true}).click();
     await expect(restore).toBeEnabled();release();
     await expect(lightbox.locator(".photo-info-face")).toHaveCount(2);
     expect((await get("h.png")).faces[0].ignored).toBe(true);expect(inferenceCalls).toBe(calls);

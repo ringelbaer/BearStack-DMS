@@ -64,7 +64,6 @@ test("person folders format paths, preview eight faces and apply whole-folder ac
     expect((await context.request.post(baseURL + `/photos/people/${person.id}/rename`, { form: { name: "Ada" }, headers: { Origin: baseURL } })).ok()).toBe(true);
     await page.goto(baseURL + `/photos/people/${person.id}`);
     await expect(page.locator("[data-person-summary]")).toBeHidden();
-    await page.getByLabel("Weitere Personenaktionen", { exact: true }).click();
     await page.getByRole("button", { name: "Stammdaten", exact: true }).click();
     const details = page.locator("[data-person-details-dialog]");
     await details.locator('[name="birth_date"]').fill("1980-05-06");
@@ -73,7 +72,7 @@ test("person folders format paths, preview eight faces and apply whole-folder ac
     await page.getByLabel("Weitere Personenaktionen", { exact: true }).click();
     const folderLink = page.getByRole("link", { name: "Ordner-Pfade prüfen", exact: true });
     await expect(folderLink).not.toHaveClass(/secondary-button/);
-    await expect(page.locator("[data-detail-display] > summary")).toHaveText("Anzeigeeinstellungen");
+    await expect(page.locator("[data-detail-display] > summary")).toHaveAttribute("aria-label", "Anzeigeeinstellungen");
     expect(await folderLink.evaluate(link => getComputedStyle(link).borderTopWidth)).toBe("0px");
     await folderLink.click();
     const folders = page.locator("[data-person-folder]");
@@ -90,7 +89,7 @@ test("person folders format paths, preview eight faces and apply whole-folder ac
     await expect(folders.getByRole("combobox")).toHaveCount(0);
     await expect(assignment).toHaveCount(1);
     for (const [index, display] of [[0, "Fotos"], [1, "Fotos / 02.01.2024 · Family Trip"], [2, "Fotos / 02.01.2024 · Family Trip / Nested Folder"]]) {
-      const opener = folders.nth(index).getByRole("button", { name: "Alle neu zuweisen", exact: true });
+      const opener = folders.nth(index).getByRole("button", { name: /Gesichter zuordnen/ });
       await opener.click();
       await expect(assignment).toBeVisible();
       await expect(assignment.locator("[data-folder-dialog-path]")).toHaveText(display);
@@ -107,30 +106,39 @@ test("person folders format paths, preview eight faces and apply whole-folder ac
       await expect(assignment).not.toBeVisible();
       await expect(opener).toBeFocused();
     }
-    await folders.nth(1).getByRole("button", { name: "Alle neu zuweisen", exact: true }).click();
+    await folders.nth(1).getByRole("button", { name: /Gesichter zuordnen/ }).click();
     await assignment.getByRole("combobox").fill("Grace");
-    await assignment.getByRole("button", { name: "Alle neu zuweisen", exact: true }).click();
+    await assignment.getByRole("button", { name: /Gesichter zuordnen/ }).click();
     await expect(folders).toHaveCount(2);
     let people = (await (await context.request.get(baseURL + "/photos/people?format=json")).json()).people;
     const grace = people.find(p => p.name === "Grace");
     expect(grace.count).toBe(9);
     expect(people.find(p => p.id === person.id).count).toBe(2);
     await page.goto(baseURL + `/photos/people/${grace.id}/folder`);
-    await folders.getByRole("button", { name: "Alle neu zuweisen", exact: true }).click();
+    await folders.getByRole("button", { name: /Gesichter zuordnen/ }).click();
     await assignment.getByRole("combobox").fill("Ada");
-    await assignment.getByRole("option", { name: /^Ada \(#/ }).click();
+    await assignment.getByRole("option", { name: /„Ada“ als Ziel wählen/ }).click();
+    await expect(assignment).toBeVisible();
+    await assignment.getByRole("button", { name: "Gesichter zuordnen", exact: true }).click();
     await expect(page).toHaveURL(/\/photos\/people\?/);
     await page.goto(baseURL + `/photos/people/${person.id}/folder`);
     await expect(folders).toHaveCount(3);
-    await folders.nth(1).getByRole("button", { name: "Pfad ausschließen und Gesichter auf unbenannt setzen", exact: true }).click();
+    await folders.nth(1).getByText("Weitere Ordneraktionen", {exact:true}).click();
+    await folders.nth(1).getByRole("button", { name: "Pfad ausschließen und Zuordnungen auflösen", exact: true }).click();
+    await page.locator("[data-app-dialog-confirm]").click();
     await expect(folders.nth(1).getByRole("button", { name: "Pfad wieder freigeben" })).toBeVisible();
     await expect(folders.nth(1).locator("img")).toHaveCount(0);
     await page.reload();
     await folders.nth(1).getByRole("button", { name: "Pfad wieder freigeben" }).click();
+    await page.locator("[data-app-dialog-confirm]").click();
     await expect(folders).toHaveCount(2);
-    await folders.nth(1).getByRole("button", { name: "Alle auf unbenannt setzen", exact: true }).click();
+    await folders.nth(1).getByText("Weitere Ordneraktionen",{exact:true}).click();
+    await folders.nth(1).getByRole("button", { name: /Gesichter auf unbenannt setzen/ }).click();
+    await page.locator("[data-app-dialog-confirm]").click();
     await expect(folders).toHaveCount(1);
-    await folders.getByRole("button", { name: "Alle ignorieren", exact: true }).click();
+    await folders.getByText("Weitere Ordneraktionen",{exact:true}).click();
+    await folders.getByRole("button", { name: /Gesichter ignorieren/ }).click();
+    await page.locator("[data-app-dialog-confirm]").click();
     await expect(page).toHaveURL(/\/photos\/people\?/);
     expect(errors).toEqual([]);
   } finally { await context.close(); }

@@ -77,8 +77,17 @@ test("ignored portraits restore unnamed or via the naming dialog without changin
       expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
       await page.screenshot({path:`/tmp/bearstack-ignored-${width}.png`,fullPage:true});
     }
+    // Whole-tile selection works for ignored faces, including keyboard and clear.
+    await page.getByRole("button", {name:"Auswahlmodus",exact:true}).click();
+    await cards.first().click();
+    await expect(page.locator("[data-ignored-selection-count]")).toHaveText("1 Gesicht auf dieser Seite");
+    await cards.nth(1).focus(); await page.keyboard.press("Space");
+    await expect(page.locator("[data-ignored-select]:checked")).toHaveCount(2);
+    await page.getByRole("button",{name:"Auswahl aufheben",exact:true}).last().click();
+    await expect(page.locator("[data-ignored-selection]")).toBeHidden();
+    await page.getByRole("button", {name:"Auswahlmodus",exact:true}).click();
     const retained=await cards.first().locator("img").elementHandle();
-    await cards.nth(1).getByRole("button",{name:"Wiederherstellen",exact:true}).click();
+    await cards.nth(1).getByRole("button",{name:"Als unbenannt wiederherstellen",exact:true}).click();
     await expect(cards).toHaveCount(1);
     expect(await retained.evaluate(img=>img.isConnected)).toBe(true);
     expect((await getFace(secondID)).name).toBe("");expect((await getFace(secondID)).ignored).toBe(false);
@@ -116,16 +125,16 @@ test("ignored portraits restore unnamed or via the naming dialog without changin
     // A committed write with a lost response cannot be submitted again.
     let attempts=0;
     await page.route("**/photos/faces/edit",async route=>{attempts++;await route.fetch();await route.abort();});
-    await cards.getByRole("button",{name:"Wiederherstellen",exact:true}).click();
+    await cards.getByRole("button",{name:"Als unbenannt wiederherstellen",exact:true}).click();
     await expect(page.locator("[data-ignored-retry]")).toBeVisible();
-    await expect(cards.getByRole("button",{name:"Wiederherstellen",exact:true})).toBeDisabled();
+    await expect(cards.getByRole("button",{name:"Als unbenannt wiederherstellen",exact:true})).toBeDisabled();
     await page.locator("[data-ignored-retry]").click();await expect(cards).toHaveCount(0);
     expect(attempts).toBe(1);await page.unroute("**/photos/faces/edit");
     // The direct unnamed restore also works without JavaScript.
     await ignore(secondID);
     const plain=await browser.newContext({javaScriptEnabled:false,storageState:await context.storageState()});
     const plainPage=await plain.newPage();await plainPage.goto(baseURL+"/photos/people?ignored=1");
-    await plainPage.getByRole("button",{name:"Wiederherstellen",exact:true}).click();
+    await plainPage.getByRole("button",{name:"Als unbenannt wiederherstellen",exact:true}).click();
     await expect(plainPage).toHaveURL(/ignored=1/);await expect(plainPage.locator("[data-ignored-face]")).toHaveCount(0);
     expect((await getFace(secondID)).name).toBe("");await plain.close();
     await ignore(secondID);
@@ -134,6 +143,57 @@ test("ignored portraits restore unnamed or via the naming dialog without changin
     const readerPage=await reader.newPage();await readerPage.goto(baseURL+"/photos/people?ignored=1");
     await expect(readerPage.locator("[data-ignored-face]")).toHaveCount(1);
     await expect(readerPage.locator("[data-ignored-edit], .ignored-face-form, [data-person-dialog]")).toHaveCount(0);
-    await reader.close();expect(errors).toEqual([]);
+    await reader.close();
+    // Batch assignment changes only the selected ignored faces in one request.
+    await ignore(firstID);
+    await page.goto(baseURL+"/photos/people?filter=ignored");
+    await page.getByRole("button",{name:"Auswahlmodus",exact:true}).click();
+    await page.getByRole("button",{name:"Alle auf dieser Seite",exact:true}).click();
+    await page.locator("[data-ignored-assign]").click();
+    await dialog.getByRole("combobox").fill("Ziel");
+    await dialog.getByRole("option").filter({hasNotText:"Neu anlegen:"}).click();
+    await expect(cards).toHaveCount(0);
+    expect((await getFace(firstID)).person_id).toBe(target.id);
+    expect((await getFace(secondID)).person_id).toBe(target.id);
+    await ignore(firstID); await ignore(secondID);
+    await page.reload();
+    await page.getByRole("button",{name:"Auswahlmodus",exact:true}).click();
+    await page.getByRole("button",{name:"Alle auf dieser Seite",exact:true}).click();
+    await page.locator("[data-ignored-restore]").click();
+    await expect(cards).toHaveCount(0);
+    await expect(page.getByRole("button",{name:"Auswahlmodus",exact:true})).toBeFocused();
+    expect((await getFace(firstID)).name).toBe("");
+    expect((await getFace(secondID)).name).toBe("");
+    expect((await getFace(firstID)).person_id).not.toBe((await getFace(secondID)).person_id);
+    const unchanged=(await(await context.request.get(baseURL+`/photos/people/${target.id}?format=json`)).json()).faces;
+    expect(unchanged).toHaveLength(1);
+    // A saved assignment with a stalled read is recoverable without another write.
+    await ignore(firstID);
+    await page.reload();
+    await page.clock.install();
+    await page.evaluate(() => {
+      window.savedFetch = window.fetch;
+      window.restoreWrites = 0;
+      window.fetch = function (url, options) {
+        if (options?.method === "POST") window.restoreWrites++;
+        if (options?.headers?.Accept !== "text/html") return window.savedFetch(url, options);
+        window.refreshPending = true;
+        return new Promise((resolve, reject) => options.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true }));
+      };
+    });
+    await cards.locator("[data-ignored-edit]").click();
+    await dialog.getByRole("combobox").fill("Nach Timeout");
+    await dialog.getByRole("button",{name:"Benennen und wiederherstellen",exact:true}).click();
+    await expect.poll(() => page.evaluate(() => window.refreshPending)).toBe(true);
+    await page.clock.fastForward(20_100);
+    await expect(dialog.locator("[data-person-dialog-status]")).toContainText("Gespeichert, aber");
+    await expect(dialog.getByRole("button",{name:"Benennen und wiederherstellen",exact:true})).toBeDisabled();
+    await dialog.getByRole("button",{name:"Abbrechen",exact:true}).click();
+    await page.evaluate(() => { window.fetch = window.savedFetch; });
+    await page.locator("[data-ignored-retry]").click();
+    await expect(cards).toHaveCount(0);
+    expect(await page.evaluate(() => window.restoreWrites)).toBe(1);
+    expect((await getFace(firstID)).name).toBe("Nach Timeout");
+    expect(errors).toEqual([]);
   } finally {await context.close();}
 });

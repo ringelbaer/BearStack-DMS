@@ -5,6 +5,11 @@
   var stage = root.querySelector("[data-review-stage]");
   var box = root.querySelector("[data-review-box]");
   var form = root.querySelector("[data-review-form]");
+  var picker = root.querySelector("[data-review-picker]");
+  window.BearStackPersonPicker.bind(picker, { allowCreate: true, showThumbnails: true,
+    onChoose: function (state) { picker.querySelector("[data-person-search]").value = state.assigned ? state.targetName : state.name; }
+  });
+  form.addEventListener("invalid", function (event) { if (event.target.closest(".face-review-precision")) root.querySelector(".face-review-precision").open = true; }, true);
   function paint() {
     box.style.left = Number(form.elements.x.value) * 100 + "%";
     box.style.top = Number(form.elements.y.value) * 100 + "%";

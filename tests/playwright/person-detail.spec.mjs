@@ -61,13 +61,23 @@ test("person detail keeps actions compact and scopes face editing, selection and
     await expect(cards).toHaveCount(2);
     await expect(dialog).toHaveCount(1);
     await expect(page.locator(".people-pagination")).toBeHidden();
+    await expect(page.getByRole("navigation",{name:"Personenverwaltung",exact:true}).getByRole("link",{name:"Personen",exact:true})).toHaveAttribute("aria-current","page");
+    await page.getByRole("button",{name:"Auswahlmodus",exact:true}).click();
+    await expect(cards.first().locator("[data-photo-item]")).toHaveAccessibleName(/^Auswählen: /);
+    await cards.first().locator("[data-photo-item]").click();
+    await expect(page.locator("[data-photo-lightbox]")).not.toBeVisible();
+    await expect(page.locator("[data-detail-selection-count]")).toHaveText("1 Gesicht auf dieser Seite");
+    await page.getByRole("button",{name:"Alle auf dieser Seite",exact:true}).click();
+    await expect(cards.locator('input:checked')).toHaveCount(2);
+    await page.locator("[data-detail-clear]").click();
+    await page.getByRole("button",{name:"Auswahlmodus",exact:true}).click();
+    await expect(cards.first().locator("[data-photo-item]")).not.toHaveAccessibleName(/^Auswählen: /);
     for (const width of [320,390,480,640,1440]) {
       await page.setViewportSize({width,height:900});
       await page.screenshot({path:`/tmp/bearstack-person-detail-${width}.png`,fullPage:true});
       const helpButton = page.getByRole("button", {name:"Hilfe",exact:true});
       const helpDialog = page.getByRole("dialog", {name:"Hilfe zur Personenansicht"});
       const beforeHelp = await cards.first().boundingBox();
-      await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
       await helpButton.click();
       await expect(helpDialog).toBeVisible();
       expect((await cards.first().boundingBox()).y).toBe(beforeHelp.y);
@@ -75,25 +85,23 @@ test("person detail keeps actions compact and scopes face editing, selection and
       expect(helpBox.x).toBeGreaterThanOrEqual(0);
       expect(helpBox.x + helpBox.width).toBeLessThanOrEqual(width);
       await helpDialog.getByRole("button", {name:"Schließen",exact:true}).click();
-      await expect(page.getByLabel("Weitere Personenaktionen", {exact:true})).toBeFocused();
-      await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
+      await expect(helpButton).toBeFocused();
       await helpButton.click();
       await page.keyboard.press("Escape");
       await expect(helpDialog).not.toBeVisible();
-      await expect(page.getByLabel("Weitere Personenaktionen", {exact:true})).toBeFocused();
+      await expect(helpButton).toBeFocused();
       const geometry = await cards.first().boundingBox();
       const toolbar = await page.locator(".person-detail-toolbar").boundingBox();
-      expect(toolbar.height).toBeLessThan(width <= 640 ? 112 : 65);
-      expect(geometry.y).toBeLessThan(width <= 640 ? 310 : 360);
+      expect(toolbar.height).toBeLessThan(width <= 640 ? 180 : 65);
+      expect(geometry.y - toolbar.y - toolbar.height).toBeLessThan(40);
       expect(geometry.height).toBeLessThan(260);
       expect(await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     }
     for (const width of [320,390]) {
       await page.setViewportSize({width,height:900});
       const before = await cards.first().boundingBox();
-      await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
       await page.getByLabel("Anzeigeeinstellungen", {exact:true}).click();
-      const box = await page.locator(".person-detail-menu").boundingBox();
+      const box = await page.locator("[data-detail-display] .people-display-options").boundingBox();
       expect(box.x).toBeGreaterThanOrEqual(0);
       expect(box.x+box.width).toBeLessThanOrEqual(width);
       expect((await cards.first().boundingBox()).y).toBe(before.y);
@@ -103,7 +111,6 @@ test("person detail keeps actions compact and scopes face editing, selection and
       await expect(page.locator(".person-detail-more")).not.toHaveAttribute("open", "");
     }
     await page.setViewportSize({width:1440,height:900});
-    await page.getByLabel("Weitere Personenaktionen", {exact:true}).click();
     await page.getByLabel("Anzeigeeinstellungen", {exact:true}).click();
     await page.getByLabel("Thumbnailgröße", {exact:true}).selectOption("m");
     await page.getByLabel("Ordnerpfad anzeigen", {exact:true}).check();
@@ -139,7 +146,7 @@ test("person detail keeps actions compact and scopes face editing, selection and
     // Moving it back refreshes the target group's detail page without renaming it.
     await lightbox.locator("[data-person-edit]").click();
     await dialog.getByRole("combobox").fill("Testgruppe");
-    await dialog.getByRole("option", { name: /^Testgruppe \(#/ }).click();
+    await dialog.getByRole("option", { name: /„Testgruppe“ zuordnen/ }).click();
     await expect(dialog).not.toBeVisible();
     await expect(cards).toHaveCount(2);
     await expect(page.locator("[data-detail-title]")).toHaveText("Testgruppe");
@@ -155,9 +162,9 @@ test("person detail keeps actions compact and scopes face editing, selection and
     await dialog.getByRole("button", {name:"Abbrechen",exact:true}).click();
     const preserved = await cards.first().locator("img").elementHandle();
     await cards.nth(1).getByLabel("Auswählen", {exact:true}).check();
-    await page.getByRole("button", {name:"Auswahl benennen / zuordnen",exact:true}).click();
+    await page.getByRole("button", {name:"Auswahl zuordnen",exact:true}).click();
     await dialog.getByRole("combobox").fill("Ada");
-    await dialog.getByRole("button", {name:"Auswahl benennen",exact:true}).click();
+    await dialog.getByRole("button", {name:"Gesicht benennen",exact:true}).click();
     await expect(dialog).not.toBeVisible();
     await expect(cards).toHaveCount(1);
     expect(await preserved.evaluate(img=>img.isConnected)).toBe(true);

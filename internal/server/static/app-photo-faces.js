@@ -56,7 +56,7 @@
           image.width = 64; image.height = 64; image.alt = ""; image.loading = "lazy";
           var label = document.createElement("span");
           label.textContent = face.name || "Unbenannt";
-          var edit = window.BearStackPersonDialog.createEditButton("Benennen oder zuordnen: " + label.textContent);
+          var edit = window.BearStackPersonDialog.createEditButton((face.name ? "Gesicht zuordnen: " : "Gruppe benennen oder zusammenführen: ") + label.textContent);
           card.append(image, label, edit);
           if (face.needs_review) {
             var review = document.createElement("a");

@@ -1,8 +1,9 @@
 {{define "face_source_reviews.html"}}
 {{template "head" .}}
-<section class="page-head"><h1>Geänderte Fotos prüfen</h1><a href="/photos/people">Personen</a></section>
+{{template "people_navigation" .}}
+<section class="page-head"><h1>Geänderte Fotos prüfen</h1></section>
 {{if .Notice}}<div class="notice">{{.Notice}}</div>{{end}}
 <section class="panel"><p>Diese Fotos wurden verändert. Ihre bisherigen Gesichtsdaten bleiben erhalten, werden aber bis zur Prüfung nicht als Erkennungsreferenzen verwendet.</p>
-<ul>{{range .FaceSourceReviews}}<li><a href="/photos/faces/{{.ID}}/review">{{if .Name}}{{.Name}}{{else}}Unbenannt{{end}} · {{.Path}}</a></li>{{else}}<li>Keine Gesichter zu prüfen.</li>{{end}}</ul>
+<ul>{{range .FaceSourceReviews}}<li><a href="/photos/faces/{{.ID}}/review">{{if .Name}}{{.Name}}{{else}}Unbenannt{{end}} · {{photoDisplayPath .Path}}</a></li>{{else}}<li>Keine Gesichter zu prüfen.</li>{{end}}</ul>
 {{if eq (len .FaceSourceReviews) 100}}<a href="?after={{(index .FaceSourceReviews 99).ID}}">Weitere Gesichter</a>{{end}}
 </section>{{template "foot" .}}{{end}}

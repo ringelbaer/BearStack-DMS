@@ -4,7 +4,7 @@
   if (!surface) return;
   var filter = document.querySelector("[data-group-filter]");
   var minimumInput = filter.querySelector('[name="min"]');
-  var unnamedFilter = filter.querySelector("[data-group-unnamed]");
+  var unnamedFilter = document.querySelector("[data-group-unnamed]");
   var grid = surface.querySelector("[data-group-grid]");
   var stage = surface.querySelector("[data-group-stage]");
   var image = surface.querySelector("[data-group-image]");
@@ -164,7 +164,7 @@
     if ((!face.name || !face.ignored) && ignored) ignored.remove();
     var edit = card.querySelector("[data-person-edit]");
     if (!face.ignored && !face.name && !edit) {
-      edit = window.BearStackPersonDialog.createEditButton("Person benennen oder zuordnen");
+      edit = window.BearStackPersonDialog.createEditButton("Gruppe benennen oder zusammenführen");
       card.append(edit);
     }
     if ((face.ignored || face.name) && edit) edit.remove();
@@ -172,7 +172,7 @@
     if (!face.ignored && !face.name && !ignore) {
       ignore = document.createElement("button"); ignore.type = "submit"; ignore.className = "person-ignore-button";
       ignore.setAttribute("form", ignoreForm.id); ignore.name = "face_id"; ignore.value = String(face.id); ignore.dataset.groupIgnoreFace = "";
-      ignore.setAttribute("aria-label", "Dieses Gesicht ignorieren"); ignore.title = "Dieses Gesicht ignorieren"; ignore.textContent = "×";
+      ignore.setAttribute("aria-label", "Dieses Gesicht ignorieren"); ignore.title = "Dieses Gesicht ignorieren"; ignore.append(document.querySelector("[data-ignore-icon]").content.cloneNode(true));
       card.insertBefore(ignore, edit || null);
     }
     if ((face.ignored || face.name) && ignore) ignore.remove();
@@ -348,7 +348,7 @@
   });
   filter.addEventListener("submit", function () { try { window.localStorage.setItem(storageKey, minimumInput.value); } catch (_) {} });
   try { unnamedFilter.checked = window.localStorage.getItem(unnamedStorageKey) === "true"; } catch (_) {}
-  filter.querySelector("[data-group-unnamed-control]").hidden = false;
+  document.querySelector("[data-group-unnamed-control]").hidden = false;
   filterFaces();
   strip.sync(currentPath ? { path: currentPath, display_path: surface.querySelector("[data-group-title]").textContent, remaining: remaining } : null);
   if (!new URL(window.location.href).searchParams.has("min")) {

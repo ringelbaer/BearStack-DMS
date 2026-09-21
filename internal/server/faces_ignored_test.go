@@ -45,7 +45,7 @@ func TestIgnoredFacesFilterAndNamingHTTP(t *testing.T) {
 		if response.Code != 200 || !strings.Contains(html, `aria-current="page">Ignoriert</a>`) || strings.Contains(html, `type="search" name="q"`) || !strings.Contains(html, fmt.Sprintf("/photos/faces/%d/thumbnail", id)) {
 			t.Fatalf("%s ignored view: %d %s", user, response.Code, html)
 		}
-		if strings.Contains(html, ">Wiederherstellen</button>") != (user != "reader") || strings.Contains(html, "data-ignored-edit") != (user != "reader") || strings.Contains(html, "data-person-dialog aria") != (user != "reader") {
+		if strings.Contains(html, ">Als unbenannt wiederherstellen</button>") != (user != "reader") || strings.Contains(html, "data-ignored-edit") != (user != "reader") || strings.Contains(html, "data-person-dialog aria") != (user != "reader") {
 			t.Fatalf("%s restore permissions", user)
 		}
 		if !strings.Contains(html, "Seite 1 von 1") {
@@ -73,6 +73,12 @@ func TestIgnoredFacesFilterAndNamingHTTP(t *testing.T) {
 	blank := url.Values{"face_id": {fmt.Sprint(id)}, "action": {"move"}, "ignored": {"1"}, "name": {"  "}}
 	if response := faceRequest(s, "POST", "/photos/faces/edit", "manager", blank); response.Code != 400 {
 		t.Fatalf("empty restore name accepted: %d", response.Code)
+	}
+	for _, action := range []string{"move", "ignore", "restore"} {
+		invalid := url.Values{"face_id": {fmt.Sprint(id)}, "action": {action}, "restore_individually": {"1"}, "name": {"Must not be saved"}}
+		if response := faceRequest(s, "POST", "/photos/faces/edit", "editor", invalid); response.Code != 400 {
+			t.Fatalf("invalid individual restore %s: %d", action, response.Code)
+		}
 	}
 	stillIgnored, err := s.photos.Face(ctx, id)
 	if err != nil || !stillIgnored.Ignored {

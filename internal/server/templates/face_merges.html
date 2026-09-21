@@ -1,6 +1,7 @@
 {{define "face_merges.html"}}
 {{template "head" .}}
-<section class="page-head"><div><h1>Ähnliche Personengruppen</h1><p>Prüfe, ob diese Gruppen dieselbe Person zeigen.</p></div><div class="page-actions"><a class="secondary-button" href="/photos/people">← Alle Personen</a>{{if .Auth.CanPhotosManage}}<a class="secondary-button people-settings-button" href="/settings/photos/faces" aria-label="Einstellungen zur Gesichtserkennung" title="Einstellungen zur Gesichtserkennung">{{template "settings_icon"}}</a>{{end}}</div></section>
+{{template "people_navigation" .}}
+<section class="page-head"><div><h1>Ähnliche Gruppen</h1><p>Prüfe, ob diese Gruppen dieselbe Person zeigen.</p></div></section>
 <p>Beim Zusammenführen werden alle Gesichter der ersten Gruppe der zweiten Gruppe zugeordnet. Ein Klick auf ein Bild öffnet das Foto in der Lightbox. Der Personenname öffnet die Gruppe mit weiteren Aufnahmen. „Getrennt lassen“ verhindert einen automatischen Abgleich zwischen diesen Gruppen.</p>
 <p>Ignorieren und der Stift unter einem Portrait gelten nur für diese Gruppe. Nach einer Einzelaktion kannst du die andere Gruppe noch bearbeiten und das Paar anschließend ausblenden.</p>
 <p class="notice" role="status" data-merge-status hidden></p>
@@ -15,7 +16,7 @@
 <span class="face-merge-folder muted" title="{{photoDisplayPath .SourcePath}}">{{photoParentName .SourcePath}}</span>
 <a href="/photos/people/{{.SourceID}}"><strong>{{if .SourceName}}{{.SourceName}}{{else}}Unbenannt{{end}}</strong></a>
 </div>
-{{if not .SourceName}}<div class="face-merge-side-actions"><button type="button" class="secondary-button" data-merge-ignore aria-label="Erste Gruppe ignorieren">Ignorieren</button><button type="button" class="secondary-button" data-merge-side-name title="Erste Gruppe benennen/zuordnen" aria-label="Erste Gruppe benennen/zuordnen">{{template "person_pencil_icon"}}</button></div>{{end}}
+{{if not .SourceName}}<div class="face-merge-side-actions"><button type="button" class="secondary-button" data-merge-ignore aria-label="Erste Gruppe ignorieren">Gruppe ignorieren</button><button type="button" class="secondary-button" data-merge-side-name title="Erste Gruppe benennen/zuordnen" aria-label="Erste Gruppe benennen/zuordnen">{{template "person_pencil_icon"}}</button></div>{{end}}
 <p class="muted" data-merge-side-status role="status" hidden></p>
 </div>
 <div class="face-merge-side" data-merge-side="{{.TargetID}}" data-side-face-id="{{.TargetFaceID}}" data-face-id="{{.TargetFaceID}}" data-display-path="{{photoDisplayPath .TargetPath}}" {{with .TargetPortrait}}data-x="{{.X}}" data-y="{{.Y}}" data-width="{{.Width}}" data-height="{{.Height}}"{{end}} data-side-revision="{{.TargetRevision}}" data-side-name="{{.TargetName}}" aria-label="Zweite Gruppe">
@@ -24,7 +25,7 @@
 <span class="face-merge-folder muted" title="{{photoDisplayPath .TargetPath}}">{{photoParentName .TargetPath}}</span>
 <a href="/photos/people/{{.TargetID}}"><strong>{{if .TargetName}}{{.TargetName}}{{else}}Unbenannt{{end}}</strong></a>
 </div>
-{{if not .TargetName}}<div class="face-merge-side-actions"><button type="button" class="secondary-button" data-merge-ignore aria-label="Zweite Gruppe ignorieren">Ignorieren</button><button type="button" class="secondary-button" data-merge-side-name title="Zweite Gruppe benennen/zuordnen" aria-label="Zweite Gruppe benennen/zuordnen">{{template "person_pencil_icon"}}</button></div>{{end}}
+{{if not .TargetName}}<div class="face-merge-side-actions"><button type="button" class="secondary-button" data-merge-ignore aria-label="Zweite Gruppe ignorieren">Gruppe ignorieren</button><button type="button" class="secondary-button" data-merge-side-name title="Zweite Gruppe benennen/zuordnen" aria-label="Zweite Gruppe benennen/zuordnen">{{template "person_pencil_icon"}}</button></div>{{end}}
 <p class="muted" data-merge-side-status role="status" hidden></p>
 </div>
 </div>
@@ -32,11 +33,11 @@
 <form method="post" action="/photos/people/merge-suggestions/{{.ID}}/accept" class="settings-actions face-merge-actions"{{if and .SourceName .TargetName}} data-merge-warning="{{template "face_merge_named_warning" .}}"{{end}}>
 <input type="hidden" name="source_revision" value="{{.SourceRevision}}"><input type="hidden" name="target_revision" value="{{.TargetRevision}}">
 {{if and .SourceName .TargetName}}<noscript><label><input type="checkbox" required> {{template "face_merge_named_warning" .}} Ich bestätige die Zusammenführung.</label></noscript>{{end}}
-<button type="submit" class="face-merge-accept">Zusammenführen</button>{{if and (not .SourceName) (not .TargetName)}}<button type="button" class="secondary-button" data-merge-name title="Zusammenführen und benennen/zuordnen" aria-label="Zusammenführen und benennen/zuordnen">{{template "person_pencil_icon"}}</button>{{end}}<button type="submit" class="secondary-button face-merge-reject" formaction="/photos/people/merge-suggestions/{{.ID}}/reject" formnovalidate>Getrennt lassen</button>
+<button type="submit" class="secondary-button face-merge-accept">Zusammenführen</button>{{if and (not .SourceName) (not .TargetName)}}<button type="button" class="secondary-button" data-merge-name title="Zusammenführen und benennen/zuordnen" aria-label="Zusammenführen und benennen/zuordnen">{{template "person_pencil_icon"}}</button>{{end}}<button type="submit" class="secondary-button face-merge-reject" formaction="/photos/people/merge-suggestions/{{.ID}}/reject" formnovalidate>Getrennt lassen</button>
 </form>
-<button type="button" class="secondary-button face-merge-dismiss" data-merge-dismiss hidden>Ausblenden</button>
+<button type="button" class="secondary-button face-merge-dismiss" data-merge-dismiss hidden>Paar ausblenden</button>
 </section>
-{{else}}<p>Aktuell keine Zusammenführungsvorschläge. Neue Vorschläge entstehen beim Hintergrundabgleich.{{if .Auth.CanPhotosManage}} Du kannst ihn unter <a href="/settings/photos/faces">Gesichtserkennung</a> erneut starten.{{end}}</p>{{end}}
+{{else}}<p>Aktuell keine Vorschläge für ähnliche Gruppen. Neue Vorschläge entstehen beim Hintergrundabgleich.{{if .Auth.CanPhotosManage}} Du kannst ihn unter <a href="/settings/photos/faces">Gesichtserkennung</a> erneut starten.{{end}}</p>{{end}}
 </div>
 <p data-merge-hint {{if not .FaceMergeSuggestions}}hidden{{end}}>Bis zu 60 Vorschläge werden angezeigt. Nach dem Bearbeiten rücken weitere nach.</p>
 <div class="photo-module" data-photo-module data-photo-mode="view">{{template "photo_lightbox" .}}</div>

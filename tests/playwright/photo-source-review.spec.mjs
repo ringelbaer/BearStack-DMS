@@ -33,9 +33,13 @@ test('preserved preview and current source can be reviewed on desktop and mobile
   await expect(page.locator('[data-review-stage] img')).toBeVisible();
   expect(await (await context.request.get(`${baseURL}/photos/faces/${id}/thumbnail`)).body()).toEqual(before);
   for(const width of [1440,390]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);}
-  await page.locator('input[name="name"]').fill('Ada');await page.locator('input[name="x"]').fill('0.12');
+  await page.locator('input[name="name"]').fill('Ada');
+  await expect(page.getByRole('option',{name:'Neu anlegen: „Ada“'})).toBeVisible();
+  await page.getByRole('option',{name:'Neu anlegen: „Ada“'}).click();
+  await page.getByText('Rahmen präzise einstellen',{exact:true}).click();
+  await page.locator('input[name="x"]').fill('0.12');
   await expect(page.locator('[data-review-box]')).toHaveCSS('left',/.+/);
-  await page.getByRole('button',{name:'Rahmen und Person bestätigen'}).click();
+  await page.getByRole('button',{name:'Bestätigen und weiter'}).click();
   await expect(page).toHaveURL(/\/photos\/faces\/review/);await expect(page.getByText('Keine Gesichter zu prüfen.')).toBeVisible();
   const checked=await context.request.get(`${baseURL}/photos/faces/${id}/review`,{headers:{Accept:'application/json'}});const state=await checked.json();expect(state.face.needs_review).toBe(false);expect(state.face.name).toBe('Ada');expect(state.face.x).toBe(.12);
   await page.goto(baseURL+'/settings/photos/identities');await expect(page.getByRole('heading',{name:'Fotoordner und Aufbewahrung'})).toBeVisible();expect(errors).toEqual([]);

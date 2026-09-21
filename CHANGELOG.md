@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.5.0
+
+- Web-Personenverwaltung: gemeinsame Bereichsnavigation und Rückwege, separate Anzeigeeinstellungen sowie einheitliche Auswahlleisten und Kachelauswahl in Übersicht, Personendetails und ignorierten Gesichtern. Auswahl bleibt auf die aktuelle Seite begrenzt.
+- Ignorierte Gesichter gemeinsam als unbenannt wiederherstellen oder einer Person zuordnen. Umfang und Wiederherstellungsverhalten stehen direkt an den Aktionen; Originalfotos bleiben unverändert. Ohne Zielperson erhält jedes Gesicht eine eigene unbenannte Gruppe (`restore_individually=1`).
+- Gruppenbenennung und Zusammenführung zeigen das Ziel vor dem expliziten Speichern. Einzelne Gesichter können weiter direkt zugeordnet werden. Ignorieren verwendet ein eigenes Symbol; optionale Ordner- und Fotoaktionen stehen in Kontextmenüs. Weitreichende Ordneraktionen werden mit ihrem Umfang bestätigt.
+- Geänderte Fotos: gemeinsamer Personenpicker, einklappbare Rahmenkoordinaten und „Bestätigen und weiter“. Optionales HTML-Formularfeld `next=1`; bestehende JSON-Antworten und Berechtigungen unverändert.
+- MINOR für neue Sammelaktionen und den erweiterten Prüfablauf; Android bleibt bei 0.22.1. README, Web-Anleitung, Website und OpenAPI aktualisiert.
+- Validiert: vollständige Go-Tests der Server- und Fotopakete sowie die betroffenen Playwright-Abläufe erfolgreich. Geprüft sind mobile/Desktop-Layouts, Tastaturbedienung, Auswahl und Zusammenführung, Berechtigungen, getrennte Sammelwiederherstellung, veraltete Antworten, verlorene Schreibantworten und Nachlade-Timeouts. Website gebaut, lokale Anleitungslinks und JavaScript-Syntax geprüft.
+
 ### BearStack 1.4.1 / Android 0.22.1
 
 - Großansicht: deckende obere und untere Menüflächen schließen die Android-Systemleistenbereiche ein. Bilder scheinen nicht mehr über der oberen oder unter der unteren Leiste durch; passende Insets für Hoch- und Querformat.

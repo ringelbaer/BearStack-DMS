@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.4.1** · Android-App: **0.22.1**.
+Aktuelle Version: **1.5.0** · Android-App: **0.22.1**.
+
+**BearStack 1.5.0:** Die Web-Personenverwaltung bietet gemeinsame Navigation, einheitliche Auswahlleisten und klar benannte Aktionen für Gruppen und einzelne Gesichter. Ignorierte Gesichter lassen sich gemeinsam wiederherstellen oder zuordnen; die Prüfung geänderter Fotos führt direkt zum nächsten offenen Gesicht.
 
 **Android 0.22.1:** Die Großansicht deckt bei eingeblendeten Bedienelementen auch die Bereiche der Android-Status- und Navigationsleiste vollständig ab. Das Bild scheint dort nicht mehr oberhalb oder unterhalb der Menüleisten durch.
 

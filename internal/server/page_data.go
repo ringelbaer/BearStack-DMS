@@ -9,6 +9,7 @@ import (
 )
 
 type PageData struct {
+	PeopleSection           string
 	FamilyTreeEnabled       bool
 	FamilyTreeSettings      photos.FamilyTreeSettings
 	PhotoIdentities         photos.PhotoIdentityStatus

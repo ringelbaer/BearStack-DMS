@@ -593,6 +593,17 @@
 </li>
 
         <li class="md-nav__item">
+  <a href="#gemeinsame-navigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gemeinsame Navigation
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
   <a href="#ubersicht-filtern-und-sortieren" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1160,6 +1171,17 @@
 </li>
 
         <li class="md-nav__item">
+  <a href="#gemeinsame-navigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Gemeinsame Navigation
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
   <a href="#ubersicht-filtern-und-sortieren" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1450,9 +1472,16 @@ löschen darf ein Konto mit <strong>Fotos verwalten</strong> (<code>photos.manag
    oder eine bereits vorhandene Person aus den Vorschlägen auswählen.</li>
 <li>Die benannte Person öffnen und ihre Gesichter auf falsche Zuordnungen prüfen.</li>
 </ol>
-<p>Die Auswahl eines Namensvorschlags speichert sofort. <strong>Abbrechen</strong> verändert
-nichts. Ist die Liste leer, können noch keine Gesichter erkannt worden sein;
+<p>Bei einzelnen Gesichtern führt ein Vorschlag wie <strong>„Anna“ zuordnen</strong> die Änderung
+sofort aus. Für ganze Gruppen oder Ordner wählst du zunächst das Ziel und bestätigst
+anschließend mit dem beschrifteten Speichern-Button. <strong>Abbrechen</strong> verändert nichts. Ist die Liste leer, können noch keine Gesichter erkannt worden sein;
 die automatische Verarbeitung ist standardmäßig ausgeschaltet.</p>
+<h2 id="gemeinsame-navigation">Gemeinsame Navigation<a class="headerlink" href="#gemeinsame-navigation" title="Permanent link">&para;</a></h2>
+<p>Die Bereichsnavigation bietet <strong>Personen</strong>, <strong>Gruppenbilder</strong>, <strong>Ähnliche Gruppen</strong>
+und <strong>Geänderte Fotos</strong> entsprechend deinen Rechten. Der aktuelle Bereich ist markiert.
+Darüber führen die Pfadlinks zurück zur Übersicht oder Person. Hilfe und die
+administrativen Erkennungseinstellungen stehen rechts. Auf schmalen Bildschirmen
+lässt sich die Bereichsnavigation horizontal scrollen.</p>
 <h2 id="ubersicht-filtern-und-sortieren">Übersicht filtern und sortieren<a class="headerlink" href="#ubersicht-filtern-und-sortieren" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1524,7 +1553,7 @@ Filter und Sortierung; explizite Angaben in einem Link haben Vorrang. Ohne
 JavaScript wird die Sortierung über <strong>Suchen</strong> beziehungsweise <strong>Sortieren</strong>
 übernommen.</p>
 <h3 id="darstellung-anpassen">Darstellung anpassen<a class="headerlink" href="#darstellung-anpassen" title="Permanent link">&para;</a></h3>
-<p>Im <strong>⋯-Menü</strong> lassen sich Thumbnailgröße <strong>S/M/L</strong>, Fotoanzahl und bei benannten
+<p>Unter <strong>Anzeigeeinstellungen</strong> rechts in der Werkzeugleiste lassen sich Thumbnailgröße <strong>S/M/L</strong>, Fotoanzahl und bei benannten
 Gruppen die Ordneranzeige ändern. Unter <strong>Unbenannt</strong> und <strong>Ignoriert</strong> steht der
 Ordner immer über dem Bild. Im Hauptverzeichnis heißt er <strong>Fotos</strong>; Datumspräfixe
 und Unterstriche werden wie in der Galerie aufbereitet.</p>
@@ -1569,18 +1598,21 @@ stabil das Gesicht mit der kleinsten ID verwendet.</p>
 </table>
 <p>Der Dialog zeigt einen vergrößerten Ausschnitt des Originalfotos mit Rahmen und
 formatiertem Fotopfad. Die Vorschlagsliste enthält ausschließlich benannte
-Personen mit Porträts. Ein Vorschlag oder <strong>Neu anlegen</strong> speichert direkt;
+Personen mit Porträts. Bei einzelnen Gesichtern speichert ein Vorschlag oder <strong>Neu anlegen</strong> direkt;
+bei Gruppen und Ordnern ist anschließend die beschriftete Hauptaktion zu bestätigen.
 Pfeiltasten und Enter funktionieren ebenfalls. Ein fehlendes Vorschaubild
 verhindert die Namensauswahl nicht.</p>
 <h3 id="mehrere-gruppen-bearbeiten">Mehrere Gruppen bearbeiten<a class="headerlink" href="#mehrere-gruppen-bearbeiten" title="Permanent link">&para;</a></h3>
-<p>In der Übersicht die gewünschten Kacheln markieren. Unter <strong>Unbenannt</strong> macht
-der <strong>Auswahlmodus</strong> links neben <strong>⋯</strong> die ganze Kachel anklickbar; Enter und
-Leertaste wählen ebenfalls aus. Stift und Einzel-Ignorieren sind währenddessen
-ausgeblendet. Ausschalten des Modus erhält die Markierungen.</p>
+<p>Übersicht, Personendetails und ignorierte Gesichter verwenden denselben <strong>Auswahlmodus</strong>:
+Ein Klick auf eine Kachel markiert sie, ein weiterer hebt die Markierung auf.
+Enter und Leertaste funktionieren ebenfalls. Ohne Auswahlmodus bleiben die
+Checkboxen nutzbar. <strong>Alle auf dieser Seite</strong> markiert höchstens die aktuelle Seite.
+Ein Seitenwechsel hebt die Auswahl auf; das Ausschalten des Modus erhält sie.
+Die gemeinsame Leiste unten nennt Anzahl und Art der ausgewählten Einträge und
+bietet <strong>Auswahl aufheben</strong>. Einzelaktionen sind im Auswahlmodus ausgeblendet.</p>
 <p><strong>Personen zusammenführen</strong> verbindet die ausgewählten Gruppen. Die zuerst
 ausgewählte benannte Person bleibt mit ihrem Namen erhalten; sind alle Gruppen
-unbenannt, bleibt die zuerst gewählte Gruppe erhalten. <strong>Auswahl benennen /
-zuordnen</strong> erlaubt stattdessen einen neuen gemeinsamen Namen oder eine vorhandene
+unbenannt, bleibt die zuerst gewählte Gruppe erhalten. <strong>Auswahl zuordnen</strong> erlaubt stattdessen einen neuen gemeinsamen Namen oder eine vorhandene
 benannte Zielperson. Eine bereits markierte Person kann ebenfalls Ziel sein.</p>
 <p>Die Auswahl gilt für die aktuelle Seite. Zusammengehörige Änderungen werden
 gemeinsam gespeichert. Personen-Tags bleiben beim Zusammenführen erhalten;
@@ -1590,10 +1622,10 @@ widersprüchliche Stammdaten müssen vorher geklärt werden.</p>
 Zielperson auswählen oder einen neuen Namen vergeben. Markierte Gesichter lassen
 sich gemeinsam bearbeiten oder ignorieren. Ein leerer Name im Auswahldialog
 trennt diese Auswahl als neue unbenannte Gruppe ab.</p>
-<p><strong>Alle auswählen</strong> markiert nur die Gesichter der aktuellen Seite. Gesicht und
-Dateiname öffnen das vollständige Foto im Bildbetrachter. Das <strong>⋯-Menü</strong> bündelt
-<strong>Ordner-Pfade prüfen</strong>, <strong>Stammdaten</strong>, <strong>Anzeigeeinstellungen</strong> und <strong>Hilfe</strong>; der Hilfedialog erklärt auch die
-Vergleichssterne.</p>
+<p><strong>Alle auf dieser Seite</strong> markiert nur die Gesichter der aktuellen Seite. Gesicht und
+Dateiname öffnen das vollständige Foto im Bildbetrachter. <strong>Stammdaten</strong> und <strong>Anzeigeeinstellungen</strong> stehen direkt in der Werkzeugleiste.
+Das <strong>⋯-Menü</strong> enthält die optionale <strong>Ordner-Pfade prüfen</strong>-Aktion. <strong>Hilfe</strong> steht
+rechts neben der Bereichsnavigation und erklärt auch die Vergleichssterne.</p>
 <h3 id="mit-der-lupe-passende-personen-suchen">Mit der Lupe passende Personen suchen<a class="headerlink" href="#mit-der-lupe-passende-personen-suchen" title="Permanent link">&para;</a></h3>
 <p>Die Lupe neben dem Namensfeld vergleicht das angezeigte Gesicht mit gespeicherten
 Referenzen benannter Personen. Bis zu <strong>20 Kandidaten</strong> erscheinen nach
@@ -1615,7 +1647,7 @@ Ansicht unterscheidet sich der Umfang:</p>
 </thead>
 <tbody>
 <tr>
-<td><strong>×</strong> an einer unbenannten Kachel</td>
+<td><strong>Gesicht ignorieren</strong> (durchgestrichener Kreis) an einer unbenannten Kachel</td>
 <td>Das angezeigte Gesicht; weitere Gesichter der Gruppe bleiben aktiv.</td>
 </tr>
 <tr>
@@ -1627,15 +1659,19 @@ Ansicht unterscheidet sich der Umfang:</p>
 <td>Die markierten Gesichter.</td>
 </tr>
 <tr>
-<td>Einzelaktion einer Gruppe unter <strong>Ähnliche Gesichter</strong></td>
+<td>Einzelaktion einer Gruppe unter <strong>Ähnliche Gruppen</strong></td>
 <td>Alle aktiven Gesichter dieser einen unbenannten Gruppe.</td>
 </tr>
 </tbody>
 </table>
-<p>Unter <strong>Ignoriert → Wiederherstellen</strong> wird ein Gesicht als neue unbenannte
+<p>Unter <strong>Ignoriert → Als unbenannt wiederherstellen</strong> wird ein Gesicht als neue unbenannte
 Gruppe sichtbar, auch wenn es vorher einer benannten Person angehörte. Der
 Stift kann es stattdessen direkt benennen oder einer vorhandenen Person
-zuordnen. Andere Gesichter seiner früheren Gruppe bleiben unverändert.</p>
+zuordnen. Andere Gesichter seiner früheren Gruppe bleiben unverändert. Mehrere markierte
+ignorierte Gesichter lassen sich gemeinsam <strong>Als unbenannt wiederherstellen</strong> oder
+<strong>Zuordnen und wiederherstellen</strong>. Beim Wiederherstellen ohne Namen entsteht je Gesicht eine eigene unbenannte Gruppe.
+Die Auswahl wird in einer Transaktion verarbeitet;
+eine ausbleibende Antwort sperrt erneute Änderungen bis <strong>Ansicht erneut laden</strong>.</p>
 <p>Zum Wiederherstellen <strong>mit den bisherigen Zuordnungen</strong> die Aktion für alle
 ignorierten Gesichter eines Fotos verwenden, beschrieben im nächsten Abschnitt.</p>
 <h3 id="ignorierte-gesichter-eines-fotoordners-zurucksetzen">Ignorierte Gesichter eines Fotoordners zurücksetzen<a class="headerlink" href="#ignorierte-gesichter-eines-fotoordners-zurucksetzen" title="Permanent link">&para;</a></h3>
@@ -1655,7 +1691,8 @@ die Aktion nicht an. Sie benötigt <strong>Fotos bearbeiten</strong> und startet
 Erkennung. Die Rückmeldung nennt die Anzahl wiederhergestellter Gesichter.</p>
 <h2 id="gesichter-im-foto-bearbeiten">Gesichter im Foto bearbeiten<a class="headerlink" href="#gesichter-im-foto-bearbeiten" title="Permanent link">&para;</a></h2>
 <p>Ein Foto öffnen und die Info-Seitenleiste anzeigen. Mit Bearbeitungsrecht bietet
-die Gesichtsleiste diese Aktionen:</p>
+die Gesichtsleiste diese Aktionen. <strong>Weitere Gesichtsaktionen</strong> bündelt die seltenen
+Aktionen zur Neuanalyse, Wiederherstellung und Aktualisierung:</p>
 <table>
 <thead>
 <tr>
@@ -1727,7 +1764,7 @@ eines Tags aktualisiert auch seine Personenzuordnungen.</p>
 <p>In der Galerie erscheinen Personen-Tags als virtuelle Ordner unter <strong>Personen</strong>.
 Ein Schrägstrich im Tagnamen erzeugt keine weiteren Ordnerebenen.</p>
 <h2 id="stammdaten-und-familie-pflegen">Stammdaten und Familie pflegen<a class="headerlink" href="#stammdaten-und-familie-pflegen" title="Permanent link">&para;</a></h2>
-<p>In den Details einer <strong>benannten</strong> Person <strong>⋯ → Stammdaten</strong> öffnen. Dort stehen
+<p>In den Details einer <strong>benannten</strong> Person <strong>Stammdaten</strong> öffnen. Dort stehen
 Geburts- und Sterbedatum, Mutter, Vater, Geschwister und Ehen zur Verfügung.
 Lesen benötigt <strong>Fotos lesen</strong>, Speichern <strong>Fotos bearbeiten</strong>. Die Eingabe dieser
 Angaben erfolgt in der Weboberfläche.</p>
@@ -1766,7 +1803,7 @@ Region zunächst erneut geprüft werden. Die
 Grenzen im Detail.</p>
 <h2 id="gruppenbilder-zugig-bearbeiten">Gruppenbilder zügig bearbeiten<a class="headerlink" href="#gruppenbilder-zugig-bearbeiten" title="Permanent link">&para;</a></h2>
 <p><strong>Personenverwaltung → Gruppenbilder</strong> zeigt Fotos mit vielen noch unbenannten
-Gesichtern. Unter <strong>Optionen</strong> die Schwelle wählen: Standard ist <strong>5</strong>, es erscheinen
+Gesichtern. Unter <strong>Durchlaufoptionen</strong> die Schwelle wählen: Standard ist <strong>5</strong>, es erscheinen
 Fotos mit <strong>mehr als fünf</strong> unbenannten, aktiven Gesichtern. Möglich sind Werte
 von 0 bis 255.</p>
 <ol>
@@ -1774,24 +1811,23 @@ von 0 bis 255.</p>
    um ihren Ausschnitt zu vergrößern; ein zweiter Klick zeigt wieder das ganze Foto.</li>
 <li>Unbenannte Gruppen über den Stift benennen oder zuordnen. Diese Aktion gilt
    für die <strong>gesamte Gruppe</strong>, auch in anderen Fotos.</li>
-<li>Mit <strong>×</strong> nur das betreffende Gesicht ignorieren oder mit
+<li>Mit <strong>Gesicht ignorieren</strong> (durchgestrichener Kreis) nur das betreffende Gesicht ignorieren oder mit
    <strong>Verbleibende ignorieren</strong> alle noch unbenannten, aktiven Gesichter des Fotos
    ausblenden und zum nächsten Foto wechseln.</li>
-<li><strong>Überspringen / nächstes Foto</strong> ändert keine Zuordnung. <strong>Durchlauf starten</strong>
+<li><strong>Nächstes Foto</strong> ändert keine Zuordnung. <strong>Durchlauf starten</strong>
    beginnt wieder am Anfang und berücksichtigt auch übersprungene Fotos.</li>
 </ol>
 <p><strong>Nur Unbenannte anzeigen</strong> blendet benannte und ignorierte Vorschauen aus. Das
 ändert weder die Fotoauswahl noch den Umfang von <strong>Verbleibende ignorieren</strong>.
 Ein geöffnetes Foto bleibt nach der Bearbeitung auch unterhalb der Schwelle
-sichtbar. Der Rückgängig-Pfeil stellt alle ignorierten Gesichter dieses Fotos mit
+sichtbar. <strong>Mit Zuordnungen wiederherstellen</strong> stellt alle ignorierten Gesichter dieses Fotos mit
 ihren bisherigen Namen und Zuordnungen wieder her, auch die vom Filter verborgenen.</p>
 <p>Die horizontal scrollbare Bilderleiste ermöglicht das direkte Öffnen früherer
-und späterer Gruppenfotos. <strong>Aktuelles Foto</strong> zentriert sie wieder. Das
-Fragezeichen neben <strong>Alle Personen</strong> erklärt die Bedienung. Grundaktionen wie
+und späterer Gruppenfotos. <strong>Aktuelles Foto</strong> zentriert sie wieder. <strong>Hilfe</strong> rechts in der Bereichsnavigation erklärt die Bedienung. Grundaktionen wie
 Überspringen und Ignorieren funktionieren auch ohne JavaScript; Vergrößerung,
 Dialog und Wiederherstellen in dieser Ansicht benötigen JavaScript.</p>
 <h2 id="ahnliche-gruppen-prufen">Ähnliche Gruppen prüfen<a class="headerlink" href="#ahnliche-gruppen-prufen" title="Permanent link">&para;</a></h2>
-<p><strong>Ähnliche Gesichter</strong> zeigt gespeicherte Vorschläge zum Zusammenführen.
+<p><strong>Ähnliche Gruppen</strong> zeigt gespeicherte Vorschläge zum Zusammenführen.
 Das Foto anklicken, um es vollständig zu sehen; der Personenname öffnet die
 Gruppe. Der angezeigte Ähnlichkeitswert ist keine Wahrscheinlichkeit.</p>
 <table>
@@ -1820,7 +1856,7 @@ Gruppe. Der angezeigte Ähnlichkeitswert ist keine Wahrscheinlichkeit.</p>
 </tr>
 </tbody>
 </table>
-<p>Nach einer Einzelaktion ersetzt <strong>Ausblenden</strong> die gemeinsamen Entscheidungsbuttons.
+<p>Nach einer Einzelaktion ersetzt <strong>Paar ausblenden</strong> die gemeinsamen Entscheidungsbuttons.
 Es entfernt das Paar aus der aktuellen Ansicht, speichert aber keine Trennung.
 In Android heißt die entsprechende Fortsetzung <strong>Weiter</strong>.</p>
 <p>Die Webansicht zeigt bis zu <strong>60 Vorschläge</strong> und startet beim Öffnen keine neue
@@ -1838,18 +1874,20 @@ einmal mit seinem vollständigen formatierten Galeriepfad und darunter höchsten
 acht Gesichtsvorschauen. Weitere Ordner folgen auf der nächsten Seite (40 pro Seite).
 Die zentrierte Seitennavigation zeigt die Seitenzahl mit Abstand zu <strong>Zurück</strong>
 und <strong>Weiter</strong> und bleibt auch auf schmalen Bildschirmen bedienbar.</p>
-<p><strong>Alle neu zuweisen</strong> öffnet das gemeinsame Personenmodal für den jeweiligen Ordner.
+<p><strong>Gesichter zuordnen …</strong> öffnet das gemeinsame Personenmodal für den jeweiligen Ordner.
 Dort steht der vollständig formatierte Pfad zur Kontrolle; wähle eine vorhandene
 Person oder gib einen neuen Namen ein. <strong>Abbrechen</strong> schließt ohne Änderung.
 Escape schließt zunächst offene Suchvorschläge, danach den Dialog. Die Ordnerliste
 selbst enthält keine Suchfelder.</p>
+<p>Unter <strong>Weitere Ordneraktionen</strong> stehen die selteneren Eingriffe. Vor der Ausführung
+zeigt eine Bestätigung Aktion und exakten Ordner; Unterordner sind nicht betroffen.</p>
 <p>Mit <strong>Fotos bearbeiten</strong> stehen folgende Aktionen für alle aktiven Gesichter der
 Person im jeweiligen Ordner bereit, auch für Gesichter außerhalb der Vorschau:</p>
 <ul>
-<li><strong>Alle neu zuweisen</strong>: vorhandene Person wählen oder neuen Namen eingeben.</li>
-<li><strong>Alle auf unbenannt setzen</strong>: als neue unbenannte Gruppe abtrennen.</li>
-<li><strong>Alle ignorieren</strong>: aus den aktiven Ansichten und dem Abgleich entfernen.</li>
-<li><strong>Pfad ausschließen und Gesichter auf unbenannt setzen</strong>: abtrennen und weitere
+<li><strong>Gesichter zuordnen …</strong>: vorhandene Person wählen oder neuen Namen eingeben.</li>
+<li><strong>Gesichter auf unbenannt setzen</strong>: als neue unbenannte Gruppe abtrennen.</li>
+<li><strong>Gesichter ignorieren</strong>: aus den aktiven Ansichten und dem Abgleich entfernen.</li>
+<li><strong>Pfad ausschließen und Zuordnungen auflösen</strong>: abtrennen und weitere
   Zuordnungen dieses exakten Ordners zur bisherigen Person dauerhaft sperren.</li>
 <li><strong>Pfad wieder freigeben</strong>: Sperre aufheben; keine automatische Rückzuweisung.</li>
 </ul>
@@ -1864,9 +1902,12 @@ Konflikte mit vorhandenen Gesichtern verhindern die gesamte Zusammenführung.</p
 <strong>Foto geändert / Prüfen</strong>. Die letzten bestätigten Gesichtsdaten und Vorschauen
 bleiben zunächst erhalten, ihre alten Vergleichsvektoren werden aber nicht weiter
 zur Erkennung verwendet.</p>
-<p>Unter <strong>Einstellungen → Fotos → Gesichter geänderter Fotos prüfen</strong> die alte
+<p>Unter <strong>Personenverwaltung → Geänderte Fotos</strong> die alte
 Vorschau mit dem aktuellen Bild vergleichen. Rahmen und Person lassen sich
-bestätigen oder korrigieren. Dafür reicht <strong>Fotos bearbeiten</strong>. Auch ohne
+bestätigen oder korrigieren. Die Namenssuche verwendet dieselben Vorschläge wie die
+übrige Personenverwaltung. Exakte Koordinaten stehen unter <strong>Rahmen präzise einstellen</strong>.
+<strong>Bestätigen und weiter</strong> öffnet das nächste offene Gesicht und kehrt am Ende zur
+Prüfliste zurück. Dafür reicht <strong>Fotos bearbeiten</strong>. Auch ohne
 verfügbaren Gesichtsdienst kann eine Region bestätigt werden; der historische
 Vektor wird dadurch nicht wieder zur Vergleichsreferenz.</p>
 <h2 id="fehler-und-unbestatigte-anderungen">Fehler und unbestätigte Änderungen<a class="headerlink" href="#fehler-und-unbestatigte-anderungen" title="Permanent link">&para;</a></h2>
@@ -1973,7 +2014,7 @@ die Auswahl, sofern sie mehrere unabhängige Familien enthält.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.4.1 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.5.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
 

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 1.4.1
+  version: 1.5.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -254,6 +254,7 @@ paths:
               properties:
                 revision: {type: string, pattern: '^[a-f0-9]{64}$'}
                 name: {type: string, maxLength: 200}
+                next: {type: string, enum: ["1"], description: "Optional HTML workflow: continue with the next pending face, wrapping to earlier pending faces. Returns to the review list when none remain. Ignored for JSON responses."}
                 x: {type: number, minimum: 0, maximum: 1}
                 y: {type: number, minimum: 0, maximum: 1}
                 width: {type: number, minimum: 0.002, maximum: 1}
@@ -264,7 +265,7 @@ paths:
           content:
             application/json:
               schema: {type: object, required: [ok], properties: {ok: {const: true}}}
-        '303': {description: Redirect to the review list after successful HTML form.}
+        '303': {description: "Redirect to the review list, or the next pending face when next=1, after successful HTML form."}
         '400': {description: Invalid region or assignment.}
         '403': {description: "Missing capability, invalid origin or protected photo."}
         '404': {description: Face or source unavailable.}
@@ -3668,7 +3669,9 @@ paths:
         apply. The restore action only accepts currently ignored faces and changes
         all selected faces atomically. With target=0 and no name, it creates an
         unnamed group; a name creates a named group, and an existing target assigns
-        only the restored faces to that person. Other faces remain unchanged.
+        only the restored faces to that person. Since 1.5.0, restore_individually=1
+        with target=0 and a blank name restores each selected face into a separate
+        unnamed group in the same transaction. Other faces remain unchanged.
         The move action likewise changes only the supplied face IDs, including
         faces already assigned to a named person. It never renames an existing
         source or target person or moves the other faces in their groups.
@@ -3686,6 +3689,7 @@ paths:
             schema:
               type: object
               properties:
+                restore_individually: {type: string, enum: ["1"], description: "Only for restore without target or name. Create a separate unnamed group per face atomically."}
                 face_id:
                   type: array
                   items:

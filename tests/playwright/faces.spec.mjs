@@ -52,13 +52,14 @@ test("people navigation and filters leave room for results on mobile", async ({ 
   await page.goto(baseURL + "/photos/people?filter=unknown");
   for (const width of [320, 390, 640, 1440]) {
     await page.setViewportSize({ width, height: 800 });
+    await page.screenshot({path:`/tmp/bearstack-people-workspace-${width}.png`,fullPage:true});
     const layout = await page.evaluate(() => {
-      const links = [...document.querySelectorAll(".people-page-head .page-actions a")].map(el => el.getBoundingClientRect());
+      const links = [...document.querySelectorAll(".people-section-tabs a")].map(el => el.getBoundingClientRect());
       const filter = document.querySelector("[data-people-filter]").getBoundingClientRect();
       const menu = document.querySelector("[data-people-display] summary").getBoundingClientRect();
       return {
         overflow: document.documentElement.scrollWidth - innerWidth,
-        paired: links[0].top === links[1].top && links[2].top === links[3].top,
+        paired: links.every(rect => rect.top === links[0].top),
         filterBottom: filter.bottom,
         menuInside: menu.top >= filter.top && menu.bottom <= filter.bottom,
         touchTargets: links.every(rect => rect.height >= 44) && menu.height >= 44,
@@ -111,7 +112,7 @@ test("face settings fit the shared desktop and mobile layout", async ({ browser 
   await page.getByRole("button", { name: "Anmelden" }).click();
   await page.goto(baseURL + "/settings/photos/faces");
   await expect(page.getByRole("heading", { name: "Gesichtserkennung", exact: true })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Einstellungen", exact: true }).locator("a")).toHaveCount(6);
+  await expect(page.getByRole("navigation", { name: "Einstellungen", exact: true }).locator("a")).toHaveCount(7);
   for (const width of [1440, 1024, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     const layout = await page.evaluate(() => {
@@ -275,7 +276,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.getByLabel("Auswählen", { exact: true }).first().check();
   await expect(lightbox).not.toBeVisible();
   await page.getByLabel("Auswählen", { exact: true }).first().uncheck();
-  await page.getByRole("button", { name: "Person benennen / zuordnen", exact: true }).click();
+  await page.getByRole("button", { name: "Gruppe benennen / zusammenführen", exact: true }).click();
   await page.getByRole("combobox",{name:"Name",exact:true}).fill("Jürgen");await page.getByRole("button",{name:"Benennen",exact:true}).click();await expect(page.getByRole("heading",{name:"Jürgen",exact:true})).toBeVisible();
   await expect(page.locator("button[data-face-favorite]")).toHaveCount(2);
   await page.locator("button[data-face-favorite]").first().click();
@@ -313,8 +314,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(unnamedCard.locator("strong")).toBeHidden();
   await expect(unnamedCard.locator("a.person-card")).toHaveAccessibleName("Person anzeigen: Unbenannt");
   await unnamedCard.locator("a.person-card").click();
-  await expect(page.getByRole("link", { name: "← Alle Personen", exact: true })).toHaveAttribute("href", /unknown=1/);
-  await page.getByRole("link", { name: "← Alle Personen", exact: true }).click();
+  await expect(page.getByRole("link", { name: "Alle Personen", exact: true })).toHaveAttribute("href", /unknown=1/);
+  await page.getByRole("link", { name: "Alle Personen", exact: true }).click();
   await expect(peopleFilter).toHaveValue("unknown");
   await page.goto(baseURL + "/photos/people");
   await expect(peopleFilter).toHaveValue("unknown");
@@ -348,6 +349,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.screenshot({ path: "/tmp/bearstack-people-modal-preview.png", fullPage: true });
   await dialogName.fill("Filter-Test");
   await personDialog.getByRole("option", { name: /Neu anlegen:.*Filter-Test/ }).click();
+  await expect(personDialog).toBeVisible();
+  await personDialog.locator("[data-person-submit]").click();
   await expect(personDialog).not.toBeVisible();
   await expect(page.locator("a.person-card")).toHaveCount(0);
   await expect(peopleFilter).toHaveValue("unknown");
@@ -392,7 +395,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.evaluate(() => { window.modalPageMarker = "unchanged"; });
   await editJuergen.click();
   await expect(dialogName).toHaveValue("Jürgen");
-  await expect(personDialog.getByRole("button", { name: "Ignorieren", exact: true })).toBeDisabled();
+  await expect(personDialog.locator("[data-person-dialog-ignore]")).toBeHidden();
   await dialogName.fill("");
   await expect(personDialog.locator("[data-person-feedback]")).toHaveText("Keine passende Person gefunden.");
   await expect(personDialog.getByRole("option", { name: /Unbenannt/ })).toHaveCount(0);
@@ -406,6 +409,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(personDialog.getByRole("option", { name: /Neu anlegen:/ })).toBeVisible();
   await page.route("**/photos/people/*/rename", route => route.fulfill({ status: 503, body: "Unavailable" }));
   await personDialog.getByRole("option", { name: /Neu anlegen:/ }).click();
+  await expect(personDialog).toBeVisible();
+  await personDialog.locator("[data-person-submit]").click();
   await expect(personDialog.locator("[data-person-dialog-status]")).toContainText("HTTP 503");
   await expect(dialogName).toHaveValue("Jürgen Neu");
   await page.unroute("**/photos/people/*/rename");
@@ -430,17 +435,17 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
 
   await expect(page.locator(".person-detail-selection")).toBeHidden();
   await page.getByLabel("Auswählen", { exact: true }).first().check();
-  await expect(page.locator("[data-detail-selection-count]")).toHaveText("1 ausgewählt");
-  await page.getByRole("button", { name: "Auswahl benennen / zuordnen", exact: true }).click();
+  await expect(page.locator("[data-detail-selection-count]")).toHaveText("1 Gesicht auf dieser Seite");
+  await page.getByRole("button", { name: "Auswahl zuordnen", exact: true }).click();
   const detailDialog = page.locator("[data-person-dialog]");
   await expect(detailDialog.locator("#person-dialog-title")).toHaveText("Gesicht benennen oder zuordnen");
   await detailDialog.getByRole("combobox").fill("Marie");
-  await detailDialog.getByRole("button", { name: "Auswahl benennen", exact: true }).click();
+  await detailDialog.getByRole("button", { name: "Gesicht benennen", exact: true }).click();
   await expect(detailDialog).not.toBeVisible();
   await expect(page.getByLabel("Auswählen", { exact: true })).toHaveCount(1);
-  await page.getByRole("link", { name: "← Alle Personen", exact: true }).click();
+  await page.getByRole("link", { name: "Alle Personen", exact: true }).click();
   await page.locator("a.person-card").filter({ hasText: "Marie" }).click();
-  await page.getByRole("button", { name: "Person benennen / zuordnen", exact: true }).click();
+  await page.getByRole("button", { name: "Gruppe benennen / zusammenführen", exact: true }).click();
   const personSearch = detailDialog.getByRole("combobox", { name: "Name", exact: true });
   await personSearch.fill("Marie");
   await expect(detailDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" })).toHaveCount(0);
@@ -448,7 +453,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await detailDialog.getByRole("button", { name: "Benennen", exact: true }).click();
   await expect(detailDialog).not.toBeVisible();
   await expect(page.getByRole("heading", { name: "nicht-vorhandene-person", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Person benennen / zuordnen", exact: true }).click();
+  await page.getByRole("button", { name: "Gruppe benennen / zusammenführen", exact: true }).click();
   await page.route("**/photos/people?format=suggestions&q=Fehler", route => route.fulfill({ status: 503, body: "Unavailable" }));
   await personSearch.fill("Fehler");
   await expect(detailDialog.locator("[data-person-feedback]")).toContainText("Personen konnten nicht geladen werden");
@@ -457,6 +462,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(detailDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" })).toHaveCount(1);
   await personSearch.press("ArrowDown");
   await personSearch.press("Enter");
+  await expect(detailDialog).toBeVisible();
+  await detailDialog.locator("[data-person-submit]").click();
   await expect(detailDialog).not.toBeVisible();
   await expect(page.getByRole("heading", { name: "Jürgen", exact: true })).toBeVisible();
   await expect(page.getByLabel("Auswählen", { exact: true })).toHaveCount(2);
@@ -519,7 +526,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(page.locator("[data-ignore-face]")).toBeHidden();
   await page.locator("a.person-card").click();
   await page.getByLabel("Auswählen", { exact: true }).check();
-  await page.getByRole("button", { name: "Auswahl ignorieren", exact: true }).click();
+  await page.locator("[data-detail-ignore-selection]").click();
   await page.goto(baseURL + "/photos/people?q=J%C3%BCrgen&known=1");
   await expect(page.locator("a.person-card")).toHaveCount(0);
   await expect(page.locator("[data-people-overview]")).toContainText("Keine Personen für diesen Filter gefunden.");
@@ -538,7 +545,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(mergeButton).toBeHidden();
   await page.locator(".person-overview-card").filter({ hasNotText: "Merge-Ziel" }).first().locator("[data-person-select]").check();
   await expect(mergeButton).toBeVisible();
-  await expect(page.locator("[data-people-merge-target]")).toContainText("Ziel: Merge-Ziel");
+  await expect(page.locator("[data-people-merge-target]")).toContainText("Zusammenführen mit: Merge-Ziel");
   const mergeBounds = await page.locator("[data-people-merge]").boundingBox();
   expect(mergeBounds.x).toBeGreaterThanOrEqual(0);
   expect(mergeBounds.x + mergeBounds.width).toBeLessThanOrEqual(390);
@@ -549,11 +556,13 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await second.check();
   await page.route("**/photos/people/*/merge", route => route.fulfill({ status: 503, body: "Unavailable" }));
   await mergeButton.click();
+  await page.locator("[data-app-dialog-confirm]").click();
   await expect(page.locator("[data-people-status]")).toContainText("HTTP 503");
   await expect(mergeButton).toBeEnabled();
   await expect(page.locator("[data-person-select]:checked")).toHaveCount(2);
   await page.unroute("**/photos/people/*/merge");
   await mergeButton.click();
+  await page.locator("[data-app-dialog-confirm]").click();
   await expect(page.locator("[data-people-status]")).toHaveText("Personen zusammengeführt.");
   await expect(mergeButton).toBeHidden();
   await expect(page.locator("a.person-card")).toHaveCount(1);
@@ -599,11 +608,11 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(faceMatch).toHaveAttribute("aria-busy", "true");
   const firstUpdate = JSON.stringify({ people: [matchedPerson], has_next: false, done: false }) + "\n";
   await page.evaluate(line => { const bytes = new TextEncoder().encode(line); window.matchStream.enqueue(bytes.slice(0, 9)); window.matchStream.enqueue(bytes.slice(9)); }, firstUpdate);
-  await expect(personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ })).toBeVisible();
+  await expect(personDialog.getByRole("option", { name: /^„Merge-Ziel“ als Ziel wählen ·/ })).toBeVisible();
   await expect(personDialog.locator("[data-person-feedback]")).toContainText("Abgleich läuft");
   await expect(faceMatch).toHaveAttribute("aria-busy", "true");
   await dialogName.press("ArrowDown");
-  const firstOption = await personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ }).elementHandle();
+  const firstOption = await personDialog.getByRole("option", { name: /^„Merge-Ziel“ als Ziel wählen ·/ }).elementHandle();
   await page.evaluate(person => {
     window.matchStream.enqueue(new TextEncoder().encode(JSON.stringify({ people: [person], has_next: false, done: true }) + "\n"));
   }, matchedPerson);
@@ -611,7 +620,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   expect(await firstOption.evaluate(node => node.isConnected && node.getAttribute("aria-selected") === "true")).toBe(true);
   await page.evaluate(() => { window.fetch = window.originalMatchFetch; });
   await expect(personDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" })).toHaveCount(1);
-  const suggestedPortrait = personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ }).locator("img");
+  const suggestedPortrait = personDialog.getByRole("option", { name: /^„Merge-Ziel“ als Ziel wählen ·/ }).locator("img");
   await expect(suggestedPortrait).toHaveAttribute("src", await page.locator('.person-overview-card[data-person-name="Merge-Ziel"] .person-card img').getAttribute("src"));
   await expect.poll(() => suggestedPortrait.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
   await expect(personDialog.getByRole("option", { name: /Neu anlegen:/ })).toHaveCount(0);
@@ -632,7 +641,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await faceMatch.click();
   await matchingStarted;
   await dialogName.fill("Merge-Ziel");
-  await expect(personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ })).toBeVisible();
+  await expect(personDialog.getByRole("option", { name: /^„Merge-Ziel“ als Ziel wählen ·/ })).toBeVisible();
   releaseMatch();
   await matchingFinished;
   await page.unroute(matchURL);
@@ -647,7 +656,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await suggestedPortrait.evaluate((img, url) => { img.src = url; }, failedPortraitURL.href);
   await failedPortraitResponse;
   await expect(suggestedPortrait).toHaveCSS("visibility", "hidden");
-  await expect(personDialog.getByRole("option", { name: /^Merge-Ziel \(#/ })).toBeVisible();
+  await expect(personDialog.getByRole("option", { name: /^„Merge-Ziel“ als Ziel wählen ·/ })).toBeVisible();
   await page.unroute(failedPortraitURL.href);
   await dialogName.press("ArrowDown");
   const caption = personDialog.locator("[data-person-preview-path]");
@@ -666,6 +675,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.screenshot({ path: "/tmp/bearstack-people-modal-mobile.png", fullPage: true });
   expect(await personDialog.evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth + 1)).toBe(true);
   await dialogName.press("Enter");
+  await expect(personDialog).toBeVisible();
+  await personDialog.locator("[data-person-submit]").click();
   await expect(personDialog).not.toBeVisible();
   await expect(page.locator("a.person-card")).toHaveCount(1);
   await expect(page.locator("a.person-card")).toContainText("Merge-Ziel");
@@ -683,7 +694,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
     await page.evaluate(() => { window.modalPageMarker = "bulk"; });
     for (const checkbox of await page.locator("[data-person-select]").all()) await checkbox.check();
     await page.locator("[data-people-edit-button]").click();
-    await expect(personDialog).toContainText("2 Gruppen benennen oder zuordnen");
+    await expect(personDialog).toContainText("2 Gruppen benennen oder zusammenführen");
   }
   await splitForBulk();
   expect(await dialogName.evaluate(input => input.checkValidity())).toBe(false);
@@ -704,6 +715,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(personDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" })).toHaveCount(1);
   await page.screenshot({ path: "/tmp/bearstack-people-bulk-modal.png", fullPage: true });
   await personDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" }).click();
+  await expect(personDialog).toBeVisible();
+  await personDialog.locator("[data-person-submit]").click();
   await expect(personDialog).not.toBeVisible();
   await expect(page.locator("a.person-card")).toHaveCount(1);
   await expect(page.locator("a.person-card")).toContainText("Gemeinsamer Name");
@@ -730,7 +743,8 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.goto(baseURL + "/photos/people?filter=unknown&page=1");
   const portraitID = await page.locator("[data-people-overview] [data-face-id]").first().getAttribute("data-face-id");
   await page.locator("[data-person-edit]").first().click();
-  const modalIgnore = personDialog.getByRole("button", { name: "Ignorieren", exact: true });
+  const modalIgnore = personDialog.locator("[data-person-dialog-ignore]");
+  await expect(modalIgnore).toHaveText("Gesicht ignorieren");
   await expect(modalIgnore).toBeEnabled();
   for (const width of [320, 1440]) {
     await page.setViewportSize({ width, height: 900 });
@@ -766,6 +780,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   for (const checkbox of await page.locator("[data-person-select]").all()) await checkbox.check();
   await page.locator("[data-people-edit-button]").click();
   await expect(dialogName).toHaveValue("");
+  await expect(modalIgnore).toHaveText("2 Gesichter ignorieren");
   await expect(modalIgnore).toBeEnabled();
   await page.route("**/photos/people?**", route => route.fulfill({ status: 503, body: "Unavailable" }));
   await modalIgnore.click();

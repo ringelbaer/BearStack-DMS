@@ -246,18 +246,20 @@ test("individual actions affect only unnamed sides and retain the pair until hid
     await expect(cards).toHaveCount(2);
     expect((await detail(otherID)).name).toBe("Ada");
     await expect(otherSide.locator("[data-merge-side-name]")).toBeHidden();
-    await first.getByRole("button", {name:"Ausblenden",exact:true}).click();
+    await first.getByRole("button", {name:"Paar ausblenden",exact:true}).click();
     await expect(cards).toHaveCount(1);
     await openPhoto(second.locator("[data-photo-item]").last());
     const remaining=second.locator('[data-side-name=""]');
     await remaining.locator("[data-merge-side-name]").click();
     await dialog.getByRole("combobox").fill("Ada");
-    await dialog.getByRole("option").filter({hasText:"Ada (#"}).click();
+    await dialog.getByRole("option").filter({hasText:"„Ada“ als Ziel wählen"}).click();
+    await expect(dialog).toBeVisible();
+    await dialog.locator("[data-person-submit]").click();
     await expect(dialog).not.toBeVisible();
-    await expect(second.getByRole("button", {name:"Ausblenden",exact:true})).toBeVisible();
+    await expect(second.getByRole("button", {name:"Paar ausblenden",exact:true})).toBeVisible();
     await expect(second.locator(".face-merge-reject")).toBeHidden();
     expect((await detail(otherID)).count).toBe(2);
-    await second.getByRole("button", {name:"Ausblenden",exact:true}).click();
+    await second.getByRole("button", {name:"Paar ausblenden",exact:true}).click();
     await expect(cards).toHaveCount(0);
     expect(await page.evaluate(() => window.mergeSideMarker)).toBe("same document");
     expect(inferenceCalls).toBe(4);
@@ -271,7 +273,7 @@ test("refresh retains an edited pair once even if matching recreated it in rever
     <div data-merge-suggestions>${pairs.map(([id,source,target]) => `<section data-merge-id="${id}" data-source-id="${source}" data-target-id="${target}">
       ${[source,target].map(person => `<div data-merge-side="${person}" data-side-revision="1" data-side-name=""><strong>Unbenannt</strong><div class="face-merge-side-actions"><button data-merge-ignore>Ignorieren</button></div><p data-merge-side-status hidden></p></div>`).join("")}
       <form action="/photos/people/merge-suggestions/${id}/reject"><input name="source_revision" value="1"><input name="target_revision" value="1"><button>Getrennt lassen</button></form>
-      <button data-merge-dismiss hidden>Ausblenden</button></section>`).join("")}</div><p data-merge-hint></p><script src="/static/app-face-merges.js" defer></script>`;
+      <button data-merge-dismiss hidden>Paar ausblenden</button></section>`).join("")}</div><p data-merge-hint></p><script src="/static/app-face-merges.js" defer></script>`;
   try {
     const page=await context.newPage();
     const errors=[];page.on("pageerror",error => errors.push(error.message));
@@ -285,13 +287,13 @@ test("refresh retains an edited pair once even if matching recreated it in rever
     await page.goto(baseURL+"/photos/people/merge-suggestions");
     const first=page.locator('[data-merge-id="1"]');
     await first.locator('[data-merge-side="3"] button').click();
-    await expect(first.getByRole("button",{name:"Ausblenden"})).toBeVisible();
+    await expect(first.getByRole("button",{name:"Paar ausblenden"})).toBeVisible();
     await page.locator('[data-merge-id="2"]').getByRole("button",{name:"Getrennt lassen"}).click();
     await expect(page.locator("[data-merge-suggestions]")).toHaveAttribute("aria-busy","false");
     await expect(page.locator("[data-merge-id]")).toHaveCount(1);
     await expect(first).toBeVisible();
     await expect(first.locator('[data-merge-side="4"] button')).toBeEnabled();
-    await first.getByRole("button",{name:"Ausblenden"}).click();
+    await first.getByRole("button",{name:"Paar ausblenden"}).click();
     await expect(page.locator("[data-merge-suggestions]")).toHaveAttribute("aria-busy","false");
     await expect(page.locator("[data-merge-id]")).toHaveCount(0);
     expect(errors).toEqual([]);

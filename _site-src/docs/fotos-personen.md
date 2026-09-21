@@ -31,9 +31,18 @@ löschen darf ein Konto mit **Fotos verwalten** (`photos.manage`).
    oder eine bereits vorhandene Person aus den Vorschlägen auswählen.
 5. Die benannte Person öffnen und ihre Gesichter auf falsche Zuordnungen prüfen.
 
-Die Auswahl eines Namensvorschlags speichert sofort. **Abbrechen** verändert
-nichts. Ist die Liste leer, können noch keine Gesichter erkannt worden sein;
+Bei einzelnen Gesichtern führt ein Vorschlag wie **„Anna“ zuordnen** die Änderung
+sofort aus. Für ganze Gruppen oder Ordner wählst du zunächst das Ziel und bestätigst
+anschließend mit dem beschrifteten Speichern-Button. **Abbrechen** verändert nichts. Ist die Liste leer, können noch keine Gesichter erkannt worden sein;
 die automatische Verarbeitung ist standardmäßig ausgeschaltet.
+
+## Gemeinsame Navigation
+
+Die Bereichsnavigation bietet **Personen**, **Gruppenbilder**, **Ähnliche Gruppen**
+und **Geänderte Fotos** entsprechend deinen Rechten. Der aktuelle Bereich ist markiert.
+Darüber führen die Pfadlinks zurück zur Übersicht oder Person. Hilfe und die
+administrativen Erkennungseinstellungen stehen rechts. Auf schmalen Bildschirmen
+lässt sich die Bereichsnavigation horizontal scrollen.
 
 ## Übersicht filtern und sortieren
 
@@ -75,7 +84,7 @@ JavaScript wird die Sortierung über **Suchen** beziehungsweise **Sortieren**
 
 ### Darstellung anpassen
 
-Im **⋯-Menü** lassen sich Thumbnailgröße **S/M/L**, Fotoanzahl und bei benannten
+Unter **Anzeigeeinstellungen** rechts in der Werkzeugleiste lassen sich Thumbnailgröße **S/M/L**, Fotoanzahl und bei benannten
 Gruppen die Ordneranzeige ändern. Unter **Unbenannt** und **Ignoriert** steht der
 Ordner immer über dem Bild. Im Hauptverzeichnis heißt er **Fotos**; Datumspräfixe
 und Unterstriche werden wie in der Galerie aufbereitet.
@@ -99,21 +108,24 @@ Vor dem Speichern den Geltungsbereich im Dialog beachten:
 
 Der Dialog zeigt einen vergrößerten Ausschnitt des Originalfotos mit Rahmen und
 formatiertem Fotopfad. Die Vorschlagsliste enthält ausschließlich benannte
-Personen mit Porträts. Ein Vorschlag oder **Neu anlegen** speichert direkt;
+Personen mit Porträts. Bei einzelnen Gesichtern speichert ein Vorschlag oder **Neu anlegen** direkt;
+bei Gruppen und Ordnern ist anschließend die beschriftete Hauptaktion zu bestätigen.
 Pfeiltasten und Enter funktionieren ebenfalls. Ein fehlendes Vorschaubild
 verhindert die Namensauswahl nicht.
 
 ### Mehrere Gruppen bearbeiten
 
-In der Übersicht die gewünschten Kacheln markieren. Unter **Unbenannt** macht
-der **Auswahlmodus** links neben **⋯** die ganze Kachel anklickbar; Enter und
-Leertaste wählen ebenfalls aus. Stift und Einzel-Ignorieren sind währenddessen
-ausgeblendet. Ausschalten des Modus erhält die Markierungen.
+Übersicht, Personendetails und ignorierte Gesichter verwenden denselben **Auswahlmodus**:
+Ein Klick auf eine Kachel markiert sie, ein weiterer hebt die Markierung auf.
+Enter und Leertaste funktionieren ebenfalls. Ohne Auswahlmodus bleiben die
+Checkboxen nutzbar. **Alle auf dieser Seite** markiert höchstens die aktuelle Seite.
+Ein Seitenwechsel hebt die Auswahl auf; das Ausschalten des Modus erhält sie.
+Die gemeinsame Leiste unten nennt Anzahl und Art der ausgewählten Einträge und
+bietet **Auswahl aufheben**. Einzelaktionen sind im Auswahlmodus ausgeblendet.
 
 **Personen zusammenführen** verbindet die ausgewählten Gruppen. Die zuerst
 ausgewählte benannte Person bleibt mit ihrem Namen erhalten; sind alle Gruppen
-unbenannt, bleibt die zuerst gewählte Gruppe erhalten. **Auswahl benennen /
-zuordnen** erlaubt stattdessen einen neuen gemeinsamen Namen oder eine vorhandene
+unbenannt, bleibt die zuerst gewählte Gruppe erhalten. **Auswahl zuordnen** erlaubt stattdessen einen neuen gemeinsamen Namen oder eine vorhandene
 benannte Zielperson. Eine bereits markierte Person kann ebenfalls Ziel sein.
 
 Die Auswahl gilt für die aktuelle Seite. Zusammengehörige Änderungen werden
@@ -127,10 +139,10 @@ Zielperson auswählen oder einen neuen Namen vergeben. Markierte Gesichter lasse
 sich gemeinsam bearbeiten oder ignorieren. Ein leerer Name im Auswahldialog
 trennt diese Auswahl als neue unbenannte Gruppe ab.
 
-**Alle auswählen** markiert nur die Gesichter der aktuellen Seite. Gesicht und
-Dateiname öffnen das vollständige Foto im Bildbetrachter. Das **⋯-Menü** bündelt
-**Ordner-Pfade prüfen**, **Stammdaten**, **Anzeigeeinstellungen** und **Hilfe**; der Hilfedialog erklärt auch die
-Vergleichssterne.
+**Alle auf dieser Seite** markiert nur die Gesichter der aktuellen Seite. Gesicht und
+Dateiname öffnen das vollständige Foto im Bildbetrachter. **Stammdaten** und **Anzeigeeinstellungen** stehen direkt in der Werkzeugleiste.
+Das **⋯-Menü** enthält die optionale **Ordner-Pfade prüfen**-Aktion. **Hilfe** steht
+rechts neben der Bereichsnavigation und erklärt auch die Vergleichssterne.
 
 ### Mit der Lupe passende Personen suchen
 
@@ -151,15 +163,19 @@ Ansicht unterscheidet sich der Umfang:
 
 | Aktion | Umfang |
 | --- | --- |
-| **×** an einer unbenannten Kachel | Das angezeigte Gesicht; weitere Gesichter der Gruppe bleiben aktiv. |
+| **Gesicht ignorieren** (durchgestrichener Kreis) an einer unbenannten Kachel | Das angezeigte Gesicht; weitere Gesichter der Gruppe bleiben aktiv. |
 | **Ignorieren** bei markierten unbenannten Gruppen | Jeweils das angezeigte Gesicht der ausgewählten Kacheln. |
 | Auswahl in den Personendetails | Die markierten Gesichter. |
-| Einzelaktion einer Gruppe unter **Ähnliche Gesichter** | Alle aktiven Gesichter dieser einen unbenannten Gruppe. |
+| Einzelaktion einer Gruppe unter **Ähnliche Gruppen** | Alle aktiven Gesichter dieser einen unbenannten Gruppe. |
 
-Unter **Ignoriert → Wiederherstellen** wird ein Gesicht als neue unbenannte
+Unter **Ignoriert → Als unbenannt wiederherstellen** wird ein Gesicht als neue unbenannte
 Gruppe sichtbar, auch wenn es vorher einer benannten Person angehörte. Der
 Stift kann es stattdessen direkt benennen oder einer vorhandenen Person
-zuordnen. Andere Gesichter seiner früheren Gruppe bleiben unverändert.
+zuordnen. Andere Gesichter seiner früheren Gruppe bleiben unverändert. Mehrere markierte
+ignorierte Gesichter lassen sich gemeinsam **Als unbenannt wiederherstellen** oder
+**Zuordnen und wiederherstellen**. Beim Wiederherstellen ohne Namen entsteht je Gesicht eine eigene unbenannte Gruppe.
+Die Auswahl wird in einer Transaktion verarbeitet;
+eine ausbleibende Antwort sperrt erneute Änderungen bis **Ansicht erneut laden**.
 
 Zum Wiederherstellen **mit den bisherigen Zuordnungen** die Aktion für alle
 ignorierten Gesichter eines Fotos verwenden, beschrieben im nächsten Abschnitt.
@@ -184,7 +200,8 @@ Erkennung. Die Rückmeldung nennt die Anzahl wiederhergestellter Gesichter.
 ## Gesichter im Foto bearbeiten
 
 Ein Foto öffnen und die Info-Seitenleiste anzeigen. Mit Bearbeitungsrecht bietet
-die Gesichtsleiste diese Aktionen:
+die Gesichtsleiste diese Aktionen. **Weitere Gesichtsaktionen** bündelt die seltenen
+Aktionen zur Neuanalyse, Wiederherstellung und Aktualisierung:
 
 | Aktion | Wirkung |
 | --- | --- |
@@ -245,7 +262,7 @@ Ein Schrägstrich im Tagnamen erzeugt keine weiteren Ordnerebenen.
 
 ## Stammdaten und Familie pflegen
 
-In den Details einer **benannten** Person **⋯ → Stammdaten** öffnen. Dort stehen
+In den Details einer **benannten** Person **Stammdaten** öffnen. Dort stehen
 Geburts- und Sterbedatum, Mutter, Vater, Geschwister und Ehen zur Verfügung.
 Lesen benötigt **Fotos lesen**, Speichern **Fotos bearbeiten**. Die Eingabe dieser
 Angaben erfolgt in der Weboberfläche.
@@ -290,7 +307,7 @@ Grenzen im Detail.
 ## Gruppenbilder zügig bearbeiten
 
 **Personenverwaltung → Gruppenbilder** zeigt Fotos mit vielen noch unbenannten
-Gesichtern. Unter **Optionen** die Schwelle wählen: Standard ist **5**, es erscheinen
+Gesichtern. Unter **Durchlaufoptionen** die Schwelle wählen: Standard ist **5**, es erscheinen
 Fotos mit **mehr als fünf** unbenannten, aktiven Gesichtern. Möglich sind Werte
 von 0 bis 255.
 
@@ -298,27 +315,26 @@ von 0 bis 255.
    um ihren Ausschnitt zu vergrößern; ein zweiter Klick zeigt wieder das ganze Foto.
 2. Unbenannte Gruppen über den Stift benennen oder zuordnen. Diese Aktion gilt
    für die **gesamte Gruppe**, auch in anderen Fotos.
-3. Mit **×** nur das betreffende Gesicht ignorieren oder mit
+3. Mit **Gesicht ignorieren** (durchgestrichener Kreis) nur das betreffende Gesicht ignorieren oder mit
    **Verbleibende ignorieren** alle noch unbenannten, aktiven Gesichter des Fotos
    ausblenden und zum nächsten Foto wechseln.
-4. **Überspringen / nächstes Foto** ändert keine Zuordnung. **Durchlauf starten**
+4. **Nächstes Foto** ändert keine Zuordnung. **Durchlauf starten**
    beginnt wieder am Anfang und berücksichtigt auch übersprungene Fotos.
 
 **Nur Unbenannte anzeigen** blendet benannte und ignorierte Vorschauen aus. Das
 ändert weder die Fotoauswahl noch den Umfang von **Verbleibende ignorieren**.
 Ein geöffnetes Foto bleibt nach der Bearbeitung auch unterhalb der Schwelle
-sichtbar. Der Rückgängig-Pfeil stellt alle ignorierten Gesichter dieses Fotos mit
+sichtbar. **Mit Zuordnungen wiederherstellen** stellt alle ignorierten Gesichter dieses Fotos mit
 ihren bisherigen Namen und Zuordnungen wieder her, auch die vom Filter verborgenen.
 
 Die horizontal scrollbare Bilderleiste ermöglicht das direkte Öffnen früherer
-und späterer Gruppenfotos. **Aktuelles Foto** zentriert sie wieder. Das
-Fragezeichen neben **Alle Personen** erklärt die Bedienung. Grundaktionen wie
+und späterer Gruppenfotos. **Aktuelles Foto** zentriert sie wieder. **Hilfe** rechts in der Bereichsnavigation erklärt die Bedienung. Grundaktionen wie
 Überspringen und Ignorieren funktionieren auch ohne JavaScript; Vergrößerung,
 Dialog und Wiederherstellen in dieser Ansicht benötigen JavaScript.
 
 ## Ähnliche Gruppen prüfen
 
-**Ähnliche Gesichter** zeigt gespeicherte Vorschläge zum Zusammenführen.
+**Ähnliche Gruppen** zeigt gespeicherte Vorschläge zum Zusammenführen.
 Das Foto anklicken, um es vollständig zu sehen; der Personenname öffnet die
 Gruppe. Der angezeigte Ähnlichkeitswert ist keine Wahrscheinlichkeit.
 
@@ -329,7 +345,7 @@ Gruppe. Der angezeigte Ähnlichkeitswert ist keine Wahrscheinlichkeit.
 | Gemeinsamer Stift bei zwei unbenannten Gruppen | Beide gemeinsam benennen oder einer vorhandenen Person zuordnen. |
 | **Ignorieren** oder Stift an einer unbenannten Seite | Nur diese gesamte Gruppe bearbeiten; die andere Seite bleibt unverändert. |
 
-Nach einer Einzelaktion ersetzt **Ausblenden** die gemeinsamen Entscheidungsbuttons.
+Nach einer Einzelaktion ersetzt **Paar ausblenden** die gemeinsamen Entscheidungsbuttons.
 Es entfernt das Paar aus der aktuellen Ansicht, speichert aber keine Trennung.
 In Android heißt die entsprechende Fortsetzung **Weiter**.
 
@@ -352,19 +368,22 @@ acht Gesichtsvorschauen. Weitere Ordner folgen auf der nächsten Seite (40 pro S
 Die zentrierte Seitennavigation zeigt die Seitenzahl mit Abstand zu **Zurück**
 und **Weiter** und bleibt auch auf schmalen Bildschirmen bedienbar.
 
-**Alle neu zuweisen** öffnet das gemeinsame Personenmodal für den jeweiligen Ordner.
+**Gesichter zuordnen …** öffnet das gemeinsame Personenmodal für den jeweiligen Ordner.
 Dort steht der vollständig formatierte Pfad zur Kontrolle; wähle eine vorhandene
 Person oder gib einen neuen Namen ein. **Abbrechen** schließt ohne Änderung.
 Escape schließt zunächst offene Suchvorschläge, danach den Dialog. Die Ordnerliste
 selbst enthält keine Suchfelder.
 
+Unter **Weitere Ordneraktionen** stehen die selteneren Eingriffe. Vor der Ausführung
+zeigt eine Bestätigung Aktion und exakten Ordner; Unterordner sind nicht betroffen.
+
 Mit **Fotos bearbeiten** stehen folgende Aktionen für alle aktiven Gesichter der
 Person im jeweiligen Ordner bereit, auch für Gesichter außerhalb der Vorschau:
 
-- **Alle neu zuweisen**: vorhandene Person wählen oder neuen Namen eingeben.
-- **Alle auf unbenannt setzen**: als neue unbenannte Gruppe abtrennen.
-- **Alle ignorieren**: aus den aktiven Ansichten und dem Abgleich entfernen.
-- **Pfad ausschließen und Gesichter auf unbenannt setzen**: abtrennen und weitere
+- **Gesichter zuordnen …**: vorhandene Person wählen oder neuen Namen eingeben.
+- **Gesichter auf unbenannt setzen**: als neue unbenannte Gruppe abtrennen.
+- **Gesichter ignorieren**: aus den aktiven Ansichten und dem Abgleich entfernen.
+- **Pfad ausschließen und Zuordnungen auflösen**: abtrennen und weitere
   Zuordnungen dieses exakten Ordners zur bisherigen Person dauerhaft sperren.
 - **Pfad wieder freigeben**: Sperre aufheben; keine automatische Rückzuweisung.
 
@@ -383,9 +402,12 @@ Wenn sich der Inhalt eines Fotos am bisherigen Pfad ändert, zeigt BearStack
 bleiben zunächst erhalten, ihre alten Vergleichsvektoren werden aber nicht weiter
 zur Erkennung verwendet.
 
-Unter **Einstellungen → Fotos → Gesichter geänderter Fotos prüfen** die alte
+Unter **Personenverwaltung → Geänderte Fotos** die alte
 Vorschau mit dem aktuellen Bild vergleichen. Rahmen und Person lassen sich
-bestätigen oder korrigieren. Dafür reicht **Fotos bearbeiten**. Auch ohne
+bestätigen oder korrigieren. Die Namenssuche verwendet dieselben Vorschläge wie die
+übrige Personenverwaltung. Exakte Koordinaten stehen unter **Rahmen präzise einstellen**.
+**Bestätigen und weiter** öffnet das nächste offene Gesicht und kehrt am Ende zur
+Prüfliste zurück. Dafür reicht **Fotos bearbeiten**. Auch ohne
 verfügbaren Gesichtsdienst kann eine Region bestätigt werden; der historische
 Vektor wird dadurch nicht wieder zur Vergleichsreferenz.
 

@@ -124,8 +124,8 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
     await page.setViewportSize({ width, height: 900 });
     const help = page.locator("[data-group-help] summary");
     const helpButtonBounds = await help.boundingBox();
-    const backBounds = await page.getByRole("link", { name: "← Alle Personen", exact: true }).boundingBox();
-    expect(Math.abs(helpButtonBounds.y - backBounds.y)).toBeLessThanOrEqual(1);
+    const backBounds = await page.getByRole("navigation", {name:"Personenverwaltung",exact:true}).getByRole("link", { name: "Personen", exact: true }).boundingBox();
+    expect(Math.abs(helpButtonBounds.y + helpButtonBounds.height / 2 - backBounds.y - backBounds.height / 2)).toBeLessThanOrEqual(1);
     await help.focus(); await page.keyboard.press("Enter");
     await expect(page.locator("#group-photo-filter-help")).toBeVisible();
     const helpBounds = await page.locator(".group-photo-help-content").boundingBox();
@@ -271,6 +271,8 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await expect(modal.getByRole("option", { name: /Neu anlegen:.*Ada/ }).locator("img")).toHaveCount(0);
   await page.route("**/photos/people/*/rename", route => route.fulfill({ status: 503, body: "Unavailable" }));
   await modal.getByRole("option", { name: /Neu anlegen:.*Ada/ }).click();
+  await expect(modal).toBeVisible();
+  await modal.locator("[data-person-submit]").click();
   await expect(modal.locator("[data-person-dialog-status]")).toContainText("HTTP 503");
   await expect(modalSource).toHaveCount(1);
   await expect(modalSource).toHaveAttribute("data-group-face", await cards.first().getAttribute("data-group-face"));
@@ -291,7 +293,7 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await expect(modalSource).toHaveCount(1);
   await expect(modalSource).toHaveAttribute("data-group-face", await cards.nth(1).getAttribute("data-group-face"));
   await modal.getByRole("combobox", { name: "Name", exact: true }).fill("Ada");
-  const adaOption = modal.getByRole("option", { name: /^Ada \(#/ });
+  const adaOption = modal.getByRole("option", { name: /^„Ada“ als Ziel wählen ·/ });
   const adaThumbnail = adaOption.locator("img");
   await expect(adaThumbnail).toHaveAttribute("src", await cards.first().locator("[data-group-highlight] img").getAttribute("src"));
   await expect(adaThumbnail).toHaveAttribute("alt", "");
@@ -308,6 +310,8 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await page.screenshot({ path: "/tmp/bearstack-group-person-thumbnail.png", fullPage: true });
   // Clicking the image chooses the same person as clicking the name.
   await adaThumbnail.click();
+  await expect(modal).toBeVisible();
+  await modal.locator("[data-person-submit]").click();
   await expect(modal).not.toBeVisible();
   await expect(modalSource).toHaveCount(0);
   await expect(page.locator("[data-group-count]")).toContainText("4 unbearbeitete");
@@ -373,7 +377,7 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await expect.poll(() => image.evaluate(img => img.complete && img.naturalWidth > 0)).toBe(true);
   await cards.first().locator("[data-group-highlight]").click();
   await expectZoom(page, cards.first());
-  await page.getByRole("link", { name: "Überspringen", exact: true }).last().click();
+  await page.getByRole("link", { name: "Nächstes Foto", exact: true }).last().click();
   await expect(page.locator("[data-group-empty]")).toBeVisible();
   await expect(image).toHaveCSS("transform", "none");
   await openGroupOptions(page);
@@ -470,10 +474,12 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await visibleCards.first().locator("[data-person-edit]").click();
   await modal.getByRole("combobox", { name: "Name", exact: true }).fill("Filtername");
   await modal.getByRole("option", { name: /Neu anlegen:.*Filtername/ }).click();
+  await expect(modal).toBeVisible();
+  await modal.locator("[data-person-submit]").click();
   await expect(modal).not.toBeVisible();
   await expect(visibleCards).toHaveCount(5);
   await visibleCards.first().locator("[data-person-edit]").click();
-  await modal.getByRole("button", { name: "Ignorieren", exact: true }).click();
+  await modal.getByRole("button", { name: "Gesicht ignorieren", exact: true }).click();
   await expect(modal).not.toBeVisible();
   await expect(visibleCards).toHaveCount(4);
   await expect(surface).toHaveAttribute("data-path", "c.png");
@@ -491,9 +497,9 @@ test("group photos: hover, zoom, whole-group naming, ignore, skip and retry", as
   await staleCard.locator("[data-person-edit]").click();
   const changed = await context.request.post(baseURL + "/photos/people/" + stalePersonID + "/rename", { form: { name: "Concurrent modal change" }, headers: { Accept: "application/json", Origin: baseURL } });
   expect(changed.ok()).toBe(true);
-  await modal.getByRole("button", { name: "Ignorieren", exact: true }).click();
+  await modal.getByRole("button", { name: "Gesicht ignorieren", exact: true }).click();
   await expect(modal.locator("[data-person-dialog-status]")).toContainText("inzwischen geändert");
-  await expect(modal.getByRole("button", { name: "Ignorieren", exact: true })).toBeDisabled();
+  await expect(modal.getByRole("button", { name: "Gesicht ignorieren", exact: true })).toBeDisabled();
   await modal.getByRole("button", { name: "Abbrechen", exact: true }).click();
   await expect(page.locator('[data-group-face][data-person-name="Concurrent modal change"]')).toHaveAttribute("data-ignored", "false");
   expect(errors).toEqual([]);
@@ -733,7 +739,7 @@ test("restore symbols recover ignored faces in this photo while preserving names
     const before = await get("b.png"), otherBefore = await get("d.png");
     const page = await context.newPage(), errors = []; page.on("pageerror", error => errors.push(error.message));
     await page.goto(baseURL + "/photos/people/groups?min=255&path=b.png");
-    const buttons = page.getByRole("button", { name: "Alle ignorierten Gesichter dieses Fotos wiederherstellen", exact: true });
+    const buttons = page.getByRole("button", { name: "Mit Zuordnungen wiederherstellen", exact: true });
     await expect(buttons).toHaveCount(2);
     await expect(buttons.first()).toBeEnabled(); await expect(buttons.last()).toBeEnabled();
     for (const width of [320, 390, 1440]) {

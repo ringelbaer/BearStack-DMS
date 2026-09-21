@@ -156,7 +156,9 @@ test("pencil names or assigns two unnamed groups atomically", async ({ browser }
       body: JSON.stringify({ people: suggestions.people, has_next: false, done: true }) + "\n"
     }));
     await dialog.getByRole("button", { name: "Ähnliche benannte Personen suchen" }).click();
-    await dialog.getByRole("option").filter({ hasText: "Ada (#" }).click();
+    await dialog.getByRole("option").filter({ hasText: "„Ada“ als Ziel wählen" }).click();
+    await expect(dialog).toBeVisible();
+    await dialog.locator("[data-person-submit]").click();
     await expect(dialog).not.toBeVisible();
     await expect(cards).toHaveCount(0);
     const all = await people();

@@ -53,21 +53,22 @@
       <section class="photo-face-tools" data-photo-face-tools hidden aria-label="Gesichter im Foto">
         <div class="photo-face-actions" role="group" aria-label="Gesichtsfunktionen">
           <span class="photo-face-symbol" role="img" aria-label="Gesichter"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 9h.01M16 9h.01M8 14s1.5 3 4 3 4-3 4-3"/></svg></span>
-          <button type="button" data-photo-face-analyze aria-label="Gesichter erkennen und zuordnen" title="Gesichter suchen, erkennen und zuordnen">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
-          </button>
+
           <button type="button" class="secondary-button" data-photo-face-draw aria-label="Gesicht einrahmen" title="Fehlendes Gesicht einrahmen und benennen">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M11 3h2M21 11v2M13 21h-2M3 13v-2"/></svg>
           </button>
           <button type="button" class="secondary-button" data-photo-face-toggle aria-label="Beschriftete Gesichtsrahmen anzeigen" aria-pressed="false" title="Beschriftete Gesichtsrahmen anzeigen">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M5 12s2.5-4 7-4 7 4 7 4-2.5 4-7 4-7-4-7-4Z"/><circle cx="12" cy="12" r="1.5"/></svg>
           </button>
-          <button type="button" class="secondary-button" data-photo-face-unignore disabled aria-label="Alle ignorierten Gesichter dieses Fotos wiederherstellen" title="Alle ignorierten Gesichter dieses Fotos wiederherstellen – Namen und Zuordnungen beibehalten">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h5M3 10V5m0 5a9 9 0 1 1 0 5"/><path d="m9 12 2 2 4-4"/></svg>
-          </button>
-          <button type="button" class="secondary-button" data-photo-face-refresh aria-label="Gesichter aktualisieren" title="Gesichter aktualisieren – ohne neue Erkennung">
+
+
+<details class="people-menu photo-face-more"><summary aria-label="Weitere Gesichtsaktionen" title="Weitere Gesichtsaktionen">{{template "more_icon"}}</summary><div class="people-menu-panel"><button type="button" class="secondary-button" data-photo-face-analyze aria-label="Gesichter erkennen und zuordnen" title="Gesichter suchen, erkennen und zuordnen">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+          Gesichter neu erkennen und zuordnen</button><button type="button" class="secondary-button" data-photo-face-unignore disabled aria-label="Alle ignorierten Gesichter dieses Fotos wiederherstellen" title="Alle ignorierten Gesichter dieses Fotos wiederherstellen – Namen und Zuordnungen beibehalten">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/><path d="m9 12 2 2 4-4"/></svg>
+          Mit Zuordnungen wiederherstellen</button><button type="button" class="secondary-button" data-photo-face-refresh aria-label="Gesichter aktualisieren" title="Gesichter aktualisieren – ohne neue Erkennung">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.9 1 6.7 2.7L21 8M21 3v5h-5"/></svg>
-          </button>
+          Gesichter aktualisieren</button></div></details>
         </div>
         <p role="status" data-photo-face-status></p>
         <div data-photo-face-list></div>
@@ -95,6 +96,7 @@
 <script src="{{assetURL "/static/app-person-dialog.js"}}" defer></script>
 <script src="{{assetURL "/static/app-face-boxes.js"}}" defer></script>
 <script src="{{assetURL "/static/app-face-drawing.js"}}" defer></script>
+<script src="{{assetURL "/static/app-people-controls.js"}}" defer></script>
 <script src="{{assetURL "/static/app-photo-faces.js"}}" defer></script>
 {{end}}
 {{end}}

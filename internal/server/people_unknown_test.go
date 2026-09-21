@@ -94,7 +94,7 @@ func TestPeopleSourceFolderHeadingsAndSelectionPermissions(t *testing.T) {
 					t.Fatal(err)
 				}
 				html := out.String()
-				if got, want := strings.Contains(html, "data-people-selection-mode"), canEdit && mode == "unknown"; got != want {
+				if got, want := strings.Contains(html, "data-people-selection-mode"), canEdit; got != want {
 					t.Fatalf("mode=%s edit=%v: selection mode=%v, want %v", mode, canEdit, got, want)
 				}
 				if got, want := strings.Contains(html, "data-people-ignore-button"), canEdit && mode == "unknown"; got != want {

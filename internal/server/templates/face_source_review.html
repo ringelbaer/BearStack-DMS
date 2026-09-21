@@ -1,22 +1,24 @@
 {{define "face_source_review.html"}}
 {{template "head" .}}
-<section class="page-head"><h1>Gesicht prüfen</h1><a href="/photos/faces/review">Zur Prüfliste</a></section>
+{{template "people_navigation" .}}
+<section class="page-head"><h1>Gesicht prüfen</h1></section>
 {{with .FaceSourceReview}}
 <section class="panel" data-face-source-review>
-<p>{{.Face.Path}}</p>
+<p>{{photoDisplayPath .Face.Path}}</p>
 {{if .Face.NeedsReview}}<p class="notice">Das Foto wurde geändert. Prüfe den Rahmen und die zugeordnete Person. Die bisherige Vorschau zeigt den letzten bestätigten Stand, sofern sie gespeichert wurde.</p>{{else}}<p>Dieses Gesicht ist bereits geprüft.</p>{{end}}
 <figure><figcaption>Bisherige Vorschau</figcaption><img src="/photos/faces/{{.Face.ID}}/thumbnail" width="160" height="160" alt="Bisheriger Gesichtsausschnitt"></figure>
 <figure><figcaption>Aktuelles Foto – ziehe bei Bedarf einen neuen Rahmen auf</figcaption>
 <div class="face-review-stage" data-review-stage><img src="/photos/faces/drawing-image?path={{queryEscape .Face.Path}}" alt="Aktuelles Foto" draggable="false"><div class="face-review-box" data-review-box></div></div></figure>
 <form method="post" action="/photos/faces/{{.Face.ID}}/review" data-review-form>
 <input type="hidden" name="revision" value="{{.Revision}}">
-<label>Person <input name="name" value="{{.Face.Name}}" maxlength="200" autocomplete="off"><small>Ein bestehender eindeutiger Name ordnet das Gesicht dieser Person zu.</small></label>
-<div class="face-review-fields">
+<div class="person-picker-field" data-review-picker><label for="review-person">Person</label><input id="review-person" name="name" value="{{.Face.Name}}" maxlength="200" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="review-person-options" data-person-search placeholder="Person suchen oder neuen Namen eingeben"><input type="hidden" data-person-target><div class="person-picker-popup" data-person-popup hidden><div id="review-person-options" role="listbox" data-person-options></div><p role="status" data-person-feedback></p></div><small>Nur dieses Gesicht wird bestätigt. Ein leerer Name lässt es unbenannt.</small></div>
+<details class="face-review-precision"><summary>Rahmen präzise einstellen</summary><div class="face-review-fields">
 <label>Links (0–1)<input type="number" name="x" value="{{.Face.X}}" min="0" max="1" step="any" required></label>
 <label>Oben (0–1)<input type="number" name="y" value="{{.Face.Y}}" min="0" max="1" step="any" required></label>
 <label>Breite (0–1)<input type="number" name="width" value="{{.Face.Width}}" min="0.002" max="1" step="any" required></label>
 <label>Höhe (0–1)<input type="number" name="height" value="{{.Face.Height}}" min="0.002" max="1" step="any" required></label>
-</div><button {{if not .Face.NeedsReview}}disabled{{end}}>Rahmen und Person bestätigen</button>
+</div></details><div class="settings-actions"><a class="secondary-button" href="/photos/faces/review">Abbrechen</a><button name="next" value="1" {{if not .Face.NeedsReview}}disabled{{end}}>Bestätigen und weiter</button></div>
 </form></section>{{end}}
+<script src="{{assetURL "/static/app-person-picker.js"}}" defer></script>
 <script src="{{assetURL "/static/app-face-source-review.js"}}" defer></script>
 {{template "foot" .}}{{end}}

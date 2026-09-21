@@ -15,11 +15,11 @@
   var more = root.querySelector(".person-detail-more");
   var moreTrigger = more.querySelector("summary");
   var galleryLink = root.querySelector("[data-detail-gallery]");
-  var helpButton = root.querySelector("[data-detail-help-open]");
+  var helpButton = document.querySelector("[data-detail-help-open]");
   var helpDialog = root.querySelector("[data-detail-help-dialog]");
   helpButton.hidden = false;
   helpButton.addEventListener("click", function () { more.open = false; helpDialog.showModal(); });
-  helpDialog.addEventListener("close", function () { moreTrigger.focus({ preventScroll: true }); });
+  helpDialog.addEventListener("close", function () { helpButton.focus({ preventScroll: true }); });
   more.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && !event.defaultPrevented) {
       more.open = false; moreTrigger.focus({ preventScroll: true }); event.stopPropagation();
@@ -29,6 +29,7 @@
     if (more.open && !more.contains(event.target) && !event.target.closest("dialog")) more.open = false;
   });
   var storageKey = "bearstack.people.detailDisplay:" + root.dataset.personUser;
+  var selectionControls;
   var busy = false, uncertain = false, mode = "group", editingFaces = [], retryTarget = null;
   function cards() { return Array.from(grid.querySelectorAll("[data-detail-face]")); }
   function selected() { return cards().filter(function (card) { return card.querySelector('[name="face_id"]').checked; }); }
@@ -41,16 +42,19 @@
     if (tagTools) tagTools.querySelectorAll("button, input, select").forEach(function (button) { button.disabled = blocked; });
     root.querySelector("[data-person-details-open]").hidden = !root.dataset.personName || !cards().length;
     retry.disabled = busy;
+    if (selectionControls) selectionControls.update();
     if (groupButton) {
       groupButton.disabled = blocked || !cards().length;
-      groupButton.querySelector("span").hidden = !!root.dataset.personName;
+      groupButton.querySelector("span").hidden = false;
+      groupButton.querySelector("span").textContent = root.dataset.personName ? "Gruppe bearbeiten" : "Gruppe benennen";
+      groupButton.classList.toggle("secondary-button", !!root.dataset.personName);
     }
     if (selection) {
       var count = selected().length;
       selection.hidden = count === 0;
       document.body.classList.toggle("has-person-selection", count > 0);
-      selection.querySelector("[data-detail-selection-count]").textContent = count + " ausgewählt";
-      selectAll.textContent = count === cards().length && count ? "Auswahl aufheben" : "Alle auswählen";
+      selection.querySelector("[data-detail-selection-count]").textContent = count + (count === 1 ? " Gesicht" : " Gesichter") + " auf dieser Seite";
+      selection.querySelector("[data-detail-ignore-selection]").textContent = count + (count === 1 ? " Gesicht" : " Gesichter") + " ignorieren";
     }
   }
   function setBusy(value) { busy = value; updateControls(); }
@@ -140,11 +144,11 @@
     isBusy: function () { return busy || uncertain; }, onBusy: setBusy,
     configureDialog: function (context) {
       if (mode === "group") {
-        context.dialog.querySelector("#person-dialog-title").textContent = "Person benennen oder zuordnen";
+        context.dialog.querySelector("#person-dialog-title").textContent = "Gruppe benennen oder zusammenführen";
       } else {
-        context.form.dataset.personFaceSelection = "";
+        context.form.dataset.personFaceSelection = editingFaces.length === 1 ? "single" : "multiple";
         context.dialog.querySelector("#person-dialog-title").textContent = editingFaces.length === 1 ? "Gesicht benennen oder zuordnen" : editingFaces.length + " Gesichter benennen oder zuordnen";
-        context.dialog.querySelector("#overview-person-hint").textContent = "Nur die ausgewählten Gesichter werden verschoben. Einen neuen Namen eingeben, eine vorhandene Person wählen oder ohne Namen als neue Gruppe abtrennen.";
+        context.dialog.querySelector("#overview-person-hint").textContent = "Nur die ausgewählten Gesichter werden zugeordnet. Einen neuen Namen eingeben, eine vorhandene Person wählen oder ohne Namen als neue Gruppe abtrennen.";
         context.form.dispatchEvent(new CustomEvent("person-picker-reset", { detail: { name: "" } }));
       }
     },
@@ -172,12 +176,11 @@
     editor.open([root.dataset.personId], opener);
   }
   groupButton.addEventListener("click", function () { mode = "group"; editingFaces = []; editor.open([root.dataset.personId], groupButton); });
-  root.addEventListener("change", function (event) { if (event.target.matches('[name="face_id"]')) updateControls(); });
-  selectAll.addEventListener("click", function () {
-    var check = selected().length !== cards().length;
-    cards().forEach(function (card) { card.querySelector('[name="face_id"]').checked = check; }); updateControls();
+  selectionControls = window.BearStackPeopleControls.bindSelection({
+    grid: grid, button: root.querySelector("[data-detail-selection-mode]"), all: selectAll, clear: selection.querySelector("[data-detail-clear]"),
+    input: '[name="face_id"]', card: "[data-detail-face]", open: ".person-photo-button",
+    blocked: function () { return busy || uncertain; }, changed: updateControls
   });
-  selection.querySelector("[data-detail-clear]").addEventListener("click", function () { cards().forEach(function (card) { card.querySelector('[name="face_id"]').checked = false; }); updateControls(); });
   selection.querySelector("[data-detail-edit-selection]").addEventListener("click", function (event) { openSelection(selected(), event.currentTarget); });
   async function ignore(choices) {
     if (busy || uncertain || !choices.length) return;

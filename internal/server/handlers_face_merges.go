@@ -43,7 +43,7 @@ func (s *Server) handleFaceMergeSuggestions(w http.ResponseWriter, r *http.Reque
 		_ = writeJSON(w, http.StatusOK, map[string]any{"suggestions": suggestions})
 		return
 	}
-	s.render(w, r, "face_merges.html", PageData{Title: "Ähnliche Personengruppen", Active: "photos", Assets: photoPageAssets(false), FaceMergeSuggestions: suggestions, Notice: r.URL.Query().Get("notice")})
+	s.render(w, r, "face_merges.html", PageData{PeopleSection: "merges", Title: "Ähnliche Gruppen", Active: "photos", Assets: photoPageAssets(false), FaceMergeSuggestions: suggestions, Notice: r.URL.Query().Get("notice")})
 }
 
 func (s *Server) handleFaceMergeSuggestionAction(w http.ResponseWriter, r *http.Request) {

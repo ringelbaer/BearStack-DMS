@@ -105,7 +105,7 @@
   var status = document.querySelector("[data-people-status]");
   var busy = false;
   var selected = new Set();
-  var selectionMode = false;
+  var selectionControls;
   var selectionModeButton = document.querySelector("[data-people-selection-mode]");
   var merge = document.querySelector("[data-people-merge]");
   var mergeButton = document.querySelector("[data-people-merge-button]");
@@ -133,23 +133,9 @@
       input.checked = selected.has(input.value);
       input.disabled = busy;
     });
-    if (selectionModeButton) selectionModeButton.disabled = busy;
-    if (selectionModeButton) overview.querySelectorAll(".person-overview-card > .person-card").forEach(function (link) {
-      if (selectionMode) {
-        link.removeAttribute("href");
-        link.setAttribute("role", "button");
-        link.setAttribute("tabindex", "0");
-        link.setAttribute("aria-pressed", String(selected.has(link.parentElement.dataset.personId)));
-        link.setAttribute("aria-label", "Person auswählen: " + (link.parentElement.dataset.personName || "Unbenannt"));
-      } else if (link.getAttribute("role") === "button") {
-        link.href = "/photos/people/" + encodeURIComponent(link.parentElement.dataset.personId);
-        link.removeAttribute("role");
-        link.removeAttribute("tabindex");
-        link.removeAttribute("aria-pressed");
-        link.setAttribute("aria-label", "Person anzeigen: " + (link.parentElement.dataset.personName || "Unbenannt"));
-      }
-    });
     merge.hidden = selected.size < 1;
+    if (selectionControls) selectionControls.update();
+    if (ignoreSelectedButton) ignoreSelectedButton.textContent = selected.size + (selected.size === 1 ? " angezeigtes Gesicht" : " angezeigte Gesichter") + " ignorieren";
     mergeButton.hidden = selected.size < 2;
     merge.querySelectorAll("[data-bulk-tags-open]").forEach(function (button) { button.disabled = busy; });
     editSelectedButton.disabled = busy;
@@ -161,7 +147,7 @@
     if (selected.size) {
       var target = cards.get(mergeSelection()[0]);
       document.querySelector("[data-people-merge-target]").textContent =
-        selected.size + " ausgewählt · Ziel: " + target.querySelector("strong").textContent;
+        selected.size + (selected.size === 1 ? " Gruppe" : " Gruppen") + " auf dieser Seite · Zusammenführen mit: " + target.querySelector("strong").textContent;
     }
   }
 
@@ -193,7 +179,7 @@
         ignore.setAttribute("aria-label", "Angezeigtes Gesicht ignorieren: " + name);
       }
       var edit = existing.querySelector("[data-person-edit]");
-      if (edit) edit.setAttribute("aria-label", "Benennen oder zuordnen: " + name);
+      if (edit) edit.setAttribute("aria-label", "Gruppe benennen oder zusammenführen: " + name);
       return existing;
     }
     var card = document.createElement("div");
@@ -231,11 +217,11 @@
       var button = document.createElement("button");
       button.type = "button"; button.className = "person-ignore-button";
       button.dataset.ignoreFace = person.face_id;
-      button.textContent = "×";
+      button.append(document.querySelector("[data-ignore-icon]").content.cloneNode(true));
       button.title = "Angezeigtes Gesicht ignorieren";
       button.setAttribute("aria-label", "Angezeigtes Gesicht ignorieren: " + name);
       card.append(button);
-      card.append(window.BearStackPersonDialog.createEditButton("Benennen oder zuordnen: " + name));
+      card.append(window.BearStackPersonDialog.createEditButton("Gruppe benennen oder zusammenführen: " + name));
     }
     return card;
   }
@@ -375,43 +361,19 @@
         updateSelection();
       }
     });
-    if (selectionModeButton && overview.dataset.unknownOnly === "true") {
-      selectionModeButton.hidden = false;
-      selectionModeButton.addEventListener("click", function () {
-        if (busy) return;
-        selectionMode = !selectionMode;
-        selectionModeButton.setAttribute("aria-pressed", String(selectionMode));
-        overview.dataset.selectionMode = String(selectionMode);
-        updateSelection();
-      });
-      // Capture the whole tile before link, ignore and dialog handlers run.
-      overview.addEventListener("click", function (event) {
-        if (!selectionMode) return;
-        var card = event.target.closest(".person-overview-card");
-        if (!card || !overview.contains(card)) return;
-        if (!busy && event.target.closest(".person-select")) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        if (busy) return;
-        var input = card.querySelector("[data-person-select]");
-        input.checked = !input.checked;
-        input.dispatchEvent(new Event("change", { bubbles: true }));
-      }, true);
-      overview.addEventListener("keydown", function (event) {
-        if (!selectionMode || !event.target.matches(".person-card") || !["Enter", " "].includes(event.key)) return;
-        event.preventDefault();
-        if (!event.repeat) event.target.click();
-      });
-    }
-    overview.addEventListener("change", function (event) {
-      var input = event.target.closest("[data-person-select]");
-      if (!input || busy) return;
-      if (input.checked) selected.add(input.value); else selected.delete(input.value);
-      updateSelection();
+    selectionControls = window.BearStackPeopleControls.bindSelection({
+      grid: overview, button: selectionModeButton, all: document.querySelector("[data-people-select-all]"), clear: document.querySelector("[data-people-clear]"),
+      input: "[data-person-select]", card: ".person-overview-card", open: ".person-card",
+      blocked: function () { return busy || needsRefresh; },
+      changed: function () { selected.clear(); overview.querySelectorAll("[data-person-select]:checked").forEach(function (input) { selected.add(input.value); }); updateSelection(); }
     });
     mergeButton.addEventListener("click", async function () {
       if (busy || selected.size < 2) return;
       var ids = mergeSelection();
+      var targetName = overview.querySelector('[data-person-id="' + ids[0] + '"]').dataset.personName || "Unbenannt";
+      busy = true; updateSelection();
+      var approved = await showAppConfirm(ids.length + " Gruppen werden zusammengeführt. Ziel und verbleibender Name: „" + targetName + "“. Alle Gesichter dieser Gruppen sind betroffen.", "Gruppen zusammenführen");
+      if (!approved) { busy = false; updateSelection(); return; }
       var body = new URLSearchParams({ target: ids[0] });
       ids.slice(2).forEach(function (id) { body.append("person_id", id); });
       busy = true;

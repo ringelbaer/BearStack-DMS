@@ -58,5 +58,5 @@ func (s *Server) handlePersonFolder(w http.ResponseWriter, r *http.Request) {
 		_ = writeJSON(w, http.StatusOK, result)
 		return
 	}
-	s.render(w, r, "person_folder.html", PageData{Title: "Ordner einer Person", Active: "photos", Assets: photoPageAssets(false), PersonFolders: result, Notice: r.URL.Query().Get("notice")})
+	s.render(w, r, "person_folder.html", PageData{PeopleSection: "people", Title: "Ordner einer Person", Active: "photos", Assets: photoPageAssets(false), PersonFolders: result, Notice: r.URL.Query().Get("notice")})
 }

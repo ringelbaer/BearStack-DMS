@@ -86,7 +86,7 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 		_ = writeJSON(w, http.StatusOK, result)
 		return
 	}
-	data := PageData{Title: "Personen", Active: "photos", Assets: photoPageAssets(!result.IgnoredOnly && s.requestHasCapabilities(r, authCapPhotosEdit)), People: result, Notice: r.URL.Query().Get("notice")}
+	data := PageData{PeopleSection: "people", Title: "Personen", Active: "photos", Assets: photoPageAssets(!result.IgnoredOnly && s.requestHasCapabilities(r, authCapPhotosEdit)), People: result, Notice: r.URL.Query().Get("notice")}
 	if id != 0 {
 		if result.Name != "" {
 			details, e := s.photos.PersonDetails(r.Context(), id)
@@ -205,6 +205,10 @@ func (s *Server) handleFacesEdit(w http.ResponseWriter, r *http.Request) {
 		target, err = faceID(raw)
 	}
 	action := r.FormValue("action")
+	separate := r.FormValue("restore_individually")
+	if separate != "" && (separate != "1" || action != "restore" || target != 0 || strings.TrimSpace(r.FormValue("name")) != "") {
+		err = errors.New("Einzelwiederherstellung benötigt action=restore ohne Ziel und Namen")
+	}
 	if action != "move" && action != "ignore" && action != "restore" {
 		err = errors.New("ungültige Aktion")
 	}
@@ -212,7 +216,9 @@ func (s *Server) handleFacesEdit(w http.ResponseWriter, r *http.Request) {
 		err = errors.New("Bitte einen Namen eingeben")
 	}
 	if err == nil {
-		if action == "restore" {
+		if separate == "1" {
+			err = s.photos.RestoreFacesSeparately(r.Context(), ids)
+		} else if action == "restore" {
 			err = s.photos.RestoreFaces(r.Context(), ids, target, r.FormValue("name"))
 		} else {
 			err = s.photos.EditFaces(r.Context(), ids, target, action == "ignore", r.FormValue("name"))
