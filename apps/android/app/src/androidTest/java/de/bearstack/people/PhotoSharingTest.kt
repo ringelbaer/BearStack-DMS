@@ -47,6 +47,40 @@ class PhotoSharingTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private val directory get() = File(context.cacheDir, "photo-sharing")
     private fun files() = directory.listFiles()?.toSet().orEmpty()
+    @Suppress("DEPRECATION")
+    @Test fun batchSharesKeepEveryOriginalAndGrantOnlyReadAccess() = runBlocking {
+        val before=files()
+        try {
+            val photos=(1..12).map {shareTestPhoto.copy(path="$it.jpg",name="$it.jpg")}
+            PhotoSharing(context,ShareTestService()).share(photos,{chooser ->
+                val send=chooser.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)!!
+                assertEquals(Intent.ACTION_SEND_MULTIPLE,send.action)
+                assertEquals("image/jpeg",send.type)
+                assertEquals(Intent.FLAG_GRANT_READ_URI_PERMISSION,send.flags)
+                val uris=send.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)!!
+                assertEquals(12,uris.distinct().size)
+                assertEquals(12,send.clipData!!.itemCount)
+                uris.forEachIndexed {i,uri ->
+                    assertEquals(uri,send.clipData!!.getItemAt(i).uri)
+                    context.contentResolver.openInputStream(uri)!!.use {assertArrayEquals(byteArrayOf(1,2,3),it.readBytes())}
+                }
+            })
+        } finally {(files()-before).forEach {it.delete()}}
+    }
+    @Test fun failureInLaterBatchItemRemovesEveryPreparedFile() = runBlocking {
+        val before=files()
+        val service=object:ShareTestService() {
+            override suspend fun download(photo:Photo,destination:()->OutputStream,progress:(Long,Long)->Unit):Long {
+                if(photo.path=="second.jpg") mode="failure"
+                return super.download(photo,destination,progress)
+            }
+        }
+        try {
+            PhotoSharing(context,service).share(listOf(shareTestPhoto,shareTestPhoto.copy(path="second.jpg")),{fail("partial batch shared")})
+            fail("failed batch accepted")
+        } catch(_: IOException) {}
+        assertEquals(before,files())
+    }
 
     @Suppress("DEPRECATION")
     @Test fun originalIsReadableFromChooserWithNameMimeAndOnlyTemporaryReadAccess() = runBlocking {

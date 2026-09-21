@@ -15,6 +15,39 @@ import java.io.OutputStream
 import java.util.UUID
 
 class PhotoDownloadStorageTest {
+    @Test fun batchKeepsCompletedFilesAndRemovesOnlyTheInterruptedDocument() = runBlocking {
+        assumeTrue(Build.VERSION.SDK_INT>=29)
+        val context=InstrumentationRegistry.getInstrumentation().targetContext
+        val resolver=context.contentResolver
+        for(batchMode in listOf("success","failure","cancel")) {
+            val created=mutableListOf<android.net.Uri>()
+            val owner=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
+            val second=CompletableDeferred<Unit>()
+            val service=object:ShareTestService() {
+                override suspend fun download(photo:Photo,destination:()->OutputStream,progress:(Long,Long)->Unit):Long {
+                    this.mode=if(photo.path=="2.jpg") batchMode else "success"
+                    if(photo.path=="2.jpg") second.complete(Unit)
+                    return withContext(Dispatchers.IO) {super.download(photo,destination,progress)}
+                }
+            }
+            try {
+                val downloads=PhotoDownloads(context,owner,service)
+                withContext(Dispatchers.Main) {downloads.saveBatch((1..3).map {shareTestPhoto.copy(path="$it.jpg")}) {
+                    resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI,ContentValues().apply {
+                        put(MediaStore.Downloads.DISPLAY_NAME,"batch-${UUID.randomUUID()}.jpg")
+                        put(MediaStore.Downloads.MIME_TYPE,"image/jpeg")
+                    })!!.also {created+=it}
+                }}
+                withTimeout(5000) {second.await()}
+                if(batchMode=="cancel") withContext(Dispatchers.Main) {downloads.cancel()}
+                withTimeout(5000) {while(downloads.state.value.active) delay(10)}
+                assertEquals(if(batchMode=="success") 3 else 2,created.size)
+                resolver.openInputStream(created.first())!!.use {assertArrayEquals(byteArrayOf(1,2,3),it.readBytes())}
+                if(batchMode=="success") assertEquals(3,downloads.state.value.savedCount)
+                else resolver.query(created.last(),null,null,null,null).use {assertTrue(it==null || it.count==0)}
+            } finally {owner.cancel();created.forEach {runCatching {resolver.delete(it,null,null)}}}
+        }
+    }
     @Test fun successWritesOriginalAndFailureOrCancellationRemoveTheCreatedDocument() = runBlocking {
         assumeTrue(Build.VERSION.SDK_INT>=29)
         val context=InstrumentationRegistry.getInstrumentation().targetContext

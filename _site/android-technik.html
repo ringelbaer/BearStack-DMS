@@ -1216,7 +1216,7 @@
 <h1 id="android-app-technik-entwicklung">Android-App – Technik &amp; Entwicklung<a class="headerlink" href="#android-app-technik-entwicklung" title="Permanent link">&para;</a></h1>
 <p>Diese Referenz richtet sich an Betreiber und Entwickler. Die
 <a href="android.html">Android-Anleitung</a> erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App <strong>0.20.1</strong> (<code>versionCode 42</code>), BearStack <strong>1.2.1</strong>.</p>
+bis zur Personenverwaltung. Stand: App <strong>0.21.0</strong> (<code>versionCode 43</code>), BearStack <strong>1.3.0</strong>.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
 <p>Öffne <code>apps/android/</code> in Android Studio als eigenes Projekt. Benötigt werden JDK 17
 oder 21 und das Android-SDK mit Plattform 36. Gradle Wrapper, Android Gradle Plugin
@@ -1456,6 +1456,19 @@ höchstens zwei Vorschau-IDs erhalten. Abfragen laufen abbrechbar außerhalb des
 UI-Threads; Anbieter ohne native Seitengrenzen werden über Cursor gelesen.
 Reihenfolge ist die absteigende Medien-ID. Es gibt keine lokalen Uploads oder
 Serveranfragen für Gerätefotos.</p>
+<p>Die Mehrfachauswahl speichert maximal 100 Medien unabhängig vom weiterhin auf
+drei Seiten begrenzten Metadatenfenster. <code>ACTION_SEND_MULTIPLE</code> verwendet temporäre
+Lesegrants und ClipData für jedes Medium. Serverdateien werden sequenziell
+vorbereitet; Dateien derselben Auswahl bleiben bei der Cachebereinigung geschützt.
+Datei- und Gesamtlimits gelten auch bei unbekannter oder falscher Größenangabe.
+Sammeldownloads erstellen neue Dokumente im über <code>ACTION_OPEN_DOCUMENT_TREE</code>
+freigegebenen Ordner und entfernen bei Fehlern nur die unvollständige Datei.</p>
+<p>Löschen ist ausschließlich für validierte MediaStore-Bild-URIs des lokalen
+Anbieters implementiert. Android 11+ verwendet <code>createDeleteRequest</code>, Android 10
+die Einzelzustimmung über <code>RecoverableSecurityException</code>, Android 8/9 eine erst
+beim Löschen angefragte Schreibberechtigung. Während der Systemzustimmung bleibt
+der lokale Controller bestehen; anschließend erfolgt der Bestandsabgleich.
+Der Serveranbieter und die HTTP-API erhalten keine Schreib- oder Löschmethode.</p>
 <p>Beim Teilen und bei App-Wechseln bleiben der lokale Controller, das geöffnete Foto
 und die Rasterposition erhalten. Die Rückkehr prüft weiterhin die Berechtigung
 und liest den erreichbaren MediaStore-Bestand abbrechbar außerhalb des UI-Threads.
@@ -1486,8 +1499,8 @@ weiterhin nur Ordnerzähler, zwei Vorschau-IDs je Ordner und der Fingerabdruck.<
 <td>16 MiB Arbeitsspeicher; beim Verlassen der lokalen Ansicht, geändertem Medienbestand oder geänderter Zugriffsberechtigung geleert. App-Wechsel erhalten den Cache.</td>
 </tr>
 <tr>
-<td>Vorbereitete Serverbilder zum Teilen</td>
-<td>Höchstens 256 MiB je Datei sowie acht Dateien und 512 MiB insgesamt; Bereinigung beim nächsten Teilen, auch für Dateien ab 24 Stunden.</td>
+<td>Vorbereitete Servermedien zum Teilen</td>
+<td>Höchstens 256 MiB je Datei sowie 100 Dateien und 512 MiB insgesamt; Bereinigung beim nächsten Teilen, auch für Dateien ab 24 Stunden.</td>
 </tr>
 <tr>
 <td>OpenStreetMap-Kartenbilder</td>
@@ -1646,7 +1659,7 @@ Projektaufbau. Verbindlich sind die Gradle-Dateien im Repository.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.2.1 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.3.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
 

@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.3.0 / Android 0.21.0
+
+- Mehrfachauswahl in den Medienrastern einschließlich Suche, Personenordnern und Karten-Trefferlisten: langes Drücken startet den Modus, kurze Tipps toggeln die Markierung. Bis zu 100 ausgewählte Medien bleiben unabhängig vom begrenzten Seitenfenster erhalten.
+- Gemeinsames Teilen mit temporären Lesegrants; Serveroriginale werden sequenziell und mit geschützten Batch-Dateien vorbereitet. Grenzen: 256 MiB je Datei, 512 MiB und 100 Dateien insgesamt, auch bei unbekannten oder falschen Größenangaben.
+- Serverauswahl in einen Android-Zielordner speichern. Erfolgreiche Dateien bleiben bei späteren Fehlern erhalten, unvollständige Dokumente werden entfernt.
+- Lokale Bilder einzeln in der Großansicht oder als Auswahl dauerhaft löschen, mit Bestätigung und Android-Systemzustimmung. Serveroriginale bleiben readonly; keine neue Server-Schreibschnittstelle.
+- MINOR für neue kompatible App-Funktionen; Android `versionCode 43`, README, Anleitung, technische Referenz, Website und OpenAPI-Version aktualisiert.
+- Validierung: 117 JVM-Tests, gezielte Emulatorprüfungen für Mehrfachauswahl, Karten-Auswahl, zwölf gemeinsam geteilte Originale, abgebrochene Sammeldownloads sowie Ablehnen/Bestätigen im echten Android-Löschdialog erfolgreich. Android-Lint ohne Fehler; Debug-/Test-APK und Website gebaut.
+
 ### BearStack 1.2.1 / Android 0.20.1
 
 - Die Erfolgsmeldung nach einem Original-Download verschwindet nach fünf Sekunden; längere Android-Bedienungshilfe-Zeitlimits werden berücksichtigt. Neue Downloads ersetzen den alten Meldungstimer, gespeicherte Dateien bleiben erhalten.

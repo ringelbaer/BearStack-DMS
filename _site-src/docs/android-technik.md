@@ -7,7 +7,7 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.20.1** (`versionCode 42`), BearStack **1.2.1**.
+bis zur Personenverwaltung. Stand: App **0.21.0** (`versionCode 43`), BearStack **1.3.0**.
 
 ## Bauen und installieren
 
@@ -229,6 +229,21 @@ UI-Threads; Anbieter ohne native Seitengrenzen werden über Cursor gelesen.
 Reihenfolge ist die absteigende Medien-ID. Es gibt keine lokalen Uploads oder
 Serveranfragen für Gerätefotos.
 
+Die Mehrfachauswahl speichert maximal 100 Medien unabhängig vom weiterhin auf
+drei Seiten begrenzten Metadatenfenster. `ACTION_SEND_MULTIPLE` verwendet temporäre
+Lesegrants und ClipData für jedes Medium. Serverdateien werden sequenziell
+vorbereitet; Dateien derselben Auswahl bleiben bei der Cachebereinigung geschützt.
+Datei- und Gesamtlimits gelten auch bei unbekannter oder falscher Größenangabe.
+Sammeldownloads erstellen neue Dokumente im über `ACTION_OPEN_DOCUMENT_TREE`
+freigegebenen Ordner und entfernen bei Fehlern nur die unvollständige Datei.
+
+Löschen ist ausschließlich für validierte MediaStore-Bild-URIs des lokalen
+Anbieters implementiert. Android 11+ verwendet `createDeleteRequest`, Android 10
+die Einzelzustimmung über `RecoverableSecurityException`, Android 8/9 eine erst
+beim Löschen angefragte Schreibberechtigung. Während der Systemzustimmung bleibt
+der lokale Controller bestehen; anschließend erfolgt der Bestandsabgleich.
+Der Serveranbieter und die HTTP-API erhalten keine Schreib- oder Löschmethode.
+
 Beim Teilen und bei App-Wechseln bleiben der lokale Controller, das geöffnete Foto
 und die Rasterposition erhalten. Die Rückkehr prüft weiterhin die Berechtigung
 und liest den erreichbaren MediaStore-Bestand abbrechbar außerhalb des UI-Threads.
@@ -245,7 +260,7 @@ weiterhin nur Ordnerzähler, zwei Vorschau-IDs je Ordner und der Fingerabdruck.
 | Server-Galerie-Thumbnails | Einstellbar 64–2048 MiB, Standard 256 MiB; der geschützte Pflichtbestand darf das Budget überschreiten. |
 | Große Vorschauen | 16 MiB Arbeitsspeicher; höchstens drei Minuten ab erfolgreichem Laden, ohne Verlängerung bei Zugriff. Kein Disk-Cache. |
 | Lokale Fotos | 16 MiB Arbeitsspeicher; beim Verlassen der lokalen Ansicht, geändertem Medienbestand oder geänderter Zugriffsberechtigung geleert. App-Wechsel erhalten den Cache. |
-| Vorbereitete Serverbilder zum Teilen | Höchstens 256 MiB je Datei sowie acht Dateien und 512 MiB insgesamt; Bereinigung beim nächsten Teilen, auch für Dateien ab 24 Stunden. |
+| Vorbereitete Servermedien zum Teilen | Höchstens 256 MiB je Datei sowie 100 Dateien und 512 MiB insgesamt; Bereinigung beim nächsten Teilen, auch für Dateien ab 24 Stunden. |
 | OpenStreetMap-Kartenbilder | 64 MiB HTTP-Cache; Cache-Header und bedingte Anfragen werden berücksichtigt. |
 
 Galerie-Thumbnails liegen privat in `noBackupFilesDir`, getrennt nach Server,

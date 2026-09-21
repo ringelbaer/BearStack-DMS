@@ -42,7 +42,8 @@ import de.bearstack.people.data.remote.Photo
                 if(state.total>0) LinearProgressIndicator(progress={(state.received.toDouble()/state.total).toFloat().coerceIn(0f,1f)},modifier=Modifier.fillMaxWidth())
                 else LinearProgressIndicator(Modifier.fillMaxWidth())
             }
-            state.complete -> Text(stringResource(R.string.photos_downloaded,state.name),style=MaterialTheme.typography.bodySmall)
+            state.complete -> Text(if(state.requestedCount>1) stringResource(R.string.photos_selection_saved,state.savedCount)
+                else stringResource(R.string.photos_downloaded,state.name),style=MaterialTheme.typography.bodySmall)
             else -> Text(state.error?.let {text(it)}.orEmpty(),color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)
         }
     }

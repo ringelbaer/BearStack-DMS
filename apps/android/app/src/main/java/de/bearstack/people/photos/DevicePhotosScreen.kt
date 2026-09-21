@@ -204,8 +204,9 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
         if(access != DevicePhotoAccess.NONE) PhotosController(scope, service, DevicePhotosService.SESSION,
             initialQuery=PhotoQuery(path=path),playback=playback) else null
     }
-    LaunchedEffect(foreground, access, revision, changes) {
-        if(foreground && access != DevicePhotoAccess.NONE) {
+    val state = local?.state?.collectAsStateWithLifecycle()?.value
+    LaunchedEffect(foreground, access, revision, changes, state?.localMutation) {
+        if(foreground && access != DevicePhotoAccess.NONE && state?.localMutation != true) {
             try {
                 if(local?.state?.value?.error != null) service = DevicePhotosService(context.contentResolver)
                 else service.refreshed()?.let { service = it }
@@ -221,7 +222,6 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
             .memoryCache { MemoryCache.Builder(context).maxSizeBytes(16 * 1024 * 1024).build() }.build() }
     }
     DisposableEffect(local, images) { onDispose { local?.close(); images?.memoryCache?.clear(); images?.shutdown() } }
-    val state = local?.state?.collectAsStateWithLifecycle()?.value
     LaunchedEffect(state?.query?.path, state?.loading) {
         if(state != null) {
             path = state.query.path

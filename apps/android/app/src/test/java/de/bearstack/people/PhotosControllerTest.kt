@@ -11,6 +11,24 @@ import org.junit.Test
 class PhotosControllerTest {
     private val session=PhotoSession("scope",false,320,320,1280,2048,5,8)
     private fun photo(path: String)=Photo(path,path,"image","image/jpeg","1","2026-09-09T10:00:00Z",null,10,100,100)
+    @Test fun selectionSurvivesPageEvictionIsBoundedAndClearsOnNavigation() = runTest {
+        val fake=Fake().apply {handler={q,p,_ -> page(q,p,List(96) {photo("${(p-1)*96+it}")},p<5).copy(total=480)}}
+        val controller=PhotosController(this,fake,session)
+        runCurrent()
+        controller.state.value.media.forEach(controller::toggleSelection)
+        controller.more("media");runCurrent()
+        controller.state.value.media.drop(96).take(10).forEach(controller::toggleSelection)
+        assertEquals(100,controller.state.value.selection.size)
+        for(p in 3..5) {controller.more("media");runCurrent()}
+        assertFalse(controller.state.value.media.any {it.path=="0"})
+        assertTrue(controller.state.value.selection.containsKey("0"))
+        controller.toggleSelection(controller.state.value.selection.getValue("0"))
+        assertEquals(99,controller.state.value.selection.size)
+        controller.open(PhotoQuery(path="another"));runCurrent()
+        assertFalse(controller.state.value.selecting)
+        assertTrue(controller.state.value.selection.isEmpty())
+        controller.close()
+    }
     private fun page(query: PhotoQuery, page: Int=1, media: List<Photo> = emptyList(), next: Boolean=false) =
         PhotoPage(query.path,"",page,media.size,next,0,false,false,media,emptyList(),emptyList())
     private inner class Fake : PhotosService {

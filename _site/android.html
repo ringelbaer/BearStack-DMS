@@ -797,6 +797,17 @@
 </li>
 
           <li class="md-nav__item">
+  <a href="#mehrfachauswahl" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Mehrfachauswahl
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#einzelne-bilder-teilen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1385,6 +1396,17 @@
 </li>
 
           <li class="md-nav__item">
+  <a href="#mehrfachauswahl" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Mehrfachauswahl
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#einzelne-bilder-teilen" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1693,7 +1715,7 @@
 <p>Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.</p>
-<p>Diese Anleitung beschreibt <strong>Android-App 0.20.1</strong>. Beginne mit den
+<p>Diese Anleitung beschreibt <strong>Android-App 0.21.0</strong>. Beginne mit den
 <a href="#erste-schritte">ersten Schritten</a>; die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die <a href="android-technik.html">technische Referenz</a>.</p>
@@ -1862,6 +1884,27 @@ Dateigröße, Kamera, Aufnahmezeit samt Zeitzone, Bewertung, Personen, Tags,
 Schlagwörter und GPS-Position. Fehlt die Aufnahmezeit, ist die ersatzweise angezeigte
 Änderungszeit entsprechend bezeichnet. Ein Fehler beim Laden lässt sich im
 Informationsblatt über <strong>Erneut versuchen</strong> wiederholen.</p>
+<h3 id="mehrfachauswahl">Mehrfachauswahl<a class="headerlink" href="#mehrfachauswahl" title="Permanent link">&para;</a></h3>
+<p>Drücke ein Medium im Raster lange, um die Mehrfachauswahl zu aktivieren. Kurze
+Tipps markieren weitere Medien oder entfernen ihre Markierung. Die Auswahl bleibt
+beim Scrollen und Nachladen erhalten; maximal 100 Medien sind gleichzeitig
+auswählbar. <strong>Auswahl beenden</strong> oder Zurück beendet den Modus. Ein Ordner-, Such-
+oder Sortierwechsel verwirft die Auswahl. Das funktioniert auch in Karten-Trefferlisten.</p>
+<ul>
+<li><strong>Teilen:</strong> Öffnet die Android-App-Auswahl mit allen markierten Medien. Lokale
+  Bilder werden direkt freigegeben; Serveroriginale werden nacheinander vorbereitet.</li>
+<li><strong>Auswahl speichern</strong> bei Servermedien: Wähle einen Zielordner im Android-Dialog.
+  Die Originale werden nacheinander als neue Dateien gespeichert. Bei Fehlern oder
+  Abbruch bleiben bereits vollständig gespeicherte Dateien erhalten; die gerade
+  geschriebene unvollständige Datei wird entfernt.</li>
+<li><strong>Löschen</strong> unter <strong>Dieses Gerät</strong>: Nach deiner Bestätigung fordert Android bei
+  Bedarf die Freigabe an. Auf Android 10 kann dies für jedes Bild einzeln nötig
+  sein; ältere Versionen benötigen Schreibzugriff. Die Löschung ist dauerhaft.
+  Bei Abbruch können bereits bestätigte Einzelbilder gelöscht sein. Einzelne
+  lokale Bilder lassen sich auch direkt in der Großansicht löschen.</li>
+</ul>
+<p>Serveroriginale bleiben schreibgeschützt; dort wird keine Löschaktion angeboten.
+Das Teilen ist auf 256 MiB pro Serverdatei und 512 MiB insgesamt begrenzt.</p>
 <h3 id="einzelne-bilder-teilen">Einzelne Bilder teilen<a class="headerlink" href="#einzelne-bilder-teilen" title="Permanent link">&para;</a></h3>
 <p>Tippe im Vollbildbetrachter auf <strong>Teilen</strong> und wähle die empfangende Android-App.
 Geteilt wird die Originaldatei des aktuellen Fotos. Bei Serverfotos lädt BearStack
@@ -1986,7 +2029,7 @@ App-Einstellungen. Bei dauerhaft verweigertem Zugriff führt
 blendet sie aus; eine Android-Berechtigung entziehst du separat in den Systemeinstellungen.</p>
 <h3 id="was-lokal-verfugbar-ist">Was lokal verfügbar ist<a class="headerlink" href="#was-lokal-verfugbar-ist" title="Permanent link">&para;</a></h3>
 <p>Lokale Fotos unterstützen Raster, Vollbild, Zoom, Informationen, Teilen, Diashow
-und Fotoframe in einem geöffneten Fotoordner. Es gibt keinen Upload. Videos,
+und Fotoframe in einem geöffneten Fotoordner sowie bestätigtes Löschen. Es gibt keinen Upload. Videos,
 private App-Dateien und Ordner außerhalb des Android-Medienindex gehören nicht zu
 dieser Ansicht. SD-Karten-Ordner erscheinen, soweit Android sie bereitstellt;
 gleichnamige Ordner verschiedener Datenträger bleiben getrennt.</p>
@@ -2460,7 +2503,7 @@ steht im <a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/CHANGELO
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.2.1 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.3.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

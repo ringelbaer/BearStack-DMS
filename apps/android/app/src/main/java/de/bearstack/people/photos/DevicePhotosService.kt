@@ -68,9 +68,7 @@ internal class DevicePhotosService(private val resolver: ContentResolver, privat
 
     override suspend fun info(path: String): Photo = read { signal ->
         // Accept only an item in this catalog's image collection, never arbitrary content providers.
-        val uri = Uri.parse(path)
-        require(uri.scheme == "content" && uri.authority == collection.authority &&
-            uri.pathSegments.dropLast(1) == collection.pathSegments && uri.lastPathSegment?.toLongOrNull() != null)
+        val uri = devicePhotoUri(path)
         resolver.query(uri, PHOTO_COLUMNS, Bundle(), signal)?.use { cursor ->
             if(cursor.moveToFirst()) photo(cursor) else throw UserIoFailure(UiText(R.string.error_missing))
         } ?: throw UserIoFailure(UiText(R.string.photos_device_error))
@@ -220,4 +218,13 @@ internal class DevicePhotosService(private val resolver: ContentResolver, privat
             MediaStore.Images.Media.SIZE, MediaStore.Images.Media.WIDTH, MediaStore.Images.Media.HEIGHT, MediaStore.Images.Media.BUCKET_DISPLAY_NAME)
         private fun date(milliseconds: Long) = Instant.ofEpochMilli(milliseconds).atZone(ZoneId.systemDefault()).toOffsetDateTime().toString()
     }
+}
+
+internal fun devicePhotoUri(path: String): Uri {
+    val uri = Uri.parse(path)
+    val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+    require(uri.scheme == "content" && uri.authority == collection.authority &&
+        uri.pathSegments.dropLast(1) == collection.pathSegments && uri.lastPathSegment?.toLongOrNull() != null &&
+        uri.query == null && uri.fragment == null)
+    return uri
 }

@@ -13,7 +13,8 @@ data class PhotosState(val query: PhotoQuery = PhotoQuery(recursive=true), val t
     val pageErrors: Map<String,PhotoPageFailure> = emptyMap(), val selected: String? = null, val blog: PhotoBlog? = null,
     val frame: Boolean = false, val blogLoading: Boolean = false, val blogError: UiText? = null,
     val scrollToKey: String? = null, val dateLoading: Boolean = false, val jumpDate: String? = null,
-    val dateError: UiText? = null, val jumpRevision: Long = 0) {
+    val dateError: UiText? = null, val jumpRevision: Long = 0,
+    val selecting: Boolean = false, val selection: Map<String,Photo> = emptyMap(), val localMutation: Boolean = false) {
     val media get() = mediaPages.items
     val folders get() = folderPages.items
     val blogs get() = blogPages.items
@@ -196,6 +197,16 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
         cancelDateJump()
         mutable.update {if(path==null || it.media.any {photo -> photo.path==path}) it.copy(selected=path) else it}
     }
+    fun toggleSelection(photo: Photo) {
+        mutable.update { current ->
+            if(photo.path !in current.selection && current.media.none {it.path==photo.path}) current
+            else if(photo.path in current.selection) current.copy(selecting=true,selection=current.selection-photo.path)
+            else if(current.selection.size >= MAX_PHOTO_SELECTION) current
+            else current.copy(selecting=true,selection=current.selection+(photo.path to photo))
+        }
+    }
+    fun clearSelection() { mutable.update {it.copy(selecting=false,selection=emptyMap())} }
+    fun localMutation(active: Boolean) { mutable.update {it.copy(localMutation=active)} }
     suspend fun prefetch(photo: Photo?, images: coil.ImageLoader) {
         val context=application ?: return
         if(photo==null || photo.type!="image") return

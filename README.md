@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.2.1** · Android-App: **0.20.1**.
+Aktuelle Version: **1.3.0** · Android-App: **0.21.0**.
+
+**Android 0.21.0:** Medien im Raster lange drücken, weitere mit kurzen Tipps markieren. Bis zu 100 Medien lassen sich gemeinsam teilen; Servermedien zusätzlich in einen gewählten Zielordner speichern. Unter **Dieses Gerät** können Bilder nach Bestätigung gelöscht werden, auch einzeln in der Großansicht. Serveroriginale bleiben schreibgeschützt.
 
 **Android 0.20.1 / BearStack 1.2.1:** Unter **Dieses Gerät** bleibt nach dem Teilen die Großansicht des aktuellen Fotos geöffnet. Auch die Rasterposition bleibt bei unverändertem Medienbestand nach einem App-Wechsel erhalten. Änderungen an Medien oder Fotofreigaben werden bei der Rückkehr weiterhin geprüft.
 

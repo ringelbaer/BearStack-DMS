@@ -30,6 +30,27 @@ import java.util.Locale
 
 class PhotosScreenTest {
     @get:Rule val compose=createComposeRule()
+    @Test fun longPressStartsSelectionAndShortTapsToggleWithoutOpeningViewer() = screen(Locale.ENGLISH) {controller,_ ->
+        compose.onNodeWithContentDescription("first.jpg").performTouchInput {longClick()}
+        compose.onNodeWithText("1 / 100 selected").assertIsDisplayed()
+        compose.onNodeWithContentDescription("second.jpg").performClick()
+        compose.onNodeWithText("2 / 100 selected").assertIsDisplayed()
+        compose.onNodeWithContentDescription("first.jpg").performClick()
+        assertEquals(setOf("second.jpg"),controller.state.value.selection.keys)
+        compose.onNodeWithTag("photo-viewer-image").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Delete").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Clear selection").performClick()
+        compose.onNodeWithContentDescription("second.jpg").performClick()
+        compose.onNodeWithTag("photo-viewer-image").assertIsDisplayed()
+    }
+    @Test fun mapThumbnailSelectionOffersShareAndSaveButNeverDelete() = screen(Locale.ENGLISH,showMapSelection=true) {_,_ ->
+        compose.onNodeWithContentDescription("first.jpg").performTouchInput {longClick()}
+        compose.onNodeWithContentDescription("second.jpg").performClick()
+        compose.onNodeWithText("2 / 100 selected").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Share").assertIsEnabled()
+        compose.onNodeWithContentDescription("Save selection").assertIsEnabled()
+        compose.onNodeWithContentDescription("Delete").assertDoesNotExist()
+    }
     private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, directoryPeople: Boolean = false, peopleCountSort: Boolean = true, frameRandomSort: Boolean = true, photoCount: Int = 2, fontScale: Float = 1f, beforeBrowse: suspend (PhotoQuery)->Unit = {}, test: (PhotosController,PhotosService)->Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext
         val context=app.createConfigurationContext(Configuration(app.resources.configuration).apply {setLocale(locale)})

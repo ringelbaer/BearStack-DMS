@@ -1,0 +1,10 @@
+<resources>
+    <string name="photos_selection_start">Mehrere Medien auswählen</string>
+    <string name="photos_selection_close">Auswahl beenden</string>
+    <string name="photos_selection_count">%1$d / %2$d ausgewählt</string>
+    <string name="photos_selection_save">Auswahl speichern</string>
+    <string name="photos_selection_saved">%1$d Medien gespeichert</string>
+    <string name="photos_delete">Löschen</string>
+    <string name="photos_delete_confirm">%1$d Bilder dauerhaft von diesem Gerät löschen? Diese Aktion lässt sich nicht rückgängig machen.</string>
+    <string name="photos_delete_error">Die Bilder konnten nicht vollständig gelöscht werden. Prüfe den Fotozugriff und versuche es erneut.</string>
+</resources>

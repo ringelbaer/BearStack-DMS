@@ -9,7 +9,7 @@ Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.
 
-Diese Anleitung beschreibt **Android-App 0.20.1**. Beginne mit den
+Diese Anleitung beschreibt **Android-App 0.21.0**. Beginne mit den
 [ersten Schritten](#erste-schritte); die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die [technische Referenz](android-technik.md).
@@ -147,6 +147,29 @@ Schlagwörter und GPS-Position. Fehlt die Aufnahmezeit, ist die ersatzweise ange
 Änderungszeit entsprechend bezeichnet. Ein Fehler beim Laden lässt sich im
 Informationsblatt über **Erneut versuchen** wiederholen.
 
+### Mehrfachauswahl
+
+Drücke ein Medium im Raster lange, um die Mehrfachauswahl zu aktivieren. Kurze
+Tipps markieren weitere Medien oder entfernen ihre Markierung. Die Auswahl bleibt
+beim Scrollen und Nachladen erhalten; maximal 100 Medien sind gleichzeitig
+auswählbar. **Auswahl beenden** oder Zurück beendet den Modus. Ein Ordner-, Such-
+oder Sortierwechsel verwirft die Auswahl. Das funktioniert auch in Karten-Trefferlisten.
+
+- **Teilen:** Öffnet die Android-App-Auswahl mit allen markierten Medien. Lokale
+  Bilder werden direkt freigegeben; Serveroriginale werden nacheinander vorbereitet.
+- **Auswahl speichern** bei Servermedien: Wähle einen Zielordner im Android-Dialog.
+  Die Originale werden nacheinander als neue Dateien gespeichert. Bei Fehlern oder
+  Abbruch bleiben bereits vollständig gespeicherte Dateien erhalten; die gerade
+  geschriebene unvollständige Datei wird entfernt.
+- **Löschen** unter **Dieses Gerät**: Nach deiner Bestätigung fordert Android bei
+  Bedarf die Freigabe an. Auf Android 10 kann dies für jedes Bild einzeln nötig
+  sein; ältere Versionen benötigen Schreibzugriff. Die Löschung ist dauerhaft.
+  Bei Abbruch können bereits bestätigte Einzelbilder gelöscht sein. Einzelne
+  lokale Bilder lassen sich auch direkt in der Großansicht löschen.
+
+Serveroriginale bleiben schreibgeschützt; dort wird keine Löschaktion angeboten.
+Das Teilen ist auf 256 MiB pro Serverdatei und 512 MiB insgesamt begrenzt.
+
 ### Einzelne Bilder teilen
 
 Tippe im Vollbildbetrachter auf **Teilen** und wähle die empfangende Android-App.
@@ -277,7 +300,7 @@ blendet sie aus; eine Android-Berechtigung entziehst du separat in den Systemein
 ### Was lokal verfügbar ist
 
 Lokale Fotos unterstützen Raster, Vollbild, Zoom, Informationen, Teilen, Diashow
-und Fotoframe in einem geöffneten Fotoordner. Es gibt keinen Upload. Videos,
+und Fotoframe in einem geöffneten Fotoordner sowie bestätigtes Löschen. Es gibt keinen Upload. Videos,
 private App-Dateien und Ordner außerhalb des Android-Medienindex gehören nicht zu
 dieser Ansicht. SD-Karten-Ordner erscheinen, soweit Android sie bereitstellt;
 gleichnamige Ordner verschiedener Datenträger bleiben getrennt.

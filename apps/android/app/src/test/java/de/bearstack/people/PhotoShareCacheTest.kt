@@ -10,6 +10,22 @@ import java.io.File
 
 class PhotoShareCacheTest {
     @get:Rule val temporary = TemporaryFolder()
+    @Test fun batchFilesArePinnedAndUnknownSizesCannotExceedTheCombinedLimit() {
+        val cache=PhotoShareCache(temporary.root,maxFileBytes=8,maxBytes=12,maxFiles=3)
+        val first=cache.create("jpg",reserveBytes=6)
+        cache.output(first).use {it.write(ByteArray(6))}
+        val second=cache.create("jpg",setOf(first),reserveBytes=2)
+        cache.output(second).use {
+            it.write(ByteArray(6))
+            try {it.write(1);fail("aggregate limit exceeded")}
+            catch(_: UserIoFailure) {}
+        }
+        assertTrue(first.exists())
+        assertEquals(12,temporary.root.listFiles()!!.sumOf {it.length()}.toInt())
+        try {cache.create("jpg",setOf(first,second),1);fail("pinned file deleted")}
+        catch(_: UserIoFailure) {}
+        assertTrue(first.exists());assertTrue(second.exists())
+    }
 
     @Test fun largeOrUnknownLengthStreamsCannotExceedDiskLimit() {
         val cache = PhotoShareCache(temporary.root, maxFileBytes = 5, maxBytes = 10)

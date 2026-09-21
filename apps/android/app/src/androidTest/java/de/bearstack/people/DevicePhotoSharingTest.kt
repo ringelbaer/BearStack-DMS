@@ -21,6 +21,41 @@ import java.io.ByteArrayOutputStream
 @SdkSuppress(minSdkVersion=29)
 class DevicePhotoSharingTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+    @SdkSuppress(minSdkVersion=30)
+    @Test fun localMultiSelectionRequiresConfirmationAndSystemApproval() = photos { uris ->
+        compose.onNodeWithContentDescription("share-159.jpg").performTouchInput {longClick()}
+        compose.onNodeWithContentDescription("share-158.jpg").performClick()
+        compose.onNodeWithText("2 / 100 ausgewählt").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Auswahl speichern").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Löschen").performClick()
+        compose.onNodeWithText("Abbrechen").performClick()
+        compose.onNodeWithText("2 / 100 ausgewählt").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Löschen").performClick()
+        compose.onNode(hasText("Löschen") and hasClickAction()).performClick()
+        val automation=InstrumentationRegistry.getInstrumentation().uiAutomation
+        compose.waitUntil(10_000) {
+            automation.rootInActiveWindow?.packageName?.toString()?.startsWith("com.android.providers.media")==true
+        }
+        // Declining Android's request must preserve both files and the selection.
+        val deny=listOf("Don't allow", "Cancel", "Deny").flatMap {
+            automation.rootInActiveWindow.findAccessibilityNodeInfosByText(it)
+        }.first {it.isClickable}
+        assertTrue(deny.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK))
+        compose.waitUntil(10_000) {automation.rootInActiveWindow?.packageName?.toString()==compose.activity.packageName}
+        compose.waitUntil(10_000) {compose.onAllNodesWithText("2 / 100 ausgewählt").fetchSemanticsNodes().isNotEmpty()}
+        compose.onNodeWithContentDescription("Löschen").performClick()
+        compose.onNode(hasText("Löschen") and hasClickAction()).performClick()
+        compose.waitUntil(10_000) {
+            listOf("Delete", "Allow").any {text -> automation.rootInActiveWindow?.findAccessibilityNodeInfosByText(text)?.any {it.isClickable}==true}
+        }
+        val button=listOf("Delete", "Allow").flatMap {automation.rootInActiveWindow.findAccessibilityNodeInfosByText(it)}.first {it.isClickable}
+        assertTrue(button.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK))
+        compose.waitUntil(10_000) {automation.rootInActiveWindow?.packageName?.toString()==compose.activity.packageName}
+        compose.waitUntil(15_000) {compose.onAllNodesWithContentDescription("share-157.jpg").fetchSemanticsNodes().isNotEmpty() &&
+            compose.onAllNodesWithContentDescription("share-159.jpg").fetchSemanticsNodes().isEmpty()}
+        uris.removeAt(uris.lastIndex);uris.removeAt(uris.lastIndex)
+        compose.onNodeWithContentDescription("share-158.jpg").assertDoesNotExist()
+    }
 
     @Test fun systemChooserAndBackgroundReturnKeepTheCurrentPhotoAndScrolledGallery() = photos { uris ->
         // Cross a metadata page boundary before sharing; returning to page one

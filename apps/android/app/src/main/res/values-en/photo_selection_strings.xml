@@ -1,0 +1,10 @@
+<resources>
+    <string name="photos_selection_start">Select multiple media</string>
+    <string name="photos_selection_close">Clear selection</string>
+    <string name="photos_selection_count">%1$d / %2$d selected</string>
+    <string name="photos_selection_save">Save selection</string>
+    <string name="photos_selection_saved">%1$d media saved</string>
+    <string name="photos_delete">Delete</string>
+    <string name="photos_delete_confirm">Permanently delete %1$d images from this device? This cannot be undone.</string>
+    <string name="photos_delete_error">Some images could not be deleted. Check photo access and try again.</string>
+</resources>

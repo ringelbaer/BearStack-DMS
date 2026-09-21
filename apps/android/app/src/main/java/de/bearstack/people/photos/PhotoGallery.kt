@@ -1,6 +1,8 @@
 package de.bearstack.people.photos
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.material3.*
@@ -12,6 +14,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import coil.ImageLoader
 import de.bearstack.people.R
 import de.bearstack.people.data.remote.*
@@ -87,7 +91,9 @@ internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, sta
             val index=rows.indexOfFirst {it.key==target}
             if(index>=0) {grid.scrollToItem(index);controller.scrollConsumed()}
         }
-        LazyVerticalGrid(columns=GridCells.Fixed(columns),state=grid,modifier=modifier.testTag("photo-gallery"),
+        Column(modifier) {
+        PhotoSelectionActions(controller, state)
+        LazyVerticalGrid(columns=GridCells.Fixed(columns),state=grid,modifier=Modifier.fillMaxWidth().weight(1f).testTag("photo-gallery"),
             horizontalArrangement=Arrangement.spacedBy(2.dp),verticalArrangement=Arrangement.spacedBy(2.dp),contentPadding=contentPadding) {
             items(rows,key={it.key},span={GridItemSpan(when(it) {
                 is GalleryRow.Folder -> folderSpan; is GalleryRow.Media -> 2; else -> maxLineSpan
@@ -106,8 +112,19 @@ internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, sta
                     is GalleryRow.Blog -> ListItem(headlineContent={Text(row.value.name)},
                         supportingContent={Text(photoDateLabel(row.value.date ?: row.value.modified,locale))},
                         modifier=Modifier.clickable {controller.openBlog(row.value)})
-                    is GalleryRow.Media -> PhotoThumbnail(row.value,controller,images,controller.session.thumbnailSize,
-                        Modifier.fillMaxWidth().aspectRatio(1f).clickable {controller.select(row.value.path)})
+                    is GalleryRow.Media -> {
+                        val marked = row.value.path in state.selection
+                        Box(Modifier.fillMaxWidth().aspectRatio(1f).semantics { selected=marked }
+                            .combinedClickable(onLongClickLabel=stringResource(R.string.photos_selection_start),
+                                onLongClick={controller.toggleSelection(row.value)},
+                                onClick={if(state.selecting) controller.toggleSelection(row.value) else controller.select(row.value.path)})) {
+                            PhotoThumbnail(row.value,controller,images,controller.session.thumbnailSize,Modifier.fillMaxSize())
+                            if(state.selecting) {
+                                if(marked) Box(Modifier.fillMaxSize().border(3.dp,MaterialTheme.colorScheme.primary))
+                                Checkbox(checked=marked,onCheckedChange=null,modifier=Modifier.align(Alignment.TopEnd))
+                            }
+                        }
+                    }
                     is GalleryRow.Date -> SectionTitle(photoDateLabel(row.value.date,locale))
                     GalleryRow.Texts -> SectionTitle(stringResource(R.string.photos_texts))
                     is GalleryRow.Failure -> GalleryLoadError(state.pageErrors.getValue(row.section).message) {
@@ -123,6 +140,7 @@ internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, sta
                     }
                 }
             }
+        }
         }
     }
 }
