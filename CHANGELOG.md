@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.4.1 / Android 0.22.1
+
+- Großansicht: deckende obere und untere Menüflächen schließen die Android-Systemleistenbereiche ein. Bilder scheinen nicht mehr über der oberen oder unter der unteren Leiste durch; passende Insets für Hoch- und Querformat.
+- PATCH für die Darstellungskorrektur; Android `versionCode 45`, README, Android-Dokumentation, Website und OpenAPI-Version aktualisiert. Kein geänderter HTTP-Vertrag.
+- Validiert: 120 JVM-Tests und 41 Emulator-Tests einschließlich Pixelprüfungen in Hoch-/Querformat, Layouts, lokaler Freigabe/Löschung, Seitensprüngen und Navigation erfolgreich; Debug-APK und Website gebaut, Android-Lint ohne Fehler (68 Warnungen).
+
 ### BearStack 1.4.0 / Android 0.22.0
 
 - Ziehbarer Scrollgriff am rechten Rand begrenzter Thumbnail-Listen: erscheint beim Scrollen und verschwindet nach kurzer Ruhe. Für Ordner, Suche, Karten-Auswahl und Gerätefotos; im Fotostream ausgeblendet. Position auch mit TalkBack veränderbar.

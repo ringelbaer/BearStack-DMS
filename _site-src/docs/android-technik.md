@@ -7,7 +7,7 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.22.0** (`versionCode 44`), BearStack **1.4.0**.
+bis zur Personenverwaltung. Stand: App **0.22.1** (`versionCode 45`), BearStack **1.4.1**.
 
 ## Bauen und installieren
 
@@ -260,6 +260,13 @@ Teilfreigaben bei gleicher Fotoanzahl und unveränderten Ordnervorschauen. Nur e
 geänderter oder nicht mehr lesbarer Bestand ersetzt den Katalog. Der neue
 Katalog übernimmt das Abfrageergebnis ohne zweiten Scan; gespeichert bleiben
 weiterhin nur Ordnerzähler, zwei Vorschau-IDs je Ordner und der Fingerabdruck.
+
+### Großansicht und Systemleisten
+
+Die Großansicht zeichnet die deckenden Menüflächen vor dem Einrücken ihrer
+Bedienelemente um die Android-Systemleisten. Oben werden nur obere und seitliche,
+unten nur untere und seitliche `safeDrawing`-Insets verwendet. Dadurch bleiben
+auch die Status- und Navigationsbereiche abgedeckt, einschließlich Querformat.
 
 ### Bild- und Dateicaches
 

@@ -145,8 +145,9 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                         } else PhotoThumbnail(photo,controller,images,controller.session.thumbnailSize,Modifier.fillMaxSize())
                     }
                     if(controls) {
-                        Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().safeDrawingPadding()
-                            .background(Color.Black.copy(alpha=.8f))) {
+                        Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().testTag("photo-viewer-top-bar")
+                            .background(Color.Black)
+                            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top+WindowInsetsSides.Horizontal))) {
                             TopAppBar(title={Text(photoDateLabel(current.date,locale),style=MaterialTheme.typography.titleSmall,maxLines=2,overflow=TextOverflow.Ellipsis)},
                                 colors=TopAppBarDefaults.topAppBarColors(containerColor=Color.Transparent),navigationIcon={
                                     IconButton(onClick=onClose) {Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_close))}
@@ -167,8 +168,10 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                                 }
                             }
                         }
-                        Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().safeDrawingPadding()
-                            .background(Color.Black.copy(alpha=.8f)).padding(horizontal=12.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween,
+                        Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().testTag("photo-viewer-bottom-bar")
+                            .background(Color.Black)
+                            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom+WindowInsetsSides.Horizontal))
+                            .padding(horizontal=12.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween,
                             verticalAlignment=Alignment.CenterVertically) {
                             IconButton(onClick={scope.launch {move(-1)}},enabled=!moving && pendingPath==null && !pager.isScrollInProgress && (currentIndex>0 || (!standalone && catalog.mediaPages.hasPrevious))) {
                                 Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_previous))

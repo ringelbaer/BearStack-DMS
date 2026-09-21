@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.4.0** · Android-App: **0.22.0**.
+Aktuelle Version: **1.4.1** · Android-App: **0.22.1**.
+
+**Android 0.22.1:** Die Großansicht deckt bei eingeblendeten Bedienelementen auch die Bereiche der Android-Status- und Navigationsleiste vollständig ab. Das Bild scheint dort nicht mehr oberhalb oder unterhalb der Menüleisten durch.
 
 **Android 0.22.0:** Beim Scrollen erscheint rechts ein ziehbarer Scrollgriff für Ordner, Suchergebnisse, Karten-Treffer und lokale Fotos. Er springt direkt zur gewünschten Stelle und blendet sich nach kurzer Ruhe aus. Im unbegrenzten Fotostream bleibt er ausgeblendet.
 

@@ -9,7 +9,7 @@ Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.
 
-Diese Anleitung beschreibt **Android-App 0.22.0**. Beginne mit den
+Diese Anleitung beschreibt **Android-App 0.22.1**. Beginne mit den
 [ersten Schritten](#erste-schritte); die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die [technische Referenz](android-technik.md).
@@ -140,6 +140,9 @@ ein vergrößertes Bild lässt sich verschieben.
 Ein einfacher Tipp auf das Foto blendet Bedien- und Systemleisten aus, ein weiterer
 Tipp blendet sie wieder ein. Das gilt auch beim Bildwechsel. TalkBack bietet eigene
 Aktionen für Zoom, Zurücksetzen und das Ein-/Ausblenden der Bedienelemente.
+
+Bei sichtbaren Bedienelementen bleiben die Status- und Navigationsbereiche der
+Großansicht deckend dunkel. Das Foto scheint dort auch im Querformat nicht durch.
 
 **Informationen** zeigt die vorhandenen Daten: Dateiname und Pfad, Auflösung,
 Dateigröße, Kamera, Aufnahmezeit samt Zeitzone, Bewertung, Personen, Tags,
