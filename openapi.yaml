@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 1.9.0
+  version: 1.10.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -4036,7 +4036,8 @@ paths:
         Requires photos.edit and same-origin form submission. Changes only BearStack metadata;
         originals and sidecars remain read-only. Choose 2–500 distinct ungrouped images.
         Galleries, map routes, frames and slideshow lists expose only the primary.
-        Accept application/json for JSON; ordinary forms redirect to the group.
+        Accept application/json for JSON with the group URL. Since 1.10.0 ordinary
+        forms redirect back to the gallery, preserving the supplied return URL.
       requestBody:
         required: true
         content:
@@ -4053,6 +4054,9 @@ paths:
                   items: {type: string}
                   description: Repeated library-relative image paths.
                 primary: {type: string, description: One of the selected paths.}
+                return:
+                  type: string
+                  description: Optional local /photos URL preserving gallery filters and sorting. Invalid or missing values fall back to the primary image's folder. Used only for HTML redirects.
       responses:
         '201':
           description: Created (JSON requested).
@@ -4065,7 +4069,7 @@ paths:
                   id: {type: integer, format: int64, minimum: 1}
                   url: {type: string}
         '303':
-          description: Created; redirect to the group.
+          description: Created; redirect to the originating gallery or primary image's folder.
           headers:
             Location:
               schema: {type: string}
@@ -4113,12 +4117,15 @@ paths:
     post:
       tags: [Photos]
       operationId: updateImageGroup
-      summary: Change the primary, remove a member or dissolve the group
+      summary: Add images, change the primary, remove a member or dissolve the group
       description: >-
         Requires photos.edit, same-origin form submission and access to every member.
         All changes are atomic and require the current revision. Removing the primary
         selects another available member. A group with fewer than two members dissolves
-        automatically. Originals are never modified. Accept application/json for JSON.
+        automatically. Adding ungrouped images (since 1.10.0) preserves the primary;
+        the resulting group must contain at most 500 members. Existing groups cannot
+        be merged. Dissolution returns to the previous primary image's folder.
+        Originals are never modified. Accept application/json for JSON.
       requestBody:
         required: true
         content:
@@ -4128,12 +4135,19 @@ paths:
               required: [revision, action]
               properties:
                 revision: {type: integer, format: int64, minimum: 1}
-                action: {type: string, enum: [primary, remove, dissolve]}
+                action: {type: string, enum: [primary, remove, dissolve, add]}
                 entity_id:
                   type: integer
                   format: int64
                   minimum: 1
                   description: Required for primary and remove; immutable member identity from GET.
+                ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 498
+                  uniqueItems: true
+                  items: {type: string}
+                  description: Required for add; repeated library-relative paths of ungrouped images. Existing plus new members must not exceed 500.
       responses:
         '200':
           description: Updated (JSON requested).
@@ -4156,7 +4170,7 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409':
-          description: Stale revision or already dissolved group; reload before editing again.
+          description: Stale revision, already dissolved group or a new image already belongs to a group; reload before editing again.
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}

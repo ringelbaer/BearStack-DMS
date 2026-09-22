@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"strconv"
 
 	"bearstack/internal/photos"
@@ -37,11 +38,28 @@ type imageGroupResponse struct {
 }
 
 func imageGroupURL(id int64) string { return "/photos/image-groups/" + strconv.FormatInt(id, 10) }
+func imageGalleryURL(mediaPath string) string {
+	directory := path.Dir(mediaPath)
+	if directory == "." {
+		directory = ""
+	}
+	return photoPageURL(url.Values{"path": {directory}})
+}
+func imageGroupGalleryURL(group photos.ImageGroup) string {
+	for _, member := range group.Members {
+		if member.EntityID == group.PrimaryID {
+			return imageGalleryURL(member.Media.Path)
+		}
+	}
+	return "/photos"
+}
 func (s *Server) imageGroupError(w http.ResponseWriter, r *http.Request, err error) {
 	status, message := http.StatusInternalServerError, "Die Bildgruppe konnte nicht geladen oder gespeichert werden."
 	switch {
 	case errors.Is(err, photos.ErrImageGroupConflict):
 		status, message = http.StatusConflict, err.Error()
+	case errors.Is(err, photos.ErrImageGroupAddInvalid):
+		status, message = http.StatusBadRequest, err.Error()
 	case errors.Is(err, photos.ErrImageGroupInvalid), errors.Is(err, photos.ErrPathEscapesRoot()):
 		status, message = http.StatusBadRequest, photos.ErrImageGroupInvalid.Error()
 	case errors.Is(err, photos.ErrAdminOnly()):
@@ -75,7 +93,11 @@ func (s *Server) handleCreateImageGroup(w http.ResponseWriter, r *http.Request) 
 		_ = writeJSON(w, http.StatusCreated, map[string]any{"id": id, "url": imageGroupURL(id)})
 		return
 	}
-	http.Redirect(w, r, imageGroupURL(id), http.StatusSeeOther)
+	destination := imageGalleryURL(r.PostForm.Get("primary"))
+	if back, err := url.Parse(safeReturnURL(r.PostForm.Get("return"))); err == nil && back.Path == "/photos" {
+		destination = back.String()
+	}
+	redirectWithNotice(w, r, destination, "Bildgruppe erstellt.")
 }
 func (s *Server) handleImageGroup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "private, no-store")
@@ -95,22 +117,40 @@ func (s *Server) handleImageGroup(w http.ResponseWriter, r *http.Request) {
 			s.imageGroupError(w, r, photos.ErrImageGroupConflict)
 			return
 		}
+		action := r.PostForm.Get("action")
 		entity := int64(0)
-		if r.PostForm.Get("action") != "dissolve" {
+		if action != "dissolve" && action != "add" {
 			entity, e = strconv.ParseInt(r.PostForm.Get("entity_id"), 10, 64)
 			if e != nil || entity < 1 {
 				s.imageGroupError(w, r, photos.ErrImageGroupInvalid)
 				return
 			}
 		}
-		exists, e := s.photos.ApplyImageGroupAction(r.Context(), id, revision, entity, r.PostForm.Get("action"), s.requestIsPhotoAdmin(r))
+		back := "/photos"
+		if action == "dissolve" || action == "remove" {
+			group, readErr := s.photos.ImageGroup(r.Context(), id, s.requestIsPhotoAdmin(r))
+			if readErr != nil {
+				if errors.Is(readErr, os.ErrNotExist) || errors.Is(readErr, sql.ErrNoRows) {
+					readErr = photos.ErrImageGroupConflict
+				}
+				s.imageGroupError(w, r, readErr)
+				return
+			}
+			back = imageGroupGalleryURL(group)
+		}
+		exists := true
+		if action == "add" {
+			e = s.photos.AddImageGroupMembers(r.Context(), id, revision, r.PostForm["ids"], s.requestIsPhotoAdmin(r))
+		} else {
+			exists, e = s.photos.ApplyImageGroupAction(r.Context(), id, revision, entity, action, s.requestIsPhotoAdmin(r))
+		}
 		if e != nil {
 			s.imageGroupError(w, r, e)
 			return
 		}
 		destination := imageGroupURL(id)
 		if !exists {
-			destination = "/photos"
+			destination = back
 		}
 		setAuditTarget(r, "image-group:"+strconv.FormatInt(id, 10))
 		if wantsJSON(r) {
@@ -139,12 +179,9 @@ func (s *Server) handleImageGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	view := ImageGroupView{ID: group.ID, Revision: group.Revision}
-	back := "/photos"
+	back := imageGroupGalleryURL(group)
 	for _, m := range group.Members {
 		view.Members = append(view.Members, ImageGroupMemberView{PhotoMediaView: photoMediaView(m.Media, settings), EntityID: m.EntityID, DisplayPath: m.DisplayPath, Missing: m.Missing, Primary: m.EntityID == group.PrimaryID})
-		if m.EntityID == group.PrimaryID {
-			back = photoPageURL(url.Values{"path": {m.Media.Directory}})
-		}
 	}
 	s.render(w, r, "image_group.html", PageData{Title: "Bildgruppe", Active: "photos", Assets: photoPageAssets(false), PhotoSettings: settings, ImageGroup: view, ReturnURL: back, Notice: r.URL.Query().Get("notice")})
 }

@@ -284,7 +284,7 @@
     {{end}}
     <div class="photo-date-group-media" data-photo-date-group-media>
     {{range .Media}}
-    <article class="photo-card" data-photo-item data-photo-path="{{.Path}}" data-photo-thumb="{{.ThumbURL}}" data-photo-type="{{.Type}}" data-photo-title="{{.Name}}" data-photo-width="{{.Width}}" data-photo-height="{{.Height}}" data-image-group-id="{{.ImageGroupID}}" data-photo-display-path="{{photoDisplayPath .Path}}" {{if eq .Type "audio"}}data-photo-src="{{.MediaURL}}"{{end}}>
+    <article class="photo-card" data-photo-item data-photo-path="{{.Path}}" data-photo-thumb="{{.ThumbURL}}" data-photo-type="{{.Type}}" data-photo-title="{{.Name}}" data-photo-width="{{.Width}}" data-photo-height="{{.Height}}" data-image-group-id="{{.ImageGroupID}}" data-image-group-preview="{{.PreviewURL}}" data-photo-display-path="{{photoDisplayPath .Path}}" {{if eq .Type "audio"}}data-photo-src="{{.MediaURL}}"{{end}}>
       {{if $.Auth.CanPhotosEdit}}
       <input class="photo-select-input photo-edit-only" type="checkbox" name="ids" value="{{.Path}}" aria-label="{{.Name}} auswählen">
       {{end}}

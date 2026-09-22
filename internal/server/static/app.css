@@ -4141,7 +4141,7 @@ body:has(.people-selection-bar:not([hidden])) { padding-bottom: max(240px, calc(
 .photo-edit-toolbar [data-image-group-hint] { flex-basis: 100%; font-size: .8rem; }
 .photo-edit-toolbar button { white-space: normal; min-height: 44px; }
 .photo-image-group-link { position: absolute; right: .35rem; top: .35rem; display: grid; place-items: center; width: 44px; height: 44px; background: var(--surface); color: var(--primary); border: 1px solid var(--line); border-radius: .4rem; z-index: 3; }
-[data-selection-mode="true"] :is(.photo-image-group-link, .photo-tag-select) { visibility: hidden; }
+[data-selection-mode="true"] .photo-tag-select { visibility: hidden; }
 .photo-module[data-photo-mode="view"] .photo-select-input { display: none !important; }
 .image-group-module .photo-mode-toggle { width: 78px; min-width: 78px; flex: 0 0 auto; }
 .image-group-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(min(260px,100%),1fr)); gap: 1rem; }
@@ -4154,5 +4154,30 @@ body:has(.people-selection-bar:not([hidden])) { padding-bottom: max(240px, calc(
 .image-group-member-actions { display: flex; flex-direction: column; gap: .5rem; }
 .image-group-member-actions button, .image-group-toolbar button { white-space: normal; min-height: 44px; max-width: 100%; }
 .image-group-toolbar { padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--line); border-radius: var(--radius-md); }
-[data-image-group-dialog] select { width: 100%; min-width: 0; }
-[data-image-group-dialog] .app-dialog-body { min-width: 0; }
+.app-dialog.image-group-create-dialog { width: min(960px, calc(100vw - 24px)); max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); overflow: hidden; background: var(--surface); color: var(--text); }
+.image-group-create-dialog[open], .image-group-create-dialog > form { display: flex; flex-direction: column; min-height: 0; }
+.image-group-create-dialog > form { max-height: calc(100dvh - 24px); margin: 0; overflow: hidden; }
+.image-group-create-dialog header, .image-group-create-dialog footer { flex-shrink: 0; }
+.image-group-create-dialog header h2 { margin: 0; font-size: 1.2rem; }
+.image-group-create-dialog .app-dialog-body { min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.image-group-preview { margin: 1rem 0; }
+.image-group-preview-stage { display: grid; place-items: center; height: clamp(180px, 32dvh, 360px); background: var(--surface-2); border-radius: .5rem; overflow: hidden; }
+.image-group-preview-stage img { width: 100%; height: 100%; min-height: 0; object-fit: contain; }
+.image-group-preview figcaption { display: grid; gap: .2rem; margin-top: .5rem; overflow-wrap: anywhere; font-size: .85rem; }
+.image-group-preview [role="status"]:empty { display: none; }
+.image-group-primary-picker { min-width: 0; padding: 0; border: 0; margin: 0; }
+.image-group-primary-picker legend { font-weight: 700; margin-bottom: .6rem; }
+.image-group-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: .75rem; }
+.image-group-choice { text-transform: none; font-weight: normal; letter-spacing: normal; display: flex; flex-direction: column; position: relative; min-width: 0; padding: .4rem; margin: 0; gap: .4rem; border: 2px solid var(--line); border-radius: .5rem; cursor: pointer; }
+.image-group-choice:hover { border-color: var(--primary); }
+.image-group-choice:has(input:checked) { border-color: var(--primary); background: var(--surface-2); box-shadow: 0 0 0 1px var(--primary); }
+.image-group-choice:focus-within { outline: 2px solid var(--primary); outline-offset: 3px; }
+.image-group-choice input[type="radio"] { position: absolute; top: .75rem; left: .75rem; width: 20px; height: 20px; margin: 0; z-index: 1; accent-color: var(--primary); }
+.image-group-choice img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: var(--surface-2); border-radius: .25rem; }
+.image-group-choice-path { overflow-wrap: anywhere; font-size: .8rem; line-height: 1.35; }
+.image-group-choice-badge { display: none; position: absolute; top: .65rem; right: .65rem; padding: .2rem .4rem; border-radius: .25rem; background: var(--primary); color: var(--on-primary); font-size: .75rem; font-weight: 700; }
+.image-group-choice input:checked ~ .image-group-choice-badge { display: block; }
+.image-group-create-dialog[data-adding="true"] .image-group-choice { cursor: default; }
+.image-group-create-dialog [data-image-group-form-status]:empty { display: none; }
+
+@media (max-width: 600px) { .image-group-preview-stage { height: 24dvh; min-height: 150px; } }

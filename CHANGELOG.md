@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.10.0
+
+- Bestehende Bildgruppen erweitern: Genau eine Gruppe und mindestens ein ungruppiertes Bild auswählen und **Ausgewählte Bilder zur Bildgruppe hinzufügen** verwenden. Das Hauptbild bleibt erhalten; mehrere ausgewählte Gruppen werden abgewiesen. Insgesamt höchstens 500 Mitglieder, atomare Änderungen mit Revisions- und Berechtigungsprüfung; gebündelte Datenbankabfragen.
+- Visuelle Hauptbildauswahl mit anklickbaren Vorschaubildern, größerer Ansicht des gewählten Bilds und Tastaturbedienung. Gruppenindikatoren bleiben im Auswahlmodus sichtbar. Nach dem Erstellen bleibt die bisherige Galerie einschließlich Sortierung und Filtern geöffnet. Auflösen, auch automatisch nach Entfernen eines Mitglieds, führt zum Ordner des bisherigen Hauptbilds.
+- MINOR für das kompatible nachträgliche Hinzufügen und `action=add` am bestehenden Gruppenendpunkt. Foto-Schema bleibt 40, Originale und Sidecars bleiben schreibgeschützt; README, Website und OpenAPI aktualisiert.
+- Validiert: vollständige Go-Testsuite, gezielte Race-Tests, API-Verträge, JavaScript-Syntax und DOM-Tests sowie 50 Browserprüfungen einschließlich Desktop, Mobil, Tastatur, Galerie-Rückkehr und Hinzufügen. Revisionskonflikte, private Mitglieder und Größenlimit getestet; Gruppenaktionen einschließlich Hinzufügen auf tatsächlich schreibgeschütztem Test-Mount erfolgreich. Website gebaut.
+
 ### BearStack 1.9.0
 
 - Manuelle Bildgruppen mit frei wählbarem Hauptbild. Galerie, Ordner-Vorschauen, Fotoframe, Karte einschließlich Fotoroute und Großansicht/Diashow berücksichtigen nur Hauptbilder; das Gruppensymbol öffnet die Mitglieder. Hauptbild ändern, einzelne Bilder entfernen und gesamte Gruppe auflösen sind getrennt benannt. Originale und XMP-Sidecars bleiben unverändert.

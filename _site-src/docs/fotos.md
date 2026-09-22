@@ -161,7 +161,10 @@ alle Mitglieder ansehen.
 4. Zwei bis 500 noch nicht gruppierte Bilder auswählen und **Ausgewählte Bilder
    gruppieren** öffnen. Videos, Audios und bestehende Gruppen können nicht
    Bestandteil einer neuen Bildgruppe werden.
-5. Im Dialog das **Hauptbild** wählen und mit **Bildgruppe erstellen** speichern.
+5. Im Dialog auf das gewünschte **Vorschaubild** klicken. Eine größere Vorschau
+   zeigt das gewählte Hauptbild. Mit **Bildgruppe erstellen** speichern.
+   Die bisherige Galerie bleibt mit derselben Sortierung und denselben Filtern
+   geöffnet; die Gruppe lässt sich bei Bedarf über ihr Symbol aufrufen.
 
 Ohne Auswahlmodus öffnet der Klick auf eine Kachel weiterhin die Großansicht.
 Die Auswahl umfasst die aktuelle Seite; bei einer ordnerübergreifenden Galerie
@@ -169,6 +172,18 @@ kann eine Gruppe auch Bilder aus mehreren Ordnern enthalten. Filter und
 Personengalerien richten sich nach dem Hauptbild: Passt nur ein anderes Mitglied
 zum Filter oder liegt nur dieses im geöffneten Ordner, erscheint die Gruppe dort
 nicht.
+
+### Bilder zu einer vorhandenen Gruppe hinzufügen
+
+Ab **1.10.0** im Bearbeitenmodus **genau eine Bildgruppe** und mindestens ein
+noch nicht gruppiertes Bild auswählen. Gruppenindikatoren bleiben auch im
+Auswahlmodus sichtbar. **Ausgewählte Bilder zur Bildgruppe hinzufügen** öffnet
+eine Vorschau der hinzuzufügenden Bilder und des bisherigen Hauptbilds.
+Mit **Zur Bildgruppe hinzufügen** speichern; das Hauptbild bleibt erhalten.
+
+Mehrere Gruppen können nicht zusammengeführt werden. Eine Gruppe darf insgesamt
+höchstens 500 Bilder enthalten. Ist die Gruppe inzwischen geändert worden, die
+Galerie neu laden und die Auswahl wiederholen.
 
 ### Eine Bildgruppe verwalten
 
@@ -180,7 +195,9 @@ Die Gruppe über ihr Symbol öffnen und **Bearbeiten einschalten** aktivieren:
 - **Gesamte Bildgruppe auflösen** zeigt alle Mitglieder wieder einzeln.
 
 Entfernen und Auflösen werden bestätigt. Bei nur einem verbleibenden Bild löst
-sich die Gruppe automatisch auf. Alle Aktionen ändern ausschließlich BearStacks
+sich die Gruppe automatisch auf. Nach dem Auflösen öffnet sich der Ordner des
+bisherigen Hauptbilds, auch bei einer Gruppe aus mehreren Ordnern.
+Alle Aktionen ändern ausschließlich BearStacks
 Datenbank; Originale, Dateinamen und XMP-Sidecars bleiben schreibgeschützt.
 
 Leser sehen nur zugängliche Mitglieder. Zum Ändern brauchst du **Fotos bearbeiten**

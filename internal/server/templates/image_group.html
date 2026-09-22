@@ -23,11 +23,25 @@
 {{define "image_group_icon"}}<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12M6 16l3-3 5 5M12 11h.01"/></svg>{{end}}
 
 {{define "image_group_create_dialog"}}
-<dialog class="app-dialog" data-image-group-dialog aria-labelledby="image-group-create-title">
+<dialog class="app-dialog image-group-create-dialog" data-image-group-dialog aria-labelledby="image-group-create-title">
 <form method="post" action="/photos/image-groups">
 <header><h2 id="image-group-create-title">Ausgewählte Bilder gruppieren</h2></header>
-<div class="app-dialog-body"><p data-image-group-summary></p><p>Nur das gewählte Hauptbild erscheint anschließend in Galerie, Karte, Fotoframe und Diashow. Alle Originalbilder bleiben erhalten und sind über das Gruppensymbol aufrufbar.</p><label for="image-group-primary">Hauptbild</label><select id="image-group-primary" name="primary" data-image-group-primary required></select><div data-image-group-inputs></div></div>
-<footer><button type="button" class="secondary-button people-local-action" data-image-group-cancel>Abbrechen</button><button>Bildgruppe erstellen</button></footer>
+<div class="app-dialog-body">
+  <p data-image-group-summary></p>
+  <p data-image-group-description></p>
+  <p class="muted" data-image-group-form-status role="status"></p>
+  <figure class="image-group-preview">
+    <div class="image-group-preview-stage" data-image-group-preview></div>
+    <figcaption><strong data-image-group-preview-title>Gewähltes Hauptbild</strong><span data-image-group-preview-path></span></figcaption>
+    <p class="muted" data-image-group-preview-status role="status"></p>
+  </figure>
+  <fieldset class="image-group-primary-picker">
+    <legend data-image-group-choice-title>Hauptbild wählen</legend>
+    <div class="image-group-choices" data-image-group-primary></div>
+  </fieldset>
+  <div data-image-group-inputs></div>
+</div>
+<footer><button type="button" class="secondary-button people-local-action" data-image-group-cancel>Abbrechen</button><button data-image-group-submit>Bildgruppe erstellen</button></footer>
 </form>
 </dialog>
 {{end}}

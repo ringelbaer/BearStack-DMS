@@ -3,6 +3,7 @@ package photos
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -34,6 +35,147 @@ func imageGroupLibrary(t *testing.T) *Library {
 		t.Fatal(err)
 	}
 	return l
+}
+
+func TestImageGroupAddMembersAtomicPrivacyAndConcurrentRevision(t *testing.T) {
+	ctx := context.Background()
+	l := imageGroupLibrary(t)
+	a, b, c, d := "20240102_Family_Trip/a.jpg", "20240102_Family_Trip/b.jpg", "20240102_Family_Trip/c.jpg", "other/d.jpg"
+	id, err := l.CreateImageGroup(ctx, []string{a, b}, b, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, err := l.ImageGroup(ctx, id, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	primary := g.PrimaryID
+	other, err := l.CreateImageGroup(ctx, []string{c, d}, c, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = l.AddImageGroupMembers(ctx, id, g.Revision, []string{c}, false); !errors.Is(err, ErrImageGroupConflict) {
+		t.Fatalf("merged another group: %v", err)
+	}
+	otherGroup, _ := l.ImageGroup(ctx, other, false)
+	if _, err = l.ApplyImageGroupAction(ctx, other, otherGroup.Revision, 0, "dissolve", false); err != nil {
+		t.Fatal(err)
+	}
+	for _, paths := range [][]string{nil, {c, c}, {a}, {c, "../outside.jpg"}, make([]string, MaxImageGroupSize+1)} {
+		if err = l.AddImageGroupMembers(ctx, id, g.Revision, paths, false); err == nil {
+			t.Fatalf("accepted %v", paths)
+		}
+	}
+	// A private new member cannot partially add the preceding public candidate.
+	marker := filepath.Join(l.root, "other/.adminonly")
+	if err = os.WriteFile(marker, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = l.AddImageGroupMembers(ctx, id, g.Revision, []string{c, d}, false); !errors.Is(err, errAdminOnly) {
+		t.Fatal(err)
+	}
+	if err = os.Remove(marker); err != nil {
+		t.Fatal(err)
+	}
+	// Access to every existing member is required even when the new photo is public.
+	marker = filepath.Join(l.root, "20240102_Family_Trip/.adminonly")
+	if err = os.WriteFile(marker, nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err = l.AddImageGroupMembers(ctx, id, g.Revision, []string{d}, false); !errors.Is(err, errAdminOnly) {
+		t.Fatal(err)
+	}
+	if err = os.Remove(marker); err != nil {
+		t.Fatal(err)
+	}
+	after, err := l.ImageGroup(ctx, id, false)
+	if err != nil || after.Revision != g.Revision || len(after.Members) != 2 {
+		t.Fatalf("failed addition changed group: %+v %v", after, err)
+	}
+	// Two tabs adding to the same revision cannot overwrite one another.
+	errs := make(chan error, 2)
+	var wg sync.WaitGroup
+	for _, p := range []string{c, d} {
+		wg.Add(1)
+		go func(p string) {
+			defer wg.Done()
+			errs <- l.AddImageGroupMembers(ctx, id, g.Revision, []string{p}, false)
+		}(p)
+	}
+	wg.Wait()
+	close(errs)
+	success, conflict := 0, 0
+	for e := range errs {
+		if e == nil {
+			success++
+		} else if errors.Is(e, ErrImageGroupConflict) {
+			conflict++
+		} else {
+			t.Fatal(e)
+		}
+	}
+	if success != 1 || conflict != 1 {
+		t.Fatalf("success=%d conflicts=%d", success, conflict)
+	}
+	after, err = l.ImageGroup(ctx, id, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	remaining := c
+	for _, m := range after.Members {
+		if m.Media.Path == c {
+			remaining = d
+		}
+	}
+	if err = l.AddImageGroupMembers(ctx, id, after.Revision, []string{remaining}, false); err != nil {
+		t.Fatal(err)
+	}
+	after, err = l.ImageGroup(ctx, id, false)
+	if err != nil || len(after.Members) != 4 || after.PrimaryID != primary {
+		t.Fatalf("addition: %+v %v", after, err)
+	}
+	listing, err := l.List(ctx, ListOptions{Recursive: true, PageSize: 60})
+	if err != nil || listing.Total != 1 || len(listing.Media) != 1 || listing.Media[0].Path != b {
+		t.Fatalf("listing: %+v %v", listing, err)
+	}
+	for _, p := range []string{a, b, c, d} {
+		content, e := os.ReadFile(filepath.Join(l.root, p))
+		if e != nil || string(content) != p {
+			t.Fatalf("original changed: %s %v", p, e)
+		}
+	}
+}
+
+func TestImageGroupAddDoesNotExceedSizeLimit(t *testing.T) {
+	ctx := context.Background()
+	l := imageGroupLibrary(t)
+	paths := []string{"20240102_Family_Trip/a.jpg", "20240102_Family_Trip/b.jpg"}
+	for i := 2; i < MaxImageGroupSize; i++ {
+		p := fmt.Sprintf("limit/%03d.jpg", i)
+		if err := os.MkdirAll(filepath.Join(l.root, "limit"), 0750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(l.root, p), []byte(p), 0444); err != nil {
+			t.Fatal(err)
+		}
+		paths = append(paths, p)
+	}
+	rebuildIdentity(t, l)
+	id, err := l.CreateImageGroup(ctx, paths, paths[1], false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, err := l.ImageGroup(ctx, id, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = l.AddImageGroupMembers(ctx, id, g.Revision, []string{"other/d.jpg"}, false); !errors.Is(err, ErrImageGroupAddInvalid) {
+		t.Fatal(err)
+	}
+	after, err := l.ImageGroup(ctx, id, false)
+	if err != nil || after.Revision != g.Revision || len(after.Members) != MaxImageGroupSize {
+		t.Fatalf("limit changed group: %v", err)
+	}
 }
 
 func TestImageGroupMissingPrimaryRestorationRelocationAndPreviews(t *testing.T) {
@@ -182,8 +324,8 @@ func TestImageGroupReadonlyMount(t *testing.T) {
 	ctx := context.Background()
 	rebuildIdentity(t, l)
 	listing, err := l.List(ctx, ListOptions{Recursive: true, MediaType: MediaTypeImage, PageSize: 10})
-	if err != nil || len(listing.Media) < 2 {
-		t.Fatalf("requires at least two read-only images: %v", err)
+	if err != nil || len(listing.Media) < 3 {
+		t.Fatalf("requires at least three read-only images: %v", err)
 	}
 	id, err := l.CreateImageGroup(ctx, []string{listing.Media[0].Path, listing.Media[1].Path}, listing.Media[0].Path, false)
 	if err != nil {
@@ -210,6 +352,13 @@ func TestImageGroupReadonlyMount(t *testing.T) {
 	g, err = l.ImageGroup(ctx, id, false)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if err = l.AddImageGroupMembers(ctx, id, g.Revision, []string{listing.Media[2].Path}, false); err != nil {
+		t.Fatal(err)
+	}
+	g, err = l.ImageGroup(ctx, id, false)
+	if err != nil || len(g.Members) != 3 {
+		t.Fatalf("add: %+v %v", g, err)
 	}
 	if _, err = l.ApplyImageGroupAction(ctx, id, g.Revision, 0, "dissolve", false); err != nil {
 		t.Fatal(err)

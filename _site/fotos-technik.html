@@ -2392,7 +2392,9 @@ nicht geschrieben. Ein fehlendes Hauptbild erhält ein temporäres Ersatzhauptbi
 Sortierung und Pagination aus. Bestehende schnelle Zähler ziehen ausgeblendete
 Mitglieder über einen Teilindex ab. Gruppenzuordnungen werden stapelweise geladen;
 Kartenrouten-Revisionen berücksichtigen Hauptbildwechsel. Vollständige
-Gruppenansichten sind auf 500 Mitglieder begrenzt.</p>
+Gruppenansichten sind auf 500 Mitglieder begrenzt. Auch das Erstellen und
+nachträgliche Hinzufügen prüfen die Mitgliedschaften in begrenzten Stapeln
+innerhalb derselben Schreibtransaktion, ohne Einzelabfrage pro Bild.</p>
 <table>
 <thead>
 <tr>
@@ -2403,7 +2405,7 @@ Gruppenansichten sind auf 500 Mitglieder begrenzt.</p>
 <tbody>
 <tr>
 <td><code>POST /photos/image-groups</code></td>
-<td><code>photos.edit</code>; Formular mit wiederholten <code>ids</code> und <code>primary</code>, 2–500 noch nicht gruppierte Bilder.</td>
+<td><code>photos.edit</code>; Formular mit wiederholten <code>ids</code> und <code>primary</code>, 2–500 noch nicht gruppierte Bilder. Optionales <code>return</code> zur bisherigen <code>/photos</code>-Galerie einschließlich Filter und Sortierung.</td>
 </tr>
 <tr>
 <td><code>GET /photos/image-groups/{id}</code></td>
@@ -2411,13 +2413,20 @@ Gruppenansichten sind auf 500 Mitglieder begrenzt.</p>
 </tr>
 <tr>
 <td><code>POST /photos/image-groups/{id}</code></td>
-<td><code>photos.edit</code>; <code>revision</code>, <code>action=primary/remove/dissolve</code>, für die ersten beiden Aktionen <code>entity_id</code>. Zugriff auf alle Mitglieder erforderlich.</td>
+<td><code>photos.edit</code>; <code>revision</code>, <code>action=primary/remove/dissolve/add</code>. Für <code>primary/remove</code> zusätzlich <code>entity_id</code>, für <code>add</code> wiederholte <code>ids</code> mit noch nicht gruppierten Bildpfaden. Zugriff auf alle bisherigen und neuen Mitglieder erforderlich.</td>
 </tr>
 </tbody>
 </table>
 <p>Schreibanfragen sind same-origin-geschützt. Mit JSON-Accept liefert Anlegen HTTP
 201 mit <code>{id,url}</code>, Ändern HTTP 200 mit <code>{ok,exists,url}</code>; sonst erfolgt eine
-303-Weiterleitung. Veraltete Revisionen oder bereits gruppierte Bilder ergeben
+303-Weiterleitung. Die JSON-Antwort beim Anlegen enthält weiterhin die Gruppen-URL;
+das HTML-Formular führt ab 1.10.0 zur bisherigen Galerie zurück. Ohne gültiges
+lokales <code>/photos</code>-Rücksprungziel wird der Ordner des Hauptbilds verwendet. Beim
+Auflösen oder automatischen Auflösen nach <code>remove</code> führen HTML-Weiterleitung und
+JSON-<code>url</code> in den Ordner des bisherigen Hauptbilds.</p>
+<p><code>action=add</code> ist ab 1.10.0 verfügbar, erhält das Hauptbild und erlaubt mindestens
+ein neues Bild bis zu einer Gesamtgröße von 500 Mitgliedern. Bestehende Gruppen
+lassen sich nicht zusammenführen. Veraltete Revisionen oder bereits gruppierte Bilder ergeben
 409. Fehlerhafte Eingaben ergeben 400, fehlende Rechte 403 und nicht vorhandene
 Bilder/Gruppen 404. Die <a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml">OpenAPI-Beschreibung</a> enthält die Schemata.
 Metadaten und native Katalogantworten ergänzen optional <code>image_group_id</code>.

@@ -28,6 +28,7 @@ trap cleanup EXIT
 mkdir "$fixture_dir/source" "$fixture_dir/root"
 cp _site-src/docs/assets/images/bearstack-app-screenshot.webp "$fixture_dir/source/photo.webp"
 cp "$fixture_dir/source/photo.webp" "$fixture_dir/source/second.webp"
+cp "$fixture_dir/source/photo.webp" "$fixture_dir/source/third.webp"
 printf '# Read-only fixture\n' > "$fixture_dir/source/blog.md"
 case "$(uname -s)" in
   Darwin)
