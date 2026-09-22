@@ -24,6 +24,8 @@ Zusammenführen, Ignorieren und Wiederherstellen **Fotos bearbeiten**
 (`photos.edit`). Die Erkennung einrichten oder alle erzeugten Gesichtsdaten
 löschen darf ein Konto mit **Fotos verwalten** (`photos.manage`).
 
+Die Breadcrumbs der Personenverwaltung verwenden dieselbe abgerundete Darstellung wie die Foto- und Ordneransichten. Die aktuelle Personenübersicht bzw. Detailseite wird hervorgehoben.
+
 1. **Fotos → Personen verwalten** öffnen (`/photos/people`).
 2. **Unbenannt** wählen, um noch nicht benannte Gruppen zu sehen.
 3. Über das Stiftsymbol einer Kachel **Benennen / zuordnen** öffnen.

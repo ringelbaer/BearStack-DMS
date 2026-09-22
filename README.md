@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.10.3** · Android-App: **0.22.2**.
+Aktuelle Version: **1.10.4** · Android-App: **0.22.2**.
+
+**BearStack 1.10.4:** Die Breadcrumbs unter **Personen verwalten** verwenden dieselbe abgerundete Darstellung wie Foto- und Ordneransichten; die aktuelle Personenübersicht bzw. Detailseite wird hervorgehoben.
 
 **BearStack 1.10.3:** In Personengalerien können keine Bildgruppen erstellt oder erweitert werden. Das gilt auch für Personen-Tags und **Personen im Ordner**. Auswahl und Tag-Aktionen bleiben verfügbar; zum Gruppieren den Fotoordner öffnen.
 

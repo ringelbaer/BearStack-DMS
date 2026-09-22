@@ -767,3 +767,29 @@ for (const failure of ["rejected", "lost", "invalid", "refresh", "timeout"]) {
     await context.close();
   });
 }
+
+test("person breadcrumbs match gallery styles on desktop and mobile", async ({ page }) => {
+  await login(page);
+  const style = locator => locator.evaluate(element => {
+    const css = getComputedStyle(element);
+    return { radius: css.borderRadius, font: css.fontSize, weight: css.fontWeight, padding: css.padding, color: css.color, background: css.backgroundColor };
+  });
+  await page.goto(baseURL + "/photos");
+  const galleryStyle = await style(page.locator('.folder-breadcrumb-current').first());
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 850 });
+    await page.goto(baseURL + "/photos/people");
+    const navigation = page.getByRole('navigation', { name: 'Pfad zur Personenverwaltung' });
+    const current = navigation.locator('[aria-current="page"]');
+    await expect(current).toHaveText('Alle Personen');
+    expect(await style(current)).toEqual(galleryStyle);
+    await expect(navigation.getByRole('link', { name: 'Fotos', exact: true })).toHaveAttribute('href', '/photos');
+    const people = await (await page.request.get(baseURL + '/photos/people?format=json&sort=count_desc')).json();
+    await page.goto(baseURL + '/photos/people/' + people.people[0].id);
+    await expect(current).toHaveText('Zoe');
+    expect(await style(current)).toEqual(galleryStyle);
+    await navigation.getByRole('link', { name: 'Alle Personen', exact: true }).click();
+    await expect(current).toHaveText('Alle Personen');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+});

@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.10.4
+
+- Breadcrumbs unter **Personen verwalten** nutzen die gemeinsamen Stile der Foto- und Ordneransichten: abgerundete Links, einheitliche Trennzeichen und Hervorhebung der aktuellen Personenübersicht bzw. Detailseite mit `aria-current`. Gilt auch für die Ordnerprüfung; lange Namen können weiterhin umbrechen.
+- PATCH für die UI-Korrektur, ohne zusätzliche Abfragen oder Änderungen an Originalfotos. README, Website und OpenAPI-Version aktualisiert; API-Verträge unverändert.
+- Validiert: Server-Tests, OpenAPI-Vertragsprüfungen und 24 Browsertests einschließlich Stilabgleich mit der Galerie auf Desktop und Mobil sowie Navigation zwischen Übersicht und Personendetail. Website erfolgreich gebaut.
+
 ### BearStack 1.10.3
 
 - In virtuellen Personengalerien unter `.people` entfallen das Erstellen und Erweitern von Bildgruppen einschließlich Info-Symbol und Dialog. Gilt für **Alle**, Personen-Tags und **Personen im Ordner**. Dadurch können dort ausgewählte Bilder aus verschiedenen Fotoordnern nicht versehentlich gruppiert werden. Auswahlmodus und Tag-Aktionen bleiben verfügbar; vorhandene Gruppen werden weiterhin dargestellt.

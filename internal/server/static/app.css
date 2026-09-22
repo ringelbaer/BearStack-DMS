@@ -4041,7 +4041,7 @@ body.has-person-selection { padding-bottom: 150px; }
 
 /* Shared people workspace: navigation, optional menus and bounded selection. */
 .people-navigation { margin-bottom: 1rem; }
-.people-breadcrumbs { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; font-size: .85rem; margin-bottom: .6rem; }
+.people-breadcrumbs { margin-top: 0; margin-bottom: .6rem; }
 .people-breadcrumbs > * { overflow-wrap: anywhere; }
 .people-navigation-row, .people-navigation-tools { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
 .people-navigation-tools { margin-left: auto; }
