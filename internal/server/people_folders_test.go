@@ -66,6 +66,14 @@ func TestPersonTagsHTTPAndGallery(t *testing.T) {
 			if want && !strings.Contains(w.Body.String(), fmt.Sprintf(`href="/photos/people/%d" aria-label="Person bearbeiten"`, id)) {
 				t.Fatal("incorrect person edit target")
 			}
+			for _, marker := range []string{"data-image-group-create", "data-image-group-hint", "data-image-group-dialog"} {
+				if strings.Contains(w.Body.String(), marker) != (user == "editor" && !photos.IsPeopleFolder(path)) {
+					t.Fatalf("grouping control %s on %s for %s", marker, path, user)
+				}
+			}
+			if want && (!strings.Contains(w.Body.String(), "data-photo-selection-mode") || !strings.Contains(w.Body.String(), `data-bulk-tags-open="add"`)) {
+				t.Fatal("person gallery lost selection or tag actions")
+			}
 		}
 	}
 

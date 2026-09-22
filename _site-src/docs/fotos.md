@@ -150,6 +150,12 @@ alle Mitglieder ansehen.
 
 ### Bilder auswählen und gruppieren
 
+Zum Gruppieren den Fotoordner öffnen. In virtuellen **Personengalerien** unter
+`.people` können keine Bildgruppen erstellt oder erweitert werden, auch nicht
+über Personen-Tags oder **Personen im Ordner**. Diese Ansichten können Aufnahmen
+aus verschiedenen Fotoordnern enthalten. Auswahlmodus und Tag-Aktionen bleiben
+dort verfügbar; vorhandene Bildgruppen werden weiterhin angezeigt.
+
 1. Mit dem Schalter **Bearbeiten einschalten** die Bearbeitung aktivieren.
    Erst dann erscheinen Checkboxen, Auswahlmodus und die Gruppenaktion.
    Die kompakte Auswahlleiste zeigt Hilfetexte hinter **Info-Symbolen**:

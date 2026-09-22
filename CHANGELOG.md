@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.10.3
+
+- In virtuellen Personengalerien unter `.people` entfallen das Erstellen und Erweitern von Bildgruppen einschließlich Info-Symbol und Dialog. Gilt für **Alle**, Personen-Tags und **Personen im Ordner**. Dadurch können dort ausgewählte Bilder aus verschiedenen Fotoordnern nicht versehentlich gruppiert werden. Auswahlmodus und Tag-Aktionen bleiben verfügbar; vorhandene Gruppen werden weiterhin dargestellt.
+- PATCH für die Korrektur des Aktionsumfangs. Serverseitige Ausgabe der Gruppenbedienung nur in regulären Fotogalerien, ohne zusätzliche Abfragen. README, Website und OpenAPI-Version aktualisiert; API-Verträge unverändert.
+- Validiert: Server-Tests und 29 Browserprüfungen einschließlich Personengalerien nach Tags und Ordnern, Auswahl aus verschiedenen Ordnern, Tag-Dialog und weiterhin funktionierender Gruppierung in regulären Galerien. Website gebaut.
+
 ### BearStack 1.10.2
 
 - Der formatierte Ordnername in der Foto-Info ist mit der zugehörigen Galerie verlinkt; **Fotos** führt zum Stammverzeichnis. Linkziele folgen dem Bildwechsel und berücksichtigen Sonderzeichen, ohne zusätzliche Anfragen.

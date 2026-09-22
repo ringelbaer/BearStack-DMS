@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.10.2** · Android-App: **0.22.2**.
+Aktuelle Version: **1.10.3** · Android-App: **0.22.2**.
+
+**BearStack 1.10.3:** In Personengalerien können keine Bildgruppen erstellt oder erweitert werden. Das gilt auch für Personen-Tags und **Personen im Ordner**. Auswahl und Tag-Aktionen bleiben verfügbar; zum Gruppieren den Fotoordner öffnen.
 
 **BearStack 1.10.2:** Der **Ordner** in der Foto-Info öffnet seine Galerie. Die Stammdaten-Zusammenfassung erscheint auch in der Galerie einer Person; Mutter, Vater, Geschwister und aktuelle Ehepartner sind mit ihren Personenseiten verlinkt.
 

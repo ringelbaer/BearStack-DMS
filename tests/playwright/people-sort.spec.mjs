@@ -299,6 +299,16 @@ test("tag a person and browse the virtual folders into the dated photo gallery",
   await page.locator(".photo-folder-link").filter({ hasText: "Zoe" }).click();
   await expect(page.locator(".photo-card")).toHaveCount(2);
   await expect(page.locator(".photo-date-group")).toHaveCount(2);
+  await page.locator("[data-photo-mode-toggle]").click();
+  await page.locator("[data-photo-selection-mode]").click();
+  await page.locator(".photo-card .photo-card-button").first().click();
+  await page.locator(".photo-card .photo-card-button").last().click({ modifiers: ["Shift"] });
+  await expect(page.locator("[data-photo-selection-count]")).toHaveText("2 ausgewählt");
+  await expect(page.locator("[data-image-group-create], [data-image-group-hint], [data-image-group-dialog]")).toHaveCount(0);
+  await page.getByRole("button", { name: "Tags ergänzen", exact: true }).click();
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
   await page.locator("[data-photo-sort-menu] summary").click();
   await page.getByRole("link", { name: "Datum absteigend", exact: true }).click();
   await expect(page.locator(".photo-card").first()).toHaveAttribute("data-photo-path", "B/photo.png");
@@ -335,6 +345,7 @@ test("named groups can choose, follow and clear existing parents", async ({ brow
   await expect(page).toHaveURL(`${baseURL}/photos/people/${parents[0].id}`);
   await expect(page.locator("[data-detail-title]")).toHaveText("Mutter Beispiel");
   await page.goto(`${baseURL}/photos?path=.people/all/${child.id}`);
+  await expect(page.locator("[data-image-group-create], [data-image-group-hint], [data-image-group-dialog]")).toHaveCount(0);
   await expect(summary.getByRole("link", { name: "Mutter Beispiel", exact: true })).toHaveAttribute("href", `/photos/people/${parents[0].id}`);
   await expect(summary.getByRole("link", { name: "Vater Beispiel", exact: true })).toHaveAttribute("href", `/photos/people/${parents[1].id}`);
   await page.setViewportSize({ width: 320, height: 844 });
@@ -374,6 +385,7 @@ test("folder people view keeps portraits, photos and navigation inside the folde
   await page.locator(".photo-folder-link").click();
   await expect(page.locator(".photo-card")).toHaveCount(1);
   await expect(page.locator(".photo-card")).toHaveAttribute("data-photo-path","B/photo.png");
+  await expect(page.locator("[data-image-group-create], [data-image-group-hint], [data-image-group-dialog]")).toHaveCount(0);
   await expect(page.getByRole("navigation",{name:"Fotopfad"}).getByRole("link",{name:"B",exact:true})).toHaveAttribute("href","/photos?path=B");
   await page.setViewportSize({width:390,height:800});
   expect(await page.evaluate(() => document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);

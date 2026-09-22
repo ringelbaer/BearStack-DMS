@@ -274,10 +274,10 @@
         <span class="photo-selection-count" data-photo-selection-count>0 ausgewählt</span>
         <button type="button" class="secondary-button people-local-action photo-selection-clear" data-photo-selection-clear aria-label="Auswahl aufheben" title="Auswahl aufheben"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
       </span>
-      <span class="photo-group-tools">
+      {{if not .Photos.Virtual}}<span class="photo-group-tools">
         <button type="button" data-image-group-create hidden>Bilder gruppieren …</button>
         <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Bildgruppen" aria-expanded="false" data-image-group-hint data-context-help-title="Ausgewählte Bilder gruppieren" data-context-help="Zum Erstellen einer Bildgruppe mindestens zwei und höchstens 500 ungruppierte Bilder auswählen. Eine bestehende Bildgruppe und einzelne Bilder auswählen, um sie hinzuzufügen. Das bisherige Hauptbild bleibt dabei erhalten. Mehrere Bildgruppen können nicht zusammengeführt werden.">i</span>
-      </span>
+      </span>{{end}}
       <div class="photo-tag-actions" role="group" aria-label="Tags der ausgewählten Medien">
         <button type="button" class="secondary-button" data-bulk-tags-open="add" data-empty-selection-message="Bitte mindestens ein Bild auswählen.">Tags ergänzen</button>
         <div class="tag-select hidden" data-tag-select data-create-tag-mode="local" data-empty-label="Keine Tags ausgewählt" data-update-url="/photos/tags/add" data-bulk-tags="true" data-bulk-tags-action="add"></div>
@@ -365,7 +365,7 @@
 {{end}}
 
 {{template "photo_lightbox" .}}
-{{if .Auth.CanPhotosEdit}}{{template "image_group_create_dialog" .}}{{end}}
+{{if and .Auth.CanPhotosEdit (not .Photos.Virtual)}}{{template "image_group_create_dialog" .}}{{end}}
 
 </div>
 
