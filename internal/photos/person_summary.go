@@ -5,10 +5,23 @@ import (
 	"time"
 )
 
-// Summary contains only recorded, visible details. Divorced marriages remain in
-// the editable master record but are omitted from the compact person heading.
-func (d PersonDetails) Summary() string {
-	parts := []string{}
+type PersonSummaryPart struct {
+	Text     string
+	PersonID int64
+}
+
+// SummaryParts keeps person identities separate from display text, so views can
+// link visible relations without parsing names or inserting trusted HTML.
+// Divorced marriages remain in the master record, not the compact heading.
+func (d PersonDetails) SummaryParts() []PersonSummaryPart {
+	var parts []PersonSummaryPart
+	field := func(label string, values ...PersonSummaryPart) {
+		if len(parts) > 0 {
+			parts = append(parts, PersonSummaryPart{Text: " · "})
+		}
+		parts = append(parts, PersonSummaryPart{Text: label + ": "})
+		parts = append(parts, values...)
+	}
 	date := func(value string) string {
 		parsed, err := time.Parse("2006-01-02", value)
 		if err != nil {
@@ -17,33 +30,43 @@ func (d PersonDetails) Summary() string {
 		return parsed.Format("02.01.2006")
 	}
 	if d.BirthDate != "" {
-		parts = append(parts, "Geboren: "+date(d.BirthDate))
+		field("Geboren", PersonSummaryPart{Text: date(d.BirthDate)})
 	}
 	if d.DeathDate != "" {
-		parts = append(parts, "Gestorben: "+date(d.DeathDate))
+		field("Gestorben", PersonSummaryPart{Text: date(d.DeathDate)})
 	}
 	if d.Parents.Mother != nil {
-		parts = append(parts, "Mutter: "+d.Parents.Mother.Name)
+		field("Mutter", PersonSummaryPart{Text: d.Parents.Mother.Name, PersonID: d.Parents.Mother.ID})
 	}
 	if d.Parents.Father != nil {
-		parts = append(parts, "Vater: "+d.Parents.Father.Name)
+		field("Vater", PersonSummaryPart{Text: d.Parents.Father.Name, PersonID: d.Parents.Father.ID})
 	}
 	if len(d.Siblings) > 0 {
-		names := []string{}
-		for _, p := range d.Siblings {
-			names = append(names, p.Name)
+		var names []PersonSummaryPart
+		for i, p := range d.Siblings {
+			if i > 0 {
+				names = append(names, PersonSummaryPart{Text: ", "})
+			}
+			names = append(names, PersonSummaryPart{Text: p.Name, PersonID: p.ID})
 		}
-		parts = append(parts, "Geschwister: "+strings.Join(names, ", "))
+		field("Geschwister", names...)
 	}
 	for _, m := range d.Marriages {
 		if m.DivorceDate != "" {
 			continue
 		}
-		s := "Verheiratet mit: " + m.Spouse.Name
+		field("Verheiratet mit", PersonSummaryPart{Text: m.Spouse.Name, PersonID: m.Spouse.ID})
 		if m.WeddingDate != "" {
-			s += " seit " + date(m.WeddingDate)
+			parts = append(parts, PersonSummaryPart{Text: " seit " + date(m.WeddingDate)})
 		}
-		parts = append(parts, s)
 	}
-	return strings.Join(parts, " · ")
+	return parts
+}
+
+func (d PersonDetails) Summary() string {
+	var summary strings.Builder
+	for _, part := range d.SummaryParts() {
+		summary.WriteString(part.Text)
+	}
+	return summary.String()
 }

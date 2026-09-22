@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.10.1** · Android-App: **0.22.2**.
+Aktuelle Version: **1.10.2** · Android-App: **0.22.2**.
+
+**BearStack 1.10.2:** Der **Ordner** in der Foto-Info öffnet seine Galerie. Die Stammdaten-Zusammenfassung erscheint auch in der Galerie einer Person; Mutter, Vater, Geschwister und aktuelle Ehepartner sind mit ihren Personenseiten verlinkt.
 
 **BearStack 1.10.1:** Kompakte Auswahlleiste in der Galerie mit getrennten Auswahl- und Bearbeitungsaktionen. Hilfetexte zur Auswahl und Gruppierung öffnen sich über **Info-Symbole**, wie in den allgemeinen Einstellungen. Auf schmalen Bildschirmen bricht die Leiste um und scrollt mit der Galerie.
 

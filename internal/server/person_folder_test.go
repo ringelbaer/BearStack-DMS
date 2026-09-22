@@ -115,30 +115,51 @@ func TestPersonHeadingShowsOnlyRecordedUndivorcedDetails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := httptest.NewRequest("GET", fmt.Sprintf("/photos/people/%d", id), nil)
-	r.SetBasicAuth("reader", "secret")
-	w := httptest.NewRecorder()
-	s.Handler().ServeHTTP(w, r)
-	if w.Code != 200 {
-		t.Fatal(w.Body.String())
+	if _, err = s.photos.SetPersonTags(ctx, id, []string{"family"}); err != nil {
+		t.Fatal(err)
 	}
-	body := w.Body.String()
-	start := strings.Index(body, "<p data-person-summary")
-	if start < 0 {
-		t.Fatalf("missing summary: %s", body)
-	}
-	end := strings.Index(body[start:], "</p>")
-	summary := body[start : start+end]
-	if !strings.Contains(summary, "06.05.1980") || !strings.Contains(summary, "Current seit 02.01.2010") || strings.Contains(summary, "Former") || strings.Contains(summary, "Gestorben") {
-		t.Fatal(summary)
-	}
-	if !strings.Contains(body, fmt.Sprintf(`/photos/people/%d/folder`, id)) {
-		t.Fatal("missing folder navigation")
+	for _, endpoint := range []string{
+		fmt.Sprintf("/photos/people/%d", id),
+		"/photos?path=" + url.QueryEscape(photos.PersonFolderPath(id)),
+		"/photos?path=.people/t-ZmFtaWx5/" + fmt.Sprint(id),
+		"/photos?path=" + url.QueryEscape(photos.DirectoryPeoplePath("")+"/"+fmt.Sprint(id)),
+	} {
+		r := httptest.NewRequest("GET", endpoint, nil)
+		r.SetBasicAuth("reader", "secret")
+		w := httptest.NewRecorder()
+		s.Handler().ServeHTTP(w, r)
+		if w.Code != 200 {
+			t.Fatalf("%s: %d %s", endpoint, w.Code, w.Body)
+		}
+		body := w.Body.String()
+		start := strings.Index(body, "<p data-person-summary")
+		if start < 0 {
+			t.Fatalf("missing summary: %s", body)
+		}
+		end := strings.Index(body[start:], "</p>")
+		summary := body[start : start+end]
+		want := fmt.Sprintf(`<a href="/photos/people/%d">Current</a> seit 02.01.2010`, other)
+		if !strings.Contains(summary, "06.05.1980") || !strings.Contains(summary, want) || strings.Contains(summary, "Former") || strings.Contains(summary, "Gestorben") {
+			t.Fatal(summary)
+		}
+		if strings.HasPrefix(endpoint, "/photos/people/") && !strings.Contains(body, fmt.Sprintf(`/photos/people/%d/folder`, id)) {
+			t.Fatal("missing folder navigation")
+		}
 	}
 	for _, route := range []string{"/photos/people/merge-suggestions", "/photos/people"} {
-		w = labelRequest(s, "GET", route, "editor", "")
+		w := labelRequest(s, "GET", route, "editor", "")
 		if strings.Contains(w.Body.String(), "/people/chains") || strings.Contains(w.Body.String(), "app-face-chains") {
 			t.Fatalf("remaining link on %s", route)
+		}
+	}
+	unnamed := group.Faces[3].PersonID
+	for _, route := range []string{"/photos", "/photos?path=.people", "/photos?path=.people/all", "/photos?path=" + url.QueryEscape(photos.PersonFolderPath(unnamed))} {
+		r := httptest.NewRequest("GET", route, nil)
+		r.SetBasicAuth("reader", "secret")
+		w := httptest.NewRecorder()
+		s.Handler().ServeHTTP(w, r)
+		if w.Code != 200 || strings.Contains(w.Body.String(), "<p data-person-summary>") {
+			t.Fatalf("summary outside named gallery: %s %d %s", route, w.Code, w.Body)
 		}
 	}
 }

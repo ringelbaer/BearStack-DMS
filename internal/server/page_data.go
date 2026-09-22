@@ -19,7 +19,7 @@ type PageData struct {
 	FaceMergeSuggestions    []photos.FaceMergeSuggestion
 	GroupPhotos             photos.GroupPhotosPage
 	People                  photos.PeoplePage
-	PersonSummary           string
+	PersonSummary           []photos.PersonSummaryPart
 	PersonFolders           photos.PersonFolderPage
 	FaceSettings            FaceSettingsView
 	AppName                 string

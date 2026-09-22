@@ -1,0 +1,1 @@
+{{define "person_summary"}}<p data-person-summary{{if not .}} hidden{{end}}>{{range .}}{{if .PersonID}}<a href="/photos/people/{{.PersonID}}">{{.Text}}</a>{{else}}{{.Text}}{{end}}{{end}}</p>{{end}}

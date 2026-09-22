@@ -94,7 +94,7 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 				s.faceError(w, r, e)
 				return
 			}
-			data.PersonSummary = details.Summary()
+			data.PersonSummary = details.SummaryParts()
 		}
 		data.PhotoSettings, err = s.photoSettings(r.Context())
 		if err != nil {

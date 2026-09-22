@@ -328,6 +328,20 @@ test("named groups can choose, follow and clear existing parents", async ({ brow
   await page.getByRole("button",{name:"Stammdaten speichern",exact:true}).click();
   await expect(page.locator("[data-person-details-dialog]")).not.toBeVisible();
   await expect(page.locator("[data-person-summary]")).toContainText("Mutter Beispiel");
+  const summary = page.locator("[data-person-summary]");
+  await expect(summary.getByRole("link", { name: "Mutter Beispiel", exact: true })).toHaveAttribute("href", `/photos/people/${parents[0].id}`);
+  await expect(summary.getByRole("link", { name: "Vater Beispiel", exact: true })).toHaveAttribute("href", `/photos/people/${parents[1].id}`);
+  await summary.getByRole("link", { name: "Mutter Beispiel", exact: true }).click();
+  await expect(page).toHaveURL(`${baseURL}/photos/people/${parents[0].id}`);
+  await expect(page.locator("[data-detail-title]")).toHaveText("Mutter Beispiel");
+  await page.goto(`${baseURL}/photos?path=.people/all/${child.id}`);
+  await expect(summary.getByRole("link", { name: "Mutter Beispiel", exact: true })).toHaveAttribute("href", `/photos/people/${parents[0].id}`);
+  await expect(summary.getByRole("link", { name: "Vater Beispiel", exact: true })).toHaveAttribute("href", `/photos/people/${parents[1].id}`);
+  await page.setViewportSize({ width: 320, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await summary.getByRole("link", { name: "Vater Beispiel", exact: true }).click();
+  await expect(page).toHaveURL(`${baseURL}/photos/people/${parents[1].id}`);
+  await page.goto(`${baseURL}/photos/people/${child.id}`);
   await page.getByRole("button",{name:"Stammdaten",exact:true}).click();
   await expect(page.locator("[data-person-details-fields]")).toBeVisible();
   await expect(page.getByRole("combobox",{name:"Mutter",exact:true})).toHaveValue(`Mutter Beispiel (#${parents[0].id})`);
@@ -343,6 +357,9 @@ test("named groups can choose, follow and clear existing parents", async ({ brow
   await expect(page.locator("[data-person-details-dialog]")).not.toBeVisible();
   const result = await (await context.request.get(`${baseURL}/photos/people/${child.id}/parents`)).json();
   expect(result).toEqual({});
+  await expect(summary).toBeHidden();
+  await page.goto(`${baseURL}/photos?path=.people/all/${child.id}`);
+  await expect(summary).toBeHidden();
   await context.close();
 });
 
@@ -492,7 +509,7 @@ test("person records support multiple relatives, reciprocal marriages, cancellat
     await expect(readerPage.getByLabel("Geburtsdatum",{exact:true})).toHaveValue("1962-01-01");await expect(readerPage.locator("[data-person-details-save]")).toHaveCount(0);
     await expect(readerPage.getByLabel("Sterbedatum",{exact:true})).toHaveValue("2020-01-01");
     await expect(readerPage.getByLabel("Scheidungsdatum",{exact:true})).toBeHidden();
-    await expect(readerPage.getByRole("button",{name:"Scheidungsdatum ergänzen",exact:true})).toHaveCount(0);await expect(readerPage.getByRole("link",{name:"Profil Epsilon",exact:true})).toBeVisible();await reader.close();
+    await expect(readerPage.getByRole("button",{name:"Scheidungsdatum ergänzen",exact:true})).toHaveCount(0);await expect(readerPage.locator("[data-person-details-dialog]").getByRole("link",{name:"Profil Epsilon",exact:true})).toBeVisible();await reader.close();
     expect(errors).toEqual([]);
   } finally {
     const current=await details(persons[0].id).catch(()=>null);

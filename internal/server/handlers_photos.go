@@ -2,6 +2,7 @@
 package server
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 	"strings"
@@ -51,6 +52,18 @@ func (s *Server) handlePhotos(w http.ResponseWriter, r *http.Request) {
 		photos.ListTraceInt("media", len(photoView.Media)),
 		photos.ListTraceInt("folder_previews", photoFolderPreviewViewCount(photoView.Folders)),
 	)
+	var personSummary []photos.PersonSummaryPart
+	if photoView.PersonID > 0 {
+		details, err := s.photos.PersonDetails(r.Context(), photoView.PersonID)
+		// Unnamed groups have no master record; their gallery stays available.
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			s.renderPhotoError(w, r, err)
+			return
+		}
+		if err == nil {
+			personSummary = details.SummaryParts()
+		}
+	}
 	var mediaGroups []PhotoMediaGroup
 	if !filter.MapView {
 		finishGroups := photos.StartListTraceStep(r.Context(), "photos.handler.media_groups", photos.ListTraceInt("media", len(photoView.Media)))
@@ -67,6 +80,7 @@ func (s *Server) handlePhotos(w http.ResponseWriter, r *http.Request) {
 		Active:           "photos",
 		Assets:           photoPageAssets(canEditPhotos),
 		Photos:           photoView,
+		PersonSummary:    personSummary,
 		PhotoFilter:      filter,
 		PhotoPage:        true,
 		PhotoSettings:    settings,

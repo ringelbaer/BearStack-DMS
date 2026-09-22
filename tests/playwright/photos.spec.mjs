@@ -565,6 +565,7 @@ test("photo lightbox ignores metadata arriving after navigation without map help
     await page.goto(`${fixture.baseURL}/photos?type=image&sort=ascending_name`);
     await page.evaluate(() => {
       document.querySelector("[data-photo-lightbox]").dataset.photoPreloadAdjacent = "false";
+      document.querySelector('[data-photo-path="public-b.png"]').dataset.photoPath = "album/20260922_Sommer_Urlaub/photo.png";
       const pending = window.lightboxPendingDetails = {};
       window.BearStack.photos.lightbox.init({
         isEditMode: () => false,
@@ -580,14 +581,18 @@ test("photo lightbox ignores metadata arriving after navigation without map help
     const dialog = page.locator("[data-photo-lightbox]");
     await photoItem(page, "public-a.png").locator(".photo-card-button").dispatchEvent("click");
     await expect(dialog).toBeVisible();
+    await expect(dialog.locator("[data-photo-info-folder]")).not.toHaveAttribute("href");
     await page.keyboard.press("ArrowRight");
-    await page.evaluate(() => window.lightboxPendingDetails["public-b.png"]());
-    await expect(dialog.locator("[data-photo-title]")).toHaveText("Details: public-b.png");
+    await page.evaluate(() => window.lightboxPendingDetails["album/20260922_Sommer_Urlaub/photo.png"]());
+    await expect(dialog.locator("[data-photo-title]")).toHaveText("Details: album/20260922_Sommer_Urlaub/photo.png");
+    await expect(dialog.locator("[data-photo-info-folder]")).toHaveAttribute("href", "/photos?path=album%2F20260922_Sommer_Urlaub");
     await page.evaluate(() => window.lightboxPendingDetails["public-a.png"]());
-    await expect(dialog.locator("[data-photo-title]")).toHaveText("Details: public-b.png");
-    await expect(dialog.locator("[data-photo-info-camera]")).toHaveText("public-b.png");
-    await expect(dialog.locator("[data-photo-info-folder]")).toHaveText("Ordner: public-b.png");
+    await expect(dialog.locator("[data-photo-title]")).toHaveText("Details: album/20260922_Sommer_Urlaub/photo.png");
+    await expect(dialog.locator("[data-photo-info-folder]")).toHaveAttribute("href", "/photos?path=album%2F20260922_Sommer_Urlaub");
+    await expect(dialog.locator("[data-photo-info-folder]")).toHaveText("Ordner: album/20260922_Sommer_Urlaub/photo.png");
     await expect(dialog.locator("[data-photo-image]")).toHaveAttribute("src", /path=public-b\.png/);
+    await page.keyboard.press("ArrowLeft");
+    await expect(dialog.locator("[data-photo-info-folder]")).toHaveAttribute("href", "/photos");
     await page.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
     expect(errors).toEqual([]);
@@ -828,10 +833,15 @@ test("photo lightbox toggles fullscreen mode", async ({ browser }) => {
   }
 });
 
-test("photo info panel shows normalized containing folder names", async ({ browser }) => {
+test("photo info panel links normalized containing folders to their galleries", async ({ browser }) => {
   const { context, page } = await editorPage(browser);
   try {
-    for (const [photoPath, folderName] of [["scroll/folder-00/photo.png", "folder 00"], ["public-a.png", "Fotos"]]) {
+    for (const [photoPath, folderName] of [
+      ["scroll/folder-00/photo.png", "folder 00"],
+      ["album/20260922_Sommer_Urlaub/photo.png", "Sommer Urlaub"],
+      ["album/20260922_Sommer_Urlaub/Unter_Ordner & Meer/photo.png", "Unter Ordner & Meer"],
+      ["public-a.png", "Fotos"],
+    ]) {
       const directory = path.posix.dirname(photoPath);
       await page.goto(`${fixture.baseURL}/photos?path=${encodeURIComponent(directory === "." ? "" : directory)}`);
       await photoItem(page, path.posix.basename(photoPath)).locator(".photo-card-button").click();
@@ -840,7 +850,11 @@ test("photo info panel shows normalized containing folder names", async ({ brows
       await lightbox.locator("[data-photo-info-toggle]").click();
       await expect(lightbox.locator("[data-photo-info-folder]")).toBeVisible();
       await expect(lightbox.locator("[data-photo-info-folder]")).toHaveText(folderName);
-      await page.keyboard.press("Escape");
+      const folder = lightbox.getByRole("link", { name: folderName, exact: true });
+      await expect(folder).toHaveAttribute("href", directory === "." ? "/photos" : `/photos?path=${encodeURIComponent(directory)}`);
+      await folder.click();
+      await expect(page).toHaveURL(url => url.pathname === "/photos" && (url.searchParams.get("path") || "") === (directory === "." ? "" : directory));
+      await expect(page.locator("[data-photo-lightbox]")).not.toBeVisible();
     }
   } finally {
     await context.close();
@@ -1361,6 +1375,10 @@ async function createPhotoFixture() {
     await mkdir(child, { recursive: true });
     await writeFile(path.join(folder, "photo.png"), tinyPNG);
     await writeFile(path.join(child, "photo.png"), tinyPNG);
+  }
+  for (const directory of ["album/20260922_Sommer_Urlaub", "album/20260922_Sommer_Urlaub/Unter_Ordner & Meer"]) {
+    await mkdir(path.join(photosRoot, directory), { recursive: true });
+    await writeFile(path.join(photosRoot, directory, "photo.png"), tinyPNG);
   }
 
   await writeFile(path.join(photosRoot, ".order_ascending_name.pg2conf"), "");

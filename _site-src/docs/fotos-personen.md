@@ -289,6 +289,12 @@ Geburts- und Sterbedatum, Mutter, Vater, Geschwister und Ehen zur Verfügung.
 Lesen benötigt **Fotos lesen**, Speichern **Fotos bearbeiten**. Die Eingabe dieser
 Angaben erfolgt in der Weboberfläche.
 
+Die kompakte Zusammenfassung steht in den Personendetails und in der Galerie
+der jeweiligen Person unter **Fotos → Personen**. Sie zeigt nur eingetragene,
+sichtbare Angaben und aktuelle Ehen. Mutter, Vater, Geschwister und Ehepartner
+sind mit ihren Personenseiten verlinkt. Nach dem Speichern der Stammdaten wird
+die Zusammenfassung in den Personendetails direkt aktualisiert.
+
 Vorhandene benannte Personen werden über die Namenssuche zugeordnet. **×** oder
 ein leeres Elternfeld entfernt die jeweilige Zuordnung. Unbekannte Daten dürfen
 leer bleiben; leere Sterbe- und Scheidungsdaten werden über **+** eingeblendet.

@@ -582,6 +582,15 @@
       applyImageTransform(false);
       setText("[data-photo-info-name]", item.title);
       setText("[data-photo-info-folder]", item.folderName);
+      var folderLink = dialog.querySelector("[data-photo-info-folder]");
+      if (folderLink) {
+        if (item.path && item.folderName && item.folderName !== "-") {
+          var directory = item.path.slice(0, Math.max(0, item.path.lastIndexOf("/")));
+          folderLink.href = directory ? "/photos?path=" + encodeURIComponent(directory) : "/photos";
+        } else {
+          folderLink.removeAttribute("href");
+        }
+      }
       setText("[data-photo-info-date]", item.dateTime || item.date);
       setText("[data-photo-info-camera]", item.camera);
       setText("[data-photo-info-lens]", item.lens);

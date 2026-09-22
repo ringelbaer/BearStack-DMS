@@ -14,6 +14,7 @@
       {{if $searchActive}}<span class="folder-breadcrumb-separator" aria-hidden="true">›</span>{{if .PhotoFilter.MapView}}<a class="folder-breadcrumb-link" href="{{.PhotoFilter.GalleryURL}}">Suchergebnis</a>{{else}}<span class="folder-breadcrumb-current" aria-current="page">Suchergebnis</span>{{end}}{{end}}
       {{if .PhotoFilter.MapView}}<span class="folder-breadcrumb-separator" aria-hidden="true">›</span><span class="folder-breadcrumb-current" aria-current="page">Karte</span>{{end}}
     </nav>
+    {{if .Photos.PersonID}}{{template "person_summary" .PersonSummary}}{{end}}
   </div>
   <div class="page-actions">
     {{if and .Auth.CanPhotosEdit .Photos.PersonEditURL}}<a class="secondary-button photo-people-manage" href="{{.Photos.PersonEditURL}}" aria-label="Person bearbeiten" title="Person bearbeiten">{{template "person_pencil_icon"}}<span>Person bearbeiten</span></a>{{end}}

@@ -15,6 +15,7 @@ import (
 )
 
 type PhotoListingView struct {
+	PersonID         int64
 	PersonEditURL    string
 	Virtual          bool
 	PeopleDirectory  bool
@@ -90,6 +91,7 @@ func newPhotoListingView(ctx context.Context, library *photos.Library, listing p
 		parts := strings.Split(listing.Path, "/")
 		if len(parts) == 3 {
 			if id, err := strconv.ParseInt(parts[2], 10, 64); err == nil && id > 0 {
+				view.PersonID = id
 				view.PersonEditURL = "/photos/people/" + strconv.FormatInt(id, 10)
 			}
 		}

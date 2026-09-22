@@ -107,8 +107,9 @@ sich innerhalb der geöffneten Auswahl blättern. Am ersten und letzten Medium
 stoppt die Navigation; die jeweilige Pfeilrichtung ist deaktiviert.
 
 Die Info-Seitenleiste zeigt vorhandene Metadaten wie Aufnahmezeitpunkt mit Datum
-und Uhrzeit, Kamera, GPS, Tags und Gesichter. **Ordner** enthält den formatierten
-Ordnernamen, bei Bildern im Hauptverzeichnis **Fotos**. Auf kleinen Bildschirmen
+und Uhrzeit, Kamera, GPS, Tags und Gesichter. **Ordner** verlinkt den formatierten
+Ordnernamen mit dessen Galerie, bei Bildern im Hauptverzeichnis führt **Fotos**
+zur Fotoübersicht. Der Link folgt beim Blättern dem aktuellen Bild. Auf kleinen Bildschirmen
 steht die Info unter dem Foto und lässt sich separat scrollen.
 
 Gesichtsnamen verlinken die zugehörigen Personen. Mit Bearbeitungsrecht lassen sich

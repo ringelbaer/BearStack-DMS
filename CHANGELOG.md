@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.10.2
+
+- Der formatierte Ordnername in der Foto-Info ist mit der zugehörigen Galerie verlinkt; **Fotos** führt zum Stammverzeichnis. Linkziele folgen dem Bildwechsel und berücksichtigen Sonderzeichen, ohne zusätzliche Anfragen.
+- Personen in der kompakten Stammdaten-Zusammenfassung sind mit ihren Personenseiten verlinkt. Die gleiche Zusammenfassung erscheint in der Galerie der jeweiligen Person, auch über Personen-Tags und **Personen im Ordner**. Unbekannte Angaben, private Beziehungen und geschiedene Ehen bleiben ausgeblendet. Gemeinsame Vorlage und strukturierte Namen/IDs sichern HTML-Escaping und Aktualisierungen ohne Seitenreload.
+- PATCH für Anzeige- und Navigationskorrekturen. README, Website und OpenAPI-Version aktualisiert; HTTP-Verträge und Originaldateien unverändert.
+- Validiert: vollständige Go-Testsuite, JavaScript-Syntax und DOM-Tests sowie 69 Browserfälle zu Galerien, Bildwechseln und Personen. Ordnerlinks für Datumspräfixe, Unterstriche, Sonderzeichen, verschachtelte Ordner und Root geprüft; Personenlinks nach AJAX-Aktualisierung sowie HTML-Escaping, gleiche Namen und leere Zusammenfassungen abgedeckt. Website gebaut.
+
 ### BearStack 1.10.1
 
 - Galerieauswahl platzsparender: Auswahlmodus, Seitenauswahl, Anzahl mit Aufheben-Symbol sowie Gruppen- und Tag-Aktionen stehen auf breiten Bildschirmen in einer Zeile. Die Leiste bricht auf schmalen Bildschirmen um und bleibt dort beim Scrollen nicht über den Fotos stehen.
