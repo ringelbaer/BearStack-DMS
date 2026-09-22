@@ -37,6 +37,9 @@ func (l *Library) MediaContext(ctx context.Context, rel string) (Media, error) {
 	if err == nil {
 		items := []Media{media}
 		err = l.AddContentStates(ctx, items)
+		if err == nil {
+			err = l.AddImageGroups(ctx, items)
+		}
 		media = items[0]
 	}
 	return media, err

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 1.8.0
+  version: 1.9.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -4027,6 +4027,140 @@ paths:
                 minimum: 1
         '404':
           $ref: '#/components/responses/NotFound'
+  /photos/image-groups:
+    post:
+      tags: [Photos]
+      operationId: createImageGroup
+      summary: Group selected images and choose a primary
+      description: >-
+        Requires photos.edit and same-origin form submission. Changes only BearStack metadata;
+        originals and sidecars remain read-only. Choose 2–500 distinct ungrouped images.
+        Galleries, map routes, frames and slideshow lists expose only the primary.
+        Accept application/json for JSON; ordinary forms redirect to the group.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [ids, primary]
+              properties:
+                ids:
+                  type: array
+                  minItems: 2
+                  maxItems: 500
+                  uniqueItems: true
+                  items: {type: string}
+                  description: Repeated library-relative image paths.
+                primary: {type: string, description: One of the selected paths.}
+      responses:
+        '201':
+          description: Created (JSON requested).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, url]
+                properties:
+                  id: {type: integer, format: int64, minimum: 1}
+                  url: {type: string}
+        '303':
+          description: Created; redirect to the group.
+          headers:
+            Location:
+              schema: {type: string}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: A selected image already belongs to a group. Reload before retrying.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '500': {$ref: '#/components/responses/InternalServerError'}
+  /photos/image-groups/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: {type: integer, format: int64, minimum: 1}
+    get:
+      tags: [Photos]
+      operationId: getImageGroup
+      summary: View all accessible members of an image group
+      description: >-
+        Requires photos.read. Private members are filtered; an inaccessible primary
+        denies access. No private member counts are exposed. Responses are private, no-store.
+        A temporarily missing primary falls back to a live member until it returns.
+      parameters:
+      - name: format
+        in: query
+        schema: {type: string, enum: [json]}
+        description: Alternatively send Accept application/json.
+      responses:
+        '200':
+          description: Group HTML, or JSON when requested.
+          content:
+            text/html:
+              schema: {type: string}
+            application/json:
+              schema: {$ref: '#/components/schemas/ImageGroup'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalServerError'}
+    post:
+      tags: [Photos]
+      operationId: updateImageGroup
+      summary: Change the primary, remove a member or dissolve the group
+      description: >-
+        Requires photos.edit, same-origin form submission and access to every member.
+        All changes are atomic and require the current revision. Removing the primary
+        selects another available member. A group with fewer than two members dissolves
+        automatically. Originals are never modified. Accept application/json for JSON.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [revision, action]
+              properties:
+                revision: {type: integer, format: int64, minimum: 1}
+                action: {type: string, enum: [primary, remove, dissolve]}
+                entity_id:
+                  type: integer
+                  format: int64
+                  minimum: 1
+                  description: Required for primary and remove; immutable member identity from GET.
+      responses:
+        '200':
+          description: Updated (JSON requested).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, exists, url]
+                properties:
+                  ok: {type: boolean, const: true}
+                  exists: {type: boolean, description: False if the group was dissolved.}
+                  url: {type: string, description: Group URL or gallery after dissolution.}
+        '303':
+          description: Updated; redirect to the group or gallery.
+          headers:
+            Location:
+              schema: {type: string}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: Stale revision or already dissolved group; reload before editing again.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '500': {$ref: '#/components/responses/InternalServerError'}
   /photos/media/info:
     get:
       tags:
@@ -4098,7 +4232,7 @@ paths:
       operationId: getPhotoFrameItems
       summary: Get a paginated photo listing for frames
       description: Requires photos.read. Supports the existing photo search syntax;
-        automatic_faces is additive and contains no internal vectors.
+        automatic_faces is additive and contains no internal vectors. Only group primaries appear; total and pagination exclude other group members.
       parameters:
       - name: q
         in: query
@@ -4252,6 +4386,24 @@ components:
             format: binary
 
   schemas:
+    ImageGroup:
+      type: object
+      required: [id, revision, members]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        revision: {type: integer, format: int64, minimum: 1}
+        members:
+          type: array
+          maxItems: 500
+          items:
+            type: object
+            required: [entity_id, path, display_path, primary, missing]
+            properties:
+              entity_id: {type: integer, format: int64, minimum: 1}
+              path: {type: string, description: Technical library-relative path.}
+              display_path: {type: string, description: Centrally formatted full path for display; clients must not derive it from path.}
+              primary: {type: boolean}
+              missing: {type: boolean, description: Original is temporarily unavailable.}
     PhotoIdentityStatus:
       type: object
       required: [files, fingerprinted, review_required, missing, relocations, next, has_next]
@@ -4352,6 +4504,7 @@ components:
       - width
       - height
       properties:
+        image_group_id: {type: integer, format: int64, minimum: 1, description: "Optional image group ID since 1.9.0. Group details are available at /photos/image-groups/{id}."}
         entity_id: {type: integer, format: int64, description: Stable internal media identity since 0.65.0.}
         content_revision: {type: integer, format: int64, description: Current indexed identity revision.}
         needs_review: {type: boolean, description: At least one preserved face requires source review.}
@@ -5864,6 +6017,7 @@ components:
       description: Media metadata including imported and recognized faces and the normalized containing folder name.
       additionalProperties: true
       properties:
+        image_group_id: {type: integer, format: int64, minimum: 1, description: "Optional image group ID since 1.9.0. Group details are available at /photos/image-groups/{id}."}
         path:
           type: string
         folder_name:

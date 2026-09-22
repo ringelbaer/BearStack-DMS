@@ -589,8 +589,8 @@
       }
       if (!edit && wasEdit && options.clearSelection !== false) {
         document.querySelectorAll("[data-photo-bulk-form]").forEach(function (form) {
-          if (!form.querySelector('input[name="ids"]:checked')) return;
           setAllPhotoSelected(form, false);
+          if (form.photoSelection) form.photoSelection.reset();
         });
       }
     }
@@ -614,71 +614,30 @@
     return controller;
   }
 
-  function selectedPhotoCount(form) {
-    return photoSelectionController(form).selectedCount();
-  }
-
   function syncPhotoCard(checkbox) {
     var item = checkbox.closest("[data-photo-item]");
-    if (item) {
-      item.classList.toggle("selected", checkbox.checked);
-    }
+    if (item) item.classList.toggle("selected", checkbox.checked);
   }
-
-  function setAllPhotoSelected(form, checked, options) {
-    photoSelectionController(form).setAll(checked, options);
+  function setAllPhotoSelected(form, checked) {
+    photoSelectionController(form).setAll(checked);
+    if (form.photoSelection) form.photoSelection.update();
   }
-
-  function updatePhotoSelection(form) {
-    return photoSelectionController(form).sync();
-  }
-
-  function applyPhotoSelectionRange(form, checkbox, checked) {
-    return photoSelectionController(form).applyRange(checkbox, checked);
-  }
-
   function initPhotoSelection() {
     document.querySelectorAll("[data-photo-bulk-form]").forEach(function (form) {
-      var selection = photoSelectionController(form);
-      if (form.dataset.photoSelectionInitialized !== "true") {
-        form.dataset.photoSelectionInitialized = "true";
-        selection.bind();
+      var gallery = form.querySelector("[data-photo-gallery]"), controller = photoSelectionController(form);
+      if (!gallery || !form.querySelector("[data-photo-selection-mode]")) return;
+      function changed() {
+        controller.items().forEach(syncPhotoCard); controller.sync();
+        form.dispatchEvent(new CustomEvent("photo-selection-changed", { bubbles: true }));
       }
-
-      var gallery = form.querySelector("[data-photo-gallery]");
-      if (gallery && gallery.dataset.photoSelectionInitialized !== "true") {
-        gallery.dataset.photoSelectionInitialized = "true";
-        gallery.addEventListener("click", function (event) {
-          if (!isPhotoEditMode()) return;
-          if (event.target.closest("[data-tag-select]")) return;
-          var item = event.target.closest("[data-photo-item]");
-          if (!item) return;
-          var checkbox = item.querySelector('input[name="ids"]');
-          if (!checkbox) return;
-
-          event.preventDefault();
-          var selected = selectedPhotoCount(form);
-          if (event.shiftKey && applyPhotoSelectionRange(form, checkbox, true)) {
-            updatePhotoSelection(form);
-            return;
-          }
-          if (event.ctrlKey || event.metaKey) {
-            selection.setItemChecked(checkbox, !checkbox.checked);
-            selection.setAnchor(checkbox);
-            updatePhotoSelection(form);
-            return;
-          }
-
-          var next = !(checkbox.checked && selected === 1);
-          setAllPhotoSelected(form, false, { update: false });
-          selection.setItemChecked(checkbox, next);
-          selection.setAnchor(checkbox);
-          updatePhotoSelection(form);
+      if (!form.photoSelection) {
+        form.photoSelection = window.BearStackPeopleControls.bindSelection({
+          grid: gallery, button: form.querySelector("[data-photo-selection-mode]"), all: form.querySelector("[data-photo-select-all]"), clear: form.querySelector("[data-photo-selection-clear]"),
+          input: 'input[name="ids"]', card: ".photo-card", open: ".photo-card-button",
+          blocked: function () { return !isPhotoEditMode(); }, changed: changed
         });
       }
-
-      selection.items().forEach(syncPhotoCard);
-      updatePhotoSelection(form);
+      form.photoSelection.update(); changed();
     });
   }
 

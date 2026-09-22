@@ -21,20 +21,21 @@ const (
 var indexPostFilterCandidateMax = 10000
 
 type indexMediaOptions struct {
-	MapBounds        *MapBounds
-	Directory        string
-	ExactDir         bool
-	Subtree          bool
-	Query            string
-	Plan             indexQueryPlan
-	MediaType        string
-	GPSOnly          bool
-	Order            string
-	RequestSort      string
-	Limit            int
-	Offset           int
-	LeanMetadata     bool
-	IncludeAdminOnly bool
+	includeImageGroupMembers bool
+	MapBounds                *MapBounds
+	Directory                string
+	ExactDir                 bool
+	Subtree                  bool
+	Query                    string
+	Plan                     indexQueryPlan
+	MediaType                string
+	GPSOnly                  bool
+	Order                    string
+	RequestSort              string
+	Limit                    int
+	Offset                   int
+	LeanMetadata             bool
+	IncludeAdminOnly         bool
 }
 
 func (l *Library) indexMedia(ctx context.Context, opts indexMediaOptions) ([]Media, int, error) {
@@ -235,11 +236,11 @@ func (l *Library) indexMediaNegatedTagFast(ctx context.Context, opts indexMediaO
 		return nil, 0, false, nil
 	}
 	from := `media_index AS mi INDEXED BY idx_media_index_date`
-	where := ``
+	where := ` WHERE mi.image_group_hidden=0`
 	args := make([]any, 0, 1)
 	if !opts.IncludeAdminOnly {
 		from = `media_index AS mi INDEXED BY idx_media_index_admin_date`
-		where = ` WHERE mi.admin_only = 0`
+		where += ` AND mi.admin_only = 0`
 	}
 	args = append(args, fetchLimit)
 	rows, err := l.index.db.QueryContext(ctx, `SELECT `+mediaIndexColumns(`mi`)+` FROM `+from+where+indexOrderSQL(opts.Order, opts.RequestSort)+` LIMIT ?`, args...)
@@ -331,7 +332,28 @@ func (p indexQueryPlan) onlyNegatedTagTerm() bool {
 	return p.FTSQuery == "" && !p.PostFilter && len(p.SQLTerms) == 1 && p.SQLTerms[0].Field == "tag" && p.SQLTerms[0].Negated
 }
 
-func (l *Library) indexFastTotal(ctx context.Context, opts indexMediaOptions) (int, bool) {
+func (l *Library) indexFastTotal(ctx context.Context, opts indexMediaOptions) (total int, ok bool) {
+	// Subtract only grouped non-primary images using the small partial index;
+	// preserve cached totals without scanning the entire library.
+	defer func() {
+		if !ok || opts.includeImageGroupMembers {
+			return
+		}
+		opts.includeImageGroupMembers = true
+		where, args, _ := indexWhere(opts)
+		if where == "" {
+			where = " WHERE mi.image_group_hidden=1"
+		} else {
+			where += " AND mi.image_group_hidden=1"
+		}
+		var hidden int
+		if err := l.index.db.QueryRowContext(ctx, `SELECT count(*) FROM media_index mi INDEXED BY idx_media_image_group_hidden`+where, args...).Scan(&hidden); err != nil {
+			ok = false
+			return
+		}
+		total = max(0, total-hidden)
+	}()
+
 	if opts.MapBounds != nil {
 		return 0, false
 	}
@@ -392,6 +414,9 @@ func (l *Library) indexFastTotal(ctx context.Context, opts indexMediaOptions) (i
 func indexWhere(opts indexMediaOptions) (string, []any, bool) {
 	where := make([]string, 0, 8)
 	args := make([]any, 0, 8)
+	if !opts.includeImageGroupMembers {
+		where = append(where, "mi.image_group_hidden=0")
+	}
 	if !opts.IncludeAdminOnly {
 		where = append(where, "mi.admin_only = 0")
 	}

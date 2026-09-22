@@ -15,6 +15,7 @@
     return {
       node: node,
       path: node.dataset.photoPath || "",
+      imageGroupID: Number(node.dataset.imageGroupId || 0),
       src: directMedia ? original : (largePreview || preview || thumb || original),
       original: original,
       preview: preview,
@@ -43,6 +44,7 @@
   function applyPhotoItemDetails(item, data) {
     if (!item || !data) return item;
     item.path = data.path || item.path || "";
+    item.imageGroupID = Number(data.image_group_id || 0);
     item.src = data.src || item.src || "";
     item.original = data.original || item.original || "";
     item.preview = data.preview || item.preview || "";

@@ -20,7 +20,7 @@
         if (mode) {
           var currentLabel = target.getAttribute("aria-label") || "";
           if (!target.hasAttribute("data-selection-label") || currentLabel !== target.dataset.selectionActionLabel) target.dataset.selectionLabel = currentLabel;
-          target.dataset.selectionActionLabel = "Auswählen: " + (card.dataset.personName || card.dataset.displayPath || "Unbenannt");
+          target.dataset.selectionActionLabel = "Auswählen: " + (card.dataset.personName || card.dataset.displayPath || card.dataset.photoDisplayPath || "Unbenannt");
           target.setAttribute("aria-label", target.dataset.selectionActionLabel);
           if (target.hasAttribute("href")) { target.dataset.selectionHref = target.getAttribute("href"); target.removeAttribute("href"); }
           if (target.tagName !== "BUTTON") { target.setAttribute("role", "button"); target.tabIndex = 0; }
@@ -101,7 +101,7 @@
         options.changed(); update();
       }
     });
-    update(); return { update: update };
+    update(); return { update: update, reset: function () { mode = false; anchor = null; update(); } };
   }
   window.BearStackPeopleControls = { bindSelection: bindSelection };
   var bars = Array.from(document.querySelectorAll(".people-selection-bar"));

@@ -47,7 +47,7 @@ func (l *Library) loadFolderPreviewIndexBatch(ctx context.Context, folders []Fol
 				CROSS JOIN media_index mi
 				WHERE fpi.folder_path IN (`+sqlutil.Placeholders(len(pathArgs))+`)
 					AND fpi.rank >= ? AND fpi.rank < ?
-					AND mi.path = fpi.media_path
+					AND mi.path = fpi.media_path AND mi.image_group_hidden=0
 				ORDER BY fpi.folder_path ASC, fpi.rank ASC`, args...)
 		if err != nil {
 			return nil, err

@@ -22,6 +22,10 @@ BearStack uses semantic versioning from the root `VERSION` file. Any agent or ma
 
 - Achte bei allen Änderungen und Funktionsergänzungen auf die Performance-Implikationen, prüfe und suche die beste Umsetzung für eine herausragende Performance, auch bei vielen Dateien, Ordnern oder Bildern.
 
+## Galerie
+
+- Die Originalfotos bleiben zu jedem Zeitpunkt readonly durch BearStack.
+
 ## Productionreadiness
 
 - Achte bei alle Änderungen und Funktionen auf eine sichere und Production-ready Umsetzung. Sichere durch ausführliche Tests ab. 

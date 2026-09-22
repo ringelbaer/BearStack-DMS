@@ -164,7 +164,9 @@ func TestMediaBatchBoundsDatabaseQueries(t *testing.T) {
 		if err != nil || len(items) != count {
 			t.Fatalf("batch %d = %d items, %v", count, len(items), err)
 		}
-		want := int64(2 * ((count + 199) / 200))
+		// Metadata, automatic faces and image-group membership each use one
+		// bounded query per chunk, independent of the number of photos.
+		want := int64(3 * ((count + 199) / 200))
 		if got := queries.Load(); got != want {
 			t.Fatalf("batch %d: %d queries; want %d", count, got, want)
 		}

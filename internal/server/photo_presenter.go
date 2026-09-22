@@ -292,6 +292,7 @@ func photoMediaGroupDate(item PhotoMediaView) (string, string) {
 }
 
 type photoMediaAPIResponse struct {
+	ImageGroupID   int64                   `json:"image_group_id,omitempty"`
 	Path           string                  `json:"path"`
 	Name           string                  `json:"name"`
 	Title          string                  `json:"title"`
@@ -358,6 +359,7 @@ func photoMediaAPIResponseFrom(item PhotoMediaView) photoMediaAPIResponse {
 		src = firstNonEmpty(item.LargePreviewURL, item.PreviewURL, item.ThumbURL, item.MediaURL)
 	}
 	response := photoMediaAPIResponse{
+		ImageGroupID:   item.ImageGroupID,
 		Path:           item.Path,
 		Name:           item.Name,
 		Title:          item.Name,

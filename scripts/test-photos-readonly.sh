@@ -5,7 +5,7 @@ repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_dir"
 go_bin="${GO:-go}"
 run_test() {
-  BEARSTACK_READONLY_TEST_ROOT="$1" "$go_bin" test ./internal/photos -run '^TestPhotoIdentityReadonlyMount$' -count=1 -v
+  BEARSTACK_READONLY_TEST_ROOT="$1" "$go_bin" test ./internal/photos -run '^Test(PhotoIdentity|ImageGroup)ReadonlyMount$' -count=1 -v
 }
 if [[ -n "${BEARSTACK_READONLY_TEST_ROOT:-}" ]]; then
   run_test "$BEARSTACK_READONLY_TEST_ROOT"
@@ -27,6 +27,7 @@ cleanup() {
 trap cleanup EXIT
 mkdir "$fixture_dir/source" "$fixture_dir/root"
 cp _site-src/docs/assets/images/bearstack-app-screenshot.webp "$fixture_dir/source/photo.webp"
+cp "$fixture_dir/source/photo.webp" "$fixture_dir/source/second.webp"
 printf '# Read-only fixture\n' > "$fixture_dir/source/blog.md"
 case "$(uname -s)" in
   Darwin)
@@ -42,7 +43,7 @@ case "$(uname -s)" in
       set -euo pipefail
       mount --bind "$1" "$2"
       mount -o remount,bind,ro "$2"
-      BEARSTACK_READONLY_TEST_ROOT="$2" "$3" test ./internal/photos -run "^TestPhotoIdentityReadonlyMount$" -count=1 -v
+      BEARSTACK_READONLY_TEST_ROOT="$2" "$3" test ./internal/photos -run "^Test(PhotoIdentity|ImageGroup)ReadonlyMount$" -count=1 -v
     ' _ "$fixture_dir/source" "$fixture_dir/root" "$go_bin"
     ;;
   *)

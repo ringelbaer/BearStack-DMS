@@ -186,6 +186,7 @@ func (l *Library) indexFolderPreviewSamples(ctx context.Context, folders []Folde
 		if recursive {
 			join = "(requested.path = '' OR mi.directory = requested.path OR (mi.directory >= requested.prefix_start AND mi.directory < requested.prefix_end))"
 		}
+		join += " AND mi.image_group_hidden=0"
 		if !includeAdminOnly {
 			join += " AND mi.admin_only = 0"
 		}
@@ -276,7 +277,7 @@ func (l *Library) filesystemDirectFolderPreviewMedia(ctx context.Context, rel st
 			}
 			seen++
 			if seen > fastFolderSummaryEntryLimit {
-				return selectFolderPreviewMedia(candidates, limit), nil
+				return l.selectVisibleFolderPreviewMedia(ctx, candidates, limit)
 			}
 			if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || ignoredName(entry.Name()) {
 				continue
@@ -292,7 +293,7 @@ func (l *Library) filesystemDirectFolderPreviewMedia(ctx context.Context, rel st
 			candidates = append(candidates, l.quickMediaFromPathInfo(joinPath(rel, entry.Name()), info, kind, adminOnly))
 		}
 		if errors.Is(err, io.EOF) {
-			return selectFolderPreviewMedia(candidates, limit), nil
+			return l.selectVisibleFolderPreviewMedia(ctx, candidates, limit)
 		}
 		if err != nil {
 			return nil, err
@@ -330,7 +331,7 @@ func (l *Library) filesystemFolderPreviewMedia(ctx context.Context, rel string, 
 	if err != nil {
 		return nil, err
 	}
-	return selectFolderPreviewMedia(candidates, limit), nil
+	return l.selectVisibleFolderPreviewMedia(ctx, candidates, limit)
 }
 
 // Folder previews use the nearest rank at 20%, 40%, 60% and 80% in
@@ -376,4 +377,14 @@ func folderPreviewMediaLess(left, right Media) bool {
 		return left.ModTime.After(right.ModTime)
 	}
 	return left.Path > right.Path
+}
+
+// Batch lookup before sampling ensures hidden members cannot replace a primary
+// in filesystem fallbacks, without issuing one query per original.
+func (l *Library) selectVisibleFolderPreviewMedia(ctx context.Context, candidates []Media, limit int) ([]Media, error) {
+	visible, err := l.filterImageGroupMembers(ctx, candidates)
+	if err != nil {
+		return nil, err
+	}
+	return selectFolderPreviewMedia(visible, limit), nil
 }

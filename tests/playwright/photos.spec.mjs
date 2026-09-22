@@ -532,11 +532,14 @@ test("photo lightbox works without the gallery script and uses host callbacks", 
     });
 
     const dialog = page.locator("[data-photo-lightbox]");
+    await page.locator("[data-photo-gallery]").evaluate(el => { el.dataset.selectionMode = "true"; });
+    // Selection mode blocks the viewer; editing alone still allows opening photos.
     // Activate items directly because their layout belongs to the omitted gallery script.
     await photoItem(page, "public-a.png").locator(".photo-card-button").dispatchEvent("click");
     await expect(dialog).not.toBeVisible();
     expect(await page.evaluate(() => window.lightboxTestHost.requested)).toEqual([]);
 
+    await page.locator("[data-photo-gallery]").evaluate(el => { el.dataset.selectionMode = "false"; });
     await page.evaluate(() => { window.lightboxTestHost.editing = false; });
     await photoItem(page, "public-a.png").locator(".photo-card-button").dispatchEvent("click");
     await expect(dialog).toBeVisible();

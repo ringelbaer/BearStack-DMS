@@ -19,22 +19,7 @@
     {{if and .Auth.CanPhotosEdit .Photos.PersonEditURL}}<a class="secondary-button photo-people-manage" href="{{.Photos.PersonEditURL}}" aria-label="Person bearbeiten" title="Person bearbeiten">{{template "person_pencil_icon"}}<span>Person bearbeiten</span></a>{{end}}
     <a class="secondary-button photo-people-manage" href="/photos/people" aria-label="Personen verwalten" title="Personen verwalten"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"></circle><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m3 11v-3a6 6 0 0 0-2-4.5"></path></svg><span>Personen verwalten</span></a>
     {{if and .Auth.CanPhotosEdit (not .PhotoFilter.MapView) (not .Photos.PeopleDirectory)}}
-    <button type="button" class="photo-mode-toggle" data-photo-mode-toggle aria-pressed="false" aria-label="Bearbeiten einschalten" title="Bearbeiten einschalten">
-      <span class="photo-mode-icon photo-mode-view" aria-hidden="true">
-        <svg viewBox="0 0 24 24" focusable="false">
-          <rect x="4" y="4" width="6" height="6" rx="1.5"></rect>
-          <rect x="14" y="4" width="6" height="6" rx="1.5"></rect>
-          <rect x="4" y="14" width="6" height="6" rx="1.5"></rect>
-          <rect x="14" y="14" width="6" height="6" rx="1.5"></rect>
-        </svg>
-      </span>
-      <span class="photo-mode-icon photo-mode-edit" aria-hidden="true">
-        <svg viewBox="0 0 24 24" focusable="false">
-          <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0 0-3L17.5 5.5a2.1 2.1 0 0 0-3 0L4 16v4z"></path>
-          <path d="M13.5 6.5l4 4"></path>
-        </svg>
-      </span>
-    </button>
+    {{template "photo_mode_toggle" .}}
     {{end}}
     <details class="photo-filter-menu{{if $filterActive}} is-active{{end}}" data-photo-filter-menu>
       <summary aria-label="Suche und Filter" title="Suche und Filter">
@@ -276,13 +261,16 @@
   <input type="hidden" name="return" value="{{.ReturnURL}}">
   {{if and .Auth.CanPhotosEdit (not .Photos.PeopleDirectory)}}
   <div class="photo-edit-toolbar photo-edit-only">
-    <label class="checkbox-line"><input type="checkbox" data-select-all> Alle auswählen</label>
+    <div class="photo-selection-tools" role="group" aria-label="Medien dieser Seite auswählen"><span class="people-action-caption">Nur auswählen · aktuelle Seite</span><button type="button" class="secondary-button people-local-action" data-photo-selection-mode aria-pressed="false" hidden>Auswahlmodus</button><button type="button" class="secondary-button people-local-action" data-photo-select-all data-selection-label="Alle Medien dieser Seite auswählen" hidden>Alle Medien dieser Seite auswählen</button><p class="muted">Im Auswahlmodus markieren Klicks ganze Kacheln. Shift + Klick markiert einen Bereich, Zeile für Zeile.</p></div>
     <div class="selection-actions hidden" data-selection-actions>
       <span class="photo-selection-count" data-photo-selection-count>0 ausgewählt</span>
-      <button type="button" data-bulk-tags-open="add" data-empty-selection-message="Bitte mindestens ein Bild auswählen.">Tags ergänzen</button>
+      <button type="button" data-image-group-create hidden>Ausgewählte Bilder gruppieren …</button>
+      <span class="muted" data-image-group-hint>Gruppieren ist für mindestens zwei ungruppierte Bilder möglich.</span>
+      <button type="button" class="secondary-button" data-bulk-tags-open="add" data-empty-selection-message="Bitte mindestens ein Bild auswählen.">Tags ergänzen</button>
       <div class="tag-select hidden" data-tag-select data-create-tag-mode="local" data-empty-label="Keine Tags ausgewählt" data-update-url="/photos/tags/add" data-bulk-tags="true" data-bulk-tags-action="add"></div>
-      <button type="button" data-bulk-tags-open="remove" data-empty-selection-message="Bitte mindestens ein Bild auswählen.">Tags entfernen</button>
+      <button type="button" class="secondary-button people-remove-action" data-bulk-tags-open="remove" data-empty-selection-message="Bitte mindestens ein Bild auswählen.">Tags entfernen</button>
       <div class="tag-select hidden" data-tag-select data-create-tag-mode="local" data-empty-label="Keine Tags ausgewählt" data-update-url="/photos/tags/remove" data-bulk-tags="true" data-bulk-tags-action="remove"></div>
+      <button type="button" class="secondary-button people-local-action" data-photo-selection-clear>Auswahl aufheben</button>
     </div>
   </div>
   {{end}}
@@ -296,7 +284,7 @@
     {{end}}
     <div class="photo-date-group-media" data-photo-date-group-media>
     {{range .Media}}
-    <article class="photo-card" data-photo-item data-photo-path="{{.Path}}" data-photo-thumb="{{.ThumbURL}}" data-photo-type="{{.Type}}" data-photo-title="{{.Name}}" data-photo-width="{{.Width}}" data-photo-height="{{.Height}}" {{if eq .Type "audio"}}data-photo-src="{{.MediaURL}}"{{end}}>
+    <article class="photo-card" data-photo-item data-photo-path="{{.Path}}" data-photo-thumb="{{.ThumbURL}}" data-photo-type="{{.Type}}" data-photo-title="{{.Name}}" data-photo-width="{{.Width}}" data-photo-height="{{.Height}}" data-image-group-id="{{.ImageGroupID}}" data-photo-display-path="{{photoDisplayPath .Path}}" {{if eq .Type "audio"}}data-photo-src="{{.MediaURL}}"{{end}}>
       {{if $.Auth.CanPhotosEdit}}
       <input class="photo-select-input photo-edit-only" type="checkbox" name="ids" value="{{.Path}}" aria-label="{{.Name}} auswählen">
       {{end}}
@@ -319,6 +307,7 @@
           <strong>{{.Name}}</strong>
         </span>
       </button>
+      {{if .ImageGroupID}}<a class="photo-image-group-link" data-image-group-link href="/photos/image-groups/{{.ImageGroupID}}" aria-label="Bildgruppe öffnen: {{.Name}}" title="Bildgruppe öffnen">{{template "image_group_icon"}}</a>{{end}}
       {{if $.Auth.CanPhotosEdit}}
       <div class="tag-select photo-tag-select photo-edit-only" data-photo-tag-select-deferred data-create-tag-mode="local" data-selected-tags="{{joinTags .Tags}}" data-update-url="/photos/tags?kind=media&amp;path={{queryEscape .Path}}" data-empty-label="Tags"></div>
       {{end}}
@@ -363,6 +352,7 @@
 {{end}}
 
 {{template "photo_lightbox" .}}
+{{if .Auth.CanPhotosEdit}}{{template "image_group_create_dialog" .}}{{end}}
 
 </div>
 
@@ -378,3 +368,22 @@
 {{end}}
 
 {{define "photo_crumb_label"}}{{if .DisplayDate}}{{formatDate .DisplayDate}}{{if .DisplayName}} · {{.DisplayName}}{{end}}{{else}}{{if .DisplayName}}{{.DisplayName}}{{else}}{{.Name}}{{end}}{{end}}{{end}}
+
+{{define "photo_mode_toggle"}}
+    <button type="button" class="photo-mode-toggle" data-photo-mode-toggle aria-pressed="false" aria-label="Bearbeiten einschalten" title="Bearbeiten einschalten">
+      <span class="photo-mode-icon photo-mode-view" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <rect x="4" y="4" width="6" height="6" rx="1.5"></rect>
+          <rect x="14" y="4" width="6" height="6" rx="1.5"></rect>
+          <rect x="4" y="14" width="6" height="6" rx="1.5"></rect>
+          <rect x="14" y="14" width="6" height="6" rx="1.5"></rect>
+        </svg>
+      </span>
+      <span class="photo-mode-icon photo-mode-edit" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0 0-3L17.5 5.5a2.1 2.1 0 0 0-3 0L4 16v4z"></path>
+          <path d="M13.5 6.5l4 4"></path>
+        </svg>
+      </span>
+    </button>
+{{end}}

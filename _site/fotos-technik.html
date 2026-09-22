@@ -971,6 +971,17 @@
 
 </li>
 
+        <li class="md-nav__item">
+  <a href="#bildgruppen-und-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bildgruppen und API
+      </span>
+    </span>
+  </a>
+
+</li>
+
     </ul>
 
 </nav>
@@ -1606,6 +1617,17 @@
 
       </ul>
     </nav>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#bildgruppen-und-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bildgruppen und API
+      </span>
+    </span>
+  </a>
 
 </li>
 
@@ -2360,6 +2382,47 @@ breite Familienzweige ausgerichtet. Geburtsdatum, Name und zuletzt ID sorgen fü
 stabile Gleichstände. Der Generationenabstand beträgt 400 Pixel bei 144 Pixel
 Kartenhöhe. Lange horizontale Verbindungen nutzen den Raum oberhalb der Karten.
 Das Layout durchläuft Familien iterativ und benötigt keine rekursive Ahnensuche.</p>
+<h2 id="bildgruppen-und-api">Bildgruppen und API<a class="headerlink" href="#bildgruppen-und-api" title="Permanent link">&para;</a></h2>
+<p>Seit <strong>1.9.0</strong>, Foto-Schema <strong>40</strong>, speichert BearStack Bildgruppen ausschließlich
+in <code>photo_image_groups</code> und <code>photo_image_group_members</code>. Mitglieder beziehen sich
+auf beständige <code>photo_entities</code>-IDs. Extern verschobene Ordner behalten ihre
+Gruppen nach erfolgreicher Identitätszuordnung; Originale und Sidecars werden
+nicht geschrieben. Ein fehlendes Hauptbild erhält ein temporäres Ersatzhauptbild.</p>
+<p><code>media_index.image_group_hidden</code> blendet andere Mitglieder bereits vor
+Sortierung und Pagination aus. Bestehende schnelle Zähler ziehen ausgeblendete
+Mitglieder über einen Teilindex ab. Gruppenzuordnungen werden stapelweise geladen;
+Kartenrouten-Revisionen berücksichtigen Hauptbildwechsel. Vollständige
+Gruppenansichten sind auf 500 Mitglieder begrenzt.</p>
+<table>
+<thead>
+<tr>
+<th>Endpunkt</th>
+<th>Verhalten</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST /photos/image-groups</code></td>
+<td><code>photos.edit</code>; Formular mit wiederholten <code>ids</code> und <code>primary</code>, 2–500 noch nicht gruppierte Bilder.</td>
+</tr>
+<tr>
+<td><code>GET /photos/image-groups/{id}</code></td>
+<td><code>photos.read</code>; Gruppenansicht, mit <code>format=json</code> oder <code>Accept: application/json</code> aktuelle Revision und sichtbare Mitglieder.</td>
+</tr>
+<tr>
+<td><code>POST /photos/image-groups/{id}</code></td>
+<td><code>photos.edit</code>; <code>revision</code>, <code>action=primary/remove/dissolve</code>, für die ersten beiden Aktionen <code>entity_id</code>. Zugriff auf alle Mitglieder erforderlich.</td>
+</tr>
+</tbody>
+</table>
+<p>Schreibanfragen sind same-origin-geschützt. Mit JSON-Accept liefert Anlegen HTTP
+201 mit <code>{id,url}</code>, Ändern HTTP 200 mit <code>{ok,exists,url}</code>; sonst erfolgt eine
+303-Weiterleitung. Veraltete Revisionen oder bereits gruppierte Bilder ergeben
+409. Fehlerhafte Eingaben ergeben 400, fehlende Rechte 403 und nicht vorhandene
+Bilder/Gruppen 404. Die <a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml">OpenAPI-Beschreibung</a> enthält die Schemata.
+Metadaten und native Katalogantworten ergänzen optional <code>image_group_id</code>.
+Gruppenfilter gelten auch für native Galerie-, Karten- und Frame-Listen; die
+Gruppenverwaltung erfolgt im Browser.</p>
 
 
 

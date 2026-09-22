@@ -5,9 +5,8 @@
   var formatPhotoRating = photoMedia.formatPhotoRating;
   var positiveNumber = photoMedia.positiveNumber;
 
-  // The host supplies edit state, batched metadata loading and optional map helpers.
+  // The host supplies batched metadata loading and optional map helpers.
   function initLightbox(options) {
-    var isPhotoEditMode = options.isEditMode;
     var ensurePhotoItemDetails = options.ensureItemDetails;
     var photoMap = options.map || {};
     var gallery = document.querySelector("[data-photo-gallery], [data-photo-map]");
@@ -23,6 +22,14 @@
     var audio = dialog.querySelector("[data-photo-audio]");
     var stage = dialog.querySelector(".photo-lightbox-stage");
     var title = dialog.querySelector("[data-photo-title]");
+    var imageGroupLink = dialog.querySelector("[data-photo-image-group]");
+    function showImageGroup(item) {
+      if (!imageGroupLink) return;
+      var id = Number(item.imageGroupID || 0);
+      imageGroupLink.hidden = !Number.isSafeInteger(id) || id < 1;
+      if (!imageGroupLink.hidden) imageGroupLink.href = "/photos/image-groups/" + id;
+      else imageGroupLink.removeAttribute("href");
+    }
     var slideshowButton = dialog.querySelector("[data-photo-slideshow]");
     var prevButton = dialog.querySelector("[data-photo-prev]");
     var nextButton = dialog.querySelector("[data-photo-next]");
@@ -613,6 +620,7 @@
       var item = items[current];
       if (faceOverlayItem !== item) clearFaceOverlay();
       if (title) title.textContent = item.title;
+      showImageGroup(item);
       renderCurrentItem(item);
       if (item.detailsLoaded) {
         preloadNeighbors();
@@ -621,6 +629,7 @@
       ensurePhotoItemDetails(item).then(function (updated) {
         if (items[current] !== item) return;
         if (title) title.textContent = updated.title;
+        showImageGroup(updated);
         renderCurrentItem(updated);
         preloadNeighbors();
       });
@@ -765,8 +774,8 @@
     }
 
     gallery.addEventListener("click", function (event) {
-      if (isPhotoEditMode()) return;
-      if (event.target.closest("[data-tag-select], .photo-select-input")) return;
+      if (gallery.dataset.selectionMode === "true") return;
+      if (event.target.closest("[data-tag-select], .photo-select-input, [data-image-group-link], .image-group-member-actions, a")) return;
       var itemNode = event.target.closest("[data-photo-item]");
       if (!itemNode) return;
       ensureItemsCollected();

@@ -76,5 +76,8 @@ func (l *Library) MediaBatchContext(ctx context.Context, paths []string) ([]Medi
 	if err := l.AddAutomaticFaces(ctx, items); err != nil {
 		return nil, err
 	}
+	if err := l.AddImageGroups(ctx, items); err != nil {
+		return nil, err
+	}
 	return items, nil
 }

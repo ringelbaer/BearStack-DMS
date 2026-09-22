@@ -252,7 +252,7 @@
   }
 
   .photo-lightbox-body,
-  .photo-module[data-photo-mode="view"] .photo-lightbox.info-open .photo-lightbox-body {
+  .photo-lightbox.info-open .photo-lightbox-body {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1fr) auto;
   }

@@ -710,3 +710,32 @@ breite Familienzweige ausgerichtet. Geburtsdatum, Name und zuletzt ID sorgen fü
 stabile Gleichstände. Der Generationenabstand beträgt 400 Pixel bei 144 Pixel
 Kartenhöhe. Lange horizontale Verbindungen nutzen den Raum oberhalb der Karten.
 Das Layout durchläuft Familien iterativ und benötigt keine rekursive Ahnensuche.
+
+## Bildgruppen und API
+
+Seit **1.9.0**, Foto-Schema **40**, speichert BearStack Bildgruppen ausschließlich
+in `photo_image_groups` und `photo_image_group_members`. Mitglieder beziehen sich
+auf beständige `photo_entities`-IDs. Extern verschobene Ordner behalten ihre
+Gruppen nach erfolgreicher Identitätszuordnung; Originale und Sidecars werden
+nicht geschrieben. Ein fehlendes Hauptbild erhält ein temporäres Ersatzhauptbild.
+
+`media_index.image_group_hidden` blendet andere Mitglieder bereits vor
+Sortierung und Pagination aus. Bestehende schnelle Zähler ziehen ausgeblendete
+Mitglieder über einen Teilindex ab. Gruppenzuordnungen werden stapelweise geladen;
+Kartenrouten-Revisionen berücksichtigen Hauptbildwechsel. Vollständige
+Gruppenansichten sind auf 500 Mitglieder begrenzt.
+
+| Endpunkt | Verhalten |
+| --- | --- |
+| `POST /photos/image-groups` | `photos.edit`; Formular mit wiederholten `ids` und `primary`, 2–500 noch nicht gruppierte Bilder. |
+| `GET /photos/image-groups/{id}` | `photos.read`; Gruppenansicht, mit `format=json` oder `Accept: application/json` aktuelle Revision und sichtbare Mitglieder. |
+| `POST /photos/image-groups/{id}` | `photos.edit`; `revision`, `action=primary/remove/dissolve`, für die ersten beiden Aktionen `entity_id`. Zugriff auf alle Mitglieder erforderlich. |
+
+Schreibanfragen sind same-origin-geschützt. Mit JSON-Accept liefert Anlegen HTTP
+201 mit `{id,url}`, Ändern HTTP 200 mit `{ok,exists,url}`; sonst erfolgt eine
+303-Weiterleitung. Veraltete Revisionen oder bereits gruppierte Bilder ergeben
+409. Fehlerhafte Eingaben ergeben 400, fehlende Rechte 403 und nicht vorhandene
+Bilder/Gruppen 404. Die [OpenAPI-Beschreibung](https://github.com/ringelbaer/BearStack-DMS/blob/main/openapi.yaml) enthält die Schemata.
+Metadaten und native Katalogantworten ergänzen optional `image_group_id`.
+Gruppenfilter gelten auch für native Galerie-, Karten- und Frame-Listen; die
+Gruppenverwaltung erfolgt im Browser.

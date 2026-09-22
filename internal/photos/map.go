@@ -278,7 +278,11 @@ func (l *Library) MapMedia(ctx context.Context, opts ListOptions, viewport MapBo
 	query.Limit = 96
 	query.Offset = (page - 1) * 96
 	query.RequestSort = "descending_date"
-	return l.indexMedia(ctx, query)
+	items, total, err := l.indexMedia(ctx, query)
+	if err == nil {
+		err = l.AddImageGroups(ctx, items)
+	}
+	return items, total, err
 }
 
 func mapViewportWhere(b MapBounds) (string, []any) {

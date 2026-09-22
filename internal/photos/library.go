@@ -290,6 +290,13 @@ func (l *Library) finishListing(ctx context.Context, opts ListOptions, listing *
 			return err
 		}
 	}
+	if !source.mediaPaged {
+		var err error
+		listing.Media, err = l.filterImageGroupMembers(ctx, listing.Media)
+		if err != nil {
+			return err
+		}
+	}
 	if !source.mediaFiltered {
 		finishFilter := StartListTraceStep(ctx, "photos.library.filter_media", ListTraceInt("before", len(listing.Media)))
 		listing.Media = filterMedia(listing.Media, opts)
@@ -317,6 +324,9 @@ func (l *Library) finishListing(ctx context.Context, opts ListOptions, listing *
 		finishMap(ListTraceInt("route_points", len(listing.RoutePoints)))
 	}
 	if source.mediaPaged {
+		if err := l.AddImageGroups(ctx, listing.Media); err != nil {
+			return err
+		}
 		listing.HasPrev = opts.Page > 1
 		listing.HasNext = opts.Page*opts.PageSize < listing.Total
 		return nil

@@ -138,6 +138,57 @@ werden nicht automatisch auf deren Fotos übertragen. Die
 Sammeländerungen. Die Foto-Tag-Bibliothek verwaltet ein Konto mit
 **Fotos verwalten**.
 
+## Bildgruppen
+
+Ab **1.9.0** kannst du mehrere Aufnahmen desselben Motivs manuell gruppieren.
+Ein **Hauptbild** vertritt die Gruppe in der Galerie, in Ordner-Vorschaubildern,
+auf der Karte, im Fotoframe und in der Großansicht/Diashow. Das Symbol mit den
+überlagerten Bildern auf der Kachel öffnet die gesamte Bildgruppe. Auch die
+Großansicht bietet **Bildgruppe öffnen**. In dieser Gruppenansicht lassen sich
+alle Mitglieder ansehen.
+
+### Bilder auswählen und gruppieren
+
+1. Mit dem Schalter **Bearbeiten einschalten** die Bearbeitung aktivieren.
+   Erst dann erscheinen Checkboxen, Auswahlmodus und die Gruppenaktion.
+2. Einzelne Checkboxen markieren oder **Auswahlmodus** aktivieren, um mit Klicks
+   auf ganze Kacheln auszuwählen. **Shift + Klick** markiert vom zuletzt
+   ausgewählten Bild bis zum angeklickten Bild, zeilenweise in der aktuellen
+   Sortierung, auch rückwärts. Bestehende Markierungen bleiben erhalten.
+3. **Alle Medien dieser Seite auswählen** betrifft ausschließlich die aktuelle
+   Seite. **Auswahl aufheben** entfernt die Markierungen. Beim Verlassen des
+   Bearbeitenmodus werden Auswahl und Auswahlmodus zurückgesetzt.
+4. Zwei bis 500 noch nicht gruppierte Bilder auswählen und **Ausgewählte Bilder
+   gruppieren** öffnen. Videos, Audios und bestehende Gruppen können nicht
+   Bestandteil einer neuen Bildgruppe werden.
+5. Im Dialog das **Hauptbild** wählen und mit **Bildgruppe erstellen** speichern.
+
+Ohne Auswahlmodus öffnet der Klick auf eine Kachel weiterhin die Großansicht.
+Die Auswahl umfasst die aktuelle Seite; bei einer ordnerübergreifenden Galerie
+kann eine Gruppe auch Bilder aus mehreren Ordnern enthalten. Filter und
+Personengalerien richten sich nach dem Hauptbild: Passt nur ein anderes Mitglied
+zum Filter oder liegt nur dieses im geöffneten Ordner, erscheint die Gruppe dort
+nicht.
+
+### Eine Bildgruppe verwalten
+
+Die Gruppe über ihr Symbol öffnen und **Bearbeiten einschalten** aktivieren:
+
+- **Als Hauptbild verwenden** ersetzt das bisherige Hauptbild.
+- **Dieses Bild aus Gruppe entfernen** zeigt es wieder einzeln in den Galerien.
+  Wird das Hauptbild entfernt, übernimmt ein verbleibendes verfügbares Bild.
+- **Gesamte Bildgruppe auflösen** zeigt alle Mitglieder wieder einzeln.
+
+Entfernen und Auflösen werden bestätigt. Bei nur einem verbleibenden Bild löst
+sich die Gruppe automatisch auf. Alle Aktionen ändern ausschließlich BearStacks
+Datenbank; Originale, Dateinamen und XMP-Sidecars bleiben schreibgeschützt.
+
+Leser sehen nur zugängliche Mitglieder. Zum Ändern brauchst du **Fotos bearbeiten**
+und Zugriff auf alle Gruppenmitglieder. Nach einer zwischenzeitlichen Änderung
+in einem anderen Tab die Gruppenansicht neu laden. Fehlt das Hauptbild vorübergehend,
+vertritt ein verfügbares Mitglied die Gruppe; bei Rückkehr des Originals wird
+das gewählte Hauptbild wiederhergestellt.
+
 ## Fotos auf der Karte ansehen
 
 1. Einen Fotoordner ab Ebene 2 öffnen, etwa einen Ereignisordner unterhalb eines

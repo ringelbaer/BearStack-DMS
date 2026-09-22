@@ -38,10 +38,11 @@ func setupPhotoRouteRevision(ctx context.Context, db *sql.DB) error {
         WHEN OLD.latitude IS NOT NULL AND OLD.longitude IS NOT NULL
         BEGIN UPDATE photo_route_revision SET revision=revision+1 WHERE id=1; ` + routeDirectoryRevisionSQL("OLD") + ` END`,
 		`CREATE TRIGGER photo_route_update
-        AFTER UPDATE OF latitude,longitude,captured_at,mod_time_unix_nano,directory,type,admin_only ON media_index
+        AFTER UPDATE OF latitude,longitude,captured_at,mod_time_unix_nano,directory,type,admin_only,image_group_hidden ON media_index
         WHEN ((OLD.latitude IS NOT NULL AND OLD.longitude IS NOT NULL) OR (NEW.latitude IS NOT NULL AND NEW.longitude IS NOT NULL))
         AND (OLD.latitude IS NOT NEW.latitude OR OLD.longitude IS NOT NEW.longitude
         OR OLD.captured_at IS NOT NEW.captured_at OR OLD.mod_time_unix_nano IS NOT NEW.mod_time_unix_nano
+        OR OLD.image_group_hidden IS NOT NEW.image_group_hidden
         OR OLD.directory IS NOT NEW.directory OR OLD.type IS NOT NEW.type OR OLD.admin_only IS NOT NEW.admin_only)
         BEGIN UPDATE photo_route_revision SET revision=revision+1 WHERE id=1; ` +
 			routeDirectoryRevisionSQL("OLD") + routeDirectoryRevisionSQL("NEW") + ` END`,

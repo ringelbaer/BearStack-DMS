@@ -286,6 +286,9 @@ func (l *Library) listPersonFolderMedia(ctx context.Context, out *Listing, id in
 			return err
 		}
 	}
+	if err := l.AddImageGroups(ctx, out.Media); err != nil {
+		return err
+	}
 	out.HasPrev = opts.Page > 1
 	out.HasNext = opts.Page*opts.PageSize < out.Total
 	return nil

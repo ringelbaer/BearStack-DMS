@@ -1063,7 +1063,7 @@ async function testPeopleRefreshRetainsImagesWhenCountsChange() {
   let pageData = { page: 2, total_pages: 3, has_prev: true, has_next: true };
   context.fetch = async (url, options) => ({ ok: true, json: async () => options.method === "POST" ?
     { ok: true } : { people: [{ id: 1, face_id: 10, name: "Neu", count: 2 }], ...pageData } });
-  runScripts(context, ["app-person-picker.js", "app-person-dialog.js", "app-people.js"]);
+  runScripts(context, ["app-person-picker.js", "app-person-dialog.js", "app-people-controls.js", "app-people.js"]);
   overview.dispatchEvent({ type: "click", target: ignore });
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(status.textContent, "Gesicht ignoriert.");
@@ -1115,7 +1115,7 @@ function testPeopleRemembersPageAndHonorsExplicitFilters() {
     context.location.replace = (url) => { context.redirect = url; };
     context.localStorage = { getItem: (k) => values.get(k), setItem: (k, value) => values.set(k, value) };
     if (blocked) context.localStorage = { getItem() { throw new Error("blocked"); }, setItem() { throw new Error("blocked"); } };
-    runScripts(context, ["app-person-picker.js", "app-person-dialog.js", "app-people.js"]);
+    runScripts(context, ["app-person-picker.js", "app-person-dialog.js", "app-people-controls.js", "app-people.js"]);
     return { context, values };
   }
   const restored = setup("http://example.test/photos/people");
@@ -1157,7 +1157,7 @@ async function testPeopleMergePrefersNamedSelection() {
   for (const names of [["", "Petra", ""], ["", "", "Petra"], ["Petra", "Marie", ""], ["", "", ""]]) {
     const document = new TestDocument();
     const inputs = names.map((name, index) => el("input", { "data-person-select": "", value: String(index + 1) }));
-    const cards = names.map((name, index) => el("div", { "data-person-id": String(index + 1), "data-person-name": name }, [el("strong", { text: name || "Unbenannt" }), inputs[index]]));
+    const cards = names.map((name, index) => el("div", { class: "person-overview-card", "data-person-id": String(index + 1), "data-person-name": name }, [el("strong", { text: name || "Unbenannt" }), inputs[index]]));
     const overview = el("div", { "data-people-overview": "", "data-can-ignore": "true" }, cards);
     const controls = peopleSelectionControls();
     const target = controls.querySelector("[data-people-merge-target]");
@@ -1165,11 +1165,12 @@ async function testPeopleMergePrefersNamedSelection() {
     document.body.append(overview, el("p", { "data-people-status": "" }), controls);
     const context = createContext(document);
     let request;
+    context.showAppConfirm = async () => true;
     context.fetch = async (url, options) => { request = { url, options }; return { ok: false, status: 503 }; };
-    runScripts(context, ["app-person-picker.js", "app-person-dialog.js", "app-people.js"]);
+    runScripts(context, ["app-person-picker.js", "app-person-dialog.js", "app-people-controls.js", "app-people.js"]);
     inputs.forEach((input) => { input.checked = true; overview.dispatchEvent({ type: "change", target: input }); });
     const expected = Math.max(0, names.findIndex(Boolean));
-    assert.equal(target.textContent, "3 ausgewählt · Ziel: " + (names[expected] || "Unbenannt"));
+    assert.equal(target.textContent, "3 Gruppen auf dieser Seite · Zusammenführen mit: " + (names[expected] || "Unbenannt"));
     button.dispatchEvent({ type: "click" });
     await new Promise((resolve) => setImmediate(resolve));
     assert.equal(request.options.body.get("target"), String(expected + 1));

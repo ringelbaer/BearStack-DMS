@@ -63,6 +63,7 @@ func (l *Library) CatalogDate(ctx context.Context, date string, includeAdminOnly
 	if !includeAdminOnly {
 		from = "media_index INDEXED BY idx_media_index_admin_date WHERE admin_only=0 AND "
 	}
+	from += "image_group_hidden=0 AND "
 	lookup := func(where, order string, args ...any) (catalogDateKey, error) {
 		var key catalogDateKey
 		err := tx.QueryRowContext(ctx, `SELECT path,captured_at,mod_time_unix_nano FROM `+from+where+

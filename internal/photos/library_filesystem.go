@@ -232,6 +232,10 @@ func (l *Library) listDirectoryFast(ctx context.Context, rel, abs string, opts L
 		}
 		return left.After(right)
 	})
+	mediaCandidates, err = l.filterImageGroupMembers(ctx, mediaCandidates)
+	if err != nil {
+		return err
+	}
 	sortMedia(mediaCandidates, listing.Order, opts.Sort)
 	finishSort()
 	listing.Total = len(mediaCandidates)
@@ -310,8 +314,8 @@ func (l *Library) directFolderSummary(ctx context.Context, rel, abs string, incl
 			seen++
 			if limit > 0 && seen > limit {
 				result.Approximate = true
-				result.Previews = selectFolderPreviewMedia(previewCandidates, folderPreviewSize)
-				return result, nil
+				result.Previews, err = l.selectVisibleFolderPreviewMedia(ctx, previewCandidates, folderPreviewSize)
+				return result, err
 			}
 			name := entry.Name()
 			if ignoredName(name) || entry.Type()&os.ModeSymlink != 0 {
@@ -334,8 +338,8 @@ func (l *Library) directFolderSummary(ctx context.Context, rel, abs string, incl
 			}
 		}
 		if errors.Is(err, io.EOF) {
-			result.Previews = selectFolderPreviewMedia(previewCandidates, folderPreviewSize)
-			return result, nil
+			result.Previews, err = l.selectVisibleFolderPreviewMedia(ctx, previewCandidates, folderPreviewSize)
+			return result, err
 		}
 		if err != nil {
 			return directFolderSummaryResult{}, err

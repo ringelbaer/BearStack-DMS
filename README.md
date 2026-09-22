@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.8.0** · Android-App: **0.22.2**.
+Aktuelle Version: **1.9.0** · Android-App: **0.22.2**.
+
+**BearStack 1.9.0:** Ähnliche Aufnahmen manuell als **Bildgruppe** zusammenfassen und ein Hauptbild bestimmen. Galerie, Fotoframe, Karte und Diashow zeigen nur das Hauptbild; das Gruppensymbol öffnet alle Mitglieder. Auswahl und Gruppenbearbeitung erscheinen erst im Bearbeitenmodus. **Shift + Klick** wählt ganze Bereiche der aktuellen Seite. Originaldateien bleiben schreibgeschützt. [Anleitung](_site-src/docs/fotos.md#bildgruppen).
 
 **BearStack 1.8.0:** Im Auswahlmodus des Personenbereichs markiert **Shift + Klick** den Bereich vom zuletzt ausgewählten Eintrag bis zum angeklickten, zeilenweise in der aktuellen Sortierung. Funktioniert vorwärts und rückwärts für Gruppen, Personengesichter und ignorierte Gesichter; vorhandene Markierungen bleiben erhalten. Auch mit Checkboxen und **Shift + Enter/Leertaste** bedienbar.
 

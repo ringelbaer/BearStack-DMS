@@ -9,6 +9,7 @@ import (
 )
 
 type PageData struct {
+	ImageGroup              ImageGroupView
 	PeopleSection           string
 	FamilyTreeEnabled       bool
 	FamilyTreeSettings      photos.FamilyTreeSettings

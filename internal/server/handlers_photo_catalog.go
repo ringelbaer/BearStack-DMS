@@ -15,6 +15,7 @@ import (
 // The native API carries source values plus centrally formatted folder labels.
 // Paths are library-relative; clients build URLs under their configured base.
 type photoCatalogMedia struct {
+	ImageGroupID    int64                   `json:"image_group_id,omitempty"`
 	EntityID        int64                   `json:"entity_id,omitempty"`
 	ContentRevision int64                   `json:"content_revision,omitempty"`
 	NeedsReview     bool                    `json:"needs_review"`
@@ -42,7 +43,7 @@ type photoCatalogMedia struct {
 }
 
 func catalogMedia(media photos.Media) photoCatalogMedia {
-	return photoCatalogMedia{EntityID: media.EntityID, ContentRevision: media.ContentRevision, NeedsReview: media.NeedsReview, FaceID: media.FaceID, Path: media.Path, Name: media.Name, FolderName: photos.MediaFolderName(media.Path), Type: media.Type, MIME: media.MIMEType,
+	return photoCatalogMedia{ImageGroupID: media.ImageGroupID, EntityID: media.EntityID, ContentRevision: media.ContentRevision, NeedsReview: media.NeedsReview, FaceID: media.FaceID, Path: media.Path, Name: media.Name, FolderName: photos.MediaFolderName(media.Path), Type: media.Type, MIME: media.MIMEType,
 		Version: strconv.FormatInt(media.ModTime.UnixNano(), 10) + ":" + strconv.FormatInt(media.ContentRevision, 10), Modified: media.ModTime, Captured: media.CapturedAt,
 		Bytes: media.SizeBytes, Width: media.Width, Height: media.Height, Camera: media.Camera, Lens: media.Lens,
 		Latitude: media.Latitude, Longitude: media.Longitude, Rating: media.Rating, Tags: media.Tags,

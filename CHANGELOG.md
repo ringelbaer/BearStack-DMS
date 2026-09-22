@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.9.0
+
+- Manuelle Bildgruppen mit frei wählbarem Hauptbild. Galerie, Ordner-Vorschauen, Fotoframe, Karte einschließlich Fotoroute und Großansicht/Diashow berücksichtigen nur Hauptbilder; das Gruppensymbol öffnet die Mitglieder. Hauptbild ändern, einzelne Bilder entfernen und gesamte Gruppe auflösen sind getrennt benannt. Originale und XMP-Sidecars bleiben unverändert.
+- Galerieauswahl nur im Bearbeitenmodus: Checkboxen, ausdrücklicher Auswahlmodus, alle Medien dieser Seite auswählen und Auswahl aufheben. Shift + Klick markiert zeilenweise Bereiche. Gruppierung von 2 bis 500 noch nicht gruppierten Bildern; Hauptbildauswahl vor dem Speichern. Gruppenverwaltung erfordert Bearbeitungsrecht; Leser können sichtbare Mitglieder ansehen.
+- Foto-Schema 40 migriert automatisch. Gruppenzuordnung über beständige Fotoidentitäten, transaktionale Änderungen mit Revisionsprüfung, Schutz privater Mitglieder und Ersatzhauptbild bei vorübergehend fehlendem Original. Indexfilter vor Pagination; gebündelte Zuordnungsabfragen und Teilindex für ausgeblendete Mitglieder halten Aufwand und Speicher begrenzt. Kartenrouten werden bei Hauptbildwechsel ungültig.
+- MINOR für die kompatible Funktion und neue `/photos/image-groups`-Endpunkte. README, Website und OpenAPI aktualisiert; Android-Version unverändert.
+- Validiert: vollständige Go-Testsuite und API-Verträge, gezielte Race-Tests, JavaScript-Syntax und DOM-Tests, Galerie-/Personenauswahl-/Großansicht-Regressionen und Bildgruppenabläufe auf Desktop und Mobil. Migration von Schema 39, fehlende/wiederkehrende und verschobene Originale, Revisionskonflikte und private Mitglieder abgedeckt. Gruppenaktionen zusätzlich auf tatsächlich schreibgeschütztem Test-Mount geprüft; Website erfolgreich gebaut.
+
 ### BearStack 1.8.0
 
 - Auswahlmodus im Personenbereich: Shift + Klick markiert den zusammenhängenden Bereich vom zuletzt ausgewählten bis zum angeklickten Eintrag in sichtbarer Reihenfolge, zeilenweise und auch rückwärts. Gilt für Gruppenübersicht, Personengesichter und ignorierte Gesichter. Bestehende Markierungen außerhalb des Bereichs bleiben erhalten.
