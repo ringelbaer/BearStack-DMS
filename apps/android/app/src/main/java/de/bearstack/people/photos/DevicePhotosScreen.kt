@@ -17,10 +17,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -31,7 +28,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -73,7 +69,8 @@ internal class DevicePhotoPreferences(context: Context) {
 @Composable
 fun PhotosScreen(controller: PhotosController?, images: ImageLoader?, canManage: Boolean,
     onPeople: () -> Unit, onConnection: () -> Unit, startOnDevice: Boolean = false,
-    connecting: Boolean = false, connectionError: UiText? = null, onRetry: (() -> Unit)? = null) {
+    connecting: Boolean = false, connectionError: UiText? = null, onRetry: (() -> Unit)? = null,
+    hasConnection: Boolean = controller != null || canManage, connectionEnabled: Boolean = true) {
     val context = LocalContext.current
     val preferences = remember(context) { DevicePhotoPreferences(context) }
     val localPlayback = remember(context) { PlaybackPreferences(context) }
@@ -109,33 +106,20 @@ fun PhotosScreen(controller: PhotosController?, images: ImageLoader?, canManage:
                 deviceOpen = false
                 if(tab != 1) controller?.open(PhotoQuery(query=if(tab == 2) search.trim() else "", recursive=true), tab=tab)
             }, connectionStatus={
-                if(controller == null) LocalConnectionStatus(connecting, connectionError, onRetry, onConnection,
+                if(controller == null) LocalConnectionStatus(connecting, connectionError, onRetry, { settingsOpen=true },
                     onPeople=onPeople.takeIf { canManage })
             })
     } else serverState.SaveableStateProvider("server") {
         ServerPhotosScreen(controller, images, canManage, onPeople, search, { search = it },
             onSettings={ settingsOpen = true }, onDevice=if(enabled) ({ deviceOpen = true }) else null)
     }
-    if(settingsOpen) AlertDialog(onDismissRequest={ settingsOpen = false },
-        title={ Text(stringResource(R.string.photos_settings)) },
-        text={ Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            TextButton(onClick={ settingsOpen = false; onConnection() }) {
-                Text(stringResource(R.string.photos_connection))
-            }
-            Row(Modifier.toggleable(value=enabled, role=Role.Switch, onValueChange={ value ->
-                    preferences.enabled = value
-                    enabled = value
-                    if(!value) deviceOpen = false
-                    else if(access == DevicePhotoAccess.NONE) permission.launch(devicePhotoPermissions())
-                }), verticalAlignment=Alignment.CenterVertically) {
-                Text(stringResource(R.string.photos_device_enable), Modifier.weight(1f))
-                Switch(checked=enabled, onCheckedChange=null, modifier=Modifier.padding(start=12.dp))
-            }
-            Text(stringResource(R.string.photos_device_setting_help))
-            if(enabled) DeviceAccessControls(access) { permission.launch(devicePhotoPermissions()) }
-            HorizontalDivider()
-            ThumbnailCacheSettings(controller?.thumbnailCache, unavailable = controller != null && controller.thumbnailCache == null)
-        } }, confirmButton={ TextButton(onClick={ settingsOpen = false }) { Text(stringResource(R.string.photos_close)) } })
+    if(settingsOpen) AppSettingsDialog(controller, connected=hasConnection,
+        onConnection=onConnection, connectionEnabled=connectionEnabled, onDismiss={ settingsOpen=false }, onDeviceChanged={ value ->
+            enabled=value
+            if(!value) deviceOpen=false
+            access=devicePhotoAccess(context)
+            revision++
+        })
 }
 
 @Composable
@@ -152,7 +136,7 @@ private fun LocalConnectionStatus(connecting: Boolean, error: UiText?, onRetry: 
                 Row {
                     if(onRetry != null) TextButton(onClick=onRetry) { Text(stringResource(R.string.photos_retry)) }
                     if(onPeople != null) TextButton(onClick=onPeople) { Text(stringResource(R.string.photos_people)) }
-                    TextButton(onClick=onConnection) { Text(stringResource(R.string.photos_connection)) }
+                    TextButton(onClick=onConnection) { Text(stringResource(R.string.photos_settings)) }
                 }
             }
         }
@@ -160,7 +144,7 @@ private fun LocalConnectionStatus(connecting: Boolean, error: UiText?, onRetry: 
 }
 
 @Composable
-private fun DeviceAccessControls(access: DevicePhotoAccess, onAccess: () -> Unit) {
+internal fun DeviceAccessControls(access: DevicePhotoAccess, onAccess: () -> Unit) {
     val context = LocalContext.current
     if(access != DevicePhotoAccess.FULL) {
         Text(stringResource(if(access == DevicePhotoAccess.SELECTED) R.string.photos_device_selected else R.string.photos_device_permission))
@@ -240,7 +224,8 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
     } }, actions={
         key(path) {
             PhotosMenu(onSettings, onMap=null,
-                onFrame=local?.let { catalog -> catalog::startFrame.takeIf { state?.loading == false && state.media.isNotEmpty() } },
+                onFrame={local?.startFrame()},
+                actionsEnabled=state?.loading==false, frameEnabled=state?.media?.isNotEmpty()==true,
                 onPeople=onPeople)
         }
     }) }, bottomBar={ if(serverAvailable) {

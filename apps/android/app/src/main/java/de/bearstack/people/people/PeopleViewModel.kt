@@ -213,6 +213,19 @@ class PeopleViewModel private constructor(application: Application, private val 
     }
     fun gallery(name: String) = api?.gallery(name)
     private fun editable() = state.value.connected && !state.value.busy && !state.value.unresolved
+    fun navigatePeople(destination: Int) {
+        if(!editable() || state.value.naming || state.value.folderConfirmation!=null ||
+            state.value.batchConfirmation!=null || state.value.removeFace!=null || destination !in 0..2) return
+        directorySearch?.cancel(); search?.cancel(); cancelFaceSearch()
+        mergeFaceSearch?.close(); mergeFaceSearch=null
+        update {it.copy(directory=false,mergeReview=false,folderReview=false,selectedPerson=null,
+            selectedFaces=emptySet(),batchNaming=false,batchConfirmation=null,mergeSuggestion=null,error=null)}
+        when(destination) {
+            1 -> openDirectory()
+            2 -> openMergeReview()
+            else -> task {loadNext()}
+        }
+    }
     fun openMergeReview() { if(editable() && !state.value.naming) task {
         search?.cancel(); searchPreload?.cancel()
         preloads.forEach { it.dispose() }; preloads.clear()
@@ -453,6 +466,9 @@ class PeopleViewModel private constructor(application: Application, private val 
     fun openDirectory() { if(editable() && !state.value.naming) task {
         update { it.copy(directory=true,selectedPerson=null,removeFace=null,selectedFaces=emptySet(),batchNaming=false,batchConfirmation=null,namedPeople=emptyList(),namedHasNext=false) }
         loadNamedPeople(true)
+    } }
+    fun refreshDirectory() { if(editable() && state.value.directory && !state.value.naming) task {
+        if(state.value.selectedPerson!=null) refreshSelectedPerson() else loadNamedPeople(true)
     } }
     fun namedQueryChanged(query: String) {
         if(!state.value.directory || state.value.selectedPerson!=null || state.value.unresolved) return

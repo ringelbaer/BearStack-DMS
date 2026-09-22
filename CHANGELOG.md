@@ -4,6 +4,14 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.10.5 / Android 0.22.3
+
+- Android: sichtbare Rückpfeile, Reiter für Benennen, Personenliste und Gruppenvergleich sowie eine getrennte Statistikansicht ohne versteckte Personenaktionen. Rücknavigation aus Personendetails und Aufheben einer Gesichtsauswahl sind eindeutig getrennt.
+- Gemeinsame Einstellungen und Hilfe in Galerie und Personenansichten. **Abmelden und Verbindung ändern** erklärt die Auswirkungen; erst die Bestätigung entfernt die gespeicherte Verbindung und den Thumbnail-Cache. Auch die Fehlerbehandlung öffnet zunächst Einstellungen.
+- Menüs gruppieren Ansichtsaktionen, Bereichswechsel und globale Funktionen. Dauerhaft unpassende Aktionen entfallen; beim Nachladen bleiben bekannte Aktionen deaktiviert sichtbar. **Gesichter zuordnen** steht direkt in der Auswahlleiste; zurücksetzende Aktionen sind klar beschriftet. **Bilderrahmen starten** und **Zuordnungen nach Ordner prüfen** ersetzen technische Bezeichnungen.
+- PATCH für die Korrektur der bestehenden Bedienabläufe. Android `versionCode 47`; keine zusätzlichen Menüabfragen, keine API-Vertragsänderungen und keine Änderungen an Originalfotos. README, Android-Anleitung, Website und OpenAPI-Version aktualisiert.
+- Validiert: jeweils 121 JVM-Tests für Debug und Release, 100 unterschiedliche UI-Regressionsfälle auf dem Android-Emulator einschließlich gezielter Nachprüfungen für große Schrift, Menüverfügbarkeit, Statistik und Auswahl-Rücknavigation. Debug-/Release-Lint und Builds, Versions-/OpenAPI-Prüfungen sowie Website-Build erfolgreich. Release-Smoke gegen isolierten HTTPS-Server bestätigt Anmeldung, Galerie, Sitzungswiederherstellung und bestätigten Kontowechsel.
+
 ### BearStack 1.10.4
 
 - Breadcrumbs unter **Personen verwalten** nutzen die gemeinsamen Stile der Foto- und Ordneransichten: abgerundete Links, einheitliche Trennzeichen und Hervorhebung der aktuellen Personenübersicht bzw. Detailseite mit `aria-current`. Gilt auch für die Ordnerprüfung; lange Namen können weiterhin umbrechen.

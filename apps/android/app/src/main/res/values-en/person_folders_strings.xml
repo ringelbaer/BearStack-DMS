@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="people_folders_title">Check folder paths</string>
-    <string name="people_folders_version">Checking folder paths requires BearStack 1.2.0 or later.</string>
+    <string name="people_folders_title">Review assignments by folder</string>
+    <string name="people_folders_version">Reviewing assignments by folder requires BearStack 1.2.0 or later.</string>
     <string name="people_folders_scope">Actions apply to all active faces of this person in this exact folder, excluding subfolders. Up to eight previews are shown.</string>
     <string name="people_folders_excluded">Excluded for this person. New assignments are blocked.</string>
     <string name="people_folders_move">Reassign all</string>

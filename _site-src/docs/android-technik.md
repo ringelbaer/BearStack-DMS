@@ -7,7 +7,7 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.22.2** (`versionCode 46`), BearStack **1.7.0**.
+bis zur Personenverwaltung. Stand: App **0.22.3** (`versionCode 47`), BearStack **1.10.5**.
 
 ## Bauen und installieren
 
@@ -418,3 +418,24 @@ den Room-Compiler. Das exportierte Datenbankschema bleibt unverändert.
 `room-ktx` und `ui-tooling-preview` sind keine zusätzlichen Abhängigkeiten.
 Release-Builds verkleinern Code und Ressourcen gemeinsam. Compose-Gerätetests
 verwenden die aktuelle v2-Testregel. Verbindlich sind die Gradle-Dateien im Repository.
+
+
+## Navigation und gemeinsame Einstellungen
+
+`OptionsMenu` stellt den gemeinsamen Menüanker bereit. `PhotosMenu` unterscheidet
+nicht anwendbare Aktionen (ausgeblendet) von vorübergehend gesperrten Aktionen
+(deaktiviert). Beim Neuladen desselben Ordners bleibt dessen bekannter Personenlink
+im Controller erhalten; bei einem Ordnerwechsel wird er verworfen. Es entstehen keine
+zusätzlichen Netzabfragen für Menüs.
+
+`PeopleNavigation` wechselt exklusiv zwischen Benennen, Personenliste und
+Gruppenvergleich und beendet nicht mehr benötigte Suchaufgaben. Detailansichten
+verwenden einen Rückpfeil. Android-Zurück beendet zuerst eine Gesichtsauswahl;
+der Rückpfeil verlässt die Person und verwirft die Auswahl. Die Statistik bietet
+keine Aktionen für eine im Hintergrund liegende Person.
+
+`AppSettingsDialog` wird von Galerie und Personenansichten verwendet. Öffnen und
+Abbrechen verändern die Sitzung nicht. Erst **Abmelden** im Bestätigungsdialog
+führt `switchConnection()` aus, entfernt die gespeicherte Verbindung und leert den
+Thumbnail-Cache. Auch Fehlerdialoge öffnen diese Einstellungen statt unmittelbar
+abzumelden. HTTP-Verträge, Serverberechtigungen und Originaldateien bleiben unverändert.

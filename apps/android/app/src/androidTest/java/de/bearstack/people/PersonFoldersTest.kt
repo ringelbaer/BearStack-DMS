@@ -77,12 +77,12 @@ class PersonFoldersTest {
             }
             idle(vm)
             compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-            if(api.supported) {compose.onNodeWithText("Ordner-Pfade prüfen").performClick();idle(vm)}
+            if(api.supported) {compose.onNodeWithText("Zuordnungen nach Ordner prüfen").performClick();idle(vm)}
             test(vm,api,db)
         } finally {compose.runOnUiThread {store.clear()}}
     }
     @Test fun olderServerDisablesEntry()=screen(setup={it.supported=false}) {vm,api,_ ->
-        compose.onNodeWithText("Ordner-Pfade prüfen").assertIsNotEnabled()
+        compose.onNodeWithText("Zuordnungen nach Ordner prüfen").assertIsNotEnabled()
         assertFalse(vm.state.value.folderReview);assertTrue(api.reads.isEmpty())
     }
     @Test fun formattedPathsHoldZoomAccessiblePreviewAndBack()=screen {vm,api,_ ->
@@ -99,8 +99,7 @@ class PersonFoldersTest {
         compose.runOnIdle {assertTrue(actions.first().action())}
         compose.onNodeWithText("Fotos / 02.01.2024 · Family Trip / Nested Folder / portrait.jpg").assertIsDisplayed()
         compose.onNodeWithText("Vorschau schließen").performClick()
-        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-        compose.onNode(hasText("Zurück") and isEnabled()).performClick();idle(vm)
+        compose.onNodeWithContentDescription("Zurück").performClick();idle(vm)
         assertFalse(vm.state.value.folderReview);assertEquals(0,api.commits)
     }
     @Test fun excludeAndIncludeRemainAvailableWithoutFacesAtLargeFont()=screen(2f) {vm,api,_ ->
@@ -158,7 +157,7 @@ class PersonFoldersTest {
         compose.runOnUiThread {vm.openDirectory()};idle(vm)
         compose.onNodeWithText("Ada").performClick();idle(vm)
         compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-        compose.onNodeWithText("Ordner-Pfade prüfen").performClick();idle(vm)
+        compose.onNodeWithText("Zuordnungen nach Ordner prüfen").performClick();idle(vm)
         assertEquals(3L,vm.state.value.folderSource!!.id)
         compose.runOnUiThread {vm.closePersonFolders()};idle(vm)
         api.base.people[3]=api.base.people.getValue(3).copy(count=0,faceId=0,faces=emptyList())

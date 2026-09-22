@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="connection_setup">Verbindung einrichten</string>
+    <string name="connection_disconnect">Abmelden und Verbindung ändern</string>
+    <string name="connection_disconnect_confirm">Abmelden</string>
+    <string name="connection_disconnect_help">Die gespeicherte Verbindung und zwischengespeicherte Vorschaubilder werden entfernt. Anschließend kannst du dich erneut anmelden. Originalfotos bleiben unverändert.</string>
+    <string name="photos_menu_help">Öffne ein Foto für die Großansicht. Langes Drücken startet die Mehrfachauswahl. Das Menü bietet passende Ansichtsaktionen; Einstellungen gelten auch im Personenbereich.</string>
+    <string name="people_statistics_help">Die Statistik zeigt benannte, ignorierte und übersprungene Gesichter und Gruppen für heute und insgesamt. Mit dem Zurück-Pfeil kehrst du zum Benennen zurück.</string>
+    <string name="people_tab_labeling">Benennen</string>
+    <string name="people_tab_merge">Gruppenvergleich</string>
+    <string name="connection_disconnect_title">Abmelden?</string>
+</resources>

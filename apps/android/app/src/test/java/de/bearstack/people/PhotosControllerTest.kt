@@ -11,6 +11,19 @@ import org.junit.Test
 class PhotosControllerTest {
     private val session=PhotoSession("scope",false,320,320,1280,2048,5,8)
     private fun photo(path: String)=Photo(path,path,"image","image/jpeg","1","2026-09-09T10:00:00Z",null,10,100,100)
+    @Test fun folderPeopleActionSurvivesReloadButDoesNotLeakIntoAnotherFolder() = runTest {
+        val fake=Fake().apply {handler={q,p,_ -> page(q,p,emptyList(),false).copy(peoplePath=".people/folders/holiday")}}
+        val controller=PhotosController(this,fake,session,initialQuery=PhotoQuery(path="holiday"))
+        runCurrent()
+        assertEquals(".people/folders/holiday",controller.state.value.peoplePath)
+        controller.open(PhotoQuery(path="holiday",sort="ascending_name"))
+        assertTrue(controller.state.value.loading)
+        assertEquals(".people/folders/holiday",controller.state.value.peoplePath)
+        runCurrent()
+        controller.open(PhotoQuery(path="another"))
+        assertEquals("",controller.state.value.peoplePath)
+        controller.close()
+    }
     @Test fun openingAVisiblePhotoCancelsAnOutstandingSeek() = runTest {
         val gate=CompletableDeferred<Unit>()
         val fake=Fake().apply {handler={q,p,_ ->

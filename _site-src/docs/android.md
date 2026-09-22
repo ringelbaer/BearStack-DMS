@@ -9,7 +9,7 @@ Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.
 
-Diese Anleitung beschreibt **Android-App 0.22.2**. Beginne mit den
+Diese Anleitung beschreibt **Android-App 0.22.3**. Beginne mit den
 [ersten Schritten](#erste-schritte); die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die [technische Referenz](android-technik.md).
@@ -47,8 +47,12 @@ Für lokale Gerätefotos brauchst du weder einen Server noch ein BearStack-Konto
    Tippe auf ein Foto, um es groß anzusehen; mit Android-Zurück gelangst du ins Raster.
 
 Die App merkt sich eine Verbindung und meldet sich beim nächsten Start automatisch
-an. Eine andere Adresse oder ein anderes Konto richtest du in der Galerie unter
-**… → Einstellungen → Verbindung wechseln** ein.
+an. Die Galerie und alle Personenansichten bieten **… → Einstellungen**.
+Unter **Verbindung → Abmelden und Verbindung ändern** kannst du eine andere Adresse
+oder ein anderes Konto einrichten. Erst nach **Abmelden** im Bestätigungsdialog
+werden die gespeicherte Verbindung und der Thumbnail-Cache entfernt. **Abbrechen**
+behält die Sitzung bei. Ohne gespeicherte Verbindung heißt die Aktion
+**Verbindung einrichten**.
 
 ### Ohne Server beginnen
 
@@ -76,15 +80,22 @@ Die Symbole haben unterschiedliche Aufgaben:
 | Symbol oder Menü | Bedeutung |
 | --- | --- |
 | **Sortieren** | Reihenfolge der aktuellen Galerie oder Personenübersicht wählen. |
-| **…** | Aktionen für die aktuelle Ansicht, etwa Karte, Fotoframe, Personenverwaltung oder Einstellungen. |
-| **Zahnrad** im Bildbetrachter oder Fotoframe | Anzeigedauer, Wiederholung und Wiedergabedarstellung einstellen. |
+| **…** | Aktionen für die aktuelle Ansicht, etwa Karte, Bilderrahmen, Personenverwaltung oder Einstellungen. |
+| **Zahnrad** im Bildbetrachter oder Bilderrahmen | Anzeigedauer, Wiederholung und Wiedergabedarstellung einstellen. |
 | **… → Personen verwalten** in der Galerie | In den Bearbeitungsbereich zum Benennen und Zuordnen wechseln. |
-| **… → Personenliste** im Bearbeitungsbereich | Bereits benannte Personen suchen und bearbeiten. |
+| Reiter **Benennen**, **Personenliste**, **Gruppenvergleich** | Zwischen den Aufgaben der Personenverwaltung wechseln. |
 
-Der Inhalt von **…** hängt von der Ansicht und deinen Rechten ab. In der
-Personenliste und in einer geöffneten Person liegen auch **Zurück**, **Hilfe** und
-**Verbindung wechseln** in diesem Menü. Beim Benennen hat die untere Aktionsleiste
-links **…** für Gruppenaktionen, mittig **?** für Hilfe und rechts den **Stift**.
+Der Inhalt von **…** hängt von der Ansicht und deinen Rechten ab. Zuerst stehen
+Ansichtsaktionen, danach gegebenenfalls Bereichswechsel und zuletzt **Einstellungen**
+und **Hilfe**. Nicht anwendbare Funktionen entfallen, etwa **Karte** bei Gerätefotos.
+Während des Ladens bleiben bekannte Ansichtsaktionen sichtbar, sind aber deaktiviert.
+
+Der **Rückpfeil oben links** verlässt eine Detailansicht. In der Personenverwaltung
+stehen die drei Aufgaben als sichtbare Reiter bereit; auf schmalen Bildschirmen
+und bei großer Schrift lässt sich die Reiterleiste seitlich scrollen. Beim Benennen
+enthält die untere Leiste links **…** für Gruppenaktionen und rechts den **Stift**.
+Die Hilfe liegt einheitlich unter **… → Hilfe** oben rechts. Die Statistik hat eine
+eigene Ansicht mit Rückpfeil zum Benennen und ohne Aktionen für die aktuelle Person.
 
 Die App folgt dem hellen oder dunklen Android-Design und unterstützt Deutsch und
 Englisch. Auf Android 13 oder neuer kannst du die Sprache unter
@@ -210,18 +221,18 @@ du Zielordner und Dateinamen. Der Transfer zeigt seinen Fortschritt und lässt s
 abbrechen. Bei Fehler oder Abbruch versucht die App, die angefangene Datei wieder
 zu entfernen. Eine allgemeine Speicherfreigabe ist dafür nicht erforderlich.
 
-### Diashow und Fotoframe
+### Diashow und Bilderrahmen {#diashow-und-fotoframe}
 
 Für eine Diashow öffnest du ein Foto und tippst auf die Wiedergabetaste. Über das
 **Zahnrad** öffnest du **Diashow einstellen**. Dort legst du eine Anzeigedauer von **3 bis 300 Sekunden**
 und **Am Ende wiederholen** fest. Die Zeit beginnt erst, wenn das Foto geladen ist.
 
-Für einen Bilderrahmen öffnest du in der Galerie **… → Fotoframe starten**. Der
-Fotoframe verwendet den aktuellen Ordner mit Unterordnern und berücksichtigt die
+Für einen Bilderrahmen öffnest du in der Galerie **… → Bilderrahmen starten**. Der
+Bilderrahmen verwendet den aktuellen Ordner mit Unterordnern und berücksichtigt die
 aktive Suche beziehungsweise Typauswahl. Antippen blendet die Steuerung ein;
 Android-Zurück stellt die vorherige Galerie wieder her.
 
-Über das **Zahnrad** öffnest du **Fotoframe einstellen**. Dort kannst du zusätzlich festlegen:
+Über das **Zahnrad** öffnest du **Bilderrahmen einstellen**. Dort kannst du zusätzlich festlegen:
 
 | Einstellung | Wirkung |
 | --- | --- |
@@ -230,12 +241,12 @@ Android-Zurück stellt die vorherige Galerie wieder her.
 | **Name und Datum anzeigen** | Die Beschriftung wird eingeblendet. |
 | **Dateiname / Ordnername** | Wählt den Inhalt der Namenszeile. Der Ordnername wird nach den Galerieregeln formatiert. |
 
-**Zufällige Reihenfolge** wird beim Speichern übernommen und startet den Fotoframe
+**Zufällige Reihenfolge** wird beim Speichern übernommen und startet den Bilderrahmen
 von vorn. Ausschalten verwendet wieder die normale Wiedergabereihenfolge. Ordner,
 Unterordner, Such- und Typfilter bleiben erhalten. Solange sich der Bestand nicht
 ändert, werden in einem Durchlauf alle Medien einmal abgespielt. Die Reihenfolge
 bleibt beim Nachladen und Wiederholen stabil; Serverfotos verwenden die feste
-Zufallssortierung des Index, Gerätefotos werden bei jedem neuen Fotoframe-Start
+Zufallssortierung des Index, Gerätefotos werden bei jedem neuen Bilderrahmen-Start
 neu gemischt. Serverfotos benötigen dafür **BearStack 0.69.0** oder neuer; auf
 älteren Servern ist der Schalter mit einem Hinweis deaktiviert. Gerätefotos
 benötigen keinen Server.
@@ -245,7 +256,7 @@ benötigt BearStack **0.68.0** oder neuer. Auf älteren Servern zeigt diese Eins
 „Ordnername nicht verfügbar“; du kannst weiter den Dateinamen verwenden. Lokale
 Fotos verwenden den Anzeigenamen ihres Gerätealbums.
 
-Videos und Audio werden im Serverbetrachter und Fotoframe bis zum Ende abgespielt.
+Videos und Audio werden im Serverbetrachter und Bilderrahmen bis zum Ende abgespielt.
 Erst danach wechselt die automatische Wiedergabe weiter. Wiederholung funktioniert
 auch bei einer einzelnen Datei. Informationen, Einstellungen, Fotozoom oder ein
 Wechsel in eine andere App pausieren die automatische Wiedergabe. Während der
@@ -312,7 +323,7 @@ blendet sie aus; eine Android-Berechtigung entziehst du separat in den Systemein
 ### Was lokal verfügbar ist
 
 Lokale Fotos unterstützen Raster, Vollbild, Zoom, Informationen, Teilen, Diashow
-und Fotoframe in einem geöffneten Fotoordner sowie bestätigtes Löschen. Es gibt keinen Upload. Videos,
+und Bilderrahmen in einem geöffneten Fotoordner sowie bestätigtes Löschen. Es gibt keinen Upload. Videos,
 private App-Dateien und Ordner außerhalb des Android-Medienindex gehören nicht zu
 dieser Ansicht. SD-Karten-Ordner erscheinen, soweit Android sie bereitstellt;
 gleichnamige Ordner verschiedener Datenträger bleiben getrennt.
@@ -337,7 +348,7 @@ Benennen, Zuordnen oder Ignorieren ändert die Gesichtsdaten; es löscht keine F
 
 Du brauchst **Fotos bearbeiten**. Öffne in der Galerie **… → Personen verwalten**.
 Für die Arbeit an bereits benannten Personen wechselst du dort über
-**… → Personenliste**. Unter **… → Fotos** gelangst du zur Galerie zurück.
+den Reiter **Personenliste**. Unter **… → Fotos** gelangst du zur Galerie zurück.
 
 ### Zuordnungsmodus
 
@@ -405,7 +416,7 @@ keinen Gesichtsabgleich.
 
 ### Benannte Personen bearbeiten
 
-Öffne **… → Personenliste**, suche nach einem Namen und tippe auf die Person.
+Öffne den Reiter **Personenliste**, suche nach einem Namen und tippe auf die Person.
 Die Suche berücksichtigt den gesamten Serverbestand, auch noch nicht geladene
 Einträge. Beim Scrollen werden weitere Personen beziehungsweise Gesichter geladen.
 **Aktualisieren** übernimmt neu hinzugekommene Personen.
@@ -421,9 +432,9 @@ Wird das letzte Gesicht entfernt, verschwindet die leere Person aus der Liste.
 Bestätigte Änderungen werden nach der Serverantwort angezeigt. Unter **… → Hilfe**
 findest du die Bedienhinweise auch direkt in der Personenliste und in einer geöffneten Person.
 
-### Ordner-Pfade prüfen
+### Zuordnungen nach Ordner prüfen {#ordner-pfade-prufen}
 
-Öffne eine Person und wähle **… → Ordner-Pfade prüfen**. Der Eintrag ist auch beim
+Öffne eine Person und wähle **… → Zuordnungen nach Ordner prüfen**. Der Eintrag ist auch beim
 Benennen einer unbenannten Gruppe verfügbar. Benötigt werden BearStack **1.2.0**
 oder neuer und **Fotos bearbeiten**; bei älteren Servern ist der Eintrag deaktiviert.
 
@@ -456,23 +467,25 @@ Nach einem Verbindungsabbruch löst **Offene Aktion prüfen** die gespeicherte A
 1. Öffne eine Person und wähle Gesichter über die Checkbox oben links in ihren Kacheln.
    Die Auswahl bleibt beim Nachladen erhalten; höchstens **500 Gesichter pro Aktion**
    sind möglich.
-2. Öffne **…** rechts in der Auswahlleiste.
-3. Wähle die gewünschte Aktion und prüfe gegebenenfalls den Bestätigungsdialog.
+2. **Gesichter zuordnen** steht direkt in der Auswahlleiste und öffnet den Namensdialog.
+3. Unter **…** rechts stehen Zurücksetzen und Ignorieren. Prüfe vor dem Anwenden
+   den Bestätigungsdialog.
 
 | Aktion | Wirkung auf die ausgewählten Gesichter |
 | --- | --- |
-| **Auf unbenannt zurücksetzen** | Bildet gemeinsam eine neue unbenannte Gruppe und entfernt ihre Vergleichsfavoriten. |
-| **Gruppe zuordnen** | Ordnet sie über den Namensdialog einer neuen oder vorhandenen Person zu. Die Lupe verwendet das erste ausgewählte Gesicht. |
-| **Ignorieren** | Entfernt sie nach Bestätigung aus der Personenansicht. Im Browser unter **Ignoriert** lassen sie sich wiederherstellen. |
+| **Ausgewählte Gesichter auf unbenannt setzen** | Bildet gemeinsam eine neue unbenannte Gruppe und entfernt ihre Vergleichsfavoriten. |
+| **Gesichter zuordnen** | Ordnet sie über den Namensdialog einer neuen oder vorhandenen Person zu. Die Lupe verwendet das erste ausgewählte Gesicht. |
+| **Ausgewählte Gesichter ignorieren** | Entfernt sie nach Bestätigung aus der Personenansicht. Im Browser unter **Ignoriert** lassen sie sich wiederherstellen. |
 
 Während der Auswahl sind ×, Vergleichsstern und Umbenennen der ganzen Person
 gesperrt. **Aufheben** leert die Auswahl; Android-Zurück hebt sie zunächst auf.
+Der Rückpfeil oben links verlässt die Person und hebt dabei die Auswahl auf.
 Das Abbrechen eines Dialogs erhält die Auswahl. Hat sich die Person zwischenzeitlich
 geändert, wird sie aktualisiert und du musst die Auswahl neu treffen.
 
 ### Ähnliche Gruppen
 
-Öffne im Personenbereich **… → Ähnliche Gruppen**. Die Ansicht zeigt ein Paar
+Öffne im Personenbereich den Reiter **Gruppenvergleich**. Die Ansicht zeigt ein Paar
 möglicherweise zusammengehöriger Gruppen mit je einem Vergleichsgesicht,
 Ordnerangabe, Namen und Gesichtsanzahl. Der Ähnlichkeitswert ist ein Vergleichswert,
 keine Prozentwahrscheinlichkeit. Prüfe bei Bedarf beide Portraits in der Fotovorschau.
@@ -529,7 +542,7 @@ Aktuelle Gruppe, Bildseite, übersprungene Gruppen und ungeklärte Aktionen werd
 auf dem Gerät für das jeweilige Konto aufbewahrt. Die App hat keine allgemeine
 Offline-Warteschlange für neue Personenentscheidungen.
 
-**… → Statistik** zählt Gesichter und Gruppen für heute und insgesamt: Benannt,
+Beim Benennen öffnet **… → Statistik** die Auswertung. Sie zählt Gesichter und Gruppen für heute und insgesamt: Benannt,
 Zugeordnet, Ignoriert und Übersprungen. Bestätigte Serveraktionen zählen einmal;
 das Zurücknehmen eines Überspringens korrigiert dessen Zählung. Abtrennen und
 Gruppenvergleiche zählen nicht als erstmaliges Benennen. Die Statistik gilt nur für
@@ -616,8 +629,8 @@ Server; mit älteren Versionen können einzelne Einträge fehlen.
 | Personen unter **Ordner** / **Personen im Ordner** | 0.53.0 / 0.55.0 |
 | Personen nach **Anzahl Bilder** sortieren | 0.58.0 |
 | Hinweis auf geänderte Gesichtsquellen | 0.65.0 |
-| Formatierter Serverordnername im Fotoframe | 0.68.0 |
-| Zufällige Reihenfolge im Fotoframe für Serverfotos | 0.69.0 |
+| Formatierter Serverordnername im Bilderrahmen | 0.68.0 |
+| Zufällige Reihenfolge im Bilderrahmen für Serverfotos | 0.69.0 |
 
 Build, Signierung, API, Datenhaltung und Tests beschreibt
 [Android-App – Technik & Entwicklung](android-technik.md). Die Versionshistorie

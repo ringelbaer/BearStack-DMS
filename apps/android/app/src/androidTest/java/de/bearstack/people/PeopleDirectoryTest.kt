@@ -36,10 +36,7 @@ class PeopleDirectoryTest {
                 CompositionLocalProvider(LocalDensity provides Density(density.density,scale)) {PeopleApp(vm)}
             }
             idle(vm)
-            compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-            compose.onNodeWithText("Lokale Fotos öffnen").assertDoesNotExist()
-            compose.onNodeWithText("Personen verwalten").assertDoesNotExist()
-            compose.onNodeWithText("Personenliste").performClick()
+            compose.onNodeWithTag("people-navigation-1").performScrollTo().performClick()
             idle(vm)
             if(openDetail) {compose.onNodeWithText("Anna").performClick();idle(vm)}
             test(vm,service)
@@ -89,8 +86,7 @@ class PeopleDirectoryTest {
         compose.onNodeWithText("Entfernen").performClick();idle(vm)
         compose.onNodeWithText("Noch keine benannten Personen vorhanden.").assertExists()
         assertEquals(4,api.commits);assertEquals("",api.people.getValue(4).name)
-        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Zurück").performClick();idle(vm)
         compose.onNodeWithText("Personen benennen").assertExists()
         assertEquals(1L,vm.state.value.person!!.id)
     }
@@ -104,13 +100,13 @@ class PeopleDirectoryTest {
         compose.onNodeWithText("2 ausgewählt").assertIsDisplayed()
         compose.onAllNodesWithContentDescription("Zuordnung entfernen")[0].assertIsNotEnabled()
         compose.onNodeWithContentDescription("Aktionen").performClick()
-        compose.onNodeWithText("Ignorieren").performClick()
+        compose.onNodeWithText("Ausgewählte Gesichter ignorieren").performClick()
         compose.onNodeWithText("Ausgewählte Gesichter ignorieren?").assertIsDisplayed()
         compose.onNodeWithText("Abbrechen").performClick()
         assertEquals(0,api.commits);assertEquals(setOf(30L,31L),vm.state.value.selectedFaces)
         compose.onNodeWithContentDescription("Aktionen").performClick()
-        compose.onNodeWithText("Ignorieren").performClick()
-        compose.onNodeWithText("Ignorieren").performClick();idle(vm)
+        compose.onNodeWithText("Ausgewählte Gesichter ignorieren").performClick()
+        compose.onNodeWithText("Ausgewählte Gesichter ignorieren").performClick();idle(vm)
         assertEquals(1,api.commits);assertEquals(listOf(32L),vm.state.value.selectedPerson!!.faces)
         compose.onNodeWithContentDescription("Aktionen").assertDoesNotExist()
     }
@@ -122,8 +118,7 @@ class PeopleDirectoryTest {
     }) {vm,api ->
         compose.onNodeWithTag("select-face-30").performScrollTo().performClick()
         compose.onNodeWithTag("select-face-31").performScrollTo().performClick()
-        compose.onNodeWithContentDescription("Aktionen").performClick()
-        compose.onNodeWithText("Gruppe zuordnen").performClick()
+        compose.onNodeWithText("Gesichter zuordnen").performClick()
         compose.onNodeWithText("Name").performTextInput("Bert")
         compose.waitUntil(10000) {vm.state.value.suggestions.isNotEmpty()}
         compose.onNodeWithText("Berta").performClick();idle(vm)
@@ -145,8 +140,7 @@ class PeopleDirectoryTest {
         compose.onNodeWithText("Person umbenennen").performClick()
         compose.onNodeWithText("Name").performTextReplacement("Anderer Name")
         compose.onNodeWithText("Speichern").performClick();idle(vm)
-        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Zurück").performClick();idle(vm)
         compose.onNodeWithText("Keine Personen gefunden.").assertIsDisplayed()
         compose.onNodeWithText("Löschen").performClick()
         compose.waitUntil(10000) {!vm.state.value.busy && vm.state.value.loadedNamedQuery.isEmpty()}

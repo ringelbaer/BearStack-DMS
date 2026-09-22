@@ -75,21 +75,24 @@ internal fun PeopleDirectoryScreen(state: PeopleState, vm: PeopleViewModel) {
         else if(person!=null) vm.closePerson() else vm.closeDirectory()
     }
     Box(Modifier.fillMaxSize()) {
-        Scaffold(topBar={ TopAppBar(title={Text(text(R.string.people_directory),maxLines=1,overflow=TextOverflow.Ellipsis)},actions={
-            OptionsMenu(menu,{menu=it},enabled=held==null && !state.naming && state.removeFace==null && state.batchConfirmation==null) {
-                DropdownMenuItem(text={Text(text(R.string.photos_back))},enabled=enabled,onClick={
-                    menu=false
-                    if(state.selectedFaces.isNotEmpty()) vm.clearFaceSelection() else if(person!=null) vm.closePerson() else vm.closeDirectory()
-                })
-                if(person!=null) DropdownMenuItem(text={Text(text(R.string.people_folders_title))},enabled=enabled && state.personFoldersSupported,
-                    onClick={menu=false;vm.openPersonFolders()})
-                if(vm.photos!=null) DropdownMenuItem(text={Text(text(R.string.photos_title))},enabled=enabled,
-                    onClick={menu=false;vm.openGallery()})
-                DropdownMenuItem(text={Text(text(R.string.common_help))},onClick={menu=false;help=true})
-                DropdownMenuItem(text={Text(text(R.string.photos_connection))},enabled=!state.busy,
-                    onClick={menu=false;vm.switchConnection()})
-            }
-        }) },bottomBar={
+        Scaffold(topBar={ Column {
+            TopAppBar(title={Text(text(R.string.people_directory),maxLines=1,overflow=TextOverflow.Ellipsis)},
+                navigationIcon={BackAction({if(person!=null) vm.closePerson() else vm.closeDirectory()},
+                    enabled=enabled && !state.naming && state.removeFace==null && state.batchConfirmation==null)},actions={
+                PeopleOptionsMenu(menu,{menu=it},state,vm,onHelp={help=true},
+                    enabled=held==null && !state.naming && state.removeFace==null && state.batchConfirmation==null) {
+                    if(person!=null) DropdownMenuItem(text={Text(text(R.string.people_folders_title))},enabled=enabled && state.personFoldersSupported,
+                        onClick={menu=false;vm.openPersonFolders()})
+                    DropdownMenuItem(text={Text(text(R.string.common_refresh))},enabled=enabled,onClick={menu=false;vm.refreshDirectory()})
+                    HorizontalDivider()
+                    if(vm.photos!=null) {
+                        DropdownMenuItem(text={Text(text(R.string.photos_title))},enabled=enabled,onClick={menu=false;vm.openGallery()})
+                        HorizontalDivider()
+                    }
+                }
+            })
+            if(person==null) PeopleNavigation(1,enabled && !state.naming,vm)
+        } },bottomBar={
             if(person!=null && state.selectedFaces.isNotEmpty()) FaceBatchBar(state,browsing,vm)
         }) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).imePadding()) {
@@ -212,12 +215,13 @@ private fun FaceBatchBar(state: PeopleState, enabled: Boolean, vm: PeopleViewMod
             Text(text(R.string.people_batch_selected,state.selectedFaces.size),style=MaterialTheme.typography.titleSmall)
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
                 TextButton(onClick=vm::clearFaceSelection,enabled=enabled) {Text(text(R.string.people_batch_clear))}
+                TextButton(onClick=vm::startBatchNaming,enabled=enabled,modifier=Modifier.weight(1f)) {
+                    Text(text(R.string.people_batch_assign))
+                }
                 OptionsMenu(actions,{actions=it},enabled=enabled,description=text(R.string.people_batch_actions)) {
-                        DropdownMenuItem(text={Text(text(R.string.people_batch_reset))},enabled=enabled,
+                        DropdownMenuItem(text={Text(text(R.string.people_batch_reset),color=if(enabled) MaterialTheme.colorScheme.error else Color.Unspecified)},enabled=enabled,
                             onClick={actions=false;vm.requestFaceBatch("unassign_faces")})
-                        DropdownMenuItem(text={Text(text(R.string.people_batch_assign))},enabled=enabled,
-                            onClick={actions=false;vm.startBatchNaming()})
-                        DropdownMenuItem(text={Text(text(R.string.people_batch_ignore))},enabled=enabled,
+                        DropdownMenuItem(text={Text(text(R.string.people_batch_ignore),color=if(enabled) MaterialTheme.colorScheme.error else Color.Unspecified)},enabled=enabled,
                             onClick={actions=false;vm.requestFaceBatch("ignore_faces")})
                 }
             }

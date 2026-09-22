@@ -1,7 +1,12 @@
 # BearStack Fotos für Android
 
 Native Android-App für BearStack-Galerie, lokale Fotos und Personenverwaltung.
-App-Version **0.22.2** (`versionCode 46`), Android **8.0 oder neuer**.
+App-Version **0.22.3** (`versionCode 47`), Android **8.0 oder neuer**.
+
+Rücknavigation, Einstellungen und Hilfe sind zwischen den Ansichten vereinheitlicht.
+Die Personenverwaltung hat sichtbare Reiter; Auswahlaktionen beziehen sich ausdrücklich
+auf ausgewählte Gesichter. Ein Verbindungswechsel erklärt die Abmeldung und lässt
+sich vor dem Entfernen der gespeicherten Verbindung abbrechen.
 
 Einzahl-/Mehrzahltexte sind in Deutsch und Englisch korrigiert. Das Galerieraster
 verwendet die Fenstergröße, der Scrollgriff vermeidet unnötige Neuberechnungen.
@@ -32,7 +37,7 @@ Die Benutzeranleitung wird an einer Stelle gepflegt und daraus für die Website 
 
 Für Serverfotos sind BearStack ab 0.50.0, ein aktiviertes Fotomodul und `photos.read`
 erforderlich; Personenverwaltung benötigt zusätzlich `photos.edit`. Gerätefotos
-lassen sich auch ohne Server verwenden. **Ordner-Pfade prüfen** einschließlich
+lassen sich auch ohne Server verwenden. **Zuordnungen nach Ordner prüfen** einschließlich
 Gesichtsvergrößerung und Sammelaktionen benötigt BearStack ab **1.2.0**. Die Anleitung enthält die
 [Kompatibilitätstabelle](../../_site-src/docs/android.md#serverkompatibilitat).
 

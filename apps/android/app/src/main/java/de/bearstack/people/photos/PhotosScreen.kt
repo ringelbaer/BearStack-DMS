@@ -82,11 +82,12 @@ internal fun ServerPhotosScreen(controller: PhotosController, images: ImageLoade
                 }
                 key(state.query, tab) {
                     PhotosMenu(onSettings,
-                        onMap=({ mapOpen=true }).takeIf { !state.loading && !state.query.path.startsWith(".people") },
-                        onFrame=controller::startFrame.takeIf { !state.loading && (!state.query.path.startsWith(".people") || state.query.path.count {it=='/'}==2) },
+                        onMap=({ mapOpen=true }).takeIf { !state.query.path.startsWith(".people") },
+                        onFrame=controller::startFrame.takeIf { (!state.query.path.startsWith(".people") || state.query.path.count {it=='/'}==2) },
                         onPeople=onPeople.takeIf { canManage },
                         onDirectoryPeople=({ controller.open(PhotoQuery(path=state.peoplePath,sort="ascending_name")) })
-                            .takeIf { state.peoplePath.isNotEmpty() && !state.loading },
+                            .takeIf { state.peoplePath.isNotEmpty() },
+                        actionsEnabled=!state.loading && !state.dateLoading && !state.seekLoading,
                         onOpen={ sortMenu=false })
                 }
             })

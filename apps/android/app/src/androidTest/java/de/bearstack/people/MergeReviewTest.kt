@@ -58,8 +58,7 @@ class MergeReviewTest {
             }
             idle(vm)
             compose.runOnUiThread {vm.page(1)};idle(vm)
-            compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-            compose.onNodeWithText("Ähnliche Gruppen").performClick();idle(vm)
+            compose.onNodeWithTag("people-navigation-2").performScrollTo().performClick();idle(vm)
             test(vm,api,db)
         } finally {compose.runOnUiThread {store.clear()}}
     }
@@ -293,7 +292,7 @@ class MergeReviewTest {
         val first=compose.onNodeWithText("1 Gesicht").getUnclippedBoundsInRoot()
         val second=compose.onNodeWithText("107 Gesichter").getUnclippedBoundsInRoot()
         assertEquals(first.top.value,second.top.value,1f)
-        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Erste Gruppe ignorieren").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("Erste Gruppe benennen/zuordnen").assertIsDisplayed()
         saveLayout("long-name")
     }
@@ -310,7 +309,12 @@ class MergeReviewTest {
         assertEquals(rejectBounds,reject.assertIsDisplayed().getUnclippedBoundsInRoot())
         saveLayout("large-font")
         reject.performClick();idle(vm)
-        compose.onNodeWithTag("face-50").assertIsDisplayed()
+        // A new pair resets scrolling. With the section tabs and large text the
+        // portrait may start below the viewport, but must remain reachable.
+        compose.onNodeWithTag("merge-review").assert(SemanticsMatcher("scroll reset") {
+            it.config[androidx.compose.ui.semantics.SemanticsProperties.VerticalScrollAxisRange].value()==0f
+        })
+        compose.onNodeWithTag("face-50").performScrollTo().assertIsDisplayed()
         assertEquals(1,api.commits)
     }
     @Test fun namedMergeRequiresConfirmationAndCancelDoesNotWrite() = screen(2f,setup=::named) {vm,api,db ->
@@ -382,12 +386,10 @@ class MergeReviewTest {
         assertEquals(listOf(40L),vm.state.value.selectedPerson!!.faces)
         assertTrue(vm.state.value.batchFaces)
         assertTrue(api.directoryQueries.isEmpty())
-        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Zurück").performClick();idle(vm)
         assertNull(vm.state.value.selectedPerson)
         assertEquals(setOf(4L,6L),vm.state.value.namedPeople.map {it.id}.toSet())
-        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Zurück").performClick();idle(vm)
         assertFalse(vm.state.value.directory)
         val after=runBlocking {db.dao().state(api.session.scope)}!!
         assertEquals(before.current,after.current);assertEquals(before.page,after.page)
@@ -569,9 +571,9 @@ class MergeReviewTest {
         compose.onNodeWithContentDescription("Zweite Gruppe benennen/zuordnen").assertDoesNotExist()
         compose.runOnUiThread {vm.ignoreMergeSide(4);vm.startMergeSideNaming(4)};idle(vm)
         assertEquals(0,api.commits);assertFalse(vm.state.value.naming)
-        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Zurück").performClick();idle(vm)
         api.supportsMergeSideActions=false
-        compose.onNodeWithContentDescription("Weitere Optionen").performClick();compose.onNodeWithText("Ähnliche Gruppen").performClick();idle(vm)
+        compose.onNodeWithTag("people-navigation-2").performScrollTo().performClick();idle(vm)
         compose.onNodeWithContentDescription("Erste Gruppe ignorieren").assertDoesNotExist()
     }
     @Test fun faceSearchUsesMergeWitnessAndAssignsBothGroups() = screen(setup=::unnamed) {vm,api,_ ->
@@ -602,7 +604,7 @@ class MergeReviewTest {
         assertFalse(vm.state.value.naming)
         compose.onNodeWithText("Person 6").assertIsDisplayed()
         pencil.assertDoesNotExist()
-        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Zurück").performClick();idle(vm)
         assertEquals(1L,vm.state.value.person!!.id)
         assertEquals(4,vm.state.value.person!!.offset)
     }
@@ -650,7 +652,7 @@ class MergeReviewTest {
         assertEquals(2,api.commits)
         assertEquals(2L,api.people.getValue(4).count)
         assertTrue(api.people.containsKey(5))
-        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Zurück").performClick();idle(vm)
         assertEquals(1L,vm.state.value.person!!.id);assertEquals(4,vm.state.value.person!!.offset)
         assertEquals(listOf(14L),vm.state.value.person!!.faces)
     }
@@ -708,13 +710,12 @@ class MergeReviewTest {
         compose.onNodeWithText("Webänderung").assertIsDisplayed()
         compose.onNodeWithText("Getrennt lassen").performClick();idle(vm)
         assertEquals(1,api.commits)
-        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Zurück").performClick();idle(vm)
         api.supportsMerges=false
-        compose.onNodeWithContentDescription("Weitere Optionen").performClick()
-        compose.onNodeWithText("Ähnliche Gruppen").performClick();idle(vm)
+        compose.onNodeWithTag("people-navigation-2").performScrollTo().performClick();idle(vm)
         compose.onNodeWithText("Ähnliche Gruppen benötigen BearStack 0.49.0.").assertIsDisplayed()
         compose.onNodeWithText("Zusammenführen").assertIsNotEnabled()
-        compose.onNodeWithText("Zurück").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Zurück").performClick();idle(vm)
         assertEquals(4,vm.state.value.person!!.offset)
     }
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="people_folders_title">Ordner-Pfade prüfen</string>
-    <string name="people_folders_version">Ordner-Pfade prüfen benötigt BearStack ab 1.2.0.</string>
+    <string name="people_folders_title">Zuordnungen nach Ordner prüfen</string>
+    <string name="people_folders_version">Zuordnungen nach Ordner prüfen benötigt BearStack ab 1.2.0.</string>
     <string name="people_folders_scope">Aktionen gelten für alle aktiven Gesichter dieser Person im exakten Ordner, ohne Unterordner. Angezeigt werden bis zu acht Vorschauen.</string>
     <string name="people_folders_excluded">Für diese Person ausgeschlossen. Neue Zuordnungen sind gesperrt.</string>
     <string name="people_folders_move">Alle neu zuweisen</string>

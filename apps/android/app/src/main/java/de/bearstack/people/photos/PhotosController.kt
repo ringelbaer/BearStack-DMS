@@ -78,7 +78,9 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
         generation++
         request?.cancel(); dateRequest?.cancel(); detail?.cancel(); additional.values.forEach { it.cancel() }; additional.clear()
         gridPosition=null;visibleKeys=emptySet()
-        mutable.value = PhotosState(query=resolvedQuery,tab=tab,frame=frame,loading=true,name=name,parent=resolvedQuery.path.substringBeforeLast('/',""))
+        mutable.value = PhotosState(query=resolvedQuery,tab=tab,frame=frame,loading=true,name=name,
+            peoplePath=current.peoplePath.takeIf {current.query.path==resolvedQuery.path}.orEmpty(),
+            parent=resolvedQuery.path.substringBeforeLast('/',""))
         val expected = generation
         request = scope.launch {
             try {

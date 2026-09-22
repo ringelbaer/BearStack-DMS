@@ -13,7 +13,7 @@
     <string name="people_labeling">Personen benennen</string>
     <string name="people_directory">Personenliste</string>
     <string name="people_similar_groups">Ähnliche Gruppen</string>
-    <string name="people_return_labeling">Zur Bearbeitung</string>
+    <string name="people_return_labeling">Zurück zum Benennen</string>
     <string name="people_review_skipped">Übersprungene bearbeiten (%1$d)</string>
     <string name="people_group_actions">Gruppenaktionen</string>
     <string name="people_ignore_group">Gruppe ignorieren</string>
@@ -44,7 +44,6 @@
     <string name="people_duplicate_rename">Eine andere Person heißt bereits so. Separat mit demselben Namen speichern?</string>
     <string name="people_duplicate_assign">Einer vorhandenen Person zuordnen oder separat mit demselben Namen benennen:</string>
     <string name="people_face_count_id">%1$s · #%2$d</string>
-    <string name="connection_check">Verbindung prüfen</string>
     <string name="people_name_separately">Separat benennen</string>
     <string name="connection_title">Verbindung</string>
     <string name="people_search">Personen suchen</string>
@@ -132,19 +131,19 @@
     <string name="people_batch_limit">Du kannst höchstens 500 Gesichter auf einmal auswählen.</string>
     <!-- The number identifies a face; it is not a quantity. -->
     <string name="people_select_face" tools:ignore="PluralsCandidate">Gesicht %1$d auswählen</string>
-    <string name="people_batch_assign">Gruppe zuordnen</string>
+    <string name="people_batch_assign">Gesichter zuordnen</string>
     <plurals name="people_batch_scope">
         <item quantity="one">Nur das %1$d ausgewählte Gesicht wird zugeordnet. Gib einen neuen Namen ein oder wähle eine vorhandene Person.</item>
         <item quantity="other">Nur die %1$d ausgewählten Gesichter werden zugeordnet. Gib einen neuen Namen ein oder wähle eine vorhandene Person.</item>
     </plurals>
-    <string name="people_batch_help">Über die Checkboxen kannst du bis zu 500 Gesichter auswählen, auch beim Weiterscrollen. Unter Aktionen kannst du sie gemeinsam auf unbenannt zurücksetzen, einer Gruppe zuordnen oder ignorieren.</string>
+    <string name="people_batch_help">Über die Checkboxen kannst du bis zu 500 Gesichter auswählen, auch beim Weiterscrollen. Gesichter zuordnen öffnet die Namensauswahl. Unter Aktionen kannst du die ausgewählten Gesichter auf unbenannt setzen oder ignorieren.</string>
     <string name="people_batch_version">Mehrfachauswahl benötigt BearStack 0.51.0 oder neuer.</string>
     <!-- This abbreviated selection label is identical for all quantities in German and English. -->
     <string name="people_batch_selected" tools:ignore="PluralsCandidate">%1$d ausgewählt</string>
     <string name="people_batch_clear">Aufheben</string>
     <string name="people_batch_actions">Aktionen</string>
-    <string name="people_batch_reset">Auf unbenannt zurücksetzen</string>
-    <string name="people_batch_ignore">Ignorieren</string>
+    <string name="people_batch_reset">Ausgewählte Gesichter auf unbenannt setzen</string>
+    <string name="people_batch_ignore">Ausgewählte Gesichter ignorieren</string>
     <string name="people_batch_ignore_title">Ausgewählte Gesichter ignorieren?</string>
     <string name="people_batch_reset_title">Ausgewählte Gesichter zurücksetzen?</string>
     <plurals name="people_batch_ignore_confirmation">

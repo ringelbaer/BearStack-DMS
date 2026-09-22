@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import de.bearstack.people.R
 import de.bearstack.people.people.PeopleState
@@ -51,12 +52,11 @@ internal fun PersonFoldersScreen(state: PeopleState, vm: PeopleViewModel) {
         else vm.closePersonFolders()
     }
     Box(Modifier.fillMaxSize()) {
-        Scaffold(topBar={TopAppBar(title={Text(text(R.string.people_folders_title))},actions={
-            OptionsMenu(menu,{menu=it},enabled=held==null && !state.naming && state.folderConfirmation==null) {
-                DropdownMenuItem(text={Text(text(R.string.photos_back))},enabled=enabled,onClick={menu=false;vm.closePersonFolders()})
+        Scaffold(topBar={TopAppBar(title={Text(text(R.string.people_folders_title),maxLines=1,overflow=TextOverflow.Ellipsis)},
+            navigationIcon={BackAction(vm::closePersonFolders,enabled=enabled && !state.naming && state.folderConfirmation==null)},actions={
+            PeopleOptionsMenu(menu,{menu=it},state,vm,onHelp={help=true},enabled=held==null && !state.naming && state.folderConfirmation==null) {
                 DropdownMenuItem(text={Text(text(R.string.common_refresh))},enabled=enabled,onClick={menu=false;vm.personFolderPage(page?.page ?: 1)})
-                DropdownMenuItem(text={Text(text(R.string.common_help))},onClick={menu=false;help=true})
-                DropdownMenuItem(text={Text(text(R.string.photos_connection))},enabled=!state.busy,onClick={menu=false;vm.switchConnection()})
+                HorizontalDivider()
             }
         })}) {padding ->
             Column(Modifier.fillMaxSize().padding(padding)) {
@@ -143,7 +143,7 @@ internal fun PersonFoldersScreen(state: PeopleState, vm: PeopleViewModel) {
                 state.error?.let {Text(text(it),color=MaterialTheme.colorScheme.error)}
                 if(state.unresolved) {
                     TextButton(onClick=vm::retry,enabled=!state.busy) {Text(text(R.string.people_check_pending))}
-                    TextButton(onClick=vm::switchConnection,enabled=!state.busy) {Text(text(R.string.connection_check))}
+                    PeopleConnectionAction(state,vm,enabled=!state.busy)
                 }
             }},confirmButton={TextButton(onClick=vm::confirmFolderAction,enabled=enabled) {Text(text(R.string.people_folders_confirm))}},
             dismissButton={TextButton(onClick=vm::cancelFolderAction,enabled=enabled) {Text(text(R.string.photos_cancel))}})

@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.10.4** · Android-App: **0.22.2**.
+Aktuelle Version: **1.10.5** · Android-App: **0.22.3**.
+
+**BearStack 1.10.5 / Android 0.22.3:** Einheitliche Rückpfeile, sichtbare Reiter der Personenverwaltung, gemeinsame Einstellungen und Hilfe. Ansichtsfunktionen und Auswahlaktionen sind getrennt; Abmelden und Verbindungswechsel sind ausdrücklich beschriftet und bestätigt. Server-API und Originalfotos bleiben unverändert.
 
 **BearStack 1.10.4:** Die Breadcrumbs unter **Personen verwalten** verwenden dieselbe abgerundete Darstellung wie Foto- und Ordneransichten; die aktuelle Personenübersicht bzw. Detailseite wird hervorgehoben.
 

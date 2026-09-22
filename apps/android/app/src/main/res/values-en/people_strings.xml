@@ -44,7 +44,6 @@
     <string name="people_duplicate_rename">Another person already has this name. Save separately with the same name?</string>
     <string name="people_duplicate_assign">Assign to an existing person or name separately with the same name:</string>
     <string name="people_face_count_id">%1$s · #%2$d</string>
-    <string name="connection_check">Check connection</string>
     <string name="people_name_separately">Name separately</string>
     <string name="connection_title">Connection</string>
     <string name="people_search">Search people</string>
@@ -132,19 +131,19 @@
     <string name="people_batch_limit">You can select up to 500 faces at a time.</string>
     <!-- The number identifies a face; it is not a quantity. -->
     <string name="people_select_face" tools:ignore="PluralsCandidate">Select face %1$d</string>
-    <string name="people_batch_assign">Assign to group</string>
+    <string name="people_batch_assign">Assign faces</string>
     <plurals name="people_batch_scope">
         <item quantity="one">Only the %1$d selected face will be assigned. Enter a new name or choose an existing person.</item>
         <item quantity="other">Only the %1$d selected faces will be assigned. Enter a new name or choose an existing person.</item>
     </plurals>
-    <string name="people_batch_help">Use the checkboxes to select up to 500 faces, including while scrolling. Under Actions you can reset them to unnamed, assign them to a group or ignore them together.</string>
+    <string name="people_batch_help">Use the checkboxes to select up to 500 faces, including while scrolling. Assign faces opens the name picker. Under Actions you can set the selected faces to unnamed or ignore them.</string>
     <string name="people_batch_version">Multiple selection requires BearStack 0.51.0 or later.</string>
     <!-- This abbreviated selection label is identical for all quantities in German and English. -->
     <string name="people_batch_selected" tools:ignore="PluralsCandidate">%1$d selected</string>
     <string name="people_batch_clear">Clear</string>
     <string name="people_batch_actions">Actions</string>
-    <string name="people_batch_reset">Reset to unnamed</string>
-    <string name="people_batch_ignore">Ignore</string>
+    <string name="people_batch_reset">Set selected faces to unnamed</string>
+    <string name="people_batch_ignore">Ignore selected faces</string>
     <string name="people_batch_ignore_title">Ignore selected faces?</string>
     <string name="people_batch_reset_title">Reset selected faces?</string>
     <plurals name="people_batch_ignore_confirmation">

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="connection_setup">Set up connection</string>
+    <string name="connection_disconnect">Sign out and change connection</string>
+    <string name="connection_disconnect_confirm">Sign out</string>
+    <string name="connection_disconnect_help">The saved connection and cached thumbnails will be removed. You can then sign in again. Original photos remain unchanged.</string>
+    <string name="photos_menu_help">Open a photo to view it full screen. Long press to select multiple photos. The menu offers actions for this view; settings also apply in the people section.</string>
+    <string name="people_statistics_help">Statistics show named, ignored and skipped faces and groups for today and overall. Use the back arrow to return to naming.</string>
+    <string name="people_tab_labeling">Naming</string>
+    <string name="people_tab_merge">Group review</string>
+    <string name="connection_disconnect_title">Sign out?</string>
+</resources>

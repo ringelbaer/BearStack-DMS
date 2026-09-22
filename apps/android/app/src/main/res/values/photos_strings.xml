@@ -26,7 +26,6 @@
     <string name="photos_search_hint">Fotos, Orte, Personen, Tags …</string>
     <string name="photos_search_help">Suche wie im Browser, zum Beispiel person:Anna oder tag:Urlaub.</string>
     <string name="photos_people">Personen verwalten</string>
-    <string name="photos_connection">Verbindung wechseln</string>
     <string name="photos_menu">Weitere Optionen</string>
     <string name="photos_back">Zurück</string>
     <string name="photos_retry">Erneut versuchen</string>
@@ -56,9 +55,9 @@
     <string name="photos_loading">Wird geladen …</string>
     <!-- Current position and total, not a quantity-dependent noun. -->
     <string name="photos_of" tools:ignore="PluralsCandidate">%1$d von %2$d</string>
-    <string name="photos_frame">Fotoframe starten</string>
+    <string name="photos_frame">Bilderrahmen starten</string>
     <string name="photos_slideshow_settings">Diashow einstellen</string>
-    <string name="photos_frame_settings">Fotoframe einstellen</string>
+    <string name="photos_frame_settings">Bilderrahmen einstellen</string>
     <string name="photos_interval">Anzeigedauer pro Foto</string>
     <plurals name="photos_seconds">
         <item quantity="one">%1$d Sekunde</item>

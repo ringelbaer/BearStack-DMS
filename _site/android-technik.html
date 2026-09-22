@@ -883,6 +883,17 @@
 
 </li>
 
+        <li class="md-nav__item">
+  <a href="#navigation-und-gemeinsame-einstellungen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Navigation und gemeinsame Einstellungen
+      </span>
+    </span>
+  </a>
+
+</li>
+
     </ul>
 
 </nav>
@@ -1217,6 +1228,17 @@
 
 </li>
 
+        <li class="md-nav__item">
+  <a href="#navigation-und-gemeinsame-einstellungen" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Navigation und gemeinsame Einstellungen
+      </span>
+    </span>
+  </a>
+
+</li>
+
     </ul>
 
 </nav>
@@ -1238,7 +1260,7 @@
 <h1 id="android-app-technik-entwicklung">Android-App – Technik &amp; Entwicklung<a class="headerlink" href="#android-app-technik-entwicklung" title="Permanent link">&para;</a></h1>
 <p>Diese Referenz richtet sich an Betreiber und Entwickler. Die
 <a href="android.html">Android-Anleitung</a> erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App <strong>0.22.2</strong> (<code>versionCode 46</code>), BearStack <strong>1.7.0</strong>.</p>
+bis zur Personenverwaltung. Stand: App <strong>0.22.3</strong> (<code>versionCode 47</code>), BearStack <strong>1.10.5</strong>.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
 <p>Öffne <code>apps/android/</code> in Android Studio als eigenes Projekt. Benötigt werden JDK 17
 oder 21 und das Android-SDK mit Plattform 37. Gradle Wrapper, Android Gradle Plugin
@@ -1659,6 +1681,22 @@ den Room-Compiler. Das exportierte Datenbankschema bleibt unverändert.
 <code>room-ktx</code> und <code>ui-tooling-preview</code> sind keine zusätzlichen Abhängigkeiten.
 Release-Builds verkleinern Code und Ressourcen gemeinsam. Compose-Gerätetests
 verwenden die aktuelle v2-Testregel. Verbindlich sind die Gradle-Dateien im Repository.</p>
+<h2 id="navigation-und-gemeinsame-einstellungen">Navigation und gemeinsame Einstellungen<a class="headerlink" href="#navigation-und-gemeinsame-einstellungen" title="Permanent link">&para;</a></h2>
+<p><code>OptionsMenu</code> stellt den gemeinsamen Menüanker bereit. <code>PhotosMenu</code> unterscheidet
+nicht anwendbare Aktionen (ausgeblendet) von vorübergehend gesperrten Aktionen
+(deaktiviert). Beim Neuladen desselben Ordners bleibt dessen bekannter Personenlink
+im Controller erhalten; bei einem Ordnerwechsel wird er verworfen. Es entstehen keine
+zusätzlichen Netzabfragen für Menüs.</p>
+<p><code>PeopleNavigation</code> wechselt exklusiv zwischen Benennen, Personenliste und
+Gruppenvergleich und beendet nicht mehr benötigte Suchaufgaben. Detailansichten
+verwenden einen Rückpfeil. Android-Zurück beendet zuerst eine Gesichtsauswahl;
+der Rückpfeil verlässt die Person und verwirft die Auswahl. Die Statistik bietet
+keine Aktionen für eine im Hintergrund liegende Person.</p>
+<p><code>AppSettingsDialog</code> wird von Galerie und Personenansichten verwendet. Öffnen und
+Abbrechen verändern die Sitzung nicht. Erst <strong>Abmelden</strong> im Bestätigungsdialog
+führt <code>switchConnection()</code> aus, entfernt die gespeicherte Verbindung und leert den
+Thumbnail-Cache. Auch Fehlerdialoge öffnen diese Einstellungen statt unmittelbar
+abzumelden. HTTP-Verträge, Serverberechtigungen und Originaldateien bleiben unverändert.</p>
 
 
 

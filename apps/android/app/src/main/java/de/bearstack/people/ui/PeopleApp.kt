@@ -54,7 +54,7 @@ fun PeopleApp(vm: PeopleViewModel) {
                 (state.connected && state.showGallery && vm.photos!=null && vm.images!=null))
                 de.bearstack.people.photos.PhotosScreen(vm.photos,vm.images,state.canManagePeople,vm::openPeople,vm::switchConnection,
                     startOnDevice=state.showDevicePhotos, connecting=state.restoring,
-                    connectionError=state.error, onRetry=if(state.savedConnection && !state.connected) vm::retryConnection else null)
+                    hasConnection=state.connected || state.savedConnection, connectionEnabled=!state.busy, connectionError=state.error, onRetry=if(state.savedConnection && !state.connected) vm::retryConnection else null)
             else if (state.restoring) StartupScreen(vm::openDevicePhotos)
             else if (!state.connected) ConnectionScreen(state,vm)
             else if(state.mergeReview) MergeReviewScreen(state,vm)
@@ -114,32 +114,41 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
     val zoomDrag: (Float) -> Unit = { dy -> zoom=zoomAfterDrag(zoom,dy,zoomDistance) }
     val enabled = !state.busy && !state.unresolved && held == null
     LaunchedEffect(state.person?.id,state.person?.revision) { held=null;accessibleZoom=false }
+    BackHandler(statistics && !help && !menu) {statistics=false}
     Box(Modifier.fillMaxSize()) {
-        Scaffold(topBar={ TopAppBar(title={Text(if(statistics) text(R.string.people_statistics) else text(R.string.people_labeling))},actions={
-            OptionsMenu(menu,{menu=it}) {
-                if(vm.photos!=null) DropdownMenuItem(text={Text(stringResource(R.string.photos_title))},onClick={vm.openGallery();menu=false},enabled=enabled)
-                if(state.person!=null) DropdownMenuItem(text={Text(text(R.string.people_folders_title))},
-                    onClick={menu=false;vm.openPersonFolders()},enabled=enabled && state.personFoldersSupported)
-                DropdownMenuItem(text={Text(text(R.string.people_directory))},onClick={vm.openDirectory();menu=false},enabled=enabled)
-                DropdownMenuItem(text={Text(text(R.string.people_similar_groups))},onClick={vm.openMergeReview();menu=false},enabled=enabled)
-                DropdownMenuItem(text={Text(if(statistics) text(R.string.people_return_labeling) else text(R.string.people_statistics))},onClick={statistics=!statistics;menu=false},enabled=enabled)
-                DropdownMenuItem(text={Text(text(R.string.people_review_skipped,state.skipped))},onClick={vm.newPass(true);menu=false},enabled=enabled && state.person==null && state.skipped>0)
-                DropdownMenuItem(text={Text(text(R.string.photos_connection))},onClick={vm.switchConnection();menu=false},enabled=!state.busy)
-            }
-        }) },bottomBar={
+        Scaffold(topBar={ Column {
+            TopAppBar(title={Text(if(statistics) text(R.string.people_statistics) else text(R.string.people_labeling),
+                maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)},
+                navigationIcon={
+                    if(statistics) BackAction({statistics=false},description=text(R.string.people_return_labeling))
+                    else if(vm.photos!=null) BackAction(vm::openGallery,enabled=enabled)
+                },actions={
+                    PeopleOptionsMenu(menu,{menu=it},state,vm,onHelp={help=true},enabled=held==null && !state.naming) {
+                        if(!statistics) {
+                            if(state.person!=null) DropdownMenuItem(text={Text(text(R.string.people_folders_title))},
+                                onClick={menu=false;vm.openPersonFolders()},enabled=enabled && state.personFoldersSupported)
+                            DropdownMenuItem(text={Text(text(R.string.people_statistics))},onClick={statistics=true;menu=false},enabled=enabled)
+                            HorizontalDivider()
+                        }
+                        if(vm.photos!=null) {
+                            DropdownMenuItem(text={Text(text(R.string.photos_title))},onClick={vm.openGallery();menu=false},enabled=enabled)
+                            HorizontalDivider()
+                        }
+                    }
+                })
+            if(!statistics) PeopleNavigation(0,enabled && !state.naming,vm)
+        } },bottomBar={
             if(!statistics) Surface(color=MaterialTheme.colorScheme.surfaceContainer,tonalElevation=2.dp) {
                 Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal+WindowInsetsSides.Bottom))
                     .heightIn(min=56.dp).padding(horizontal=12.dp).testTag("labeling-action-bar"),
                     horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
                     OptionsMenu(actions,{actions=it},enabled=enabled && !state.naming,
                         description=text(R.string.people_group_actions)) {
-                        DropdownMenuItem(text={Text(text(R.string.people_ignore_group))},onClick={actions=false;vm.ignore()},enabled=enabled && state.person!=null)
                         DropdownMenuItem(text={Text(text(R.string.people_skip_group))},onClick={actions=false;vm.skip()},enabled=enabled && state.person!=null)
                         DropdownMenuItem(text={Text(text(R.string.people_undo_skip))},onClick={actions=false;vm.back()},enabled=enabled && state.canGoBack)
-                    }
-                    IconButton(onClick={help=true},enabled=held==null && !state.naming,
-                        modifier=Modifier.semantics {contentDescription=text(R.string.people_naming_help)}) {
-                        Icon(painterResource(R.drawable.ic_question_mark),contentDescription=null,modifier=Modifier.size(24.dp))
+                        HorizontalDivider()
+                        DropdownMenuItem(text={Text(text(R.string.people_ignore_group),color=if(enabled && state.person!=null) MaterialTheme.colorScheme.error else Color.Unspecified)},
+                            onClick={actions=false;vm.ignore()},enabled=enabled && state.person!=null)
                     }
                     IconButton(onClick=vm::startNaming,enabled=enabled && !state.naming && state.person!=null,
                         modifier=Modifier.semantics {contentDescription=text(R.string.people_name_person)}) {
@@ -200,12 +209,14 @@ private fun LabelingScreen(state: PeopleState, vm: PeopleViewModel) {
             }
         }
     }
-    if(help) AlertDialog(onDismissRequest={help=false},title={Text(text(R.string.people_naming_help))},
+    if(help) AlertDialog(onDismissRequest={help=false},title={Text(text(if(statistics) R.string.common_help else R.string.people_naming_help))},
         text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            Text(text(R.string.people_help_name))
-            Text(text(R.string.people_help_preview))
-            Text(text(R.string.people_help_swipe))
-            Text(text(R.string.people_help_undo))
+            if(statistics) Text(text(R.string.people_statistics_help)) else {
+                Text(text(R.string.people_help_name))
+                Text(text(R.string.people_help_preview))
+                Text(text(R.string.people_help_swipe))
+                Text(text(R.string.people_help_undo))
+            }
         }},confirmButton={TextButton(onClick={help=false}) {Text(text(R.string.photos_close))}})
     if(state.naming) NamingDialog(state,vm,enabled)
 }
@@ -347,7 +358,7 @@ internal fun NamingDialog(state: PeopleState, vm: PeopleViewModel, enabled: Bool
             state.error?.let { Text(text(it),color=MaterialTheme.colorScheme.error) }
             if(state.unresolved) {
                 TextButton(onClick=vm::retry,enabled=!state.busy) { Text(text(R.string.people_check_pending)) }
-                TextButton(onClick=vm::switchConnection,enabled=!state.busy) { Text(text(R.string.connection_check)) }
+                PeopleConnectionAction(state,vm,enabled=!state.busy)
             }
         } },confirmButton={ TextButton(onClick={vm.submitName(state.duplicates.isNotEmpty())},enabled=enabled && state.name.isNotBlank() && (!state.folderReview || state.duplicates.isEmpty())) {
             Text(if(state.duplicates.isNotEmpty() && !state.folderReview) text(R.string.people_name_separately) else text(R.string.photos_save))

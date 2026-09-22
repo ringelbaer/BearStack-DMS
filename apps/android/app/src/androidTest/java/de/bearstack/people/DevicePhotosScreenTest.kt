@@ -48,15 +48,14 @@ class DevicePhotosScreenTest {
         val close = if(german) "Schließen" else "Close"
         val back = if(german) "Zurück" else "Back"
         val menu = if(german) "Weitere Optionen" else "More options"
-        val connection = if(german) "Verbindung wechseln" else "Switch connection"
-        val frame = if(german) "Fotoframe starten" else "Start photo frame"
+        val connection = if(german) "Abmelden und Verbindung ändern" else "Sign out and change connection"
+        val frame = if(german) "Bilderrahmen starten" else "Start photo frame"
         val people = if(german) "Personen verwalten" else "Manage people"
         val canManage = german // Cover both permitted and read-only menus.
         fun checkMenu(local: Boolean = false) {
             compose.onNodeWithContentDescription(menu).performClick()
-            compose.onNodeWithText(if(german) "Karte" else "Map").assertIsDisplayed().also {
-                if(local) it.assertIsNotEnabled()
-            }
+            val map=compose.onNodeWithText(if(german) "Karte" else "Map")
+            if(local) map.assertDoesNotExist() else map.assertIsDisplayed()
             compose.onNodeWithText(frame).assertIsDisplayed()
             if(canManage) compose.onNodeWithText(people).assertIsDisplayed()
             else compose.onNodeWithText(people).assertDoesNotExist()
@@ -142,6 +141,11 @@ class DevicePhotosScreenTest {
             }
             compose.onNodeWithText(settings).performClick()
             compose.onNodeWithText(connection).performClick()
+            assertEquals(0, connectionChanges)
+            compose.onNodeWithText(if(german) "Abbrechen" else "Cancel").performClick()
+            assertEquals(0, connectionChanges)
+            compose.onNodeWithText(connection).performClick()
+            compose.onNodeWithText(if(german) "Abmelden" else "Sign out").performClick()
             assertEquals(1, connectionChanges)
             compose.onNodeWithText(setting).assertDoesNotExist()
             compose.onNodeWithText("BearStackDeviceTest").performClick()

@@ -26,7 +26,6 @@
     <string name="photos_search_hint">Photos, places, people, tags …</string>
     <string name="photos_search_help">Search as in the browser, for example person:Anna or tag:Holiday.</string>
     <string name="photos_people">Manage people</string>
-    <string name="photos_connection">Switch connection</string>
     <string name="photos_menu">More options</string>
     <string name="photos_back">Back</string>
     <string name="photos_retry">Try again</string>

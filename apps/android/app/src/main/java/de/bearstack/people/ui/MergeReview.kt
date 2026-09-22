@@ -39,6 +39,7 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
     var accessible by remember { mutableStateOf(false) }
     var zoom by remember { mutableFloatStateOf(0f) }
     var help by remember { mutableStateOf(false) }
+    var menu by remember { mutableStateOf(false) }
     val distance=with(LocalDensity.current) {240.dp.toPx()}
     val drag: (Float)->Unit={zoom=zoomAfterDrag(zoom,it,distance)}
     val dialogEnabled=!state.busy && !state.unresolved
@@ -66,9 +67,19 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
         else if(help) help=false else if(state.naming) vm.closeNaming() else vm.closeMergeReview()
     }
     Box(Modifier.fillMaxSize()) {
-        Scaffold(topBar={TopAppBar(title={Text(text(R.string.people_similar_groups),maxLines=1,overflow=TextOverflow.Ellipsis)},
-            navigationIcon={TextButton(onClick=vm::closeMergeReview,enabled=enabled) {Text(text(R.string.photos_back))}},
-            actions={TextButton(onClick={help=true},enabled=held==null && !state.naming) {Text(text(R.string.common_help))}})
+        Scaffold(topBar={Column {
+            TopAppBar(title={Text(text(R.string.people_similar_groups),maxLines=1,overflow=TextOverflow.Ellipsis)},
+                navigationIcon={BackAction(vm::closeMergeReview,enabled=enabled)},
+                actions={PeopleOptionsMenu(menu,{menu=it},state,vm,onHelp={help=true},enabled=held==null && !state.naming && !confirmMerge) {
+                    DropdownMenuItem(text={Text(text(R.string.common_refresh))},enabled=enabled,onClick={menu=false;vm.retry()})
+                    HorizontalDivider()
+                    if(vm.photos!=null) {
+                        DropdownMenuItem(text={Text(text(R.string.photos_title))},enabled=enabled,onClick={menu=false;vm.openGallery()})
+                        HorizontalDivider()
+                    }
+                }})
+            PeopleNavigation(2,enabled,vm)
+        }
         },bottomBar={
             Surface(color=MaterialTheme.colorScheme.surfaceContainer,tonalElevation=2.dp) {
                 Column(Modifier.fillMaxWidth()
@@ -107,7 +118,7 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
                         Text(text(error),color=MaterialTheme.colorScheme.error,modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite})
                         Row {
                             TextButton(onClick=vm::retry,enabled=!state.busy && held==null) {Text(if(state.unresolved) text(R.string.people_check_pending) else text(R.string.photos_retry))}
-                            TextButton(onClick=vm::switchConnection,enabled=!state.busy && held==null) {Text(text(R.string.connection_title))}
+                            PeopleConnectionAction(state,vm,enabled=!state.busy && held==null)
                         }
                     }
                 }

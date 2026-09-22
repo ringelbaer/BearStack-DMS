@@ -69,7 +69,8 @@ class LocalizationTest {
 
     @Test fun englishNamingDirectoryHelpAndStatisticsUseNativeResources()=screen {vm,api,language ->
         language(Locale.ENGLISH)
-        compose.onNodeWithContentDescription("Naming help").performClick()
+        compose.onNodeWithContentDescription("More options").performClick()
+        compose.onNodeWithText("Help").performClick()
         compose.onNodeWithText("Pencil: name the person or assign the group to an existing person.").assertIsDisplayed()
         compose.onNodeWithText("Close").performClick()
         compose.onNodeWithContentDescription("Name person").performClick()
@@ -81,8 +82,8 @@ class LocalizationTest {
         compose.onNodeWithText("Statistics").performClick()
         compose.waitUntil(10_000) {compose.onAllNodesWithText("Total: 5 faces · 1 group").fetchSemanticsNodes().isNotEmpty()}
         compose.onNodeWithText("Total: 5 faces · 1 group").assertIsDisplayed()
-        compose.onNodeWithContentDescription("More options").performClick()
-        compose.onNodeWithText("People list").performClick();idle(vm)
+        compose.onNodeWithContentDescription("Return to naming").performClick()
+        compose.onNodeWithTag("people-navigation-1").performScrollTo().performClick();idle(vm)
         compose.onNodeWithText("Search people").assertIsDisplayed()
         compose.onNodeWithText("Ada").performClick();idle(vm)
         compose.onNodeWithText("1 face").assertIsDisplayed()
@@ -95,8 +96,7 @@ class LocalizationTest {
 
     @Test fun englishSimilarGroupsKeepDecisionsAndAccessiblePreview()=screen {vm,api,language ->
         language(Locale.ENGLISH)
-        compose.onNodeWithContentDescription("More options").performClick()
-        compose.onNodeWithText("Similar groups").performClick();idle(vm)
+        compose.onNodeWithTag("people-navigation-2").performScrollTo().performClick();idle(vm)
         compose.onNodeWithText("Same person?").assertIsDisplayed()
         compose.onNodeWithText("First group").assertIsDisplayed()
         compose.onNodeWithTag("merge-folder-1").assertIsDisplayed().assertTextEquals("Urlaub")
@@ -105,6 +105,7 @@ class LocalizationTest {
         compose.runOnIdle {assertTrue(preview.action())}
         compose.onNodeWithText("Photos / Urlaub / Bild.jpg").assertIsDisplayed()
         compose.onNodeWithText("Close preview").performClick()
+        compose.onNodeWithContentDescription("More options").performClick()
         compose.onNodeWithText("Help").performClick()
         compose.onNodeWithText("Review similar groups").assertIsDisplayed()
         compose.onNodeWithText("Close").performClick()
