@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/fnv"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -328,7 +329,7 @@ func (l *Library) finishListing(ctx context.Context, opts ListOptions, listing *
 			return err
 		}
 		listing.HasPrev = opts.Page > 1
-		listing.HasNext = opts.Page*opts.PageSize < listing.Total
+		listing.HasNext = pageHasNext(opts.Page, opts.PageSize, listing.Total)
 		return nil
 	}
 	listing.Total = len(listing.Media)
@@ -339,6 +340,20 @@ func (l *Library) finishListing(ctx context.Context, opts ListOptions, listing *
 }
 
 // Compare before multiplying so even an out-of-range page cannot overflow.
+func pageOffset(page, size int) int {
+	if page <= 1 || size <= 0 {
+		return 0
+	}
+	if page-1 > math.MaxInt/size {
+		return math.MaxInt
+	}
+	return (page - 1) * size
+}
+
+func pageHasNext(page, size, total int) bool {
+	return size > 0 && total > 0 && max(page, 1) <= (total-1)/size
+}
+
 func listingPage[T any](items []T, page, size int) ([]T, bool) {
 	if page < 1 {
 		page = 1
@@ -368,17 +383,10 @@ func previewMapItemCount(previews map[string][]Media) int {
 }
 
 func paginateListingMedia(listing *Listing, opts ListOptions) {
-	start := (opts.Page - 1) * opts.PageSize
-	if start > len(listing.Media) {
-		start = len(listing.Media)
-	}
-	end := start + opts.PageSize
-	if end > len(listing.Media) {
-		end = len(listing.Media)
-	}
+	page, hasNext := listingPage(listing.Media, opts.Page, opts.PageSize)
 	listing.HasPrev = opts.Page > 1
-	listing.HasNext = end < len(listing.Media)
-	listing.Media = append([]Media(nil), listing.Media[start:end]...)
+	listing.HasNext = hasNext
+	listing.Media = append([]Media(nil), page...)
 }
 
 func (l *Library) populateIndexedGPXTracks(ctx context.Context, abs string, opts ListOptions, listing *Listing) error {

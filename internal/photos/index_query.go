@@ -49,7 +49,7 @@ func (l *Library) listFromIndex(ctx context.Context, rel string, opts ListOption
 			Order:            order,
 			RequestSort:      opts.Sort,
 			Limit:            opts.PageSize,
-			Offset:           (opts.Page - 1) * opts.PageSize,
+			Offset:           pageOffset(opts.Page, opts.PageSize),
 			LeanMetadata:     opts.LeanMetadata,
 			IncludeAdminOnly: opts.IncludeAdminOnly,
 		})
@@ -89,7 +89,7 @@ func (l *Library) listFromIndex(ctx context.Context, rel string, opts ListOption
 		Order:            order,
 		RequestSort:      opts.Sort,
 		Limit:            opts.PageSize,
-		Offset:           (opts.Page - 1) * opts.PageSize,
+		Offset:           pageOffset(opts.Page, opts.PageSize),
 		LeanMetadata:     opts.LeanMetadata,
 		IncludeAdminOnly: opts.IncludeAdminOnly,
 	})

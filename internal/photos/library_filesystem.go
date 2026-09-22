@@ -239,15 +239,8 @@ func (l *Library) listDirectoryFast(ctx context.Context, rel, abs string, opts L
 	sortMedia(mediaCandidates, listing.Order, opts.Sort)
 	finishSort()
 	listing.Total = len(mediaCandidates)
-	start := (opts.Page - 1) * opts.PageSize
-	if start > len(mediaCandidates) {
-		start = len(mediaCandidates)
-	}
-	end := start + opts.PageSize
-	if end > len(mediaCandidates) {
-		end = len(mediaCandidates)
-	}
-	listing.Media = append([]Media(nil), mediaCandidates[start:end]...)
+	page, _ := listingPage(mediaCandidates, opts.Page, opts.PageSize)
+	listing.Media = append([]Media(nil), page...)
 	finishScan(
 		ListTraceInt("folders", len(listing.Folders)),
 		ListTraceInt("blogs", len(listing.Blogs)),

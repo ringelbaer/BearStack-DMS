@@ -8,7 +8,7 @@ icon: lucide/play
 
 ## Voraussetzungen
 
-Für Entwicklung und Build wird Go `1.26.6` oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich `node` dazu. Die optionalen Playwright-Smoke-Tests brauchen `npm` und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.
+Für Entwicklung und Build wird Go `1.26.8` oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich `node` dazu. Die optionalen Playwright-Smoke-Tests brauchen `npm` und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.
 
 Vorschau, OCR und Medienfunktionen nutzen externe Werkzeuge nur dort, wo sie gebraucht werden:
 
@@ -143,13 +143,15 @@ BEARSTACK_AUTH_PASSWORD_HASH='$2a$10$...' docker compose up -d --build
 
 Der Container lauscht intern auf `0.0.0.0:8080` und speichert Daten unter `/var/lib/bearstack`. Deshalb muss Auth im Container gesetzt sein. `compose.yaml` nutzt standardmäßig `admin` als Benutzer, reicht `BEARSTACK_AUTH_PASSWORD` und `BEARSTACK_AUTH_PASSWORD_HASH` durch und veröffentlicht den Host-Port über `BEARSTACK_PORT` oder sonst `8080`.
 
-Das Runtime-Image basiert auf `debian:trixie-slim`, die Build-Stage auf `golang:1.26-trixie`. Das Beispiel-Image enthält `chromium`, `ffmpeg`, `libreoffice-writer`, `poppler-utils`, `tesseract-ocr`, `tesseract-ocr-deu` und `tesseract-ocr-eng`, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach `/srv/photos` gemountet werden.
+Das Runtime-Image basiert auf `debian:trixie-slim`, die Build-Stage auf `golang:1.26.8-trixie`. Das Beispiel-Image enthält `chromium`, `ffmpeg`, `libreoffice-writer`, `poppler-utils`, `tesseract-ocr`, `tesseract-ocr-deu` und `tesseract-ocr-eng`, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. `bubblewrap` ist für die optional aktivierbare Konvertersandbox enthalten. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach `/srv/photos` gemountet werden.
 
 Alle Docker-relevanten Umgebungsvariablen:
 
 | Variable | Bedeutung |
 | --- | --- |
 | `BEARSTACK_PORT` | Nur für `compose.yaml`: Host-Port, der auf den Container-Port `8080` gemappt wird. Standard `8080`. |
+| `BEARSTACK_MEMORY_LIMIT` | Nur für `compose.yaml`: RAM-Limit des Hauptdiensts. Standard `2g`; bei größeren Installationen anpassen. |
+| `BEARSTACK_CONVERTER_SANDBOX` | Optionale Linux-Konvertersandbox: `bubblewrap` oder `off` (Standard). Benötigt zulässige Benutzer-Namespaces; siehe **Konverter isolieren**. |
 | `BEARSTACK_CONFIG` | Pfad zu einer JSON-Konfigurationsdatei im Container. Die Datei muss per Volume ins Image gemountet werden, wenn sie nicht im Container liegt. |
 | `BEARSTACK_ENV_FILE` | Optionale zusätzliche Env-Datei im Container. BearStack liest zuerst `.env` im Arbeitsverzeichnis und danach diese Datei, ohne bereits gesetzte Prozessvariablen zu überschreiben. |
 | `BEARSTACK_ADDR` | Listener im Container. Im Dockerfile und in `compose.yaml` auf `0.0.0.0:8080` gesetzt, damit Port-Mapping funktioniert. Nicht-lokale Listener erfordern Auth. |
@@ -353,3 +355,40 @@ curl -fsS -u admin:mein-passwort http://127.0.0.1:8080/healthz
 - Foto-/Video-Vorschaubilder fehlen: `ffmpeg` installieren; für Bild-Thumbnails kann optional `vipsthumbnail` genutzt werden.
 - OCR scheitert: `tesseract-ocr`, Sprachpakete und `pdfinfo`/`pdftoppm` prüfen.
 - Fotomodul fehlt in der Navigation: `BEARSTACK_PHOTOS_ENABLED=true` setzen und Dienst neu starten.
+
+## Konverter isolieren
+
+Ab BearStack **1.11.0** laufen Chromium, LibreOffice, Poppler, Tesseract und die
+externen Foto-Thumbnail-Werkzeuge über dieselbe begrenzte Prozessausführung.
+Diagnoseausgaben behalten höchstens 4 KiB plus Kürzungshinweis. OCR-Ausgaben sind
+auf 10 MiB pro Prozess begrenzt; größere Ergebnisse führen zu einem Fehler und
+werden nicht als vollständiger Text gespeichert. Serverpasswörter, Tokens,
+Proxy-Zugangsdaten und persönliche Browser-/Office-Profile werden nicht vererbt.
+Jeder Prozess erhält ein privates temporäres Home. Unter Linux beendet ein
+Abbruch auch die Prozessgruppe; geerbte Ausgabepipes haben eine begrenzte Wartezeit.
+
+Für zusätzliche Dateisystem- und Netzwerkisolation kann unter Linux
+`BEARSTACK_CONVERTER_SANDBOX=bubblewrap` gesetzt werden. Dafür muss `bwrap`
+installiert sein und der Dienst Benutzer-, Mount-, Prozess- und Netzwerk-Namespaces
+anlegen dürfen. Der Konverter sieht nur benötigte Systemdateien, ausdrücklich
+freigegebene Eingaben und Ausgabe-/Profilverzeichnisse. Eingaben werden read-only
+gebunden; `/tmp`, `/proc` und das Netzwerk sind privat. Andere Dokumente, die
+Serverkonfiguration und das Netzwerk des Servers sind nicht erreichbar. Auch
+Chromium mit `--no-sandbox` läuft dadurch in einer äußeren Prozesssandbox.
+
+Die Einstellung ist optional; ohne Wert beziehungsweise mit `off` bleibt die
+bisherige Konverterverfügbarkeit erhalten. Ein unbekannter Wert oder ein Fehler
+beim Aufbau der aktivierten Sandbox bricht die Konvertierung ab. Es gibt keinen
+automatischen ungeschützten Wiederholungsversuch. Für native Installationen kann
+ein systemd-Drop-in `Environment=BEARSTACK_CONVERTER_SANDBOX=bubblewrap` setzen.
+Snap-Konverter sind dafür ungeeignet; native Distributionpakete verwenden.
+
+Compose begrenzt den Hauptdienst auf 256 Prozesse und standardmäßig 2 GiB RAM
+(`BEARSTACK_MEMORY_LIMIT`), entfernt Linux-Capabilities, verbietet neue Privilegien
+und verwendet ein schreibgeschütztes Root-Dateisystem. Schreibbar bleiben das
+Daten-Volume und `/tmp` als auf 1 GiB begrenztes tmpfs. Die systemd-Vorlage begrenzt
+Tasks und schützt zusätzliche Kernel-/Gerätebereiche. Die vollständige
+Bubblewrap-Sandbox bleibt in Compose standardmäßig aus, da Container-Runtimes
+verschachtelte Benutzer-Namespaces unterschiedlich einschränken. Nur auf einer
+dafür geeigneten Laufzeit aktivieren; keine privilegierten Container oder pauschal
+deaktivierten Seccomp-/AppArmor-Profile dafür verwenden.

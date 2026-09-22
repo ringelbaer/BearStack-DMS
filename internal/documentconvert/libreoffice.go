@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"bearstack/internal/processrun"
 	"bearstack/internal/textmeta"
 )
 
@@ -98,7 +99,7 @@ func runLibreOfficeConvert(ctx context.Context, source, outDir, format string) e
 		source,
 	}
 	cmd := exec.CommandContext(timeoutCtx, command, args...)
-	output, err := cmd.CombinedOutput()
+	output, err := processrun.Run(cmd, processrun.Files{Read: []string{source}, Write: []string{outDir, profileDir}})
 	if err != nil {
 		if timeoutCtx.Err() != nil {
 			return fmt.Errorf("libreoffice: %w", timeoutCtx.Err())

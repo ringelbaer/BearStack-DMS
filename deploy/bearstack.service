@@ -18,6 +18,15 @@ UMask=0027
 
 NoNewPrivileges=true
 PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+CapabilityBoundingSet=
+LimitCORE=0
+TasksMax=256
 ProtectHome=true
 ProtectSystem=strict
 ReadWritePaths=/var/lib/bearstack

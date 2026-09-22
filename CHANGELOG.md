@@ -4,6 +4,18 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.11.0 / Android 0.22.4
+
+- Go-Mindestversion auf `1.26.8` angehoben und Docker-Buildimage auf `golang:1.26.8-trixie` festgelegt. README, Installationsanleitung und Raspberry-Pi-Deployment aktualisiert. Das Toolchain-Wartungsupdate ist Teil des bereits vorbereiteten Releases `1.11.0`.
+- Mit Go `1.26.8` validiert: vollständige Go-Testsuite einschließlich realer Konverter, gezielte Race-Tests für Prozessausführung, Fotos, API und Sitzungen sowie Produktionsbuilds ohne CGO für Linux amd64 und arm64. Website erfolgreich gebaut; Verfügbarkeit des offiziellen Docker-Buildimages für beide Architekturen geprüft. Ein Containerbuild wurde mangels Docker-Daemon-Zugriff nicht ausgeführt.
+- Überlaufsichere Seitenberechnung für Medien, Ordner und Texte einschließlich Dateisystem-Fallback und virtueller Personengalerien. Sehr große gültige Seitennummern liefern leere Seiten statt negativer Offsets oder Slice-Panics.
+- Gemeinsame Auswertung von Suchausdrücken, Negationen, Datums- und GPS-Vergleichen für Medien und Indexzeilen. Metadaten von Indexzeilen werden weiterhin erst bei Bedarf dekodiert; Vergleichstests sichern außerdem die SQL-Pfade ab.
+- Begrenzte Konverterdiagnosen (4 KiB), getrennte und begrenzte OCR-/Metadatenausgaben, private temporäre Prozessprofile, bereinigte Umgebungen und Beendigung von Prozessgruppen unter Linux. Optionale Bubblewrap-Sandbox mit schreibgeschützten Eingaben sowie privaten Datei-, Prozess- und Netzwerkbereichen; bei aktivierter Sandbox kein ungeschützter Fallback.
+- Gehärtete Compose- und systemd-Vorgaben. Die zusätzliche Bubblewrap-Sandbox wird ausdrücklich aktiviert und setzt eine Laufzeit mit passenden Namespace-Rechten voraus.
+- Android: ausdrückliche Navigationszustände, getrennte Zustände für Personenliste, Gruppenvergleich und Ordnerprüfung sowie ein eigener Controller für die Ordnerprüfung. Gemeinsamer Schreibzugriff und Wiederholung dauerhafter Aktionen bleiben erhalten. Abgeschlossenen Foto-Abnahmeplan ins Archiv verschoben und als historisch gekennzeichnet.
+- MINOR für die optionale Konvertersandbox; Android-PATCH `0.22.4` mit `versionCode 48` für den Refactor. README, technische Dokumentation, Website und OpenAPI-Version aktualisiert; keine Datenmigration oder Änderung an Originalfotos.
+- Validiert: vollständige Go-Testsuite, gezielte Race-Tests und Suchbenchmarks mit 20.000/50.000 Medien. Bubblewrap mit echten LibreOffice-/Poppler-/Tesseract-Konvertierungen und Chromium Headless Shell sowie Tests gegen Originalschreibzugriffe, fremde Dateien, Hostprozesse und Hostnetzwerk. Je 121 Android-JVM-Tests für Debug/Release, UI-Regressionen für Navigation, Personenliste, Ordnerprüfung und Gruppenvergleich einschließlich Wiederholung des Großschrift-Tests, Lint/Builds und Release-Smoke gegen einen isolierten HTTPS-Server erfolgreich. Website-Build und Compose-Konfigurationsprüfung bestanden; Containerlauf mangels Docker-Daemon-Zugriff nicht geprüft.
+
 ### BearStack 1.10.5 / Android 0.22.3
 
 - Android: sichtbare Rückpfeile, Reiter für Benennen, Personenliste und Gruppenvergleich sowie eine getrennte Statistikansicht ohne versteckte Personenaktionen. Rücknavigation aus Personendetails und Aufheben einer Gesichtsauswahl sind eindeutig getrennt.

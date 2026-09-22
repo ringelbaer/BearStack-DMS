@@ -159,29 +159,46 @@ func compileMediaQuery(query string) compiledMediaQuery {
 }
 
 func (query compiledMediaQuery) matches(media Media) bool {
+	return query.match(func(term queryTerm) bool { return matchesTerm(media, term) })
+}
+
+func (query compiledMediaQuery) matchesRow(row cachedMediaRow) bool {
+	matcher := cachedMediaRowMatcher{row: row}
+	return query.match(matcher.matchesTerm)
+}
+
+// Both representations share the expression semantics. Row matching still
+// decodes metadata lazily, without materializing a complete Media for every row.
+func (query compiledMediaQuery) match(termMatches func(queryTerm) bool) bool {
 	if len(query.groups) == 0 {
 		return true
 	}
 	for _, group := range query.groups {
-		if matchesCompiledQueryGroup(media, group) {
+		if matchesCompiledQueryGroup(group, termMatches) {
 			return true
 		}
 	}
 	return false
 }
 
-func matchesCompiledQueryGroup(media Media, group []compiledQueryTerm) bool {
+func matchesCompiledQueryGroup(group []compiledQueryTerm, termMatches func(queryTerm) bool) bool {
 	for _, compiled := range group {
 		if compiled.skip {
 			continue
 		}
 		if compiled.nOf > 0 {
-			if !matchesCompiledNOf(media, compiled.nOfTerms, compiled.nOf) {
+			matches := 0
+			for _, term := range compiled.nOfTerms {
+				if termMatches(term) {
+					matches++
+				}
+			}
+			if matches < compiled.nOf {
 				return false
 			}
 			continue
 		}
-		ok := matchesTerm(media, compiled.term)
+		ok := termMatches(compiled.term)
 		if compiled.term.Negated {
 			ok = !ok
 		}
@@ -190,19 +207,6 @@ func matchesCompiledQueryGroup(media Media, group []compiledQueryTerm) bool {
 		}
 	}
 	return true
-}
-
-func (query compiledMediaQuery) matchesRow(row cachedMediaRow) bool {
-	if len(query.groups) == 0 {
-		return true
-	}
-	matcher := cachedMediaRowMatcher{row: row}
-	for _, group := range query.groups {
-		if matchesCompiledQueryGroupRow(&matcher, group) {
-			return true
-		}
-	}
-	return false
 }
 
 type cachedMediaRowMatcher struct {
@@ -215,28 +219,6 @@ type cachedMediaRowMatcher struct {
 	tagsSet     bool
 	faces       string
 	facesSet    bool
-}
-
-func matchesCompiledQueryGroupRow(matcher *cachedMediaRowMatcher, group []compiledQueryTerm) bool {
-	for _, compiled := range group {
-		if compiled.skip {
-			continue
-		}
-		if compiled.nOf > 0 {
-			if !matchesCompiledNOfRow(matcher, compiled.nOfTerms, compiled.nOf) {
-				return false
-			}
-			continue
-		}
-		ok := matcher.matchesTerm(compiled.term)
-		if compiled.term.Negated {
-			ok = !ok
-		}
-		if !ok {
-			return false
-		}
-	}
-	return true
 }
 
 func parseQueryExpression(query string) queryExpression {
@@ -437,15 +419,7 @@ func matchesTerm(media Media, term queryTerm) bool {
 	case "type":
 		return strings.EqualFold(media.Type, normalizeMediaType(value))
 	case "gps":
-		hasGPS := media.Latitude != nil && media.Longitude != nil
-		switch strings.ToLower(value) {
-		case "1", "true", "yes", "on":
-			return hasGPS
-		case "0", "false", "no", "off":
-			return !hasGPS
-		default:
-			return hasGPS
-		}
+		return matchGPS(media.Latitude != nil && media.Longitude != nil, value)
 	default:
 		return matchText(searchText(media), value)
 	}
@@ -481,15 +455,7 @@ func (matcher *cachedMediaRowMatcher) matchesTerm(term queryTerm) bool {
 	case "type":
 		return strings.EqualFold(row.Type, normalizeMediaType(value))
 	case "gps":
-		hasGPS := row.Latitude.Valid && row.Longitude.Valid
-		switch strings.ToLower(value) {
-		case "1", "true", "yes", "on":
-			return hasGPS
-		case "0", "false", "no", "off":
-			return !hasGPS
-		default:
-			return hasGPS
-		}
+		return matchGPS(row.Latitude.Valid && row.Longitude.Valid, value)
 	default:
 		return matcher.matchSearchText(value)
 	}
@@ -503,7 +469,10 @@ func keywordAndTagText(media Media) []string {
 }
 
 func matchDate(media Media, value string) bool {
-	date := mediaDate(media)
+	return matchDateValue(mediaDate(media), value)
+}
+
+func matchDateValue(date time.Time, value string) bool {
 	if len(value) == 4 {
 		year, err := strconv.Atoi(value)
 		return err == nil && date.Year() == year
@@ -519,15 +488,16 @@ func matchResolution(media Media, value string) bool {
 }
 
 func matchRowDate(row cachedMediaRow, value string) bool {
-	date := cachedRowDate(row)
-	if len(value) == 4 {
-		year, err := strconv.Atoi(value)
-		return err == nil && date.Year() == year
+	return matchDateValue(cachedRowDate(row), value)
+}
+
+func matchGPS(hasGPS bool, value string) bool {
+	switch strings.ToLower(value) {
+	case "0", "false", "no", "off":
+		return !hasGPS
+	default:
+		return hasGPS
 	}
-	if len(value) == 7 && value[4] == '-' {
-		return date.Format("2006-01") == value
-	}
-	return date.Format("2006-01-02") == value
 }
 
 func matchRowResolution(row cachedMediaRow, value string) bool {
@@ -580,26 +550,6 @@ func parseNOfTerms(raw string) []queryTerm {
 		terms = append(terms, parseTerm(part))
 	}
 	return terms
-}
-
-func matchesCompiledNOf(media Media, terms []queryTerm, n int) bool {
-	matches := 0
-	for _, term := range terms {
-		if matchesTerm(media, term) {
-			matches++
-		}
-	}
-	return matches >= n
-}
-
-func matchesCompiledNOfRow(matcher *cachedMediaRowMatcher, terms []queryTerm, n int) bool {
-	matches := 0
-	for _, term := range terms {
-		if matcher.matchesTerm(term) {
-			matches++
-		}
-	}
-	return matches >= n
 }
 
 func (matcher *cachedMediaRowMatcher) matchKeyword(value string) bool {

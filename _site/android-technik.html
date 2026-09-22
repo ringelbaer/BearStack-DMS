@@ -892,6 +892,23 @@
     </span>
   </a>
 
+    <nav class="md-nav" aria-label="Navigation und gemeinsame Einstellungen">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#zustande-der-personenverwaltung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Zustände der Personenverwaltung
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
 </li>
 
     </ul>
@@ -1237,6 +1254,23 @@
     </span>
   </a>
 
+    <nav class="md-nav" aria-label="Navigation und gemeinsame Einstellungen">
+      <ul class="md-nav__list">
+
+          <li class="md-nav__item">
+  <a href="#zustande-der-personenverwaltung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Zustände der Personenverwaltung
+      </span>
+    </span>
+  </a>
+
+</li>
+
+      </ul>
+    </nav>
+
 </li>
 
     </ul>
@@ -1260,7 +1294,7 @@
 <h1 id="android-app-technik-entwicklung">Android-App – Technik &amp; Entwicklung<a class="headerlink" href="#android-app-technik-entwicklung" title="Permanent link">&para;</a></h1>
 <p>Diese Referenz richtet sich an Betreiber und Entwickler. Die
 <a href="android.html">Android-Anleitung</a> erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App <strong>0.22.3</strong> (<code>versionCode 47</code>), BearStack <strong>1.10.5</strong>.</p>
+bis zur Personenverwaltung. Stand: App <strong>0.22.4</strong> (<code>versionCode 48</code>), BearStack <strong>1.11.0</strong>.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
 <p>Öffne <code>apps/android/</code> in Android Studio als eigenes Projekt. Benötigt werden JDK 17
 oder 21 und das Android-SDK mit Plattform 37. Gradle Wrapper, Android Gradle Plugin
@@ -1697,6 +1731,19 @@ Abbrechen verändern die Sitzung nicht. Erst <strong>Abmelden</strong> im Bestä
 führt <code>switchConnection()</code> aus, entfernt die gespeicherte Verbindung und leert den
 Thumbnail-Cache. Auch Fehlerdialoge öffnen diese Einstellungen statt unmittelbar
 abzumelden. HTTP-Verträge, Serverberechtigungen und Originaldateien bleiben unverändert.</p>
+<h3 id="zustande-der-personenverwaltung">Zustände der Personenverwaltung<a class="headerlink" href="#zustande-der-personenverwaltung" title="Permanent link">&para;</a></h3>
+<p>Ab Android <strong>0.22.4</strong> hält <code>PeopleState.kt</code> den gemeinsamen Verbindungs- und
+Schreibstatus sowie getrennte Daten für Personenliste, Gruppenvergleich und
+Ordnerprüfung. <code>PeopleRoute</code> legt die aktive Ansicht eindeutig fest; bei der
+Ordnerprüfung speichert es ausdrücklich die Herkunft aus Benennen oder
+Personenliste. Servergalerie, Gerätefotos und Personenverwaltung verwenden
+<code>AppSection</code> statt überlappender Anzeige-Flags.</p>
+<p><code>PersonFolderController</code> übernimmt Laden, Bestätigen, Wiederholen und Verlassen
+der Ordnerprüfung. <code>PeopleViewModel</code> koordiniert weiterhin Sitzung, den einzelnen
+Schreibzugriff und dauerhafte Aktionsquittungen. Dadurch bleiben ausstehende
+Änderungen über Bereichswechsel hinweg gesperrt und wiederholbar. Der abgeschlossene
+<a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/apps/android/archive/PHOTOS_PLAN_2026-09-09.md">Foto-Abnahmeplan vom September 2026</a>
+ist ein historisches Dokument und keine aktuelle technische Referenz.</p>
 
 
 
@@ -1745,7 +1792,7 @@ abzumelden. HTTP-Verträge, Serverberechtigungen und Originaldateien bleiben unv
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.8.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.11.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
 

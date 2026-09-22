@@ -2,7 +2,6 @@
 package photos
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"database/sql"
@@ -19,6 +18,7 @@ import (
 	"time"
 
 	"bearstack/internal/fsutil"
+	"bearstack/internal/processrun"
 )
 
 const (
@@ -559,7 +559,7 @@ func writeImageThumbnailWithVips(ctx context.Context, source, target string, siz
 		return err
 	}
 	output := target + "[Q=" + strconv.Itoa(thumbnailWebPQuality) + ",strip]"
-	return runThumbnailCommand(ctx, "vipsthumbnail", binary, source, "-s", strconv.Itoa(size)+"x"+strconv.Itoa(size)+">", "-o", output)
+	return runThumbnailCommand(ctx, "vipsthumbnail", binary, source, filepath.Dir(target), source, "-s", strconv.Itoa(size)+"x"+strconv.Itoa(size)+">", "-o", output)
 }
 
 func writeImageThumbnailWithFFmpeg(ctx context.Context, source, target string, size int) error {
@@ -567,7 +567,7 @@ func writeImageThumbnailWithFFmpeg(ctx context.Context, source, target string, s
 	if err != nil {
 		return err
 	}
-	return runThumbnailCommand(ctx, "ffmpeg", binary, "-hide_banner", "-loglevel", "error", "-y", "-threads", "1", "-i", source, "-frames:v", "1", "-vf", thumbnailScaleFilter(size), "-preset", "photo", "-quality", strconv.Itoa(thumbnailWebPQuality), target)
+	return runThumbnailCommand(ctx, "ffmpeg", binary, source, filepath.Dir(target), "-hide_banner", "-loglevel", "error", "-y", "-threads", "1", "-i", source, "-frames:v", "1", "-vf", thumbnailScaleFilter(size), "-preset", "photo", "-quality", strconv.Itoa(thumbnailWebPQuality), target)
 }
 
 func extractVideoThumbnail(ctx context.Context, source, target string, size int, seek string) error {
@@ -575,17 +575,15 @@ func extractVideoThumbnail(ctx context.Context, source, target string, size int,
 	if err != nil {
 		return err
 	}
-	return runThumbnailCommand(ctx, "ffmpeg", binary, "-hide_banner", "-loglevel", "error", "-y", "-threads", "1", "-ss", seek, "-i", source, "-frames:v", "1", "-vf", thumbnailScaleFilter(size), "-preset", "photo", "-quality", strconv.Itoa(thumbnailWebPQuality), target)
+	return runThumbnailCommand(ctx, "ffmpeg", binary, source, filepath.Dir(target), "-hide_banner", "-loglevel", "error", "-y", "-threads", "1", "-ss", seek, "-i", source, "-frames:v", "1", "-vf", thumbnailScaleFilter(size), "-preset", "photo", "-quality", strconv.Itoa(thumbnailWebPQuality), target)
 }
 
-func runThumbnailCommand(ctx context.Context, name, binary string, args ...string) error {
+func runThumbnailCommand(ctx context.Context, name, binary, source, outDir string, args ...string) error {
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Env = append(os.Environ(), "VIPS_CONCURRENCY=1")
-	var output limitedThumbnailOutput
-	cmd.Stdout = &output
-	cmd.Stderr = &output
-	if err := cmd.Run(); err != nil {
-		message := strings.TrimSpace(output.String())
+	output, err := processrun.Run(cmd, processrun.Files{Read: []string{source}, Write: []string{outDir}})
+	if err != nil {
+		message := strings.TrimSpace(string(output))
 		if message == "" {
 			message = err.Error()
 		}
@@ -670,25 +668,4 @@ func thumbnailBackendPath(name string) (string, error) {
 type thumbnailBackendLookup struct {
 	path string
 	err  error
-}
-
-type limitedThumbnailOutput struct {
-	buf bytes.Buffer
-}
-
-func (o *limitedThumbnailOutput) Write(p []byte) (int, error) {
-	const limit = 4096
-	if o.buf.Len() < limit {
-		remaining := limit - o.buf.Len()
-		if len(p) > remaining {
-			_, _ = o.buf.Write(p[:remaining])
-		} else {
-			_, _ = o.buf.Write(p)
-		}
-	}
-	return len(p), nil
-}
-
-func (o *limitedThumbnailOutput) String() string {
-	return o.buf.String()
 }

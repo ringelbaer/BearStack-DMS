@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"bearstack/internal/processrun"
 )
 
 const (
@@ -137,7 +139,7 @@ func pdfBulk(ctx context.Context, source, lang, tempDir string, progress Progres
 	}
 	prefix := filepath.Join(tempDir, "page")
 	cmd := exec.CommandContext(ctx, "pdftoppm", pdfBulkCommandArgs(source, prefix)...)
-	if output, err := cmd.CombinedOutput(); err != nil {
+	if output, err := processrun.Run(cmd, processrun.Files{Read: []string{source}, Write: []string{tempDir}}); err != nil {
 		if ctx.Err() != nil {
 			return "", fmt.Errorf("pdftoppm: %w", ctx.Err())
 		}
@@ -197,12 +199,12 @@ func pdfPageCount(ctx context.Context, source string) (int, error) {
 		return 0, err
 	}
 	cmd := exec.CommandContext(ctx, "pdfinfo", source)
-	output, err := cmd.CombinedOutput()
+	output, diagnostic, err := processrun.Output(cmd, processrun.Files{Read: []string{source}}, 64<<10)
 	if err != nil {
 		if ctx.Err() != nil {
 			return 0, ctx.Err()
 		}
-		return 0, fmt.Errorf("pdfinfo: %w: %s", err, strings.TrimSpace(string(output)))
+		return 0, fmt.Errorf("pdfinfo: %w: %s", err, strings.TrimSpace(string(diagnostic)))
 	}
 	return parsePDFPageCount(string(output))
 }
@@ -225,7 +227,7 @@ func parsePDFPageCount(output string) (int, error) {
 func renderPDFPage(ctx context.Context, source, tempDir string, pageNumber int) (string, error) {
 	prefix := filepath.Join(tempDir, fmt.Sprintf("page-%d", pageNumber))
 	cmd := exec.CommandContext(ctx, "pdftoppm", "-f", strconv.Itoa(pageNumber), "-l", strconv.Itoa(pageNumber), "-singlefile", "-r", "300", "-png", source, prefix)
-	if output, err := cmd.CombinedOutput(); err != nil {
+	if output, err := processrun.Run(cmd, processrun.Files{Read: []string{source}, Write: []string{tempDir}}); err != nil {
 		if ctx.Err() != nil {
 			return "", fmt.Errorf("pdftoppm: %w", ctx.Err())
 		}
@@ -244,15 +246,12 @@ func renderPDFPage(ctx context.Context, source, tempDir string, pageNumber int) 
 
 func Image(ctx context.Context, source, lang string) (string, error) {
 	cmd := exec.CommandContext(ctx, "tesseract", source, "stdout", "-l", lang)
-	output, err := cmd.Output()
+	output, diagnostic, err := processrun.Output(cmd, processrun.Files{Read: []string{source}}, 10<<20)
 	if err != nil {
 		if ctx.Err() != nil {
 			return "", fmt.Errorf("tesseract: %w", ctx.Err())
 		}
-		message := ""
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			message = strings.TrimSpace(string(exitErr.Stderr))
-		}
+		message := strings.TrimSpace(string(diagnostic))
 		if message == "" {
 			return "", fmt.Errorf("tesseract: %w", err)
 		}

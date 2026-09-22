@@ -18,6 +18,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.bearstack.people.R
+import de.bearstack.people.people.PeopleDestination
 import de.bearstack.people.people.PeopleState
 import de.bearstack.people.people.PeopleViewModel
 import de.bearstack.people.photos.AppSettingsDialog
@@ -34,7 +35,7 @@ import de.bearstack.people.photos.AppSettingsDialog
             val active=selected==index
             val bringIntoView=remember {BringIntoViewRequester()}
             LaunchedEffect(active) {if(active) bringIntoView.bringIntoView()}
-            Tab(selected=active,enabled=enabled,onClick={if(!active) vm.navigatePeople(index)},
+            Tab(selected=active,enabled=enabled,onClick={if(!active) vm.navigatePeople(PeopleDestination.entries[index])},
                 selectedContentColor=MaterialTheme.colorScheme.onSecondaryContainer,
                 unselectedContentColor=MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier=Modifier.widthIn(min=96.dp).bringIntoViewRequester(bringIntoView)

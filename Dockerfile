@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM --platform=$BUILDPLATFORM golang:1.26-trixie AS build
+FROM --platform=$BUILDPLATFORM golang:1.26.8-trixie AS build
 
 WORKDIR /src
 
@@ -19,6 +19,7 @@ FROM debian:trixie-slim AS runtime
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
 		ca-certificates \
+		bubblewrap \
 		chromium \
 		ffmpeg \
 		libreoffice-writer \

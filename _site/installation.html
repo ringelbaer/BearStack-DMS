@@ -882,6 +882,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#konverter-isolieren" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Konverter isolieren
+      </span>
+    </span>
+  </a>
+
+</li>
+
     </ul>
   
 </nav>
@@ -1146,6 +1157,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#konverter-isolieren" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Konverter isolieren
+      </span>
+    </span>
+  </a>
+
+</li>
+
     </ul>
   
 </nav>
@@ -1166,7 +1188,7 @@
 
 <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
 <h2 id="voraussetzungen">Voraussetzungen<a class="headerlink" href="#voraussetzungen" title="Permanent link">&para;</a></h2>
-<p>Für Entwicklung und Build wird Go <code>1.26.6</code> oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich <code>node</code> dazu. Die optionalen Playwright-Smoke-Tests brauchen <code>npm</code> und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.</p>
+<p>Für Entwicklung und Build wird Go <code>1.26.8</code> oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich <code>node</code> dazu. Die optionalen Playwright-Smoke-Tests brauchen <code>npm</code> und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.</p>
 <p>Vorschau, OCR und Medienfunktionen nutzen externe Werkzeuge nur dort, wo sie gebraucht werden:</p>
 <ul>
 <li><code>poppler-utils</code> für PDF-Vorschau, PDF-Merge bei EML-Archiven und OCR-Vorbereitung</li>
@@ -1273,7 +1295,7 @@
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nv">BEARSTACK_AUTH_PASSWORD_HASH</span><span class="o">=</span><span class="s1">&#39;$2a$10$...&#39;</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build
 </span></code></pre></div>
 <p>Der Container lauscht intern auf <code>0.0.0.0:8080</code> und speichert Daten unter <code>/var/lib/bearstack</code>. Deshalb muss Auth im Container gesetzt sein. <code>compose.yaml</code> nutzt standardmäßig <code>admin</code> als Benutzer, reicht <code>BEARSTACK_AUTH_PASSWORD</code> und <code>BEARSTACK_AUTH_PASSWORD_HASH</code> durch und veröffentlicht den Host-Port über <code>BEARSTACK_PORT</code> oder sonst <code>8080</code>.</p>
-<p>Das Runtime-Image basiert auf <code>debian:trixie-slim</code>, die Build-Stage auf <code>golang:1.26-trixie</code>. Das Beispiel-Image enthält <code>chromium</code>, <code>ffmpeg</code>, <code>libreoffice-writer</code>, <code>poppler-utils</code>, <code>tesseract-ocr</code>, <code>tesseract-ocr-deu</code> und <code>tesseract-ocr-eng</code>, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach <code>/srv/photos</code> gemountet werden.</p>
+<p>Das Runtime-Image basiert auf <code>debian:trixie-slim</code>, die Build-Stage auf <code>golang:1.26.8-trixie</code>. Das Beispiel-Image enthält <code>chromium</code>, <code>ffmpeg</code>, <code>libreoffice-writer</code>, <code>poppler-utils</code>, <code>tesseract-ocr</code>, <code>tesseract-ocr-deu</code> und <code>tesseract-ocr-eng</code>, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. <code>bubblewrap</code> ist für die optional aktivierbare Konvertersandbox enthalten. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach <code>/srv/photos</code> gemountet werden.</p>
 <p>Alle Docker-relevanten Umgebungsvariablen:</p>
 <table>
 <thead>
@@ -1286,6 +1308,14 @@
 <tr>
 <td><code>BEARSTACK_PORT</code></td>
 <td>Nur für <code>compose.yaml</code>: Host-Port, der auf den Container-Port <code>8080</code> gemappt wird. Standard <code>8080</code>.</td>
+</tr>
+<tr>
+<td><code>BEARSTACK_MEMORY_LIMIT</code></td>
+<td>Nur für <code>compose.yaml</code>: RAM-Limit des Hauptdiensts. Standard <code>2g</code>; bei größeren Installationen anpassen.</td>
+</tr>
+<tr>
+<td><code>BEARSTACK_CONVERTER_SANDBOX</code></td>
+<td>Optionale Linux-Konvertersandbox: <code>bubblewrap</code> oder <code>off</code> (Standard). Benötigt zulässige Benutzer-Namespaces; siehe <strong>Konverter isolieren</strong>.</td>
 </tr>
 <tr>
 <td><code>BEARSTACK_CONFIG</code></td>
@@ -1522,6 +1552,38 @@
 <li>OCR scheitert: <code>tesseract-ocr</code>, Sprachpakete und <code>pdfinfo</code>/<code>pdftoppm</code> prüfen.</li>
 <li>Fotomodul fehlt in der Navigation: <code>BEARSTACK_PHOTOS_ENABLED=true</code> setzen und Dienst neu starten.</li>
 </ul>
+<h2 id="konverter-isolieren">Konverter isolieren<a class="headerlink" href="#konverter-isolieren" title="Permanent link">&para;</a></h2>
+<p>Ab BearStack <strong>1.11.0</strong> laufen Chromium, LibreOffice, Poppler, Tesseract und die
+externen Foto-Thumbnail-Werkzeuge über dieselbe begrenzte Prozessausführung.
+Diagnoseausgaben behalten höchstens 4 KiB plus Kürzungshinweis. OCR-Ausgaben sind
+auf 10 MiB pro Prozess begrenzt; größere Ergebnisse führen zu einem Fehler und
+werden nicht als vollständiger Text gespeichert. Serverpasswörter, Tokens,
+Proxy-Zugangsdaten und persönliche Browser-/Office-Profile werden nicht vererbt.
+Jeder Prozess erhält ein privates temporäres Home. Unter Linux beendet ein
+Abbruch auch die Prozessgruppe; geerbte Ausgabepipes haben eine begrenzte Wartezeit.</p>
+<p>Für zusätzliche Dateisystem- und Netzwerkisolation kann unter Linux
+<code>BEARSTACK_CONVERTER_SANDBOX=bubblewrap</code> gesetzt werden. Dafür muss <code>bwrap</code>
+installiert sein und der Dienst Benutzer-, Mount-, Prozess- und Netzwerk-Namespaces
+anlegen dürfen. Der Konverter sieht nur benötigte Systemdateien, ausdrücklich
+freigegebene Eingaben und Ausgabe-/Profilverzeichnisse. Eingaben werden read-only
+gebunden; <code>/tmp</code>, <code>/proc</code> und das Netzwerk sind privat. Andere Dokumente, die
+Serverkonfiguration und das Netzwerk des Servers sind nicht erreichbar. Auch
+Chromium mit <code>--no-sandbox</code> läuft dadurch in einer äußeren Prozesssandbox.</p>
+<p>Die Einstellung ist optional; ohne Wert beziehungsweise mit <code>off</code> bleibt die
+bisherige Konverterverfügbarkeit erhalten. Ein unbekannter Wert oder ein Fehler
+beim Aufbau der aktivierten Sandbox bricht die Konvertierung ab. Es gibt keinen
+automatischen ungeschützten Wiederholungsversuch. Für native Installationen kann
+ein systemd-Drop-in <code>Environment=BEARSTACK_CONVERTER_SANDBOX=bubblewrap</code> setzen.
+Snap-Konverter sind dafür ungeeignet; native Distributionpakete verwenden.</p>
+<p>Compose begrenzt den Hauptdienst auf 256 Prozesse und standardmäßig 2 GiB RAM
+(<code>BEARSTACK_MEMORY_LIMIT</code>), entfernt Linux-Capabilities, verbietet neue Privilegien
+und verwendet ein schreibgeschütztes Root-Dateisystem. Schreibbar bleiben das
+Daten-Volume und <code>/tmp</code> als auf 1 GiB begrenztes tmpfs. Die systemd-Vorlage begrenzt
+Tasks und schützt zusätzliche Kernel-/Gerätebereiche. Die vollständige
+Bubblewrap-Sandbox bleibt in Compose standardmäßig aus, da Container-Runtimes
+verschachtelte Benutzer-Namespaces unterschiedlich einschränken. Nur auf einer
+dafür geeigneten Laufzeit aktivieren; keine privilegierten Container oder pauschal
+deaktivierten Seccomp-/AppArmor-Profile dafür verwenden.</p>
 
 
 
@@ -1570,7 +1632,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.8.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.11.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

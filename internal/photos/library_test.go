@@ -1286,10 +1286,9 @@ func TestLibraryCreatesVideoThumbnailWithFFmpeg(t *testing.T) {
 	frame := filepath.Join(tools, "frame.jpg")
 	writeSizedJPEG(t, frame, 120, 67, color.RGBA{R: 40, G: 120, B: 200, A: 255})
 	ffmpeg := filepath.Join(tools, "ffmpeg")
-	if err := os.WriteFile(ffmpeg, []byte("#!/bin/sh\nlast=\"\"\nfor arg in \"$@\"; do last=\"$arg\"; done\ncp \"$FAKE_FFMPEG_FRAME\" \"$last\"\n"), 0o700); err != nil {
+	if err := os.WriteFile(ffmpeg, []byte("#!/bin/sh\nFAKE_FFMPEG_FRAME="+shellFixturePath(frame)+"\nlast=\"\"\nfor arg in \"$@\"; do last=\"$arg\"; done\ncp \"$FAKE_FFMPEG_FRAME\" \"$last\"\n"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("FAKE_FFMPEG_FRAME", frame)
 	t.Setenv("PATH", tools+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	lib, err := New(root, filepath.Join(t.TempDir(), "cache"), filepath.Join(t.TempDir(), "photos.db"), 50)
@@ -1348,11 +1347,9 @@ func TestLibraryCoalescesConcurrentThumbnailRequests(t *testing.T) {
 	writeSizedJPEG(t, frame, 120, 67, color.RGBA{R: 40, G: 120, B: 200, A: 255})
 	countFile := filepath.Join(tools, "count")
 	ffmpeg := filepath.Join(tools, "ffmpeg")
-	if err := os.WriteFile(ffmpeg, []byte("#!/bin/sh\nprintf x >> \"$FAKE_FFMPEG_COUNT\"\nsleep 0.2\nlast=\"\"\nfor arg in \"$@\"; do last=\"$arg\"; done\ncp \"$FAKE_FFMPEG_FRAME\" \"$last\"\n"), 0o700); err != nil {
+	if err := os.WriteFile(ffmpeg, []byte("#!/bin/sh\nFAKE_FFMPEG_FRAME="+shellFixturePath(frame)+"\nFAKE_FFMPEG_COUNT="+shellFixturePath(countFile)+"\nprintf x >> \"$FAKE_FFMPEG_COUNT\"\nsleep 0.2\nlast=\"\"\nfor arg in \"$@\"; do last=\"$arg\"; done\ncp \"$FAKE_FFMPEG_FRAME\" \"$last\"\n"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("FAKE_FFMPEG_COUNT", countFile)
-	t.Setenv("FAKE_FFMPEG_FRAME", frame)
 	t.Setenv("PATH", tools+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	lib, err := New(root, filepath.Join(t.TempDir(), "cache"), filepath.Join(t.TempDir(), "photos.db"), 50)
@@ -3917,13 +3914,16 @@ func installFakeWebPThumbnailer(t *testing.T, width, height int) {
 		t.Fatal(err)
 	}
 	ffmpeg := filepath.Join(tools, "ffmpeg")
-	if err := os.WriteFile(ffmpeg, []byte("#!/bin/sh\nlast=\"\"\nfor arg in \"$@\"; do last=\"$arg\"; done\ncp \"$FAKE_FFMPEG_FRAME\" \"$last\"\n"), 0o700); err != nil {
+	if err := os.WriteFile(ffmpeg, []byte("#!/bin/sh\nFAKE_FFMPEG_FRAME="+shellFixturePath(frame)+"\nlast=\"\"\nfor arg in \"$@\"; do last=\"$arg\"; done\ncp \"$FAKE_FFMPEG_FRAME\" \"$last\"\n"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("FAKE_FFMPEG_FRAME", frame)
 	t.Setenv("PATH", tools+string(os.PathListSeparator)+os.Getenv("PATH"))
 }
 
 func float64Ptr(value float64) *float64 {
 	return &value
+}
+
+func shellFixturePath(path string) string {
+	return "'" + strings.ReplaceAll(path, "'", "'\"'\"'") + "'"
 }

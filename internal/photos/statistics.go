@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"bearstack/internal/processrun"
 )
 
 type Statistics struct {
@@ -330,7 +332,7 @@ func thumbnailBackendVersion(parent context.Context, name string) string {
 	ctx, cancel := context.WithTimeout(parent, 700*time.Millisecond)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, name, "--version")
-	output, err := cmd.CombinedOutput()
+	output, err := processrun.Run(cmd, processrun.Files{})
 	if err != nil && len(output) == 0 {
 		return ""
 	}

@@ -114,7 +114,7 @@ func (l *Library) listDirectoryPeople(ctx context.Context, rel string, opts List
 	if opts.Sort == "ascending_count" || opts.Sort == "descending_count" {
 		order = "n " + direction + ",name_fold,id"
 	}
-	rows, err := reader.QueryContext(ctx, cte+`SELECT id,name,n,face_id,count(*) OVER() FROM matched ORDER BY `+order+` LIMIT ? OFFSET ?`, append(append([]any{}, args...), size, (opts.Page-1)*size)...)
+	rows, err := reader.QueryContext(ctx, cte+`SELECT id,name,n,face_id,count(*) OVER() FROM matched ORDER BY `+order+` LIMIT ? OFFSET ?`, append(append([]any{}, args...), size, pageOffset(opts.Page, size))...)
 	if err != nil {
 		return out, err
 	}
@@ -141,7 +141,7 @@ func (l *Library) listDirectoryPeople(ctx context.Context, rel string, opts List
 			return out, err
 		}
 	}
-	out.FolderHasNext = opts.Page*size < out.FolderTotal
+	out.FolderHasNext = pageHasNext(opts.Page, size, out.FolderTotal)
 	if opts.FolderPageSize == 0 {
 		out.Total = out.FolderTotal
 		out.HasPrev = opts.Page > 1

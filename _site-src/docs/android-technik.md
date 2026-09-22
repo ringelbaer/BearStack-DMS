@@ -7,7 +7,7 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.22.3** (`versionCode 47`), BearStack **1.10.5**.
+bis zur Personenverwaltung. Stand: App **0.22.4** (`versionCode 48`), BearStack **1.11.0**.
 
 ## Bauen und installieren
 
@@ -439,3 +439,19 @@ Abbrechen verändern die Sitzung nicht. Erst **Abmelden** im Bestätigungsdialog
 führt `switchConnection()` aus, entfernt die gespeicherte Verbindung und leert den
 Thumbnail-Cache. Auch Fehlerdialoge öffnen diese Einstellungen statt unmittelbar
 abzumelden. HTTP-Verträge, Serverberechtigungen und Originaldateien bleiben unverändert.
+
+### Zustände der Personenverwaltung
+
+Ab Android **0.22.4** hält `PeopleState.kt` den gemeinsamen Verbindungs- und
+Schreibstatus sowie getrennte Daten für Personenliste, Gruppenvergleich und
+Ordnerprüfung. `PeopleRoute` legt die aktive Ansicht eindeutig fest; bei der
+Ordnerprüfung speichert es ausdrücklich die Herkunft aus Benennen oder
+Personenliste. Servergalerie, Gerätefotos und Personenverwaltung verwenden
+`AppSection` statt überlappender Anzeige-Flags.
+
+`PersonFolderController` übernimmt Laden, Bestätigen, Wiederholen und Verlassen
+der Ordnerprüfung. `PeopleViewModel` koordiniert weiterhin Sitzung, den einzelnen
+Schreibzugriff und dauerhafte Aktionsquittungen. Dadurch bleiben ausstehende
+Änderungen über Bereichswechsel hinweg gesperrt und wiederholbar. Der abgeschlossene
+[Foto-Abnahmeplan vom September 2026](https://github.com/ringelbaer/BearStack-DMS/blob/main/apps/android/archive/PHOTOS_PLAN_2026-09-09.md)
+ist ein historisches Dokument und keine aktuelle technische Referenz.

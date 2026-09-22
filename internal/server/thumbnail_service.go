@@ -22,6 +22,7 @@ import (
 	"bearstack/internal/document"
 	"bearstack/internal/documentformat"
 	"bearstack/internal/fsutil"
+	"bearstack/internal/processrun"
 	"bearstack/internal/repository"
 	"bearstack/internal/storage"
 )
@@ -182,7 +183,7 @@ func writePDFThumbnail(ctx context.Context, source, target string) error {
 	defer os.RemoveAll(tmpDir)
 	prefix := filepath.Join(tmpDir, "thumbnail")
 	cmd := exec.CommandContext(ctx, "pdftoppm", "-f", "1", "-l", "1", "-singlefile", "-jpeg", "-scale-to", "300", source, prefix)
-	if output, err := cmd.CombinedOutput(); err != nil {
+	if output, err := processrun.Run(cmd, processrun.Files{Read: []string{source}, Write: []string{tmpDir}}); err != nil {
 		return fmt.Errorf("pdftoppm: %w: %s", err, strings.TrimSpace(string(output)))
 	}
 	output := prefix + ".jpg"

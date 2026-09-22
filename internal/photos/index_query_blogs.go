@@ -21,7 +21,7 @@ func (l *Library) indexListingBlogs(ctx context.Context, rel string, opts ListOp
 		return err
 	}
 	posts, err := l.indexBlogsPage(ctx, rel, opts.Query, opts.IncludeAdminOnly,
-		(opts.Page-1)*opts.BlogPageSize, opts.BlogPageSize+1, opts.BlogSummaries)
+		pageOffset(opts.Page, opts.BlogPageSize), opts.BlogPageSize+1, opts.BlogSummaries)
 	if err != nil {
 		return err
 	}

@@ -15,6 +15,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -241,15 +242,13 @@ func installFakePDFToPPM(t *testing.T) {
 	if err := os.WriteFile(fixture, encoded.Bytes(), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("BEARSTACK_TEST_PDF_THUMBNAIL", fixture)
 	script := filepath.Join(dir, "pdftoppm")
-	if err := os.WriteFile(script, []byte(`#!/bin/sh
-prefix=""
+	if err := os.WriteFile(script, []byte("#!/bin/sh\nfixture='"+strings.ReplaceAll(fixture, "'", "'\"'\"'")+"'\n"+`prefix=""
 while [ "$#" -gt 0 ]; do
 	prefix="$1"
 	shift
 done
-/bin/cp "$BEARSTACK_TEST_PDF_THUMBNAIL" "$prefix.jpg"
+/bin/cp "$fixture" "$prefix.jpg"
 `), 0o755); err != nil {
 		t.Fatal(err)
 	}

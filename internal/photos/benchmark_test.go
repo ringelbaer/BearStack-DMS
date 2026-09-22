@@ -2,6 +2,7 @@ package photos
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -124,14 +125,15 @@ func BenchmarkPhotoPostFilterSearch(b *testing.B) {
 			lib := newBenchmarkIndexedLibrary(b, size.galleries, size.photos)
 			defer lib.Close()
 			cases := []struct {
-				name  string
-				query string
+				name     string
+				query    string
+				tooBroad bool
 			}{
 				{name: "fts-exact", query: "IMG_0004242"},
 				{name: "sql-tag", query: "tag:benchmark"},
-				{name: "postfilter-short-term", query: "IM"},
+				{name: "postfilter-short-term", query: "IM", tooBroad: true},
 				{name: "postfilter-negated-tag", query: "-tag:benchmark"},
-				{name: "postfilter-two-of", query: "2-of:(camera:BearCam,lens:PrimeLens)"},
+				{name: "postfilter-two-of", query: "2-of:(camera:BearCam,lens:PrimeLens)", tooBroad: true},
 				{name: "postfilter-or-text", query: "IMG_0004242 or IMG_0004243"},
 			}
 			for _, tc := range cases {
@@ -139,6 +141,12 @@ func BenchmarkPhotoPostFilterSearch(b *testing.B) {
 					b.ReportAllocs()
 					for i := 0; i < b.N; i++ {
 						listing, err := lib.List(ctx, ListOptions{Query: tc.query, PageSize: 120})
+						if tc.tooBroad {
+							if !errors.Is(err, ErrSearchTooBroad()) {
+								b.Fatalf("query %q must hit the bounded-search guard, got %v", tc.query, err)
+							}
+							continue
+						}
 						if err != nil {
 							b.Fatal(err)
 						}

@@ -1,4 +1,12 @@
-# BearStack Fotos – Umsetzung und Abnahme
+# Historische Abnahme: BearStack Fotos (9. September 2026)
+
+Dieser abgeschlossene Plan dokumentiert den damaligen Entwicklungsstand. Er ist
+keine aktuelle Funktions- oder Betriebsbeschreibung. Maßgeblich sind die
+[Android-Anleitung](../../../_site-src/docs/android.md), die
+[technische Referenz](../../../_site-src/docs/android-technik.md) und das
+[Changelog](../../../CHANGELOG.md).
+
+## Ursprünglicher Abnahmestand
 
 Stand: 9. September 2026. BearStack **0.50.0**, Android **0.10.0 (22)**,
 zusammengehöriges unveröffentlichtes MINOR-Feature. App-ID und bestehende Konten,

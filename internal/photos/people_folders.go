@@ -176,7 +176,7 @@ func (l *Library) listPeopleFolders(ctx context.Context, rel string, opts ListOp
 		rows, err := l.index.db.QueryContext(ctx, `WITH entries AS (
  SELECT 'Alle' AS name,count(*) AS n,1 AS is_all FROM photo_people p WHERE p.name<>'' AND `+visiblePersonSQL+`
  UNION ALL SELECT pt.tag,count(*),0 FROM person_tag_index pt JOIN photo_people p ON p.id=pt.person_id WHERE `+visiblePersonSQL+` GROUP BY pt.tag)
- SELECT name,n,is_all FROM entries ORDER BY is_all DESC,bearstack_german_fold(name) `+direction+`,name `+direction+` LIMIT ? OFFSET ?`, size, (opts.Page-1)*size)
+ SELECT name,n,is_all FROM entries ORDER BY is_all DESC,bearstack_german_fold(name) `+direction+`,name `+direction+` LIMIT ? OFFSET ?`, size, pageOffset(opts.Page, size))
 		if err != nil {
 			return out, err
 		}
@@ -200,7 +200,7 @@ func (l *Library) listPeopleFolders(ctx context.Context, rel string, opts ListOp
 		if err != nil {
 			return out, err
 		}
-		out.FolderHasNext = opts.Page*size < out.FolderTotal
+		out.FolderHasNext = pageHasNext(opts.Page, size, out.FolderTotal)
 		if err := l.peopleFolderPreviews(ctx, out.Folders, 2*opts.FolderPreviewSize); err != nil {
 			return out, err
 		}
@@ -220,7 +220,7 @@ func (l *Library) listPeopleFolders(ctx context.Context, rel string, opts ListOp
 		if strings.HasPrefix(opts.Sort, "descending_") {
 			direction = "DESC"
 		}
-		args = append(args, size, (opts.Page-1)*size)
+		args = append(args, size, pageOffset(opts.Page, size))
 		var reader peopleSortReader = l.index.db
 		columns, count, order := "p.id,p.name,p.name_fold", personPhotoCountSQL, "p.name_fold "+direction+",p.id"
 		if opts.Sort == "ascending_count" || opts.Sort == "descending_count" {
@@ -258,7 +258,7 @@ func (l *Library) listPeopleFolders(ctx context.Context, rel string, opts ListOp
 		if err := rows.Err(); err != nil {
 			return out, err
 		}
-		out.FolderHasNext = opts.Page*size < out.FolderTotal
+		out.FolderHasNext = pageHasNext(opts.Page, size, out.FolderTotal)
 	}
 	// Browser pagination is shared with the ordinary gallery; native clients
 	// keep their independent folder and media sections.
@@ -281,7 +281,7 @@ func (l *Library) listPersonFolderMedia(ctx context.Context, out *Listing, id in
 		plan.ExpressionSQL = condition
 		plan.ExpressionArgs = append(plan.ExpressionArgs, id)
 		var err error
-		out.Media, out.Total, err = l.indexMedia(ctx, indexMediaOptions{Directory: directory, Subtree: directory != "", Query: opts.Query, Plan: plan, MediaType: opts.MediaType, GPSOnly: opts.GPSOnly, RequestSort: opts.Sort, Limit: opts.PageSize, Offset: (opts.Page - 1) * opts.PageSize, LeanMetadata: opts.LeanMetadata})
+		out.Media, out.Total, err = l.indexMedia(ctx, indexMediaOptions{Directory: directory, Subtree: directory != "", Query: opts.Query, Plan: plan, MediaType: opts.MediaType, GPSOnly: opts.GPSOnly, RequestSort: opts.Sort, Limit: opts.PageSize, Offset: pageOffset(opts.Page, opts.PageSize), LeanMetadata: opts.LeanMetadata})
 		if err != nil {
 			return err
 		}
@@ -290,6 +290,6 @@ func (l *Library) listPersonFolderMedia(ctx context.Context, out *Listing, id in
 		return err
 	}
 	out.HasPrev = opts.Page > 1
-	out.HasNext = opts.Page*opts.PageSize < out.Total
+	out.HasNext = pageHasNext(opts.Page, opts.PageSize, out.Total)
 	return nil
 }

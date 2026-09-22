@@ -21,6 +21,7 @@ import (
 
 	"bearstack/internal/documentconvert"
 	"bearstack/internal/mailmime"
+	"bearstack/internal/processrun"
 	"bearstack/internal/storage"
 	"bearstack/internal/uploadlimit"
 )
@@ -632,6 +633,8 @@ func renderHTMLWithChromium(ctx context.Context, htmlContent, output, tempDir st
 	htmlURL := (&url.URL{Scheme: "file", Path: filepath.ToSlash(htmlPath)}).String()
 	args := []string{
 		"--headless",
+		"--no-first-run",
+		"--no-default-browser-check",
 		"--disable-gpu",
 		"--no-sandbox",
 		"--disable-dev-shm-usage",
@@ -646,7 +649,7 @@ func renderHTMLWithChromium(ctx context.Context, htmlContent, output, tempDir st
 		htmlURL,
 	}
 	cmd := exec.CommandContext(ctx, command, args...)
-	combined, err := cmd.CombinedOutput()
+	combined, err := processrun.Run(cmd, processrun.Files{Read: []string{htmlPath}, Write: []string{tempDir, filepath.Dir(output)}})
 	if err != nil {
 		if ctx.Err() != nil {
 			return fmt.Errorf("chromium: %w", ctx.Err())
@@ -689,7 +692,7 @@ func mergePDFsWithPDFUnite(ctx context.Context, output string, inputs []string) 
 	}
 	args := append(append([]string{}, inputs...), output)
 	cmd := exec.CommandContext(ctx, command, args...)
-	combined, err := cmd.CombinedOutput()
+	combined, err := processrun.Run(cmd, processrun.Files{Read: inputs, Write: []string{filepath.Dir(output)}})
 	if err != nil {
 		if ctx.Err() != nil {
 			return fmt.Errorf("pdfunite: %w", ctx.Err())

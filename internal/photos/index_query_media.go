@@ -189,6 +189,11 @@ func (l *Library) indexMediaPostFilter(ctx context.Context, opts indexMediaOptio
 }
 
 func postFilterCandidateLimit(opts indexMediaOptions) int {
+	// Saturate before either multiplication or addition; remote page numbers
+	// can approach MaxInt even though the actual result set is small.
+	if opts.Offset >= indexPostFilterCandidateMax || opts.Limit > (indexPostFilterCandidateMax-opts.Offset)/indexPostFilterCandidateFactor {
+		return indexPostFilterCandidateMax
+	}
 	limit := opts.Offset + opts.Limit*indexPostFilterCandidateFactor
 	if limit < indexPostFilterCandidateMin {
 		limit = indexPostFilterCandidateMin

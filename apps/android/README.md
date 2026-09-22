@@ -1,7 +1,7 @@
 # BearStack Fotos für Android
 
 Native Android-App für BearStack-Galerie, lokale Fotos und Personenverwaltung.
-App-Version **0.22.3** (`versionCode 47`), Android **8.0 oder neuer**.
+App-Version **0.22.4** (`versionCode 48`), Android **8.0 oder neuer**.
 
 Rücknavigation, Einstellungen und Hilfe sind zwischen den Ansichten vereinheitlicht.
 Die Personenverwaltung hat sichtbare Reiter; Auswahlaktionen beziehen sich ausdrücklich
@@ -25,6 +25,11 @@ und bestätigtes Löschen lokaler Bilder. Serveroriginale bleiben schreibgeschü
 Nach dem Teilen eines Gerätefotos bleibt die Großansicht geöffnet. Beim Schließen
 kehrt die Galerie zum aktuellen Bild zurück; unveränderte lokale Medien behalten
 auch nach einem App-Wechsel ihre Rasterposition.
+
+Die Personenverwaltung verwendet getrennte Zustände für Personenliste, Gruppenvergleich
+und Ordnerprüfung sowie einen eindeutigen Navigationszustand. Die Ordnerprüfung hat
+einen eigenen Controller; dauerhafte Aktionen und Wiederholungen behalten den
+gemeinsamen Schreibzugriff.
 
 ## Dokumentation
 

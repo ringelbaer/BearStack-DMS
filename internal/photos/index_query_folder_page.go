@@ -39,7 +39,7 @@ func (l *Library) indexFolderPage(ctx context.Context, rel string, opts ListOpti
 	if incomplete != 0 {
 		return false, nil
 	}
-	offset, limit := (opts.Page-1)*opts.FolderPageSize, opts.FolderPageSize
+	offset, limit := pageOffset(opts.Page, opts.FolderPageSize), opts.FolderPageSize
 	folders := []Folder{}
 	if opts.IncludePeopleFolders && rel == "" {
 		total++
@@ -54,7 +54,7 @@ func (l *Library) indexFolderPage(ctx context.Context, rel string, opts ListOpti
 	if order == "descending_name" {
 		direction = "DESC"
 	}
-	if (opts.Page-1)*opts.FolderPageSize >= total {
+	if pageOffset(opts.Page, opts.FolderPageSize) >= total {
 		limit = 0
 	}
 	if limit > 0 {
@@ -83,6 +83,6 @@ func (l *Library) indexFolderPage(ctx context.Context, rel string, opts ListOpti
 		return false, err
 	}
 	listing.Folders, listing.FolderTotal = folders, total
-	listing.FolderHasNext = opts.Page*opts.FolderPageSize < total
+	listing.FolderHasNext = pageHasNext(opts.Page, opts.FolderPageSize, total)
 	return true, nil
 }

@@ -235,7 +235,7 @@ internal fun MergeReviewScreen(state: PeopleState, vm: PeopleViewModel) {
             if(vm.state.value.mergeSuggestion==suggestion) vm.decideMerge(true)
         },enabled=dialogEnabled) {Text(text(R.string.people_merge_named_confirm))}},
         dismissButton={TextButton(onClick={confirmMerge=false}) {Text(text(R.string.photos_cancel))}})
-    if(state.naming) NamingDialog(state.copy(directory=false),vm,dialogEnabled)
+    if(state.naming) NamingDialog(state,vm,dialogEnabled)
     if(help) AlertDialog(onDismissRequest={help=false},title={Text(text(R.string.people_merge_help_title))},
         text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text(text(R.string.people_merge_help))
