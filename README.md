@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.10.0** · Android-App: **0.22.2**.
+Aktuelle Version: **1.10.1** · Android-App: **0.22.2**.
+
+**BearStack 1.10.1:** Kompakte Auswahlleiste in der Galerie mit getrennten Auswahl- und Bearbeitungsaktionen. Hilfetexte zur Auswahl und Gruppierung öffnen sich über **Info-Symbole**, wie in den allgemeinen Einstellungen. Auf schmalen Bildschirmen bricht die Leiste um und scrollt mit der Galerie.
 
 **BearStack 1.10.0:** Hauptbilder über **Vorschaubilder** auswählen und bestehende **Bildgruppen erweitern**: Im Bearbeitenmodus genau eine Gruppe und die hinzuzufügenden Bilder markieren. Der Gruppenindikator bleibt im Auswahlmodus sichtbar. Nach dem Erstellen bleibt die bisherige Galerie geöffnet; Auflösen führt zum Ordner des Hauptbilds. Galerie, Fotoframe, Karte und Diashow zeigen weiterhin nur das Hauptbild. Originaldateien bleiben schreibgeschützt. [Anleitung](_site-src/docs/fotos.md#bildgruppen).
 

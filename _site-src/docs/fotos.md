@@ -151,15 +151,18 @@ alle Mitglieder ansehen.
 
 1. Mit dem Schalter **Bearbeiten einschalten** die Bearbeitung aktivieren.
    Erst dann erscheinen Checkboxen, Auswahlmodus und die Gruppenaktion.
+   Die kompakte Auswahlleiste zeigt Hilfetexte hinter **Info-Symbolen**:
+   per Maus, Tastaturfokus oder Antippen öffnen, mit Escape schließen.
 2. Einzelne Checkboxen markieren oder **Auswahlmodus** aktivieren, um mit Klicks
    auf ganze Kacheln auszuwählen. **Shift + Klick** markiert vom zuletzt
    ausgewählten Bild bis zum angeklickten Bild, zeilenweise in der aktuellen
    Sortierung, auch rückwärts. Bestehende Markierungen bleiben erhalten.
 3. **Alle Medien dieser Seite auswählen** betrifft ausschließlich die aktuelle
-   Seite. **Auswahl aufheben** entfernt die Markierungen. Beim Verlassen des
+   Seite. Das **×** neben der Anzahl (**Auswahl aufheben**) entfernt die Markierungen. Beim Verlassen des
    Bearbeitenmodus werden Auswahl und Auswahlmodus zurückgesetzt.
-4. Zwei bis 500 noch nicht gruppierte Bilder auswählen und **Ausgewählte Bilder
-   gruppieren** öffnen. Videos, Audios und bestehende Gruppen können nicht
+4. Zwei bis 500 noch nicht gruppierte Bilder auswählen und **Bilder gruppieren**
+   öffnen. Das Info-Symbol daneben erklärt auch, warum die Aktion bei einer
+   ungeeigneten Auswahl deaktiviert ist. Videos, Audios und bestehende Gruppen können nicht
    Bestandteil einer neuen Bildgruppe werden.
 5. Im Dialog auf das gewünschte **Vorschaubild** klicken. Eine größere Vorschau
    zeigt das gewählte Hauptbild. Mit **Bildgruppe erstellen** speichern.
@@ -177,7 +180,7 @@ nicht.
 
 Ab **1.10.0** im Bearbeitenmodus **genau eine Bildgruppe** und mindestens ein
 noch nicht gruppiertes Bild auswählen. Gruppenindikatoren bleiben auch im
-Auswahlmodus sichtbar. **Ausgewählte Bilder zur Bildgruppe hinzufügen** öffnet
+Auswahlmodus sichtbar. **Zur Bildgruppe hinzufügen** öffnet
 eine Vorschau der hinzuzufügenden Bilder und des bisherigen Hauptbilds.
 Mit **Zur Bildgruppe hinzufügen** speichern; das Hauptbild bleibt erhalten.
 

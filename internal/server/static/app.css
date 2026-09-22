@@ -4134,12 +4134,21 @@ body:has(.people-selection-bar:not([hidden])) { padding-bottom: max(240px, calc(
 }
 
 /* Gallery: viewing, selecting, and group-wide changes have separate controls. */
-.photo-selection-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; width: 100%; }
-.photo-selection-tools p { flex-basis: 100%; margin: 0; font-size: .85rem; }
-.photo-edit-toolbar { flex-wrap: wrap; align-items: start; }
-.photo-edit-toolbar .selection-actions { flex-wrap: wrap; align-items: center; padding-top: .75rem; border-top: 1px solid var(--line); }
-.photo-edit-toolbar [data-image-group-hint] { flex-basis: 100%; font-size: .8rem; }
-.photo-edit-toolbar button { white-space: normal; min-height: 44px; }
+.photo-selection-tools, .photo-edit-toolbar .selection-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; min-width: 0; }
+.photo-edit-toolbar { align-items: center; gap: .5rem 1rem; padding: .5rem .65rem; }
+.photo-edit-toolbar .selection-actions { gap: .5rem .85rem; }
+.photo-mode-tools, .photo-selection-summary, .photo-group-tools, .photo-tag-actions { display: inline-flex; align-items: center; gap: .4rem; min-width: 0; max-width: 100%; }
+.photo-selection-summary { border-left: 1px solid var(--line); padding-left: .85rem; white-space: nowrap; }
+.photo-tag-actions { flex-wrap: wrap; }
+.photo-edit-toolbar button { white-space: normal; min-height: 44px; padding: .45rem .6rem; font-size: .85rem; }
+.photo-edit-toolbar .photo-selection-clear { width: 36px; padding: 0; }
+.photo-edit-toolbar .context-help-trigger { position: relative; margin: 0 .25rem; }
+.photo-edit-toolbar .context-help-trigger::before { content: ""; position: absolute; inset: -6px; }
+@media (max-width: 640px) {
+  .photo-edit-toolbar { position: static; }
+  .photo-selection-summary { border-left: 0; padding-left: 0; }
+  .photo-edit-toolbar .selection-actions { border-top: 1px solid var(--line); padding-top: .5rem; width: 100%; }
+}
 .photo-image-group-link { position: absolute; right: .35rem; top: .35rem; display: grid; place-items: center; width: 44px; height: 44px; background: var(--surface); color: var(--primary); border: 1px solid var(--line); border-radius: .4rem; z-index: 3; }
 [data-selection-mode="true"] .photo-tag-select { visibility: hidden; }
 .photo-module[data-photo-mode="view"] .photo-select-input { display: none !important; }

@@ -261,16 +261,28 @@
   <input type="hidden" name="return" value="{{.ReturnURL}}">
   {{if and .Auth.CanPhotosEdit (not .Photos.PeopleDirectory)}}
   <div class="photo-edit-toolbar photo-edit-only">
-    <div class="photo-selection-tools" role="group" aria-label="Medien dieser Seite auswählen"><span class="people-action-caption">Nur auswählen · aktuelle Seite</span><button type="button" class="secondary-button people-local-action" data-photo-selection-mode aria-pressed="false" hidden>Auswahlmodus</button><button type="button" class="secondary-button people-local-action" data-photo-select-all data-selection-label="Alle Medien dieser Seite auswählen" hidden>Alle Medien dieser Seite auswählen</button><p class="muted">Im Auswahlmodus markieren Klicks ganze Kacheln. Shift + Klick markiert einen Bereich, Zeile für Zeile.</p></div>
-    <div class="selection-actions hidden" data-selection-actions>
-      <span class="photo-selection-count" data-photo-selection-count>0 ausgewählt</span>
-      <button type="button" data-image-group-create hidden>Ausgewählte Bilder gruppieren …</button>
-      <span class="muted" data-image-group-hint>Gruppieren ist für mindestens zwei ungruppierte Bilder möglich.</span>
-      <button type="button" class="secondary-button" data-bulk-tags-open="add" data-empty-selection-message="Bitte mindestens ein Bild auswählen.">Tags ergänzen</button>
-      <div class="tag-select hidden" data-tag-select data-create-tag-mode="local" data-empty-label="Keine Tags ausgewählt" data-update-url="/photos/tags/add" data-bulk-tags="true" data-bulk-tags-action="add"></div>
-      <button type="button" class="secondary-button people-remove-action" data-bulk-tags-open="remove" data-empty-selection-message="Bitte mindestens ein Bild auswählen.">Tags entfernen</button>
-      <div class="tag-select hidden" data-tag-select data-create-tag-mode="local" data-empty-label="Keine Tags ausgewählt" data-update-url="/photos/tags/remove" data-bulk-tags="true" data-bulk-tags-action="remove"></div>
-      <button type="button" class="secondary-button people-local-action" data-photo-selection-clear>Auswahl aufheben</button>
+    <div class="photo-selection-tools" role="group" aria-label="Medien dieser Seite auswählen">
+      <span class="photo-mode-tools">
+        <button type="button" class="secondary-button people-local-action" data-photo-selection-mode aria-pressed="false" hidden>Auswahlmodus</button>
+        <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zur Medienauswahl" aria-expanded="false" data-context-help-title="Medien dieser Seite auswählen" data-context-help="Die Auswahl gilt nur für die aktuelle Seite. Im Auswahlmodus markieren Klicks ganze Kacheln. Shift + Klick markiert vom zuletzt ausgewählten bis zum angeklickten Bild einen Bereich, Zeile für Zeile. Beim Verlassen des Bearbeitenmodus wird die Auswahl aufgehoben.">i</span>
+      </span>
+      <button type="button" class="secondary-button people-local-action" data-photo-select-all data-selection-label="Alle Medien dieser Seite auswählen" hidden>Alle Medien dieser Seite auswählen</button>
+    </div>
+    <div class="selection-actions hidden" data-selection-actions role="group" aria-label="Ausgewählte Medien bearbeiten">
+      <span class="photo-selection-summary">
+        <span class="photo-selection-count" data-photo-selection-count>0 ausgewählt</span>
+        <button type="button" class="secondary-button people-local-action photo-selection-clear" data-photo-selection-clear aria-label="Auswahl aufheben" title="Auswahl aufheben"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+      </span>
+      <span class="photo-group-tools">
+        <button type="button" data-image-group-create hidden>Bilder gruppieren …</button>
+        <span class="context-help-trigger" role="button" tabindex="0" aria-label="Hilfe zu Bildgruppen" aria-expanded="false" data-image-group-hint data-context-help-title="Ausgewählte Bilder gruppieren" data-context-help="Zum Erstellen einer Bildgruppe mindestens zwei und höchstens 500 ungruppierte Bilder auswählen. Eine bestehende Bildgruppe und einzelne Bilder auswählen, um sie hinzuzufügen. Das bisherige Hauptbild bleibt dabei erhalten. Mehrere Bildgruppen können nicht zusammengeführt werden.">i</span>
+      </span>
+      <div class="photo-tag-actions" role="group" aria-label="Tags der ausgewählten Medien">
+        <button type="button" class="secondary-button" data-bulk-tags-open="add" data-empty-selection-message="Bitte mindestens ein Bild auswählen.">Tags ergänzen</button>
+        <div class="tag-select hidden" data-tag-select data-create-tag-mode="local" data-empty-label="Keine Tags ausgewählt" data-update-url="/photos/tags/add" data-bulk-tags="true" data-bulk-tags-action="add"></div>
+        <button type="button" class="secondary-button people-remove-action" data-bulk-tags-open="remove" data-empty-selection-message="Bitte mindestens ein Bild auswählen.">Tags entfernen</button>
+        <div class="tag-select hidden" data-tag-select data-create-tag-mode="local" data-empty-label="Keine Tags ausgewählt" data-update-url="/photos/tags/remove" data-bulk-tags="true" data-bulk-tags-action="remove"></div>
+      </div>
     </div>
   </div>
   {{end}}

@@ -12,13 +12,14 @@
       var items = selected(), hint = document.querySelector("[data-image-group-hint]");
       var groupCount = groups(items).length;
       create.disabled = !eligible(items);
-      create.textContent = groupCount === 1 ? "Ausgewählte Bilder zur Bildgruppe hinzufügen …" : "Ausgewählte Bilder gruppieren …";
+      create.textContent = groupCount === 1 ? "Zur Bildgruppe hinzufügen …" : "Bilder gruppieren …";
       if (!hint) return;
-      hint.textContent = items.length > 500 ? "Bitte höchstens 500 Bilder auswählen." :
+      hint.dataset.contextHelpTitle = groupCount === 1 ? "Zur Bildgruppe hinzufügen" : "Ausgewählte Bilder gruppieren";
+      hint.dataset.contextHelp = items.length > 500 ? "Bitte höchstens 500 Bilder auswählen." :
         groupCount > 1 ? "Bitte höchstens eine Bildgruppe auswählen. Mehrere Bildgruppen können nicht zusammengeführt werden." :
         items.some(function (item) { return item.dataset.photoType !== "image"; }) ? "Bildgruppen können nur Bilder enthalten. Bitte Videos und Audios abwählen." :
-        groupCount === 1 ? "Eine Bildgruppe und einzelne Bilder auswählen. Das bisherige Hauptbild bleibt erhalten." :
-        "Gruppieren ist für mindestens zwei ungruppierte Bilder möglich.";
+        groupCount === 1 ? "Eine Bildgruppe und einzelne Bilder auswählen. Die ausgewählten Bilder werden zur Gruppe hinzugefügt; das bisherige Hauptbild bleibt erhalten. Eine Gruppe darf insgesamt höchstens 500 Bilder enthalten." :
+        "Zum Erstellen einer Bildgruppe mindestens zwei und höchstens 500 ungruppierte Bilder auswählen. Im nächsten Schritt das Hauptbild über die Vorschaubilder wählen. Eine bestehende Bildgruppe und einzelne Bilder auswählen, um sie hinzuzufügen. Originaldateien bleiben unverändert.";
     }
     if (create && form) {
       var choices = dialog.querySelector("[data-image-group-primary]");

@@ -81,8 +81,7 @@ label span.label-help-row {
   text-transform: none;
 }
 
-label .context-help-trigger,
-.checkbox-line .context-help-trigger {
+.context-help-trigger {
   align-items: center;
   background: var(--surface-2);
   border: 1px solid var(--line);
@@ -101,10 +100,8 @@ label .context-help-trigger,
   width: 17px;
 }
 
-label .context-help-trigger:hover,
-label .context-help-trigger:focus-visible,
-.checkbox-line .context-help-trigger:hover,
-.checkbox-line .context-help-trigger:focus-visible,
+.context-help-trigger:hover,
+.context-help-trigger:focus-visible,
 .context-help-trigger[aria-expanded="true"] {
   background: var(--primary);
   border-color: var(--primary);

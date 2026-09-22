@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.10.1
+
+- Galerieauswahl platzsparender: Auswahlmodus, Seitenauswahl, Anzahl mit Aufheben-Symbol sowie Gruppen- und Tag-Aktionen stehen auf breiten Bildschirmen in einer Zeile. Die Leiste bricht auf schmalen Bildschirmen um und bleibt dort beim Scrollen nicht über den Fotos stehen.
+- Auswahl- und Gruppierungshinweise hinter den bekannten Info-Symbolen der Einstellungen; per Maus, Tastatur und Touch erreichbar. Gründe für eine nicht mögliche Gruppierung stehen im zugehörigen Info-Popover. Kürzere Aktionsnamen **Bilder gruppieren** und **Zur Bildgruppe hinzufügen**.
+- PATCH für die UI-Korrektur. README, Website und OpenAPI-Version aktualisiert; HTTP-Verträge und Originaldateien unverändert.
+- Validiert: Server-Tests, JavaScript-Syntax und DOM-Tests sowie 14 Browserprüfungen für Desktop/Mobil, Tastatur/Touch, Gruppen- und Tag-Aktionen und beide Einstellungsdesigns. Eine veraltete Erwartung zur Anzahl der Einstellungsseiten korrigiert; Website erfolgreich gebaut.
+
 ### BearStack 1.10.0
 
 - Bestehende Bildgruppen erweitern: Genau eine Gruppe und mindestens ein ungruppiertes Bild auswählen und **Ausgewählte Bilder zur Bildgruppe hinzufügen** verwenden. Das Hauptbild bleibt erhalten; mehrere ausgewählte Gruppen werden abgewiesen. Insgesamt höchstens 500 Mitglieder, atomare Änderungen mit Revisions- und Berechtigungsprüfung; gebündelte Datenbankabfragen.

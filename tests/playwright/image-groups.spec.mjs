@@ -70,6 +70,48 @@ async function login(page, name) {
   await page.goto(baseURL + "/login"); await page.getByLabel("Benutzername").fill(name); await page.locator('input[name="password"]').fill("secret"); await page.getByRole("button", { name: "Anmelden", exact: true }).click();
 }
 
+for (const width of [1440, 320]) {
+  test(`gallery selection toolbar keeps help behind icons at ${width}px`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width, height: 900 }, hasTouch: width === 320, isMobile: width === 320 });
+    try {
+      const page = await context.newPage(); await login(page, "editor");
+      await page.goto(`${baseURL}/photos?path=${encodeURIComponent(folder)}&sort=ascending_name`);
+      const toolbar = page.locator(".photo-edit-toolbar"), actions = toolbar.locator("[data-selection-actions]");
+      await expect(toolbar).toBeHidden();
+      await page.locator("[data-photo-mode-toggle]").click();
+      await expect(actions).toBeHidden();
+      const selectionHelp = toolbar.getByRole("button", { name: "Hilfe zur Medienauswahl", exact: true });
+      if (width === 320) await selectionHelp.tap();
+      else { await selectionHelp.focus(); await page.keyboard.press("Enter"); }
+      const help = page.locator(".context-help-popover");
+      await expect(help).toBeVisible();
+      await expect(help).toContainText("Shift + Klick");
+      await expect(help).toContainText("aktuelle Seite");
+      const helpBox = await help.boundingBox();
+      expect(helpBox.x).toBeGreaterThanOrEqual(0); expect(helpBox.x + helpBox.width).toBeLessThanOrEqual(width);
+      await page.keyboard.press("Escape"); await expect(help).toBeHidden();
+      await toolbar.locator("[data-photo-selection-mode]").click();
+      const cards = page.locator(".photo-card");
+      await cards.first().locator(".photo-card-button").click();
+      await expect(toolbar.getByRole("button", { name: "Bilder gruppieren …", exact: true })).toBeDisabled();
+      const groupHelp = toolbar.getByRole("button", { name: "Hilfe zu Bildgruppen", exact: true });
+      await groupHelp.click(); await expect(help).toContainText("mindestens zwei");
+      await page.keyboard.press("Escape");
+      await cards.nth(3).locator(".photo-card-button").click({ modifiers: ["Shift"] });
+      await expect(toolbar.locator("[data-photo-selection-count]")).toHaveText("4 ausgewählt");
+      await expect(toolbar.getByRole("button", { name: "Bilder gruppieren …", exact: true })).toBeEnabled();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      expect((await toolbar.boundingBox()).height).toBeLessThan(width === 320 ? 310 : 80);
+      await toolbar.screenshot({ path: `/tmp/bearstack-selection-toolbar-${width}.png`, animations: "disabled" });
+      await toolbar.getByRole("button", { name: "Auswahl aufheben", exact: true }).click();
+      await expect(actions).toBeHidden();
+      await expect(cards.locator("input:checked")).toHaveCount(0);
+      await page.locator("[data-photo-mode-toggle]").click();
+      await expect(toolbar).toBeHidden();
+    } finally { await context.close(); }
+  });
+}
+
 async function createGroup(request, members, primary = members[0]) {
   const body = new URLSearchParams({ primary }); members.forEach(p => body.append("ids", p));
   const response = await request.post(baseURL + "/photos/image-groups", { data: body.toString(), headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json", Origin: baseURL } });
@@ -100,10 +142,11 @@ test("selection keeps group badges and adds images to exactly one existing group
     await card(paths[4]).locator(".photo-card-button").click();
     await card(paths[2]).locator(".photo-card-button").click();
     await expect(page.locator("[data-image-group-create]")).toBeDisabled();
-    await expect(page.locator("[data-image-group-hint]")).toContainText("höchstens eine Bildgruppe");
+    await page.getByRole("button", { name: "Hilfe zu Bildgruppen", exact: true }).click();
+    await expect(page.locator(".context-help-popover")).toContainText("höchstens eine Bildgruppe");
     await card(paths[4]).locator(".photo-card-button").click();
     await expect(card(paths[0]).locator("[data-image-group-link]")).toBeVisible();
-    await page.getByRole("button", { name: "Ausgewählte Bilder zur Bildgruppe hinzufügen …", exact: true }).click();
+    await page.getByRole("button", { name: "Zur Bildgruppe hinzufügen …", exact: true }).click();
     const dialog = page.locator("[data-image-group-dialog]");
     await expect(dialog).toContainText("Bisheriges Hauptbild bleibt erhalten");
     await expect(dialog.locator(".image-group-choice")).toHaveCount(1);
