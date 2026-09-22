@@ -59,6 +59,37 @@ async function login(page, username = "manager") {
   await page.getByRole("button", { name: "Anmelden" }).click();
 }
 
+test("Shift selection follows the displayed sort order and resets on page changes", async ({ browser }) => {
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage(); await login(page);
+    await page.goto(baseURL + "/photos/people?page=1&filter=all&sort=name_desc");
+    await page.setViewportSize({ width: 640, height: 900 });
+    const cards = page.locator(".person-overview-card"), inputs = cards.locator("[data-person-select]");
+    await expect(cards).toHaveCount(60);
+    let writes = 0;
+    page.on("request", request => { if (request.method() === "POST") writes++; });
+    await page.locator("[data-people-selection-mode]").click();
+    await cards.nth(1).locator(".person-card").click();
+    await cards.nth(7).locator(".person-card").click({ modifiers: ["Shift"] });
+    await expect(cards.locator("input:checked")).toHaveCount(7);
+    expect(await inputs.evaluateAll(items => items.map((item, i) => item.checked ? i : -1).filter(i => i >= 0))).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    await expect(page.locator("[data-people-merge-target]")).toContainText("7 Gruppen auf dieser Seite");
+    await cards.nth(11).locator(".person-card").press("Shift+Enter");
+    await expect(cards.locator("input:checked")).toHaveCount(11);
+    await expect(page.locator("[data-people-merge-target]")).toContainText("11 Gruppen auf dieser Seite");
+    await expect(page.locator("[data-person-dialog]")).not.toBeVisible();
+    expect(writes).toBe(0);
+    await page.locator('.people-pagination a[rel="next"]').click();
+    await expect(inputs).toHaveCount(5);
+    await expect(cards.locator("input:checked")).toHaveCount(0);
+    await page.locator("[data-people-selection-mode]").click();
+    await cards.nth(2).locator(".person-card").click({ modifiers: ["Shift"] });
+    await expect(cards.locator("input:checked")).toHaveCount(1);
+    await expect(page.locator("[data-people-merge-target]")).toContainText("1 Gruppe auf dieser Seite");
+  } finally { await context.close(); }
+});
+
 test("sorting resets the page, persists through details and matches global server order", async ({ browser }) => {
   const context = await browser.newContext(); const page = await context.newPage();
   await login(page);

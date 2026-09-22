@@ -16,7 +16,7 @@
 <span class="face-merge-folder muted" title="{{photoDisplayPath .SourcePath}}">{{photoParentName .SourcePath}}</span>
 <a href="/photos/people/{{.SourceID}}"><strong>{{if .SourceName}}{{.SourceName}}{{else}}Unbenannt{{end}}</strong></a>
 </div>
-{{if not .SourceName}}<div class="face-merge-side-actions"><button type="button" class="secondary-button" data-merge-ignore aria-label="Erste Gruppe ignorieren">Gruppe ignorieren</button><button type="button" class="secondary-button" data-merge-side-name title="Erste Gruppe benennen/zuordnen" aria-label="Erste Gruppe benennen/zuordnen">{{template "person_pencil_icon"}}</button></div>{{end}}
+{{if not .SourceName}}<div class="face-merge-side-actions"><button type="button" class="secondary-button people-remove-action" data-merge-ignore aria-label="Erste Gruppe ignorieren">Gruppe ignorieren</button><button type="button" class="secondary-button" data-merge-side-name title="Erste Gruppe benennen/zuordnen" aria-label="Erste Gruppe benennen/zuordnen">{{template "person_pencil_icon"}}</button></div>{{end}}
 <p class="muted" data-merge-side-status role="status" hidden></p>
 </div>
 <div class="face-merge-side" data-merge-side="{{.TargetID}}" data-side-face-id="{{.TargetFaceID}}" data-face-id="{{.TargetFaceID}}" data-display-path="{{photoDisplayPath .TargetPath}}" {{with .TargetPortrait}}data-x="{{.X}}" data-y="{{.Y}}" data-width="{{.Width}}" data-height="{{.Height}}"{{end}} data-side-revision="{{.TargetRevision}}" data-side-name="{{.TargetName}}" aria-label="Zweite Gruppe">
@@ -25,7 +25,7 @@
 <span class="face-merge-folder muted" title="{{photoDisplayPath .TargetPath}}">{{photoParentName .TargetPath}}</span>
 <a href="/photos/people/{{.TargetID}}"><strong>{{if .TargetName}}{{.TargetName}}{{else}}Unbenannt{{end}}</strong></a>
 </div>
-{{if not .TargetName}}<div class="face-merge-side-actions"><button type="button" class="secondary-button" data-merge-ignore aria-label="Zweite Gruppe ignorieren">Gruppe ignorieren</button><button type="button" class="secondary-button" data-merge-side-name title="Zweite Gruppe benennen/zuordnen" aria-label="Zweite Gruppe benennen/zuordnen">{{template "person_pencil_icon"}}</button></div>{{end}}
+{{if not .TargetName}}<div class="face-merge-side-actions"><button type="button" class="secondary-button people-remove-action" data-merge-ignore aria-label="Zweite Gruppe ignorieren">Gruppe ignorieren</button><button type="button" class="secondary-button" data-merge-side-name title="Zweite Gruppe benennen/zuordnen" aria-label="Zweite Gruppe benennen/zuordnen">{{template "person_pencil_icon"}}</button></div>{{end}}
 <p class="muted" data-merge-side-status role="status" hidden></p>
 </div>
 </div>
@@ -33,9 +33,9 @@
 <form method="post" action="/photos/people/merge-suggestions/{{.ID}}/accept" class="settings-actions face-merge-actions"{{if and .SourceName .TargetName}} data-merge-warning="{{template "face_merge_named_warning" .}}"{{end}}>
 <input type="hidden" name="source_revision" value="{{.SourceRevision}}"><input type="hidden" name="target_revision" value="{{.TargetRevision}}">
 {{if and .SourceName .TargetName}}<noscript><label><input type="checkbox" required> {{template "face_merge_named_warning" .}} Ich bestätige die Zusammenführung.</label></noscript>{{end}}
-<button type="submit" class="secondary-button face-merge-accept">Zusammenführen</button>{{if and (not .SourceName) (not .TargetName)}}<button type="button" class="secondary-button" data-merge-name title="Zusammenführen und benennen/zuordnen" aria-label="Zusammenführen und benennen/zuordnen">{{template "person_pencil_icon"}}</button>{{end}}<button type="submit" class="secondary-button face-merge-reject" formaction="/photos/people/merge-suggestions/{{.ID}}/reject" formnovalidate>Getrennt lassen</button>
+<button type="submit" class="face-merge-accept">Zusammenführen</button>{{if and (not .SourceName) (not .TargetName)}}<button type="button" class="secondary-button" data-merge-name title="Zusammenführen und benennen/zuordnen" aria-label="Zusammenführen und benennen/zuordnen">{{template "person_pencil_icon"}}</button>{{end}}<button type="submit" class="secondary-button people-caution-action face-merge-reject" formaction="/photos/people/merge-suggestions/{{.ID}}/reject" formnovalidate title="Speichert die Trennung und verhindert den automatischen Abgleich dieser Gruppen">Gruppen dauerhaft getrennt lassen</button>
 </form>
-<button type="button" class="secondary-button face-merge-dismiss" data-merge-dismiss hidden>Paar ausblenden</button>
+<button type="button" class="secondary-button people-local-action face-merge-dismiss" data-merge-dismiss hidden>Vorschlag nur aus Ansicht ausblenden</button>
 </section>
 {{else}}<p>Aktuell keine Vorschläge für ähnliche Gruppen. Neue Vorschläge entstehen beim Hintergrundabgleich.{{if .Auth.CanPhotosManage}} Du kannst ihn unter <a href="/settings/photos/faces">Gesichtserkennung</a> erneut starten.{{end}}</p>{{end}}
 </div>

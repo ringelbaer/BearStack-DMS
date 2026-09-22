@@ -46,8 +46,6 @@
     if (groupButton) {
       groupButton.disabled = blocked || !cards().length;
       groupButton.querySelector("span").hidden = false;
-      groupButton.querySelector("span").textContent = root.dataset.personName ? "Gruppe bearbeiten" : "Gruppe benennen";
-      groupButton.classList.toggle("secondary-button", !!root.dataset.personName);
     }
     if (selection) {
       var count = selected().length;

@@ -4,6 +4,21 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.8.0
+
+- Auswahlmodus im Personenbereich: Shift + Klick markiert den zusammenhängenden Bereich vom zuletzt ausgewählten bis zum angeklickten Eintrag in sichtbarer Reihenfolge, zeilenweise und auch rückwärts. Gilt für Gruppenübersicht, Personengesichter und ignorierte Gesichter. Bestehende Markierungen außerhalb des Bereichs bleiben erhalten.
+- Checkboxen und Shift + Enter/Leertaste unterstützen dieselbe Auswahl. Auswahl aufheben, Alle auswählen und Modus-/Seitenwechsel setzen den Ausgangspunkt zurück; entfernte und abgewählte Einträge können keine veralteten Bereiche auslösen. Schreibsperren gelten auch für die Bereichsauswahl.
+- MINOR für die neue kompatible Bedienfunktion. Auswahl ausschließlich im Browser und auf der aktuellen Seite, ohne zusätzliche Anfragen oder Layoutmessungen. Android bleibt bei 0.22.2; README, Website und OpenAPI-Version aktualisiert, HTTP-Verträge unverändert.
+- Validiert: sechs gezielte Browserabläufe erfolgreich, einschließlich Vorwärts-/Rückwärtsauswahl über Zeilengrenzen auf Desktop und Mobil, Checkboxen/Labels, Tastatur ohne doppelte Auslösung, bestehender Markierungen, gesperrter Aktionen, ersetzter Kacheln und Seitenwechsel. Einbindung in alle drei echten Personenansichten geprüft. Server-, Foto- und API-Vertragstests, JavaScript-Syntax und Website-Build erfolgreich.
+
+### BearStack 1.7.1
+
+- Personenbereich: konkrete Aktionsnamen unterscheiden ganze Gruppen von einzelnen bzw. ausgewählten Gesichtern. „Gesamte Gruppe benennen / zusammenführen“ gilt auch über Seitengrenzen hinweg; „Alle Gruppen/Gesichter dieser Seite auswählen“ ändert nur die Auswahl.
+- Personendetails trennen Aktionen für die gesamte Person, Ansicht und Seitenauswahl. Navigation und Auswahl sind neutral gestaltet; Ignorieren und Auflösen sind farblich abgesetzt. Ähnliche Gruppen unterscheiden dauerhaftes Getrennthalten vom bloßen Ausblenden eines Vorschlags.
+- Anzeigeeinstellungen erhalten im geöffneten Zustand dieselbe Hintergrundhervorhebung wie „Weitere Personenaktionen“.
+- PATCH für Beschriftungs- und Darstellungskorrekturen ohne zusätzliche Anfragen oder geänderte HTTP-Verträge. Android bleibt bei 0.22.2; README, Website und OpenAPI-Version aktualisiert.
+- Validiert: vollständige Foto- und Server-Go-Tests sowie Root-/OpenAPI-Vertragstests erfolgreich; 13 betroffene Browserabläufe einschließlich gezielter Wiederholung bestanden. Beschriftungen nach AJAX-Aktualisierung, mobile Layouts ab 320 px sowie Menüfarben und Tastaturbedienung in beiden Designs geprüft. Website-Build und JavaScript-Syntax erfolgreich. Der allgemeine JS-DOM-Testlauf scheitert bereits im unveränderten HEAD an der fehlenden Test-Einbindung von `BearStackPeopleControls`; separat reproduziert.
+
 ### BearStack 1.7.0
 
 - Personen-Ordneransicht: Zuordnen, Unbenannt setzen, Ignorieren, Ausschließen und Freigeben funktionieren ohne vollständigen Seitenreload. Nur die serverseitig formatierte Ordnerliste mit aktuellen Revisionen, Vorschauen und Seitennavigation wird erneuert; entfallene Personen zeigen eine leere Ansicht mit Rückweg.

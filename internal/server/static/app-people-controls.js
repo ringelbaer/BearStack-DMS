@@ -3,15 +3,16 @@
   if (window.BearStackPeopleControls) return;
   // The same interaction for groups, active faces and ignored faces; bounded to one page.
   function bindSelection(options) {
-    var grid = options.grid, mode = false;
+    var grid = options.grid, mode = false, anchor = null;
     var button = options.button, all = options.all, clear = options.clear;
     function inputs() { return Array.from(grid.querySelectorAll(options.input)); }
     function update() {
       var items = inputs(), count = items.filter(function (input) { return input.checked; }).length;
       var blocked = options.blocked();
+      if (anchor && (!grid.contains(anchor) || !anchor.checked)) anchor = null;
       grid.dataset.selectionMode = String(mode);
       if (button) { button.hidden = false; button.disabled = blocked; button.setAttribute("aria-pressed", String(mode)); }
-      if (all) { all.hidden = !mode && !count; all.disabled = blocked || !items.length; all.textContent = count && count === items.length ? "Auswahl aufheben" : "Alle auf dieser Seite"; }
+      if (all) { all.hidden = !mode && !count; all.disabled = blocked || !items.length; all.textContent = count && count === items.length ? "Auswahl aufheben" : all.dataset.selectionLabel; }
       if (clear) clear.disabled = blocked;
       items.forEach(function (input) {
         input.disabled = blocked;
@@ -38,28 +39,68 @@
     }
     function select(value) {
       if (options.blocked()) return;
+      anchor = null;
       inputs().forEach(function (input) { input.checked = value; });
       options.changed(); update();
     }
-    if (button) button.addEventListener("click", function () { if (!options.blocked()) { mode = !mode; update(); } });
+    // DOM order is the visible row-by-row grid order; never scan off-page data
+    // or measure card geometry. Only an explicitly selected item is an anchor.
+    function markRange(input) {
+      if (!anchor || !anchor.checked) return false;
+      var items = inputs(), start = items.indexOf(anchor), end = items.indexOf(input);
+      if (start < 0 || end < 0) return false;
+      for (var i = Math.min(start, end); i <= Math.max(start, end); i++) {
+        if (!items[i].disabled) items[i].checked = true;
+      }
+      return true;
+    }
+    function remember(input) {
+      if (input.checked) anchor = input;
+      else if (anchor === input) anchor = null;
+    }
+    function activate(input, shift) {
+      if (options.blocked() || input.disabled) return;
+      if (!shift || !markRange(input)) input.checked = !input.checked;
+      remember(input);
+      options.changed(); update();
+    }
+    if (button) button.addEventListener("click", function () {
+      if (!options.blocked()) { mode = !mode; anchor = null; update(); }
+    });
     if (all) all.addEventListener("click", function () { select(!inputs().every(function (input) { return input.checked; })); });
     if (clear) clear.addEventListener("click", function () { select(false); if (button) button.focus({ preventScroll: true }); });
     grid.addEventListener("click", function (event) {
       if (!mode) return;
       var card = event.target.closest(options.card);
       if (!card || !grid.contains(card)) return;
-      if (event.target.closest("label") || event.target.matches(options.input)) return;
+      if (event.target.matches(options.input)) {
+        // Native checkboxes toggle before click and emit change afterwards.
+        // Do not cancel click: the browser would roll back the checked state.
+        if (options.blocked()) { event.preventDefault(); return; }
+        if (event.shiftKey) markRange(event.target);
+        remember(event.target);
+        return;
+      }
       event.preventDefault(); event.stopImmediatePropagation();
-      if (options.blocked()) return;
-      var input = card.querySelector(options.input); input.checked = !input.checked;
-      options.changed(); update();
+      var input = card.querySelector(options.input);
+      activate(input, event.shiftKey);
+      if (event.target.closest("label") && !input.disabled) input.focus({ preventScroll: true });
     }, true);
     grid.addEventListener("keydown", function (event) {
-      if (!mode || options.blocked() || !["Enter", " "].includes(event.key) || event.target.tagName === "BUTTON" || event.target.tagName === "INPUT") return;
-      if (!event.target.matches('[role="button"]')) return;
-      event.preventDefault(); if (!event.repeat) event.target.click();
+      if (!mode || options.blocked() || !["Enter", " "].includes(event.key)) return;
+      var card = event.target.closest(options.card);
+      if (!card || !grid.contains(card)) return;
+      var input = card.querySelector(options.input), target = card.querySelector(options.open) || card;
+      if (event.target !== input && event.target !== target) return;
+      event.preventDefault(); event.stopImmediatePropagation();
+      if (!event.repeat) activate(input, event.shiftKey);
     });
-    grid.addEventListener("change", function (event) { if (event.target.matches(options.input)) { options.changed(); update(); } });
+    grid.addEventListener("change", function (event) {
+      if (event.target.matches(options.input)) {
+        if (mode && !options.blocked()) remember(event.target);
+        options.changed(); update();
+      }
+    });
     update(); return { update: update };
   }
   window.BearStackPeopleControls = { bindSelection: bindSelection };

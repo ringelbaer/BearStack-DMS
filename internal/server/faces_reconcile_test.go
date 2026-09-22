@@ -108,7 +108,7 @@ func TestFaceMergeSuggestionsHTTP(t *testing.T) {
 			r.SetBasicAuth("editor", "secret")
 			w := httptest.NewRecorder()
 			s.Handler().ServeHTTP(w, r)
-			if w.Code != 200 || !strings.Contains(w.Body.String(), "Getrennt lassen") || !strings.Contains(w.Body.String(), "Zusammenführen") {
+			if w.Code != 200 || !strings.Contains(w.Body.String(), "Gruppen dauerhaft getrennt lassen") || !strings.Contains(w.Body.String(), "Zusammenführen") {
 				t.Fatalf("HTML %d %s", w.Code, w.Body.String())
 			}
 			if !strings.Contains(w.Body.String(), `data-photo-path="`+suggestion.SourcePath+`"`) || !strings.Contains(w.Body.String(), `data-photo-path="`+suggestion.TargetPath+`"`) || !strings.Contains(w.Body.String(), `data-photo-lightbox`) || !strings.Contains(w.Body.String(), `>Fotos</span>`) {

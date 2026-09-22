@@ -50,6 +50,21 @@ test("people navigation and filters leave room for results on mobile", async ({ 
   await page.locator('input[name="password"]').fill("secret");
   await page.getByRole("button", { name: "Anmelden" }).click();
   await page.goto(baseURL + "/photos/people?filter=unknown");
+  await page.getByRole("button", { name: "Auswahlmodus", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Alle Gruppen dieser Seite auswählen", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Auswahlmodus", exact: true }).click();
+  for (const theme of ["", "design2"]) {
+    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    const display = page.getByLabel("Anzeigeeinstellungen", { exact: true });
+    await page.mouse.move(0, 0);
+    const closed = await display.evaluate(el => getComputedStyle(el).backgroundColor);
+    await display.press("Enter");
+    expect(await display.evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe(closed);
+    await display.press("Escape");
+    await expect(display).toBeFocused();
+    expect(await display.evaluate(el => getComputedStyle(el).backgroundColor)).toBe(closed);
+  }
+  await page.evaluate(() => delete document.documentElement.dataset.theme);
   for (const width of [320, 390, 640, 1440]) {
     await page.setViewportSize({ width, height: 800 });
     await page.screenshot({path:`/tmp/bearstack-people-workspace-${width}.png`,fullPage:true});
@@ -276,7 +291,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await page.getByLabel("Auswählen", { exact: true }).first().check();
   await expect(lightbox).not.toBeVisible();
   await page.getByLabel("Auswählen", { exact: true }).first().uncheck();
-  await page.getByRole("button", { name: "Gruppe benennen / zusammenführen", exact: true }).click();
+  await page.getByRole("button", { name: "Gesamte Gruppe benennen / zusammenführen", exact: true }).click();
   await page.getByRole("combobox",{name:"Name",exact:true}).fill("Jürgen");await page.getByRole("button",{name:"Benennen",exact:true}).click();await expect(page.getByRole("heading",{name:"Jürgen",exact:true})).toBeVisible();
   await expect(page.locator("button[data-face-favorite]")).toHaveCount(2);
   await page.locator("button[data-face-favorite]").first().click();
@@ -436,7 +451,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(page.locator(".person-detail-selection")).toBeHidden();
   await page.getByLabel("Auswählen", { exact: true }).first().check();
   await expect(page.locator("[data-detail-selection-count]")).toHaveText("1 Gesicht auf dieser Seite");
-  await page.getByRole("button", { name: "Auswahl zuordnen", exact: true }).click();
+  await page.getByRole("button", { name: "Ausgewählte Gesichter zuordnen", exact: true }).click();
   const detailDialog = page.locator("[data-person-dialog]");
   await expect(detailDialog.locator("#person-dialog-title")).toHaveText("Gesicht benennen oder zuordnen");
   await detailDialog.getByRole("combobox").fill("Marie");
@@ -445,7 +460,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await expect(page.getByLabel("Auswählen", { exact: true })).toHaveCount(1);
   await page.getByRole("link", { name: "Alle Personen", exact: true }).click();
   await page.locator("a.person-card").filter({ hasText: "Marie" }).click();
-  await page.getByRole("button", { name: "Gruppe benennen / zusammenführen", exact: true }).click();
+  await page.getByRole("button", { name: "Gesamte Gruppe benennen / zusammenführen", exact: true }).click();
   const personSearch = detailDialog.getByRole("combobox", { name: "Name", exact: true });
   await personSearch.fill("Marie");
   await expect(detailDialog.getByRole("option").filter({ hasNotText: "Neu anlegen:" })).toHaveCount(0);
@@ -453,7 +468,7 @@ test("face recognition: enable, name, move, merge, ignore and search",async({bro
   await detailDialog.getByRole("button", { name: "Benennen", exact: true }).click();
   await expect(detailDialog).not.toBeVisible();
   await expect(page.getByRole("heading", { name: "nicht-vorhandene-person", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Gruppe benennen / zusammenführen", exact: true }).click();
+  await page.getByRole("button", { name: "Gesamte Gruppe benennen / zusammenführen", exact: true }).click();
   await page.route("**/photos/people?format=suggestions&q=Fehler", route => route.fulfill({ status: 503, body: "Unavailable" }));
   await personSearch.fill("Fehler");
   await expect(detailDialog.locator("[data-person-feedback]")).toContainText("Personen konnten nicht geladen werden");

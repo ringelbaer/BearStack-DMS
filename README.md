@@ -1,6 +1,10 @@
 # BearStack
 
-Aktuelle Version: **1.7.0** · Android-App: **0.22.2**.
+Aktuelle Version: **1.8.0** · Android-App: **0.22.2**.
+
+**BearStack 1.8.0:** Im Auswahlmodus des Personenbereichs markiert **Shift + Klick** den Bereich vom zuletzt ausgewählten Eintrag bis zum angeklickten, zeilenweise in der aktuellen Sortierung. Funktioniert vorwärts und rückwärts für Gruppen, Personengesichter und ignorierte Gesichter; vorhandene Markierungen bleiben erhalten. Auch mit Checkboxen und **Shift + Enter/Leertaste** bedienbar.
+
+**BearStack 1.7.1:** Personenaktionen unterscheiden die gesamte Person (alle Seiten), Ansicht und reine Seitenauswahl. „Gesamte Gruppe benennen / zusammenführen“ und „Alle Gruppen/Gesichter dieser Seite auswählen“ nennen Aktion und Umfang; Ignorieren und Auflösen sind farblich abgesetzt. Geöffnete Anzeigeeinstellungen sind sichtbar hervorgehoben.
 
 **BearStack 1.7.0:** Aktionen unter **Ordner-Pfade prüfen** aktualisieren die Ordnerliste ohne Seitenreload. Zuordnen, Unbenannt setzen, Ignorieren, Sperren und Freigeben übernehmen dabei die aktuellen Revisionen. Bei Verbindungsproblemen erlaubt **Ansicht aktualisieren** einen neuen Leseversuch ohne Wiederholung der Schreibaktion.
 

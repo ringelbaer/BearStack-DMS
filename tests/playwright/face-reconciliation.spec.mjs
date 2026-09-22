@@ -228,7 +228,7 @@ test("stored face reconciliation works offline with responsive merge review and 
     expect(pause.ok()).toBe(true);
     await rename(people[2].id, "Grace geändert");
     const staleResponse = page.waitForResponse(response => response.request().method() === "POST" && response.url().endsWith("/reject"));
-    await cards.getByRole("button", { name: "Getrennt lassen", exact: true }).click();
+    await cards.getByRole("button", { name: "Gruppen dauerhaft getrennt lassen", exact: true }).click();
     const stale = await staleResponse;
     expect(stale.status()).toBe(409);
     expect(stale.headers()["content-type"]).toContain("application/json");
@@ -244,7 +244,7 @@ test("stored face reconciliation works offline with responsive merge review and 
     await page.goto(suggestionsURL);
     await expect(cards).toContainText("Grace geändert");
     await page.evaluate(() => { window.mergePageMarker = "reject document"; });
-    await cards.getByRole("button", { name: "Getrennt lassen", exact: true }).click();
+    await cards.getByRole("button", { name: "Gruppen dauerhaft getrennt lassen", exact: true }).click();
     await expect(cards).toHaveCount(0);
     await expect(page.locator(".notice")).toHaveText("Die Gruppen bleiben getrennt.");
     await expect(page.locator("[data-merge-suggestions]")).toContainText("Aktuell keine Vorschläge für ähnliche Gruppen");
@@ -268,7 +268,7 @@ function mergeReviewHTML(ids) {
     <div data-merge-suggestions>${[...ids].map(id => `<section data-merge-id="${id}">
       <form action="/photos/people/merge-suggestions/${id}/accept" method="post">
         <input name="source_revision" value="1" type="hidden"><input name="target_revision" value="1" type="hidden">
-        <button>Zusammenführen</button><button formaction="/photos/people/merge-suggestions/${id}/reject">Getrennt lassen</button>
+        <button>Zusammenführen</button><button formaction="/photos/people/merge-suggestions/${id}/reject">Gruppen dauerhaft getrennt lassen</button>
       </form></section>`).join("")}</div><p data-merge-hint></p>
     <script src="/static/app-face-merges.js" defer></script>`;
 }
@@ -292,11 +292,11 @@ test("merge cards remain independent and ignore refreshes overtaken by decisions
     const untouched = await card("3").elementHandle();
     await card("1").getByRole("button", { name: "Zusammenführen" }).click();
     await expect.poll(() => writes.length).toBe(1);
-    await expect(card("1").getByRole("button", { name: "Getrennt lassen" })).toBeDisabled();
-    await expect(card("2").getByRole("button", { name: "Getrennt lassen" })).toBeEnabled();
+    await expect(card("1").getByRole("button", { name: "Gruppen dauerhaft getrennt lassen" })).toBeDisabled();
+    await expect(card("2").getByRole("button", { name: "Gruppen dauerhaft getrennt lassen" })).toBeEnabled();
     // Even a second programmatic submit cannot duplicate this card's request.
     await card("1").locator("form").evaluate(form => form.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true, submitter: form.querySelector("button") })));
-    await card("2").getByRole("button", { name: "Getrennt lassen" }).click();
+    await card("2").getByRole("button", { name: "Gruppen dauerhaft getrennt lassen" }).click();
     await expect.poll(() => writes.length).toBe(2);
     expect(writes[1].request().url()).toContain("/2/reject");
     await expect(card("3").getByRole("button", { name: "Zusammenführen" })).toBeEnabled();

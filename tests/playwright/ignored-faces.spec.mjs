@@ -148,7 +148,9 @@ test("ignored portraits restore unnamed or via the naming dialog without changin
     await ignore(firstID);
     await page.goto(baseURL+"/photos/people?filter=ignored");
     await page.getByRole("button",{name:"Auswahlmodus",exact:true}).click();
-    await page.getByRole("button",{name:"Alle auf dieser Seite",exact:true}).click();
+    await cards.first().locator("[data-ignored-select]").click();
+    await cards.nth(1).locator("[data-ignored-select]").click({ modifiers: ["Shift"] });
+    await expect(cards.locator("input:checked")).toHaveCount(2);
     await page.locator("[data-ignored-assign]").click();
     await dialog.getByRole("combobox").fill("Ziel");
     await dialog.getByRole("option").filter({hasNotText:"Neu anlegen:"}).click();
@@ -158,7 +160,7 @@ test("ignored portraits restore unnamed or via the naming dialog without changin
     await ignore(firstID); await ignore(secondID);
     await page.reload();
     await page.getByRole("button",{name:"Auswahlmodus",exact:true}).click();
-    await page.getByRole("button",{name:"Alle auf dieser Seite",exact:true}).click();
+    await page.getByRole("button",{name:"Alle Gesichter dieser Seite auswählen",exact:true}).click();
     await page.locator("[data-ignored-restore]").click();
     await expect(cards).toHaveCount(0);
     await expect(page.getByRole("button",{name:"Auswahlmodus",exact:true})).toBeFocused();

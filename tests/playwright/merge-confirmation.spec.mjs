@@ -183,7 +183,7 @@ with sqlite3.connect(sys.argv[1]) as db:
     await plain.goto(suggestionsURL);
     plainCard = plain.locator("[data-merge-id]").filter({ hasText: "Alex" });
     await expect(plainCard.getByRole("checkbox")).not.toBeChecked();
-    await plainCard.getByRole("button", { name: "Getrennt lassen", exact: true }).click();
+    await plainCard.getByRole("button", { name: "Gruppen dauerhaft getrennt lassen", exact: true }).click();
     await expect(plain.locator("body")).toHaveText("Formular empfangen");
     expect(plainWrites).toHaveLength(2); expect(plainWrites[1].url()).toMatch(/\/reject$/);
 
@@ -207,7 +207,7 @@ with sqlite3.connect(sys.argv[1]) as db:
     expect(writes).toHaveLength(2);
     const merged = (await (await context.request.get(baseURL + "/photos/people?format=json&filter=all")).json()).people;
     expect(merged.find(person => person.name === retained).count).toBe(2);
-    await cards.getByRole("button", { name: "Getrennt lassen", exact: true }).click();
+    await cards.getByRole("button", { name: "Gruppen dauerhaft getrennt lassen", exact: true }).click();
     await expect(cards).toHaveCount(0);
     await expect(dialog).toBeHidden();
     expect(writes).toHaveLength(3); expect(writes[2].url()).toMatch(/\/reject$/);

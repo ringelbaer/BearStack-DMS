@@ -1606,23 +1606,41 @@ verhindert die Namensauswahl nicht.</p>
 <p>Übersicht, Personendetails und ignorierte Gesichter verwenden denselben <strong>Auswahlmodus</strong>:
 Ein Klick auf eine Kachel markiert sie, ein weiterer hebt die Markierung auf.
 Enter und Leertaste funktionieren ebenfalls. Ohne Auswahlmodus bleiben die
-Checkboxen nutzbar. <strong>Alle auf dieser Seite</strong> markiert höchstens die aktuelle Seite.
+Checkboxen nutzbar. <strong>Alle Gruppen dieser Seite auswählen</strong> markiert in der Übersicht ganze Gruppen;
+in Personendetails und bei ignorierten Gesichtern heißt die Aktion <strong>Alle Gesichter dieser Seite auswählen</strong>.
+Beide ändern nur die Auswahl auf der aktuellen Seite, noch keine Zuordnung.
 Ein Seitenwechsel hebt die Auswahl auf; das Ausschalten des Modus erhält sie.
 Die gemeinsame Leiste unten nennt Anzahl und Art der ausgewählten Einträge und
 bietet <strong>Auswahl aufheben</strong>. Einzelaktionen sind im Auswahlmodus ausgeblendet.</p>
-<p><strong>Personen zusammenführen</strong> verbindet die ausgewählten Gruppen. Die zuerst
+<p>Ab <strong>1.8.0</strong> markiert <strong>Shift + Klick</strong> im Auswahlmodus alle Einträge zwischen dem
+zuletzt ausgewählten und dem angeklickten Eintrag einschließlich beider Endpunkte.
+Die Auswahl folgt der sichtbaren Sortierung von links nach rechts, Zeile für Zeile;
+sie funktioniert auch rückwärts. Vorhandene Markierungen außerhalb des Bereichs bleiben erhalten.
+Das angeklickte Ende ist der Ausgangspunkt für den nächsten Shift-Klick. Ohne Ausgangspunkt
+wird nur der angeklickte Eintrag umgeschaltet. Checkboxen und <strong>Shift + Enter/Leertaste</strong>
+funktionieren ebenso. <strong>Auswahl aufheben</strong>, <strong>Alle auswählen</strong>, ein Modus- oder Seitenwechsel
+setzen den Ausgangspunkt zurück; entfernte oder abgewählte Einträge dienen nicht mehr als Ausgangspunkt.
+Die Bereichsauswahl bleibt auf die aktuelle Seite begrenzt und speichert keine Änderungen.</p>
+<p><strong>Ausgewählte Gruppen zusammenführen</strong> verbindet die ausgewählten Gruppen. Die zuerst
 ausgewählte benannte Person bleibt mit ihrem Namen erhalten; sind alle Gruppen
-unbenannt, bleibt die zuerst gewählte Gruppe erhalten. <strong>Auswahl zuordnen</strong> erlaubt stattdessen einen neuen gemeinsamen Namen oder eine vorhandene
+unbenannt, bleibt die zuerst gewählte Gruppe erhalten. <strong>Ausgewählte Gruppen benennen / zuordnen</strong> erlaubt stattdessen einen neuen gemeinsamen Namen oder eine vorhandene
 benannte Zielperson. Eine bereits markierte Person kann ebenfalls Ziel sein.</p>
 <p>Die Auswahl gilt für die aktuelle Seite. Zusammengehörige Änderungen werden
 gemeinsam gespeichert. Personen-Tags bleiben beim Zusammenführen erhalten;
 widersprüchliche Stammdaten müssen vorher geklärt werden.</p>
+<p>Seit <strong>1.7.1</strong> trennt die Werkzeugleiste in Personendetails <strong>Gesamte Person · alle Seiten</strong>,
+<strong>Ansicht</strong> und <strong>Gesichter dieser Seite · nur auswählen</strong>. <strong>Gesamte Gruppe benennen / zusammenführen</strong>
+betrifft auch Gesichter auf anderen Seiten. Navigation und Auswahl sind neutral gestaltet;
+Ignorieren, Auflösen von Zuordnungen und Entfernen eines Namens sind rot abgesetzt.
+Bei ähnlichen Gruppen unterscheidet sich die dauerhaft gespeicherte Trennung auch optisch
+vom bloßen Ausblenden eines Vorschlags. Geöffnete <strong>Anzeigeeinstellungen</strong> sind wie
+das Menü <strong>Weitere Personenaktionen</strong> hervorgehoben.</p>
 <h3 id="einzelne-zuordnungen-korrigieren">Einzelne Zuordnungen korrigieren<a class="headerlink" href="#einzelne-zuordnungen-korrigieren" title="Permanent link">&para;</a></h3>
 <p>Eine Person öffnen und den Stift am falschen Gesicht verwenden. Eine vorhandene
 Zielperson auswählen oder einen neuen Namen vergeben. Markierte Gesichter lassen
 sich gemeinsam bearbeiten oder ignorieren. Ein leerer Name im Auswahldialog
 trennt diese Auswahl als neue unbenannte Gruppe ab.</p>
-<p><strong>Alle auf dieser Seite</strong> markiert nur die Gesichter der aktuellen Seite. Gesicht und
+<p><strong>Alle Gesichter dieser Seite auswählen</strong> markiert nur die Gesichter der aktuellen Seite. Gesicht und
 Dateiname öffnen das vollständige Foto im Bildbetrachter. <strong>Stammdaten</strong> und <strong>Anzeigeeinstellungen</strong> stehen direkt in der Werkzeugleiste.
 Das <strong>⋯-Menü</strong> enthält die optionale <strong>Ordner-Pfade prüfen</strong>-Aktion. <strong>Hilfe</strong> steht
 rechts neben der Bereichsnavigation und erklärt auch die Vergleichssterne.</p>
@@ -1852,7 +1870,7 @@ Schrift innerhalb des Buttons um. Der Stift daneben bleibt separat bedienbar.</p
 <td>Die Gruppen werden verbunden. Bei zwei bereits benannten Gruppen ist eine zusätzliche Bestätigung nötig; der Name der zweiten Gruppe bleibt erhalten.</td>
 </tr>
 <tr>
-<td><strong>Getrennt lassen</strong></td>
+<td><strong>Gruppen dauerhaft getrennt lassen</strong></td>
 <td>Die Ablehnung wird gespeichert und verhindert auch zukünftige automatische Zuordnungen zwischen diesen Gruppen.</td>
 </tr>
 <tr>
@@ -1865,7 +1883,7 @@ Schrift innerhalb des Buttons um. Der Stift daneben bleibt separat bedienbar.</p
 </tr>
 </tbody>
 </table>
-<p>Nach einer Einzelaktion ersetzt <strong>Paar ausblenden</strong> die gemeinsamen Entscheidungsbuttons.
+<p>Nach einer Einzelaktion ersetzt <strong>Vorschlag nur aus Ansicht ausblenden</strong> die gemeinsamen Entscheidungsbuttons.
 Es entfernt das Paar aus der aktuellen Ansicht, speichert aber keine Trennung.
 In Android heißt die entsprechende Fortsetzung <strong>Weiter</strong>.</p>
 <p>Die Webansicht zeigt bis zu <strong>60 Vorschläge</strong> und startet beim Öffnen keine neue
@@ -2033,7 +2051,7 @@ die Auswahl, sofern sie mehrere unabhängige Familien enthält.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.7.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.8.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
 

@@ -118,19 +118,39 @@ verhindert die Namensauswahl nicht.
 Übersicht, Personendetails und ignorierte Gesichter verwenden denselben **Auswahlmodus**:
 Ein Klick auf eine Kachel markiert sie, ein weiterer hebt die Markierung auf.
 Enter und Leertaste funktionieren ebenfalls. Ohne Auswahlmodus bleiben die
-Checkboxen nutzbar. **Alle auf dieser Seite** markiert höchstens die aktuelle Seite.
+Checkboxen nutzbar. **Alle Gruppen dieser Seite auswählen** markiert in der Übersicht ganze Gruppen;
+in Personendetails und bei ignorierten Gesichtern heißt die Aktion **Alle Gesichter dieser Seite auswählen**.
+Beide ändern nur die Auswahl auf der aktuellen Seite, noch keine Zuordnung.
 Ein Seitenwechsel hebt die Auswahl auf; das Ausschalten des Modus erhält sie.
 Die gemeinsame Leiste unten nennt Anzahl und Art der ausgewählten Einträge und
 bietet **Auswahl aufheben**. Einzelaktionen sind im Auswahlmodus ausgeblendet.
 
-**Personen zusammenführen** verbindet die ausgewählten Gruppen. Die zuerst
+Ab **1.8.0** markiert **Shift + Klick** im Auswahlmodus alle Einträge zwischen dem
+zuletzt ausgewählten und dem angeklickten Eintrag einschließlich beider Endpunkte.
+Die Auswahl folgt der sichtbaren Sortierung von links nach rechts, Zeile für Zeile;
+sie funktioniert auch rückwärts. Vorhandene Markierungen außerhalb des Bereichs bleiben erhalten.
+Das angeklickte Ende ist der Ausgangspunkt für den nächsten Shift-Klick. Ohne Ausgangspunkt
+wird nur der angeklickte Eintrag umgeschaltet. Checkboxen und **Shift + Enter/Leertaste**
+funktionieren ebenso. **Auswahl aufheben**, **Alle auswählen**, ein Modus- oder Seitenwechsel
+setzen den Ausgangspunkt zurück; entfernte oder abgewählte Einträge dienen nicht mehr als Ausgangspunkt.
+Die Bereichsauswahl bleibt auf die aktuelle Seite begrenzt und speichert keine Änderungen.
+
+**Ausgewählte Gruppen zusammenführen** verbindet die ausgewählten Gruppen. Die zuerst
 ausgewählte benannte Person bleibt mit ihrem Namen erhalten; sind alle Gruppen
-unbenannt, bleibt die zuerst gewählte Gruppe erhalten. **Auswahl zuordnen** erlaubt stattdessen einen neuen gemeinsamen Namen oder eine vorhandene
+unbenannt, bleibt die zuerst gewählte Gruppe erhalten. **Ausgewählte Gruppen benennen / zuordnen** erlaubt stattdessen einen neuen gemeinsamen Namen oder eine vorhandene
 benannte Zielperson. Eine bereits markierte Person kann ebenfalls Ziel sein.
 
 Die Auswahl gilt für die aktuelle Seite. Zusammengehörige Änderungen werden
 gemeinsam gespeichert. Personen-Tags bleiben beim Zusammenführen erhalten;
 widersprüchliche Stammdaten müssen vorher geklärt werden.
+
+Seit **1.7.1** trennt die Werkzeugleiste in Personendetails **Gesamte Person · alle Seiten**,
+**Ansicht** und **Gesichter dieser Seite · nur auswählen**. **Gesamte Gruppe benennen / zusammenführen**
+betrifft auch Gesichter auf anderen Seiten. Navigation und Auswahl sind neutral gestaltet;
+Ignorieren, Auflösen von Zuordnungen und Entfernen eines Namens sind rot abgesetzt.
+Bei ähnlichen Gruppen unterscheidet sich die dauerhaft gespeicherte Trennung auch optisch
+vom bloßen Ausblenden eines Vorschlags. Geöffnete **Anzeigeeinstellungen** sind wie
+das Menü **Weitere Personenaktionen** hervorgehoben.
 
 ### Einzelne Zuordnungen korrigieren
 
@@ -139,7 +159,7 @@ Zielperson auswählen oder einen neuen Namen vergeben. Markierte Gesichter lasse
 sich gemeinsam bearbeiten oder ignorieren. Ein leerer Name im Auswahldialog
 trennt diese Auswahl als neue unbenannte Gruppe ab.
 
-**Alle auf dieser Seite** markiert nur die Gesichter der aktuellen Seite. Gesicht und
+**Alle Gesichter dieser Seite auswählen** markiert nur die Gesichter der aktuellen Seite. Gesicht und
 Dateiname öffnen das vollständige Foto im Bildbetrachter. **Stammdaten** und **Anzeigeeinstellungen** stehen direkt in der Werkzeugleiste.
 Das **⋯-Menü** enthält die optionale **Ordner-Pfade prüfen**-Aktion. **Hilfe** steht
 rechts neben der Bereichsnavigation und erklärt auch die Vergleichssterne.
@@ -352,11 +372,11 @@ Schrift innerhalb des Buttons um. Der Stift daneben bleibt separat bedienbar.
 | Entscheidung | Folge |
 | --- | --- |
 | **Zusammenführen** | Die Gruppen werden verbunden. Bei zwei bereits benannten Gruppen ist eine zusätzliche Bestätigung nötig; der Name der zweiten Gruppe bleibt erhalten. |
-| **Getrennt lassen** | Die Ablehnung wird gespeichert und verhindert auch zukünftige automatische Zuordnungen zwischen diesen Gruppen. |
+| **Gruppen dauerhaft getrennt lassen** | Die Ablehnung wird gespeichert und verhindert auch zukünftige automatische Zuordnungen zwischen diesen Gruppen. |
 | Gemeinsamer Stift bei zwei unbenannten Gruppen | Beide gemeinsam benennen oder einer vorhandenen Person zuordnen. |
 | **Ignorieren** oder Stift an einer unbenannten Seite | Nur diese gesamte Gruppe bearbeiten; die andere Seite bleibt unverändert. |
 
-Nach einer Einzelaktion ersetzt **Paar ausblenden** die gemeinsamen Entscheidungsbuttons.
+Nach einer Einzelaktion ersetzt **Vorschlag nur aus Ansicht ausblenden** die gemeinsamen Entscheidungsbuttons.
 Es entfernt das Paar aus der aktuellen Ansicht, speichert aber keine Trennung.
 In Android heißt die entsprechende Fortsetzung **Weiter**.
 
