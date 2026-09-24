@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.11.1
+
+- Web-Fotogroßansicht: Verschiebegrenzen gezoomter Bilder berücksichtigen die sichtbare Fläche und das Seitenverhältnis. Vollständig sichtbare Achsen bleiben zentriert; nach dem Ziehen über einen Bildrand reagiert die Gegenrichtung sofort.
+- Nach dem Zwei-Finger-Zoom verschiebt der verbleibende Finger den Ausschnitt weiter, unabhängig davon, welcher Finger zuerst angehoben wird. Abgebrochene Gesten beenden das Verschieben ohne Bildwechsel.
+- PATCH für die Bedienkorrektur; README, Website und OpenAPI-Version aktualisiert. Originalfotos und HTTP-Verträge bleiben unverändert.
+- Validiert: 21 Chromium-Browserprüfungen einschließlich neuer Maus-/Touch-Regressionen, Server- und API-Vertragstests, JavaScript-Syntax und DOM-Tests sowie Website-Build. Die Thumbnail-Testfixture benötigt keine vom Konverter entfernte Umgebungsvariable mehr.
+
 ### BearStack 1.11.0 / Android 0.22.4
 
 - Go-Mindestversion auf `1.26.8` angehoben und Docker-Buildimage auf `golang:1.26.8-trixie` festgelegt. README, Installationsanleitung und Raspberry-Pi-Deployment aktualisiert. Das Toolchain-Wartungsupdate ist Teil des bereits vorbereiteten Releases `1.11.0`.

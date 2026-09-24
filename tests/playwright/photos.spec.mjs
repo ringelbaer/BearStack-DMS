@@ -16,7 +16,6 @@ let server;
 test.beforeAll(async () => {
   fixture = await createPhotoFixture();
   server = await startBearStack(fixture, { username: "admin", password }, {
-    BEARSTACK_E2E_THUMBNAIL: fixture.thumbnailFixture,
     PATH: `${fixture.toolsDir}${path.delimiter}${process.env.PATH || ""}`,
   });
 });
@@ -768,6 +767,100 @@ test("photo lightbox opens from gallery", async ({ browser }) => {
   }
 });
 
+for (const [orientation, width, height] of [["landscape", 1600, 600], ["portrait", 600, 1600]]) {
+  test(`photo lightbox pans ${orientation} images within the viewport and reverses at edges`, async ({ browser }) => {
+    const { context, page } = await editorPage(browser);
+    try {
+      await page.route("**/photos/thumbnail?**", (route) => route.fulfill({
+        contentType: "image/svg+xml",
+        body: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="teal"/></svg>`,
+      }));
+      await page.goto(`${fixture.baseURL}/photos?sort=ascending_name`);
+      await photoItem(page, "public-a.png").locator(".photo-card-button").click();
+      const image = page.locator("[data-photo-image]");
+      await expect.poll(() => image.evaluate((node) => node.naturalWidth)).toBe(width);
+      const stage = await page.locator(".photo-lightbox-stage").boundingBox();
+      await page.keyboard.press("+");
+      await page.keyboard.press("+");
+      await page.keyboard.press("+");
+      const scale = 1.2 ** 3;
+      const fit = Math.min(stage.width / width, stage.height / height);
+      const limit = {
+        x: Math.max(0, (width * fit * scale - stage.width) / 2),
+        y: Math.max(0, (height * fit * scale - stage.height) / 2),
+      };
+      const pan = () => image.evaluate((node) => {
+        const matrix = new DOMMatrix(node.style.transform);
+        return { x: matrix.m41, y: matrix.m42 };
+      });
+      const start = { x: stage.x + 100, y: stage.y + 100 };
+      await page.mouse.move(start.x, start.y);
+      await page.mouse.down();
+      await page.mouse.move(start.x + stage.width * 0.8, start.y + stage.height * 0.8, { steps: 8 });
+      const edge = await pan();
+      expect(edge.x).toBeCloseTo(limit.x, 1);
+      expect(edge.y).toBeCloseTo(limit.y, 1);
+      await page.mouse.move(start.x + stage.width * 0.8 - 20, start.y + stage.height * 0.8 - 20);
+      const reversed = await pan();
+      expect(reversed.x).toBeCloseTo(limit.x > 0 ? limit.x - 20 : 0, 1);
+      expect(reversed.y).toBeCloseTo(limit.y > 0 ? limit.y - 20 : 0, 1);
+      await page.mouse.up();
+      await expect(page.locator("[data-photo-lightbox] [data-photo-title]")).toHaveText("public-a.png");
+      const released = await pan();
+      await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
+      expect(await pan()).toEqual(released);
+      await page.keyboard.press("0");
+      expect(await pan()).toEqual({ x: 0, y: 0 });
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+for (const lifted of [1, 2]) {
+  test(`photo lightbox continues touch panning after pinch finger ${lifted} lifts`, async ({ browser }) => {
+    const { context, page } = await editorPage(browser, { hasTouch: true });
+    try {
+      await page.route("**/photos/thumbnail?**", (route) => route.fulfill({
+        contentType: "image/svg+xml",
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000"><rect width="100%" height="100%" fill="teal"/></svg>',
+      }));
+      await page.goto(`${fixture.baseURL}/photos?sort=ascending_name`);
+      await photoItem(page, "public-a.png").locator(".photo-card-button").tap();
+      const image = page.locator("[data-photo-image]");
+      await expect.poll(() => image.evaluate((node) => node.complete && node.naturalWidth > 0)).toBe(true);
+      const stage = await page.locator(".photo-lightbox-stage").boundingBox();
+      const center = { x: stage.x + stage.width / 2, y: stage.y + stage.height / 2 };
+      const client = await context.newCDPSession(page);
+      const touch = (type, touchPoints) => client.send("Input.dispatchTouchEvent", { type, touchPoints });
+      const points = [{ id: 1, x: center.x - 60, y: center.y }, { id: 2, x: center.x + 60, y: center.y }];
+      await touch("touchStart", points);
+      points[0].x -= 90;
+      points[1].x += 90;
+      await touch("touchMove", points);
+      await expect.poll(() => lightboxZoomPercent(page)).toBeGreaterThan(200);
+      const remaining = points.filter((point) => point.id !== lifted);
+      await touch("touchEnd", points.filter((point) => point.id === lifted));
+      await expect(page.locator(".photo-lightbox-stage")).not.toHaveClass(/is-dragging/);
+      const pan = () => image.evaluate((node) => {
+        const matrix = new DOMMatrix(node.style.transform);
+        return { x: matrix.m41, y: matrix.m42 };
+      });
+      const before = await pan();
+      remaining[0].x += 30;
+      remaining[0].y += 20;
+      await touch("touchMove", remaining);
+      await expect.poll(async () => (await pan()).x - before.x).toBeCloseTo(30, 1);
+      await expect.poll(async () => (await pan()).y - before.y).toBeCloseTo(20, 1);
+      await touch(lifted === 1 ? "touchCancel" : "touchEnd", []);
+      await expect(page.locator(".photo-lightbox-stage")).not.toHaveClass(/is-dragging/);
+      await expect(page.locator("[data-photo-lightbox] [data-photo-title]")).toHaveText("public-a.png");
+    } finally {
+      await context.close();
+    }
+  });
+}
+
 test("photo lightbox chooses large previews for large screens", async ({ browser }) => {
   const { context, page } = await editorPage(browser);
   try {
@@ -1429,7 +1522,6 @@ async function createPhotoFixture() {
     baseURL: `http://127.0.0.1:${port}`,
     configPath,
     toolsDir,
-    thumbnailFixture,
   };
 }
 
@@ -1463,7 +1555,7 @@ last=""
 for arg in "$@"; do
   last="$arg"
 done
-cp "$BEARSTACK_E2E_THUMBNAIL" "$last"
+cp "$(dirname -- "$0")/../thumbnail.png" "$last"
 `);
   await chmod(target, 0o700);
 }

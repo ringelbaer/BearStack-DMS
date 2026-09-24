@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.11.0** · Android-App: **0.22.4**.
+Aktuelle Version: **1.11.1** · Android-App: **0.22.4**.
+
+**BearStack 1.11.1:** Korrigiertes Verschieben gezoomter Fotos in der Web-Großansicht: passende Bildgrenzen, sofortiger Richtungswechsel am Rand und Weiterziehen mit einem Finger nach dem Zwei-Finger-Zoom.
 
 **BearStack 1.11.0 / Android 0.22.4:** Überlaufsichere Galerie-Paginierung, gemeinsame Suchregeln für Medien und Indexzeilen sowie begrenzte Konverterausgaben. Optionale Linux-Konvertersandbox über Bubblewrap; gehärtete Container-/systemd-Vorgaben. Getrennte Android-Arbeitsabläufe mit ausdrücklicher Navigation. Originalfotos bleiben schreibgeschützt. Details zur Sandbox stehen in der [Installationsanleitung](_site-src/docs/installation.md#konverter-isolieren).
 

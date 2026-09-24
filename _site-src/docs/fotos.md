@@ -29,6 +29,17 @@ Fehlt **Fotos** in der Navigation, muss das Fotomodul aktiviert und deinem Konto
 mindestens **Fotos lesen** zugewiesen sein. Wer BearStack selbst betreibt, beginnt
 bei [Fotomodul aktivieren](fotos-technik.md#fotomodul-aktivieren).
 
+## Gezoomte Fotos verschieben
+
+In der Großansicht vergrößerst du Fotos mit dem Mausrad, **+ / −** oder
+zwei Fingern. Ziehe das vergrößerte Bild mit gedrückter linker Maustaste oder
+mit einem Finger, um den Bildausschnitt zu verschieben. Nach dem Zwei-Finger-Zoom
+kannst du mit dem verbleibenden Finger direkt weiterziehen.
+
+Der Ausschnitt stoppt am Bildrand und reagiert beim Zurückziehen sofort.
+Passt das Bild auf einer Achse vollständig in die Ansicht, bleibt es dort
+zentriert. **0** oder **Zoom zurücksetzen** zeigt wieder das gesamte Foto.
+
 ## In der Galerie orientieren
 
 | Element | Wofür es da ist |

@@ -239,9 +239,9 @@
       };
     }
 
-    function currentImageRenderSize(item) {
+    function currentImageRenderSize(item, bounds) {
       if (!stage) return { width: 1, height: 1 };
-      var bounds = stage.getBoundingClientRect();
+      bounds = bounds || stage.getBoundingClientRect();
       var stageWidth = Math.max(1, bounds.width || stage.clientWidth || 1);
       var stageHeight = Math.max(1, bounds.height || stage.clientHeight || 1);
       var naturalWidth = positiveNumber(image && image.naturalWidth);
@@ -265,10 +265,11 @@
     }
 
     function imageMaxPan(item) {
-      var rendered = currentImageRenderSize(item);
+      var bounds = stage.getBoundingClientRect();
+      var rendered = currentImageRenderSize(item, bounds);
       return {
-        x: Math.max(0, rendered.width * Math.max(0, imageZoom - 1) / 2),
-        y: Math.max(0, rendered.height * Math.max(0, imageZoom - 1) / 2)
+        x: Math.max(0, (rendered.width * imageZoom - bounds.width) / 2),
+        y: Math.max(0, (rendered.height * imageZoom - bounds.height) / 2)
       };
     }
 
@@ -922,6 +923,9 @@
       imagePan.x = pointerStart.panX + deltaX;
       imagePan.y = pointerStart.panY + deltaY;
       applyImageTransform(true);
+      // Discard movement beyond an edge so reversing direction responds immediately.
+      pointerStart.panX = imagePan.x - deltaX;
+      pointerStart.panY = imagePan.y - deltaY;
       event.preventDefault();
     });
 
@@ -934,6 +938,9 @@
       var interactiveTarget = event.target.closest("video, audio, button, a, input, select, textarea");
       if (insideStage && !interactiveTarget && event.pointerType !== "mouse") {
         activeTouchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (typeof stage.setPointerCapture === "function") {
+          try { stage.setPointerCapture(event.pointerId); } catch (_) {}
+        }
         if (activeTouchPointers.size >= 2 && isImageStageActive()) {
           var startDistance = touchPointerDistance();
           if (startDistance > 0.1) {
@@ -972,6 +979,23 @@
         try {
           stage.releasePointerCapture(event.pointerId);
         } catch (_) {}
+      }
+      if (event.type === "pointercancel") {
+        releaseGestureTracking();
+        suppressClickNavigationOnce();
+        applyImageTransform(false);
+        return;
+      }
+      if (pinchJustEnded && activeTouchPointers.size === 1 && isZoomedImageStage()) {
+        // The remaining finger may no longer be the primary pointer.
+        var remaining = activeTouchPointers.entries().next().value;
+        pointerStart = {
+          id: remaining[0], x: remaining[1].x, y: remaining[1].y,
+          panX: imagePan.x, panY: imagePan.y, moved: true, panningImage: true
+        };
+        suppressClickNavigationOnce();
+        applyImageTransform(false);
+        return;
       }
       if (!pointerStart || pointerStart.id !== event.pointerId) {
         if (pinchJustEnded) {
