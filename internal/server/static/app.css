@@ -4190,3 +4190,19 @@ body:has(.people-selection-bar:not([hidden])) { padding-bottom: max(240px, calc(
 .image-group-create-dialog [data-image-group-form-status]:empty { display: none; }
 
 @media (max-width: 600px) { .image-group-preview-stage { height: 24dvh; min-height: 150px; } }
+
+/* External transfers are independent of gallery gesture and selection styles. */
+.transfer-connection, .transfer-job { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; margin-block: 16px; overflow-wrap: anywhere; }
+.transfer-connection label, .transfer-dialog label { display: grid; gap: 6px; margin-block: 12px; }
+.transfer-connection label:has(input[type="checkbox"]) { display: flex; align-items: center; }
+.transfer-connection button, .transfer-job button, [data-transfer-folder-list] button { margin: 4px; }
+.transfer-summary progress { width: 100%; }
+.app-dialog.transfer-dialog { width: min(720px, calc(100vw - 24px)); max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); background: var(--surface); color: var(--text); overflow: hidden; }
+.transfer-dialog[open] { display: flex; flex-direction: column; }
+.transfer-dialog header, .transfer-dialog footer { flex-shrink: 0; }
+.transfer-dialog .app-dialog-body { min-height: 0; }
+.transfer-dialog p, .transfer-job p { margin-block: 8px; }
+.transfer-dialog .transfer-summary { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 8px; overflow-wrap: anywhere; }
+.transfer-dialog footer { flex-wrap: wrap; }
+.transfer-dialog .app-dialog-body, [data-transfer-folders] .app-dialog-body { overflow-y: auto; max-height: 65dvh; }
+[data-transfer-folder-list] { display: grid; gap: 4px; }

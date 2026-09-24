@@ -9,6 +9,12 @@ import (
 )
 
 type PageData struct {
+	TransferAdmin           bool
+	TransferEnabled         bool
+	TransferReady           bool
+	TransferUpload          bool
+	TransferLabel           string
+	TransferSelection       string
 	ImageGroup              ImageGroupView
 	PeopleSection           string
 	FamilyTreeEnabled       bool

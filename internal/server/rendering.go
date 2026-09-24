@@ -359,6 +359,7 @@ func (s *Server) withRenderSettings(r *http.Request, data PageData) PageData {
 		data.WebDAVPath = s.webDAVPath()
 	}
 	data.Auth = authPermissionsForRequest(s, r)
+	s.transferView(r, &data)
 	if principal, ok := authPrincipalFromContext(r.Context()); ok {
 		data.CustomPDFPreviewEnabled = s.customPDFPreviewForRequest(principal)
 	}

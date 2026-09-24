@@ -9,6 +9,7 @@ import (
 
 type photoFilesystemWalkOptions struct {
 	Root             string
+	StrictErrors     bool
 	IncludeAdminOnly bool
 	OnAdminOnlyDir   func()
 }
@@ -19,6 +20,9 @@ func walkPhotoFilesystem(ctx context.Context, opts photoFilesystemWalkOptions, v
 	}
 	return filepath.WalkDir(opts.Root, func(path string, entry os.DirEntry, walkErr error) error {
 		if walkErr != nil {
+			if opts.StrictErrors {
+				return walkErr
+			}
 			return nil
 		}
 		if err := ctx.Err(); err != nil {

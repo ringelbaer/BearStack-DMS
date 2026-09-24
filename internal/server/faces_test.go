@@ -59,6 +59,9 @@ func faceTestServer(t *testing.T) *Server {
 		s.faceWorker.run.Unlock()
 		s.faceWorker.reconcileRun.Lock()
 		s.faceWorker.reconcileRun.Unlock()
+		if s.transfers != nil {
+			s.transfers.Close()
+		}
 		s.photos.Close()
 	})
 	if _, err = s.photos.RebuildIndex(context.Background()); err != nil {

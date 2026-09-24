@@ -563,6 +563,35 @@
 
 
 
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./externe-speicher.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-cloud-upload" viewBox="0 0 24 24"><path d="M12 13v8M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Externe Speicher
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
           </ul>
         </nav>
 
@@ -993,6 +1022,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#externe-speicher-und-nextcloud" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Externe Speicher und Nextcloud
+      </span>
+    </span>
+  </a>
+
+</li>
+
     </ul>
   
 </nav>
@@ -1196,6 +1236,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Manuelle Audits
+      </span>
+    </span>
+  </a>
+
+</li>
+
+        <li class="md-nav__item">
+  <a href="#externe-speicher-und-nextcloud" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Externe Speicher und Nextcloud
       </span>
     </span>
   </a>
@@ -1695,6 +1746,16 @@ Browser sind abgedeckt.</p>
 <li>Dokument-Berechtigungen, Verarbeitung, Batch-Editing, virtuelle Ordner und Tagging</li>
 </ul>
 <p>Ein Audit sollte konkrete Dateien, Risiken und Tests nennen. Wenn ein Befund umgesetzt wird, bleibt die Änderung klein, bekommt passende Tests oder Benchmarks und wird danach mit den relevanten Befehlen verifiziert.</p>
+<h2 id="externe-speicher-und-nextcloud">Externe Speicher und Nextcloud<a class="headerlink" href="#externe-speicher-und-nextcloud" title="Permanent link">&para;</a></h2>
+<p><code>go test ./internal/transfers/...</code> führt die gemeinsame Anbieter-Vertragssuite sowohl mit dem echten Nextcloud-HTTP-Adapter an einer isolierten TLS-Protokollfixture als auch mit einem reinen Testanbieter mit opaken Ziel-IDs aus. Geprüft werden ausschließliches Neuanlegen, konkurrierende Konflikte, Pfadgrenzen, TLS, Login Flow v2, Fortschritt, Abbruch und Chunk-Wiederaufnahme. Der Transferkern hat zusätzliche Tests für mehrere Verbindungen, Revisionswechsel, Neustart, Rechteentzug und 50.000 Medien. <code>scripts/test-photos-readonly.sh</code> prüft auch den Export auf einem tatsächlich schreibgeschützten Mount.</p>
+<p>Die WebUI-Abnahme mit zwei Konten, Basisziel, Vorschau, Ordner- und Auswahl-Upload und Warteschlange läuft über:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nv">PLAYWRIGHT_BROWSER_CHANNEL</span><span class="o">=</span>chromium<span class="w"> </span>npm<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>--<span class="w"> </span>playwright<span class="w"> </span><span class="nb">test</span><span class="w"> </span>tests/playwright/transfers.spec.mjs
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nv">PLAYWRIGHT_BROWSER</span><span class="o">=</span>firefox<span class="w"> </span>npm<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>--<span class="w"> </span>playwright<span class="w"> </span><span class="nb">test</span><span class="w"> </span>tests/playwright/transfers.spec.mjs
+</span></code></pre></div>
+<p>Für die zusätzliche Protokoll-Abnahme an einer <strong>isolierten, wegwerfbaren Nextcloud-Instanz</strong> die Variablen <code>BEARSTACK_NEXTCLOUD_TEST_URL</code> (HTTPS), <code>BEARSTACK_NEXTCLOUD_TEST_USER</code> und <code>BEARSTACK_NEXTCLOUD_TEST_PASSWORD</code> setzen. Bei privater Test-CA kann <code>SSL_CERT_FILE</code> deren PEM-Datei angeben. Dann:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/transfers/nextcloud<span class="w"> </span>-run<span class="w"> </span><span class="s1">&#39;^TestNextcloudLive$&#39;</span><span class="w"> </span>-count<span class="o">=</span><span class="m">1</span><span class="w"> </span>-v
+</span></code></pre></div>
+<p>Ohne URL wird dieser Live-Test ausdrücklich übersprungen. Er legt eindeutig benannte <code>BearStack-acceptance-*</code>-Ordner an und prüft auch Dateien über 20 MiB. Er löscht keine Remote-Inhalte; die isolierte Testinstanz anschließend außerhalb BearStacks verwerfen. Ein bestandener Fixture-Test ersetzt diese Live-Abnahme nicht.</p>
 
 
 
@@ -1743,7 +1804,7 @@ Browser sind abgedeckt.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.11.2 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.12.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

@@ -99,6 +99,7 @@ func (w BackgroundWorkers) Start(ctx context.Context) {
 	start(w.runPhotoThumbnailWorker)
 	start(w.runPhotoCacheStatistics)
 	if w.server != nil {
+		start(w.server.runTransfers)
 		start(w.server.RunFaceWorker)
 		start(w.server.runPhotoIdentityBackfill)
 	}

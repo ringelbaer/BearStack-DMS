@@ -5,7 +5,7 @@ repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_dir"
 go_bin="${GO:-go}"
 run_test() {
-  BEARSTACK_READONLY_TEST_ROOT="$1" "$go_bin" test ./internal/photos -run '^Test(PhotoIdentity|ImageGroup)ReadonlyMount$' -count=1 -v
+  BEARSTACK_READONLY_TEST_ROOT="$1" "$go_bin" test ./internal/photos ./internal/server -run '^Test((PhotoIdentity|ImageGroup)ReadonlyMount|TransferSourceOnReadOnlyMount)$' -count=1 -v
 }
 if [[ -n "${BEARSTACK_READONLY_TEST_ROOT:-}" ]]; then
   run_test "$BEARSTACK_READONLY_TEST_ROOT"
@@ -44,7 +44,7 @@ case "$(uname -s)" in
       set -euo pipefail
       mount --bind "$1" "$2"
       mount -o remount,bind,ro "$2"
-      BEARSTACK_READONLY_TEST_ROOT="$2" "$3" test ./internal/photos -run "^Test(PhotoIdentity|ImageGroup)ReadonlyMount$" -count=1 -v
+      BEARSTACK_READONLY_TEST_ROOT="$2" "$3" test ./internal/photos ./internal/server -run "^Test((PhotoIdentity|ImageGroup)ReadonlyMount|TransferSourceOnReadOnlyMount)$" -count=1 -v
     ' _ "$fixture_dir/source" "$fixture_dir/root" "$go_bin"
     ;;
   *)

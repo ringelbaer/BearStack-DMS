@@ -344,3 +344,7 @@ noch nicht zum aktuellen Bild geprüft wurden. Fotobearbeiter können die
 Für Einrichtung, Worker, Speicherbedarf und Sicherung bei
 [Einrichtung und Betrieb](fotos-technik.md) weiterlesen. Die vollständige
 Rechtematrix steht unter [Benutzer und Rechte](benutzer-und-rechte.md).
+
+## Upload zu externem Speicher
+
+Ab **1.12.0** können Administratoren ganze Fotoordner, virtuelle Such- und Personengalerien oder markierte Medien zu mehreren Nextcloud-Verbindungen hochladen. Einrichtung, Vorschau, Konflikte und Warteschlange beschreibt [Externe Speicher](externe-speicher.md). BearStack verändert dabei keine Originaldateien.

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 1.11.2
+  version: 1.12.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -35,6 +35,8 @@ security:
   - basicAuth: []
   - sessionCookie: []
 tags:
+  - name: Transfers
+    description: Administrator-only outbound photo transfers to optional external storage.
   - name: Photos
     description: Optional photo library and local face recognition.
   - name: System
@@ -47,6 +49,822 @@ tags:
     description: Tags, custom fields and virtual folders.
 
 paths:
+  /settings/storage-connections:
+    get:
+      tags: [Transfers]
+      operationId: storageConnectionsPage
+      summary: Manage external storage connections
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            text/html:
+              schema: {type: string}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /photos/uploads:
+    get:
+      tags: [Transfers]
+      operationId: photoUploadsPage
+      summary: View the shared upload queue
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            text/html:
+              schema: {type: string}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/providers:
+    get:
+      tags: [Transfers]
+      operationId: transferProviders
+      summary: List statically registered providers
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/TransferProvider'}}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/connections:
+    get:
+      tags: [Transfers]
+      operationId: transferConnections
+      summary: List connections without credentials
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/TransferConnection'}}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+    post:
+      tags: [Transfers]
+      operationId: transferConnectionCreate
+      summary: Create a named connection
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TransferConnectionInput'}
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferConnection'}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/connections/{id}:
+    parameters:
+      - {$ref: '#/components/parameters/TransferID'}
+    put:
+      tags: [Transfers]
+      operationId: transferConnectionUpdate
+      summary: Update a connection with its current revision
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TransferConnectionInput'}
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferConnection'}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/connections/{id}/disconnect:
+    parameters:
+      - {$ref: '#/components/parameters/TransferID'}
+    post:
+      tags: [Transfers]
+      operationId: transferDisconnect
+      summary: Remove credentials locally and pause affected jobs; no remote deletion
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {type: object, required: [disconnected], properties: {disconnected: {type: boolean}}}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/connections/{id}/login:
+    parameters:
+      - {$ref: '#/components/parameters/TransferID'}
+    post:
+      tags: [Transfers]
+      operationId: transferLogin
+      summary: Start browser login; credentials stay server-side
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {type: object, required: [login_url, token], properties: {login_url: {type: string, format: uri}, token: {type: string, description: Local login handle bound to the initiating session; not the provider polling token.}}}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/connections/{id}/login/{token}:
+    parameters:
+      - {$ref: '#/components/parameters/TransferID'}
+    post:
+      tags: [Transfers]
+      operationId: transferLoginPoll
+      summary: Poll the session-bound server-side login
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {type: object, required: [connected], properties: {connected: {type: boolean}}}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/connections/{id}/locations:
+    parameters:
+      - {$ref: '#/components/parameters/TransferID'}
+    get:
+      tags: [Transfers]
+      operationId: transferLocations
+      summary: Browse opaque base-target choices
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      parameters:
+        - in: query
+          name: parent
+          schema: {type: string}
+          description: Opaque location ID; omit to browse available roots. The result includes the current location.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/TransferLocation'}}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/connections/{id}/base:
+    parameters:
+      - {$ref: '#/components/parameters/TransferID'}
+    post:
+      tags: [Transfers]
+      operationId: transferSetBase
+      summary: Validate and select an existing base target
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TransferBaseInput'}
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferConnection'}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/previews:
+    post:
+      tags: [Transfers]
+      operationId: transferPreview
+      summary: Create an immutable asynchronous transfer preview
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TransferPreviewInput'}
+      responses:
+        '202':
+          description: Accepted; poll GET jobs/{id} until ready. The manifest expires after 30 minutes.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferJob'}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/jobs:
+    get:
+      tags: [Transfers]
+      operationId: transferJobs
+      summary: List confirmed jobs; at most 30 per page
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      parameters:
+        - in: query
+          name: connection
+          schema: {type: string}
+        - in: query
+          name: page
+          schema: {type: integer, minimum: 1, default: 1}
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/TransferJob'}}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/jobs/{id}:
+    parameters:
+      - {$ref: '#/components/parameters/TransferID'}
+    get:
+      tags: [Transfers]
+      operationId: transferJob
+      summary: Read a job or preview with aggregate progress
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferJob'}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/jobs/{id}/items:
+    parameters:
+      - {$ref: '#/components/parameters/TransferID'}
+    get:
+      tags: [Transfers]
+      operationId: transferItems
+      summary: Read at most 200 manifest entries after a cursor
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      parameters:
+        - in: query
+          name: after
+          schema: {type: integer, format: int64, minimum: 0, default: 0}
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/TransferItem'}}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+  /api/transfers/v1/jobs/{id}/{action}:
+    parameters:
+      - {$ref: '#/components/parameters/TransferID'}
+    post:
+      tags: [Transfers]
+      operationId: transferAction
+      summary: Confirm, pause, resume, cancel or retry a job
+      description: |
+        Since 1.12.0. Requires the administrator role and enabled photo module.
+        Cookie-authenticated writes require a matching Origin or Referer.
+        Responses never expose credentials or provider login polling tokens.
+      parameters:
+        - in: path
+          name: action
+          required: true
+          schema: {type: string, enum: [start, pause, resume, cancel, retry]}
+          description: Start is idempotent for a confirmed preview. Resume/retry require a confirmed job and the original connection revision; an unconfirmed, expired or changed preview requires a new preview.
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferJob'}
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '403':
+          description: Administrator role or valid request origin required.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        '404':
+          description: "Photo module, connection or job not found."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
+            text/plain:
+              schema: {type: string}
+            text/html:
+              schema: {type: string}
+        default:
+          description: Invalid input (400), changed revision or state (409), unsupported operation (422), throttling (429), provider unavailable (502) or full storage (507).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TransferError'}
   /settings/photos/family-tree:
     get:
       tags: [Photos]
@@ -4301,6 +5119,12 @@ components:
       description: Signed session cookie created by the web login.
 
   parameters:
+    TransferID:
+      in: path
+      name: id
+      required: true
+      schema: {type: string}
+      description: Stable local connection or job identifier.
     DocumentID:
       name: id
       in: path
@@ -4400,6 +5224,133 @@ components:
             format: binary
 
   schemas:
+    TransferError:
+      type: object
+      required: [error]
+      properties:
+        error: {type: string}
+    TransferProvider:
+      type: object
+      required: [id, name, upload_label, fields]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        upload_label: {type: string}
+        fields:
+          type: array
+          items:
+            type: object
+            required: [key, label, type]
+            properties:
+              key: {type: string}
+              label: {type: string}
+              type: {type: string}
+    TransferLocation:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: string, description: Provider-owned opaque target reference; empty until selected.}
+        name: {type: string}
+    TransferConnectionInput:
+      type: object
+      additionalProperties: false
+      required: [name, provider, config]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        provider: {type: string, examples: [nextcloud]}
+        enabled: {type: boolean, default: false}
+        revision: {type: integer, format: int64, description: Required current revision when updating.}
+        config:
+          type: object
+          description: Public provider configuration only. Nextcloud accepts only server, an HTTPS origin and optional installation path without credentials, query or fragment.
+          examples: [{server: 'https://cloud.example.org'}]
+    TransferConnection:
+      type: object
+      required: [id, name, provider, enabled, revision, config, base, account, connected]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        provider: {type: string}
+        enabled: {type: boolean}
+        revision: {type: integer, format: int64}
+        config: {type: object}
+        base: {$ref: '#/components/schemas/TransferLocation'}
+        account: {type: string}
+        connected: {type: boolean, description: Locally stored authorization exists; browsing or uploading also checks remote authorization.}
+    TransferBaseInput:
+      type: object
+      additionalProperties: false
+      required: [revision, base]
+      properties:
+        revision: {type: integer, format: int64}
+        base: {$ref: '#/components/schemas/TransferLocation'}
+    TransferSelection:
+      type: object
+      additionalProperties: false
+      properties:
+        path: {type: string, description: Physical folder with at least two segments or concrete virtual person folder. Ignored as an export root for explicit paths.}
+        paths:
+          type: array
+          minItems: 1
+          maxItems: 5000
+          items: {type: string}
+          description: Explicit original-media selection. Deduplicated, group members hidden by the gallery are excluded. An omitted property selects the folder or query. Original root-relative paths are retained in the target.
+        query: {type: string, maxLength: 4096}
+        media_type: {type: string, enum: ['', image, video, audio]}
+        gps_only: {type: boolean}
+        include_admin_only: {type: boolean, readOnly: true, description: Set from the authenticated gallery visibility preference; client values are ignored.}
+    TransferPreviewInput:
+      type: object
+      additionalProperties: false
+      required: [connection_id, selection]
+      properties:
+        connection_id: {type: string}
+        selection: {$ref: '#/components/schemas/TransferSelection'}
+        target: {type: string, description: "Optional one-segment name for virtual or explicit selections. Physical folders always retain their technical basename. No slash, backslash, dot segments or control characters."}
+    TransferJob:
+      type: object
+      required: [id, connection_id, connection_name, provider, revision, submitted, target_exists, selection, source_name, target, base, state, error, created, expires, updated, attempts, retry_at, total, bytes, missing, missing_bytes, existing, conflicts, done, failed, uploaded_bytes, in_flight_bytes]
+      properties:
+        id: {type: string}
+        connection_id: {type: string}
+        connection_name: {type: string}
+        provider: {type: string}
+        revision: {type: integer, format: int64}
+        submitted: {type: boolean}
+        target_exists: {type: boolean}
+        selection: {$ref: '#/components/schemas/TransferSelection'}
+        source_name: {type: string, description: Server-formatted human-readable source name.}
+        target: {type: string, description: Technical target directory name.}
+        base: {$ref: '#/components/schemas/TransferLocation'}
+        state: {type: string, enum: [preparing, planning, ready, queued, running, waiting, paused, cancelled, complete, partial, failed]}
+        error: {type: string}
+        created: {type: integer, format: int64, description: Unix seconds.}
+        expires: {type: integer, format: int64, description: Preview confirmation deadline in Unix seconds; does not expire confirmed jobs.}
+        updated: {type: integer, format: int64}
+        attempts: {type: integer}
+        retry_at: {type: integer, format: int64}
+        total: {type: integer, format: int64}
+        bytes: {type: integer, format: int64}
+        missing: {type: integer, format: int64}
+        missing_bytes: {type: integer, format: int64}
+        existing: {type: integer, format: int64, description: Same target path and size; not a content equality assertion.}
+        conflicts: {type: integer, format: int64}
+        done: {type: integer, format: int64}
+        failed: {type: integer, format: int64}
+        uploaded_bytes: {type: integer, format: int64}
+        in_flight_bytes: {type: integer, format: int64}
+    TransferItem:
+      type: object
+      required: [id, path, display_path, relative, size, modified, state, error]
+      properties:
+        id: {type: integer, format: int64}
+        path: {type: string, description: Technical source path relative to the photo root.}
+        display_path: {type: string, description: Central gallery formatting; use this field for visible source paths.}
+        relative: {type: array, items: {type: string}, description: Technical destination segments relative to the selected base.}
+        size: {type: integer, format: int64}
+        modified: {type: integer, format: int64, description: Source modification time in Unix nanoseconds.}
+        state: {type: string, enum: [missing, existing, conflict, uploading, done, failed]}
+        error: {type: string}
     ImageGroup:
       type: object
       required: [id, revision, members]

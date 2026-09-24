@@ -565,6 +565,35 @@
 
 
 
+
+
+
+
+
+
+    <li class="md-nav__item">
+      <a href="./externe-speicher.html" class="md-nav__link">
+
+
+
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-cloud-upload" viewBox="0 0 24 24"><path d="M12 13v8M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/></svg>
+
+  <span class="md-ellipsis">
+
+
+  Externe Speicher
+
+
+  </span>
+
+
+
+      </a>
+    </li>
+
+
+
+
           </ul>
         </nav>
 
@@ -1465,6 +1494,7 @@
 </span></code></pre></div>
 <p>Die Pfade in <code>ReadWritePaths</code> und <code>RequiresMountsFor</code> müssen zur eigenen Konfiguration passen. Eine vollständige Raspberry-Pi-Installation ist in <code>deploy-raspberrypi.md</code> beschrieben.</p>
 <h2 id="backup-und-restore">Backup und Restore<a class="headerlink" href="#backup-und-restore" title="Permanent link">&para;</a></h2>
+<p>Bei eingerichtetem Fotomodul gehört außerdem <code>data_dir/transfers/</code> vollständig ins Backup: <code>transfers.db</code>, gegebenenfalls <code>transfers.db-wal</code>/<code>transfers.db-shm</code> sowie <strong><code>credentials.key</code></strong>. Die Datenbank enthält Verbindungen, feste Upload-Dateilisten und Aufträge; der Schlüssel entschlüsselt ausschließlich die getrennt gespeicherten Zugangsdaten. Ohne zugehörigen Schlüssel startet das Modul mit bestehender Datenbank nicht. Datenbank und Schlüssel gemeinsam, vertraulich und mit restriktiven Dateirechten sichern und wiederherstellen. Nach Wiederherstellung können bestätigte Aufträge weiterlaufen; gegebenenfalls vor dem Start die Verbindung in einer isolierten Umgebung prüfen. Die <a href="externe-speicher.html">Speicherbrücke</a> verändert keine Originalfotos.</p>
 <p>Sicherste Backup-Variante: Dienst kurz stoppen und Datenverzeichnis plus Konfiguration sichern.</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/var/backups/bearstack
 </span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>bearstack
@@ -1632,7 +1662,7 @@ deaktivierten Seccomp-/AppArmor-Profile dafür verwenden.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.11.2 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.12.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

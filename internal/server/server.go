@@ -27,12 +27,16 @@ import (
 	"bearstack/internal/repository"
 	"bearstack/internal/storage"
 	"bearstack/internal/tagutil"
+	"bearstack/internal/transfers"
+	"bearstack/internal/transfers/nextcloud"
 )
 
 //go:embed templates/*.html static/*
 var webFS embed.FS
 
 type Server struct {
+	transfers         *transfers.Engine
+	transferLogins    transferLoginState
 	faceWorker        faceWorkerState
 	cfg               config.Config
 	repo              *repository.Repository
@@ -157,6 +161,14 @@ func New(cfg config.Config, repo *repository.Repository, store *storage.Store, l
 	s.faceWorker.wake = make(chan struct{}, 1)
 	s.apps.photo.jobs = make(chan struct{}, 1)
 	s.initServices()
+	if photoLibrary != nil {
+		s.transfers, err = transfers.Open(filepath.Join(cfg.DataDir, "transfers"), transfers.Registry{"nextcloud": nextcloud.New()}, photoTransferSource{photoLibrary}, s.transferAdministrator)
+		if err != nil {
+			photoLibrary.Close()
+			return nil, fmt.Errorf("configure transfers: %w", err)
+		}
+	}
+
 	if photoLibrary != nil {
 		if _, err := s.photoSettings(context.Background()); err != nil && logger != nil {
 			logger.Warn("photo thumbnail settings failed", "error", err)

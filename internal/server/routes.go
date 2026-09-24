@@ -63,6 +63,7 @@ func (s *Server) registerPhotoRoutes(mux *http.ServeMux) {
 		return
 	}
 	s.registerRouteSpecs(mux, photoRouteSpecs)
+	s.registerRouteSpecs(mux, transferRoutes)
 }
 
 func (s *Server) registerWebDAVRoutes(mux *http.ServeMux) {

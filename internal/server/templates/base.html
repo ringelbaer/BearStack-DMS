@@ -37,6 +37,7 @@
         <span></span>
       </summary>
       <nav class="system-menu-list" aria-label="Systemmenü">
+        {{if .TransferEnabled}}<a href="/photos/uploads">Upload-Warteschlange</a>{{end}}
         {{$systemMenuPrimary := .SystemMenuPrimaryVisible}}
         {{$systemMenuSecondary := .SystemMenuSecondaryVisible}}
         {{if or .Auth.CanDocumentsRead .Auth.CanPhotosRead .Auth.CanPhotosManage}}<a href="/tags" class="{{if eq .Active "tags"}}active{{end}}">Tags</a>{{end}}

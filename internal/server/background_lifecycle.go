@@ -85,6 +85,11 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	if err := s.WaitBackgroundJobs(ctx); err != nil {
 		return err
 	}
+	if s.transfers != nil {
+		if err := s.transfers.Close(); err != nil {
+			return err
+		}
+	}
 	if s.photos != nil {
 		return s.photos.Close()
 	}

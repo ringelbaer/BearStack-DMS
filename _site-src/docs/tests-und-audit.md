@@ -439,3 +439,22 @@ Die Audits in `.codex/AUDIT.md` sind nach Themen gruppiert:
 - Dokument-Berechtigungen, Verarbeitung, Batch-Editing, virtuelle Ordner und Tagging
 
 Ein Audit sollte konkrete Dateien, Risiken und Tests nennen. Wenn ein Befund umgesetzt wird, bleibt die Änderung klein, bekommt passende Tests oder Benchmarks und wird danach mit den relevanten Befehlen verifiziert.
+
+## Externe Speicher und Nextcloud
+
+`go test ./internal/transfers/...` führt die gemeinsame Anbieter-Vertragssuite sowohl mit dem echten Nextcloud-HTTP-Adapter an einer isolierten TLS-Protokollfixture als auch mit einem reinen Testanbieter mit opaken Ziel-IDs aus. Geprüft werden ausschließliches Neuanlegen, konkurrierende Konflikte, Pfadgrenzen, TLS, Login Flow v2, Fortschritt, Abbruch und Chunk-Wiederaufnahme. Der Transferkern hat zusätzliche Tests für mehrere Verbindungen, Revisionswechsel, Neustart, Rechteentzug und 50.000 Medien. `scripts/test-photos-readonly.sh` prüft auch den Export auf einem tatsächlich schreibgeschützten Mount.
+
+Die WebUI-Abnahme mit zwei Konten, Basisziel, Vorschau, Ordner- und Auswahl-Upload und Warteschlange läuft über:
+
+```sh
+PLAYWRIGHT_BROWSER_CHANNEL=chromium npm exec -- playwright test tests/playwright/transfers.spec.mjs
+PLAYWRIGHT_BROWSER=firefox npm exec -- playwright test tests/playwright/transfers.spec.mjs
+```
+
+Für die zusätzliche Protokoll-Abnahme an einer **isolierten, wegwerfbaren Nextcloud-Instanz** die Variablen `BEARSTACK_NEXTCLOUD_TEST_URL` (HTTPS), `BEARSTACK_NEXTCLOUD_TEST_USER` und `BEARSTACK_NEXTCLOUD_TEST_PASSWORD` setzen. Bei privater Test-CA kann `SSL_CERT_FILE` deren PEM-Datei angeben. Dann:
+
+```sh
+go test ./internal/transfers/nextcloud -run '^TestNextcloudLive$' -count=1 -v
+```
+
+Ohne URL wird dieser Live-Test ausdrücklich übersprungen. Er legt eindeutig benannte `BearStack-acceptance-*`-Ordner an und prüft auch Dateien über 20 MiB. Er löscht keine Remote-Inhalte; die isolierte Testinstanz anschließend außerhalb BearStacks verwerfen. Ein bestandener Fixture-Test ersetzt diese Live-Abnahme nicht.

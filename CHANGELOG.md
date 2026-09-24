@@ -4,6 +4,16 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.12.0
+
+- Eigenständiges Transfermodul mit statischer Anbieter-Registry, opaken Basiszielen und ausschließlich anlegenden Dateioperationen. Nextcloud ist der erste Anbieter; mehrere benannte Verbindungen und getrennte verschlüsselte Zugangsdaten werden unterstützt.
+- Administratoren richten Verbindungen unter **Einstellungen → Externe Speicher** über Nextcloud Login Flow v2 ein. HTTPS und Zertifikatsprüfung sind verpflichtend; Anmeldetoken und Zugangsdaten bleiben serverseitig, Weiterleitungen mit Zugangsdaten sind gesperrt.
+- **Upload to Nextcloud** überträgt echte Fotoordner ab zwei relativen Pfadbestandteilen rekursiv, virtuelle Such-/Personengalerien über alle Seiten oder die explizit markierten Medien. Nur Originalbilder, Videos, Audio und angezeigte Gruppenhauptbilder; virtuelle Exporte und Auswahlen erhalten ihre ursprünglichen Unterpfade.
+- Asynchrone Vorschauen halten Dateiliste, Verbindungsrevision und Ziel fest. Das Modal zeigt Dateianzahl, Größe, vorhandene Ziele und Konflikte. Gleich große vorhandene Dateien werden ohne Aussage zur Inhaltsgleichheit übersprungen; andere Größen und Datei-/Ordnerkollisionen bleiben unangetastet.
+- Dauerhafte FIFO-Warteschlange mit einem aktiven Auftrag und maximal zwei parallelen Dateien, Pause/Fortsetzen/Abbrechen/Wiederholen, begrenzten Wiederholungen und Wiederanlauf. Große Nextcloud-Dateien ab 20 MiB verwenden Chunked Upload v2 mit adaptereigenem, versioniertem Fortsetzungszustand. Keine DELETE-Anfragen; abschließendes MOVE ausschließlich aus eigenem temporären Upload mit `Overwrite: F`.
+- Neue Administrator-API unter `/api/transfers/v1/`, eigene SQLite-Datenbank und Zugangsschlüssel unter `data_dir/transfers`. Vorschauen verfallen nach 30 Minuten; abgeschlossene Auftragsdetails werden nach 30 Tagen lokal bereinigt. Backup-Hinweise, OpenAPI, README und Website ergänzt. MINOR für die optionalen Funktionen; Migrationen ausschließlich im neuen Modul.
+- Validiert: vollständige Go-Suite, Anbieter-/Race-/OpenAPI-Tests, JavaScript-Syntax und DOM-Tests, Firefox und Chromium mit zwei Verbindungen und Auswahl-Upload, tatsächlicher readonly-Mount sowie Website und Produktionsbuild. 50.000 Dateien: Vorschau rund 0,47 s bei etwa 3,1 MiB zusätzlichem Go-Heap; Galerieabfrage während Export rund 0,6 ms auf dem Testrechner. Live-Abnahme gegen eine echte Nextcloud bleibt mangels Docker-Zugriff offen; reproduzierbarer Opt-in-Test und Anleitung sind enthalten.
+
 ### BearStack 1.11.2
 
 - Firefox: Natives Bildziehen in der Foto-Großansicht über `draggable="false"` deaktiviert. Dadurch unterbricht der Browser die Mausgeste nicht mehr und gezoomte Fotos folgen der gedrückten Maustaste.

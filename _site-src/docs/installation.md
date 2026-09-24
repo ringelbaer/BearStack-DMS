@@ -261,6 +261,8 @@ Die Pfade in `ReadWritePaths` und `RequiresMountsFor` müssen zur eigenen Konfig
 
 ## Backup und Restore
 
+Bei eingerichtetem Fotomodul gehört außerdem `data_dir/transfers/` vollständig ins Backup: `transfers.db`, gegebenenfalls `transfers.db-wal`/`transfers.db-shm` sowie **`credentials.key`**. Die Datenbank enthält Verbindungen, feste Upload-Dateilisten und Aufträge; der Schlüssel entschlüsselt ausschließlich die getrennt gespeicherten Zugangsdaten. Ohne zugehörigen Schlüssel startet das Modul mit bestehender Datenbank nicht. Datenbank und Schlüssel gemeinsam, vertraulich und mit restriktiven Dateirechten sichern und wiederherstellen. Nach Wiederherstellung können bestätigte Aufträge weiterlaufen; gegebenenfalls vor dem Start die Verbindung in einer isolierten Umgebung prüfen. Die [Speicherbrücke](externe-speicher.md) verändert keine Originalfotos.
+
 Sicherste Backup-Variante: Dienst kurz stoppen und Datenverzeichnis plus Konfiguration sichern.
 
 ```sh
