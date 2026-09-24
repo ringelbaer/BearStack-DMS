@@ -3,6 +3,7 @@
   const root = document.querySelector("[data-transfer-page]");
   const modal = document.querySelector("[data-transfer-modal]");
   if (!root && !modal) return;
+  const providerNames = new Map();
   const api = "/api/transfers/v1/";
   const states = {
     preparing: "Vorschau wird vorbereitet",
@@ -29,8 +30,9 @@
     return n;
   };
   const button = (text, action) => {
-    const b = node("button", text);
+    const b = node("button", text, "secondary-button");
     b.type = "button";
+    if (text === "Abbrechen") b.classList.add("transfer-danger");
     b.addEventListener("click", action);
     return b;
   };
@@ -65,13 +67,16 @@
       throw new Error("Ungültige Serverantwort");
     }
     if (!response.ok) throw new Error(result.error || "Anfrage fehlgeschlagen");
+    if (path === "providers")
+      for (const provider of result)
+        providerNames.set(provider.id, provider.name);
     return result;
   }
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const status = root && root.querySelector("[data-transfer-status]");
-  async function guard(fn, target = status) {
+  async function guard(fn, target = status, clear = true) {
     try {
-      if (target) target.textContent = "";
+      if (target && clear) target.textContent = "";
       await fn();
     } catch (error) {
       if (target) target.textContent = error.message;
@@ -79,32 +84,69 @@
   }
   function summary(job) {
     const box = node("div", undefined, "transfer-summary");
-    box.append(
+    const heading = node("div", undefined, "transfer-card-head");
+    const identity = node("div");
+    identity.append(
+      node("h3", job.source_name),
       node(
         "p",
-        job.source_name + " → " + job.connection_name + " · " + job.provider,
+        job.connection_name +
+          " · " +
+          (providerNames.get(job.provider) || job.provider),
+        "transfer-hint",
       ),
-      node("p", "Ziel: " + job.base.name + " / " + job.target),
     );
+    const badge = node(
+      "span",
+      states[job.state] || job.state,
+      "transfer-badge",
+    );
+    badge.dataset.state = job.state;
+    heading.append(identity, badge);
+    box.append(heading);
+    const destination = node("div", undefined, "transfer-destination");
+    destination.append(
+      node("span", "Zielordner", "transfer-hint"),
+      node("strong", job.base.name + " / " + job.target),
+    );
+    box.append(destination);
     if (job.target_exists)
       box.append(
         node(
           "p",
           "Der Zielordner ist bereits vorhanden; fehlende Dateien werden ergänzt.",
+          "transfer-note",
         ),
       );
-    box.append(
-      node(
-        "p",
-        `${job.total} ${job.total === 1 ? "Datei" : "Dateien"} · ${bytes(job.bytes)} insgesamt · ${job.missing} neu (${bytes(job.missing_bytes)}) · ${job.existing} vorhanden · ${job.conflicts} Konflikte · ${job.failed} Fehler`,
-      ),
-    );
-    box.append(
-      node(
-        "p",
-        (states[job.state] || job.state) + (job.error ? ": " + job.error : ""),
-      ),
-    );
+    const metrics = node("dl", undefined, "transfer-metrics");
+    for (const [label, value, detail] of [
+      [
+        "Gesamt",
+        `${job.total} ${job.total === 1 ? "Datei" : "Dateien"}`,
+        bytes(job.bytes),
+      ],
+      [
+        job.state === "ready" ? "Zu übertragen" : "Noch offen",
+        `${job.missing} neu`,
+        bytes(job.missing_bytes),
+      ],
+      [
+        "Übersprungen",
+        `${job.existing} vorhanden`,
+        "Gleicher Pfad und gleiche Größe",
+      ],
+      ["Prüfen", `${job.conflicts} Konflikte`, `${job.failed} Fehler`],
+    ]) {
+      const metric = node("div");
+      metric.append(
+        node("dt", label),
+        node("dd", value),
+        node("dd", detail, "transfer-hint"),
+      );
+      metrics.append(metric);
+    }
+    box.append(metrics);
+    if (job.error) box.append(node("p", job.error, "notice error-state"));
     if (
       [
         "running",
@@ -134,14 +176,23 @@
   }
   async function appendItems(container, jobID, after = 0) {
     const items = await request(`jobs/${jobID}/items?after=${after}`);
-    const list = node("ul");
-    for (const item of items)
-      list.append(
-        node(
-          "li",
-          `${item.display_path} · ${bytes(item.size)} · ${states[item.state] || item.state}${item.error ? ": " + item.error : ""}`,
-        ),
+    const list = node("ul", undefined, "transfer-file-list");
+    for (const item of items) {
+      const row = node("li");
+      const state = node(
+        "span",
+        states[item.state] || item.state,
+        "transfer-file-state",
       );
+      state.dataset.state = item.state;
+      row.append(
+        node("span", item.display_path, "transfer-file-path"),
+        node("span", bytes(item.size), "transfer-hint"),
+        state,
+      );
+      if (item.error) row.append(node("p", item.error, "transfer-file-error"));
+      list.append(row);
+    }
     container.append(list);
     if (items.length === 200) {
       const more = button("Weitere Dateien", () =>
@@ -167,7 +218,7 @@
       return [wrap, input];
     };
     function renderConnection(connection) {
-      const form = node("form", undefined, "transfer-connection");
+      const form = node("form", undefined, "transfer-connection settings-form");
       const [nameLabel, name] = field("Name", "text", connection.name);
       name.required = true;
       name.maxLength = 120;
@@ -207,26 +258,56 @@
       enabledLabel.prepend(enabled);
       const save = node("button", "Speichern");
       save.type = "submit";
-      form.append(
-        node("h2", connection.name || "Neue Verbindung"),
+      const heading = node("div", undefined, "transfer-card-head");
+      heading.append(node("h3", connection.name || "Neue Verbindung"));
+      const badge = node(
+        "span",
+        connection.connected ? "Verbunden" : "Nicht verbunden",
+        "transfer-badge",
+      );
+      badge.dataset.state = connection.connected ? "complete" : "paused";
+      heading.append(badge);
+      const configuration = node("div", undefined, "settings-fieldset");
+      const accountFields = node("fieldset");
+      accountFields.append(
+        node("legend", "Verbindung"),
         nameLabel,
         providerLabel,
         fields,
         enabledLabel,
-        node(
-          "p",
-          connection.connected
-            ? "Verbunden: " + connection.account
-            : "Nicht verbunden",
-        ),
-        node(
-          "p",
-          "Basisziel: " +
-            ((connection.base && connection.base.name) ||
-              "Noch nicht ausgewählt"),
-        ),
-        save,
       );
+      configuration.append(accountFields);
+      const destination = node("fieldset");
+      destination.append(node("legend", "Konto und Upload-Ziel"));
+      const info = node("dl", undefined, "transfer-connection-info");
+      for (const [label, value] of [
+        [
+          "Konto",
+          connection.connected ? connection.account : "Noch nicht verbunden",
+        ],
+        ["Basis-Zielordner", connection.base?.name || "Noch nicht ausgewählt"],
+        [
+          "Uploads",
+          !connection.enabled
+            ? "Deaktiviert"
+            : !connection.connected
+              ? "Anmeldung erforderlich"
+              : !connection.base?.id
+                ? "Zielordner erforderlich"
+                : "Bereit",
+        ],
+      ]) {
+        const row = node("div");
+        row.append(node("dt", label), node("dd", value));
+        info.append(row);
+      }
+      destination.append(info);
+      const connectionActions = node("div", undefined, "transfer-actions");
+      destination.append(connectionActions);
+      if (connection.id) configuration.append(destination);
+      const actions = node("div", undefined, "transfer-actions");
+      actions.append(save);
+      form.append(heading, configuration, actions);
       form.addEventListener("submit", (event) => {
         event.preventDefault();
         guard(async () => {
@@ -252,47 +333,52 @@
         });
       });
       if (connection.id) {
-        form.append(
-          button("Konto verbinden", () => {
-            const popup = window.open("about:blank", "_blank");
-            if (popup) popup.opener = null;
-            const generation = ++loginGeneration;
-            guard(async () => {
-              const login = await request(
-                `connections/${connection.id}/login`,
-                "POST",
-              );
-              if (popup) popup.location.replace(login.login_url);
-              status.replaceChildren(
-                node("span", "Anmeldung beim Speicheranbieter bestätigen. "),
-              );
-              const link = node("a", "Anmeldung öffnen");
-              link.href = login.login_url;
-              link.target = "_blank";
-              link.rel = "noopener noreferrer";
-              status.append(link);
-              const deadline = Date.now() + 20 * 60 * 1000;
-              while (generation === loginGeneration && Date.now() < deadline) {
-                await sleep(2000);
-                const result = await request(
-                  `connections/${connection.id}/login/${login.token}`,
+        if (!connection.connected)
+          connectionActions.append(
+            button("Konto verbinden", () => {
+              const popup = window.open("about:blank", "_blank");
+              if (popup) popup.opener = null;
+              const generation = ++loginGeneration;
+              guard(async () => {
+                const login = await request(
+                  `connections/${connection.id}/login`,
                   "POST",
                 );
-                if (result.connected) {
-                  status.textContent =
-                    "Konto verbunden. Jetzt Basis-Zielordner auswählen.";
-                  await load();
-                  return;
+                if (popup) popup.location.replace(login.login_url);
+                status.replaceChildren(
+                  node("span", "Anmeldung beim Speicheranbieter bestätigen. "),
+                );
+                const link = node("a", "Anmeldung öffnen");
+                link.href = login.login_url;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                status.append(link);
+                const deadline = Date.now() + 20 * 60 * 1000;
+                while (
+                  generation === loginGeneration &&
+                  Date.now() < deadline
+                ) {
+                  await sleep(2000);
+                  const result = await request(
+                    `connections/${connection.id}/login/${login.token}`,
+                    "POST",
+                  );
+                  if (result.connected) {
+                    status.textContent =
+                      "Konto verbunden. Jetzt Basis-Zielordner auswählen.";
+                    await load();
+                    return;
+                  }
                 }
-              }
-            });
-          }),
-        );
-        const folders = button("Basis-Zielordner wählen", () =>
-          guard(() => browse(connection)),
+              });
+            }),
+          );
+        const folders = button(
+          connection.base?.id ? "Zielordner ändern" : "Basis-Zielordner wählen",
+          () => guard(() => browse(connection)),
         );
         folders.disabled = !connection.connected || !connection.enabled;
-        form.append(folders);
+        if (connection.connected) connectionActions.append(folders);
         const disconnect = button("Verbindung trennen", () =>
           guard(async () => {
             await request(`connections/${connection.id}/disconnect`, "POST");
@@ -301,7 +387,8 @@
           }),
         );
         disconnect.disabled = !connection.connected;
-        form.append(disconnect);
+        disconnect.classList.add("transfer-danger");
+        if (connection.connected) connectionActions.append(disconnect);
       }
       container.append(form);
     }
@@ -319,53 +406,88 @@
     const folders = document.querySelector("[data-transfer-folders]"),
       folderStatus = folders.querySelector("[data-transfer-folder-status]"),
       folderList = folders.querySelector("[data-transfer-folder-list]"),
-      back = folders.querySelector("[data-transfer-folder-back]");
+      back = folders.querySelector("[data-transfer-folder-back]"),
+      choose = folders.querySelector("[data-transfer-folder-select]"),
+      currentFolder = folders.querySelector("[data-transfer-folder-current]"),
+      breadcrumbs = folders.querySelector("[data-transfer-folder-breadcrumbs]");
+    let browseGeneration = 0;
+    folders.addEventListener("close", () => {
+      browseGeneration++;
+    });
     folders
       .querySelector("[data-transfer-folder-close]")
       .addEventListener("click", () => folders.close());
     async function browse(connection) {
-      const history = [];
+      let history = [];
       folders.showModal();
       async function show(parent, name) {
+        const current = ++browseGeneration;
+        choose.disabled = true;
+        back.disabled = true;
+        folderList.replaceChildren();
         folderStatus.textContent = "Ordner werden geladen …";
+        currentFolder.textContent = "Noch keiner";
         const locations = await request(
           `connections/${connection.id}/locations?parent=${encodeURIComponent(parent)}`,
         );
-        if (!folders.open) return;
-        folderStatus.textContent = name || "Basis-Zielordner auswählen";
-        folderList.replaceChildren();
+        if (!folders.open || current !== browseGeneration) return;
+        folderStatus.textContent = "";
         back.disabled = history.length === 0;
-        if (parent)
-          folderList.append(
-            button("Diesen Ordner verwenden", () =>
+        currentFolder.textContent = parent ? name : "Bitte einen Ordner öffnen";
+        breadcrumbs.replaceChildren();
+        for (const [index, entry] of history.entries()) {
+          const crumb = node("li");
+          crumb.append(
+            button(entry.name, () =>
               guard(async () => {
-                await request(`connections/${connection.id}/base`, "POST", {
-                  revision: connection.revision,
-                  base: { id: parent, name },
-                });
-                folders.close();
-                await load();
+                history = history.slice(0, index);
+                await show(entry.parent, entry.name);
               }, folderStatus),
             ),
           );
+          breadcrumbs.append(crumb);
+        }
+        const active = node("li", name);
+        active.setAttribute("aria-current", "location");
+        breadcrumbs.append(active);
+        choose.disabled = !parent;
+        choose.onclick = () =>
+          guard(async () => {
+            choose.disabled = true;
+            try {
+              await request(`connections/${connection.id}/base`, "POST", {
+                revision: connection.revision,
+                base: { id: parent, name },
+              });
+              folders.close();
+              await load();
+            } finally {
+              if (folders.open) choose.disabled = false;
+            }
+          }, folderStatus);
         for (const location of locations) {
           if (location.id === parent) continue;
-          folderList.append(
-            button(location.name, () =>
-              guard(async () => {
-                history.push({ parent, name });
-                await show(location.id, location.name);
-              }, folderStatus),
-            ),
+          const entry = button(location.name, () =>
+            guard(async () => {
+              history.push({ parent, name });
+              await show(location.id, location.name);
+            }, folderStatus),
           );
+          entry.classList.add("transfer-folder-entry");
+          entry.setAttribute("aria-label", location.name);
+          folderList.append(entry);
         }
+        if (!folderList.childElementCount)
+          folderList.append(
+            node("p", "Keine Unterordner vorhanden.", "transfer-hint"),
+          );
       }
       back.onclick = () =>
         guard(async () => {
           const previous = history.pop();
           if (previous) await show(previous.parent, previous.name);
         }, folderStatus);
-      await guard(() => show("", "Dateien"), folderStatus);
+      await guard(() => show("", connection.name), folderStatus);
     }
     guard(load);
   }
@@ -402,7 +524,7 @@
           if (!card) {
             const element = node("section", undefined, "transfer-job"),
               overview = node("div"),
-              actions = node("div");
+              actions = node("div", undefined, "transfer-actions");
             const details = node("details"),
               files = node("div");
             let loaded = false;
@@ -480,7 +602,11 @@
       guard(load);
     });
     guard(async () => {
-      for (const c of await request("connections")) {
+      const [connections] = await Promise.all([
+        request("connections"),
+        request("providers"),
+      ]);
+      for (const c of connections) {
         const option = node("option", c.name);
         option.value = c.id;
         filter.append(option);
@@ -542,7 +668,11 @@
           connection.firstChild.value = "";
           modal.showModal();
           const opened = generation;
-          const list = (await request("connections")).filter(
+          const [connections] = await Promise.all([
+            request("connections"),
+            request("providers"),
+          ]);
+          const list = connections.filter(
             (c) => c.enabled && c.connected && c.base.id,
           );
           if (!modal.open || opened !== generation) return;
@@ -587,7 +717,7 @@
               details.addEventListener("toggle", () => {
                 if (details.open && !loaded) {
                   loaded = true;
-                  guard(() => appendItems(details, result.id), message);
+                  guard(() => appendItems(details, result.id), message, false);
                 }
               });
               previewItems.append(details);

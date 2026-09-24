@@ -15,6 +15,8 @@ Ab BearStack **1.12.0** unterstützt die Web-Foto-App optionale ausgehende Uploa
 3. **Konto verbinden** öffnet die Nextcloud-Anmeldung in einem eigenen Browserfenster. Dort anmelden und den Zugriff bestätigen. BearStack erhält ein separates App-Passwort über [Login Flow v2](https://docs.nextcloud.com/server/stable/developer_manual/client_apis/LoginFlow/index.html#login-flow-v2); Passwort und Polling-Token gelangen nicht in die BearStack-WebUI.
 4. Über **Basis-Zielordner wählen** einen vorhandenen Ordner oder die oberste Ebene **Dateien** auswählen. Die Uploads legen darunter jeweils einen eigenen Zielordner an.
 
+Der Status **Verbunden** ersetzt nach erfolgreicher Anmeldung die Aktion **Konto verbinden**. Konto, Basis-Zielordner und Upload-Bereitschaft stehen getrennt neben den Verbindungsdaten. Nach der Zielwahl heißt die Aktion **Zielordner ändern**. Die Ordnerauswahl bietet einen Navigationspfad und übernimmt den geöffneten Ordner über **Diesen Ordner verwenden** im festen Dialogfuß.
+
 Jede Verbindung besitzt ihr eigenes Konto und Basisziel. **Verbindung trennen** entfernt Zugangsdaten nur lokal und deaktiviert die Verbindung. Ein App-Passwort bei Bedarf zusätzlich in Nextcloud selbst widerrufen; BearStack sendet auch beim Trennen keinen Löschbefehl.
 
 ## Ordner oder eine Auswahl hochladen
@@ -33,7 +35,7 @@ Im Modal genau eine Verbindung wählen und **Übertragung prüfen** ausführen. 
 
 ## Warteschlange und Änderungen
 
-Das Burgermenü enthält bei mindestens einer aktivierten Verbindung die **Upload-Warteschlange**. Sie zeigt Verbindung, Anbieter, Ziel, Fortschritt sowie dateibezogene Fehler und lässt sich nach Verbindung filtern. Ein Auftrag läuft zur Zeit mit höchstens zwei parallelen Dateien. Pausierte und auf Wiederholung wartende Aufträge blockieren andere Verbindungen nicht.
+Das Burgermenü enthält bei mindestens einer aktivierten Verbindung die **Upload-Warteschlange**. Sie zeigt je Auftrag eine Statusanzeige, Verbindung und Anbieter, den Zielordner sowie getrennte Kennzahlen für Gesamtumfang, offene Dateien, vorhandene Dateien und Konflikte. Der Fortschritt steht darunter; **Dateien und Fehler** öffnet die gegliederte Dateiliste. Die Warteschlange lässt sich nach Verbindung filtern. Ein Auftrag läuft zur Zeit mit höchstens zwei parallelen Dateien. Pausierte und auf Wiederholung wartende Aufträge blockieren andere Verbindungen nicht.
 
 **Pause**, **Fortsetzen**, **Abbrechen** und **Wiederholen** ändern nur den lokalen Auftrag. Bereits hochgeladene Dateien bleiben erhalten. Vor einer Wiederholung prüft BearStack unklare Upload-Ergebnisse erneut am Ziel. Vorübergehende Fehler werden mit wachsender Wartezeit begrenzt wiederholt; volle Speicher und Anmeldefehler pausieren den Auftrag.
 

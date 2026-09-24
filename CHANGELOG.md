@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.12.1
+
+- Externe Speicher folgen dem bestehenden Settings-Aufbau mit eigener Abschnittsüberschrift und Formulargruppen. Verbindungsstatus, Konto, Basisziel und Upload-Bereitschaft sind getrennt sichtbar. Verbundene Konten zeigen keinen Anmeldebutton; gesetzte Basisziele bieten „Zielordner ändern“.
+- Kompakte Zielordnerliste mit Navigationspfad und dauerhaft erreichbarer Ordnerübernahme. Upload-Modal und Warteschlange erhalten strukturierte Kennzahlen, Statusanzeigen, abgestufte Aktionen und lesbare Dateidetails; Abstände und mobile Dialogdarstellung korrigiert.
+- PATCH für WebUI-Korrekturen. README, Website und OpenAPI-Version aktualisiert; keine Änderungen an Transferverträgen oder Originaldateien.
+- Validiert: Server- und Transfer-Suite, OpenAPI-Prüfungen, JavaScript-Syntax/DOM-Tests und Website-Build. Firefox und Chromium prüfen mehrere Verbindungen, Deaktivieren/Trennen, Ordnernavigation mit langen Listen, mobile Dialoge, Vorschau, Auswahl-Upload und Warteschlange.
+
 ### BearStack 1.12.0
 
 - Eigenständiges Transfermodul mit statischer Anbieter-Registry, opaken Basiszielen und ausschließlich anlegenden Dateioperationen. Nextcloud ist der erste Anbieter; mehrere benannte Verbindungen und getrennte verschlüsselte Zugangsdaten werden unterstützt.

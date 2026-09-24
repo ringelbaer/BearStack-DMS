@@ -1,8 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.12.0** · Android-App: **0.22.4**.
+Aktuelle Version: **1.12.1** · Android-App: **0.22.4**.
 
-**BearStack 1.12.0:** Optionale externe Speicher für Foto-Uploads: mehrere Nextcloud-Verbindungen, Browser-Anmeldung, Vorschau und dauerhafte Upload-Warteschlange. Ganze Ordner, Such-/Personengalerien oder markierte Medien übertragen; Originale bleiben readonly, Ziele werden niemals überschrieben oder gelöscht. [Einrichtung und Bedienung](_site-src/docs/externe-speicher.md).
+**BearStack 1.12.1:** Überarbeitete Speicher-Einstellungen mit eindeutigem Verbindungsstatus, kompakte Zielordnerauswahl und klar gegliederte Upload-Vorschauen und Warteschlange – auch auf kleinen Bildschirmen.
 
 **BearStack 1.11.2:** Gezoomte Fotos lassen sich auch in Firefox mit gedrückter Maustaste verschieben; das native Ziehen des Bildes unterbricht die Geste nicht mehr.
 

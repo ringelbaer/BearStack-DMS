@@ -1,34 +1,95 @@
 {{define "transfers.html"}}
 {{template "head" .}}
-<section class="page-head"><h1>{{.Title}}</h1><a class="secondary-button" href="/photos">Fotos</a></section>
+<section class="page-head">
+  <h1>{{if eq .Active "storage-connections"}}Einstellungen{{else}}{{.Title}}{{end}}</h1>
+  {{if ne .Active "storage-connections"}}<a class="secondary-button" href="/photos">Fotos</a>{{end}}
+</section>
 {{if eq .Active "storage-connections"}}
-<section class="panel settings-panel"><div class="settings-tabs">{{template "settings-tab-list" .}}<section class="settings-tab-panel">
-<p>Verbinde externe Speicher für ausgehende Foto-Uploads. Originale bleiben unverändert; vorhandene Zieldateien werden weder überschrieben noch gelöscht.</p>
-<div data-transfer-page="connections"><p role="status" data-transfer-status></p><div data-transfer-connections></div><button type="button" data-transfer-new>Verbindung hinzufügen</button></div>
-</section></div></section>
+<section class="panel settings-panel">
+  <div class="settings-tabs">
+    {{template "settings-tab-list" .}}
+    <section class="settings-tab-panel">
+      <header class="settings-section-head">
+        <h2>Externe Speicher</h2>
+        <p>Verbindungen und Zielordner für Foto-Uploads verwalten.</p>
+      </header>
+      <div data-transfer-page="connections">
+        <p role="status" data-transfer-status></p>
+        <div data-transfer-connections></div>
+        <button type="button" data-transfer-new>Verbindung hinzufügen</button>
+      </div>
+    </section>
+  </div>
+</section>
 {{else}}
-<section class="panel" data-transfer-page="jobs"><p role="status" data-transfer-status></p>
-<label>Verbindung <select data-transfer-filter><option value="">Alle Verbindungen</option></select></label>
-<div data-transfer-jobs></div><div class="page-actions"><button type="button" data-transfer-prev>Zurück</button><span data-transfer-page-number></span><button type="button" data-transfer-next>Weiter</button></div>
+<section class="panel" data-transfer-page="jobs">
+  <p role="status" data-transfer-status></p>
+  <div class="transfer-toolbar">
+    <label>Nach Verbindung filtern <select data-transfer-filter><option value="">Alle Verbindungen</option></select></label>
+    <span class="transfer-hint">Uploads laufen im Hintergrund weiter.</span>
+  </div>
+  <div data-transfer-jobs></div>
+  <div class="transfer-actions transfer-pagination">
+    <button type="button" class="secondary-button" data-transfer-prev>Zurück</button>
+    <span data-transfer-page-number></span>
+    <button type="button" class="secondary-button" data-transfer-next>Weiter</button>
+  </div>
 </section>
 {{end}}
-<dialog class="app-dialog" data-transfer-folders><header><h2>Basis-Zielordner wählen</h2><button type="button" data-transfer-folder-close aria-label="Schließen">×</button></header><div class="app-dialog-body"><p role="status" data-transfer-folder-status></p><button type="button" data-transfer-folder-back>Zurück</button><div data-transfer-folder-list></div></div></dialog>
+<dialog class="app-dialog transfer-dialog transfer-folder-dialog" data-transfer-folders aria-labelledby="transfer-folder-title">
+  <header>
+    <h2 id="transfer-folder-title">Basis-Zielordner wählen</h2>
+    <button type="button" class="secondary-button transfer-close" data-transfer-folder-close aria-label="Schließen">×</button>
+  </header>
+  <div class="app-dialog-body">
+    <p class="transfer-hint">Ordner öffnen und anschließend als Basisziel übernehmen.</p>
+    <nav class="transfer-folder-nav" aria-label="Ordnernavigation">
+      <button type="button" class="secondary-button" data-transfer-folder-back>Zurück</button>
+      <ol data-transfer-folder-breadcrumbs></ol>
+    </nav>
+    <p role="status" data-transfer-folder-status></p>
+    <div data-transfer-folder-list></div>
+  </div>
+  <footer>
+    <div class="transfer-folder-choice">
+      <span class="transfer-hint">Ausgewählter Ordner</span>
+      <strong data-transfer-folder-current>Noch keiner</strong>
+    </div>
+    <button type="button" data-transfer-folder-select disabled>Diesen Ordner verwenden</button>
+  </footer>
+</dialog>
 <script src="/static/app-transfers.js?v={{.AppVersion}}" defer></script>
 {{template "foot" .}}
 {{end}}
 
 {{define "transfer-modal"}}
 {{if and .TransferReady (not .Photos.PeopleDirectory)}}
-<dialog class="app-dialog transfer-dialog" data-transfer-modal data-transfer-selection="{{.TransferSelection}}">
-<header><h2>Upload zu externem Speicher</h2><button type="button" data-transfer-close aria-label="Schließen">×</button></header>
-<div class="app-dialog-body">
-<label>Verbindung <select data-transfer-connection required></select></label>
-<label>Zielordnername <input data-transfer-target maxlength="255" placeholder="Wird aus der Fotoauswahl vorgeschlagen"></label>
-<p>Originaldateien werden kopiert. Vorhandene Dateien bleiben erhalten; abweichende Größen werden als Konflikt gemeldet. Bei Bildgruppen werden nur die angezeigten Hauptbilder übertragen.</p>
-<button type="button" data-transfer-preview>Übertragung prüfen</button>
-<p role="status" data-transfer-preview-status></p><div data-transfer-summary></div><div data-transfer-preview-items></div>
-</div>
-<footer><a href="/photos/uploads">Upload-Warteschlange</a><button type="button" data-transfer-start disabled>Upload starten</button></footer>
+<dialog class="app-dialog transfer-dialog" aria-labelledby="transfer-upload-title" data-transfer-modal data-transfer-selection="{{.TransferSelection}}">
+  <header>
+    <h2 id="transfer-upload-title">Upload zu externem Speicher</h2>
+    <button type="button" class="secondary-button transfer-close" data-transfer-close aria-label="Schließen">×</button>
+  </header>
+  <div class="app-dialog-body">
+    <section class="transfer-form-section">
+      <h3>Upload-Ziel</h3>
+      <label>Verbindung <select data-transfer-connection required></select></label>
+      <label>Zielordnername <input data-transfer-target maxlength="255" placeholder="Wird aus der Fotoauswahl vorgeschlagen"></label>
+    </section>
+    <p class="transfer-note">Originaldateien werden kopiert. Vorhandene Dateien bleiben erhalten; abweichende Größen werden als Konflikt gemeldet. Bei Bildgruppen werden nur die angezeigten Hauptbilder übertragen.</p>
+    <section class="transfer-preview-section">
+      <div class="transfer-toolbar">
+        <h3>Vorschau</h3>
+        <button type="button" class="secondary-button" data-transfer-preview>Übertragung prüfen</button>
+      </div>
+      <p role="status" data-transfer-preview-status></p>
+      <div data-transfer-summary></div>
+      <div data-transfer-preview-items></div>
+    </section>
+  </div>
+  <footer>
+    <a href="/photos/uploads">Upload-Warteschlange</a>
+    <button type="button" data-transfer-start disabled>Upload starten</button>
+  </footer>
 </dialog>
 <script src="/static/app-transfers.js?v={{.AppVersion}}" defer></script>
 {{end}}

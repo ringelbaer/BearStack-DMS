@@ -50,6 +50,15 @@ test.beforeAll(async () => {
     }),
   );
   cloud = await nextcloudFixture(root);
+  for (const user of ["user-1", "user-2"]) {
+    for (let i = 0; i < 35; i++)
+      cloud.directories.add(
+        `/remote.php/dav/files/${user}/Ordner ${String(i).padStart(2, "0")}`,
+      );
+    cloud.directories.add(
+      `/remote.php/dav/files/${user}/Ordner 00/Unterordner`,
+    );
+  }
   server = await startBearStack(
     fixture,
     { username: "admin", password: "secret" },
@@ -87,15 +96,66 @@ async function addConnection(page, name) {
   const popup = await popupPromise;
   await popup.getByRole("button", { name: "Zugriff erlauben" }).click();
   await popup.close();
-  await expect(connection).toContainText("Verbunden:");
+  await expect(connection.locator(".transfer-badge")).toHaveText("Verbunden");
+  await expect(
+    connection.getByRole("button", { name: "Konto verbinden" }),
+  ).toHaveCount(0);
+  await expect(connection.locator(".transfer-connection-info")).toContainText(
+    "Zielordner erforderlich",
+  );
   await connection
     .getByRole("button", { name: "Basis-Zielordner wählen" })
     .click();
   const dialog = page.locator("[data-transfer-folders]");
+  await expect(dialog.locator("[data-transfer-folder-select]")).toBeDisabled();
   await dialog.getByRole("button", { name: "Dateien", exact: true }).click();
+  await expect(dialog.locator(".transfer-folder-entry")).toHaveCount(35);
+  await dialog.getByRole("button", { name: "Ordner 00", exact: true }).click();
+  await expect(dialog.locator("[data-transfer-folder-current]")).toHaveText(
+    "Ordner 00",
+  );
+  await dialog
+    .getByRole("button", { name: "Unterordner", exact: true })
+    .click();
+  await expect(dialog.locator("[data-transfer-folder-current]")).toHaveText(
+    "Unterordner",
+  );
+  await dialog
+    .locator("[data-transfer-folder-breadcrumbs]")
+    .getByRole("button", { name: "Dateien", exact: true })
+    .click();
+  await expect(dialog.locator(".transfer-folder-entry")).toHaveCount(35);
+  await expect(dialog.locator("[data-transfer-folder-current]")).toHaveText(
+    "Dateien",
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    dialog.locator("[data-transfer-folder-select]"),
+  ).toBeInViewport();
+  await expect
+    .poll(() => dialog.evaluate((el) => el.scrollWidth - el.clientWidth))
+    .toBeLessThanOrEqual(1);
+  await page.screenshot({ path: "/tmp/bearstack-transfer-folders-mobile.png" });
+  await dialog.getByRole("button", { name: "Ordner 34", exact: true }).click();
+  await expect(dialog.locator("[data-transfer-folder-current]")).toHaveText(
+    "Ordner 34",
+  );
+  await dialog.getByRole("button", { name: "Zurück", exact: true }).click();
+  await expect(dialog.locator("[data-transfer-folder-current]")).toHaveText(
+    "Dateien",
+  );
+  await page.setViewportSize({ width: 1280, height: 900 });
   await dialog.getByRole("button", { name: "Diesen Ordner verwenden" }).click();
   await expect(dialog).not.toBeVisible();
-  await expect(connection).toContainText("Basisziel: Dateien");
+  await expect(connection.locator(".transfer-connection-info")).toContainText(
+    "Dateien",
+  );
+  await expect(
+    connection.getByRole("button", { name: "Zielordner ändern" }),
+  ).toBeVisible();
+  await expect(
+    connection.getByRole("button", { name: "Basis-Zielordner wählen" }),
+  ).toHaveCount(0);
 }
 async function preview(page, connectionName, target) {
   const dialog = page.locator("[data-transfer-modal]");
@@ -130,6 +190,20 @@ test("multiple connections, folder preview, selected media and queue", async ({
     await page.goto(fixture.baseURL + "/settings/storage-connections");
     await addConnection(page, "Familiencloud");
     await addConnection(page, "Privates Archiv");
+    await expect(
+      page.getByRole("heading", {
+        name: "Einstellungen",
+        exact: true,
+        level: 1,
+      }),
+    ).toBeVisible();
+    await expect(page.locator(".settings-section-head h2")).toHaveText(
+      "Externe Speicher",
+    );
+    await page.screenshot({
+      path: "/tmp/bearstack-transfer-settings.png",
+      fullPage: true,
+    });
     await page.goto(fixture.baseURL + "/photos?path=2026");
     await expect(page.locator('[data-transfer-open=""]')).toHaveCount(0);
     await page.goto(
@@ -154,11 +228,19 @@ test("multiple connections, folder preview, selected media and queue", async ({
       "Unter Ordner",
     );
     await page.screenshot({ path: "/tmp/bearstack-transfer-preview.png" });
+    const spacing = await dialog
+      .locator(".app-dialog-body")
+      .evaluate((el) => parseFloat(getComputedStyle(el).rowGap));
+    expect(spacing).toBeGreaterThanOrEqual(16);
+    await expect(dialog.locator(".transfer-metrics > div")).toHaveCount(4);
     await page.setViewportSize({ width: 390, height: 844 });
     await expect
       .poll(() => dialog.evaluate((el) => el.scrollWidth - el.clientWidth))
       .toBeLessThanOrEqual(1);
     await expect(dialog.locator("[data-transfer-start]")).toBeInViewport();
+    await page.screenshot({
+      path: "/tmp/bearstack-transfer-preview-mobile.png",
+    });
     await page.setViewportSize({ width: 1280, height: 720 });
     await dialog
       .locator("[data-transfer-connection]")
@@ -217,6 +299,24 @@ test("multiple connections, folder preview, selected media and queue", async ({
       .selectOption({ label: "Privates Archiv" });
     await expect(page.locator(".transfer-job")).toHaveCount(1);
     await expect(page.locator(".transfer-job")).toContainText("Abgeschlossen");
+    await expect(
+      page.locator(".transfer-job .transfer-hint").first(),
+    ).toContainText("Nextcloud");
+    await page.getByText("Dateien und Fehler", { exact: true }).click();
+    await expect(page.locator(".transfer-file-list li")).toHaveCount(1);
+    await page.screenshot({ path: "/tmp/bearstack-transfer-queue.png" });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect
+      .poll(() =>
+        page
+          .locator(".transfer-job")
+          .evaluate((el) => el.scrollWidth - el.clientWidth),
+      )
+      .toBeLessThanOrEqual(1);
+    await page.screenshot({
+      path: "/tmp/bearstack-transfer-queue-mobile.png",
+      fullPage: true,
+    });
     expect(cloud.log.some((r) => r.method === "DELETE")).toBe(false);
     expect(
       cloud.log
@@ -224,6 +324,50 @@ test("multiple connections, folder preview, selected media and queue", async ({
         .every((r) => r.headers["if-none-match"] === "*"),
     ).toBe(true);
     expect(await readFile(path.join(fixture.photos, "root.png"))).toEqual(png);
+    await page.goto(fixture.baseURL + "/settings/storage-connections");
+    const connection = page.locator(".transfer-connection").filter({
+      has: page.getByRole("heading", {
+        name: "Privates Archiv",
+        exact: true,
+      }),
+    });
+    await connection.getByLabel("Aktiviert", { exact: true }).uncheck();
+    await connection
+      .getByRole("button", { name: "Speichern", exact: true })
+      .click();
+    await expect(connection.locator(".transfer-connection-info")).toContainText(
+      "Deaktiviert",
+    );
+    await expect(connection.locator(".transfer-badge")).toHaveText("Verbunden");
+    await expect(
+      connection.getByRole("button", { name: "Konto verbinden" }),
+    ).toHaveCount(0);
+    await expect(
+      connection.getByRole("button", { name: "Zielordner ändern" }),
+    ).toBeDisabled();
+    await connection
+      .getByRole("button", { name: "Verbindung trennen" })
+      .click();
+    await expect(connection.locator(".transfer-badge")).toHaveText(
+      "Nicht verbunden",
+    );
+    await expect(
+      connection.getByRole("button", { name: "Konto verbinden" }),
+    ).toBeVisible();
+    await expect(
+      connection.getByRole("button", { name: "Verbindung trennen" }),
+    ).toHaveCount(0);
+    await expect(
+      page
+        .locator(".transfer-connection")
+        .filter({
+          has: page.getByRole("heading", {
+            name: "Familiencloud",
+            exact: true,
+          }),
+        })
+        .locator(".transfer-badge"),
+    ).toHaveText("Verbunden");
     expect(errors).toEqual([]);
   } finally {
     await context.close();
