@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.11.1** · Android-App: **0.22.4**.
+Aktuelle Version: **1.11.2** · Android-App: **0.22.4**.
+
+**BearStack 1.11.2:** Gezoomte Fotos lassen sich auch in Firefox mit gedrückter Maustaste verschieben; das native Ziehen des Bildes unterbricht die Geste nicht mehr.
 
 **BearStack 1.11.1:** Korrigiertes Verschieben gezoomter Fotos in der Web-Großansicht: passende Bildgrenzen, sofortiger Richtungswechsel am Rand und Weiterziehen mit einem Finger nach dem Zwei-Finger-Zoom.
 
@@ -315,6 +317,8 @@ make test-playwright
 
 `make test-go` fuehrt `go test ./...` aus. `make test-js` nutzt `scripts/check-js.sh` und fuehrt `node --check` fuer alle Browser-Skripte unter `internal/server/static/*.js` aus. `make test-playwright` installiert bei Bedarf die fest versionierte Testabhängigkeit und prüft Dokumenten-Upload, Benutzerverwaltung und Foto-Galerie. Die Make-Variablen `GO`, `NODE` und `NPM` koennen bei Bedarf ueberschrieben werden, z. B. `NODE=/opt/node/bin/node make test-js`. Falls kein lokaler Chrome-Channel verfuegbar ist, kann Playwright wie ueblich mit eigenem Browser-Download verwendet werden, z. B. `npx playwright install chromium` und `PLAYWRIGHT_BROWSER_CHANNEL=chromium make test-playwright`.
 
+Die Firefox-Mausregressionen laufen nach `npx playwright install firefox` mit `PLAYWRIGHT_BROWSER=firefox npx playwright test tests/playwright/photos.spec.mjs --grep "pans"`.
+
 Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle Suiten verwenden denselben Helfer für Start, Gesundheitsprüfung und geordnetes Beenden; temporäre Daten werden erst nach Prozessende entfernt. Die Testabhängigkeit ist in `package-lock.json` festgelegt und wird bei Bedarf mit `npm ci --ignore-scripts` installiert. Ein vorhandener `GOCACHE` wird weiterverwendet.
 
 Reine Go-Testhelfer liegen in `_test.go`-Dateien und werden nicht in das Anwendungsbinary übernommen. Das gilt auch für den direkten Mail-Nachrichtenimport der Server-Integrationstests; die Produktionsschnittstellen enthalten nur tatsächlich benötigte Operationen. Ab 0.41.2 gilt dies auch für das Vorbelegen der Einstellungs-Caches. Die Mailimport-Tests verwenden die gemeinsamen Anhangsfunktionen direkt; ungenutzte PDF-Weiterleitungen sind entfernt. Die GPX-Benchmarks setzen für Messungen ohne Cache neben den Einträgen auch LRU-Verwaltung und Speicherzähler zurück.
@@ -516,6 +520,7 @@ Weitere projektnahe Variablen:
 | `GO` | Nur `Makefile`: Go-Binary fuer `make test-go` und `make build`, Standard `go`. |
 | `NODE` | Nur `Makefile`/`scripts/check-js.sh`: Node-Binary fuer `make test-js`, Standard `node`. |
 | `NPM` | Nur `Makefile`: npm-Binary fuer `make test-playwright`, Standard `npm`. |
+| `PLAYWRIGHT_BROWSER` | Nur Playwright-Konfiguration: Browser-Engine, Standard `chromium`; gezielte Maus-Regressionen auch mit `firefox`. |
 | `PLAYWRIGHT_BROWSER_CHANNEL` | Nur Playwright-Konfiguration: Browser-Channel fuer `make test-playwright`, Standard `chrome`. |
 | `BEARSTACK_WEBDAV_TRACE` | Diagnose fuer WebDAV-Clients: bei `1`, `true`, `yes` oder `on` protokolliert BearStack WebDAV-Methode, Status und Pfadmetadaten. |
 

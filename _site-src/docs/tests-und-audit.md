@@ -196,6 +196,18 @@ Für Änderungen an riskanten Bereichen gilt: fokussierte Regressionstests vor b
 
 Bei Versionsänderungen muss `info.version` in `openapi.yaml` mit der Root-Datei `VERSION` übereinstimmen. Der Go-Test `TestOpenAPISpecMatchesApplicationVersion` prüft diesen Abgleich für die eingebettete API-Beschreibung.
 
+Die Mausregressionen für gezoomte Fotos prüfen Hoch-/Querformat, Bildgrenzen,
+Richtungswechsel und Ziehen nach Mausrad-Zoom auch in Firefox:
+
+```sh
+npx playwright install firefox
+PLAYWRIGHT_BROWSER=firefox npx playwright test tests/playwright/photos.spec.mjs --grep "pans"
+```
+
+Die Browser-Engine wird über `PLAYWRIGHT_BROWSER` gewählt; ohne Angabe bleibt
+Chromium mit dem konfigurierten Chrome-Channel aktiv. Die CDP-Touchtests benötigen
+weiterhin Chromium.
+
 Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle Suiten verwenden denselben Helfer für Start, Gesundheitsprüfung und geordnetes Beenden; temporäre Daten werden erst nach Prozessende entfernt. Die Testabhängigkeit ist in `package-lock.json` festgelegt und wird bei Bedarf mit `npm ci --ignore-scripts` installiert. Ein vorhandener `GOCACHE` wird weiterverwendet.
 
 Sicherheitsregressionen ab 0.42.1 prüfen defekte `.adminonly`-Symlinks über Ordner-, Medien-, Batch- und Gesichtsprüfungen sowie die HTTP-Routen. Verweigerte Verzeichniszugriffe dürfen keine Gesichtsdaten löschen; unauflösbare Indexpfade dürfen private Einträge beim Start nicht veröffentlichen. TLS-Tests prüfen bei erneuter automatischer Erzeugung die Schlüsselrechte `0600`, unveränderte Symlink-Ziele und das Entfernen temporärer Dateien.

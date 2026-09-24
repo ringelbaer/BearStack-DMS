@@ -6,7 +6,7 @@ import path from "node:path";
 
 const password = "secret";
 const tinyPNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=",
   "base64",
 );
 
@@ -762,6 +762,39 @@ test("photo lightbox opens from gallery", async ({ browser }) => {
     await expect(page.locator("[data-photo-lightbox] [data-photo-info-name]")).toHaveText("public-a.png");
     await expect(page.locator("[data-photo-lightbox] [data-photo-info-date]")).toHaveText(/^01\.06\.2024 \d{2}:00$/);
     await expect(page.locator("[data-photo-lightbox] [data-photo-info-rating]")).toHaveText("4 Sterne");
+  } finally {
+    await context.close();
+  }
+});
+
+test("photo lightbox pans by mouse after wheel zoom without native image dragging", async ({ browser }) => {
+  const { context, page } = await editorPage(browser, { viewport: { width: 1000, height: 800 } });
+  try {
+    await page.goto(`${fixture.baseURL}/photos?sort=ascending_name`);
+    await photoItem(page, "public-a.png").locator(".photo-card-button").click();
+    const image = page.locator("[data-photo-image]");
+    await expect.poll(() => image.evaluate((node) => node.naturalWidth)).toBeGreaterThan(0);
+    await image.evaluate((node) => {
+      node.addEventListener("dragstart", () => { node.dataset.nativeDragStarted = "true"; });
+    });
+    const stage = await page.locator(".photo-lightbox-stage").boundingBox();
+    const x = stage.x + stage.width / 2, y = stage.y + stage.height / 2;
+    await page.mouse.move(x, y);
+    for (let step = 1; step <= 3; step++) {
+      await page.mouse.wheel(0, -100);
+      await expect.poll(() => lightboxZoomPercent(page)).toBe(Math.round(100 * 1.2 ** step));
+    }
+    await expect(image).toHaveCSS("cursor", "grab");
+    await page.mouse.down();
+    await page.mouse.move(x + 60, y + 40, { steps: 6 });
+    await expect.poll(() => image.evaluate((node) => {
+      const matrix = new DOMMatrix(node.style.transform);
+      return { x: matrix.m41, y: matrix.m42 };
+    })).toEqual({ x: 60, y: 40 });
+    await expect(image).not.toHaveAttribute("data-native-drag-started", "true");
+    await page.mouse.up();
+    await expect(page.locator(".photo-lightbox-stage")).not.toHaveClass(/is-dragging/);
+    await expect(page.locator("[data-photo-lightbox] [data-photo-title]")).toHaveText("public-a.png");
   } finally {
     await context.close();
   }

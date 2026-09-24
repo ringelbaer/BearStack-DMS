@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const configDir = dirname(fileURLToPath(import.meta.url));
+const browserName = process.env.PLAYWRIGHT_BROWSER || "chromium";
 
 export default defineConfig({
   testDir: join(configDir, "tests/playwright"),
@@ -15,7 +16,8 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   use: {
-    channel: process.env.PLAYWRIGHT_BROWSER_CHANNEL || "chrome",
+    browserName,
+    channel: browserName === "chromium" ? (process.env.PLAYWRIGHT_BROWSER_CHANNEL || "chrome") : undefined,
     trace: "retain-on-failure",
   },
 });

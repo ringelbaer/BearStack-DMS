@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.11.2
+
+- Firefox: Natives Bildziehen in der Foto-Großansicht über `draggable="false"` deaktiviert. Dadurch unterbricht der Browser die Mausgeste nicht mehr und gezoomte Fotos folgen der gedrückten Maustaste.
+- Explizite Mausregression nach Mausrad-Zoom und optionale Firefox-Ausführung über `PLAYWRIGHT_BROWSER`; ungültige IDAT-Prüfsumme der PNG-Testfixture korrigiert.
+- PATCH für die Browserkorrektur; README, Website und OpenAPI-Version aktualisiert. Keine Änderung an HTTP-Verträgen oder Originalfotos.
+- Validiert: Fehler vor der Korrektur in Firefox reproduziert; danach drei Firefox-Mausregressionen und 22 Chromium-Lightbox-/Touchprüfungen erfolgreich. Server-/API-Tests, Testsyntax und Website-Build bestanden.
+
 ### BearStack 1.11.1
 
 - Web-Fotogroßansicht: Verschiebegrenzen gezoomter Bilder berücksichtigen die sichtbare Fläche und das Seitenverhältnis. Vollständig sichtbare Achsen bleiben zentriert; nach dem Ziehen über einen Bildrand reagiert die Gegenrichtung sofort.
