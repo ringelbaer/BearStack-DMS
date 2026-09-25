@@ -1920,6 +1920,14 @@ höchstens <strong>8 Bildern und 32 MiB</strong>. Datei- oder Sidecaränderungen
 Schlüssel. Kann ein geänderter Fingerabdruck nicht gespeichert werden, bricht
 der Abruf ab.</p>
 <h2 id="karten-und-gpx">Karten und GPX<a class="headerlink" href="#karten-und-gpx" title="Permanent link">&para;</a></h2>
+<p>Ab 1.13.1 hält die Web-Karte höchstens 128 Kacheln im Speicher, bei größeren
+Ansichten mindestens den aktuell sichtbaren Kachelsatz. Zuletzt unbenutzte
+Kacheln werden entfernt; weiterhin sichtbare Bildknoten bleiben erhalten.
+Marker, Routenpunkte und GPX-Tracks verschieben sich beim normalen Ziehen als
+zusammenhängende Ebene. Ihre Geometrie wird bei Zoom, Größenänderungen,
+Ebenenwechsel, Änderungen der Weltumbruch-Zuordnung oder größeren Verschiebungen
+neu berechnet. Dadurch benötigt eine gewöhnliche Bewegung unabhängig von der
+Markerzahl nur eine Positionsänderung für die gemeinsame Ebene.</p>
 <p>Die Karte verwendet Fotokoordinaten und vorhandene GPX-Tracks. Die
 <strong>Foto-Track-Auflösung</strong> unter <strong>Einstellungen → Fotos</strong> gruppiert nahe Fotos in
 Stufen von <strong>500 m bis 10 km</strong>. Browser und Android verwenden dieselbe

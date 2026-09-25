@@ -325,11 +325,36 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, dat
 }
 
 func (s *Server) renderPartial(w http.ResponseWriter, r *http.Request, name string, data PageData) {
-	data = s.withRenderSettings(r, data)
+	data = s.withPartialRenderSettings(r, data)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.templates.ExecuteTemplate(w, name, data); err != nil {
 		s.log.Error("template partial render failed", "template", name, "error", err)
 	}
+}
+
+// Fragments inherit the page shell. Only permissions and tag presentation are
+// needed by the document table and person-folder content templates.
+func (s *Server) withPartialRenderSettings(r *http.Request, data PageData) PageData {
+	data.Auth = authPermissionsForRequest(s, r)
+	if data.TagDisplayMode == "" {
+		data.TagDisplayMode = s.renderSettingsForPage(r.Context()).TagDisplayMode
+	} else {
+		data.TagDisplayMode = normalizeTagDisplayMode(data.TagDisplayMode)
+	}
+	return data
+}
+
+func (s *Server) renderSettingsForPage(ctx context.Context) renderSettingsSnapshot {
+	if s.repo != nil {
+		settings, err := s.renderSettings(ctx)
+		if err == nil {
+			return settings
+		}
+		if s.log != nil {
+			s.log.Warn("render settings failed", "error", err)
+		}
+	}
+	return defaultRenderSettingsSnapshot()
 }
 
 func (s *Server) withRenderSettings(r *http.Request, data PageData) PageData {
@@ -367,17 +392,7 @@ func (s *Server) withRenderSettings(r *http.Request, data PageData) PageData {
 	} else {
 		data.AppName = normalizeAppName(data.AppName)
 	}
-	renderSettings := defaultRenderSettingsSnapshot()
-	if s.repo != nil {
-		settings, err := s.renderSettings(ctx)
-		if err != nil {
-			if s.log != nil {
-				s.log.Warn("render settings failed", "error", err)
-			}
-		} else {
-			renderSettings = settings
-		}
-	}
+	renderSettings := s.renderSettingsForPage(ctx)
 	if data.TagDisplayMode == "" {
 		data.TagDisplayMode = renderSettings.TagDisplayMode
 	} else {

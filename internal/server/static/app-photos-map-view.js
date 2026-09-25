@@ -98,6 +98,18 @@
     }
     canvas.classList.remove("empty");
 
+    // One translated overlay preserves stacking while avoiding thousands of
+    // marker and track DOM writes during ordinary pans.
+    var overlay = document.createElement("div");
+    overlay.className = "photo-map-overlay";
+    Array.from(canvas.querySelectorAll("[data-photo-map-marker], [data-photo-route-point], [data-photo-map-route], [data-photo-map-gpx-track], [data-photo-map-gpx-label]")).forEach(function (node) {
+      overlay.appendChild(node);
+    });
+    canvas.appendChild(overlay);
+    var anchor = null;
+    var layersDirty = false;
+    var longitudes = allPositions.map(function (position) { return position.lon; }).sort(function (a, b) { return a - b; });
+
     var state = photoMapInitialState(allPositions, canvas.clientWidth || 640, canvas.clientHeight || 320);
 
     function canvasSize() {
@@ -157,9 +169,33 @@
 
     function renderMap() {
       var size = canvasSize();
-      var screenPoint = photoMapProjector(state, size);
       renderPhotoMapTiles(tileLayer, state, size, tileCache);
-      renderMarkers(screenPoint, size);
+      var center = centerWorld();
+      var worldSize = photoMapWorldSize(state.zoom);
+      var deltaX = anchor ? anchor.center.x - center.x : 0;
+      if (deltaX > worldSize / 2) deltaX -= worldSize;
+      if (deltaX < -worldSize / 2) deltaX += worldSize;
+      var deltaY = anchor ? anchor.center.y - center.y : 0;
+      // Detect a change of nearest world copy at the opposite meridian in
+      // logarithmic time, including exact points on the wrap boundary.
+      var cut = state.lon < 0 ? state.lon + 180 : state.lon - 180;
+      var low = 0, high = longitudes.length;
+      while (low < high) {
+        var mid = (low + high) >>> 1;
+        if (longitudes[mid] < cut || (state.lon < 0 && longitudes[mid] === cut)) low = mid + 1;
+        else high = mid;
+      }
+      var rebase = !anchor || anchor.zoom !== state.zoom || anchor.wrap !== low || layersDirty ||
+        anchor.width !== size.width || anchor.height !== size.height ||
+        Math.abs(deltaX) > size.width * 2 || Math.abs(deltaY) > size.height * 2;
+      if (rebase) {
+        overlay.style.transform = "translate(0px, 0px)";
+        renderMarkers(photoMapProjector(state, size), size);
+        anchor = { center: center, zoom: state.zoom, wrap: low, width: size.width, height: size.height };
+        layersDirty = false;
+      } else {
+        overlay.style.transform = "translate(" + deltaX.toFixed(2) + "px, " + deltaY.toFixed(2) + "px)";
+      }
     }
 
     function scheduleRender() {
@@ -211,6 +247,7 @@
     layerToggles.forEach(function (toggle) {
       toggle.addEventListener("change", function () {
         layerVisibility[toggle.dataset.photoMapLayer || ""] = toggle.checked;
+        layersDirty = true;
         scheduleRender();
       });
     });

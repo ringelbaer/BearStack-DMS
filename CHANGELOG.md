@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.13.1
+
+- Karten-Kacheln werden als begrenzter LRU-Cache gehalten: höchstens 128 Einträge oder die für den sichtbaren Ausschnitt notwendige Anzahl. Weiterhin sichtbare Bildknoten bleiben im DOM.
+- Marker und Tracks verschieben sich beim normalen Ziehen als gemeinsame Ebene. Zoom, Größenänderungen, Weltumbruch und größere Verschiebungen berechnen die Geometrie neu; Ebenenschalter blenden ihre Inhalte zuverlässig aus.
+- Dokumenttabellen und Personenordner verwenden für HTML-Teilantworten nur Berechtigungen und Tag-Darstellung. Abfragen für Transferverbindungen, Stammbaum-Navigation, App-Namen und Favicon entfallen dort.
+- PATCH mit Browser-Regressionen für 10.000 Marker und Trackpunkte, Cachegrenzen, Weltumbruch, Zoom und Größenänderungen. Servertests vergleichen die Teilantworten für Administratoren und Leser und prüfen den Weg ohne Navigationsabfragen. README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 1.13.0
 
 - Transfer-Dateisummen werden transaktional bei Dateiänderungen mitgeführt. Listen und Einzelaufträge benötigen keine wiederholten Dateizählungen; die Historie verwendet passende Indizes und eine gemeinsame Abfrage pro Seite.

@@ -2289,6 +2289,27 @@ label span {
   width: 256px;
 }
 
+.photo-map-overlay {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+.photo-map-overlay .photo-map-marker,
+.photo-map-overlay .photo-map-route-point {
+  pointer-events: auto;
+}
+
+.photo-map-overlay .photo-map-route,
+.photo-map-overlay .photo-map-gpx-track {
+  overflow: visible;
+}
+
+.photo-map-overlay > [hidden] {
+  display: none !important;
+}
+
 .photo-map-canvas.empty .photo-map-tile-layer,
 .photo-map-canvas.empty .photo-map-controls,
 .photo-map-canvas.empty .photo-map-layer-panel,

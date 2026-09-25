@@ -237,6 +237,15 @@ der Abruf ab.
 
 ## Karten und GPX
 
+Ab 1.13.1 hält die Web-Karte höchstens 128 Kacheln im Speicher, bei größeren
+Ansichten mindestens den aktuell sichtbaren Kachelsatz. Zuletzt unbenutzte
+Kacheln werden entfernt; weiterhin sichtbare Bildknoten bleiben erhalten.
+Marker, Routenpunkte und GPX-Tracks verschieben sich beim normalen Ziehen als
+zusammenhängende Ebene. Ihre Geometrie wird bei Zoom, Größenänderungen,
+Ebenenwechsel, Änderungen der Weltumbruch-Zuordnung oder größeren Verschiebungen
+neu berechnet. Dadurch benötigt eine gewöhnliche Bewegung unabhängig von der
+Markerzahl nur eine Positionsänderung für die gemeinsame Ebene.
+
 Die Karte verwendet Fotokoordinaten und vorhandene GPX-Tracks. Die
 **Foto-Track-Auflösung** unter **Einstellungen → Fotos** gruppiert nahe Fotos in
 Stufen von **500 m bis 10 km**. Browser und Android verwenden dieselbe

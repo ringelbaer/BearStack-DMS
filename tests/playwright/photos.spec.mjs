@@ -1373,6 +1373,7 @@ test("photo map measures once per render and reuses its track while panning", as
     await page.route("https://tile.openstreetmap.org/**", route => route.fulfill({status: 200, contentType: "image/png", body: tinyPNG}));
     await page.goto(`${fixture.baseURL}/help`);
     await page.setContent('<section data-photo-map><div data-photo-map-canvas tabindex="0" style="width:1000px;height:600px"><div data-photo-map-tiles></div><svg data-photo-map-gpx-track data-photo-map-layer="track"></svg></div></section>');
+    await page.addStyleTag({url: `${fixture.baseURL}/static/app.css`});
     await page.addScriptTag({url: `${fixture.baseURL}/static/app-photos-map.js`});
     await page.addScriptTag({url: `${fixture.baseURL}/static/app-photos-map-view.js`});
     const initial = await page.evaluate(() => {
@@ -1388,11 +1389,13 @@ test("photo map measures once per render and reuses its track while panning", as
       const reads = window.mapSizeReads;
       window.mapSizeReads = 0;
       window.originalPolyline = track.querySelector("polyline");
-      return {reads, point: window.originalPolyline.points.getItem(0).x};
+      const point = window.originalPolyline.points.getItem(0);
+      return {reads, point: point.matrixTransform(window.originalPolyline.getScreenCTM()).x, local: point.x};
     });
     expect(initial.reads).toBe(4); // Initial fit plus the first render, independent of point count.
     await page.locator("[data-photo-map-canvas]").press("ArrowRight");
-    await expect.poll(() => page.evaluate(() => window.originalPolyline.points.getItem(0).x)).toBeCloseTo(initial.point - 80, 1);
+    await expect.poll(() => page.evaluate(() => window.originalPolyline.points.getItem(0).matrixTransform(window.originalPolyline.getScreenCTM()).x)).toBeCloseTo(initial.point - 80, 1);
+    expect(await page.evaluate(() => window.originalPolyline.points.getItem(0).x)).toBe(initial.local);
     expect(await page.evaluate(() => ({
       reads: window.mapSizeReads,
       reused: window.originalPolyline === document.querySelector("[data-photo-map-gpx-track] polyline"),

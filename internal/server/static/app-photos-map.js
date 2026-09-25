@@ -111,7 +111,7 @@
     var startY = Math.floor(topLeftY / photoMapTileSize);
     var endY = Math.floor((topLeftY + size.height) / photoMapTileSize);
     var cache = tileCache || new Map();
-    var fragment = document.createDocumentFragment();
+    var visible = new Set();
 
     for (var tileY = startY; tileY <= endY; tileY += 1) {
       if (tileY < 0 || tileY >= tileCount) continue;
@@ -127,14 +127,24 @@
           tile.draggable = false;
           tile.referrerPolicy = "origin";
           tile.src = "https://tile.openstreetmap.org/" + key + ".png";
-          cache.set(key, tile);
         }
+        // Insertion order is the LRU order; visible tiles survive eviction.
+        cache.delete(key);
+        cache.set(key, tile);
+        visible.add(tile);
         tile.style.transform = "translate(" + Math.round(tileX * photoMapTileSize - topLeftX) + "px, " + Math.round(tileY * photoMapTileSize - topLeftY) + "px)";
-        fragment.appendChild(tile);
+        if (tile.parentNode !== tileLayer) tileLayer.appendChild(tile);
       }
     }
 
-    tileLayer.replaceChildren(fragment);
+    Array.from(tileLayer.children).forEach(function (tile) {
+      if (!visible.has(tile)) tile.remove();
+    });
+    var limit = Math.max(128, visible.size);
+    for (var entry of cache) {
+      if (cache.size <= limit) break;
+      if (!visible.has(entry[1])) cache.delete(entry[0]);
+    }
   }
 
   window.BearStack = window.BearStack || {};

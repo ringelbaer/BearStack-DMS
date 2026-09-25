@@ -75,6 +75,8 @@ Zusätzlich zur Startkonfiguration speichert BearStack über die Weboberfläche 
 
 ## Abfragen und Darstellung
 
+Ab 1.13.1 verwenden HTML-Teilantworten für Dokumenttabellen und Personenordner einen eigenen Render-Kontext mit Berechtigungen und Tag-Darstellung. Globale Navigationsdaten, Transferverbindungen, Stammbaum-Menü, App-Name und Favicon werden nur für vollständige Seiten vorbereitet. Die vorhandenen Darstellungs- und Rechteprüfungen bleiben auch nach AJAX-Aktualisierungen erhalten.
+
 Ab 1.12.9 besitzen auch `app-upload.js` und `app-ocr.js` ihren DOM- und Ablaufzustand selbst. Upload-Fortschritt und Minimieren benötigen keine Variablen aus `app.js` oder `app-documents.js`. Nach einem Upload wird `BearStack.documents.refreshList` aufgerufen; die Dokumentliste verantwortet ihre Aktualisierung und die erneute Initialisierung ihrer Bedienelemente. Das OCR-Modul verwaltet Statusabfragen und ausgeblendete Meldungen eigenständig.
 
 Ab 1.12.8 besitzt `app-tags.js` seine DOM-Referenzen, Tag-Optionen und Dialogauswahl selbst. Andere WebUI-Module verwenden `BearStack.tags`, auch nach dem Nachladen von Dokumentlisten und Personenansichten. Der Löschschutz wird über eine lesende Moduloperation abgefragt; die interne Tag-Tabelle bleibt privat. Das gemeinsame `app.js` initialisiert keinen Tag-Zustand mehr.

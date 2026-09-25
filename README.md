@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.13.0** · Android-App: **0.22.4**.
+Aktuelle Version: **1.13.1** · Android-App: **0.22.4**.
+
+**BearStack 1.13.1:** Die Web-Karte begrenzt ihren Kachel-Cache und verschiebt Marker und Tracks gemeinsam, statt sie bei jeder Bewegung einzeln zu aktualisieren. HTML-Teilantworten laden keine Daten für die globale Navigation.
 
 **BearStack 1.13.0:** Die Foto-Upload-Warteschlange liest gespeicherte Dateisummen mit einer gebündelten, indizierten Abfrage. Unveränderte Auftragskarten bleiben erhalten; im Leerlauf und bei Fehlern fragt die WebUI seltener nach.
 
