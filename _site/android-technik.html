@@ -2,104 +2,104 @@
 <!doctype html>
 <html lang="de" class="no-js">
   <head>
-
+    
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
-
+      
         <meta name="description" content="Build, Signierung, Verbindung, API, Datenhaltung und Tests der Android-App.">
-
-
+      
+      
         <meta name="author" content="BearStack">
-
-
-
+      
+      
+      
         <link rel="prev" href="./android.html">
-
-
+      
+      
         <link rel="next" href="./installation.html">
-
-
-
-
-
+      
+      
+        
+      
+      
       <link rel="icon" href="./assets/images/bearstack.svg">
       <meta name="generator" content="zensical-0.0.46">
-
-
-
+    
+    
+      
         <title>Android-App – Technik & Entwicklung - BearStack</title>
-
-
-
-
-
-
+      
+    
+    
+      
+        
+      
       <link rel="stylesheet" href="./assets/stylesheets/modern/main.19d3147f.min.css">
-
-
-
-
+      
+        
+          
+        
         <link rel="stylesheet" href="./assets/stylesheets/modern/palette.dfe2e883.min.css">
+      
+      
 
 
-
-
-
-
-
-
-
-
-
-
+    
+    
+      
+    
+    
+      
+    
+    
       <link rel="stylesheet" href="./stylesheets/bearstack.css">
-
+    
     <script>__md_scope=new URL(".",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
 
-
-
-
-
+    
+    
   </head>
-
-
-
-
-
-
-
-
-
+  
+  
+    
+    
+      
+    
+    
+    
+    
     <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="green">
-
-
+  
+    
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" for="__drawer" aria-label="Navigation"></label>
     <div data-md-component="skip">
-
-
+      
+        
         <a href="#android-app-technik-entwicklung" class="md-skip">
           Zum Inhalt
         </a>
-
+      
     </div>
     <div data-md-component="announce">
-
+      
     </div>
-
-
-
+    
+    
+      
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Kopfzeile">
     <a href="./index.html" title="BearStack" class="md-header__button md-logo" aria-label="BearStack" data-md-component="logo">
-
+      
   <img src="./assets/images/bearstack.svg" alt="BearStack">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
-
+      
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
     </label>
     <div class="md-header__title" data-md-component="header-title">
@@ -111,49 +111,49 @@
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
-
+            
               Android-App – Technik & Entwicklung
-
+            
           </span>
         </div>
       </div>
     </div>
-
-
+    
+      
         <form class="md-header__option" data-md-component="palette">
-
-
-
-
+  
+    
+    
+    
     <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="green"  aria-label="Zum dunklen Modus wechseln"  type="radio" name="__palette" id="__palette_0">
-
+    
       <label class="md-header__button md-icon" title="Zum dunklen Modus wechseln" for="__palette_1" hidden>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
       </label>
-
-
-
-
-
+    
+  
+    
+    
+    
     <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="green"  aria-label="Zum hellen Modus wechseln"  type="radio" name="__palette" id="__palette_1">
-
+    
       <label class="md-header__button md-icon" title="Zum hellen Modus wechseln" for="__palette_0" hidden>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
       </label>
-
-
+    
+  
 </form>
-
-
-
+      
+    
+    
       <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
-
-
-
-
-
+    
+    
+    
+      
+      
         <label class="md-header__button md-icon" for="__search" aria-label="Suche">
-
+          
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
         </label>
         <div class="md-search" data-md-component="search" role="dialog" aria-label="Suche">
@@ -161,211 +161,211 @@
     Suche
   </button>
 </div>
-
-
+      
+    
     <div class="md-header__source">
-
+      
         <a href="https://github.com/ringelbaer/BearStack-DMS" title="Zum Repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
-
+    
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
     ringelbaer/BearStack-DMS
   </div>
 </a>
-
+      
     </div>
   </nav>
-
+  
 </header>
-
+    
     <div class="md-container" data-md-component="container">
-
-
-
-
-
+      
+      
+        
+          
+            
 <nav class="md-tabs" aria-label="Hauptnavigation" data-md-component="tabs">
   <div class="md-grid">
     <ul class="md-tabs__list">
-
-
-
-
-
-
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
       <a href="./index.html" class="md-tabs__link">
-
-
+        
+  
   Start
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
       <a href="./dokumente.html" class="md-tabs__link">
-
-
+        
+  
   Dokumente
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
-
-
-
-
-
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
       <li class="md-tabs__item">
         <a href="./fotos.html" class="md-tabs__link">
-
-
+          
+  
   Fotos
 
         </a>
       </li>
+    
+  
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      
+        
+  
+  
+  
+    
+  
+  
+    
+      
+    
+    
+    
       <li class="md-tabs__item md-tabs__item--active">
         <a href="./android.html" class="md-tabs__link">
-
-
+          
+  
   Android-App
 
         </a>
       </li>
+    
+  
 
-
-
-
-
-
-
-
-
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
       <a href="./installation.html" class="md-tabs__link">
-
-
+        
+  
   Installation
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
       <a href="./benutzer-und-rechte.html" class="md-tabs__link">
-
-
+        
+  
   Benutzer & Rechte
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
       <a href="./architektur.html" class="md-tabs__link">
-
-
+        
+  
   Architektur
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
       <a href="./tests-und-audit.html" class="md-tabs__link">
-
-
+        
+  
   Tests & Audit
 
       </a>
     </li>
+  
 
-
-
+      
     </ul>
   </div>
 </nav>
-
-
-
+          
+        
+      
       <main class="md-main" data-md-component="main">
         <div class="md-main__inner md-grid">
-
-
-
+          
+            
+              
               <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
+                    
 
 
-
-
+  
 
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
     <a href="./index.html" title="BearStack" class="md-nav__button md-logo" aria-label="BearStack" data-md-component="logo">
-
+      
   <img src="./assets/images/bearstack.svg" alt="BearStack">
 
     </a>
     BearStack
   </label>
-
+  
     <div class="md-nav__source">
       <a href="https://github.com/ringelbaer/BearStack-DMS" title="Zum Repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
-
+    
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
@@ -373,379 +373,379 @@
   </div>
 </a>
     </div>
-
+  
   <ul class="md-nav__list" data-md-scrollfix>
-
-
-
-
-
-
-
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="./index.html" class="md-nav__link">
-
-
-
+        
+  
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Start
 
-
+    
   </span>
-
-
+  
+  
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
-
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="./dokumente.html" class="md-nav__link">
-
-
-
+        
+  
+  
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5M10 9H8M16 13H8M16 17H8"/></svg>
-
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Dokumente
 
-
+    
   </span>
-
-
+  
+  
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
     <li class="md-nav__item md-nav__item--nested">
-
-
-
+      
+        
+        
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
-
-
+        
+          
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-
-
-
+            
+  
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Fotos
 
-
+    
   </span>
-
-
+  
+  
 
             <span class="md-nav__icon md-icon"></span>
           </label>
-
+        
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
-
-
+            
+  
   Fotos
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-
-
-
-
-
-
-
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="./fotos.html" class="md-nav__link">
-
-
-
+        
+  
+  
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-images" viewBox="0 0 24 24"><path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16"/><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><circle cx="13" cy="7" r="1" fill="currentColor"/><rect width="14" height="14" x="8" y="2" rx="2"/></svg>
-
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Anleitung
 
-
+    
   </span>
-
-
+  
+  
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
-
-
+              
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="./fotos-personen.html" class="md-nav__link">
-
-
-
+        
+  
+  
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
-
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Personen & Gesichter
 
-
+    
   </span>
-
-
+  
+  
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
-
-
+              
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="./fotos-technik.html" class="md-nav__link">
-
-
-
+        
+  
+  
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
-
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Einrichtung & Betrieb
 
-
+    
   </span>
-
-
+  
+  
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
-
-
+              
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="./externe-speicher.html" class="md-nav__link">
-
-
-
+        
+  
+  
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-cloud-upload" viewBox="0 0 24 24"><path d="M12 13v8M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/></svg>
-
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Externe Speicher
 
-
+    
   </span>
-
-
+  
+  
 
       </a>
     </li>
+  
 
-
-
-
+              
+            
           </ul>
         </nav>
-
+      
     </li>
+  
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
     <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-
-
-
+      
+        
+        
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
-
-
+        
+          
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
-
-
-
+            
+  
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Android-App
 
-
+    
   </span>
-
-
+  
+  
 
             <span class="md-nav__icon md-icon"></span>
           </label>
-
+        
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
-
-
+            
+  
   Android-App
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-
-
-
-
-
-
-
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="./android.html" class="md-nav__link">
-
-
-
+        
+  
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Anleitung
 
-
+    
   </span>
-
-
+  
+  
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
-
-
-
-
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
     <li class="md-nav__item md-nav__item--active">
-
-
-
-
-
-
-
+      
+      
+      
+      
+        
+      
+      
         <label class="md-nav__link md-nav__link--active" for="__toc">
-
-
-
+          
+  
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Technik & Entwicklung
 
-
+    
   </span>
-
-
+  
+  
 
           <span class="md-nav__icon md-icon"></span>
         </label>
-
+      
       <a href="android-technik.html" class="md-nav__link md-nav__link--active">
-
-
-
+        
+  
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Technik & Entwicklung
 
-
+    
   </span>
-
-
+  
+  
 
       </a>
-
-
+      
+        
 
 
 <nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
-
-
-
-
-
-
+  
+  
+  
+    
+  
+  
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
       Inhaltsverzeichnis
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-
+      
         <li class="md-nav__item">
   <a href="#bauen-und-installieren" class="md-nav__link">
     <span class="md-ellipsis">
@@ -754,9 +754,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#privaten-release-signieren" class="md-nav__link">
     <span class="md-ellipsis">
@@ -765,9 +765,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#verbindung-und-zertifikat" class="md-nav__link">
     <span class="md-ellipsis">
@@ -776,9 +776,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#api-und-datenhaltung" class="md-nav__link">
     <span class="md-ellipsis">
@@ -787,10 +787,10 @@
       </span>
     </span>
   </a>
-
+  
     <nav class="md-nav" aria-label="API und Datenhaltung">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#native-ordnerprufung" class="md-nav__link">
     <span class="md-ellipsis">
@@ -799,9 +799,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#aktionen-revisionen-und-wiederanlauf" class="md-nav__link">
     <span class="md-ellipsis">
@@ -810,9 +810,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#gesichtsabgleich" class="md-nav__link">
     <span class="md-ellipsis">
@@ -821,14 +821,14 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#speicher-und-ladeverhalten" class="md-nav__link">
     <span class="md-ellipsis">
@@ -837,10 +837,10 @@
       </span>
     </span>
   </a>
-
+  
     <nav class="md-nav" aria-label="Speicher und Ladeverhalten">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#metadatengrenzen" class="md-nav__link">
     <span class="md-ellipsis">
@@ -849,9 +849,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#groansicht-und-systemleisten" class="md-nav__link">
     <span class="md-ellipsis">
@@ -860,9 +860,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#bild-und-dateicaches" class="md-nav__link">
     <span class="md-ellipsis">
@@ -871,9 +871,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#karten-und-geometrien" class="md-nav__link">
     <span class="md-ellipsis">
@@ -882,14 +882,14 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#tests" class="md-nav__link">
     <span class="md-ellipsis">
@@ -898,9 +898,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#projektstruktur" class="md-nav__link">
     <span class="md-ellipsis">
@@ -909,9 +909,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#navigation-und-gemeinsame-einstellungen" class="md-nav__link">
     <span class="md-ellipsis">
@@ -920,10 +920,10 @@
       </span>
     </span>
   </a>
-
+  
     <nav class="md-nav" aria-label="Navigation und gemeinsame Einstellungen">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#zustande-der-personenverwaltung" class="md-nav__link">
     <span class="md-ellipsis">
@@ -932,182 +932,182 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
-
+  
 </li>
-
+      
     </ul>
-
+  
 </nav>
-
+      
     </li>
+  
 
-
-
-
+              
+            
           </ul>
         </nav>
-
+      
     </li>
+  
 
-
-
-
-
-
-
-
-
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="./installation.html" class="md-nav__link">
-
-
-
+        
+  
+  
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-play" viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg>
-
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Installation
 
-
+    
   </span>
-
-
+  
+  
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
-
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="./benutzer-und-rechte.html" class="md-nav__link">
-
-
-
+        
+  
+  
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
-
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Benutzer & Rechte
 
-
+    
   </span>
-
-
+  
+  
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
-
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="./architektur.html" class="md-nav__link">
-
-
-
+        
+  
+  
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-blocks" viewBox="0 0 24 24"><path d="M10 22V7a1 1 0 0 0-1-1H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 0 0-1-1H2"/><rect width="8" height="8" x="14" y="2" rx="1"/></svg>
-
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Architektur
 
-
+    
   </span>
-
-
+  
+  
 
       </a>
     </li>
+  
 
-
-
-
-
-
-
-
-
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="./tests-und-audit.html" class="md-nav__link">
-
-
-
+        
+  
+  
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
-
+  
   <span class="md-ellipsis">
-
-
+    
+  
   Tests & Audit
 
-
+    
   </span>
-
-
+  
+  
 
       </a>
     </li>
+  
 
-
-
+    
   </ul>
 </nav>
                   </div>
                 </div>
               </div>
-
-
-
+            
+            
+              
               <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
-
-
-
-
-
-
-
+                  
+                    
+                    
+                    
+                      
+                    
+                    
                       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
                       <div class="md-sidebar-button__wrapper">
                         <label class="md-sidebar-button" for="__toc"></label>
                       </div>
-
-
+                    
+                  
                   <div class="md-sidebar__inner">
-
+                    
 
 
 <nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
-
-
-
-
-
-
+  
+  
+  
+    
+  
+  
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
       Inhaltsverzeichnis
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-
+      
         <li class="md-nav__item">
   <a href="#bauen-und-installieren" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1116,9 +1116,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#privaten-release-signieren" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1127,9 +1127,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#verbindung-und-zertifikat" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1138,9 +1138,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#api-und-datenhaltung" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1149,10 +1149,10 @@
       </span>
     </span>
   </a>
-
+  
     <nav class="md-nav" aria-label="API und Datenhaltung">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#native-ordnerprufung" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1161,9 +1161,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#aktionen-revisionen-und-wiederanlauf" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1172,9 +1172,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#gesichtsabgleich" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1183,14 +1183,14 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#speicher-und-ladeverhalten" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1199,10 +1199,10 @@
       </span>
     </span>
   </a>
-
+  
     <nav class="md-nav" aria-label="Speicher und Ladeverhalten">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#metadatengrenzen" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1211,9 +1211,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#groansicht-und-systemleisten" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1222,9 +1222,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#bild-und-dateicaches" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1233,9 +1233,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
           <li class="md-nav__item">
   <a href="#karten-und-geometrien" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1244,14 +1244,14 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#tests" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1260,9 +1260,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#projektstruktur" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1271,9 +1271,9 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+      
         <li class="md-nav__item">
   <a href="#navigation-und-gemeinsame-einstellungen" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1282,10 +1282,10 @@
       </span>
     </span>
   </a>
-
+  
     <nav class="md-nav" aria-label="Navigation und gemeinsame Einstellungen">
       <ul class="md-nav__list">
-
+        
           <li class="md-nav__item">
   <a href="#zustande-der-personenverwaltung" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1294,30 +1294,30 @@
       </span>
     </span>
   </a>
-
+  
 </li>
-
+        
       </ul>
     </nav>
-
+  
 </li>
-
+      
     </ul>
-
+  
 </nav>
                   </div>
                 </div>
               </div>
-
-
-
+            
+          
+          
             <div class="md-content" data-md-component="content">
-
+              
               <article class="md-content__inner md-typeset">
-
-
-
-
+                
+                  
+  
+  
 
 
 <h1 id="android-app-technik-entwicklung">Android-App – Technik &amp; Entwicklung<a class="headerlink" href="#android-app-technik-entwicklung" title="Permanent link">&para;</a></h1>
@@ -1782,30 +1782,30 @@ ist ein historisches Dokument und keine aktuelle technische Referenz.</p>
 
 
 
+  
+  
 
 
 
 
 
 
-
-
-
+                
               </article>
             </div>
-
-
+          
+          
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
-
+        
           <button type="button" class="md-top md-icon" data-md-component="top" hidden>
-
+  
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
   Zurück zum Seitenanfang
 </button>
-
+        
       </main>
-
+      
         <footer class="bs-footer" aria-label="Website-Footer">
   <div class="bs-wrap bs-footer__inner">
     <div>
@@ -1824,21 +1824,21 @@ ist ein historisches Dokument und keine aktuelle technische Referenz.</p>
     <p class="bs-footer__meta">BearStack 1.12.9 · Website gebaut mit Zensical</p>
   </div>
 </footer>
-
+      
     </div>
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-
-
-
-
-
+    
+    
+    
+      
+      
       <script id="__config" type="application/json">{"annotate":null,"base":".","features":["navigation.tabs","navigation.top","toc.follow"],"search":"./assets/javascripts/workers/search.b6b7e04f.min.js","tags":null,"translations":{"clipboard.copied":"In Zwischenablage kopiert","clipboard.copy":"In Zwischenablage kopieren","search.result.more.one":"1 weiteres Suchergebnis auf dieser Seite","search.result.more.other":"# weitere Suchergebnisse auf dieser Seite","search.result.none":"Keine Suchergebnisse","search.result.one":"1 Suchergebnis","search.result.other":"# Suchergebnisse","search.result.placeholder":"Suchbegriff eingeben","search.result.term.missing":"Es fehlt","select.version":"Version auswählen"},"version":null}</script>
-
-
+    
+    
       <script src="./assets/javascripts/bundle.ee611ef6.min.js"></script>
-
-
+      
+    
   </body>
 </html>
