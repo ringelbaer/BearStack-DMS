@@ -317,10 +317,6 @@ func scanIndexedMediaWithRowID(scanner mediaScanner) (Media, int64, error) {
 	return mediaFromCachedRow(row), rowID, nil
 }
 
-func (l *Library) SetMediaTags(path string, tags []string) ([]string, error) {
-	return l.SetMediaTagsContext(context.Background(), path, tags)
-}
-
 func (l *Library) SetMediaTagsContext(ctx context.Context, path string, tags []string) ([]string, error) {
 	media, err := l.MediaContext(ctx, path)
 	if err != nil {
@@ -334,10 +330,6 @@ func (l *Library) SetMediaTagsContext(ctx context.Context, path string, tags []s
 		return nil, err
 	}
 	return tags, nil
-}
-
-func (l *Library) SetFolderTags(path string, tags []string) ([]string, error) {
-	return l.SetFolderTagsContext(context.Background(), path, tags)
 }
 
 func (l *Library) SetFolderTagsContext(ctx context.Context, path string, tags []string) ([]string, error) {

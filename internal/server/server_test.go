@@ -4565,7 +4565,7 @@ func TestTagsListRendersSeparatePhotoTags(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer photoLib.Close()
-	if _, err := photoLib.SetFolderTags("album", []string{"Urlaub"}); err != nil {
+	if _, err := photoLib.SetFolderTagsContext(context.Background(), "album", []string{"Urlaub"}); err != nil {
 		t.Fatal(err)
 	}
 

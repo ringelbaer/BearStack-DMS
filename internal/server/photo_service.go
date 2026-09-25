@@ -23,7 +23,6 @@ type photoApplicationService struct {
 type photoListingRequest struct {
 	Options          photos.ListOptions
 	IncludeAdminOnly bool
-	Frame            bool
 	CanEdit          bool
 	MapRequested     bool
 	// Bounded native pages override presentation defaults, not access policy.
@@ -74,13 +73,6 @@ func (svc photoApplicationService) Listing(ctx context.Context, request photoLis
 	opts.RouteClusterRadiusMeters = settings.MapTrackResolutionMeters
 	mapRequested := request.MapRequested && photoMapAvailable(opts.Path)
 	opts.IncludeMapData = mapRequested
-	if request.Frame {
-		opts.Recursive = true
-		opts.Page = 1
-		opts.PageSize = 10000
-		opts.LeanMetadata = true
-		opts.IncludeMapData = false
-	}
 	if mapRequested {
 		opts.GPSOnly = true
 		opts.Recursive = true
@@ -88,7 +80,7 @@ func (svc photoApplicationService) Listing(ctx context.Context, request photoLis
 		opts.PageSize = 10000
 		opts.LeanMetadata = true
 	}
-	if !request.Frame && !mapRequested && !request.CanEdit {
+	if !mapRequested && !request.CanEdit {
 		opts.LeanMetadata = true
 	}
 	finishOptions(
@@ -96,7 +88,6 @@ func (svc photoApplicationService) Listing(ctx context.Context, request photoLis
 		photos.ListTraceString("query", opts.Query),
 		photos.ListTraceString("media_type", opts.MediaType),
 		photos.ListTraceString("sort", opts.Sort),
-		photos.ListTraceBool("frame", request.Frame),
 		photos.ListTraceBool("map", mapRequested),
 		photos.ListTraceBool("recursive", opts.Recursive),
 		photos.ListTraceBool("lean_metadata", opts.LeanMetadata),

@@ -61,10 +61,6 @@ func NormalizeThumbnailSize(size int) int {
 	return size
 }
 
-func (l *Library) ThumbnailReady(rel string, size int) (bool, error) {
-	return l.ThumbnailReadyContext(context.Background(), rel, size)
-}
-
 func (l *Library) ThumbnailReadyContext(ctx context.Context, rel string, size int) (bool, error) {
 	if l == nil {
 		return false, nil

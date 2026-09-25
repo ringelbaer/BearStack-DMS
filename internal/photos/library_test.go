@@ -1017,7 +1017,7 @@ func TestLibraryReportsThumbnailReadyWithoutCreating(t *testing.T) {
 	}
 	defer lib.Close()
 
-	ready, err := lib.ThumbnailReady("photo.jpg", 120)
+	ready, err := lib.ThumbnailReadyContext(context.Background(), "photo.jpg", 120)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1034,7 +1034,7 @@ func TestLibraryReportsThumbnailReadyWithoutCreating(t *testing.T) {
 	if _, err := lib.Thumbnail(context.Background(), "photo.jpg", 120); err != nil {
 		t.Fatal(err)
 	}
-	ready, err = lib.ThumbnailReady("photo.jpg", 120)
+	ready, err = lib.ThumbnailReadyContext(context.Background(), "photo.jpg", 120)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2670,10 +2670,10 @@ func TestLibraryRebuildIndexPreservesTagsAcrossRescan(t *testing.T) {
 	if _, err := lib.RebuildIndex(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := lib.SetMediaTags("album/photo.jpg", []string{"Reise"}); err != nil {
+	if _, err := lib.SetMediaTagsContext(context.Background(), "album/photo.jpg", []string{"Reise"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := lib.SetFolderTags("album", []string{"Familie"}); err != nil {
+	if _, err := lib.SetFolderTagsContext(context.Background(), "album", []string{"Familie"}); err != nil {
 		t.Fatal(err)
 	}
 	post, err := lib.blogFromPath("album/story.md")
@@ -3384,10 +3384,10 @@ func TestLibrarySearchesMediaAndFolderTags(t *testing.T) {
 	if _, err := lib.List(context.Background(), ListOptions{Path: "album"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := lib.SetMediaTags("album/photo.jpg", []string{"Urlaub"}); err != nil {
+	if _, err := lib.SetMediaTagsContext(context.Background(), "album/photo.jpg", []string{"Urlaub"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := lib.SetFolderTags("album", []string{"Familie"}); err != nil {
+	if _, err := lib.SetFolderTagsContext(context.Background(), "album", []string{"Familie"}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3422,10 +3422,10 @@ func TestLibraryClearingPhotoTagsRemovesAssignments(t *testing.T) {
 	if _, err := lib.List(context.Background(), ListOptions{Path: "album"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := lib.SetMediaTags("album/photo.jpg", []string{"Clear"}); err != nil {
+	if _, err := lib.SetMediaTagsContext(context.Background(), "album/photo.jpg", []string{"Clear"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := lib.SetFolderTags("album", []string{"Clear"}); err != nil {
+	if _, err := lib.SetFolderTagsContext(context.Background(), "album", []string{"Clear"}); err != nil {
 		t.Fatal(err)
 	}
 	post, err := lib.blogFromPath("album/story.md")
@@ -3442,10 +3442,10 @@ func TestLibraryClearingPhotoTagsRemovesAssignments(t *testing.T) {
 	if tag.Count != 3 {
 		t.Fatalf("tag before clearing = %#v", tag)
 	}
-	if _, err := lib.SetMediaTags("album/photo.jpg", nil); err != nil {
+	if _, err := lib.SetMediaTagsContext(context.Background(), "album/photo.jpg", nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := lib.SetFolderTags("album", []string{"  "}); err != nil {
+	if _, err := lib.SetFolderTagsContext(context.Background(), "album", []string{"  "}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := lib.index.db.Exec(`UPDATE blog_index SET tags = '[]' WHERE path = ?`, post.Path); err != nil {
@@ -3487,10 +3487,10 @@ func TestLibraryStatisticsCountsPhotoTagAssignments(t *testing.T) {
 	if _, err := lib.List(context.Background(), ListOptions{Path: "album"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := lib.SetMediaTags("album/photo.jpg", []string{"Reise", "Sommer"}); err != nil {
+	if _, err := lib.SetMediaTagsContext(context.Background(), "album/photo.jpg", []string{"Reise", "Sommer"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := lib.SetFolderTags("album", []string{"Familie"}); err != nil {
+	if _, err := lib.SetFolderTagsContext(context.Background(), "album", []string{"Familie"}); err != nil {
 		t.Fatal(err)
 	}
 	post, err := lib.blogFromPath("album/story.md")

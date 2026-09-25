@@ -123,6 +123,13 @@ die jeweilige Arbeit gezielt. Die Thumbnail-Parallelität begrenzt auch die
 Erzeugung beim ersten Abruf. Größere Galerieseiten und Vorschauen erhöhen
 Ladeaufwand und Speicherbedarf; für kleine Server mit den Vorgaben beginnen.
 
+Die WebUI fragt den Thumbnail-Status für höchstens 200 Medien je Anfrage ab.
+Auch Netzwerkfehler, ungültige oder unvollständige Antworten zählen zur Grenze
+von 40 Versuchen mit wachsendem Abstand. Jede Anfrage hat ein Zeitlimit von
+15 Sekunden. Dauerhafte HTTP-Clientfehler und Anmeldeweiterleitungen stoppen
+die Abfrage sofort; 408 und 429 werden begrenzt wiederholt. Ein späteres
+Neuladen der Galerie startet die Prüfung erneut.
+
 Jeder Thumbnail-Konverter (`vipsthumbnail` oder `ffmpeg`) erhält höchstens
 30 Sekunden Laufzeit. Timeout und Abbruch stoppen weitere Konverterversuche
 und das aktuelle Worker-Paket. Der Fehler wird gespeichert; das bestehende

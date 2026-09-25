@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.12.4
+
+- Thumbnail-Polling zählt auch Netzwerkfehler, unvollständige Antworten und HTTP-Fehler als Versuche. Höchstens 40 Versuche mit wachsendem Abstand, 15 Sekunden je Anfrage und maximal 200 Medien je Batch. Dauerhafte 4xx-Antworten und Anmeldeweiterleitungen beenden die Abfrage sofort; 408 und 429 bleiben wiederholbar.
+- Nicht mehr erreichbaren Frame-Zweig aus dem Foto-Service entfernt. Der aktive paginierte Frame-Endpunkt bleibt erhalten. Nur noch von Tests verwendete Methoden `ThumbnailReady`, `SetMediaTags` und `SetFolderTags` entfernt; Tests verwenden die vorhandenen Context-Varianten.
+- PATCH für Fehlerbehandlung und internes Aufräumen; README, Website und OpenAPI-Version aktualisiert. DOM-Regressionen prüfen Fehlergrenzen, Timeouts, Wiederaufnahme und Batchgrößen.
+
 ### BearStack 1.12.3
 
 - Thumbnail-Konverter auf 30 Sekunden je Prozess begrenzt. Timeout und Abbruch bleiben als Fehler erkennbar, verhindern weitere Konverterversuche und beenden das aktuelle Worker-Paket; Slots und Job-Sperren werden freigegeben.

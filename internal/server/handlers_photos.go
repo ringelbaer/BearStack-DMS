@@ -35,7 +35,7 @@ func (s *Server) handlePhotos(w http.ResponseWriter, r *http.Request) {
 		defer s.logPhotoListTrace(r, trace)
 	}
 	canEditPhotos := s.requestHasCapabilities(r, authCapPhotosEdit)
-	listing, settings, err := s.photoService().Listing(r.Context(), photoListingRequestFromRequest(r, s.requestPhotoAdminOnlyVisible(r), false, canEditPhotos))
+	listing, settings, err := s.photoService().Listing(r.Context(), photoListingRequestFromRequest(r, s.requestPhotoAdminOnlyVisible(r), canEditPhotos))
 	if err != nil {
 		s.renderPhotoError(w, r, err)
 		return
@@ -280,11 +280,10 @@ func photoListOptionsFromRequest(r *http.Request) photos.ListOptions {
 	}
 }
 
-func photoListingRequestFromRequest(r *http.Request, includeAdminOnly, frame, canEdit bool) photoListingRequest {
+func photoListingRequestFromRequest(r *http.Request, includeAdminOnly, canEdit bool) photoListingRequest {
 	return photoListingRequest{
 		Options:          photoListOptionsFromRequest(r),
 		IncludeAdminOnly: includeAdminOnly,
-		Frame:            frame,
 		CanEdit:          canEdit,
 		MapRequested:     r.URL.Query().Get("view") == "map",
 	}

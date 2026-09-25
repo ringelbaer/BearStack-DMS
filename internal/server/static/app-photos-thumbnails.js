@@ -138,7 +138,7 @@
       var hasVisibleImage = Array.from(entry.images).some(photoThumbVisible);
       if (!entry.images.size) {
         photoThumbStatusWait.delete(key);
-      } else if (hasVisibleImage) {
+      } else if (hasVisibleImage && activeEntries.length < 200) {
         activeEntries.push(entry);
       }
     });
@@ -147,27 +147,40 @@
       return;
     }
     photoThumbStatusInFlight = true;
+    var controller = new AbortController();
+    var timeout = window.setTimeout(function () { controller.abort(); }, 15000);
+    var permanentFailure = false;
+    var nextDelay = 0;
     window.fetch("/photos/thumbnail/status", {
       method: "POST",
       headers: { "Accept": "application/json", "Content-Type": "application/json" },
       credentials: "same-origin",
+      signal: controller.signal,
       body: JSON.stringify({
         items: activeEntries.map(function (entry) {
           return { path: entry.path, size: entry.size };
         })
       })
     }).then(function (response) {
-      if (!response.ok) throw new Error("thumbnail status failed");
+      permanentFailure = response.redirected || (response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429);
+      if (!response.ok || permanentFailure) throw new Error("thumbnail status failed");
       return response.json();
-    }).catch(function () {
-      return { items: [] };
     }).then(function (payload) {
-      var nextDelay = 0;
-      (payload.items || []).forEach(function (status) {
-        var key = (status.path || "") + "\n" + (status.size || 420);
-        var entry = photoThumbStatusWait.get(key);
-        if (!entry) return;
-        if (status.ready) {
+      if (!payload || !Array.isArray(payload.items)) throw new Error("invalid thumbnail status");
+      return payload.items;
+    }).catch(function () {
+      return [];
+    }).then(function (statuses) {
+      var byKey = new Map();
+      statuses.forEach(function (status) {
+        if (status) byKey.set(status.path + "\n" + status.size, status);
+      });
+      // Count every attempted entry, including errors and omitted response items.
+      // Otherwise an unavailable endpoint retries forever with attempt === 0.
+      activeEntries.forEach(function (entry) {
+        var key = entry.path + "\n" + entry.size;
+        var status = byKey.get(key);
+        if (status && status.ready === true) {
           entry.images.forEach(function (img) {
             if (!img || img.dataset.photoThumbLoaded === "1" || !document.documentElement.contains(img)) return;
             img.dataset.photoThumbReady = "1";
@@ -177,24 +190,21 @@
           return;
         }
         entry.attempt += 1;
+        var finished = permanentFailure || entry.attempt >= 40;
         entry.images.forEach(function (img) {
-          setPhotoThumbGenerating(img, true);
-          if (entry.attempt >= 40) {
-            markThumbnailError(img);
-            markThumbnailLoaded(img);
-          }
+          if (finished) markPhotoThumbBroken(img);
+          else setPhotoThumbGenerating(img, true);
         });
-        if (entry.attempt >= 40) {
+        if (finished) {
           photoThumbStatusWait.delete(key);
         } else {
           nextDelay = Math.max(nextDelay, Math.min(8000, 500 + entry.attempt * 500));
         }
       });
-      if (photoThumbStatusWait.size > 0) {
-        schedulePhotoThumbStatusBatch(nextDelay || 1000);
-      }
     }).finally(function () {
+      window.clearTimeout(timeout);
       photoThumbStatusInFlight = false;
+      if (photoThumbStatusWait.size > 0) schedulePhotoThumbStatusBatch(nextDelay || 1000);
     });
   }
 

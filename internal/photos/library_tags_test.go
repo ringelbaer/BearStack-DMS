@@ -26,10 +26,10 @@ func TestLibraryListsTagsFromPhotoDatabase(t *testing.T) {
 	if _, err := lib.List(context.Background(), ListOptions{Path: "album"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := lib.SetMediaTags("album/photo.jpg", []string{" Reise ", "", "Reise", "Sommer"}); err != nil {
+	if _, err := lib.SetMediaTagsContext(context.Background(), "album/photo.jpg", []string{" Reise ", "", "Reise", "Sommer"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := lib.SetFolderTags("album", []string{"Reise"}); err != nil {
+	if _, err := lib.SetFolderTagsContext(context.Background(), "album", []string{"Reise"}); err != nil {
 		t.Fatal(err)
 	}
 	post, err := lib.blogFromPath("album/story.md")

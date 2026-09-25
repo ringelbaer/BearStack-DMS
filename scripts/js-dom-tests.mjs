@@ -1376,7 +1376,93 @@ function testFamilyTreeLayoutHandlesLongFamiliesWithoutRecursion() {
   assert.ok(result.nodes.get(9999).y < result.nodes.get(10000).y);
 }
 
+function thumbnailPollingFixture(respond, count = 1) {
+  const document = new TestDocument();
+  const images = [], wraps = [];
+  for (let i = 0; i < count; i++) {
+    const image = el("img", {
+      "data-photo-thumb-image": "", "data-photo-thumb-ready": "0",
+      "data-photo-thumb-src": `/photos/thumbnail?path=${i}.jpg&size=420`,
+    });
+    image.getBoundingClientRect = () => ({ top: 0, bottom: 20 });
+    Object.defineProperty(image, "src", {
+      get() { return this.getAttribute("src") || ""; },
+      set(value) { this.setAttribute("src", value); queueMicrotask(() => this.onload?.()); },
+    });
+    const wrap = el("div", { class: "photo-thumb-wrap" }, [image, el("span", { class: "photo-thumb-loader" })]);
+    images.push(image); wraps.push(wrap); document.body.append(wrap);
+  }
+  const context = createContext(document);
+  const timers = new Map(), requests = [];
+  let next = 1, now = 0;
+  context.innerHeight = 800;
+  context.setTimeout = (callback, delay = 0) => { const id = next++; timers.set(id, { callback, at: now + delay }); return id; };
+  context.clearTimeout = (id) => timers.delete(id);
+  context.requestAnimationFrame = (callback) => context.setTimeout(callback, 0);
+  context.fetch = async (url, options) => {
+    const items = JSON.parse(options.body).items;
+    requests.push(items);
+    return respond(requests.length, items, options.signal);
+  };
+  runScripts(context, ["app-photos-thumbnails.js"]);
+  context.BearStack.photos.thumbnails.init();
+  return { images, wraps, requests, timers, async drain(limit = 300) {
+    for (let i = 0; timers.size && i < limit; i++) {
+      const [id, task] = [...timers].sort((a, b) => a[1].at - b[1].at)[0];
+      timers.delete(id); now = task.at; task.callback();
+      await new Promise(setImmediate);
+    }
+  } };
+}
+
+async function testPhotoThumbnailPollingBoundsTransientFailures() {
+  for (const mode of ["offline", "500", "408", "429", "json", "empty", "timeout"]) {
+    const fixture = thumbnailPollingFixture(async (_, items, signal) => {
+      if (mode === "offline") throw new Error("offline");
+      if (mode === "timeout") return new Promise((resolve, reject) => signal.addEventListener("abort", () => reject(new Error("timeout"))));
+      if (mode === "json") return { ok: true, status: 200, json: async () => { throw new Error("malformed"); } };
+      if (mode === "empty") return { ok: true, status: 200, json: async () => ({ items: [] }) };
+      return { ok: false, status: Number(mode) };
+    });
+    await fixture.drain();
+    assert.equal(fixture.requests.length, 40, mode);
+    assert.equal(fixture.timers.size, 0, mode);
+    assert.equal(fixture.wraps[0].classList.contains("is-error"), true, mode);
+    assert.equal(fixture.images[0].dataset.photoThumbLoaded, "1", mode);
+  }
+}
+
+async function testPhotoThumbnailPollingStopsPermanentFailures() {
+  for (const status of [400, 401, 403, 404, 413]) {
+    const fixture = thumbnailPollingFixture(async () => ({ ok: false, status }));
+    await fixture.drain();
+    assert.equal(fixture.requests.length, 1, String(status));
+    assert.equal(fixture.timers.size, 0);
+    assert.equal(fixture.wraps[0].classList.contains("is-error"), true);
+  }
+  const redirected = thumbnailPollingFixture(async () => ({ ok: true, status: 200, redirected: true }));
+  await redirected.drain();
+  assert.equal(redirected.requests.length, 1);
+  assert.equal(redirected.timers.size, 0);
+}
+
+async function testPhotoThumbnailPollingRecoversAndBoundsBatches() {
+  const fixture = thumbnailPollingFixture(async (attempt, items) => {
+    if (attempt < 3) throw new Error("temporarily offline");
+    return { ok: true, status: 200, json: async () => ({ items: items.map(item => ({ ...item, ready: true })) }) };
+  }, 205);
+  await fixture.drain(500);
+  assert.ok(fixture.requests.every(items => items.length <= 200));
+  assert.ok(fixture.requests.length >= 4);
+  assert.equal(fixture.timers.size, 0);
+  assert.ok(fixture.images.every(image => image.dataset.photoThumbLoaded === "1" && image.src));
+  assert.ok(fixture.wraps.every(wrap => !wrap.classList.contains("is-error")));
+}
+
 const tests = [
+  testPhotoThumbnailPollingBoundsTransientFailures,
+  testPhotoThumbnailPollingStopsPermanentFailures,
+  testPhotoThumbnailPollingRecoversAndBoundsBatches,
   testFamilyTreeLayoutPreservesPeopleAndGenerations,
   testFamilyTreeLayoutHandlesLongFamiliesWithoutRecursion,
   testFamilyTreeLayoutAlignsUnequalBranchesAndOrdersSiblings,
