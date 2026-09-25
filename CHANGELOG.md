@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.13.2
+
+- Der IMAP-Verbindungsaufbau erhält ein durchgehendes Zeitlimit von 20 Sekunden für TCP, TLS, Begrüßung, CAPABILITY und STARTTLS. Bibliotheksinterne Änderungen an Socket-Deadlines können dieses Limit nicht mehr aufheben; jeder fehlgeschlagene Aufbau schließt die Verbindung.
+- Gesichts-Endpunkte geben bei fehlenden Quelldateien eine neutrale 404-Antwort aus. Andere Dateisystemfehler werden in der HTML-Fehlerbehandlung als interne Fehler behandelt; absolute Serverpfade und Betriebssystemmeldungen gelangen nicht mehr in diese Antworten. Der JSON-Fehlercode `not_found` bleibt erhalten.
+- Regressionen reproduzieren blockierende IMAP-Phasen, prüfen Socket-Bereinigung, TLS-Zertifikatsprüfung und die weitere Nutzung erfolgreicher Verbindungen. HTTP-Tests prüfen fehlende Fotoquellen sowie die vertrauliche Behandlung von Dateisystemfehlern. PATCH ohne neue Dependencies oder Datenmigration; README, Website und OpenAPI aktualisiert.
+
 ### BearStack 1.13.1
 
 - Karten-Kacheln werden als begrenzter LRU-Cache gehalten: höchstens 128 Einträge oder die für den sichtbaren Ausschnitt notwendige Anzahl. Weiterhin sichtbare Bildknoten bleiben im DOM.

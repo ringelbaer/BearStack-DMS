@@ -32,6 +32,7 @@ func (s *Server) labelError(w http.ResponseWriter, r *http.Request, err error) {
 		status, code = 400, "invalid"
 	case errors.Is(err, sql.ErrNoRows), errors.Is(err, os.ErrNotExist):
 		status, code = 404, "not_found"
+		err = errors.New("Foto oder Person nicht gefunden")
 	case errors.Is(err, photos.ErrAdminOnly()):
 		status, code = 403, "forbidden"
 	}

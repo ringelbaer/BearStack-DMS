@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -24,12 +25,17 @@ func faceID(raw string) (int64, error) {
 }
 func (s *Server) faceError(w http.ResponseWriter, r *http.Request, err error) {
 	status := http.StatusBadRequest
+	var pathError *os.PathError
+	if errors.As(err, &pathError) {
+		status = http.StatusInternalServerError
+	}
 	if photos.IsPersonFolderExcluded(err) {
 		err = photos.ErrPersonFolderExcluded
 		status = http.StatusConflict
 	}
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, os.ErrNotExist) {
 		status = http.StatusNotFound
+		err = errors.New("Foto oder Person nicht gefunden")
 	}
 	if errors.Is(err, photos.ErrAdminOnly()) {
 		status = http.StatusForbidden

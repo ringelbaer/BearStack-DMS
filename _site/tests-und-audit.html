@@ -896,6 +896,17 @@
       <ul class="md-nav__list">
 
           <li class="md-nav__item">
+  <a href="#sicherheitsprufung-1132" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Sicherheitsprüfung 1.13.2
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#sicherheitsprufung-0683" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1116,6 +1127,17 @@
       <ul class="md-nav__list">
 
           <li class="md-nav__item">
+  <a href="#sicherheitsprufung-1132" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Sicherheitsprüfung 1.13.2
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#sicherheitsprufung-0683" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1293,6 +1315,13 @@
 <li>Admin-only-Fotoordner sind für Nicht-Admins nicht sichtbar und bleiben auch über direkte Medien- und Thumbnail-URLs geschützt.</li>
 </ul>
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
+<h3 id="sicherheitsprufung-1132">Sicherheitsprüfung 1.13.2<a class="headerlink" href="#sicherheitsprufung-1132" title="Permanent link">&para;</a></h3>
+<p>Die Prüfung von Konfiguration, Auth, Datei- und Uploadzugriffen, Secrets, Logging und Fehlerbehandlung führte zu zwei konkreten Korrekturen:</p>
+<ul>
+<li><strong>IMAP-Verbindungsaufbau:</strong> Die Bibliothek konnte bei CAPABILITY und STARTTLS das zuvor gesetzte Zeitlimit aufheben. Fehler beim Aufbau ließen zudem Sockets offen. Ein durchgehendes Limit von 20 Sekunden und die Bereinigung aller fehlgeschlagenen Verbindungen verhindern dauerhaft blockierte Verbindungsversuche.</li>
+<li><strong>Foto-Fehlerantworten:</strong> Fehlende Quelldateien konnten über Gesichts-Thumbnails und die Prüfung geänderter Fotos absolute Serverpfade preisgeben. Diese Antworten verwenden jetzt eine neutrale 404-Meldung; andere Dateisystemfehler erscheinen in der HTML-Fehlerbehandlung als generische interne Fehler. Der JSON-Code <code>not_found</code> bleibt erhalten.</li>
+</ul>
+<p>Regressionen verwenden lokale IMAP-Testserver für blockierende Begrüßung, CAPABILITY, STARTTLS und TLS sowie für Socket-Bereinigung, Zertifikatsprüfung und erfolgreiche Verbindungen nach Ablauf des Aufbau-Limits. HTTP-Tests entfernen ausschließlich Test-Fotoquellen und prüfen die Antworten der Gesichts-Endpunkte. Die Korrekturen verändern keine Originalfotos und benötigen keine Datenmigration.</p>
 <h3 id="sicherheitsprufung-0683">Sicherheitsprüfung 0.68.3<a class="headerlink" href="#sicherheitsprufung-0683" title="Permanent link">&para;</a></h3>
 <p>Die Prüfung von Konfiguration, Authentifizierung, Datei- und Uploadzugriffen, Secrets, Logging und Fehlerbehandlung ergab vier konkrete Korrekturen:</p>
 <ul>

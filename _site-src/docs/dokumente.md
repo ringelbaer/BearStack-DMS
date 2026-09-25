@@ -67,6 +67,8 @@ EML-Anhänge werden als eigenständige E-Mail-Archive importiert. BearStack erze
 
 Konfiguriert wird der Import unter `Einstellungen -> E-Mail-Import`. Unterstützt werden SSL/TLS, STARTTLS und unverschlüsselte IMAP-Verbindungen; Standardwerte sind Port `993`, `INBOX` und ein Abrufintervall von 15 Minuten. Ein Verbindungstest prüft die Zugangsdaten, ein manueller Lauf ruft sofort ab, und bei aktiviertem Import prüft BearStack das Postfach regelmäßig im Hintergrund.
 
+Ab 1.13.2 ist der gesamte Verbindungsaufbau einschließlich TLS, Begrüßung, CAPABILITY und STARTTLS auf 20 Sekunden begrenzt. Ein fehlgeschlagener Aufbau schließt die Verbindung. Für anschließende IMAP-Kommandos gilt weiterhin ein Zeitlimit von zwei Minuten.
+
 Die Absenderliste kann leer bleiben oder einzelne Adressen und Domänen enthalten. Eine leere Liste verarbeitet alle Absender. Domänenregeln passen auch auf Subdomains; nicht erlaubte Absender werden abgelehnt, protokolliert und aus dem IMAP-Postfach gelöscht. Die Prüfung bezieht sich auf die Import-Nachricht im IMAP-Postfach. Erfolgreich verarbeitete E-Mails mit PDF- oder EML-Anhängen werden ebenfalls gelöscht, damit das Postfach als Eingangskorb funktioniert. E-Mails ohne verarbeitbare Anhänge bleiben unberührt.
 
 Die Größe einer Nachricht wird vor dem IMAP-Download geprüft; auch die angeforderte Inhaltsmenge ist begrenzt. Das bestehende Nachrichtenlimit beträgt das 20-Fache der konfigurierten Upload-Dateigröße und berücksichtigt Anhänge sowie Mail-Kodierung. Mail-Import und EML-Archivierung akzeptieren höchstens 32 verschachtelte MIME-Container. Nachrichten, die diese Grenzen überschreiten, werden als Fehler protokolliert und bleiben im Postfach.

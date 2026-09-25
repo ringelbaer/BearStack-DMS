@@ -36,6 +36,15 @@ Die wichtigsten Vorkehrungen entstehen direkt in der Anwendung:
 
 ## Tests
 
+### Sicherheitsprüfung 1.13.2
+
+Die Prüfung von Konfiguration, Auth, Datei- und Uploadzugriffen, Secrets, Logging und Fehlerbehandlung führte zu zwei konkreten Korrekturen:
+
+- **IMAP-Verbindungsaufbau:** Die Bibliothek konnte bei CAPABILITY und STARTTLS das zuvor gesetzte Zeitlimit aufheben. Fehler beim Aufbau ließen zudem Sockets offen. Ein durchgehendes Limit von 20 Sekunden und die Bereinigung aller fehlgeschlagenen Verbindungen verhindern dauerhaft blockierte Verbindungsversuche.
+- **Foto-Fehlerantworten:** Fehlende Quelldateien konnten über Gesichts-Thumbnails und die Prüfung geänderter Fotos absolute Serverpfade preisgeben. Diese Antworten verwenden jetzt eine neutrale 404-Meldung; andere Dateisystemfehler erscheinen in der HTML-Fehlerbehandlung als generische interne Fehler. Der JSON-Code `not_found` bleibt erhalten.
+
+Regressionen verwenden lokale IMAP-Testserver für blockierende Begrüßung, CAPABILITY, STARTTLS und TLS sowie für Socket-Bereinigung, Zertifikatsprüfung und erfolgreiche Verbindungen nach Ablauf des Aufbau-Limits. HTTP-Tests entfernen ausschließlich Test-Fotoquellen und prüfen die Antworten der Gesichts-Endpunkte. Die Korrekturen verändern keine Originalfotos und benötigen keine Datenmigration.
+
 ### Sicherheitsprüfung 0.68.3
 
 Die Prüfung von Konfiguration, Authentifizierung, Datei- und Uploadzugriffen, Secrets, Logging und Fehlerbehandlung ergab vier konkrete Korrekturen:

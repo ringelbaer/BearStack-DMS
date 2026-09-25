@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 1.13.1
+  version: 1.13.2
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -13,6 +13,10 @@ info:
 
     Write operations require the capabilities stated in their descriptions.
     API clients using form endpoints should send `Accept: application/json`.
+
+    Face thumbnail and source-review endpoints return a generic 404 message
+    for missing photo files without exposing filesystem paths. Source-review
+    JSON responses retain the `not_found` error code.
 
     The Android app can optionally display device photo folders using Android MediaStore.
     Those folders and content URIs are local to the device and are never sent to this API;
@@ -4100,6 +4104,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/photos/v1/faces/{id}/thumbnail:
     get:
       tags:
@@ -4132,6 +4138,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /photos/people/{id}/details:
     parameters:
     - name: id

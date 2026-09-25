@@ -2,6 +2,7 @@
 package mailimport
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -57,12 +58,37 @@ func OpenMailbox(settings document.MailImportSettings, readOnly bool) (*Client, 
 }
 
 func Dial(settings document.MailImportSettings) (*Client, error) {
+	return dial(settings, 20*time.Second)
+}
+
+func dial(settings document.MailImportSettings, setupTimeout time.Duration) (*Client, error) {
+	switch settings.Security {
+	case document.MailImportSecurityTLS, document.MailImportSecuritySTARTTLS, document.MailImportSecurityNone:
+	default:
+		return nil, errors.New("IMAP-Verschlüsselung ist ungültig")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), setupTimeout)
+	defer cancel()
 	addr := net.JoinHostPort(settings.Host, fmt.Sprintf("%d", settings.Port))
-	dialer := &net.Dialer{Timeout: 20 * time.Second}
+	conn, err := (&net.Dialer{}).DialContext(ctx, "tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+	// The IMAP client resets socket deadlines during its initial CAPABILITY
+	// query and STARTTLS. Close the owned connection on timeout independently
+	// of those deadlines, including TLS handshakes and failed greetings.
+	stopTimeout := context.AfterFunc(ctx, func() { _ = conn.Close() })
+	defer stopTimeout()
+	connected := false
+	defer func() {
+		if !connected {
+			_ = conn.Close()
+		}
+	}()
+	dialer := connectedIMAPDialer{conn}
 	tlsConfig := &tls.Config{ServerName: settings.Host, MinVersion: tls.VersionTLS12}
 
 	var c *client.Client
-	var err error
 	switch settings.Security {
 	case document.MailImportSecurityTLS:
 		c, err = client.DialWithDialerTLS(dialer, addr, tlsConfig)
@@ -73,8 +99,9 @@ func Dial(settings document.MailImportSettings) (*Client, error) {
 		}
 	case document.MailImportSecurityNone:
 		c, err = client.DialWithDialer(dialer, addr)
-	default:
-		err = errors.New("IMAP-Verschlüsselung ist ungültig")
+	}
+	if !stopTimeout() || ctx.Err() != nil {
+		err = ctx.Err()
 	}
 	if err != nil {
 		if c != nil {
@@ -84,8 +111,15 @@ func Dial(settings document.MailImportSettings) (*Client, error) {
 	}
 	c.Timeout = 2 * time.Minute
 	c.ErrorLog = log.New(io.Discard, "", 0)
+	connected = true
 	return c, nil
 }
+
+// Keep go-imap's TLS state initialization while retaining ownership of the
+// socket before client construction, which itself exchanges IMAP commands.
+type connectedIMAPDialer struct{ net.Conn }
+
+func (d connectedIMAPDialer) Dial(_, _ string) (net.Conn, error) { return d.Conn, nil }
 
 func UndeletedUIDs(c *Client) ([]uint32, error) {
 	criteria := imap.NewSearchCriteria()
