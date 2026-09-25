@@ -36,6 +36,16 @@ Die wichtigsten Vorkehrungen entstehen direkt in der Anwendung:
 
 ## Tests
 
+### Go 1.27.1 / BearStack 1.13.3
+
+Die Toolchain-Umstellung wurde mit der vollständigen Go-Testsuite, `go vet`, `go mod tidy -diff` und Produktionsbuilds ohne CGO für Linux amd64 und arm64 geprüft. Die Abhängigkeiten benötigen keine Versionsänderung. Die Vorprüfung verwendete bereits eine temporäre Moduldatei mit `go 1.27.1`.
+
+Race-Prüfungen decken Galerie, Server, Prozessausführung und Transfers ab. Der erste vollständige Galerie-Lauf überschritt das standardmäßige Zehn-Minuten-Limit; die verbleibenden Tests wurden anschließend in vier getrennten Gruppen erfolgreich abgeschlossen. Für einen zusammenhängenden Lauf sollte deshalb ein längeres Limit gesetzt werden, etwa `go test -race -timeout=30m ./internal/photos ./internal/server ./internal/processrun ./internal/transfers/...`.
+
+Ein lokaler Vergleich gegen Go 1.26.8 umfasst 17 Galerie- und Personenszenarien mit jeweils drei Messungen, `GOMAXPROCS=4` und 300 ms Benchmarkzeit. Die Fixtures enthalten bis zu 300.000 Fotos, 10.000 Ordner beziehungsweise 10.000 Personengruppen. In den Medianen zeigte sich keine auffällige Laufzeitverschlechterung; die erste und eine tiefe Medienseite waren rund 20 % beziehungsweise 14 % schneller. Dies sind lokale Stichproben auf Linux amd64, keine Messungen auf dem Raspberry Pi.
+
+Der Integrationstest mit echtem LibreOffice und OCR in der Konvertersandbox war erfolgreich. Der zusätzliche Chromium-Konvertertest wurde mangels konfiguriertem Testbrowser übersprungen. Die offiziellen Docker-Buildimages für amd64 und arm64 sind verfügbar; ein vollständiger Containerbuild und ein Laufzeittest auf einem Raspberry Pi wurden nicht durchgeführt.
+
 ### Sicherheitsprüfung 1.13.2
 
 Die Prüfung von Konfiguration, Auth, Datei- und Uploadzugriffen, Secrets, Logging und Fehlerbehandlung führte zu zwei konkreten Korrekturen:
@@ -202,7 +212,7 @@ OCR-Tests führen kontrollierte Ersatzprogramme für Tesseract und Poppler aus. 
 
 Browser-Regressionen prüfen, dass verspätete Metadaten oder Vorschaubilder nach einem Bildwechsel das aktuelle Foto nicht überschreiben. Auch fehlgeschlagene Metadaten- und Vorschauabrufe, die Lightbox ohne Kartenhelfer und die Tastaturnavigation zu den Menü-Icons und Footer-Links sind abgedeckt. Die Berechtigungsmatrix der Navigation umfasst unter anderem reine WebDAV-Rechte und die Einstellungsziele bei deaktiviertem Fotomodul.
 
-Regressionstests prüfen den Zugriff ohne Auth über lokale und fremde Hostnamen einschließlich gefälschter Forwarded-Header. Präparierte WebP-Dateien mit widersprüchlichen Bild- und Alpha-Dimensionen müssen bei der Gesichtsvorverarbeitung einen Fehler statt eines Absturzes auslösen; gültige WebP-Bilder bleiben verarbeitbar. Die zugehörigen Sicherheitskorrekturen sind seit Go `1.26.6` und `golang.org/x/image` `v0.45.0` enthalten; BearStack setzt inzwischen mindestens Go `1.26.8` voraus.
+Regressionstests prüfen den Zugriff ohne Auth über lokale und fremde Hostnamen einschließlich gefälschter Forwarded-Header. Präparierte WebP-Dateien mit widersprüchlichen Bild- und Alpha-Dimensionen müssen bei der Gesichtsvorverarbeitung einen Fehler statt eines Absturzes auslösen; gültige WebP-Bilder bleiben verarbeitbar. Die zugehörigen Sicherheitskorrekturen sind seit Go `1.26.6` und `golang.org/x/image` `v0.45.0` enthalten; BearStack setzt inzwischen mindestens Go `1.27.1` voraus.
 
 Zusätzliche Regressionstests vergleichen die Normalisierung von Fotoeinstellungen aus Datenbank und HTTP-Formular, prüfen die Abfrageanzahl für HTML- und API-Dokumentlisten und erhalten deren unterschiedliche Behandlung zu hoher Seitenzahlen. Ein Browser-Test lädt den Fotoframe mit leerem Galerie-Script und prüft, dass das gemeinsame Medienmodul für die Anzeige ausreicht.
 

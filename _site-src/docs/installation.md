@@ -8,7 +8,9 @@ icon: lucide/play
 
 ## Voraussetzungen
 
-Für Entwicklung und Build wird Go `1.26.8` oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich `node` dazu. Die optionalen Playwright-Smoke-Tests brauchen `npm` und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.
+Für Entwicklung und Build wird Go `1.27.1` oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich `node` dazu. Die optionalen Playwright-Smoke-Tests brauchen `npm` und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.
+
+Für den Raspberry Pi 5 mit 64-Bit-Linux ist das offizielle Go-Paket [go1.27.1.linux-arm64.tar.gz](https://go.dev/dl/go1.27.1.linux-arm64.tar.gz) verfügbar. Der BearStack-Produktionsbuild für Linux ARM64 wird ohne CGO geprüft.
 
 Vorschau, OCR und Medienfunktionen nutzen externe Werkzeuge nur dort, wo sie gebraucht werden:
 
@@ -143,7 +145,7 @@ BEARSTACK_AUTH_PASSWORD_HASH='$2a$10$...' docker compose up -d --build
 
 Der Container lauscht intern auf `0.0.0.0:8080` und speichert Daten unter `/var/lib/bearstack`. Deshalb muss Auth im Container gesetzt sein. `compose.yaml` nutzt standardmäßig `admin` als Benutzer, reicht `BEARSTACK_AUTH_PASSWORD` und `BEARSTACK_AUTH_PASSWORD_HASH` durch und veröffentlicht den Host-Port über `BEARSTACK_PORT` oder sonst `8080`.
 
-Das Runtime-Image basiert auf `debian:trixie-slim`, die Build-Stage auf `golang:1.26.8-trixie`. Das Beispiel-Image enthält `chromium`, `ffmpeg`, `libreoffice-writer`, `poppler-utils`, `tesseract-ocr`, `tesseract-ocr-deu` und `tesseract-ocr-eng`, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. `bubblewrap` ist für die optional aktivierbare Konvertersandbox enthalten. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach `/srv/photos` gemountet werden.
+Das Runtime-Image basiert auf `debian:trixie-slim`, die Build-Stage auf `golang:1.27.1-trixie`. Das Beispiel-Image enthält `chromium`, `ffmpeg`, `libreoffice-writer`, `poppler-utils`, `tesseract-ocr`, `tesseract-ocr-deu` und `tesseract-ocr-eng`, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. `bubblewrap` ist für die optional aktivierbare Konvertersandbox enthalten. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach `/srv/photos` gemountet werden.
 
 Alle Docker-relevanten Umgebungsvariablen:
 

@@ -1,8 +1,10 @@
 # BearStack
 
-Aktuelle Version: **1.13.2** · Android-App: **0.22.4**.
+Aktuelle Version: **1.13.3** · Android-App: **0.22.4**.
 
 Die [Website](https://ringelbaer.github.io/BearStack-DMS/) stellt Dokumenten- und Fotoverwaltung, lokale Gesichtserkennung, Personenverwaltung und die Android-App vor und führt zu den jeweiligen Anleitungen.
+
+**BearStack 1.13.3:** Go-Mindestversion und Docker-Build auf 1.27.1 aktualisiert. Linux amd64 und ARM64 werden unterstützt, einschließlich Raspberry Pi 5 mit 64-Bit-Linux. Toolchain-Wartungsupdate ohne Datenmigration.
 
 **BearStack 1.13.2:** Der gesamte IMAP-Verbindungsaufbau einschließlich CAPABILITY und STARTTLS ist auf 20 Sekunden begrenzt; fehlgeschlagene Verbindungen werden geschlossen. Fehlerantworten für Gesichter geben bei fehlenden oder nicht lesbaren Fotodateien keine internen Dateipfade mehr aus. Sicherheitskorrekturen ohne Datenmigration.
 
@@ -138,7 +140,7 @@ Diese Datei beschreibt die wichtigsten Admin-Punkte. Eine vollstaendige Pi-Insta
 
 ## Schnellstart
 
-Voraussetzung fuer Entwicklung und Build ist Go `1.26.8` oder eine kompatible neuere Version. Fuer `make test-js` wird zusaetzlich `node` benoetigt. Die optionalen Playwright-Smokes brauchen zusaetzlich `npm` und einen Playwright-kompatiblen Browser; lokal ist standardmaessig der Chrome-Channel konfiguriert.
+Voraussetzung fuer Entwicklung und Build ist Go `1.27.1` oder eine kompatible neuere Version. Fuer `make test-js` wird zusaetzlich `node` benoetigt. Die optionalen Playwright-Smokes brauchen zusaetzlich `npm` und einen Playwright-kompatiblen Browser; lokal ist standardmaessig der Chrome-Channel konfiguriert.
 
 ```sh
 BEARSTACK_AUTH_USER=admin \
@@ -439,7 +441,7 @@ Alternativ mit Passwort-Hash:
 BEARSTACK_AUTH_PASSWORD_HASH='$2a$10$...' docker compose up -d --build
 ```
 
-Der Container lauscht intern auf `0.0.0.0:8080` und speichert Daten unter `/var/lib/bearstack`. Deshalb muss Auth im Container gesetzt sein; `compose.yaml` nutzt standardmaessig `admin` als Benutzer, reicht `BEARSTACK_AUTH_PASSWORD` und `BEARSTACK_AUTH_PASSWORD_HASH` durch und veroeffentlicht den Port ueber `BEARSTACK_PORT` oder sonst `8080`. Das Runtime-Image basiert auf `debian:trixie-slim`, die Build-Stage auf `golang:1.26.8-trixie`. Das Beispiel-Image enthaelt `chromium`, `ffmpeg`, `libreoffice-writer`, `poppler-utils`, `tesseract-ocr`, `tesseract-ocr-deu` und `tesseract-ocr-eng`, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach `/srv/photos` gemountet werden.
+Der Container lauscht intern auf `0.0.0.0:8080` und speichert Daten unter `/var/lib/bearstack`. Deshalb muss Auth im Container gesetzt sein; `compose.yaml` nutzt standardmaessig `admin` als Benutzer, reicht `BEARSTACK_AUTH_PASSWORD` und `BEARSTACK_AUTH_PASSWORD_HASH` durch und veroeffentlicht den Port ueber `BEARSTACK_PORT` oder sonst `8080`. Das Runtime-Image basiert auf `debian:trixie-slim`, die Build-Stage auf `golang:1.27.1-trixie`. Das Beispiel-Image enthaelt `chromium`, `ffmpeg`, `libreoffice-writer`, `poppler-utils`, `tesseract-ocr`, `tesseract-ocr-deu` und `tesseract-ocr-eng`, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach `/srv/photos` gemountet werden.
 
 Eine detaillierte Anleitung fuer Synology DSM mit Container Manager steht in [`deploy-synology.md`](deploy-synology.md).
 

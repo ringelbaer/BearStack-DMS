@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM --platform=$BUILDPLATFORM golang:1.26.8-trixie AS build
+FROM --platform=$BUILDPLATFORM golang:1.27.1-trixie AS build
 
 WORKDIR /src
 

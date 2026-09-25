@@ -1217,7 +1217,8 @@
 
 <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
 <h2 id="voraussetzungen">Voraussetzungen<a class="headerlink" href="#voraussetzungen" title="Permanent link">&para;</a></h2>
-<p>Für Entwicklung und Build wird Go <code>1.26.8</code> oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich <code>node</code> dazu. Die optionalen Playwright-Smoke-Tests brauchen <code>npm</code> und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.</p>
+<p>Für Entwicklung und Build wird Go <code>1.27.1</code> oder eine kompatible neuere Version benötigt. Für JavaScript-Syntaxchecks kommt zusätzlich <code>node</code> dazu. Die optionalen Playwright-Smoke-Tests brauchen <code>npm</code> und einen Playwright-kompatiblen Browser; lokal ist standardmäßig der Chrome-Channel konfiguriert.</p>
+<p>Für den Raspberry Pi 5 mit 64-Bit-Linux ist das offizielle Go-Paket <a href="https://go.dev/dl/go1.27.1.linux-arm64.tar.gz">go1.27.1.linux-arm64.tar.gz</a> verfügbar. Der BearStack-Produktionsbuild für Linux ARM64 wird ohne CGO geprüft.</p>
 <p>Vorschau, OCR und Medienfunktionen nutzen externe Werkzeuge nur dort, wo sie gebraucht werden:</p>
 <ul>
 <li><code>poppler-utils</code> für PDF-Vorschau, PDF-Merge bei EML-Archiven und OCR-Vorbereitung</li>
@@ -1324,7 +1325,7 @@
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nv">BEARSTACK_AUTH_PASSWORD_HASH</span><span class="o">=</span><span class="s1">&#39;$2a$10$...&#39;</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build
 </span></code></pre></div>
 <p>Der Container lauscht intern auf <code>0.0.0.0:8080</code> und speichert Daten unter <code>/var/lib/bearstack</code>. Deshalb muss Auth im Container gesetzt sein. <code>compose.yaml</code> nutzt standardmäßig <code>admin</code> als Benutzer, reicht <code>BEARSTACK_AUTH_PASSWORD</code> und <code>BEARSTACK_AUTH_PASSWORD_HASH</code> durch und veröffentlicht den Host-Port über <code>BEARSTACK_PORT</code> oder sonst <code>8080</code>.</p>
-<p>Das Runtime-Image basiert auf <code>debian:trixie-slim</code>, die Build-Stage auf <code>golang:1.26.8-trixie</code>. Das Beispiel-Image enthält <code>chromium</code>, <code>ffmpeg</code>, <code>libreoffice-writer</code>, <code>poppler-utils</code>, <code>tesseract-ocr</code>, <code>tesseract-ocr-deu</code> und <code>tesseract-ocr-eng</code>, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. <code>bubblewrap</code> ist für die optional aktivierbare Konvertersandbox enthalten. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach <code>/srv/photos</code> gemountet werden.</p>
+<p>Das Runtime-Image basiert auf <code>debian:trixie-slim</code>, die Build-Stage auf <code>golang:1.27.1-trixie</code>. Das Beispiel-Image enthält <code>chromium</code>, <code>ffmpeg</code>, <code>libreoffice-writer</code>, <code>poppler-utils</code>, <code>tesseract-ocr</code>, <code>tesseract-ocr-deu</code> und <code>tesseract-ocr-eng</code>, damit EML-Archive, Foto-/Video-Vorschaubilder, PDF-/Office-Vorschauen, Text-/Office-Volltextextraktion und OCR im Container funktionieren. <code>bubblewrap</code> ist für die optional aktivierbare Konvertersandbox enthalten. Bei aktiviertem Fotomodul muss ein Host-Fotoverzeichnis read-only nach <code>/srv/photos</code> gemountet werden.</p>
 <p>Alle Docker-relevanten Umgebungsvariablen:</p>
 <table>
 <thead>
@@ -1662,7 +1663,7 @@ deaktivierten Seccomp-/AppArmor-Profile dafür verwenden.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.13.2 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.13.3 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       
