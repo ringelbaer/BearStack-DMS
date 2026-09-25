@@ -98,7 +98,7 @@ func TestExportPersonFiltersAndHiddenGroupMembers(t *testing.T) {
 	if _, err = l.CreateImageGroup(ctx, []string{a, b}, b, false); err != nil {
 		t.Fatal(err)
 	}
-	got := exportPaths(t, l, ListOptions{Path: PersonFolderPath(id), Page: 2, PageSize: 1})
+	got := exportPaths(t, l, ListOptions{Path: fmt.Sprintf(".people/all/%d", id), Page: 2, PageSize: 1})
 	if !reflect.DeepEqual(got, []string{b, "other/d.jpg"}) {
 		t.Fatalf("person export %v", got)
 	}
@@ -106,22 +106,22 @@ func TestExportPersonFiltersAndHiddenGroupMembers(t *testing.T) {
 	if !reflect.DeepEqual(got, []string{b}) {
 		t.Fatalf("directory person scope %v", got)
 	}
-	got = exportPaths(t, l, ListOptions{Path: PersonFolderPath(id), Query: "d.jpg"})
+	got = exportPaths(t, l, ListOptions{Path: fmt.Sprintf(".people/all/%d", id), Query: "d.jpg"})
 	if !reflect.DeepEqual(got, []string{"other/d.jpg"}) {
 		t.Fatalf("person search %v", got)
 	}
-	got = exportPaths(t, l, ListOptions{Path: PersonFolderPath(id), MediaType: "video"})
+	got = exportPaths(t, l, ListOptions{Path: fmt.Sprintf(".people/all/%d", id), MediaType: "video"})
 	if len(got) != 0 {
 		t.Fatalf("person type filter %v", got)
 	}
-	got = exportPaths(t, l, ListOptions{Path: PersonFolderPath(id), GPSOnly: true})
+	got = exportPaths(t, l, ListOptions{Path: fmt.Sprintf(".people/all/%d", id), GPSOnly: true})
 	if len(got) != 0 {
 		t.Fatalf("person GPS filter %v", got)
 	}
 	if err = os.WriteFile(filepath.Join(l.Root(), "other/.adminonly"), nil, 0444); err != nil {
 		t.Fatal(err)
 	}
-	got = exportPaths(t, l, ListOptions{Path: PersonFolderPath(id), IncludeAdminOnly: true})
+	got = exportPaths(t, l, ListOptions{Path: fmt.Sprintf(".people/all/%d", id), IncludeAdminOnly: true})
 	if !reflect.DeepEqual(got, []string{b}) {
 		t.Fatalf("private person media leaked %v", got)
 	}

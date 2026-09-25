@@ -140,26 +140,6 @@ func (rt *faceRuntime) rankFacePersonsInScope(ctx context.Context, v []float32, 
 	return ranked, ctx.Err()
 }
 
-// facePersonCandidates returns exact, distinct-person scores in descending
-// order. Only groups that can enter the requested top results need SQL reads.
-// If live privacy, deletion, reassignment or exclusion invalidates a leading
-// reference, continue through the ranking instead of starving the result set.
-// Caller holds faceRuntime.mu and has called ensureFaceGraph.
-func (l *Library) facePersonCandidates(ctx context.Context, tx faceRowsQuery, v []float32, excluded map[int64]bool, limit int) ([]facePersonCandidate, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-	if limit <= 0 {
-		return nil, nil
-	}
-	rt := &l.faceRuntime
-	ranked, err := rt.rankFacePersons(ctx, v, excluded)
-	if err != nil {
-		return nil, err
-	}
-	return l.validateFacePersonCandidates(ctx, tx, v, ranked, limit)
-}
-
 // ranked contains per-person upper bounds in descending order.
 func (l *Library) validateFacePersonCandidates(ctx context.Context, tx faceRowsQuery, v []float32, ranked []facePersonCandidate, limit int) ([]facePersonCandidate, error) {
 	return l.validateFaceCandidates(ctx, tx, &l.faceRuntime, v, ranked, limit)

@@ -41,7 +41,7 @@ func TestPersonTagsHTTPAndGallery(t *testing.T) {
 	if err := s.photos.RenamePerson(context.Background(), id, "Zoe"); err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range []string{"/photos", "/photos?path=.people", "/photos?path=" + url.QueryEscape(photos.PersonFolderPath(id))} {
+	for _, path := range []string{"/photos", "/photos?path=.people", "/photos?path=" + url.QueryEscape(fmt.Sprintf(".people/all/%d", id))} {
 		r := httptest.NewRequest("GET", path, nil)
 		r.SetBasicAuth("reader", "secret")
 		w := httptest.NewRecorder()
@@ -57,7 +57,7 @@ func TestPersonTagsHTTPAndGallery(t *testing.T) {
 		}
 	}
 	for _, user := range []string{"reader", "editor"} {
-		for _, path := range []string{"", ".people", ".people/all", photos.PersonFolderPath(id), ".people/t-ZmFtaWx5/" + fmt.Sprint(id), photos.DirectoryPeoplePath("") + "/" + fmt.Sprint(id)} {
+		for _, path := range []string{"", ".people", ".people/all", fmt.Sprintf(".people/all/%d", id), ".people/t-ZmFtaWx5/" + fmt.Sprint(id), photos.DirectoryPeoplePath("") + "/" + fmt.Sprint(id)} {
 			w := labelRequest(s, "GET", "/photos?path="+url.QueryEscape(path), user, "")
 			want := user == "editor" && strings.Count(path, "/") == 2
 			if w.Code != 200 || strings.Contains(w.Body.String(), `aria-label="Person bearbeiten"`) != want {
@@ -228,7 +228,7 @@ func TestNativePeopleCountSortCapabilityAndScope(t *testing.T) {
 				t.Fatalf("%s %s: %d %s", path, sort, w.Code, w.Body.String())
 			}
 		}
-		for _, path := range []string{"", ".people", photos.PersonFolderPath(id)} {
+		for _, path := range []string{"", ".people", fmt.Sprintf(".people/all/%d", id)} {
 			w := labelRequest(s, "GET", "/api/photos/v1/browse?path="+url.QueryEscape(path)+"&sort="+sort, "reader", "")
 			if w.Code != 400 {
 				t.Fatalf("invalid count scope %s: %d", path, w.Code)

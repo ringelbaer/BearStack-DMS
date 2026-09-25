@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.12.6
+
+- Ungenutzte Template-Helfer für Tag-Prüfungen und Statistiksegmente sowie fünf nicht mehr benötigte Template-Registrierungen entfernt. Weiterhin genutzte Formatierungsfunktionen bleiben erhalten; Imports im Renderer folgen der bestehenden Paketgruppierung.
+- Nur von Tests verwendete Gesichtskandidaten-Hilfe in die vorhandene Test-Hilfsdatei verschoben. Den ungenutzten Produktions-Wrapper für virtuelle Personenpfade entfernt; Tests formulieren diese Pfade direkt.
+- PATCH für konservative interne Bereinigung ohne Funktionsänderung. README, Website und OpenAPI-Version aktualisiert; HTTP-Verträge, Datenformate und Dependencies bleiben unverändert.
+
 ### BearStack 1.12.5
 
 - Foto-Assets nach Ansicht getrennt: Frame lädt Medienhelfer und Frame-Steuerung; Personenübersichten und Personenordner laden keine Galerie-Skripte. Personen-Details und Bildgruppen behalten die Großansicht.

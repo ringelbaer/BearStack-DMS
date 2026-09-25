@@ -2,7 +2,6 @@
 package server
 
 import (
-	"bearstack"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -21,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"bearstack"
 	"bearstack/internal/document"
 	"bearstack/internal/documentformat"
 	"bearstack/internal/photos"
@@ -46,23 +46,18 @@ func parseTemplates() (*template.Template, error) {
 		"formatDuration":         formatDuration,
 		"formatNumber":           formatNumber,
 		"formatCoord":            formatCoord,
-		"formatRatingData":       formatRatingData,
 		"formatTag":              formatTag,
-		"formatFolderTag":        formatFolderTag,
 		"formatFolderCrumb":      formatFolderCrumb,
 		"folderBreadcrumbLabel":  folderBreadcrumbLabel,
 		"joinTags":               func(tags []string) string { return strings.Join(tags, ", ") },
 		"joinDisplayTags":        joinDisplayTags,
 		"listVisibleTags":        listVisibleTags,
 		"listHiddenTags":         listHiddenTags,
-		"hasTag":                 hasTag,
 		"customValue":            customValue,
 		"customFieldFilterValue": customFieldFilterValue,
 		"columnVisible":          columnVisible,
 		"sortIndicator":          sortIndicator,
 		"statBarStyle":           statBarStyle,
-		"statShareStyle":         statShareStyle,
-		"tagSegmentStyle":        tagSegmentStyle,
 		"queryEscape": func(value string) template.URL {
 			return template.URL(url.QueryEscape(value))
 		},
@@ -301,27 +296,6 @@ func statBarStyle(value, maximum int) template.CSS {
 		percent = 100
 	}
 	return template.CSS(fmt.Sprintf("--bar-value: %d%%;", percent))
-}
-
-func statShareStyle(value, total int) template.CSS {
-	if value < 0 {
-		value = 0
-	}
-	if total < 1 {
-		total = 1
-	}
-	percent := (value*100 + total/2) / total
-	if percent < 1 && value > 0 {
-		percent = 1
-	}
-	if percent > 100 {
-		percent = 100
-	}
-	return template.CSS(fmt.Sprintf("--bar-value: %d%%;", percent))
-}
-
-func tagSegmentStyle(value, total int, tagStyle template.CSS) template.CSS {
-	return template.CSS(string(statShareStyle(value, total)) + " " + string(tagStyle))
 }
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, data PageData) {
@@ -701,15 +675,6 @@ func joinDisplayTags(mode string, tags []string) string {
 func tagStyle(color string) template.CSS {
 	color = tagutil.NormalizeColor(color)
 	return template.CSS("--tag-color: " + color + "; --tag-text-color: " + tagutil.ReadableTextColor(color) + ";")
-}
-
-func hasTag(tags []string, name string) bool {
-	for _, tag := range tags {
-		if tag == name {
-			return true
-		}
-	}
-	return false
 }
 
 func customValue(values map[int64]string, id int64) string {

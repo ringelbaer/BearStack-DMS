@@ -120,7 +120,7 @@ func TestPersonHeadingShowsOnlyRecordedUndivorcedDetails(t *testing.T) {
 	}
 	for _, endpoint := range []string{
 		fmt.Sprintf("/photos/people/%d", id),
-		"/photos?path=" + url.QueryEscape(photos.PersonFolderPath(id)),
+		"/photos?path=" + url.QueryEscape(fmt.Sprintf(".people/all/%d", id)),
 		"/photos?path=.people/t-ZmFtaWx5/" + fmt.Sprint(id),
 		"/photos?path=" + url.QueryEscape(photos.DirectoryPeoplePath("")+"/"+fmt.Sprint(id)),
 	} {
@@ -153,7 +153,7 @@ func TestPersonHeadingShowsOnlyRecordedUndivorcedDetails(t *testing.T) {
 		}
 	}
 	unnamed := group.Faces[3].PersonID
-	for _, route := range []string{"/photos", "/photos?path=.people", "/photos?path=.people/all", "/photos?path=" + url.QueryEscape(photos.PersonFolderPath(unnamed))} {
+	for _, route := range []string{"/photos", "/photos?path=.people", "/photos?path=.people/all", "/photos?path=" + url.QueryEscape(fmt.Sprintf(".people/all/%d", unnamed))} {
 		r := httptest.NewRequest("GET", route, nil)
 		r.SetBasicAuth("reader", "secret")
 		w := httptest.NewRecorder()

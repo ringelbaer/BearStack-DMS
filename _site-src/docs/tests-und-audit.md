@@ -49,6 +49,13 @@ Regressionstests prüfen Rollen und zusätzliche Leserechte, beide Upload-Endpun
 
 ### Weitere Regressionen
 
+Die interne Bereinigung in **1.12.6** entfernt ungenutzte Template-Helfer und
+Registrierungen. Nur von Tests benötigte Gesichtskandidaten-Hilfen liegen in
+`_test.go`; Tests bauen virtuelle Personenpfade direkt auf. Bestehende
+Template-, Personen-, Galerie- und Exporttests prüfen die unveränderten
+Darstellungen und Abläufe. HTTP-Verträge, Datenformate und Dependencies bleiben
+unverändert.
+
 Die Kettenprüfung (0.57.0) hat eigene Go- und Browserregressionen: Verzweigungen,
 Sprunggrenzen, benannte Zwischenstationen, abgelehnte Paare, Sichtbarkeit,
 Vorschlagsschwellen und Gesichter außerhalb des Referenzlimits. Eine Auswahl mit

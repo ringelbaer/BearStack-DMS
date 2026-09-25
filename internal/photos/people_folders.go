@@ -28,8 +28,6 @@ func IsPeopleDirectory(path string) bool {
 		(parts[1] == "all" || strings.HasPrefix(parts[1], "t-") || strings.HasPrefix(parts[1], "f-"))
 }
 
-func PersonFolderPath(id int64) string { return PeopleFolderPath + "/all/" + strconv.FormatInt(id, 10) }
-
 func personTagPath(tag string) string {
 	return PeopleFolderPath + "/t-" + base64.RawURLEncoding.EncodeToString([]byte(tag))
 }

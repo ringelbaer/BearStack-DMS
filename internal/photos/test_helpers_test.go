@@ -23,3 +23,20 @@ func decodeGPX(ctx context.Context, input io.Reader, maxBytes int64, maxPoints i
 	points, _, err := decodeGPXSegments(ctx, input, maxBytes, maxPoints)
 	return points, err
 }
+
+// facePersonCandidates combines ranking and validation for candidate tests.
+// Caller holds faceRuntime.mu and has called ensureFaceGraph.
+func (l *Library) facePersonCandidates(ctx context.Context, tx faceRowsQuery, v []float32, excluded map[int64]bool, limit int) ([]facePersonCandidate, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if limit <= 0 {
+		return nil, nil
+	}
+	rt := &l.faceRuntime
+	ranked, err := rt.rankFacePersons(ctx, v, excluded)
+	if err != nil {
+		return nil, err
+	}
+	return l.validateFacePersonCandidates(ctx, tx, v, ranked, limit)
+}

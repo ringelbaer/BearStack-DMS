@@ -1303,6 +1303,12 @@
 </ul>
 <p>Regressionstests prüfen Rollen und zusätzliche Leserechte, beide Upload-Endpunkte, Tag-Zugriff ohne Fotomodul, tatsächliche IMAP-Kommandos ohne Netzwerkzugriff, exakte Größen- und Verschachtelungsgrenzen sowie Abbruch und Dateibereinigung. Bestehende Tests sichern Login-Drosselung, Sitzungswiderruf, CSRF, Loopback-Zugriff, Pfad- und Symlink-Schutz sowie generische Fehlerantworten ab.</p>
 <h3 id="weitere-regressionen">Weitere Regressionen<a class="headerlink" href="#weitere-regressionen" title="Permanent link">&para;</a></h3>
+<p>Die interne Bereinigung in <strong>1.12.6</strong> entfernt ungenutzte Template-Helfer und
+Registrierungen. Nur von Tests benötigte Gesichtskandidaten-Hilfen liegen in
+<code>_test.go</code>; Tests bauen virtuelle Personenpfade direkt auf. Bestehende
+Template-, Personen-, Galerie- und Exporttests prüfen die unveränderten
+Darstellungen und Abläufe. HTTP-Verträge, Datenformate und Dependencies bleiben
+unverändert.</p>
 <p>Die Kettenprüfung (0.57.0) hat eigene Go- und Browserregressionen: Verzweigungen,
 Sprunggrenzen, benannte Zwischenstationen, abgelehnte Paare, Sichtbarkeit,
 Vorschlagsschwellen und Gesichter außerhalb des Referenzlimits. Eine Auswahl mit
@@ -1804,7 +1810,7 @@ Browser sind abgedeckt.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.12.5 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.12.6 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

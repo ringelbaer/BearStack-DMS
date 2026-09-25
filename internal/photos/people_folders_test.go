@@ -78,7 +78,7 @@ func TestPeopleFoldersTagsPortraitsAndGallery(t *testing.T) {
 		}
 	}
 	for _, q := range []string{"file_name:a.jpg", "file_name:a.jpg OR file_name:c.jpg", "-tag:missing"} {
-		page, err := l.List(ctx, ListOptions{Path: PersonFolderPath(id), Query: q})
+		page, err := l.List(ctx, ListOptions{Path: fmt.Sprintf(".people/all/%d", id), Query: q})
 		want := 1
 		if q == "-tag:missing" {
 			want = 2
@@ -168,7 +168,7 @@ func TestPeopleFoldersVisibilityAndIgnored(t *testing.T) {
 	if err != nil || len(root.Folders) != 1 || root.Folders[0].DirCount != 1 {
 		t.Fatalf("private group/tag leaked: %+v %v", root, err)
 	}
-	if _, err := l.List(ctx, ListOptions{Path: PersonFolderPath(b[0].PersonID), IncludeAdminOnly: true}); !errors.Is(err, sql.ErrNoRows) {
+	if _, err := l.List(ctx, ListOptions{Path: fmt.Sprintf(".people/all/%d", b[0].PersonID), IncludeAdminOnly: true}); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("private gallery: %v", err)
 	}
 	if _, err := l.SetPersonTags(ctx, b[0].PersonID, []string{"changed"}); !errors.Is(err, sql.ErrNoRows) {
@@ -292,7 +292,7 @@ func TestPeopleFoldersPrivateFavoriteWithinVisiblePerson(t *testing.T) {
 	if err != nil || len(people.Folders) != 1 || people.Folders[0].MediaCount != 1 || people.Folders[0].Previews[0].FaceID != a[0].ID {
 		t.Fatalf("private favorite/count leaked: %+v %v", people, err)
 	}
-	gallery, err := l.List(ctx, ListOptions{Path: PersonFolderPath(id), IncludeAdminOnly: true})
+	gallery, err := l.List(ctx, ListOptions{Path: fmt.Sprintf(".people/all/%d", id), IncludeAdminOnly: true})
 	if err != nil || gallery.Total != 1 || gallery.Media[0].Path != "public/a.jpg" {
 		t.Fatalf("private photo leaked: %+v %v", gallery, err)
 	}
