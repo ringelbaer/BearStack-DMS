@@ -2,6 +2,8 @@
 
 Aktuelle Version: **1.13.2** · Android-App: **0.22.4**.
 
+Die [Website](https://ringelbaer.github.io/BearStack-DMS/) stellt Dokumenten- und Fotoverwaltung, lokale Gesichtserkennung, Personenverwaltung und die Android-App vor und führt zu den jeweiligen Anleitungen.
+
 **BearStack 1.13.2:** Der gesamte IMAP-Verbindungsaufbau einschließlich CAPABILITY und STARTTLS ist auf 20 Sekunden begrenzt; fehlgeschlagene Verbindungen werden geschlossen. Fehlerantworten für Gesichter geben bei fehlenden oder nicht lesbaren Fotodateien keine internen Dateipfade mehr aus. Sicherheitskorrekturen ohne Datenmigration.
 
 **BearStack 1.13.1:** Die Web-Karte begrenzt ihren Kachel-Cache und verschiebt Marker und Tracks gemeinsam, statt sie bei jeder Bewegung einzeln zu aktualisieren. HTML-Teilantworten laden keine Daten für die globale Navigation.

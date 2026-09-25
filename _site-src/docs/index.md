@@ -1,6 +1,6 @@
 ---
 title: BearStack
-description: Lokale Dokumenten- und Fotoverwaltung für kleine Server.
+description: Lokale Dokumenten- und Fotoverwaltung mit Gesichtserkennung, Personenverwaltung und Android-App für dein Fotoarchiv.
 template: landing.html
 hide:
   - toc
@@ -12,14 +12,15 @@ hide:
   <div class="bs-hero__layout">
     <div class="bs-hero__inner">
       <p class="bs-kicker">Schlankes Archiv. Starke Funktion.</p>
-      <h1>BearStack</h1>
+      <h1 id="__skip" tabindex="-1">BearStack</h1>
       <p class="bs-lead">
-        Finde Dokumente und Fotos schnell wieder, ohne deine Ablage in eine Cloud oder ein proprietäres System umzuziehen.
+        Finde Dokumente, Fotos und Menschen in deiner Sammlung wieder. Mit lokaler Gesichtserkennung, Personenverwaltung und einer Android-App für dein Fotoarchiv.
       </p>
       <div class="bs-actions">
         <a class="md-button md-button--primary" href="installation.html">Loslegen</a>
         <a class="md-button" href="dokumente.html">Dokumente</a>
         <a class="md-button" href="fotos.html">Fotos</a>
+        <a class="md-button" href="android.html">Android-App</a>
       </div>
     </div>
   </div>
@@ -56,14 +57,48 @@ hide:
       </article>
       <article class="bs-feature">
         <span class="bs-feature__icon">03</span>
-        <h3>Fotoarchiv on the go</h3>
-        <p>Das optionale Fotomodul liefert deine Fotosammlung in rasender Geschwindigkeit auf jedes Gerät.</p>
+        <h3>Dein Fotoarchiv überall dabei</h3>
+        <p>Durchsuche deine Sammlung im Browser oder in der Android-App: nach Datum, Tags oder benannten Personen, unabhängig vom Fotoordner.</p>
       </article>
       <article class="bs-feature">
         <span class="bs-feature__icon">04</span>
         <h3>Klein betreiben</h3>
         <p>Go-Binary, umfassendes Caching und Hintergrund-Thumbnail-Generierung passen gut zu Raspberry Pi und NAS.</p>
       </article>
+    </div>
+  </div>
+</section>
+
+<section class="bs-band bs-band--quiet" aria-label="Gesichtserkennung und Personenverwaltung">
+  <div class="bs-wrap bs-intro">
+    <div>
+      <p class="bs-kicker">Gesichter und Personen</p>
+      <h2>Finde Menschen in deinen Erinnerungen wieder.</h2>
+      <div class="bs-actions">
+        <a class="md-button md-button--primary" href="fotos-personen.html">Personen verwalten</a>
+        <a class="md-button" href="fotos-technik.html#gesichtserkennung-einrichten">Gesichtserkennung einrichten</a>
+      </div>
+    </div>
+    <div>
+      <p>Die optionale Gesichtserkennung läuft lokal über einen selbst betriebenen Dienst. BearStack erkennt Gesichter und schlägt passende Personen vor. Du prüfst die Vorschläge, vergibst Namen und korrigierst Zuordnungen – auch für mehrere Gesichter oder ganze Fotoordner.</p>
+      <p>Personengalerien führen Fotos aus verschiedenen Ordnern zusammen. Fehlende Gesichter lassen sich manuell ergänzen; Tags, Lebensdaten und Familienbeziehungen erweitern die Personenverwaltung bis zum interaktiven Stammbaum. Deine Originalfotos bleiben dabei unverändert und schreibgeschützt.</p>
+    </div>
+  </div>
+</section>
+
+<section class="bs-band" aria-label="Android-App">
+  <div class="bs-wrap bs-intro">
+    <div>
+      <p class="bs-kicker">BearStack Fotos für Android</p>
+      <h2>Deine Fotos und Personen direkt auf dem Smartphone.</h2>
+      <div class="bs-actions">
+        <a class="md-button md-button--primary" href="android.html">Android-App kennenlernen</a>
+        <a class="md-button" href="android-technik.html#bauen-und-installieren">APK bauen und installieren</a>
+      </div>
+    </div>
+    <div>
+      <p>Die native App verbindet sich per HTTPS mit deinem BearStack-Server. Blättere durch Galerien und Ordner, suche Fotos, erkunde Aufnahmeorte auf der Karte und teile ausgewählte Bilder. Gesichter benennen, ähnliche Gruppen vergleichen und Zuordnungen nach Ordnern prüfen geht auch unterwegs.</p>
+      <p>Lokale Gerätefotos kannst du auch ohne Serverkonto ansehen. BearStack Fotos unterstützt Deutsch und Englisch, helle und dunkle Darstellung sowie Android ab Version 8.0. Die Installation erfolgt über eine selbst gebaute oder vom Serverbetreiber bereitgestellte APK.</p>
     </div>
   </div>
 </section>

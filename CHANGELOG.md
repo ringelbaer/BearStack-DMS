@@ -4,6 +4,11 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### Website und Dokumentation
+
+- Startseite um lokale Gesichtserkennung, Personenverwaltung mit Familienbeziehungen und die Android-App ergänzt; direkte Links führen zu Bedienung, Einrichtung und APK-Build. Fehlendes Sprungziel für „Zum Inhalt“ ergänzt.
+- Versionsangaben in Website-Footer und Android-Anleitungen auf BearStack 1.13.2 und Android 0.22.4 aktualisiert. Generierte Website neu gebaut; keine Änderung an Anwendung oder API, daher kein Versionssprung.
+
 ### BearStack 1.13.2
 
 - Der IMAP-Verbindungsaufbau erhält ein durchgehendes Zeitlimit von 20 Sekunden für TCP, TLS, Begrüßung, CAPABILITY und STARTTLS. Bibliotheksinterne Änderungen an Socket-Deadlines können dieses Limit nicht mehr aufheben; jeder fehlgeschlagene Aufbau schließt die Verbindung.
