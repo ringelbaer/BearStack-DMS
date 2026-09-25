@@ -122,6 +122,7 @@ type PageAssets struct {
 	OCR        bool
 	Statistics bool
 	Photos     bool
+	PhotoFrame bool
 	Tags       bool
 }
 

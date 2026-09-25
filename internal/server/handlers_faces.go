@@ -86,7 +86,8 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 		_ = writeJSON(w, http.StatusOK, result)
 		return
 	}
-	data := PageData{PeopleSection: "people", Title: "Personen", Active: "photos", Assets: photoPageAssets(!result.IgnoredOnly && s.requestHasCapabilities(r, authCapPhotosEdit)), People: result, Notice: r.URL.Query().Get("notice")}
+	assets := PageAssets{Explicit: true, Photos: id != 0, Tags: !result.IgnoredOnly && s.requestHasCapabilities(r, authCapPhotosEdit)}
+	data := PageData{PeopleSection: "people", Title: "Personen", Active: "photos", Assets: assets, People: result, Notice: r.URL.Query().Get("notice")}
 	if id != 0 {
 		if result.Name != "" {
 			details, e := s.photos.PersonDetails(r.Context(), id)

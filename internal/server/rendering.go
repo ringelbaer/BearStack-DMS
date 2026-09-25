@@ -132,16 +132,26 @@ func pageJSAssets(data PageData) []string {
 	if pageAssets.Statistics {
 		assets = append(assets, "/static/app-charts.js")
 	}
+	if pageAssets.Photos || pageAssets.PhotoFrame {
+		assets = append(assets, "/static/app-photos-media.js")
+	}
 	if pageAssets.Photos {
+		// Both the gallery lightbox and full map use the small map primitives.
+		assets = append(assets, "/static/app-photos-map.js")
+		if data.PhotoFilter.MapView {
+			assets = append(assets, "/static/app-photos-map-view.js")
+		}
 		assets = append(assets,
-			"/static/app-photos-media.js",
-			"/static/app-photos-map.js",
 			"/static/app-photos-thumbnails.js",
 			"/static/app-photos-lightbox.js",
 			"/static/app-photos.js",
-			"/static/app-image-groups.js",
-			"/static/app-photos-frame.js",
 		)
+		if data.Auth.CanPhotosEdit && (data.ImageGroup.ID > 0 || (data.PhotoPage && !data.Photos.Virtual && !data.PhotoFilter.MapView)) {
+			assets = append(assets, "/static/app-image-groups.js")
+		}
+	}
+	if pageAssets.PhotoFrame {
+		assets = append(assets, "/static/app-photos-frame.js")
 	}
 	return assets
 }
@@ -163,7 +173,8 @@ func inferredPageAssets(data PageData) PageAssets {
 		Documents:  needsDocumentAssets(data),
 		OCR:        data.Document.ID > 0,
 		Statistics: data.Active == "statistics",
-		Photos:     data.PhotoPage || data.PhotoFrame || data.Active == "photos",
+		Photos:     !data.PhotoFrame && (data.PhotoPage || data.People.PersonID > 0 || data.ImageGroup.ID > 0),
+		PhotoFrame: data.PhotoFrame,
 		Tags:       needsTagAssets(data),
 	}
 }
@@ -189,7 +200,7 @@ func photoPageAssets(includeTags ...bool) PageAssets {
 }
 
 func photoFrameAssets() PageAssets {
-	return PageAssets{Explicit: true, Photos: true}
+	return PageAssets{Explicit: true, PhotoFrame: true}
 }
 
 func needsDocumentAssets(data PageData) bool {

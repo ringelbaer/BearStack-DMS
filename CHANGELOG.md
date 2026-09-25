@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.12.5
+
+- Foto-Assets nach Ansicht getrennt: Frame lädt Medienhelfer und Frame-Steuerung; Personenübersichten und Personenordner laden keine Galerie-Skripte. Personen-Details und Bildgruppen behalten die Großansicht.
+- Gemeinsame Kartenprojektion und Kacheldarstellung von der vollständigen Kartensteuerung getrennt. Die GPS-Karte der Großansicht bleibt verfügbar; `app-photos-map-view.js` wird nur für die Kartenseite geladen. Bildgruppenaktionen laden nur für passende Bearbeitungsansichten.
+- PATCH für geringere Übertragung und JavaScript-Verarbeitung. README, Website und OpenAPI-Version aktualisiert; keine Änderungen an Originaldateien oder HTTP-Verträgen.
+
 ### BearStack 1.12.4
 
 - Thumbnail-Polling zählt auch Netzwerkfehler, unvollständige Antworten und HTTP-Fehler als Versuche. Höchstens 40 Versuche mit wachsendem Abstand, 15 Sekunden je Anfrage und maximal 200 Medien je Batch. Dauerhafte 4xx-Antworten und Anmeldeweiterleitungen beenden die Abfrage sofort; 408 und 429 bleiben wiederholbar.

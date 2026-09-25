@@ -123,6 +123,14 @@ die jeweilige Arbeit gezielt. Die Thumbnail-Parallelität begrenzt auch die
 Erzeugung beim ersten Abruf. Größere Galerieseiten und Vorschauen erhöhen
 Ladeaufwand und Speicherbedarf; für kleine Server mit den Vorgaben beginnen.
 
+Die WebUI lädt Foto-Skripte passend zur Ansicht: Der Frame benötigt nur
+Medienhelfer und Frame-Steuerung; Personenübersichten und Personenordner
+benötigen keine Galerie-Skripte. Personen-Details und Bildgruppen behalten die
+Großansicht. Kartenprojektion und Kacheldarstellung werden von der kleinen
+GPS-Karte in der Großansicht wiederverwendet; die vollständige Kartensteuerung
+wird ausschließlich auf der Kartenseite geladen. Bildgruppenaktionen werden
+nur in den passenden Bearbeitungsansichten geladen.
+
 Die WebUI fragt den Thumbnail-Status für höchstens 200 Medien je Anfrage ab.
 Auch Netzwerkfehler, ungültige oder unvollständige Antworten zählen zur Grenze
 von 40 Versuchen mit wachsendem Abstand. Jede Anfrage hat ein Zeitlimit von

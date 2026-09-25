@@ -159,6 +159,7 @@ test("photo frame works without the gallery script", async ({ browser }) => {
       body: "",
     }));
     await page.goto(`${fixture.baseURL}/photos/frame?q=file_name%3Apublic-a.png&type=image&sort=ascending_name`);
+    await expect(page.locator('script[src*="/static/app-photos.js"], script[src*="/static/app-photos-map"], script[src*="/static/app-photos-lightbox.js"], script[src*="/static/app-photos-thumbnails.js"], script[src*="/static/app-image-groups.js"]')).toHaveCount(0);
     const image = page.locator("[data-photo-frame-image]");
     await expect(image).toBeVisible();
     await expect(image).toHaveAttribute("src", /public-a/);
@@ -623,6 +624,33 @@ test("photo lightbox remains usable when the metadata batch fails", async ({ bro
     await expect.poll(() => dialog.locator("[data-photo-image]").evaluate((image) => image.naturalWidth)).toBeGreaterThan(0);
     await page.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
+    expect(errors).toEqual([]);
+  } finally {
+    await context.close();
+  }
+});
+
+test("gallery keeps the lightbox GPS map without loading the full map view", async ({ browser }) => {
+  const { context, page } = await editorPage(browser);
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  try {
+    await page.route("https://tile.openstreetmap.org/**", route => route.fulfill({ status: 200, contentType: "image/png", body: tinyPNG }));
+    await page.route("**/photos/media/info", async route => {
+      const response = await route.fetch();
+      const payload = await response.json();
+      payload.media.forEach(item => { item.lat = "48.137"; item.lon = "11.575"; item.coords = "48.137, 11.575"; });
+      await route.fulfill({ response, json: payload });
+    });
+    await page.goto(`${fixture.baseURL}/photos?type=image&sort=ascending_name`);
+    await expect(page.locator('script[src*="app-photos-map-view.js"], script[src*="app-photos-frame.js"]')).toHaveCount(0);
+    await photoItem(page, "public-a.png").locator(".photo-card-button").click();
+    const dialog = page.locator("[data-photo-lightbox]");
+    await revealPhotoControls(page);
+    await dialog.locator("[data-photo-info-toggle]").click();
+    await expect(dialog.locator("[data-photo-info-map]")).toBeVisible();
+    await expect.poll(() => dialog.locator("[data-photo-info-map-tiles] img").count()).toBeGreaterThan(0);
+    await expect(dialog.locator("[data-photo-info-map-link]")).toHaveAttribute("href", /mlat=48\.137000/);
     expect(errors).toEqual([]);
   } finally {
     await context.close();
@@ -1337,6 +1365,7 @@ test("photo map measures once per render and reuses its track while panning", as
     await page.goto(`${fixture.baseURL}/help`);
     await page.setContent('<section data-photo-map><div data-photo-map-canvas tabindex="0" style="width:1000px;height:600px"><div data-photo-map-tiles></div><svg data-photo-map-gpx-track data-photo-map-layer="track"></svg></div></section>');
     await page.addScriptTag({url: `${fixture.baseURL}/static/app-photos-map.js`});
+    await page.addScriptTag({url: `${fixture.baseURL}/static/app-photos-map-view.js`});
     const initial = await page.evaluate(() => {
       const canvas = document.querySelector("[data-photo-map-canvas]");
       window.mapSizeReads = 0;

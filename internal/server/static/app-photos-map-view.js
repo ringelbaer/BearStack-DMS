@@ -1,0 +1,346 @@
+(function () {
+  var map = window.BearStack.photos.map;
+  var photoMapMinZoom = map.minZoom;
+  var photoMapMaxZoom = map.maxZoom;
+  var clampPhotoMap = map.clamp;
+  var wrapPhotoMapX = map.wrapX;
+  var photoMapWorldSize = map.worldSize;
+  var projectPhotoMap = map.project;
+  var unprojectPhotoMap = map.unproject;
+  var photoMapProjector = map.projector;
+  var photoMapInitialState = map.initialState;
+  var renderPhotoMapTiles = map.renderTiles;
+
+  function parsePhotoMapPoints(value) {
+    return (value || "").trim().split(/\s+/).map(function (entry) {
+      var parts = entry.split(",");
+      return {
+        lat: parseFloat(parts[0] || ""),
+        lon: parseFloat(parts[1] || "")
+      };
+    }).filter(function (point) {
+      return Number.isFinite(point.lat) && Number.isFinite(point.lon);
+    });
+  }
+
+  function initMap() {
+    var panel = document.querySelector("[data-photo-map]");
+    if (!panel) return;
+    var canvas = panel.querySelector("[data-photo-map-canvas]");
+    var tileLayer = panel.querySelector("[data-photo-map-tiles]");
+    var routeLayer = panel.querySelector("[data-photo-map-route]");
+    var zoomIn = panel.querySelector("[data-photo-map-zoom-in]");
+    var zoomOut = panel.querySelector("[data-photo-map-zoom-out]");
+    var markers = Array.from(panel.querySelectorAll("[data-photo-map-marker]"));
+    var routePointNodes = Array.from(panel.querySelectorAll("[data-photo-route-point]"));
+    var layerToggles = Array.from(panel.querySelectorAll("[data-photo-layer-toggle]"));
+    var gpxTrackNodes = Array.from(panel.querySelectorAll("[data-photo-map-gpx-track]"));
+    var gpxLabelNodes = Array.from(panel.querySelectorAll("[data-photo-map-gpx-label]"));
+    var gpxLabels = new Map(gpxLabelNodes.map(function (label) {
+      return [label.dataset.photoMapLayer || "", label];
+    }));
+    var tileCache = new Map();
+    var renderQueued = false;
+    var layerVisibility = {};
+    layerToggles.forEach(function (toggle) {
+      var layer = toggle.dataset.photoMapLayer || "";
+      layerVisibility[layer] = toggle.checked;
+    });
+    function layerVisible(layer) {
+      return layerVisibility[layer] !== false;
+    }
+    var positions = markers.map(function (marker) {
+      return {
+        node: marker,
+        marker: marker,
+        lat: parseFloat(marker.dataset.lat || ""),
+        lon: parseFloat(marker.dataset.lon || "")
+      };
+    }).filter(function (position) {
+      return Number.isFinite(position.lat) && Number.isFinite(position.lon);
+    });
+    var routePositions = routePointNodes.map(function (point) {
+      return {
+        node: point,
+        lat: parseFloat(point.dataset.lat || ""),
+        lon: parseFloat(point.dataset.lon || "")
+      };
+    }).filter(function (position) {
+      return Number.isFinite(position.lat) && Number.isFinite(position.lon);
+    });
+    var gpxTracks = gpxTrackNodes.map(function (track) {
+      var layer = track.dataset.photoMapLayer || "";
+      return {
+        node: track,
+        label: gpxLabels.get(layer) || null,
+        layer: layer,
+        color: track.dataset.color || "",
+        labelText: track.dataset.label || "",
+        points: parsePhotoMapPoints(track.dataset.points || "")
+      };
+    }).filter(function (track) {
+      return track.layer && track.points.length > 0;
+    });
+    var gpxPositions = [];
+    gpxTracks.forEach(function (track) {
+      track.points.forEach(function (point) {
+        gpxPositions.push(point);
+      });
+    });
+    var allPositions = positions.concat(routePositions, gpxPositions);
+    if (!canvas || !allPositions.length) {
+      if (canvas) canvas.classList.add("empty");
+      renderPhotoRoute(routeLayer, [], null);
+      gpxTracks.forEach(function (track) {
+        renderPhotoMapTrack(track, false, null, null);
+      });
+      return;
+    }
+    canvas.classList.remove("empty");
+
+    var state = photoMapInitialState(allPositions, canvas.clientWidth || 640, canvas.clientHeight || 320);
+
+    function canvasSize() {
+      return {
+        width: Math.max(1, canvas.clientWidth || canvas.offsetWidth || 640),
+        height: Math.max(1, canvas.clientHeight || canvas.offsetHeight || 320)
+      };
+    }
+
+    function centerWorld() {
+      return projectPhotoMap(state.lat, state.lon, state.zoom);
+    }
+
+    function setStateFromWorld(world, zoom) {
+      var size = photoMapWorldSize(zoom);
+      var center = unprojectPhotoMap(
+        wrapPhotoMapX(world.x, zoom),
+        clampPhotoMap(world.y, 0, size),
+        zoom
+      );
+      state = {
+        lat: center.lat,
+        lon: center.lon,
+        zoom: zoom
+      };
+      updateControls();
+      scheduleRender();
+    }
+
+    function renderMarkers(screenPoint, size) {
+      var showPhotos = layerVisible("photos");
+      positions.forEach(function (position) {
+        position.node.hidden = !showPhotos;
+        if (!showPhotos) return;
+        var point = screenPoint(position);
+        position.node.style.left = point.x.toFixed(2) + "px";
+        position.node.style.top = point.y.toFixed(2) + "px";
+      });
+      var showRoute = layerVisible("photo-route");
+      routePositions.forEach(function (position) {
+        position.node.hidden = !showRoute;
+        if (!showRoute) return;
+        var point = screenPoint(position);
+        position.node.style.left = point.x.toFixed(2) + "px";
+        position.node.style.top = point.y.toFixed(2) + "px";
+      });
+      renderPhotoRoute(routeLayer, showRoute ? routePositions : [], screenPoint, size);
+      gpxTracks.forEach(function (track) {
+        renderPhotoMapTrack(track, layerVisible(track.layer), screenPoint, size);
+      });
+    }
+
+    function updateControls() {
+      if (zoomIn) zoomIn.disabled = state.zoom >= photoMapMaxZoom;
+      if (zoomOut) zoomOut.disabled = state.zoom <= photoMapMinZoom;
+    }
+
+    function renderMap() {
+      var size = canvasSize();
+      var screenPoint = photoMapProjector(state, size);
+      renderPhotoMapTiles(tileLayer, state, size, tileCache);
+      renderMarkers(screenPoint, size);
+    }
+
+    function scheduleRender() {
+      if (renderQueued) return;
+      renderQueued = true;
+      function flushRender() {
+        if (!renderQueued) return;
+        renderQueued = false;
+        renderMap();
+      }
+      window.requestAnimationFrame(flushRender);
+      window.setTimeout(flushRender, 80);
+    }
+
+    function zoomBy(delta, clientX, clientY) {
+      var nextZoom = clampPhotoMap(state.zoom + delta, photoMapMinZoom, photoMapMaxZoom);
+      if (nextZoom === state.zoom) return;
+      var rect = canvas.getBoundingClientRect();
+      var size = canvasSize();
+      var anchorX = Number.isFinite(clientX) ? clientX - rect.left : size.width / 2;
+      var anchorY = Number.isFinite(clientY) ? clientY - rect.top : size.height / 2;
+      anchorX = clampPhotoMap(anchorX, 0, size.width);
+      anchorY = clampPhotoMap(anchorY, 0, size.height);
+      var oldCenter = centerWorld();
+      var anchor = unprojectPhotoMap(
+        oldCenter.x + anchorX - size.width / 2,
+        oldCenter.y + anchorY - size.height / 2,
+        state.zoom
+      );
+      var nextAnchor = projectPhotoMap(anchor.lat, anchor.lon, nextZoom);
+      setStateFromWorld({
+        x: nextAnchor.x - anchorX + size.width / 2,
+        y: nextAnchor.y - anchorY + size.height / 2
+      }, nextZoom);
+    }
+
+    if (zoomIn) {
+      zoomIn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        zoomBy(1);
+      });
+    }
+    if (zoomOut) {
+      zoomOut.addEventListener("click", function (event) {
+        event.stopPropagation();
+        zoomBy(-1);
+      });
+    }
+    layerToggles.forEach(function (toggle) {
+      toggle.addEventListener("change", function () {
+        layerVisibility[toggle.dataset.photoMapLayer || ""] = toggle.checked;
+        scheduleRender();
+      });
+    });
+
+    var drag = null;
+    canvas.addEventListener("pointerdown", function (event) {
+      if (event.button !== undefined && event.button !== 0) return;
+      if (event.target.closest("[data-photo-map-marker], [data-photo-route-point], .photo-map-controls, .photo-map-layer-panel, .photo-map-attribution")) return;
+      var center = centerWorld();
+      drag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        centerX: center.x,
+        centerY: center.y
+      };
+      canvas.classList.add("is-dragging");
+      canvas.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+
+    canvas.addEventListener("pointermove", function (event) {
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      setStateFromWorld({
+        x: drag.centerX - (event.clientX - drag.startX),
+        y: drag.centerY - (event.clientY - drag.startY)
+      }, state.zoom);
+      event.preventDefault();
+    });
+
+    function endDrag(event) {
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      drag = null;
+      canvas.classList.remove("is-dragging");
+    }
+
+    canvas.addEventListener("pointerup", endDrag);
+    canvas.addEventListener("pointercancel", endDrag);
+
+    canvas.addEventListener("wheel", function (event) {
+      event.preventDefault();
+      zoomBy(event.deltaY < 0 ? 1 : -1, event.clientX, event.clientY);
+    }, { passive: false });
+
+    canvas.addEventListener("dblclick", function (event) {
+      if (event.target.closest("[data-photo-map-marker], [data-photo-route-point], .photo-map-controls, .photo-map-layer-panel, .photo-map-attribution")) return;
+      event.preventDefault();
+      zoomBy(1, event.clientX, event.clientY);
+    });
+
+    canvas.addEventListener("keydown", function (event) {
+      if (event.target !== canvas) return;
+      var pan = 80;
+      var center = centerWorld();
+      if (event.key === "+" || event.key === "=") {
+        event.preventDefault();
+        zoomBy(1);
+        return;
+      }
+      if (event.key === "-") {
+        event.preventDefault();
+        zoomBy(-1);
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        center.x -= pan;
+      } else if (event.key === "ArrowRight") {
+        center.x += pan;
+      } else if (event.key === "ArrowUp") {
+        center.y -= pan;
+      } else if (event.key === "ArrowDown") {
+        center.y += pan;
+      } else {
+        return;
+      }
+      event.preventDefault();
+      setStateFromWorld(center, state.zoom);
+    });
+
+    window.addEventListener("resize", scheduleRender);
+    updateControls();
+    renderMap();
+  }
+
+  function renderPhotoRoute(routeLayer, routePositions, project, size) {
+    renderPhotoMapPolyline(routeLayer, routePositions, project, size, "photo-map-route-line", "", "");
+  }
+
+  function renderPhotoMapTrack(track, visible, project, size) {
+    if (!track) return;
+    var points = visible ? track.points : [];
+    renderPhotoMapPolyline(track.node, points, project, size, "photo-map-gpx-line", track.color, track.labelText);
+    if (!track.label) return;
+    if (!visible || !project || !track.points.length) {
+      track.label.hidden = true;
+      return;
+    }
+    var anchor = project(track.points[Math.floor(track.points.length / 2)]);
+    track.label.hidden = false;
+    track.label.style.left = anchor.x.toFixed(2) + "px";
+    track.label.style.top = anchor.y.toFixed(2) + "px";
+  }
+
+  function renderPhotoMapPolyline(layer, positions, project, size, className, color, label) {
+    if (!layer) return;
+    if (!project || positions.length < 2 || !size || !size.width || !size.height) {
+      layer.setAttribute("hidden", "");
+      return;
+    }
+    layer.removeAttribute("hidden");
+    layer.setAttribute("viewBox", "0 0 " + size.width + " " + size.height);
+    var polyline = layer.querySelector("polyline");
+    if (!polyline) {
+      polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+      polyline.setAttribute("class", className);
+      if (color) {
+        polyline.setAttribute("stroke", color);
+      }
+      if (label) {
+        var title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+        title.textContent = label;
+        polyline.appendChild(title);
+      }
+      layer.appendChild(polyline);
+    }
+    polyline.setAttribute("points", positions.map(function (position) {
+      var point = project(position);
+      return point.x.toFixed(2) + "," + point.y.toFixed(2);
+    }).join(" "));
+  }
+
+  map.init = initMap;
+})();

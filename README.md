@@ -1,8 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.12.4** · Android-App: **0.22.4**.
+Aktuelle Version: **1.12.5** · Android-App: **0.22.4**.
 
-**BearStack 1.12.4:** Thumbnail-Statusabfragen haben begrenzte Wiederholungen und ein Anfragezeitlimit. Dauerhafte HTTP-Fehler stoppen die Abfrage; der veraltete Frame-Servicepfad und ungenutzte interne Komfortmethoden sind entfernt.
+**BearStack 1.12.5:** Foto-Skripte werden nach Ansicht geladen: kleinere Pakete für Frame und Personenübersichten, getrennte Kartensteuerung und Bildgruppenaktionen nur bei Bedarf. Die GPS-Karte in der Großansicht bleibt verfügbar.
 
 **BearStack 1.11.2:** Gezoomte Fotos lassen sich auch in Firefox mit gedrückter Maustaste verschieben; das native Ziehen des Bildes unterbricht die Geste nicht mehr.
 
