@@ -96,7 +96,7 @@ func Open(directory string, providers Registry, source Source, authorize func(co
 		db.Close()
 		return nil, err
 	}
-	if version > 1 {
+	if version > 2 {
 		db.Close()
 		return nil, errors.New("transfer database is newer than this application")
 	}
@@ -108,8 +108,12 @@ func Open(directory string, providers Registry, source Source, authorize func(co
  CREATE INDEX IF NOT EXISTS items_directory ON items(job_id,directory);
  CREATE INDEX IF NOT EXISTS items_pending ON items(job_id,state,id);
  CREATE TABLE IF NOT EXISTS directories(job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,relative TEXT NOT NULL,blocked INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(job_id,relative));
- PRAGMA user_version=1;`)
+`)
 	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	if err = setupJobTotals(context.Background(), db, version); err != nil {
 		db.Close()
 		return nil, err
 	}

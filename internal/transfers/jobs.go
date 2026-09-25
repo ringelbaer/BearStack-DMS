@@ -37,68 +37,6 @@ func (e *Engine) NewPreview(ctx context.Context, connectionID, actor string, sel
 	e.signal()
 	return j, err
 }
-func (e *Engine) Job(ctx context.Context, id string) (Job, error) {
-	var j Job
-	var selection, base, conn string
-	err := e.db.QueryRowContext(ctx, `SELECT j.id,j.connection_id,j.revision,j.actor,j.selection,j.source_name,j.target,j.base,j.state,j.error,j.created,j.expires,j.updated,j.attempts,j.retry_at,j.submitted,j.target_exists,c.data FROM jobs j JOIN connections c ON c.id=j.connection_id WHERE j.id=?`, id).Scan(&j.ID, &j.ConnectionID, &j.Revision, &j.Actor, &selection, &j.SourceName, &j.Target, &base, &j.State, &j.Error, &j.Created, &j.Expires, &j.Updated, &j.Attempts, &j.RetryAt, &j.Submitted, &j.TargetExists, &conn)
-	if err != nil {
-		return j, err
-	}
-	if err = json.Unmarshal([]byte(selection), &j.Selection); err != nil {
-		return j, err
-	}
-	if err = json.Unmarshal([]byte(base), &j.Base); err != nil {
-		return j, err
-	}
-	var c Connection
-	if err = json.Unmarshal([]byte(conn), &c); err != nil {
-		return j, err
-	}
-	j.ConnectionName = c.Name
-	j.Provider = c.Provider
-	err = e.db.QueryRowContext(ctx, `SELECT count(*),coalesce(sum(size),0),coalesce(sum(state IN ('missing','uploading')),0),coalesce(sum(CASE WHEN state IN ('missing','uploading') THEN size ELSE 0 END),0),coalesce(sum(state='existing'),0),coalesce(sum(state='conflict'),0),coalesce(sum(state='done'),0),coalesce(sum(state='failed'),0),coalesce(sum(CASE WHEN state='done' THEN size ELSE 0 END),0) FROM items WHERE job_id=?`, id).Scan(&j.Total, &j.Bytes, &j.Missing, &j.MissingBytes, &j.Existing, &j.Conflicts, &j.Done, &j.Failed, &j.UploadedBytes)
-	e.progressMu.Lock()
-	for _, n := range e.progress[id] {
-		j.InFlightBytes += n
-	}
-	e.progressMu.Unlock()
-	return j, err
-}
-func (e *Engine) Jobs(ctx context.Context, connection string, page int) ([]Job, error) {
-	if page < 1 {
-		page = 1
-	}
-	if page > 1000000 {
-		page = 1000000
-	}
-	rows, err := e.db.QueryContext(ctx, `SELECT id FROM jobs WHERE (?='' OR connection_id=?) AND submitted=1 ORDER BY created DESC,id DESC LIMIT 30 OFFSET ?`, connection, connection, (page-1)*30)
-	if err != nil {
-		return nil, err
-	}
-	ids := []string{}
-	for rows.Next() {
-		var id string
-		if err = rows.Scan(&id); err != nil {
-			rows.Close()
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-	err = rows.Err()
-	rows.Close()
-	if err != nil {
-		return nil, err
-	}
-	out := []Job{}
-	for _, id := range ids {
-		j, err := e.Job(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, j)
-	}
-	return out, nil
-}
 func (e *Engine) Items(ctx context.Context, id string, after int64) ([]Item, error) {
 	rows, err := e.db.QueryContext(ctx, `SELECT id,path,display_path,relative,size,modified,state,error,resume FROM items WHERE job_id=? AND id>? ORDER BY id LIMIT 200`, id, after)
 	if err != nil {

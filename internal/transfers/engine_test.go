@@ -263,7 +263,11 @@ func (r *rig) run(t *testing.T) func() {
 }
 func waitJob(t *testing.T, e *transfers.Engine, id string, states ...string) transfers.Job {
 	t.Helper()
-	deadline := time.Now().Add(15 * time.Second)
+	return waitJobWithin(t, e, id, 15*time.Second, states...)
+}
+func waitJobWithin(t *testing.T, e *transfers.Engine, id string, timeout time.Duration, states ...string) transfers.Job {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		j, err := e.Job(context.Background(), id)
 		if err != nil {
@@ -474,7 +478,13 @@ func TestFiftyThousandManifestIsPaged(t *testing.T) {
 		}
 	}()
 	start := time.Now()
-	j := r.preview(t, c, "")
+	j, err := r.e.NewPreview(context.Background(), c.ID, "admin", transfers.Selection{}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// This checks bounded memory and pagination, including under SQLite race
+	// instrumentation; small functional fixtures retain the 15-second bound.
+	j = waitJobWithin(t, r.e, j.ID, time.Minute, "ready")
 	cancel()
 	<-sampled
 	delta := int64(peak.Load()) - int64(before.HeapAlloc)

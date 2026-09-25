@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.13.0
+
+- Transfer-Dateisummen werden transaktional bei Dateiänderungen mitgeführt. Listen und Einzelaufträge benötigen keine wiederholten Dateizählungen; die Historie verwendet passende Indizes und eine gemeinsame Abfrage pro Seite.
+- Die WebUI behält unveränderte Auftragsübersichten bei. Aktive Aufträge werden alle zwei Sekunden abgefragt, ruhende Ansichten alle 15 Sekunden; Hintergrund-Tabs pausieren und Fehler verlängern den Abstand bis auf 30 Sekunden. Filterwechsel verwerfen überholte Antworten.
+- MINOR gemäß Versionierungsregel für automatische Migrationen; transaktionale Umstellung der internen Transferdatenbank auf Schema 2. Regressionen prüfen Summen, Rückabwicklung, Upgrade/Wiederanlauf, Pagination, SQL-Pläne und Browser-Polling. HTTP-Verträge und Originalfotos bleiben unverändert.
+
 ### BearStack 1.12.9
 
 - Upload-DOM-Referenzen, Fortschrittsanzeige und Minimieren gehören zum gekapselten Upload-Modul. OCR-Referenzen, Polling und Ausblendestatus liegen vollständig im OCR-Modul; beide benötigen keinen Zustand aus `app.js`.

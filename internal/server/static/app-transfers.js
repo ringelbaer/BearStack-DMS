@@ -497,15 +497,29 @@
       prev = root.querySelector("[data-transfer-prev]"),
       next = root.querySelector("[data-transfer-next]");
     let page = 1,
-      loading = false;
+      loading = false,
+      reloadPending = false,
+      pollTimer = 0,
+      pollDelay = 2000;
     const cards = new Map();
     async function load() {
-      if (loading) return;
+      window.clearTimeout(pollTimer);
+      if (loading) {
+        reloadPending = true;
+        return;
+      }
+      if (document.hidden) return;
       loading = true;
+      const requestedPage = page, requestedConnection = filter.value;
       try {
         const jobs = await request(
-          `jobs?connection=${encodeURIComponent(filter.value)}&page=${page}`,
+          `jobs?connection=${encodeURIComponent(requestedConnection)}&page=${requestedPage}`,
         );
+        if (page !== requestedPage || filter.value !== requestedConnection) {
+          reloadPending = true;
+          return;
+        }
+        pollDelay = jobs.some((job) => ["preparing", "planning", "queued", "running", "waiting"].includes(job.state)) ? 2000 : 15000;
         const wanted = new Set(jobs.map((job) => job.id));
         for (const [id, card] of cards)
           if (!wanted.has(id)) {
@@ -513,8 +527,8 @@
             cards.delete(id);
           }
         const empty = container.querySelector("[data-transfer-empty]");
-        if (empty) empty.remove();
-        if (!jobs.length) {
+        if (empty && jobs.length) empty.remove();
+        if (!empty && !jobs.length) {
           const hint = node("p", "Keine Aufträge vorhanden.");
           hint.dataset.transferEmpty = "";
           container.append(hint);
@@ -545,7 +559,17 @@
             card = { element, overview, actions, state: "" };
             cards.set(job.id, card);
           }
-          card.overview.replaceChildren(summary(job));
+          // Compare only displayed values; selections can contain many paths.
+          const summaryKey = JSON.stringify([
+            job.source_name, job.connection_name, job.provider, job.base.name,
+            job.target, job.target_exists, job.state, job.total, job.bytes,
+            job.missing, job.missing_bytes, job.existing, job.conflicts,
+            job.failed, job.error, job.uploaded_bytes, job.in_flight_bytes, job.done,
+          ]);
+          if (card.summaryKey !== summaryKey) {
+            card.summaryKey = summaryKey;
+            card.overview.replaceChildren(summary(job));
+          }
           if (card.state !== job.state) {
             card.state = job.state;
             card.actions.replaceChildren();
@@ -585,10 +609,21 @@
         next.disabled = jobs.length < 30;
         root.querySelector("[data-transfer-page-number]").textContent =
           "Seite " + page;
+      } catch (error) {
+        pollDelay = Math.min(30000, Math.max(5000, pollDelay * 2));
+        throw error;
       } finally {
         loading = false;
+        if (!document.hidden) {
+          pollTimer = window.setTimeout(() => guard(load), reloadPending ? 0 : pollDelay);
+        }
+        reloadPending = false;
       }
     }
+    document.addEventListener("visibilitychange", () => {
+      window.clearTimeout(pollTimer);
+      if (!document.hidden) guard(load);
+    });
     filter.addEventListener("change", () => {
       page = 1;
       guard(load);
@@ -613,9 +648,6 @@
       }
       await load();
     });
-    window.setInterval(() => {
-      if (!document.hidden) guard(load);
-    }, 2000);
   }
   if (modal) {
     const gallerySelection = JSON.parse(modal.dataset.transferSelection),

@@ -37,6 +37,8 @@ Im Modal genau eine Verbindung wählen und **Übertragung prüfen** ausführen. 
 
 Das Burgermenü enthält bei mindestens einer aktivierten Verbindung die **Upload-Warteschlange** als Icon direkt neben den Einstellungen. Sie zeigt je Auftrag eine Statusanzeige, Verbindung und Anbieter, den Zielordner sowie getrennte Kennzahlen für Gesamtumfang, offene Dateien, vorhandene Dateien und Konflikte. Der Fortschritt steht darunter; **Dateien und Fehler** öffnet die gegliederte Dateiliste. Die Warteschlange lässt sich nach Verbindung filtern. Ein Auftrag läuft zur Zeit mit höchstens zwei parallelen Dateien. Pausierte und auf Wiederholung wartende Aufträge blockieren andere Verbindungen nicht.
 
+Die sichtbare Warteschlange aktualisiert aktive Aufträge alle zwei Sekunden. Wenn auf der angezeigten Seite keine aktiven Aufträge stehen, erfolgt die Abfrage alle 15 Sekunden. Hintergrund-Tabs pausieren; beim Zurückkehren wird sofort aktualisiert. Bei Netzwerk- oder Serverfehlern wächst der Abstand bis auf 30 Sekunden. Unveränderte Auftragsübersichten und geöffnete Dateidetails bleiben erhalten.
+
 **Pause**, **Fortsetzen**, **Abbrechen** und **Wiederholen** ändern nur den lokalen Auftrag. Bereits hochgeladene Dateien bleiben erhalten. Vor einer Wiederholung prüft BearStack unklare Upload-Ergebnisse erneut am Ziel. Vorübergehende Fehler werden mit wachsender Wartezeit begrenzt wiederholt; volle Speicher und Anmeldefehler pausieren den Auftrag.
 
 Die Vorschau fixiert ihre Dateiliste für 30 Minuten. Neue Treffer erfordern eine neue Vorschau. Veränderte oder verschwundene Quellen werden als Fehler gemeldet; vor jedem Upload werden die aktuellen Administratorrechte des Auftraggebers kontrolliert. Änderungen an Server, Konto oder Basisziel pausieren die betroffenen Aufträge und verlangen eine neue Vorschau. Deaktivieren pausiert die Verbindung; nach Aktivierung können unveränderte bestätigte Aufträge fortgesetzt werden. Andere Verbindungen bleiben unabhängig.
@@ -46,6 +48,8 @@ Neustarts nehmen bestätigte Aufträge wieder auf. Dateien ab 20 MiB verwenden [
 ## Betrieb und Erweiterungen
 
 `internal/transfers` besitzt eine eigene SQLite-Datenbank unter `data_dir/transfers/transfers.db`. Zugangsdaten sind getrennt von der Konfiguration mit AES-GCM verschlüsselt; `credentials.key` muss zusammen mit der Datenbank gesichert werden. Siehe [Backup und Restore](installation.md#backup-und-restore). Abgeschlossene Auftragsdetails werden nach 30 Tagen ausschließlich lokal entfernt.
+
+Ab 1.13.0 führt die Transferdatenbank Dateianzahlen und Byte-Summen bei jeder relevanten Dateiänderung in derselben Transaktion mit. Die Historie liest bis zu 30 Aufträge mit einer indizierten SQL-Abfrage, ohne erneut sämtliche Dateien zu zählen. Bestehende Datenbanken werden beim ersten Start automatisch auf Schema 2 umgestellt und die Summen einmalig aufgebaut. Die Migration wird vollständig übernommen oder zurückgerollt; ältere BearStack-Versionen mit Schema-1-Unterstützung können die umgestellte Transferdatenbank nicht öffnen.
 
 Die Seiten `/settings/storage-connections` und `/photos/uploads` sowie die API `/api/transfers/v1/` prüfen die Administratorrolle; schreibende Browseranfragen zusätzlich die Herkunft zum CSRF-Schutz. Galerieaufrufe lesen ausschließlich lokale Verbindungsdaten und warten auf keinen Cloud-Anbieter. Medienlisten und Uploads werden in begrenzten Stapeln beziehungsweise als Streams verarbeitet. Originale können auf einem schreibgeschützten Mount liegen.
 

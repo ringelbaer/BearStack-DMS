@@ -298,6 +298,8 @@ test("multiple connections, folder preview, selected media and queue", async ({
     await expect(queueLink.locator("svg")).toHaveCount(1);
     await expect(page.locator('.system-menu-actions a[href="/photos/uploads"] + a')).toHaveAttribute("aria-label", "Einstellungen");
     await queueLink.click();
+    await page.waitForURL(url => url.pathname === "/photos/uploads");
+    await page.locator(".system-menu > summary").click();
     await expect(queueLink).toHaveAttribute("aria-current", "page");
     await expect(page.locator(".transfer-job")).toHaveCount(2);
     await page

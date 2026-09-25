@@ -1,8 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.12.9** · Android-App: **0.22.4**.
+Aktuelle Version: **1.13.0** · Android-App: **0.22.4**.
 
-**BearStack 1.12.9:** Upload-Anzeige und OCR-Status sind in ihren WebUI-Modulen gekapselt. Uploads aktualisieren die Dokumentliste über eine ausdrückliche Modul-Schnittstelle; bestehende Abläufe bleiben erhalten.
+**BearStack 1.13.0:** Die Foto-Upload-Warteschlange liest gespeicherte Dateisummen mit einer gebündelten, indizierten Abfrage. Unveränderte Auftragskarten bleiben erhalten; im Leerlauf und bei Fehlern fragt die WebUI seltener nach.
 
 **BearStack 1.11.2:** Gezoomte Fotos lassen sich auch in Firefox mit gedrückter Maustaste verschieben; das native Ziehen des Bildes unterbricht die Geste nicht mehr.
 
