@@ -658,11 +658,15 @@ function testUploadLifecycleUsesXHRBoundary() {
   const uploadProgress = el("progress", { "data-upload-progress": "" });
   const uploadMessage = el("div", { "data-upload-message": "" });
   const uploadList = el("ul", { "data-upload-list": "" });
-  document.body.append(uploadStatus, uploadProgress, uploadMessage, uploadList);
+  const minimize = el("button", { "data-upload-minimize": "" });
+  document.body.append(uploadStatus, uploadProgress, uploadMessage, uploadList, minimize);
 
-  const context = loadCore(document);
+  const context = createContext(document);
   runScripts(context, ["app-upload.js"]);
+  minimize.dispatchEvent({ type: "click" });
+  assert.equal(uploadStatus.classList.contains("minimized"), true);
   context.window.BearStack.upload.uploadFiles([{ name: "rechnung.pdf" }]);
+  assert.equal(uploadStatus.classList.contains("minimized"), false);
 
   const request = FakeXMLHttpRequest.instances[0];
   assert.equal(request.method, "POST");
@@ -688,6 +692,120 @@ function testUploadLifecycleUsesXHRBoundary() {
     uploadList.children.map((child) => child.textContent),
     ["Fehler: kaputt.pdf - defekt", "Duplikat übersprungen: alt.pdf", "Hochgeladen: rechnung.pdf"],
   );
+  context.BearStack.upload.uploadFiles([{ name: "offline.pdf" }]);
+  FakeXMLHttpRequest.instances[1].dispatchEvent({ type: "error" });
+  assert.equal(uploadMessage.textContent, "Upload fehlgeschlagen");
+  assert.equal(uploadList.children[0].textContent, "Netzwerkfehler beim Hochladen");
+}
+
+async function testUploadRefreshUsesDocumentModuleAndFallback() {
+  for (const mode of ["refresh", "unavailable", "failed", "absent"]) {
+    const document = new TestDocument();
+    document.body.append(el("div", { "data-upload-message": "" }));
+    const context = createContext(document);
+    const timers = [];
+    context.setTimeout = (callback) => { timers.push(callback); return timers.length; };
+    runScripts(context, ["app-upload.js"]);
+    let refreshes = 0;
+    if (mode !== "absent") context.BearStack.documents = { async refreshList() {
+      refreshes++;
+      if (mode === "failed") throw new Error("offline");
+      return mode === "refresh";
+    } };
+    context.BearStack.upload.uploadFiles([{ name: "invoice.pdf" }]);
+    const request = FakeXMLHttpRequest.instances[0];
+    request.responseText = JSON.stringify({ uploaded: [{ filename: "invoice.pdf" }] });
+    request.dispatchEvent({ type: "load" });
+    assert.equal(timers.length, 1);
+    await timers.shift()();
+    assert.equal(refreshes, mode === "absent" ? 0 : 1);
+    assert.equal(context.location.reloadCalled, mode !== "refresh", mode);
+  }
+}
+
+function ocrFixture({ terminal = false, dismissed = false } = {}) {
+  const document = new TestDocument();
+  const state = el("span", { "data-ocr-state": "" });
+  const progress = el("progress", { "data-ocr-progress": "" });
+  const progressRow = el("div", { "data-ocr-progress-row": "" }, [progress]);
+  const progressText = el("span", { "data-ocr-progress-text": "" });
+  const message = el("p", { "data-ocr-message": "" });
+  const dismiss = el("button", { "data-ocr-dismiss": "" });
+  const panel = el("section", {
+    "data-ocr-status": "", "data-ocr-status-url": "/documents/1/ocr/status",
+    "data-ocr-job-id": "42", "data-ocr-active": terminal ? "0" : "1", "data-ocr-terminal": terminal ? "1" : "0",
+  }, [state, progressRow, progressText, message, dismiss]);
+  document.body.append(panel);
+  const context = createContext(document), timers = [];
+  context.setTimeout = (callback, delay) => { timers.push({ callback, delay }); return timers.length; };
+  if (dismissed) context.sessionStorage.setItem("bearstack.ocr.dismissed.42", "1");
+  return { context, timers, panel, state, progress, progressRow, progressText, message, dismiss,
+    async tick() { const timer = timers.shift(); assert.ok(timer); timer.callback(); await new Promise(setImmediate); },
+  };
+}
+
+async function testOCRPollingAndCompletionOwnTheirState() {
+  const f = ocrFixture();
+  let requests = 0;
+  f.context.fetch = async (url, options) => {
+    assert.equal(url, "/documents/1/ocr/status");
+    assert.equal(options.credentials, "same-origin");
+    requests++;
+    return { ok: true, json: async () => ({ job: requests === 1
+      ? { id: 42, active: true, terminal: false, status: "running", status_text: "Läuft", progress_percent: 50, current_page: 1, total_pages: 2 }
+      : { id: 42, active: false, terminal: true, status: "completed", status_text: "Fertig", progress_percent: 100, text_length: 321 },
+    }) };
+  };
+  runScripts(f.context, ["app-ocr.js"]);
+  assert.equal(f.timers[0].delay, 1000);
+  await f.tick();
+  assert.equal(f.state.textContent, "Läuft");
+  assert.equal(f.progress.value, 50);
+  assert.equal(f.progressText.textContent, "1 von 2");
+  assert.equal(f.dismiss.hidden, true);
+  assert.equal(f.timers[0].delay, 2000);
+  await f.tick();
+  assert.equal(f.panel.classList.contains("ocr-status-completed"), true);
+  assert.equal(f.message.textContent, "321 Zeichen wurden in den Textinhalt übernommen.");
+  assert.equal(f.progressRow.hidden, true);
+  assert.equal(f.dismiss.hidden, false);
+  assert.equal(f.context.sessionStorage.getItem("bearstack.ocr.dismissed.42"), "1");
+  assert.equal(f.timers[0].delay, 900);
+  await f.tick();
+  assert.equal(f.context.location.reloadCalled, true);
+  assert.equal(f.timers.length, 0);
+  assert.equal(requests, 2);
+}
+
+async function testOCRRetriesAndRemembersDismissal() {
+  for (const failure of ["network", "http"]) {
+    const f = ocrFixture();
+    let calls = 0;
+    f.context.fetch = async () => {
+      if (++calls === 1) {
+        if (failure === "network") throw new Error("offline");
+        return { ok: false };
+      }
+      return { ok: true, json: async () => ({ job: { id: 42, active: false, terminal: true, status: "failed", error: "Konverterfehler" } }) };
+    };
+    runScripts(f.context, ["app-ocr.js"]);
+    await f.tick();
+    assert.equal(f.timers[0].delay, 5000);
+    await f.tick();
+    assert.equal(f.message.textContent, "Konverterfehler");
+    assert.equal(f.panel.hidden, false);
+    f.dismiss.dispatchEvent({ type: "click" });
+    assert.equal(f.panel.hidden, true);
+    assert.equal(f.context.sessionStorage.getItem("bearstack.ocr.dismissed.42"), "1");
+    assert.equal(f.timers.length, 0);
+  }
+  const restored = ocrFixture({ terminal: true, dismissed: true });
+  runScripts(restored.context, ["app-ocr.js"]);
+  assert.equal(restored.panel.hidden, true);
+  assert.equal(restored.timers.length, 0);
+  const empty = createContext();
+  empty.setTimeout = () => { throw new Error("OCR polling without a panel"); };
+  runScripts(empty, ["app-ocr.js"]);
 }
 
 function testRuleFormsUseCoreScript() {
@@ -1523,6 +1641,9 @@ const tests = [
   testTagModuleReadsOptionsWhenItLoads,
   testDocumentMetadataUsesTagModuleProtection,
   testUploadLifecycleUsesXHRBoundary,
+  testUploadRefreshUsesDocumentModuleAndFallback,
+  testOCRPollingAndCompletionOwnTheirState,
+  testOCRRetriesAndRemembersDismissal,
   testRuleFormsUseCoreScript,
   testBulkSelectionControllerUpdatesActionsAndRanges,
   testDocumentBatchMenuUsesDesktopAndCompactStates,

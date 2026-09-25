@@ -33,6 +33,9 @@ test("document upload, preview, columns and metadata work", async ({ browser }) 
   const filename = "2026-05-18_Playwright.pdf";
   try {
     await page.goto(`${fixture.baseURL}/`);
+    let uploadNavigations = 0;
+    const recordNavigation = frame => { if (frame === page.mainFrame()) uploadNavigations++; };
+    page.on("framenavigated", recordNavigation);
 
     const uploadResponsePromise = page.waitForResponse((response) => {
       return response.url().endsWith("/upload") && response.request().method() === "POST";
@@ -46,6 +49,12 @@ test("document upload, preview, columns and metadata work", async ({ browser }) 
 
     await expect(page.locator("[data-upload-message]")).toContainText("1 hochgeladen");
     await expect(page.locator("[data-document-list]")).toContainText(filename);
+    expect(uploadNavigations).toBe(0);
+    page.off("framenavigated", recordNavigation);
+    await page.locator("[data-upload-minimize]").click();
+    await expect(page.locator("[data-upload-status]")).toHaveClass(/minimized/);
+    await page.locator("[data-upload-minimize]").click();
+    await expect(page.locator("[data-upload-status]")).not.toHaveClass(/minimized/);
 
     const row = page.locator("[data-document-list] tr", { hasText: filename }).first();
     await row.locator("[data-preview-url]").first().click();

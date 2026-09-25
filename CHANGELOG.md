@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.12.9
+
+- Upload-DOM-Referenzen, Fortschrittsanzeige und Minimieren gehören zum gekapselten Upload-Modul. OCR-Referenzen, Polling und Ausblendestatus liegen vollständig im OCR-Modul; beide benötigen keinen Zustand aus `app.js`.
+- Dokumentlisten werden über `BearStack.documents.refreshList` aktualisiert. Neuladen bei fehlgeschlagener Aktualisierung und Initialisierung nachgeladener Bedienelemente bleiben erhalten.
+- PATCH ohne Änderung der Upload-/OCR-Abläufe. DOM-Regressionen prüfen eigenständiges Laden, Fehler, Aktualisierung, OCR-Fortschritt und Ausblenden; der Upload-Browsertest prüft die Aktualisierung ohne Seitennavigation. README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 1.12.8
 
 - Tag-DOM-Referenzen, Optionsindex und Dialogauswahl aus dem gemeinsamen WebUI-Skript in das gekapselte Tag-Modul verschoben. Nur die bestehenden Moduloperationen und eine Abfrage des Löschschutzes sind nach außen verfügbar.

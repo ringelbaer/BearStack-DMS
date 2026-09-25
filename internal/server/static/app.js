@@ -1,9 +1,3 @@
-const uploadStatus = document.querySelector("[data-upload-status]");
-const uploadProgress = document.querySelector("[data-upload-progress]");
-const uploadMessage = document.querySelector("[data-upload-message]");
-const uploadList = document.querySelector("[data-upload-list]");
-const uploadMinimize = document.querySelector("[data-upload-minimize]");
-const ocrStatus = document.querySelector("[data-ocr-status]");
 const initializedElements = new WeakMap();
 
 function setBatchBusy(form, message = "Batch-Aktion wird verarbeitet...") {
@@ -501,54 +495,6 @@ function initializeContextHelp(root = document) {
       }
     });
   });
-}
-
-function showUploadStatus(message) {
-  if (!uploadStatus) return;
-  uploadStatus.classList.remove("hidden");
-  uploadStatus.classList.remove("minimized");
-  uploadMessage.textContent = message || "";
-}
-
-function setUploadProgress(value) {
-  if (!uploadProgress) return;
-  uploadProgress.value = Math.max(0, Math.min(100, value));
-}
-
-function addUploadLine(text) {
-  if (!uploadList) return;
-  const li = document.createElement("li");
-  li.textContent = text;
-  uploadList.prepend(li);
-}
-
-async function refreshDocumentList() {
-  const container = document.querySelector("[data-document-list]");
-  if (!container) return false;
-  const activePreviewDocumentID = document.querySelector(".document-preview-active[data-document-id]")?.dataset.documentId || "";
-
-  const response = await fetch(window.location.href, {
-    credentials: "same-origin",
-    headers: {
-      "X-Requested-With": "XMLHttpRequest",
-      "X-BearStack-Partial": "document-list",
-    },
-  });
-  if (!response.ok) return false;
-
-  const html = await response.text();
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const updated = doc.querySelector("[data-document-list]");
-  if (!updated) return false;
-
-  container.innerHTML = updated.innerHTML;
-  initializeDocumentList(container);
-  if (activePreviewDocumentID) {
-    container
-      .querySelector(`[data-document-id="${CSS.escape(activePreviewDocumentID)}"]`)
-      ?.classList.add("document-preview-active");
-  }
-  return true;
 }
 
 function closeOpenMenusOutside(target) {
