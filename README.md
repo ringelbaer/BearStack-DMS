@@ -1,10 +1,10 @@
 # BearStack
 
-Aktuelle Version: **1.13.3** · Android-App: **0.22.4**.
+Aktuelle Version: **1.14.0** · Android-App: **0.22.4**.
 
 Die [Website](https://ringelbaer.github.io/BearStack-DMS/) stellt Dokumenten- und Fotoverwaltung, lokale Gesichtserkennung, Personenverwaltung und die Android-App vor und führt zu den jeweiligen Anleitungen.
 
-**BearStack 1.13.3:** Go-Mindestversion und Docker-Build auf 1.27.1 aktualisiert. Linux amd64 und ARM64 werden unterstützt, einschließlich Raspberry Pi 5 mit 64-Bit-Linux. Toolchain-Wartungsupdate ohne Datenmigration.
+**BearStack 1.14.0:** Beim Verknüpfen einer bereits verknüpften und einer oder mehreren unverknüpften Dateien bietet ein Dialog zwei Möglichkeiten: zur vorhandenen Verknüpfung hinzufügen (einschließlich aller direkten Partner) oder nur die ausgewählten Dateien neu verknüpfen. Bestehende Beziehungen bleiben erhalten; keine Datenmigration.
 
 **BearStack 1.13.2:** Der gesamte IMAP-Verbindungsaufbau einschließlich CAPABILITY und STARTTLS ist auf 20 Sekunden begrenzt; fehlgeschlagene Verbindungen werden geschlossen. Fehlerantworten für Gesichter geben bei fehlenden oder nicht lesbaren Fotodateien keine internen Dateipfade mehr aus. Sicherheitskorrekturen ohne Datenmigration.
 

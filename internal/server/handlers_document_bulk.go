@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"bearstack/internal/repository"
 )
 
 func (s *Server) handleLinkDocuments(w http.ResponseWriter, r *http.Request) {
@@ -20,12 +22,26 @@ func (s *Server) handleLinkDocuments(w http.ResponseWriter, r *http.Request) {
 		s.renderErrorWithReturn(w, r, http.StatusBadRequest, errors.New("mindestens zwei Dokumente zum Verknüpfen auswählen"), formReturnURL(r))
 		return
 	}
-	docs, err := s.repo.ListByIDs(r.Context(), ids)
+	mode := r.FormValue("link_mode")
+	switch mode {
+	case "", "new":
+		err = s.repo.LinkDocuments(r.Context(), ids)
+	case "extend":
+		ids, err = s.repo.ExtendDocumentLinks(r.Context(), ids)
+	default:
+		s.renderErrorWithReturn(w, r, http.StatusBadRequest, errors.New("ungültiger Verknüpfungsmodus"), formReturnURL(r))
+		return
+	}
+	if errors.Is(err, repository.ErrDocumentLinkSelectionChanged) {
+		s.renderErrorWithReturn(w, r, http.StatusConflict, err, formReturnURL(r))
+		return
+	}
 	if err != nil {
 		s.renderHTTPError(w, r, err)
 		return
 	}
-	if err := s.repo.LinkDocuments(r.Context(), ids); err != nil {
+	docs, err := s.repo.ListByIDs(r.Context(), ids)
+	if err != nil {
 		s.renderHTTPError(w, r, err)
 		return
 	}

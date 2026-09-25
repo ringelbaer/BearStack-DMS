@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 1.13.3
+  version: 1.14.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -3043,6 +3043,64 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           description: Document or thumbnail not found.
+
+  /documents/link:
+    post:
+      tags: [Documents]
+      operationId: linkDocuments
+      summary: Link selected documents or extend existing links
+      description: |
+        Requires documents.edit. Since 1.14.0, optional link_mode=extend accepts
+        exactly one linked and one or more unlinked active documents and connects
+        the new documents to each other, the linked document and all its direct
+        active partners in one transaction.
+        Other partners' links are not traversed; group tags are not changed.
+        An omitted mode or new links only the selected documents, preserving all
+        existing links. Cookie-authenticated writes require matching Origin or Referer.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  minItems: 2
+                  items:
+                    type: integer
+                    format: int64
+                link_mode:
+                  type: string
+                  enum: [new, extend]
+                  default: new
+                return:
+                  type: string
+                  description: Local redirect destination.
+            encoding:
+              ids:
+                style: form
+                explode: true
+      responses:
+        "303":
+          description: Redirect to the return URL with the affected document count.
+          headers:
+            Location:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Extension requires one linked and one or more unlinked active documents; reload the list.
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /documents/{id}/tags:
     post:

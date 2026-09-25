@@ -66,6 +66,23 @@
     <button type="button" class="secondary-button" data-columns-open>Spalten</button>
     {{end}}
   </div>
+  {{if .Auth.CanDocumentsEdit}}
+  <input type="hidden" name="link_mode" value="new" data-document-link-mode>
+  <dialog class="app-dialog" data-document-link-dialog aria-label="Dokumente verknüpfen">
+    <header><strong>Dokumente verknüpfen</strong></header>
+    <div class="app-dialog-body">
+      <p>Eine ausgewählte Datei ist bereits verknüpft. Wie möchtest du die unverknüpften Dateien hinzufügen?</p>
+      <label class="checkbox-line"><input type="radio" name="link_choice" value="extend" checked> Zur vorhandenen Verknüpfung hinzufügen</label>
+      <p>Verbindet die neuen Dateien untereinander sowie mit der bereits verknüpften Datei und allen ihren direkt verknüpften Dateien.</p>
+      <label class="checkbox-line"><input type="radio" name="link_choice" value="new"> Neue Verknüpfung erstellen</label>
+      <p>Verbindet nur die ausgewählten Dateien untereinander. Bisherige Verknüpfungen bleiben bestehen.</p>
+    </div>
+    <footer>
+      <button type="button" class="secondary-button" data-document-link-cancel>Abbrechen</button>
+      <button type="button" data-document-link-confirm>Verknüpfen</button>
+    </footer>
+  </dialog>
+  {{end}}
   {{if and .CustomFields .Auth.CanDocumentsEdit}}
   <dialog class="bulk-fields-modal" data-bulk-fields-modal>
     <header>
@@ -107,7 +124,7 @@
         {{range .Documents}}
         {{$doc := .}}
         <tr id="document-{{.ID}}" data-document-id="{{.ID}}" class="{{if eq $.HighlightID .ID}}document-highlight{{end}}">
-          <td><input type="checkbox" name="ids" value="{{.ID}}" aria-label="{{.OriginalName}} auswählen"></td>
+          <td><input type="checkbox" name="ids" value="{{.ID}}" data-linked-count="{{.LinkedCount}}" aria-label="{{.OriginalName}} auswählen"></td>
           {{range $.DocumentColumns}}
           {{if eq .Key "thumbnail"}}
           <td data-column="thumbnail" data-label="Vorschau">

@@ -9,6 +9,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 - Startseite um lokale Gesichtserkennung, Personenverwaltung mit Familienbeziehungen und die Android-App ergänzt; direkte Links führen zu Bedienung, Einrichtung und APK-Build. Fehlendes Sprungziel für „Zum Inhalt“ ergänzt.
 - Versionsangaben in Website-Footer und Android-Anleitungen auf BearStack 1.13.2 und Android 0.22.4 aktualisiert. Generierte Website neu gebaut; keine Änderung an Anwendung oder API, daher kein Versionssprung.
 
+### BearStack 1.14.0
+
+- Neuer Dialog beim Verknüpfen genau einer verknüpften und einer oder mehreren unverknüpften Dateien: bestehende Verknüpfung um die neuen Dateien erweitern oder nur die Auswahl neu verknüpfen. Abbrechen und Escape speichern nichts.
+- Die Erweiterung verbindet atomar mit den direkten aktiven Partnern, ohne weitere Beziehungen rekursiv zusammenzuführen. Indizierte Abfragen; es werden nur die benötigten neuen Beziehungen angelegt; geänderte Auswahlen werden serverseitig abgelehnt. Bestehende Aufrufe behalten ihr Verhalten.
+- MINOR ohne Datenmigration; README, Website und OpenAPI aktualisiert. Regressionen für Erweiterung, separate Beziehungen, gelöschte Dateien, Abbruch und Transaktions-Rollback.
+
 ### BearStack 1.13.3
 
 - Go-Mindestversion auf `1.27.1` angehoben und Docker-Buildimage auf `golang:1.27.1-trixie` festgelegt. README, Website und Raspberry-Pi-Anleitung einschließlich Linux-ARM64-Download aktualisiert; OpenAPI-Version und Website-Footer folgen der neuen PATCH-Version. Keine Datenmigration oder Änderung der Modulabhängigkeiten.

@@ -1299,6 +1299,13 @@
 </table>
 <h2 id="dateien-verknupfen">Dateien verknüpfen<a class="headerlink" href="#dateien-verknupfen" title="Permanent link">&para;</a></h2>
 <p>BearStack kann Dokumente manuell miteinander verknüpfen. In der Dokumentliste werden dafür mehrere Dateien ausgewählt und anschließend verknüpft. Auf der Detailseite erscheinen diese Dateien im Abschnitt „Verknüpfte und gruppierte Dateien“ mit Vorschau, Titel, Originalname, Datum, Größe, Upload-Weg, Detail-Link und Download.</p>
+<p>Wenn du genau <strong>eine bereits verknüpfte und eine oder mehrere unverknüpfte Dateien</strong> auswählst und auf <strong>Verknüpfen</strong> klickst, erscheint ein Dialog:</p>
+<ul>
+<li><strong>Zur vorhandenen Verknüpfung hinzufügen:</strong> Die neuen Dateien werden untereinander sowie mit der bereits verknüpften Datei und allen ihren direkt verknüpften, aktiven Dateien verbunden. Weitere Verknüpfungen dieser Partner werden nicht verfolgt; Gruppentags bleiben unverändert.</li>
+<li><strong>Neue Verknüpfung erstellen:</strong> Nur die ausgewählten Dateien werden miteinander verbunden. Bisherige Verknüpfungen bleiben bestehen.</li>
+<li><strong>Abbrechen</strong> oder Escape schließt den Dialog ohne Änderung.</li>
+</ul>
+<p>Bei anderen Auswahlen bleibt die bisherige Bestätigung erhalten. Die Erweiterung wird atomar gespeichert. Ist inzwischen nicht mehr genau eine ausgewählte Datei verknüpft, wird sie abgelehnt; lade dann die Liste neu. Ohne JavaScript oder ohne Angabe eines Modus gilt weiterhin das Verknüpfen nur der ausgewählten Dateien.</p>
 <p>Manuelle Verknüpfungen eignen sich für Anlagen, Nachweise, Verträge mit Nachträgen oder mehrteilige Vorgänge. Sie verändern die Originaldateien nicht; die Beziehung liegt als BearStack-Metadatum in der Datenbank. Mit Dokument-Bearbeitungsrechten kann eine manuelle Verknüpfung auf der Detailseite wieder aufgehoben werden.</p>
 <p>Zusätzlich gibt es automatische Gruppierung über Tags im Gruppenmodus. Alle Dokumente mit demselben Gruppentag werden auf der Detailseite zusammen angezeigt. Gruppierte Dateien sind dort erkennbar, lassen sich aber nicht einzeln als Verknüpfung aufheben, weil die Gruppierung aus dem gemeinsamen Tag entsteht. Um die Gruppierung zu ändern, wird der Gruppentag am Dokument angepasst.</p>
 <h2 id="suchfavoriten">Suchfavoriten<a class="headerlink" href="#suchfavoriten" title="Permanent link">&para;</a></h2>
@@ -1393,7 +1400,7 @@
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.13.3 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.14.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

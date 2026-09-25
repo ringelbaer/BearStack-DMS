@@ -96,6 +96,14 @@ Dokument-Tags können mehr als nur markieren:
 
 BearStack kann Dokumente manuell miteinander verknüpfen. In der Dokumentliste werden dafür mehrere Dateien ausgewählt und anschließend verknüpft. Auf der Detailseite erscheinen diese Dateien im Abschnitt „Verknüpfte und gruppierte Dateien“ mit Vorschau, Titel, Originalname, Datum, Größe, Upload-Weg, Detail-Link und Download.
 
+Wenn du genau **eine bereits verknüpfte und eine oder mehrere unverknüpfte Dateien** auswählst und auf **Verknüpfen** klickst, erscheint ein Dialog:
+
+- **Zur vorhandenen Verknüpfung hinzufügen:** Die neuen Dateien werden untereinander sowie mit der bereits verknüpften Datei und allen ihren direkt verknüpften, aktiven Dateien verbunden. Weitere Verknüpfungen dieser Partner werden nicht verfolgt; Gruppentags bleiben unverändert.
+- **Neue Verknüpfung erstellen:** Nur die ausgewählten Dateien werden miteinander verbunden. Bisherige Verknüpfungen bleiben bestehen.
+- **Abbrechen** oder Escape schließt den Dialog ohne Änderung.
+
+Bei anderen Auswahlen bleibt die bisherige Bestätigung erhalten. Die Erweiterung wird atomar gespeichert. Ist inzwischen nicht mehr genau eine ausgewählte Datei verknüpft, wird sie abgelehnt; lade dann die Liste neu. Ohne JavaScript oder ohne Angabe eines Modus gilt weiterhin das Verknüpfen nur der ausgewählten Dateien.
+
 Manuelle Verknüpfungen eignen sich für Anlagen, Nachweise, Verträge mit Nachträgen oder mehrteilige Vorgänge. Sie verändern die Originaldateien nicht; die Beziehung liegt als BearStack-Metadatum in der Datenbank. Mit Dokument-Bearbeitungsrechten kann eine manuelle Verknüpfung auf der Detailseite wieder aufgehoben werden.
 
 Zusätzlich gibt es automatische Gruppierung über Tags im Gruppenmodus. Alle Dokumente mit demselben Gruppentag werden auf der Detailseite zusammen angezeigt. Gruppierte Dateien sind dort erkennbar, lassen sich aber nicht einzeln als Verknüpfung aufheben, weil die Gruppierung aus dem gemeinsamen Tag entsteht. Um die Gruppierung zu ändern, wird der Gruppentag am Dokument angepasst.

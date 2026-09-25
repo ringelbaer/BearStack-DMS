@@ -55,6 +55,111 @@ func (r *Repository) LinkDocuments(ctx context.Context, ids []int64) error {
 	return tx.Commit()
 }
 
+// ErrDocumentLinkSelectionChanged means the extension no longer has exactly
+// one linked anchor and one or more unlinked active documents.
+var ErrDocumentLinkSelectionChanged = errors.New("Bitte eine verknüpfte und mindestens eine unverknüpfte Datei auswählen und die Liste neu laden.")
+
+// ExtendDocumentLinks links new selections to each other and the anchor's direct
+// active partners. It does not recursively merge separate partner relationships.
+func (r *Repository) ExtendDocumentLinks(ctx context.Context, ids []int64) ([]int64, error) {
+	ids = cleanDocumentLinkIDs(ids)
+	if len(ids) < 2 {
+		return nil, ErrDocumentLinkSelectionChanged
+	}
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	var active int
+	anchor := int64(0)
+	linkedCount := 0
+	// Read only selected IDs and link counts, in bounded, indexed batches.
+	if err := forIDBatches(ids, func(placeholders string, args []any) error {
+		rows, err := tx.QueryContext(ctx, `SELECT d.id,
+   EXISTS(SELECT 1 FROM document_links WHERE source_document_id = d.id)
+   OR EXISTS(SELECT 1 FROM document_links WHERE target_document_id = d.id)
+   FROM documents d WHERE d.deleted_at IS NULL AND d.id IN (`+placeholders+`)`, args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id int64
+			var linked bool
+			if err := rows.Scan(&id, &linked); err != nil {
+				return err
+			}
+			active++
+			if linked {
+				linkedCount++
+				anchor = id
+			}
+		}
+		return rows.Err()
+	}); err != nil {
+		return nil, err
+	}
+	if active != len(ids) {
+		return nil, sql.ErrNoRows
+	}
+	if linkedCount != 1 {
+		return nil, ErrDocumentLinkSelectionChanged
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT d.id FROM documents d JOIN (
+  SELECT target_document_id AS id FROM document_links WHERE source_document_id = ?
+  UNION SELECT source_document_id FROM document_links WHERE target_document_id = ?
+ ) links ON links.id = d.id WHERE d.deleted_at IS NULL`, anchor, anchor)
+	if err != nil {
+		return nil, err
+	}
+	members := []int64{anchor}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		members = append(members, id)
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	now := formatTime(time.Now().UTC())
+	stmt, err := tx.PrepareContext(ctx, `INSERT OR IGNORE INTO document_links(source_document_id, target_document_id, created_at) VALUES (?, ?, ?)`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+	for _, target := range ids {
+		if target == anchor {
+			continue
+		}
+		for _, member := range members {
+			source, destination := member, target
+			if source > destination {
+				source, destination = destination, source
+			}
+			if _, err := stmt.ExecContext(ctx, source, destination, now); err != nil {
+				return nil, err
+			}
+		}
+		members = append(members, target)
+	}
+	if err := forIDBatches(members, func(placeholders string, args []any) error {
+		_, err := tx.ExecContext(ctx, `UPDATE documents SET updated_at = ? WHERE id IN (`+placeholders+`)`, append([]any{now}, args...)...)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return members, nil
+}
+
 func (r *Repository) LinkedDocuments(ctx context.Context, id int64) ([]document.Document, error) {
 	rows, err := r.db.QueryContext(ctx, summarySelect()+`
 		JOIN (

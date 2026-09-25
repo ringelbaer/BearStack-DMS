@@ -143,6 +143,31 @@ function initializeDocumentBatchMenus(root = document) {
   }
 }
 
+function chooseDocumentLinkMode(form) {
+  const dialog = form.querySelector("[data-document-link-dialog]");
+  if (!dialog) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const confirm = dialog.querySelector("[data-document-link-confirm]");
+    const cancel = dialog.querySelector("[data-document-link-cancel]");
+    let choice = null;
+    const onConfirm = () => {
+      choice = dialog.querySelector('input[name="link_choice"]:checked').value;
+      dialog.close();
+    };
+    const onCancel = () => dialog.close();
+    const onClose = () => {
+      confirm.removeEventListener("click", onConfirm);
+      cancel.removeEventListener("click", onCancel);
+      resolve(choice);
+    };
+    dialog.querySelector('input[value="extend"]').checked = true;
+    confirm.addEventListener("click", onConfirm);
+    cancel.addEventListener("click", onCancel);
+    dialog.addEventListener("close", onClose, { once: true });
+    dialog.showModal();
+  });
+}
+
 function initializeSelectionControls(root = document) {
   initializeDocumentBatchMenus(root);
 
@@ -162,6 +187,12 @@ function initializeSelectionControls(root = document) {
     if (form.dataset.batchSubmitInitialized !== "true") {
       form.dataset.batchSubmitInitialized = "true";
       form.addEventListener("submit", (event) => {
+        const linkDialog = form.querySelector("[data-document-link-dialog]");
+        if (linkDialog?.open) {
+          event.preventDefault();
+          linkDialog.querySelector("[data-document-link-confirm]").click();
+          return;
+        }
         setBatchBusy(form, "Auswahl wird verarbeitet...");
         if (isDocumentExportSubmit(form, event.submitter)) {
           waitForDocumentExportDownload(form);
@@ -182,8 +213,19 @@ function initializeSelectionControls(root = document) {
         }
         const message = (button.dataset.linkPrompt || "{count} Dokumente verknüpfen?").replace("{count}", selected);
         event.preventDefault();
-        if (await showAppConfirm(message)) {
-          form.requestSubmit(button);
+        if (button.dataset.linkPending === "true") return;
+        button.dataset.linkPending = "true";
+        try {
+          const inputs = Array.from(form.querySelectorAll('input[name="ids"]:checked'));
+          const mixedSelection = inputs.length >= 2 && inputs.filter((input) => Number(input.dataset.linkedCount) > 0).length === 1;
+          const mode = mixedSelection ? await chooseDocumentLinkMode(form) : (await showAppConfirm(message) ? "new" : null);
+          if (mode) {
+            const field = form.querySelector("[data-document-link-mode]");
+            if (field) field.value = mode;
+            form.requestSubmit(button);
+          }
+        } finally {
+          delete button.dataset.linkPending;
         }
       });
     });
