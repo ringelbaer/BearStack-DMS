@@ -21,9 +21,9 @@ Jede Verbindung besitzt ihr eigenes Konto und Basisziel. **Verbindung trennen** 
 
 ## Ordner oder eine Auswahl hochladen
 
-In echten Fotoordnern ab zwei Pfadbestandteilen, beispielsweise `2026/20260613-Geburtstag-Thomas-Paue`, befindet sich **Upload to Nextcloud** im Menü **…**. Suchergebnisse und konkrete Personengalerien bieten denselben Einstieg. Reine Personenübersichten enthalten keine konkrete Medienauswahl und bieten keinen Ordner-Upload.
+In echten Fotoordnern ab zwei Pfadbestandteilen, beispielsweise `2026/20260613-Geburtstag-Thomas-Paue`, befindet sich **Fotos übertragen ⇧** im Menü **…**. Suchergebnisse und konkrete Personengalerien bieten denselben Einstieg. Reine Personenübersichten enthalten keine konkrete Medienauswahl und bieten keinen Ordner-Upload.
 
-Für einzelne Medien **Bearbeiten → Auswahlmodus** einschalten, die gewünschten Kacheln markieren und **Upload to Nextcloud (Auswahl)** verwenden. Das geht auch im Foto-Stammverzeichnis. Die Markierung gilt wie die übrigen Auswahlaktionen für die aktuelle Seite; die API akzeptiert höchstens 5.000 explizite Pfade je Auswahl. Ein ganzer virtueller Ordner wird dagegen über alle Seiten erfasst.
+Für einzelne Medien **Bearbeiten → Auswahlmodus** einschalten, die gewünschten Kacheln markieren und **Fotos übertragen ⇧ (Auswahl)** verwenden. Das geht auch im Foto-Stammverzeichnis. Die Markierung gilt wie die übrigen Auswahlaktionen für die aktuelle Seite; die API akzeptiert höchstens 5.000 explizite Pfade je Auswahl. Ein ganzer virtueller Ordner wird dagegen über alle Seiten erfasst.
 
 Im Modal genau eine Verbindung wählen und **Übertragung prüfen** ausführen. Bei nur einer verwendbaren Verbindung ist sie vorausgewählt. Die Vorschau zeigt Zielordner, Anzahl und Größe, vorhandene Dateien, Konflikte und neu zu übertragende Daten. Einzelheiten stehen unter **Dateien und Konflikte ansehen**. Erst **Upload starten** bestätigt den Hintergrundauftrag; das Modal kann danach geschlossen werden.
 
@@ -35,7 +35,7 @@ Im Modal genau eine Verbindung wählen und **Übertragung prüfen** ausführen. 
 
 ## Warteschlange und Änderungen
 
-Das Burgermenü enthält bei mindestens einer aktivierten Verbindung die **Upload-Warteschlange**. Sie zeigt je Auftrag eine Statusanzeige, Verbindung und Anbieter, den Zielordner sowie getrennte Kennzahlen für Gesamtumfang, offene Dateien, vorhandene Dateien und Konflikte. Der Fortschritt steht darunter; **Dateien und Fehler** öffnet die gegliederte Dateiliste. Die Warteschlange lässt sich nach Verbindung filtern. Ein Auftrag läuft zur Zeit mit höchstens zwei parallelen Dateien. Pausierte und auf Wiederholung wartende Aufträge blockieren andere Verbindungen nicht.
+Das Burgermenü enthält bei mindestens einer aktivierten Verbindung die **Upload-Warteschlange** als Icon direkt neben den Einstellungen. Sie zeigt je Auftrag eine Statusanzeige, Verbindung und Anbieter, den Zielordner sowie getrennte Kennzahlen für Gesamtumfang, offene Dateien, vorhandene Dateien und Konflikte. Der Fortschritt steht darunter; **Dateien und Fehler** öffnet die gegliederte Dateiliste. Die Warteschlange lässt sich nach Verbindung filtern. Ein Auftrag läuft zur Zeit mit höchstens zwei parallelen Dateien. Pausierte und auf Wiederholung wartende Aufträge blockieren andere Verbindungen nicht.
 
 **Pause**, **Fortsetzen**, **Abbrechen** und **Wiederholen** ändern nur den lokalen Auftrag. Bereits hochgeladene Dateien bleiben erhalten. Vor einer Wiederholung prüft BearStack unklare Upload-Ergebnisse erneut am Ziel. Vorübergehende Fehler werden mit wachsender Wartezeit begrenzt wiederholt; volle Speicher und Anmeldefehler pausieren den Auftrag.
 

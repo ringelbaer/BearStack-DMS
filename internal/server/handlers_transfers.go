@@ -275,31 +275,15 @@ func (s *Server) transferView(r *http.Request, data *PageData) {
 	if err != nil {
 		return
 	}
-	provider := ""
-	label := ""
-	mixed := false
 	for _, c := range connections {
 		if c.Enabled {
 			data.TransferEnabled = true
 		}
-		if !c.Enabled || !c.Connected || c.Base.ID == "" {
-			continue
-		}
-		data.TransferReady = true
-		if provider != "" && provider != c.Provider {
-			mixed = true
-		}
-		provider = c.Provider
-		for _, p := range s.transfers.Providers() {
-			if p.ID == c.Provider {
-				label = p.UploadLabel
-			}
+		if c.Enabled && c.Connected && c.Base.ID != "" {
+			data.TransferReady = true
 		}
 	}
-	if mixed {
-		label = "Upload zu Speicher …"
-	}
-	data.TransferLabel = label
+	data.TransferLabel = "Fotos übertragen ⇧"
 	if data.Active != "photos" || !data.TransferReady {
 		return
 	}

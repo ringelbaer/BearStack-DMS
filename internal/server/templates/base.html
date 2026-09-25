@@ -37,7 +37,6 @@
         <span></span>
       </summary>
       <nav class="system-menu-list" aria-label="Systemmenü">
-        {{if .TransferEnabled}}<a href="/photos/uploads">Upload-Warteschlange</a>{{end}}
         {{$systemMenuPrimary := .SystemMenuPrimaryVisible}}
         {{$systemMenuSecondary := .SystemMenuSecondaryVisible}}
         {{if or .Auth.CanDocumentsRead .Auth.CanPhotosRead .Auth.CanPhotosManage}}<a href="/tags" class="{{if eq .Active "tags"}}active{{end}}">Tags</a>{{end}}
@@ -58,8 +57,13 @@
         <a href="/statistics" class="{{if eq .Active "statistics"}}active{{end}}">Statistik</a>
         {{end}}
         <a href="/help" class="{{if eq .Active "help"}}active{{end}}">Hilfe</a>
-        {{if or .SettingsURL .Auth.Username}}
-        <div class="system-menu-actions" role="group" aria-label="Einstellungen und Konto">
+        {{if or .TransferEnabled .SettingsURL .Auth.Username}}
+        <div class="system-menu-actions" role="group" aria-label="Uploads, Einstellungen und Konto">
+        {{if .TransferEnabled}}
+        <a href="/photos/uploads" class="system-menu-icon {{if eq .Active "uploads"}}active{{end}}" {{if eq .Active "uploads"}}aria-current="page"{{end}} aria-label="Upload-Warteschlange" title="Upload-Warteschlange">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"></path></svg>
+        </a>
+        {{end}}
         {{if .SettingsURL}}
         <a href="{{.SettingsURL}}" class="system-menu-icon {{if eq .Active "settings"}}active{{end}}" {{if eq .Active "settings"}}aria-current="page"{{end}} aria-label="Einstellungen" title="Einstellungen">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 3-.5 2-2 1.2-2-.6-2 3.4L4 10.5v3L2.5 15l2 3.4 2-.6 2 1.2.5 2h6l.5-2 2-1.2 2 .6 2-3.4-1.5-1.5v-3L21.5 9l-2-3.4-2 .6-2-1.2L15 3Z"></path><circle cx="12" cy="12" r="3"></circle></svg>

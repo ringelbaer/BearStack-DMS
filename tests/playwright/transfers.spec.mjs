@@ -214,7 +214,7 @@ test("multiple connections, folder preview, selected media and queue", async ({
       .first()
       .click();
     await page
-      .getByRole("button", { name: "Upload to Nextcloud", exact: true })
+      .getByRole("button", { name: "Fotos übertragen ⇧", exact: true })
       .click();
     let dialog = await preview(page, "Familiencloud");
     await expect(dialog.locator("[data-transfer-summary]")).toContainText(
@@ -277,7 +277,7 @@ test("multiple connections, folder preview, selected media and queue", async ({
       .click();
     await page
       .getByRole("button", {
-        name: "Upload to Nextcloud (Auswahl)",
+        name: "Fotos übertragen ⇧ (Auswahl)",
         exact: true,
       })
       .click();
@@ -292,7 +292,13 @@ test("multiple connections, folder preview, selected media and queue", async ({
       )
       .toBe(true);
     await dialog.locator("[data-transfer-close]").click();
-    await page.goto(fixture.baseURL + "/photos/uploads");
+    await page.getByLabel("Systemmenü öffnen", { exact: true }).click();
+    const queueLink = page.locator('.system-menu-actions').getByRole("link", { name: "Upload-Warteschlange", exact: true });
+    await expect(queueLink).toHaveAttribute("title", "Upload-Warteschlange");
+    await expect(queueLink.locator("svg")).toHaveCount(1);
+    await expect(page.locator('.system-menu-actions a[href="/photos/uploads"] + a')).toHaveAttribute("aria-label", "Einstellungen");
+    await queueLink.click();
+    await expect(queueLink).toHaveAttribute("aria-current", "page");
     await expect(page.locator(".transfer-job")).toHaveCount(2);
     await page
       .locator("[data-transfer-filter]")

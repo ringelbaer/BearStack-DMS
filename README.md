@@ -1,8 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.12.1** · Android-App: **0.22.4**.
+Aktuelle Version: **1.12.2** · Android-App: **0.22.4**.
 
-**BearStack 1.12.1:** Überarbeitete Speicher-Einstellungen mit eindeutigem Verbindungsstatus, kompakte Zielordnerauswahl und klar gegliederte Upload-Vorschauen und Warteschlange – auch auf kleinen Bildschirmen.
+**BearStack 1.12.2:** Fotoaktionen heißen anbieterunabhängig „Fotos übertragen ⇧“. Die Upload-Warteschlange ist im Menü als Icon direkt neben den Einstellungen erreichbar.
 
 **BearStack 1.11.2:** Gezoomte Fotos lassen sich auch in Firefox mit gedrückter Maustaste verschieben; das native Ziehen des Bildes unterbricht die Geste nicht mehr.
 

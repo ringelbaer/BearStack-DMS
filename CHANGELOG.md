@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.12.2
+
+- Fotoübertragung anbieterunabhängig als „Fotos übertragen ⇧“ beschriftet, auch bei mehreren Speicheranbietern und im Auswahlmodus.
+- Upload-Warteschlange als Icon direkt neben den Einstellungen im Systemmenü, mit Tooltip, zugänglichem Namen und Markierung der aktiven Seite.
+- PATCH für UI-Korrekturen; README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 1.12.1
 
 - Externe Speicher folgen dem bestehenden Settings-Aufbau mit eigener Abschnittsüberschrift und Formulargruppen. Verbindungsstatus, Konto, Basisziel und Upload-Bereitschaft sind getrennt sichtbar. Verbundene Konten zeigen keinen Anmeldebutton; gesetzte Basisziele bieten „Zielordner ändern“.
