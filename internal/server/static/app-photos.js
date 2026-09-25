@@ -583,9 +583,7 @@
       if (edit) {
         initPhotoSelection();
         hydrateDeferredPhotoTagSelects(module);
-        if (typeof window.initializeTagSelects === "function") {
-          window.initializeTagSelects(document);
-        }
+        window.BearStack.tags?.initializeTagSelects(document);
       }
       if (!edit && wasEdit && options.clearSelection !== false) {
         document.querySelectorAll("[data-photo-bulk-form]").forEach(function (form) {

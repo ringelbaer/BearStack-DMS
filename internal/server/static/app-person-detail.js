@@ -102,7 +102,7 @@
     if (tagTools && updatedTagTools) {
       var nextTagTools = document.importNode(updatedTagTools, true);
       tagTools.replaceWith(nextTagTools); tagTools = nextTagTools;
-      if (window.initializeTagSelects) window.initializeTagSelects(tagTools);
+      window.BearStack.tags?.initializeTagSelects(tagTools);
       if (window.initializePersonPickers) window.initializePersonPickers(tagTools);
     }
     galleryLink.setAttribute("href", view.querySelector("[data-detail-gallery]").getAttribute("href"));

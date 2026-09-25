@@ -463,9 +463,7 @@ if (columnsClose && columnsModal) {
 
 function initializeDocumentList(root = document) {
   initializeSubmitPrompts(root);
-  if (typeof initializeSearchFavoriteYearFields === "function") {
-    initializeSearchFavoriteYearFields(root);
-  }
+  window.BearStack.tags?.initializeSearchFavoriteYearFields(root);
   if (typeof initializeDocumentDateCharts === "function") {
     initializeDocumentDateCharts(root);
   }
@@ -475,9 +473,7 @@ function initializeDocumentList(root = document) {
   initializeSelectionControls(root);
   initializeDocumentDateInputs(root);
   initializeCustomFieldSuggestions(root);
-  if (typeof initializeTagSelects === "function") {
-    initializeTagSelects(root);
-  }
+  window.BearStack.tags?.initializeTagSelects(root);
   initializeDocumentThumbnails(root);
   initializePreviewButtons(root);
   initializeDetailPreview(root);

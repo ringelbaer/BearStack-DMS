@@ -441,11 +441,11 @@ document.querySelectorAll("[data-metadata-form]").forEach((form) => {
       }
       const tagSelect = form.querySelector("[data-tag-select]");
       if (tagSelect && Array.isArray(payload.tags)) {
-        setTagSelection(tagSelect, payload.tags);
+        window.BearStack.tags.setTagSelection(tagSelect, payload.tags);
       }
       if (Array.isArray(payload.tags)) {
         const initialProtected = document.body?.dataset.documentDeleteProtected === "true";
-        const nextProtected = payload.tags.some((name) => tagOptionMap.get(name)?.deleteProtected);
+        const nextProtected = payload.tags.some(window.BearStack.tags.isDeleteProtected);
         if (initialProtected !== nextProtected) {
           window.location.reload();
           return;

@@ -3,31 +3,8 @@ const uploadProgress = document.querySelector("[data-upload-progress]");
 const uploadMessage = document.querySelector("[data-upload-message]");
 const uploadList = document.querySelector("[data-upload-list]");
 const uploadMinimize = document.querySelector("[data-upload-minimize]");
-const tagSelectModal = document.querySelector("[data-tag-select-modal]");
-const tagSelectList = document.querySelector("[data-tag-select-list]");
-const tagSelectSearch = document.querySelector("[data-tag-select-search]");
-const tagSelectClose = document.querySelector("[data-tag-select-close]");
-const tagSelectClear = document.querySelector("[data-tag-select-clear]");
-const tagSelectApply = document.querySelector("[data-tag-select-apply]");
-const tagCreate = document.querySelector("[data-tag-create]");
-const tagSelectEmpty = document.querySelector("[data-tag-select-empty]");
-const tagSelectError = document.querySelector("[data-tag-select-error]");
 const ocrStatus = document.querySelector("[data-ocr-status]");
-const tagOptions = Array.from(document.querySelectorAll("[data-tag-option]"))
-  .map((item) => ({
-    name: item.dataset.name || "",
-    displayName: item.dataset.displayName || "",
-    description: item.dataset.description || "",
-    listHidden: item.dataset.listHidden === "true",
-    deleteProtected: item.dataset.deleteProtected === "true",
-    style: item.getAttribute("style") || "",
-  }))
-  .filter((item) => item.name)
-  .sort((a, b) => (a.displayName || a.name).localeCompare(b.displayName || b.name, "de", { sensitivity: "base" }));
-const tagOptionMap = new Map(tagOptions.map((item) => [item.name, item]));
 const initializedElements = new WeakMap();
-let activeTagSelect = null;
-let draftTagSelection = new Set();
 
 function setBatchBusy(form, message = "Batch-Aktion wird verarbeitet...") {
   if (!form) return null;

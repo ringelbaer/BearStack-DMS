@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.12.8
+
+- Tag-DOM-Referenzen, Optionsindex und Dialogauswahl aus dem gemeinsamen WebUI-Skript in das gekapselte Tag-Modul verschoben. Nur die bestehenden Moduloperationen und eine Abfrage des Löschschutzes sind nach außen verfügbar.
+- Galerie, nachgeladene Personenansichten, Dokumentlisten und Metadatenformulare verwenden `BearStack.tags`; direkte Zugriffe auf globale Tag-Zustände entfallen.
+- PATCH ohne Änderung der Tag-Abläufe. DOM-Regressionen prüfen nachträglich bereitgestellte Tag-Optionen und den Löschschutz nach Metadatenänderungen; README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 1.12.7
 
 - Thumbnail-Status wird vor dem Foto-Presenter über einen schmalen Lesevertrag geladen. Galerie und Frame übergeben vorbereitete Ergebnisse; der Presenter benötigt keine Foto-Library mehr.

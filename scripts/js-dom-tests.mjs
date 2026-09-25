@@ -608,6 +608,50 @@ function testTagPickerFallsBackToConfiguredDisplayMode() {
   assert.equal(picker.querySelector("[data-tag-select-trigger]").title, "STEUER");
 }
 
+function testTagModuleReadsOptionsWhenItLoads() {
+  const document = new TestDocument();
+  const context = loadCore(document);
+  // Feature markup may arrive after the shared core has initialized.
+  document.body.append(el("span", {
+    "data-tag-option": "", "data-name": "protected", "data-display-name": "Geschützt",
+    "data-delete-protected": "true",
+  }));
+  runScripts(context, ["app-tags.js"]);
+  const tags = context.window.BearStack.tags;
+  assert.equal(tags.displayTagName("protected"), "Geschützt");
+  assert.equal(tags.isDeleteProtected("protected"), true);
+  assert.equal(tags.isDeleteProtected("unknown"), false);
+  tags.addTagOption({ name: "protected", display_name: "Freigegeben", delete_protected: false });
+  assert.equal(tags.isDeleteProtected("protected"), false);
+  assert.equal(tags.displayTagName("protected"), "Freigegeben");
+}
+
+async function testDocumentMetadataUsesTagModuleProtection() {
+  for (const protectedTag of [false, true]) {
+    const document = new TestDocument();
+    document.body.dataset.documentDeleteProtected = "false";
+    const picker = el("div", { "data-tag-select": "" }, [
+      el("div", { "data-tag-select-summary": "" }),
+      el("div", { "data-tag-select-inputs": "" }),
+      el("button", { "data-tag-select-trigger": "" }),
+    ]);
+    const message = el("div", { "data-metadata-message": "" });
+    const form = el("form", { "data-metadata-form": "", action: "/documents/1/metadata" }, [
+      picker, message, el("button", { type: "submit" }),
+    ]);
+    document.body.append(form);
+    const context = loadCore(document);
+    runScripts(context, ["app-tags.js", "app-documents.js"]);
+    context.window.BearStack.tags.addTagOption({ name: "updated", display_name: "Aktualisiert", delete_protected: protectedTag });
+    context.fetch = async () => ({ ok: true, json: async () => ({ tags: ["updated"] }) });
+    form.dispatchEvent({ type: "submit" });
+    await new Promise(setImmediate);
+    assert.equal(picker.querySelector("[data-tag-select-summary]").children[0].textContent, "Aktualisiert");
+    assert.equal(context.location.reloadCalled, protectedTag);
+    if (!protectedTag) assert.equal(message.textContent, "Metadaten gespeichert.");
+  }
+}
+
 function testUploadLifecycleUsesXHRBoundary() {
   const document = new TestDocument();
   const uploadStatus = el("section", { "data-upload-status": "", class: "hidden" });
@@ -1476,6 +1520,8 @@ const tests = [
   testPeopleRefreshRetainsImagesWhenCountsChange,
   testTagPickerUsesBackendDisplayValues,
   testTagPickerFallsBackToConfiguredDisplayMode,
+  testTagModuleReadsOptionsWhenItLoads,
+  testDocumentMetadataUsesTagModuleProtection,
   testUploadLifecycleUsesXHRBoundary,
   testRuleFormsUseCoreScript,
   testBulkSelectionControllerUpdatesActionsAndRanges,

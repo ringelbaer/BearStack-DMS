@@ -75,6 +75,8 @@ Zusätzlich zur Startkonfiguration speichert BearStack über die Weboberfläche 
 
 ## Abfragen und Darstellung
 
+Ab 1.12.8 besitzt `app-tags.js` seine DOM-Referenzen, Tag-Optionen und Dialogauswahl selbst. Andere WebUI-Module verwenden `BearStack.tags`, auch nach dem Nachladen von Dokumentlisten und Personenansichten. Der Löschschutz wird über eine lesende Moduloperation abgefragt; die interne Tag-Tabelle bleibt privat. Das gemeinsame `app.js` initialisiert keinen Tag-Zustand mehr.
+
 Ab 1.12.7 lädt `internal/server/photo_thumbnails.go` den Thumbnail-Status vor der Foto-Darstellung über einen schmalen Lesevertrag. Der Presenter erhält nur das Listing, Einstellungen und die vorbereiteten Statuswerte. Ordner- und Galeriemedien werden weiterhin nach Thumbnail-Größe gebündelt abgefragt; gleiche Größen teilen einen Batch. Gesichtsvorschauen verwenden weiterhin ihren eigenen Cache. Galerie und Frame nutzen denselben Vorbereitungsschritt.
 
 Ab 0.41.3 trennt `internal/server/navigation.go` erreichbare Startseiten und URLs vom Einstellungsservice. Die reine Startseitenauflösung erhält Berechtigungen und Modulstatus explizit; `settings_presenter.go` enthält die beschrifteten Auswahloptionen. Speicherung, Normalisierung und synchronisierte Caches bleiben im Einstellungsservice.
