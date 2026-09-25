@@ -4,6 +4,7 @@ package photos
 import (
 	"container/list"
 	"html/template"
+	"os"
 	"sync"
 	"time"
 )
@@ -39,6 +40,7 @@ type Library struct {
 	faceSuggestions faceSuggestionCache
 	faceThumbnails  faceThumbnailCache
 	root            string
+	originals       *os.Root
 	cacheDir        string
 	dbPath          string
 	index           *photoIndexStore

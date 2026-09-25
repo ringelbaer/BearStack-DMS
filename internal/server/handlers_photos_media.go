@@ -4,7 +4,6 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-	"os"
 
 	"bearstack/internal/photos"
 )
@@ -22,14 +21,9 @@ func (s *Server) servePhotoMedia(w http.ResponseWriter, r *http.Request, photoPa
 		s.renderPhotoError(w, r, err)
 		return
 	}
-	path, err := s.photos.Resolve(media.Path)
+	file, err := s.photos.OpenOriginal(media.Path, s.requestIsPhotoAdmin(r))
 	if err != nil {
 		s.renderPhotoError(w, r, err)
-		return
-	}
-	file, err := os.Open(path)
-	if err != nil {
-		s.renderHTTPError(w, r, err)
 		return
 	}
 	defer file.Close()

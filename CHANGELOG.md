@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.12.3
+
+- Thumbnail-Konverter auf 30 Sekunden je Prozess begrenzt. Timeout und Abbruch bleiben als Fehler erkennbar, verhindern weitere Konverterversuche und beenden das aktuelle Worker-Paket; Slots und Job-Sperren werden freigegeben.
+- HTTP-Originalabrufe und Fotoübertragungen verwenden einen festgehaltenen Foto-Root sowie geprüfte Verzeichnis- und Dateiidentitäten. Symlinks werden auch innerhalb des Fotoarchivs abgelehnt; Originaldateien bleiben ausschließlich lesbar. Sichtbarkeit wird zusätzlich an den geöffneten Verzeichnissen geprüft.
+- PATCH für Betriebs- und Sicherheitskorrekturen; README, Website und OpenAPI-Version aktualisiert. Bestehende URLs und Range-Abrufe bleiben erhalten.
+
 ### BearStack 1.12.2
 
 - Fotoübertragung anbieterunabhängig als „Fotos übertragen ⇧“ beschriftet, auch bei mehreren Speicheranbietern und im Auswahlmodus.

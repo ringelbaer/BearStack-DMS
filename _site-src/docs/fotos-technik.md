@@ -123,6 +123,18 @@ die jeweilige Arbeit gezielt. Die Thumbnail-Parallelität begrenzt auch die
 Erzeugung beim ersten Abruf. Größere Galerieseiten und Vorschauen erhöhen
 Ladeaufwand und Speicherbedarf; für kleine Server mit den Vorgaben beginnen.
 
+Jeder Thumbnail-Konverter (`vipsthumbnail` oder `ffmpeg`) erhält höchstens
+30 Sekunden Laufzeit. Timeout und Abbruch stoppen weitere Konverterversuche
+und das aktuelle Worker-Paket. Der Fehler wird gespeichert; das bestehende
+Wiederholungsintervall gilt weiter und die Job-Sperre wird freigegeben.
+
+HTTP-Originalabrufe und Fotoübertragungen öffnen Originale ausschließlich
+lesend über festgehaltene Verzeichnis-Handles. Der Foto-Root bleibt während der
+Library-Laufzeit gebunden. Ausgetauschte Symlink-Pfade und abweichende
+Dateiidentitäten werden abgelehnt; Schutzmarker werden auch an den geöffneten
+Verzeichnissen geprüft. Nach einem Austausch des Foto-Root-Verzeichnisses ist
+ein Neustart erforderlich, um den neuen Root zu verwenden.
+
 Der Indexscan arbeitet ordnerweise, überspringt unveränderte Ordner anhand des
 Scanstands und nutzt eine niedrige I/O-Priorität, sofern unterstützt. Bei Stat-
 oder Blog-Lesefehlern bleibt der Index des betroffenen Ordners einschließlich

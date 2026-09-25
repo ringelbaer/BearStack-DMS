@@ -48,6 +48,11 @@ func New(root, cacheDir, dbPath string, pageSize int) (*Library, error) {
 	if err != nil {
 		return nil, err
 	}
+	originals, err := os.OpenRoot(absRoot)
+	if err != nil {
+		_ = index.close()
+		return nil, err
+	}
 	if pageSize <= 0 {
 		pageSize = defaultPageSize
 	}
@@ -55,6 +60,7 @@ func New(root, cacheDir, dbPath string, pageSize int) (*Library, error) {
 		faceImageGate:  make(chan struct{}, 1),
 		faceThumbnails: faceThumbnailCache{dir: filepath.Join(absCache, "faces", "v1"), root: absRoot},
 		root:           absRoot,
+		originals:      originals,
 		cacheDir:       absCache,
 		dbPath:         absDBPath,
 		index:          index,
@@ -105,7 +111,11 @@ func (l *Library) Close() error {
 	l.faceImages.close()
 	l.photoRoutes.close()
 	l.faceSuggestions.clear()
-	return l.index.close()
+	var originalErr error
+	if l.originals != nil {
+		originalErr = l.originals.Close()
+	}
+	return errors.Join(l.index.close(), originalErr)
 }
 
 func (l *Library) PageSize() int {

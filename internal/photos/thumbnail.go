@@ -330,6 +330,8 @@ func (l *Library) ensureThumbnailsFromIndex(ctx context.Context, sizes []int, ba
 		}
 		if _, err := l.thumbnailForMedia(ctx, candidate.Media, candidate.Size); err == nil {
 			generated++
+		} else if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			return generated, usedIndex, err
 		} else if firstErr == nil {
 			firstErr = err
 		}
@@ -370,6 +372,8 @@ func (l *Library) ensureThumbnailsFromFilesystem(ctx context.Context, sizes []in
 			}
 			if _, err := l.thumbnailForMedia(ctx, media, size); err == nil {
 				generated++
+			} else if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+				return err
 			} else if firstErr == nil {
 				firstErr = err
 			}
@@ -523,7 +527,13 @@ func writeVideoThumbnail(ctx context.Context, source, target string, size int) e
 		return nil
 	}
 	_ = os.Remove(target)
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return err
+	}
 	if fallbackErr := extractVideoThumbnail(ctx, source, target, size, "0"); fallbackErr != nil {
+		if errors.Is(fallbackErr, context.DeadlineExceeded) || errors.Is(fallbackErr, context.Canceled) {
+			return fallbackErr
+		}
 		if err != nil {
 			return err
 		}
@@ -543,6 +553,9 @@ func writeImageThumbnail(ctx context.Context, source, target string, size int) e
 		vipsErr = fmt.Errorf("vipsthumbnail produced no thumbnail")
 	}
 	_ = os.Remove(target)
+	if errors.Is(vipsErr, context.DeadlineExceeded) || errors.Is(vipsErr, context.Canceled) {
+		return vipsErr
+	}
 	ffmpegErr := writeImageThumbnailWithFFmpeg(ctx, source, target, size)
 	if ffmpegErr == nil && fsutil.FileHasContent(target) {
 		return nil
@@ -579,6 +592,14 @@ func extractVideoThumbnail(ctx context.Context, source, target string, size int,
 }
 
 func runThumbnailCommand(ctx context.Context, name, binary, source, outDir string, args ...string) error {
+	return runThumbnailCommandTimeout(ctx, 30*time.Second, name, binary, source, outDir, args...)
+}
+
+// Bound each decoder even when a background job has no deadline. Keep timeout
+// identity so callers do not start another decoder after cancellation.
+func runThumbnailCommandTimeout(ctx context.Context, timeout time.Duration, name, binary, source, outDir string, args ...string) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Env = append(os.Environ(), "VIPS_CONCURRENCY=1")
 	output, err := processrun.Run(cmd, processrun.Files{Read: []string{source}, Write: []string{outDir}})
@@ -587,7 +608,7 @@ func runThumbnailCommand(ctx context.Context, name, binary, source, outDir strin
 		if message == "" {
 			message = err.Error()
 		}
-		return fmt.Errorf("%s thumbnail failed: %s", name, message)
+		return fmt.Errorf("%s thumbnail failed: %s: %w", name, message, errors.Join(err, ctx.Err()))
 	}
 	return nil
 }

@@ -13,7 +13,6 @@ import (
 
 	"bearstack/internal/account"
 	"bearstack/internal/photos"
-	"bearstack/internal/photos/photopath"
 	"bearstack/internal/transfers"
 )
 
@@ -146,15 +145,7 @@ func (source photoTransferSource) Open(ctx context.Context, selection transfers.
 			return nil, transfers.Fail(transfers.Permission, "Foto ist inzwischen ausgeblendet")
 		}
 	}
-	if err := photopath.RejectSymlinkPath(source.library.Root(), item.Path); err != nil {
-		return nil, transfers.Fail(transfers.Invalid, "Foto enthält einen symbolischen Pfad")
-	}
-	root, err := os.OpenRoot(source.library.Root())
-	if err != nil {
-		return nil, err
-	}
-	defer root.Close()
-	file, err := root.Open(item.Path)
+	file, err := source.library.OpenOriginal(item.Path, selection.IncludeAdminOnly && !photos.IsPeopleFolder(selection.Path))
 	if err != nil {
 		return nil, transfers.Fail(transfers.Invalid, "Quelldatei nicht mehr verfügbar")
 	}
