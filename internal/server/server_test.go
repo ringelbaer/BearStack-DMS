@@ -1556,7 +1556,9 @@ func TestDecoratePhotoListingMarksCachedThumbnailReady(t *testing.T) {
 			{Path: "album/missing.jpg", Type: photos.MediaTypeImage},
 		},
 	}
-	view := newPhotoListingView(context.Background(), photoLib, listing, PhotoSettings{FolderThumbnailSize: 180, ThumbnailSize: 420, PreviewSize: 960})
+	settings := PhotoSettings{FolderThumbnailSize: 180, ThumbnailSize: 420, PreviewSize: 960}
+	ready := loadPhotoThumbnailReadiness(context.Background(), photoLib, listing, settings)
+	view := newPhotoListingView(context.Background(), listing, settings, ready)
 
 	if !view.Media[0].ThumbReady {
 		t.Fatal("cached thumbnail was not marked ready")
@@ -1586,7 +1588,7 @@ func TestPhotoFolderViewLabelsRecursiveMediaCounts(t *testing.T) {
 		},
 	}
 
-	view := newPhotoListingView(context.Background(), nil, listing, PhotoSettings{})
+	view := newPhotoListingView(context.Background(), listing, PhotoSettings{}, nil)
 	if view.Folders[0].MediaCountLabel != "3 Medien gesamt" {
 		t.Fatalf("recursive count label = %q", view.Folders[0].MediaCountLabel)
 	}
@@ -1630,7 +1632,9 @@ func TestDecoratePhotoListingTrustsGeneratedThumbnailIndexWhenFileIsMissing(t *t
 	listing := photos.Listing{
 		Media: []photos.Media{media},
 	}
-	view := newPhotoListingView(context.Background(), photoLib, listing, PhotoSettings{ThumbnailSize: 420})
+	settings := PhotoSettings{ThumbnailSize: 420}
+	ready := loadPhotoThumbnailReadiness(context.Background(), photoLib, listing, settings)
+	view := newPhotoListingView(context.Background(), listing, settings, ready)
 	if !view.Media[0].ThumbReady {
 		t.Fatalf("generated thumbnail metadata should mark media ready even without cache file: %#v", view.Media[0])
 	}

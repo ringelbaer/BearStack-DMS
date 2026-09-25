@@ -45,7 +45,8 @@ func (s *Server) handlePhotos(w http.ResponseWriter, r *http.Request) {
 	s.decoratePhotoAdminOnlyFilter(r, &filter)
 	finishDecorate(photos.ListTraceBool("admin_toggle", filter.AdminOnlyToggleVisible), photos.ListTraceBool("show_admin_only", filter.ShowAdminOnly))
 	finishView := photos.StartListTraceStep(r.Context(), "photos.handler.presenter")
-	photoView := newPhotoListingView(r.Context(), s.photos, listing, settings)
+	ready := s.photoService().ThumbnailReadiness(r.Context(), listing, settings)
+	photoView := newPhotoListingView(r.Context(), listing, settings, ready)
 	annotatePhotoTraceFolderURLs(&photoView, photoTraceQueryValue(r.URL.Query()))
 	finishView(
 		photos.ListTraceInt("folders", len(photoView.Folders)),
@@ -113,7 +114,8 @@ func (s *Server) handlePhotoFrame(w http.ResponseWriter, r *http.Request) {
 		Sort:      opts.Sort,
 		Page:      1,
 	}
-	photoView := newPhotoListingView(r.Context(), s.photos, listing, settings)
+	ready := s.photoService().ThumbnailReadiness(r.Context(), listing, settings)
+	photoView := newPhotoListingView(r.Context(), listing, settings, ready)
 	s.render(w, r, "photo_frame.html", PageData{
 		Title:         "Fotoframe",
 		Active:        "photos",
@@ -163,7 +165,8 @@ func (s *Server) handlePhotoFrameItems(w http.ResponseWriter, r *http.Request) {
 		s.renderPhotoError(w, r, err)
 		return
 	}
-	photoView := newPhotoListingView(r.Context(), s.photos, listing, settings)
+	ready := s.photoService().ThumbnailReadiness(r.Context(), listing, settings)
+	photoView := newPhotoListingView(r.Context(), listing, settings, ready)
 	if err := writeJSON(w, http.StatusOK, struct {
 		Media    []photoMediaAPIResponse `json:"media"`
 		Page     int                     `json:"page"`

@@ -4,6 +4,12 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.12.7
+
+- Thumbnail-Status wird vor dem Foto-Presenter über einen schmalen Lesevertrag geladen. Galerie und Frame übergeben vorbereitete Ergebnisse; der Presenter benötigt keine Foto-Library mehr.
+- Abfragen bleiben nach Größe gebündelt, einschließlich gemeinsamer Ordner-/Galeriegrößen. Gesichtsvorschauen, fehlende Thumbnails und Größen-Defaults behalten ihr bisheriges Verhalten.
+- PATCH für die interne Trennung; Regressionen prüfen Batchgrenzen und Darstellung. README, Website und OpenAPI-Version aktualisiert.
+
 ### BearStack 1.12.6
 
 - Ungenutzte Template-Helfer für Tag-Prüfungen und Statistiksegmente sowie fünf nicht mehr benötigte Template-Registrierungen entfernt. Weiterhin genutzte Formatierungsfunktionen bleiben erhalten; Imports im Renderer folgen der bestehenden Paketgruppierung.

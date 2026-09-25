@@ -1,8 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.12.6** · Android-App: **0.22.4**.
+Aktuelle Version: **1.12.7** · Android-App: **0.22.4**.
 
-**BearStack 1.12.6:** Interne Bereinigung ohne Funktionsänderung: ungenutzte Template-Helfer entfernt und ausschließlich von Tests benötigte Foto-Helfer aus dem Produktionscode herausgenommen.
+**BearStack 1.12.7:** Foto-Darstellung und Thumbnail-Statusabfragen sind getrennt. Der Presenter erhält vorbereitete Ergebnisse; Statusabfragen bleiben nach Größe gebündelt.
 
 **BearStack 1.11.2:** Gezoomte Fotos lassen sich auch in Firefox mit gedrückter Maustaste verschieben; das native Ziehen des Bildes unterbricht die Geste nicht mehr.
 

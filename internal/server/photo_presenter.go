@@ -63,7 +63,7 @@ type PhotoMediaGroup struct {
 	Media []PhotoMediaView
 }
 
-func newPhotoListingView(ctx context.Context, library *photos.Library, listing photos.Listing, settings PhotoSettings) PhotoListingView {
+func newPhotoListingView(ctx context.Context, listing photos.Listing, settings PhotoSettings, ready photoThumbnailReadiness) PhotoListingView {
 	settings = normalizePhotoPresentationSettings(settings)
 	view := PhotoListingView{
 		Virtual:          photos.IsPeopleFolder(listing.Path),
@@ -97,7 +97,6 @@ func newPhotoListingView(ctx context.Context, library *photos.Library, listing p
 		}
 	}
 
-	thumbnailGroups := map[int]*photoThumbnailReadyGroup{}
 	finishFolders := photos.StartListTraceStep(ctx, "photos.presenter.folders", photos.ListTraceInt("folders", len(listing.Folders)))
 	if len(listing.Folders) > 0 {
 		view.Folders = make([]PhotoFolderView, len(listing.Folders))
@@ -121,7 +120,7 @@ func newPhotoListingView(ctx context.Context, library *photos.Library, listing p
 			preview := photoFolderPreviewView(item, settings)
 			viewFolder.Previews[j] = preview
 			if preview.ThumbURL != "" {
-				addPhotoThumbnailReadyTarget(thumbnailGroups, item, &viewFolder.Previews[j], settings.FolderThumbnailSize)
+				viewFolder.Previews[j].ThumbReady = ready[settings.FolderThumbnailSize][item.Path]
 				folderPreviewTargets++
 			}
 		}
@@ -138,17 +137,12 @@ func newPhotoListingView(ctx context.Context, library *photos.Library, listing p
 		media := photoMediaView(item, settings)
 		view.Media[i] = media
 		if media.ThumbURL != "" {
-			addPhotoThumbnailReadyTarget(thumbnailGroups, item, &view.Media[i], settings.ThumbnailSize)
+			view.Media[i].ThumbReady = ready[settings.ThumbnailSize][item.Path]
 			mediaThumbnailTargets++
 		}
 	}
 	finishMedia(photos.ListTraceInt("thumbnail_targets", mediaThumbnailTargets))
 
-	for size, group := range thumbnailGroups {
-		finishReady := photos.StartListTraceStep(ctx, "photos.presenter.thumbnail_ready", photos.ListTraceInt("size", size), photos.ListTraceInt("items", len(group.media)))
-		markPhotoThumbnailsReady(ctx, library, group.media, group.targets, size)
-		finishReady()
-	}
 	return view
 }
 
@@ -204,31 +198,6 @@ func normalizePhotoPresentationSettings(settings PhotoSettings) PhotoSettings {
 		settings.LargePreviewSize = defaults.LargePreviewSize
 	}
 	return settings
-}
-
-type photoThumbnailReadyGroup struct {
-	media   []photos.Media
-	targets []*PhotoMediaView
-}
-
-func addPhotoThumbnailReadyTarget(groups map[int]*photoThumbnailReadyGroup, media photos.Media, target *PhotoMediaView, size int) {
-	group := groups[size]
-	if group == nil {
-		group = &photoThumbnailReadyGroup{}
-		groups[size] = group
-	}
-	group.media = append(group.media, media)
-	group.targets = append(group.targets, target)
-}
-
-func markPhotoThumbnailsReady(ctx context.Context, library *photos.Library, media []photos.Media, targets []*PhotoMediaView, size int) {
-	if library == nil || len(media) == 0 || len(targets) == 0 {
-		return
-	}
-	ready := library.CachedThumbnailsReadyForMediaContext(ctx, media, size)
-	for _, item := range targets {
-		item.ThumbReady = ready[item.Path]
-	}
 }
 
 func photoMediaView(item photos.Media, settings PhotoSettings) PhotoMediaView {
