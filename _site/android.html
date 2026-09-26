@@ -837,6 +837,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#bildgruppen-und-galerieordner" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bildgruppen und Galerieordner
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#mehrfachauswahl" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1447,6 +1458,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#bildgruppen-und-galerieordner" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bildgruppen und Galerieordner
+      </span>
+    </span>
+  </a>
+
+</li>
+
+          <li class="md-nav__item">
   <a href="#mehrfachauswahl" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1766,7 +1788,7 @@
 <p>Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.</p>
-<p>Diese Anleitung beschreibt <strong>Android-App 0.22.4</strong>. Beginne mit den
+<p>Diese Anleitung beschreibt <strong>Android-App 0.23.0</strong>. Beginne mit den
 <a href="#erste-schritte">ersten Schritten</a>; die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die <a href="android-technik.html">technische Referenz</a>.</p>
@@ -1954,6 +1976,25 @@ zu springen. Nach kurzer Ruhe verschwindet er wieder. Das gilt für Ordner,
 Suchergebnisse, Karten-Treffer und <strong>Dieses Gerät</strong>. Im unbegrenzten Fotostream
 unter <strong>Fotos</strong> wird er nicht angezeigt. TalkBack kann die Position am Griff
 ebenfalls verändern.</p>
+<h3 id="bildgruppen-und-galerieordner">Bildgruppen und Galerieordner<a class="headerlink" href="#bildgruppen-und-galerieordner" title="Permanent link">&para;</a></h3>
+<p>Ab <strong>App 0.23.0 / BearStack 1.15.0</strong> kannst du BearStack-Bilder gruppieren.
+Markiere zwei bis 100 Bilder per Mehrfachauswahl und wähle <strong>Gruppieren</strong>.
+Im Dialog bestimmst du das Hauptbild; nur dieses erscheint anschließend in den
+Galerielisten. Markierst du ein bestehendes Gruppenbild und ungruppierte Bilder,
+werden die neuen Bilder zur Gruppe hinzugefügt. Zwei bestehende Gruppen lassen
+sich damit nicht zusammenführen. Videos, Audio und Gerätefotos sind ausgeschlossen.</p>
+<p><strong>Informationen → Bildgruppe</strong> zeigt die Mitglieder mit Vorschauen. Du kannst
+Bilder öffnen, ein anderes Hauptbild wählen, ein Mitglied entfernen oder die
+Gruppe auflösen. Entfernen betrifft ausschließlich die Gruppenzuordnung.
+Originaldateien und Sidecars bleiben unverändert. Änderungen benötigen <code>photos.edit</code>;
+Leser dürfen Gruppen ansehen. Bei Konflikten lade die Gruppe neu. Schlägt das
+Speichern fehl, prüfe nach dem Neuladen den aktuellen Stand vor einem neuen Versuch.</p>
+<p><strong>Informationen → Im Galerieordner anzeigen</strong> wechselt vom Fotostream, einem
+Personenordner oder der Karte zum physischen Ordner und scrollt zum Bild.
+Suchfilter werden zurückgesetzt; der Ordner wird nach Datum absteigend geöffnet.
+Die App lädt gezielt die Zielseite und die erste Ordnerseite, auch bei großen
+Sammlungen. Ist das Bild inzwischen ausgeblendet oder nicht mehr verfügbar,
+erscheint ein Fehler. Ältere Server und Gerätefotos zeigen diesen Link nicht.</p>
 <h3 id="mehrfachauswahl">Mehrfachauswahl<a class="headerlink" href="#mehrfachauswahl" title="Permanent link">&para;</a></h3>
 <p>Drücke ein Medium im Raster lange, um die Mehrfachauswahl zu aktivieren. Kurze
 Tipps markieren weitere Medien oder entfernen ihre Markierung. Die Auswahl bleibt
@@ -2525,6 +2566,10 @@ Server; mit älteren Versionen können einzelne Einträge fehlen.</p>
 <td>Zufällige Reihenfolge im Bilderrahmen für Serverfotos</td>
 <td>0.69.0</td>
 </tr>
+<tr>
+<td>Bildgruppen und direkter Ordnersprung (App ab 0.23.0)</td>
+<td>1.15.0</td>
+</tr>
 </tbody>
 </table>
 <p>Build, Signierung, API, Datenhaltung und Tests beschreibt
@@ -2578,7 +2623,7 @@ steht im <a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/CHANGELO
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.14.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.15.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

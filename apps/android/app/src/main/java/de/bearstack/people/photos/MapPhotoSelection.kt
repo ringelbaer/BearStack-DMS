@@ -53,6 +53,6 @@ internal fun MapPhotoSelection(controller: PhotosController,images: ImageLoader,
                 PhotoGallery(selection,images,state,Modifier.fillMaxWidth().weight(1f),fastScroll=true)
             }
         }
-        state.selected?.let {path ->PhotoViewer(selection,images,state.media,path)}
+        state.selected?.let {path ->PhotoViewer(selection,images,state.media,path,onOpenFolder={photo ->onClose();controller.openPhotoFolder(photo)})}
     }
 }

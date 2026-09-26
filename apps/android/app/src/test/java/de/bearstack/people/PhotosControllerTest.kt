@@ -11,6 +11,40 @@ import org.junit.Test
 class PhotosControllerTest {
     private val session=PhotoSession("scope",false,320,320,1280,2048,5,8)
     private fun photo(path: String)=Photo(path,path,"image","image/jpeg","1","2026-09-09T10:00:00Z",null,10,100,100)
+    @Test fun folderLinkClearsStreamFiltersAndLoadsOnlyTargetAndFolderPage()=runTest {
+        val fake=Fake().apply {handler={q,p,_ ->page(q,p,listOf(photo("trip/target.jpg"))).copy(name="Trip")}}
+        val controller=PhotosController(this,fake,session.copy(folderPosition=true),initialQuery=PhotoQuery(path=".people/all/42",query="person",recursive=true,gps=true))
+        runCurrent();fake.requests.clear()
+        controller.openPhotoFolder(photo("trip/target.jpg"));runCurrent()
+        val result=controller.state.value
+        assertEquals(PhotoQuery(path="trip"),result.query)
+        assertEquals(1,result.tab)
+        assertEquals(3,result.mediaPages.firstPage)
+        assertEquals(1,result.folderPages.firstPage)
+        assertEquals("photo:trip/target.jpg",result.scrollToKey)
+        assertNull(result.selected)
+        assertEquals(listOf(1,3),fake.requests.map {it.second})
+        controller.close()
+    }
+    @Test fun oldFolderResponseCannotReplaceNewNavigation()=runTest {
+        val fake=Fake().apply {positionHandler={path ->withContext(NonCancellable) {delay(100);PhotoFolderPosition(path,"trip",1)}}}
+        val controller=PhotosController(this,fake,session.copy(folderPosition=true));runCurrent()
+        controller.openPhotoFolder(photo("trip/target.jpg"));runCurrent()
+        controller.open(PhotoQuery(path="new"));advanceUntilIdle()
+        assertEquals("new",controller.state.value.query.path)
+        controller.close()
+    }
+    @Test fun folderLinkRejectsChangedPageAndLegacyServers()=runTest {
+        val fake=Fake()
+        val controller=PhotosController(this,fake,session.copy(folderPosition=true));runCurrent()
+        controller.openPhotoFolder(photo("trip/target.jpg"));runCurrent()
+        assertNotNull(controller.state.value.error)
+        assertEquals(PhotoQuery(recursive=true),controller.state.value.query)
+        controller.close()
+        val legacy=PhotosController(this,fake,session);runCurrent();fake.requests.clear()
+        legacy.openPhotoFolder(photo("trip/target.jpg"));runCurrent()
+        assertTrue(fake.requests.isEmpty());legacy.close()
+    }
     @Test fun folderPeopleActionSurvivesReloadButDoesNotLeakIntoAnotherFolder() = runTest {
         val fake=Fake().apply {handler={q,p,_ -> page(q,p,emptyList(),false).copy(peoplePath=".people/folders/holiday")}}
         val controller=PhotosController(this,fake,session,initialQuery=PhotoQuery(path="holiday"))
@@ -91,6 +125,8 @@ class PhotosControllerTest {
     private fun page(query: PhotoQuery, page: Int=1, media: List<Photo> = emptyList(), next: Boolean=false) =
         PhotoPage(query.path,"",page,media.size,next,0,false,false,media,emptyList(),emptyList())
     private inner class Fake : PhotosService {
+        var positionHandler: suspend (String) -> PhotoFolderPosition = {PhotoFolderPosition(it,it.substringBeforeLast('/',""),3)}
+        override suspend fun locatePhoto(path: String)=positionHandler(path)
         var dateHandler: suspend (String) -> PhotoDatePosition = { PhotoDatePosition("target", it, 10) }
         var handler: suspend (PhotoQuery,Int,String) -> PhotoPage = {q,p,_ -> page(q,p)}
         var blogHandler: suspend (String)->PhotoBlog = {path -> PhotoBlog(path,path,null,"2026-09-09T10:00:00Z","Text","<p>Text</p>")}

@@ -940,6 +940,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#bildgruppen-und-gezielter-ordnersprung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bildgruppen und gezielter Ordnersprung
+      </span>
+    </span>
+  </a>
+
+</li>
+
     </ul>
   
 </nav>
@@ -1302,6 +1313,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#bildgruppen-und-gezielter-ordnersprung" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Bildgruppen und gezielter Ordnersprung
+      </span>
+    </span>
+  </a>
+
+</li>
+
     </ul>
   
 </nav>
@@ -1323,7 +1345,7 @@
 <h1 id="android-app-technik-entwicklung">Android-App – Technik &amp; Entwicklung<a class="headerlink" href="#android-app-technik-entwicklung" title="Permanent link">&para;</a></h1>
 <p>Diese Referenz richtet sich an Betreiber und Entwickler. Die
 <a href="android.html">Android-Anleitung</a> erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App <strong>0.22.4</strong> (<code>versionCode 48</code>), BearStack <strong>1.14.0</strong>.</p>
+bis zur Personenverwaltung. Stand: App <strong>0.23.0</strong> (<code>versionCode 49</code>), BearStack <strong>1.15.0</strong>.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
 <p>Öffne <code>apps/android/</code> in Android Studio als eigenes Projekt. Benötigt werden JDK 17
 oder 21 und das Android-SDK mit Plattform 37. Gradle Wrapper, Android Gradle Plugin
@@ -1773,6 +1795,23 @@ Schreibzugriff und dauerhafte Aktionsquittungen. Dadurch bleiben ausstehende
 Änderungen über Bereichswechsel hinweg gesperrt und wiederholbar. Der abgeschlossene
 <a href="https://github.com/ringelbaer/BearStack-DMS/blob/main/apps/android/archive/PHOTOS_PLAN_2026-09-09.md">Foto-Abnahmeplan vom September 2026</a>
 ist ein historisches Dokument und keine aktuelle technische Referenz.</p>
+<h2 id="bildgruppen-und-gezielter-ordnersprung">Bildgruppen und gezielter Ordnersprung<a class="headerlink" href="#bildgruppen-und-gezielter-ordnersprung" title="Permanent link">&para;</a></h2>
+<p>Ab App 0.23.0 wertet die Sitzung <code>image_groups</code> und <code>folder_position</code> aus;
+fehlende Felder deaktivieren die jeweiligen Aktionen. Gruppen verwenden die
+bestehenden JSON-Antworten von <code>/photos/image-groups</code> und <code>/photos/image-groups/{id}</code>
+mit Formular-POST, Basic-Authentifizierung, aktuellem Revisionswert und
+<code>Accept: application/json</code>. Der konfigurierte Reverse-Proxy-Präfix bleibt erhalten.
+Die Serverberechtigung <code>photos.edit</code> gilt weiterhin für alle Schreibaktionen.
+Die Auswahl ist auf 100 Medien beschränkt; Gruppen dürfen serverseitig 500 Mitglieder haben.</p>
+<p><code>GET /api/photos/v1/browse/position?path=…</code> liefert die Seite des sichtbaren
+Mediums in seinem physischen Ordner (<code>descending_date</code>, 96 Medien pro Seite).
+Die Ermittlung verwendet eine SQLite-Lesetransaktion und eine indizierte Zählung
+im Zielordner. Es werden keine vorhergehenden Seiten oder gesamten Medienlisten
+an Android übertragen. Vor und nach der Abfrage wird die Dateizugriffsberechtigung
+geprüft; geschützte und in Gruppen ausgeblendete Medien werden nicht lokalisiert.
+Android validiert das Ziel anhand der geladenen Seite und verwirft überholte
+Antworten nach Navigation. <code>display_path</code> und <code>folder_name</code> stammen aus der
+zentralen Serverformatierung; technische Pfade bleiben Navigationsschlüssel.</p>
 
 
 
@@ -1821,7 +1860,7 @@ ist ein historisches Dokument und keine aktuelle technische Referenz.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.14.0 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.15.0 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

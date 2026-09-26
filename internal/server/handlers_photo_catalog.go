@@ -22,6 +22,7 @@ type photoCatalogMedia struct {
 	FaceID          int64                   `json:"face_id,omitempty"`
 	Path            string                  `json:"path"`
 	Name            string                  `json:"name"`
+	DisplayPath     string                  `json:"display_path"`
 	FolderName      string                  `json:"folder_name"`
 	Type            string                  `json:"type"`
 	MIME            string                  `json:"mime"`
@@ -43,7 +44,7 @@ type photoCatalogMedia struct {
 }
 
 func catalogMedia(media photos.Media) photoCatalogMedia {
-	return photoCatalogMedia{ImageGroupID: media.ImageGroupID, EntityID: media.EntityID, ContentRevision: media.ContentRevision, NeedsReview: media.NeedsReview, FaceID: media.FaceID, Path: media.Path, Name: media.Name, FolderName: photos.MediaFolderName(media.Path), Type: media.Type, MIME: media.MIMEType,
+	return photoCatalogMedia{ImageGroupID: media.ImageGroupID, EntityID: media.EntityID, ContentRevision: media.ContentRevision, NeedsReview: media.NeedsReview, FaceID: media.FaceID, Path: media.Path, Name: media.Name, DisplayPath: photos.MediaDisplayPath(media.Path), FolderName: photos.MediaFolderName(media.Path), Type: media.Type, MIME: media.MIMEType,
 		Version: strconv.FormatInt(media.ModTime.UnixNano(), 10) + ":" + strconv.FormatInt(media.ContentRevision, 10), Modified: media.ModTime, Captured: media.CapturedAt,
 		Bytes: media.SizeBytes, Width: media.Width, Height: media.Height, Camera: media.Camera, Lens: media.Lens,
 		Latitude: media.Latitude, Longitude: media.Longitude, Rating: media.Rating, Tags: media.Tags,
@@ -121,6 +122,7 @@ func (s *Server) handlePhotoCatalogSession(w http.ResponseWriter, r *http.Reques
 		"can_manage_people": s.requestHasCapabilities(r, authCapPhotosEdit),
 		"people_count_sort": true,
 		"frame_random_sort": true,
+		"image_groups":      true, "folder_position": true,
 		"settings": map[string]int{"thumbnail_size": settings.ThumbnailSize, "folder_thumbnail_size": settings.FolderThumbnailSize,
 			"preview_size": settings.PreviewSize, "large_preview_size": settings.LargePreviewSize,
 			"slideshow_seconds": settings.SlideshowSeconds, "frame_seconds": settings.FrameSeconds},

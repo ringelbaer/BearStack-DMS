@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.15.0 / Android 0.23.0 (49)
+
+- Android: BearStack-Bilder über die vorhandene Mehrfachauswahl gruppieren, Hauptbild wählen und bestehende Gruppen erweitern. Infopanel mit Gruppenvorschauen, Hauptbildwechsel, Entfernen und Auflösen. Gerätefotos bleiben ausgeschlossen; Serverberechtigungen und Revisionsprüfungen gelten weiterhin.
+- Infopanel mit direktem Sprung zum Bild im Galerieordner aus Fotostream, Personenordner und Kartenansichten. Neue Positionsabfrage mit indizierter Zählung, begrenzten Seitenabrufen, Sichtbarkeitsprüfung und Schutz vor überholten Antworten.
+- Neue optionale Sitzungsfähigkeiten und zentral formatierte Anzeigepfade. MINOR für Server und App, ohne Datenmigration; Originalfotos und Sidecars bleiben schreibgeschützt. README, Android-Anleitung, technische Referenz, Website und OpenAPI aktualisiert.
+- Geprüft: 126 Android-JVM-Tests, 28 Emulator-Tests einschließlich Galerie und Gerätefotos, Debug-Build und Lint, vollständige Foto-/Server-Tests, neuer OpenAPI-Vertrag und Go-Vet. Lokaler Benchmark mit 100.000 Fotos: Ordnerposition etwa 20 ms, rund 2,8 KB Allokationen pro Abfrage. Website erfolgreich gebaut.
+
 ### Website und Dokumentation
 
 - Startseite um lokale Gesichtserkennung, Personenverwaltung mit Familienbeziehungen und die Android-App ergänzt; direkte Links führen zu Bedienung, Einrichtung und APK-Build. Fehlendes Sprungziel für „Zum Inhalt“ ergänzt.

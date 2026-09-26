@@ -7,7 +7,7 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.22.4** (`versionCode 48`), BearStack **1.14.0**.
+bis zur Personenverwaltung. Stand: App **0.23.0** (`versionCode 49`), BearStack **1.15.0**.
 
 ## Bauen und installieren
 
@@ -455,3 +455,24 @@ Schreibzugriff und dauerhafte Aktionsquittungen. Dadurch bleiben ausstehende
 Änderungen über Bereichswechsel hinweg gesperrt und wiederholbar. Der abgeschlossene
 [Foto-Abnahmeplan vom September 2026](https://github.com/ringelbaer/BearStack-DMS/blob/main/apps/android/archive/PHOTOS_PLAN_2026-09-09.md)
 ist ein historisches Dokument und keine aktuelle technische Referenz.
+
+
+## Bildgruppen und gezielter Ordnersprung
+
+Ab App 0.23.0 wertet die Sitzung `image_groups` und `folder_position` aus;
+fehlende Felder deaktivieren die jeweiligen Aktionen. Gruppen verwenden die
+bestehenden JSON-Antworten von `/photos/image-groups` und `/photos/image-groups/{id}`
+mit Formular-POST, Basic-Authentifizierung, aktuellem Revisionswert und
+`Accept: application/json`. Der konfigurierte Reverse-Proxy-Präfix bleibt erhalten.
+Die Serverberechtigung `photos.edit` gilt weiterhin für alle Schreibaktionen.
+Die Auswahl ist auf 100 Medien beschränkt; Gruppen dürfen serverseitig 500 Mitglieder haben.
+
+`GET /api/photos/v1/browse/position?path=…` liefert die Seite des sichtbaren
+Mediums in seinem physischen Ordner (`descending_date`, 96 Medien pro Seite).
+Die Ermittlung verwendet eine SQLite-Lesetransaktion und eine indizierte Zählung
+im Zielordner. Es werden keine vorhergehenden Seiten oder gesamten Medienlisten
+an Android übertragen. Vor und nach der Abfrage wird die Dateizugriffsberechtigung
+geprüft; geschützte und in Gruppen ausgeblendete Medien werden nicht lokalisiert.
+Android validiert das Ziel anhand der geladenen Seite und verwirft überholte
+Antworten nach Navigation. `display_path` und `folder_name` stammen aus der
+zentralen Serverformatierung; technische Pfade bleiben Navigationsschlüssel.

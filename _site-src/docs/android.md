@@ -9,7 +9,7 @@ Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.
 
-Diese Anleitung beschreibt **Android-App 0.22.4**. Beginne mit den
+Diese Anleitung beschreibt **Android-App 0.23.0**. Beginne mit den
 [ersten Schritten](#erste-schritte); die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die [technische Referenz](android-technik.md).
@@ -169,6 +169,29 @@ zu springen. Nach kurzer Ruhe verschwindet er wieder. Das gilt für Ordner,
 Suchergebnisse, Karten-Treffer und **Dieses Gerät**. Im unbegrenzten Fotostream
 unter **Fotos** wird er nicht angezeigt. TalkBack kann die Position am Griff
 ebenfalls verändern.
+
+### Bildgruppen und Galerieordner
+
+Ab **App 0.23.0 / BearStack 1.15.0** kannst du BearStack-Bilder gruppieren.
+Markiere zwei bis 100 Bilder per Mehrfachauswahl und wähle **Gruppieren**.
+Im Dialog bestimmst du das Hauptbild; nur dieses erscheint anschließend in den
+Galerielisten. Markierst du ein bestehendes Gruppenbild und ungruppierte Bilder,
+werden die neuen Bilder zur Gruppe hinzugefügt. Zwei bestehende Gruppen lassen
+sich damit nicht zusammenführen. Videos, Audio und Gerätefotos sind ausgeschlossen.
+
+**Informationen → Bildgruppe** zeigt die Mitglieder mit Vorschauen. Du kannst
+Bilder öffnen, ein anderes Hauptbild wählen, ein Mitglied entfernen oder die
+Gruppe auflösen. Entfernen betrifft ausschließlich die Gruppenzuordnung.
+Originaldateien und Sidecars bleiben unverändert. Änderungen benötigen `photos.edit`;
+Leser dürfen Gruppen ansehen. Bei Konflikten lade die Gruppe neu. Schlägt das
+Speichern fehl, prüfe nach dem Neuladen den aktuellen Stand vor einem neuen Versuch.
+
+**Informationen → Im Galerieordner anzeigen** wechselt vom Fotostream, einem
+Personenordner oder der Karte zum physischen Ordner und scrollt zum Bild.
+Suchfilter werden zurückgesetzt; der Ordner wird nach Datum absteigend geöffnet.
+Die App lädt gezielt die Zielseite und die erste Ordnerseite, auch bei großen
+Sammlungen. Ist das Bild inzwischen ausgeblendet oder nicht mehr verfügbar,
+erscheint ein Fehler. Ältere Server und Gerätefotos zeigen diesen Link nicht.
 
 ### Mehrfachauswahl
 
@@ -631,6 +654,7 @@ Server; mit älteren Versionen können einzelne Einträge fehlen.
 | Hinweis auf geänderte Gesichtsquellen | 0.65.0 |
 | Formatierter Serverordnername im Bilderrahmen | 0.68.0 |
 | Zufällige Reihenfolge im Bilderrahmen für Serverfotos | 0.69.0 |
+| Bildgruppen und direkter Ordnersprung (App ab 0.23.0) | 1.15.0 |
 
 Build, Signierung, API, Datenhaltung und Tests beschreibt
 [Android-App – Technik & Entwicklung](android-technik.md). Die Versionshistorie

@@ -102,6 +102,36 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
         requireMessage(page.page==number && page.media.size<=96 && page.folders.size<=24 && page.blogs.size<=20 &&
             page.folders.all {it.previews.size<=if(it.virtual) 8 else 4},de.bearstack.people.R.string.error_response_invalid)
     }
+    fun openPhotoFolder(photo: Photo) {
+        if(!session.folderPosition || service is DevicePhotosService) return
+        generation++
+        request?.cancel(); dateRequest?.cancel(); detail?.cancel()
+        additional.values.forEach {it.cancel()}; additional.clear()
+        val expected=generation
+        mutable.update {it.copy(loading=true,error=null,selected=null,loadingSections=emptySet())}
+        request=scope.launch {
+            try {
+                val target=service.locatePhoto(photo.path)
+                val query=PhotoQuery(path=target.directory)
+                val first=service.browse(query,1)
+                validate(first,1)
+                val page=if(target.page==1) first else service.browse(query,target.page,"media")
+                validate(page,target.page)
+                requireMessage(page.path==target.directory && page.media.any {it.path==target.path},de.bearstack.people.R.string.photos_folder_changed)
+                if(generation!=expected) return@launch
+                rememberNames(page)
+                frameReturn=null;service.clearPlaybackOrder();visibleKeys=emptySet()
+                val key="photo:${target.path}"
+                gridPosition=GalleryPosition(key)
+                mutable.value=PhotosState(query=query,tab=1,name=first.name,parent=first.parent,peoplePath=first.peoplePath,
+                    mediaPages=PhotoPages.media().add(target.page,page.media,page.hasNext),
+                    folderPages=PhotoPages.folders().add(1,first.folders,first.folderHasNext),
+                    blogPages=PhotoPages.blogs().add(1,first.blogs,first.blogHasNext),
+                    total=page.total,folderTotal=first.folderTotal,scrollToKey=key)
+            } catch(e: CancellationException) {throw e}
+            catch(e: Exception) {if(generation==expected) mutable.update {it.copy(loading=false,error=failureText(e))}}
+        }
+    }
     fun jumpToDate(date: java.time.LocalDate) {
         val current = state.value
         if(current.loading || current.tab != 0 || current.frame || current.selected != null ||

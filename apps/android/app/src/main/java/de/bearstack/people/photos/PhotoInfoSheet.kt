@@ -32,7 +32,7 @@ internal fun photoTimeLabel(date: String, locale: Locale): String? = runCatching
 }.getOrNull()
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable internal fun PhotoInfoSheet(photo: Photo, service: PhotosService, onClose: () -> Unit) {
+@Composable internal fun PhotoInfoSheet(photo: Photo, service: PhotosService, controller: PhotosController? = null, images: coil.ImageLoader? = null, onFolder: ((Photo) -> Unit)? = null, onClose: () -> Unit) {
     val text=uiStrings()
     val context=LocalContext.current
     val configuration=LocalResources.current.configuration
@@ -51,6 +51,8 @@ internal fun photoTimeLabel(date: String, locale: Locale): String? = runCatching
         catch(e: Exception) {error=failureText(e)}
     }
     val item=detail ?: photo
+    var groupOpen by remember(photo.path) {mutableStateOf(false)}
+    if(groupOpen && controller!=null) ImageGroupDialog(controller,item.imageGroupId,images,onFolder,onClose={groupOpen=false},onChanged={groupOpen=false;onClose();controller.open(controller.state.value.query)})
     ModalBottomSheet(onDismissRequest=onClose,sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true)) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal=24.dp).padding(bottom=32.dp),
             verticalArrangement=Arrangement.spacedBy(20.dp)) {
@@ -71,7 +73,11 @@ internal fun photoTimeLabel(date: String, locale: Locale): String? = runCatching
                 Text(item.name,style=MaterialTheme.typography.titleMedium)
                 val bytes=Formatter.formatFileSize(formatContext,item.bytes)
                 Text(if(item.width>0 && item.height>0) stringResource(R.string.photos_details,item.width,item.height,bytes) else bytes)
-                Text(item.path,style=MaterialTheme.typography.bodySmall)
+                if(service is DevicePhotosService) Text(item.path,style=MaterialTheme.typography.bodySmall)
+                else if(item.displayPath.isNotBlank()) Text(item.displayPath,style=MaterialTheme.typography.bodySmall)
+                if(onFolder!=null) TextButton(onClick={onFolder(item)}) {Text(stringResource(R.string.photos_open_folder))}
+                if(controller?.session?.imageGroups==true && item.imageGroupId>0)
+                    TextButton(onClick={groupOpen=true}) {Text(stringResource(R.string.photos_group_view))}
             }
             if(item.camera.isNotBlank() || item.lens.isNotBlank()) InfoSection(stringResource(R.string.photos_camera)) {
                 Text(listOf(item.camera,item.lens).filter(String::isNotBlank).joinToString("\n"))

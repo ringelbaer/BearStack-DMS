@@ -102,7 +102,7 @@ internal fun FolderMap(controller: PhotosController, images: ImageLoader, query:
             }
         }
         if(layerSheet) MapTrackSheet(tracks,photoRoute) {layerSheet=false}
-        selected?.let {photo ->PhotoViewer(controller,images,listOf(photo),photo.path,onClose={selected=null},standalone=true)}
+        selected?.let {photo ->PhotoViewer(controller,images,listOf(photo),photo.path,onClose={selected=null},standalone=true,onOpenFolder={target ->selected=null;onClose();controller.openPhotoFolder(target)})}
         cluster?.let {marker ->key(marker) {MapPhotoSelection(controller,images,query,marker) {cluster=null}}}
     }
 }

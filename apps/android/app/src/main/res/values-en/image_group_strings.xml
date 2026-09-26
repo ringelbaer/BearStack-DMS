@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photos_open_folder">Show in gallery folder</string>
+    <string name="photos_group">Group</string>
+    <string name="photos_group_add">Add to image group</string>
+    <string name="photos_group_add_description">The ungrouped images will be added to the selected group. Its primary image stays unchanged.</string>
+    <string name="photos_group_choose_primary">Choose a primary image. Only the primary appears in the gallery. Original files stay unchanged.</string>
+    <string name="photos_group_view">Image group</string>
+    <string name="photos_group_save">Save</string>
+    <string name="photos_group_primary">Primary image</string>
+    <string name="photos_group_make_primary">Use as primary</string>
+    <string name="photos_group_remove">Remove from group</string>
+    <string name="photos_group_dissolve">Dissolve group</string>
+    <string name="photos_group_missing">Original currently unavailable</string>
+    <string name="photos_group_change">Change image group?</string>
+    <string name="photos_group_conflict">The image group changed. Reload and review your selection.</string>
+    <string name="photos_folder_changed">The photo library changed. Please open the gallery folder again.</string>
+</resources>

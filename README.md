@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.14.0** · Android-App: **0.22.4**.
+Aktuelle Version: **1.15.0** · Android-App: **0.23.0**.
+
+**Android 0.23.0 / BearStack 1.15.0:** BearStack-Bilder per Mehrfachauswahl gruppieren oder einer bestehenden Bildgruppe hinzufügen. Das Infopanel öffnet die Bildgruppe und springt direkt zum Bild im Galerieordner, auch aus Fotostream und Personenordnern. Gerätefotos sind von der Gruppierung ausgenommen; Originale bleiben schreibgeschützt.
 
 Die [Website](https://ringelbaer.github.io/BearStack-DMS/) stellt Dokumenten- und Fotoverwaltung, lokale Gesichtserkennung, Personenverwaltung und die Android-App vor und führt zu den jeweiligen Anleitungen.
 

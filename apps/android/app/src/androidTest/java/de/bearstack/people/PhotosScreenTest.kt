@@ -30,6 +30,19 @@ import java.util.Locale
 
 class PhotosScreenTest {
     @get:Rule val compose=createComposeRule()
+    @Test fun editorsCanOpenGroupingFromTheSelectionToolbar()=screen(Locale.ENGLISH,groups=true,editing=true) {_,_ ->
+        compose.onNodeWithContentDescription("first.jpg").performTouchInput {longClick()}
+        compose.onNodeWithContentDescription("second.jpg").performClick()
+        compose.onNodeWithText("Group").assertIsDisplayed().assertIsEnabled().performClick()
+        compose.onNodeWithText("Choose a primary image. Only the primary appears in the gallery. Original files stay unchanged.").assertIsDisplayed()
+        compose.onNodeWithText("Cancel").performClick()
+        compose.onNodeWithText("2 / 100 selected").assertIsDisplayed()
+    }
+    @Test fun readersNeverSeeGroupingInTheSelectionToolbar()=screen(Locale.ENGLISH,groups=true) {_,_ ->
+        compose.onNodeWithContentDescription("first.jpg").performTouchInput {longClick()}
+        compose.onNodeWithContentDescription("second.jpg").performClick()
+        compose.onNodeWithText("Group").assertDoesNotExist()
+    }
     @Test fun longPressStartsSelectionAndShortTapsToggleWithoutOpeningViewer() = screen(Locale.ENGLISH) {controller,_ ->
         compose.onNodeWithContentDescription("first.jpg").performTouchInput {longClick()}
         compose.onNodeWithText("1 / 100 selected").assertIsDisplayed()
@@ -51,7 +64,7 @@ class PhotosScreenTest {
         compose.onNodeWithContentDescription("Save selection").assertIsEnabled()
         compose.onNodeWithContentDescription("Delete").assertDoesNotExist()
     }
-    private fun screen(locale: Locale, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, directoryPeople: Boolean = false, peopleCountSort: Boolean = true, frameRandomSort: Boolean = true, photoCount: Int = 2, fontScale: Float = 1f, beforeBrowse: suspend (PhotoQuery)->Unit = {}, test: (PhotosController,PhotosService)->Unit) {
+    private fun screen(locale: Locale, groups: Boolean = false, editing: Boolean = false, showMapSelection: Boolean = false, retryEmptyBlog: Boolean = false, retryInfo: Boolean = false, peopleFolders: Boolean = false, directoryPeople: Boolean = false, peopleCountSort: Boolean = true, frameRandomSort: Boolean = true, photoCount: Int = 2, fontScale: Float = 1f, beforeBrowse: suspend (PhotoQuery)->Unit = {}, test: (PhotosController,PhotosService)->Unit) {
         val app=InstrumentationRegistry.getInstrumentation().targetContext
         val context=app.createConfigurationContext(Configuration(app.resources.configuration).apply {setLocale(locale)})
         val file=File(app.cacheDir,"gallery-test.jpg")
@@ -64,7 +77,7 @@ class PhotosScreenTest {
         val api=object:PhotosService {
             var blogAttempts=0
             var infoAttempts=0
-            override suspend fun session()=PhotoSession("gallery-test",false,240,240,1280,2048,5,8,peopleCountSort,frameRandomSort)
+            override suspend fun session()=PhotoSession("gallery-test",editing,240,240,1280,2048,5,8,peopleCountSort,frameRandomSort,imageGroups=groups)
             override suspend fun browse(query: PhotoQuery,page: Int,section: String): PhotoPage {
                 beforeBrowse(query)
                 if(directoryPeople && query.path.startsWith(".people/f-")) {
@@ -107,7 +120,7 @@ class PhotosScreenTest {
             override fun original(photo: Photo)=file.toURI().toString()
         }
         lateinit var controller:PhotosController
-        compose.runOnUiThread {controller=PhotosController(owner,api,PhotoSession("gallery-test",false,240,240,1280,2048,5,8,peopleCountSort,frameRandomSort))}
+        compose.runOnUiThread {controller=PhotosController(owner,api,PhotoSession("gallery-test",editing,240,240,1280,2048,5,8,peopleCountSort,frameRandomSort,imageGroups=groups))}
         try {
             compose.setContent {
                 val registry = checkNotNull(LocalActivityResultRegistryOwner.current)

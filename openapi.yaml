@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 1.14.0
+  version: 1.15.0
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -1471,6 +1471,66 @@ paths:
           description: Photo index not ready (map_index_not_ready). Retry-After is 10 seconds.
         '500':
           description: Internal error.
+  /api/photos/v1/browse/position:
+    get:
+      tags: [Photos]
+      operationId: locatePhotoCatalogFolderPosition
+      summary: Locate a visible photo in its physical gallery folder
+      description: >-
+        Since 1.15.0; requires photos.read and folder_position session capability.
+        Returns the target page for nonrecursive, unfiltered browse with
+        sort=descending_date and 96 media per page. Admin-only and grouped hidden
+        media are excluded, including for administrators. Target key and rank are
+        read in one transaction using the folder index; no full media list is loaded.
+        Filesystem access is checked before and after lookup. Clients must verify
+        that the requested media still appears on the returned page after concurrent
+        library changes. Responses are private, no-store.
+      parameters:
+      - name: path
+        in: query
+        required: true
+        schema: {type: string}
+      responses:
+        '200':
+          description: Target page in the physical folder.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [path, directory, page]
+                properties:
+                  path: {type: string}
+                  directory: {type: string, description: Technical folder path; empty for the root.}
+                  page: {type: integer, minimum: 1}
+        '400':
+          description: Invalid media path.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403':
+          description: Missing photos.read or protected target.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                - $ref: '#/components/schemas/PhotoCatalogError'
+                - $ref: '#/components/schemas/Error'
+        '404':
+          description: Missing or grouped hidden target.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '500':
+          description: Internal catalog error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoCatalogError'
+        '503':
+          description: Catalog index is not ready; Retry-After is 10 seconds.
   /api/photos/v1/browse/date:
     get:
       tags: [Photos]
@@ -5549,6 +5609,9 @@ components:
           type: string
         name:
           type: string
+        display_path:
+          type: string
+          description: Since 1.15.0, full display path formatted by photos.MediaDisplayPath; clients must not derive it from path.
         folder_name:
           type: string
           description: Containing folder label formatted by the shared gallery rules (since 0.68.0). Removes date prefixes and replaces underscores; root media use Fotos. Clients must not derive labels from technical paths. Available in browse, map media and media info without extra requests.
@@ -5690,6 +5753,14 @@ components:
           type: boolean
           default: false
           description: Supports ascending_count/descending_count for browse people directories; absent on older servers.
+        image_groups:
+          type: boolean
+          default: false
+          description: Since 1.15.0, advertises image group JSON endpoints for native clients. Writes additionally require photos.edit (can_manage_people).
+        folder_position:
+          type: boolean
+          default: false
+          description: Since 1.15.0, supports browse/position for direct folder navigation.
         frame_random_sort:
           type: boolean
           default: false

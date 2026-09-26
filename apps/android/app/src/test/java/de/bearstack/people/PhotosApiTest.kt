@@ -40,6 +40,11 @@ class PhotosApiTest {
             val api=PhotosApi(client,"https://example.test/")
             assertFalse(api.session().peopleCountSort)
             assertFalse(api.session().frameRandomSort)
+            assertFalse(api.session().imageGroups)
+            assertFalse(api.session().folderPosition)
+            capability="\"image_groups\":true,\"folder_position\":true,"
+            assertTrue(api.session().imageGroups)
+            assertTrue(api.session().folderPosition)
             capability="\"people_count_sort\":true,"
             assertTrue(api.session().peopleCountSort)
             capability="\"frame_random_sort\":true,"

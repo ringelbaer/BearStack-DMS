@@ -52,7 +52,8 @@ import androidx.compose.ui.text.style.TextOverflow
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, photos: List<Photo>, path: String,
-    onClose: () -> Unit = controller::closeViewer, standalone: Boolean = false) {
+    onClose: () -> Unit = controller::closeViewer, standalone: Boolean = false,
+    onOpenFolder: (Photo) -> Unit = controller::openPhotoFolder) {
     val text=uiStrings()
     if(photos.isEmpty()) return
     val catalog by controller.state.collectAsStateWithLifecycle()
@@ -195,7 +196,10 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                 }
                 if(settingsOpen) PlaybackSettingsDialog(settings,seconds,frame,controller.session.frameRandomSort,
                     onSave=controller::savePlaybackSettings,onDismiss={settingsOpen=false})
-                if(infoOpen) PhotoInfoSheet(current,controller.service) {infoOpen=false}
+                if(infoOpen) PhotoInfoSheet(current,controller.service,controller,images,
+                    onFolder=if(controller.session.folderPosition && controller.service !is DevicePhotosService) ({photo ->
+                        infoOpen=false;onOpenFolder(photo)
+                    }) else null) {infoOpen=false}
             }
         }
     }

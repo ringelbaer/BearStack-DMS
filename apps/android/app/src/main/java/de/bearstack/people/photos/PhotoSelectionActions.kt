@@ -68,6 +68,8 @@ internal const val MAX_PHOTO_SELECTION = 100
                         Icon(painterResource(R.drawable.ic_download), stringResource(R.string.photos_selection_save))
                     }
                 }
+                if(controller.session.imageGroups && controller.session.canManagePeople && controller.service !is DevicePhotosService)
+                    PhotoGroupSelectionAction(controller,photos)
                 if(controller.service is DevicePhotosService)
                     DevicePhotoDeleteAction(controller, photos, controller::clearSelection)
             }

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="photos_open_folder">Im Galerieordner anzeigen</string>
+    <string name="photos_group">Gruppieren</string>
+    <string name="photos_group_add">Zur Bildgruppe hinzufügen</string>
+    <string name="photos_group_add_description">Die ungruppierten Bilder werden der ausgewählten Bildgruppe hinzugefügt. Das Hauptbild bleibt erhalten.</string>
+    <string name="photos_group_choose_primary">Hauptbild wählen. In der Galerie wird nur das Hauptbild angezeigt. Originaldateien bleiben unverändert.</string>
+    <string name="photos_group_view">Bildgruppe</string>
+    <string name="photos_group_save">Speichern</string>
+    <string name="photos_group_primary">Hauptbild</string>
+    <string name="photos_group_make_primary">Als Hauptbild verwenden</string>
+    <string name="photos_group_remove">Aus Gruppe entfernen</string>
+    <string name="photos_group_dissolve">Gruppe auflösen</string>
+    <string name="photos_group_missing">Original derzeit nicht verfügbar</string>
+    <string name="photos_group_change">Bildgruppe ändern?</string>
+    <string name="photos_group_conflict">Die Bildgruppe wurde geändert. Bitte neu laden und die Auswahl prüfen.</string>
+    <string name="photos_folder_changed">Der Fotobestand hat sich geändert. Bitte öffne den Galerieordner erneut.</string>
+</resources>

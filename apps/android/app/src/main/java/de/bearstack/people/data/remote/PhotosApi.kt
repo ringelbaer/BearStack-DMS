@@ -14,12 +14,12 @@ import java.util.concurrent.TimeUnit
 data class PhotoSession(val scope: String, val canManagePeople: Boolean, val thumbnailSize: Int,
     val folderThumbnailSize: Int, val previewSize: Int, val largePreviewSize: Int,
     val slideshowSeconds: Int, val frameSeconds: Int, val peopleCountSort: Boolean = false,
-    val frameRandomSort: Boolean = false)
+    val frameRandomSort: Boolean = false, val imageGroups: Boolean = false, val folderPosition: Boolean = false)
 data class Photo(val path: String, val name: String, val type: String, val mime: String, val version: String,
     val modified: String, val captured: String?, val bytes: Long, val width: Int, val height: Int,
     val camera: String = "", val lens: String = "", val latitude: Double? = null, val longitude: Double? = null,
     val rating: Double? = null, val tags: List<String> = emptyList(), val keywords: List<String> = emptyList(),
-    val people: List<String> = emptyList(), val faceId: Long = 0, val folderName: String = "") {
+    val people: List<String> = emptyList(), val faceId: Long = 0, val folderName: String = "", val imageGroupId: Long = 0, val displayPath: String = "") {
     val date: String get() = captured ?: modified
 }
 data class PhotoFolder(val path: String, val name: String, val date: String?, val count: Int,
@@ -45,7 +45,16 @@ data class PhotoTrackGeometry(val path: String,val name: String,val bounds: Phot
     val segments: List<List<PhotoMapPoint>>,val totalPoints: Int,val simplified: Boolean,val omittedSegments: Int)
 data class PhotoRouteData(val geometry: PhotoTrackGeometry,val totalMedia: Int,val radiusMeters: Int)
 
+data class PhotoFolderPosition(val path: String, val directory: String, val page: Int)
+data class ImageGroupMember(val id: Long, val path: String, val displayPath: String, val primary: Boolean, val missing: Boolean)
+data class ImageGroup(val id: Long, val revision: Long, val members: List<ImageGroupMember>)
+
 interface PhotosService {
+    suspend fun locatePhoto(path: String): PhotoFolderPosition = throw UnsupportedOperationException()
+    suspend fun imageGroup(id: Long): ImageGroup = throw UnsupportedOperationException()
+    suspend fun createImageGroup(paths: List<String>, primary: String): Long = throw UnsupportedOperationException()
+    suspend fun updateImageGroup(group: ImageGroup, action: String, entity: Long = 0, paths: List<String> = emptyList()): Boolean = throw UnsupportedOperationException()
+
     fun clearPlaybackOrder() {}
     suspend fun session(): PhotoSession
     suspend fun browse(query: PhotoQuery, page: Int = 1, section: String = ""): PhotoPage
@@ -93,7 +102,7 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
         return PhotoSession(scope,o.getBoolean("can_manage_people"),settings.getInt("thumbnail_size").coerceIn(80,640),
             settings.getInt("folder_thumbnail_size").coerceIn(80,640),settings.getInt("preview_size").coerceIn(640,2048),
             settings.getInt("large_preview_size").coerceIn(640,4096),settings.getInt("slideshow_seconds").coerceIn(3,300),
-            settings.getInt("frame_seconds").coerceIn(3,300),o.optBoolean("people_count_sort",false),o.optBoolean("frame_random_sort",false))
+            settings.getInt("frame_seconds").coerceIn(3,300),o.optBoolean("people_count_sort",false),o.optBoolean("frame_random_sort",false),o.optBoolean("image_groups"),o.optBoolean("folder_position"))
     }
     override suspend fun browse(query: PhotoQuery, page: Int, section: String): PhotoPage {
         val o = json("browse",mapOf("people" to "1","path" to query.path,"q" to query.query,"page" to "$page","section" to section,
@@ -106,6 +115,43 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
                     folder.getInt("media_count"),folder.getBoolean("approximate"),folder.getInt("folder_count"),
                     folder.getJSONArray("previews").objects(::photo),folder.optBoolean("virtual"))
             },o.getJSONArray("blogs").objects(::post),o.optString("name"),o.optString("people_path"))
+    }
+    override suspend fun locatePhoto(path: String): PhotoFolderPosition {
+        val o=json("browse/position",mapOf("path" to path),64*1024)
+        val target=PhotoFolderPosition(o.getString("path"),o.getString("directory"),o.getInt("page"))
+        requireMessage(target.path==path && target.directory==path.substringBeforeLast('/',"") && target.page in 1..1_000_000,R.string.error_response_invalid)
+        return target
+    }
+    private suspend fun groupJson(id: Long? = null, body: okhttp3.FormBody? = null): JSONObject {
+        val target=base.resolve("../../../photos/image-groups"+(id?.let {"/$it"} ?: ""))!!
+        return client.json(Request.Builder().url(target).header("Accept","application/json").apply {body?.let {post(it)}}.build(),2*1024*1024) {status,_ ->
+            when(status) {
+                401 -> UiText(R.string.error_auth)
+                403 -> UiText(R.string.error_photos_permission)
+                409 -> UiText(R.string.photos_group_conflict)
+                else -> UiText(R.string.error_photos_server,status)
+            }
+        }
+    }
+    override suspend fun imageGroup(id: Long): ImageGroup {
+        require(id>0)
+        val o=groupJson(id)
+        val members=o.getJSONArray("members")
+        requireMessage(o.getLong("id")==id && o.getLong("revision")>0 && members.length() in 1..500,R.string.error_response_invalid)
+        return ImageGroup(id,o.getLong("revision"),members.objects {
+            ImageGroupMember(it.getLong("entity_id"),it.getString("path"),it.getString("display_path"),it.getBoolean("primary"),it.getBoolean("missing"))
+        })
+    }
+    override suspend fun createImageGroup(paths: List<String>, primary: String): Long {
+        require(paths.size in 2..100 && paths.distinct().size==paths.size && primary in paths)
+        val body=okhttp3.FormBody.Builder().add("primary",primary).apply {paths.forEach {add("ids",it)}}.build()
+        return groupJson(body=body).getLong("id")
+    }
+    override suspend fun updateImageGroup(group: ImageGroup, action: String, entity: Long, paths: List<String>): Boolean {
+        require(group.id>0 && group.revision>0 && action in setOf("primary","remove","dissolve","add"))
+        val body=okhttp3.FormBody.Builder().add("revision",group.revision.toString()).add("action",action)
+            .apply {if(entity>0) add("entity_id",entity.toString());paths.forEach {add("ids",it)}}.build()
+        return groupJson(group.id,body).getBoolean("exists")
     }
     override suspend fun info(path: String) = photo(json("media/info",mapOf("path" to path)).getJSONObject("media"))
     override suspend fun locateDate(date: String): PhotoDatePosition {
@@ -217,7 +263,7 @@ class PhotosApi(private val client: OkHttpClient, address: String) : PhotosServi
         o.optString("camera"),o.optString("lens"),o.optionalDouble("latitude"),o.optionalDouble("longitude"),
         o.optionalDouble("rating"),o.stringList("tags"),o.stringList("keywords"),
         ((o.optJSONArray("faces")?.objects {it.optString("Name")} ?: emptyList()) +
-            (o.optJSONArray("automatic_faces")?.objects {it.optString("name")} ?: emptyList())).distinct(),o.optLong("face_id"),o.optString("folder_name"))
+            (o.optJSONArray("automatic_faces")?.objects {it.optString("name")} ?: emptyList())).distinct(),o.optLong("face_id"),o.optString("folder_name"),o.optLong("image_group_id"),o.optString("display_path"))
     private fun post(o: JSONObject) = PhotoBlog(o.getString("path"),o.getString("name"),o.optionalString("date"),o.getString("modified"),o.optString("text"),o.optString("html"))
 }
 private fun JSONObject.optionalString(key: String): String? = if(isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
