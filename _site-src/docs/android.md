@@ -9,10 +9,12 @@ Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.
 
-Diese Anleitung beschreibt **Android-App 0.23.2**. Beginne mit den
+Diese Anleitung beschreibt **Android-App 0.23.3**. Beginne mit den
 [ersten Schritten](#erste-schritte); die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die [technische Referenz](android-technik.md).
+
+Android **0.23.3** behebt „Bild konnte nicht geladen werden“ beim Öffnen von Serverfotos: Großansichten und Gesichtsoriginale verwenden wieder den angemeldeten HTTP-Client mit dem bestätigten Serverzertifikat. Kleine Vorschaubilder und Großansichten funktionieren gemeinsam; ein Leeren des Bildcaches ist nicht erforderlich.
 
 ## Erste Schritte
 

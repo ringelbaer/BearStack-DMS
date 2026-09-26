@@ -976,6 +976,17 @@
 
 </li>
 
+        <li class="md-nav__item">
+  <a href="#serverbilder-ab-android-0233" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Serverbilder ab Android 0.23.3
+      </span>
+    </span>
+  </a>
+
+</li>
+
     </ul>
   
 </nav>
@@ -1372,6 +1383,17 @@
 
 </li>
 
+        <li class="md-nav__item">
+  <a href="#serverbilder-ab-android-0233" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Serverbilder ab Android 0.23.3
+      </span>
+    </span>
+  </a>
+
+</li>
+
     </ul>
   
 </nav>
@@ -1393,7 +1415,7 @@
 <h1 id="android-app-technik-entwicklung">Android-App – Technik &amp; Entwicklung<a class="headerlink" href="#android-app-technik-entwicklung" title="Permanent link">&para;</a></h1>
 <p>Diese Referenz richtet sich an Betreiber und Entwickler. Die
 <a href="android.html">Android-Anleitung</a> erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App <strong>0.23.2</strong> (<code>versionCode 51</code>), BearStack <strong>1.15.3</strong>.</p>
+bis zur Personenverwaltung. Stand: App <strong>0.23.3</strong> (<code>versionCode 52</code>), BearStack <strong>1.15.4</strong>.</p>
 <h2 id="bauen-und-installieren">Bauen und installieren<a class="headerlink" href="#bauen-und-installieren" title="Permanent link">&para;</a></h2>
 <p>Öffne <code>apps/android/</code> in Android Studio als eigenes Projekt. Benötigt werden JDK 17
 oder 21 und das Android-SDK mit Plattform 37. Gradle Wrapper, Android Gradle Plugin
@@ -1882,6 +1904,22 @@ Hauptbild bleibt dabei erhalten. HTTP-Verträge und Originaldateien ändern sich
 nach dem Blättern, das Schließen ohne Auswahländerung und Abbrechen ohne Schreiben.
 Der Weg über die Galerie-Auswahlleiste und die Gruppenerweiterung sind ebenfalls
 abgedeckt. 126 JVM-Tests, 38 Emulatorfälle, Debug-Build und Lint bestehen.</p>
+<h2 id="serverbilder-ab-android-0233">Serverbilder ab Android 0.23.3<a class="headerlink" href="#serverbilder-ab-android-0233" title="Permanent link">&para;</a></h2>
+<p>Coil 3 ersetzt bei jedem Aufruf von <code>components</code> das vollständige Komponentenregister.
+Der Sitzungs-Loader registriert deshalb den authentifizierten OkHttp-Fetcher und den
+Thumbnail-Cache gemeinsam. Dadurch gelten Anmeldung, bestätigtes Zertifikat und
+Herkunftsprüfung auch für Großansichten und Gesichtsoriginale. Der bisherige zweite
+Registrierungsaufruf hatte den konfigurierten Netzwerk-Fetcher überschrieben.</p>
+<p>Die Korrektur gilt auch bei nicht verfügbarem Thumbnail-Speicher. Öffentliche
+Kartenkacheln verwenden weiterhin ihren separaten Client. Dekodiergrenze von
+2.048 Pixeln, 16-MiB-Speichercache, feste dreiminütige Gültigkeit von Großbildern
+und der separate kleine Thumbnail-Cache bleiben erhalten.</p>
+<p>Ein HTTPS-Regressionstest verwendet den produktiven Sitzungs-Loader und prüft
+Anmeldedaten, ein bestätigtes selbstsigniertes Zertifikat, kleine Vorschaubilder,
+3.072-Pixel-Serverbilder, Gesichtsoriginale und Speicher-Cache-Treffer jeweils mit
+und ohne Thumbnail-Cache. Ein geändertes Zertifikat wird vor dem Senden der
+Anmeldedaten abgewiesen. Der Großbildtest scheiterte vor der Korrektur an der
+Zertifikatsprüfung und besteht mit gemeinsamer Komponentenregistrierung.</p>
 
 
 
@@ -1930,7 +1968,7 @@ abgedeckt. 126 JVM-Tests, 38 Emulatorfälle, Debug-Build und Lint bestehen.</p>
       <a href="tests-und-audit.html">Tests & Audit</a>
       <a href="https://github.com/ringelbaer/BearStack-DMS">GitHub</a>
     </nav>
-    <p class="bs-footer__meta">BearStack 1.15.3 · Website gebaut mit Zensical</p>
+    <p class="bs-footer__meta">BearStack 1.15.4 · Website gebaut mit Zensical</p>
   </div>
 </footer>
       

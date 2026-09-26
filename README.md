@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.15.3** · Android-App: **0.23.2**.
+Aktuelle Version: **1.15.4** · Android-App: **0.23.3**.
+
+Android **0.23.3** behebt „Bild konnte nicht geladen werden“ beim Öffnen von Serverfotos: Großansichten und Gesichtsoriginale verwenden wieder den angemeldeten HTTP-Client mit dem bestätigten Serverzertifikat. Kleine Vorschaubilder und Großansichten funktionieren gemeinsam; ein Leeren des Bildcaches ist nicht erforderlich.
 
 **Android-Gruppierung:** Die Hauptbildauswahl zeigt Vorschaubilder. Antippen öffnet die Großansicht mit Zoom und Blättern; dort lässt sich das angezeigte Bild als Hauptbild übernehmen. Erst „Speichern“ legt die Gruppe an.
 

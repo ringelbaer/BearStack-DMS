@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.15.4 / Android 0.23.3 (52)
+
+- Großansichten von Serverfotos und Gesichtsoriginale laden wieder mit Anmeldung und bestätigtem Serverzertifikat. Coil 3 ersetzt bei erneutem `components`-Aufruf das Register; Netzwerk-Fetcher und Thumbnail-Cache werden jetzt gemeinsam registriert.
+- Produktions-Loader durch HTTPS-Regressionen mit und ohne Thumbnail-Cache abgesichert. Der Fehler wurde vor der Korrektur reproduziert. Große Bilder werden weiterhin mit begrenzter Auflösung und unveränderten Cache-Limits dekodiert; geänderte Zertifikate bleiben gesperrt.
+- PATCH für die Android-Ladekorrektur; README, Website und OpenAPI-Version aktualisiert. Keine API- oder Datenmigration; Originalfotos bleiben unverändert.
+- Geprüft: jeweils 126 JVM-Tests für Debug und Release, beide Lint-Prüfungen und APK-Builds, 23 Emulator-Tests für Bilder, Cache, TLS, Viewer, Gruppierung und Karten sowie OpenAPI-Prüfung und Website-Build.
+
 ### BearStack 1.15.3
 
 - Neu erzeugte Gesichtsthumbnails erhalten auf jeder Seite 50 % zusätzlichen Rand bezogen auf die Gesichtsbreite bzw. -höhe. Der doppelt breite und hohe Ausschnitt wird am Bildrand begrenzt und proportional in 160-/640-Pixel-Vorschauen eingepasst; Web und Android verwenden denselben Renderer.

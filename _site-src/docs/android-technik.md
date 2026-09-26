@@ -7,7 +7,7 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.23.2** (`versionCode 51`), BearStack **1.15.3**.
+bis zur Personenverwaltung. Stand: App **0.23.3** (`versionCode 52`), BearStack **1.15.4**.
 
 ## Bauen und installieren
 
@@ -504,3 +504,23 @@ Regressionen prüfen das tatsächliche Decodieren beider Vorschauen, die Hauptbi
 nach dem Blättern, das Schließen ohne Auswahländerung und Abbrechen ohne Schreiben.
 Der Weg über die Galerie-Auswahlleiste und die Gruppenerweiterung sind ebenfalls
 abgedeckt. 126 JVM-Tests, 38 Emulatorfälle, Debug-Build und Lint bestehen.
+
+## Serverbilder ab Android 0.23.3
+
+Coil 3 ersetzt bei jedem Aufruf von `components` das vollständige Komponentenregister.
+Der Sitzungs-Loader registriert deshalb den authentifizierten OkHttp-Fetcher und den
+Thumbnail-Cache gemeinsam. Dadurch gelten Anmeldung, bestätigtes Zertifikat und
+Herkunftsprüfung auch für Großansichten und Gesichtsoriginale. Der bisherige zweite
+Registrierungsaufruf hatte den konfigurierten Netzwerk-Fetcher überschrieben.
+
+Die Korrektur gilt auch bei nicht verfügbarem Thumbnail-Speicher. Öffentliche
+Kartenkacheln verwenden weiterhin ihren separaten Client. Dekodiergrenze von
+2.048 Pixeln, 16-MiB-Speichercache, feste dreiminütige Gültigkeit von Großbildern
+und der separate kleine Thumbnail-Cache bleiben erhalten.
+
+Ein HTTPS-Regressionstest verwendet den produktiven Sitzungs-Loader und prüft
+Anmeldedaten, ein bestätigtes selbstsigniertes Zertifikat, kleine Vorschaubilder,
+3.072-Pixel-Serverbilder, Gesichtsoriginale und Speicher-Cache-Treffer jeweils mit
+und ohne Thumbnail-Cache. Ein geändertes Zertifikat wird vor dem Senden der
+Anmeldedaten abgewiesen. Der Großbildtest scheiterte vor der Korrektur an der
+Zertifikatsprüfung und besteht mit gemeinsamer Komponentenregistrierung.

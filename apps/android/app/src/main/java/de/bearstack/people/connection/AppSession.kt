@@ -1,12 +1,9 @@
 package de.bearstack.people.connection
 
-import de.bearstack.people.media.networkClient
+import de.bearstack.people.media.sessionImages
 import android.content.Context
 import coil3.ImageLoader
-import coil3.memory.MemoryCache
-import coil3.request.CachePolicy
 import de.bearstack.people.data.remote.*
-import de.bearstack.people.media.OriginalMemoryCache
 import de.bearstack.people.media.ThumbnailCache
 import de.bearstack.people.photos.PhotosController
 import kotlinx.coroutines.*
@@ -88,10 +85,7 @@ class AppSession(private val context: Context, private val scope: CoroutineScope
                 try { ThumbnailCache.open(context, profile.url, client, gallery, it, scope) }
                 catch (_: java.io.IOException) { null } // Keep the gallery usable; settings report unavailable storage.
             }
-            images = ImageLoader.Builder(context).networkClient(client).diskCachePolicy(CachePolicy.DISABLED)
-                .components { thumbnails?.let { add(ThumbnailCache.Factory(it)); add(ThumbnailCache.Keys()); add(ThumbnailCache.Integrity(it)) } }
-                .memoryCache { OriginalMemoryCache(MemoryCache.Builder().maxSizeBytes(16 * 1024 * 1024)
-                    .weakReferencesEnabled(false).build()) }.build()
+            images = sessionImages(context, client, thumbnails)
             photos = gallerySession?.let { PhotosController(scope, gallery, it, context) }
             photos?.thumbnailCache = thumbnails
             active = Resources(people, peopleSession, images, photos, client, thumbnails)

@@ -1,7 +1,9 @@
 # BearStack Fotos für Android
 
 Native Android-App für BearStack-Galerie, lokale Fotos und Personenverwaltung.
-App-Version **0.23.2** (`versionCode 51`), Android **8.0 oder neuer**.
+App-Version **0.23.3** (`versionCode 52`), Android **8.0 oder neuer**.
+
+Android **0.23.3** behebt „Bild konnte nicht geladen werden“ beim Öffnen von Serverfotos: Großansichten und Gesichtsoriginale verwenden wieder den angemeldeten HTTP-Client mit dem bestätigten Serverzertifikat. Kleine Vorschaubilder und Großansichten funktionieren gemeinsam; ein Leeren des Bildcaches ist nicht erforderlich.
 
 Rücknavigation, Einstellungen und Hilfe sind zwischen den Ansichten vereinheitlicht.
 Die Personenverwaltung hat sichtbare Reiter; Auswahlaktionen beziehen sich ausdrücklich
