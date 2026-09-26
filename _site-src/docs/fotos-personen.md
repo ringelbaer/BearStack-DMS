@@ -6,6 +6,8 @@ icon: lucide/users
 
 # Personen und Gesichter
 
+Ab BearStack **1.15.3** zeigen neu erzeugte Gesichtsthumbnails auf jeder Seite zusätzlich 50 % der Gesichtsbreite bzw. -höhe. Der Ausschnitt ist damit doppelt so breit und hoch, soweit die Bildränder es erlauben, und wird weiterhin unverzerrt in die quadratische Vorschau eingepasst. Vorhandene Thumbnails bleiben gültig; die Erweiterung löst weder eine Cache-Löschung noch eine sofortige Neugenerierung aus. Dies gilt für Web und Android sowie für 160 und 640 Pixel. Originalfotos und gespeicherte Gesichtsmarkierungen bleiben unverändert.
+
 BearStack fasst Gesichter zu Personengruppen zusammen. Du kannst diesen Gruppen
 Namen geben, falsche Zuordnungen korrigieren und Fotos einer Person unabhängig
 von ihrem Ordner finden. Ein automatischer Treffer ist ein Vorschlag und keine

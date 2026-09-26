@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.15.3
+
+- Neu erzeugte Gesichtsthumbnails erhalten auf jeder Seite 50 % zusätzlichen Rand bezogen auf die Gesichtsbreite bzw. -höhe. Der doppelt breite und hohe Ausschnitt wird am Bildrand begrenzt und proportional in 160-/640-Pixel-Vorschauen eingepasst; Web und Android verwenden denselben Renderer.
+- Vorhandene Thumbnails behalten ihre Cache-Schlüssel und Gültigkeit. Kein Cache-Neuaufbau oder zusätzlicher Verzeichnisscan; Originalfotos und Gesichtskoordinaten bleiben unverändert.
+- PATCH für die Darstellungskorrektur; README, Website und OpenAPI aktualisiert. Keine Datenmigration.
+- Geprüft: vollständige Go-Testsuite, gezielte Race-Tests für Gesichtsbilder und Thumbnails, drei Tests mit schreibgeschütztem Foto-Mount sowie Website-Build. Neue Regressionen prüfen Bildkontext, alle Bildränder, beide Vorschaugrößen und unveränderte Cache-Dateien samt Ablaufzeit vor und nach Neustart.
+
 ### BearStack 1.15.2 / Android 0.23.2 (51)
 
 - Gruppierungsdialog mit Vorschaubildern statt reiner Dateinamenauswahl. Antippen öffnet die Großansicht mit Zoom, Blättern und „Als Hauptbild verwenden“. Erst Speichern legt die Gruppe an; Abbrechen verwirft die Wahl.

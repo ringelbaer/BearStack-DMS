@@ -175,6 +175,8 @@ func (l *Library) FaceThumbnailSize(ctx context.Context, id int64, size int) ([]
 	legacyKey := faceThumbnailKey(f, size, filepath.Join(l.root, filepath.FromSlash(sourcePath)), sourceSize, sourceMtime)
 	// Old previews stretched the crop. Replace them on demand without a full
 	// cache scan or rebuilding the library at startup.
+	// Keep this key stable: existing thumbnails remain valid when the crop
+	// expands; only cache misses render the additional context.
 	key := "aspect-fit-v2:" + legacyKey
 	b, err := l.faceThumbnails.get(ctx, id, key, func() ([]byte, error) {
 		if f.NeedsReview {
@@ -203,7 +205,14 @@ func (l *Library) renderFaceThumbnail(ctx context.Context, f RecognizedFace, siz
 		return nil, err
 	}
 	w, h := img.Bounds().Dx(), img.Bounds().Dy()
-	r := image.Rect(int(f.X*float64(w)), int(f.Y*float64(h)), int(math.Ceil((f.X+f.Width)*float64(w))), int(math.Ceil((f.Y+f.Height)*float64(h)))).Intersect(img.Bounds())
+	// Add half the face width/height on each side, clipped to the source image.
+	// Detection bounds remain unchanged for recognition and overlays.
+	r := image.Rect(
+		int(math.Floor((f.X-f.Width/2)*float64(w))),
+		int(math.Floor((f.Y-f.Height/2)*float64(h))),
+		int(math.Ceil((f.X+f.Width*1.5)*float64(w))),
+		int(math.Ceil((f.Y+f.Height*1.5)*float64(h))),
+	).Intersect(img.Bounds())
 	if r.Empty() {
 		return nil, errors.New("leere Gesichtsregion")
 	}

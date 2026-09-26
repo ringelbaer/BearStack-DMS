@@ -38,11 +38,11 @@ func TestFaceThumbnailPreservesCropAspectRatio(t *testing.T) {
 			x, y, w, h float64
 			want       image.Rectangle
 		}{
-			{"portrait", .25, 0, .25, 1, image.Rect(size/4, 0, size*3/4, size)},
-			{"landscape", 0, .25, 1, .5, image.Rect(0, size*3/8, size, size*5/8)},
+			{"portrait", .25, 0, .125, 1, image.Rect(size/4, 0, size*3/4, size)},
+			{"landscape", 0, .375, 1, .25, image.Rect(0, size*3/8, size, size*5/8)},
 			// Normalized width != height, but the source crop is square in pixels.
 			{"square", .25, .25, .25, .5, image.Rect(0, 0, size, size)},
-			{"clipped edge", .875, 0, .25, .5, image.Rect(size/4, 0, size*3/4, size)},
+			{"clipped edge", .875, .25, .25, .5, image.Rect(size/4, 0, size*3/4, size)},
 		} {
 			t.Run(fmt.Sprintf("%s/%d", tc.name, size), func(t *testing.T) {
 				data, err := l.renderFaceThumbnail(context.Background(), RecognizedFace{Path: "source.png", X: tc.x, Y: tc.y, Width: tc.w, Height: tc.h}, size)

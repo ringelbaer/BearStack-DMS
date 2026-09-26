@@ -1,6 +1,6 @@
 # BearStack
 
-Aktuelle Version: **1.15.2** · Android-App: **0.23.2**.
+Aktuelle Version: **1.15.3** · Android-App: **0.23.2**.
 
 **Android-Gruppierung:** Die Hauptbildauswahl zeigt Vorschaubilder. Antippen öffnet die Großansicht mit Zoom und Blättern; dort lässt sich das angezeigte Bild als Hauptbild übernehmen. Erst „Speichern“ legt die Gruppe an.
 
@@ -340,6 +340,8 @@ Playwright baut einmal pro Testlauf ein temporäres BearStack-Binary. Alle Suite
 Reine Go-Testhelfer liegen in `_test.go`-Dateien und werden nicht in das Anwendungsbinary übernommen. Das gilt auch für den direkten Mail-Nachrichtenimport der Server-Integrationstests; die Produktionsschnittstellen enthalten nur tatsächlich benötigte Operationen. Ab 0.41.2 gilt dies auch für das Vorbelegen der Einstellungs-Caches. Die Mailimport-Tests verwenden die gemeinsamen Anhangsfunktionen direkt; ungenutzte PDF-Weiterleitungen sind entfernt. Die GPX-Benchmarks setzen für Messungen ohne Cache neben den Einträgen auch LRU-Verwaltung und Speicherzähler zurück.
 
 Ab BearStack 0.39.2 bleiben Gesichtsausschnitte im Web und in der Android-App unverzerrt: Sie werden proportional auf dunkelgrauem Hintergrund in die gleichmäßig quadratischen Kacheln eingepasst. Alte gestreckte Vorschauen werden beim nächsten Abruf einzeln ersetzt; ein App-Update oder vollständiger Cache-Neuaufbau ist dafür nicht nötig. Bereits im App-Speicher geladene Altbilder werden nach erneutem Anmelden oder einem App-Neustart neu geladen.
+
+Ab BearStack **1.15.3** zeigen neu erzeugte Gesichtsthumbnails auf jeder Seite zusätzlich 50 % der Gesichtsbreite bzw. -höhe. Der Ausschnitt ist damit doppelt so breit und hoch, soweit die Bildränder es erlauben, und wird weiterhin unverzerrt in die quadratische Vorschau eingepasst. Vorhandene Thumbnails bleiben gültig; die Erweiterung löst weder eine Cache-Löschung noch eine sofortige Neugenerierung aus. Dies gilt für Web und Android sowie für 160 und 640 Pixel. Originalfotos und gespeicherte Gesichtsmarkierungen bleiben unverändert.
 
 Ab 0.41.0 führt **Gruppenbilder** unter `/photos/people` zur Bearbeitung ganzer Gruppenfotos: links das Foto, rechts alle erkannten Gesichter mit Markierung im Foto bei Hover oder Tastaturfokus. Ab 0.45.1 vergrößert ein Klick auf ein Thumbnail den Ausschnitt auf die dreifache Breite und Höhe der Bounding Box (300 %); ein erneuter Klick zeigt wieder das ganze Foto. Die einstellbare Schwelle zählt nur unbenannte, nicht ignorierte Gesichter; „mehr als 5“ bedeutet mindestens sechs. Benennen und Zuordnen im bekannten Modal betrifft die gesamte Personengruppe. „Verbleibende ignorieren“ betrifft ausschließlich die noch unbearbeiteten Gesichter dieses Fotos. Ignorieren und Überspringen wechseln direkt zum nächsten passenden Foto; übersprungene Fotos erscheinen im nächsten Durchlauf wieder.
 

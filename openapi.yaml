@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: BearStack HTTP API
-  version: 1.15.2
+  version: 1.15.3
   description: |
     Programmatic HTTP interface for documents, uploads, tags, custom fields,
     virtual folders and document media.
@@ -2618,7 +2618,7 @@ paths:
       tags: [Photos]
       operationId: getLabelingFaceImage
       summary: Get an authorized face crop
-      description: Requires photos.edit. Protected and ignored faces are excluded; no embeddings or original photos are returned.
+      description: Requires photos.edit. Protected and ignored faces are excluded; no embeddings or original photos are returned. Newly rendered crops add 50% of the face width on each horizontal side and 50% of its height on each vertical side, clipped to the image bounds and proportionally fitted into the square preview. Existing cached previews remain valid and are not regenerated for this change.
       parameters:
         - name: id
           in: path
@@ -4200,6 +4200,7 @@ paths:
         crops use private browser caching with mandatory revalidation and ETags.
         Matching If-None-Match returns 304 only after authentication and visibility
         checks. Encoded crops are cached in the configured photo cache.
+        Newly rendered crops add 50% of the face width on each horizontal side and 50% of its height on each vertical side, clipped to the image bounds and proportionally fitted into the square preview. Existing cached previews remain valid and are not regenerated for this change.
       parameters:
       - name: id
         in: path
@@ -4234,6 +4235,7 @@ paths:
         crops use private browser caching with mandatory revalidation and ETags.
         Matching If-None-Match returns 304 only after authentication and visibility
         checks. Encoded crops are cached in the configured photo cache.
+        Newly rendered crops add 50% of the face width on each horizontal side and 50% of its height on each vertical side, clipped to the image bounds and proportionally fitted into the square preview. Existing cached previews remain valid and are not regenerated for this change.
       parameters:
       - name: id
         in: path
