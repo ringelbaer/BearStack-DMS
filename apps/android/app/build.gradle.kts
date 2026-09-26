@@ -18,7 +18,7 @@ android {
         // Keep the tested target until that flow and denial/retry tests exist.
         //noinspection OldTargetApi
         targetSdk = 36
-        versionCode = 50
+        versionCode = 51
         versionName = rootProject.file("VERSION").readText().trim()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

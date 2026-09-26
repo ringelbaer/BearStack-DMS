@@ -6,6 +6,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -20,15 +23,16 @@ internal fun canGroupSelection(photos: List<Photo>): Boolean {
     return photos.map {it.imageGroupId}.filter {it>0}.distinct().size<=1 && photos.any {it.imageGroupId==0L}
 }
 
-@Composable internal fun PhotoGroupSelectionAction(controller: PhotosController, photos: List<Photo>) {
+@Composable internal fun PhotoGroupSelectionAction(controller: PhotosController, photos: List<Photo>, images: coil3.ImageLoader) {
     var selected by remember(controller) {mutableStateOf<List<Photo>?>(null)}
     TextButton(enabled=canGroupSelection(photos),onClick={selected=photos.toList()}) {Text(stringResource(R.string.photos_group))}
     selected?.let { snapshot ->
-        CreateImageGroupDialog(controller,snapshot,onClose={selected=null})
+        CreateImageGroupDialog(controller,snapshot,images,onClose={selected=null})
     }
 }
 
-@Composable private fun CreateImageGroupDialog(controller: PhotosController, photos: List<Photo>, onClose: () -> Unit) {
+@Composable private fun CreateImageGroupDialog(controller: PhotosController, photos: List<Photo>, images: coil3.ImageLoader, onClose: () -> Unit) {
+    var viewed by remember {mutableStateOf<Photo?>(null)}
     var primary by remember {mutableStateOf(photos.first().path)}
     var busy by remember {mutableStateOf(false)}
     var error by remember {mutableStateOf<UiText?>(null)}
@@ -37,11 +41,19 @@ internal fun canGroupSelection(photos: List<Photo>): Boolean {
     AlertDialog(onDismissRequest={if(!busy) onClose()},title={Text(stringResource(if(existing==null) R.string.photos_group else R.string.photos_group_add))},
         text={Column {
             Text(stringResource(if(existing==null) R.string.photos_group_choose_primary else R.string.photos_group_add_description))
-            if(existing==null) LazyColumn(Modifier.heightIn(max=320.dp)) {
+            LazyColumn(Modifier.heightIn(max=320.dp)) {
                 items(photos,key={it.path}) {photo ->
-                    Row {
-                        RadioButton(selected=primary==photo.path,enabled=!busy,onClick={primary=photo.path})
-                        TextButton(enabled=!busy,onClick={primary=photo.path}) {Text(photo.displayPath.ifBlank {photo.name})}
+                    Row(Modifier.fillMaxWidth().padding(vertical=4.dp),verticalAlignment=Alignment.CenterVertically) {
+                        PhotoThumbnail(photo,controller,images,controller.session.thumbnailSize,
+                            Modifier.size(88.dp).testTag("group-preview:${photo.path}").clickable(enabled=!busy,onClickLabel=stringResource(R.string.photos_group_preview)) {viewed=photo})
+                        if(existing==null) {
+                            RadioButton(selected=primary==photo.path,enabled=!busy,onClick={primary=photo.path},
+                                modifier=Modifier.testTag("group-primary:${photo.path}"))
+                            TextButton(enabled=!busy,onClick={primary=photo.path},modifier=Modifier.weight(1f)) {
+                                Text(photo.displayPath.ifBlank {photo.name},maxLines=3,overflow=TextOverflow.Ellipsis)
+                            }
+                        } else Text(photo.displayPath.ifBlank {photo.name},Modifier.weight(1f).padding(start=12.dp),
+                            maxLines=3,overflow=TextOverflow.Ellipsis)
                     }
                 }
             }
@@ -64,6 +76,11 @@ internal fun canGroupSelection(photos: List<Photo>): Boolean {
             }
         }) {Text(stringResource(R.string.photos_group_save))}},
         dismissButton={TextButton(enabled=!busy,onClick={if(error!=null) controller.open(controller.state.value.query);onClose()}) {Text(stringResource(R.string.photos_cancel))}})
+    viewed?.let {photo ->
+        PhotoViewer(controller,images,photos,photo.path,onClose={viewed=null},standalone=true,
+            onChoosePrimary=if(existing==null) ({chosen -> primary=chosen.path;viewed=null}) else null,
+            onOpenFolder={target -> viewed=null;onClose();controller.openPhotoFolder(target)})
+    }
 }
 
 @Composable internal fun ImageGroupDialog(controller: PhotosController, id: Long, images: coil3.ImageLoader?, onFolder: ((Photo) -> Unit)?, onClose: () -> Unit, onChanged: () -> Unit) {

@@ -4,6 +4,13 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.15.2 / Android 0.23.2 (51)
+
+- Gruppierungsdialog mit Vorschaubildern statt reiner Dateinamenauswahl. Antippen öffnet die Großansicht mit Zoom, Blättern und „Als Hauptbild verwenden“. Erst Speichern legt die Gruppe an; Abbrechen verwirft die Wahl.
+- Auch beim Erweitern einer vorhandenen Gruppe sind die ausgewählten Bilder sichtbar. Vorschauen verwenden den bestehenden authentifizierten Loader und begrenzte Caches; Gerätefotos bleiben ausgeschlossen.
+- PATCH für die Bedienkorrektur. README, Website und OpenAPI-Version aktualisiert; keine Änderung am API-Vertrag, an Datenformaten oder Originaldateien.
+- Geprüft: 126 JVM-Tests, Debug-Build und Lint sowie 38 Emulatorfälle (37 im Gesamtlauf, aktualisierte Prüfung der Auswahlleiste im Nachlauf). Abgedeckt sind geladene Vorschauen, Hauptbildwahl nach Blättern, Abbrechen ohne Schreiben, Gruppenerweiterung, Galerie, Gerätefotos, Übersetzungen und Viewer-Systemabstände. Website erfolgreich gebaut.
+
 ### BearStack 1.15.1 / Android 0.23.1 (50)
 
 - Direkte und genutzte transitive Go-Abhängigkeiten aktualisiert, darunter SQLite 1.59.0, x/crypto 0.57.0, x/image 0.46.0, x/sys 0.48.0, x/text 0.42.0, YAML 3.0.5 und der PDF-Parser.

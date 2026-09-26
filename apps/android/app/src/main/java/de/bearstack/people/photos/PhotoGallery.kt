@@ -96,7 +96,7 @@ internal fun PhotoGallery(controller: PhotosController, images: ImageLoader, sta
             if(index>=0) {grid.scrollToItem(index);controller.scrollConsumed()}
         }
         Column(modifier.fillMaxSize()) {
-        PhotoSelectionActions(controller, state)
+        PhotoSelectionActions(controller, state, images)
         Box(Modifier.fillMaxWidth().weight(1f)) {
         LazyVerticalGrid(columns=GridCells.Fixed(columns),state=grid,modifier=Modifier.fillMaxSize().testTag("photo-gallery"),
             horizontalArrangement=Arrangement.spacedBy(2.dp),verticalArrangement=Arrangement.spacedBy(2.dp),contentPadding=contentPadding) {

@@ -34,7 +34,10 @@ class PhotosScreenTest {
         compose.onNodeWithContentDescription("first.jpg").performTouchInput {longClick()}
         compose.onNodeWithContentDescription("second.jpg").performClick()
         compose.onNodeWithText("Group").assertIsDisplayed().assertIsEnabled().performClick()
-        compose.onNodeWithText("Choose a primary image. Only the primary appears in the gallery. Original files stay unchanged.").assertIsDisplayed()
+        compose.onNodeWithTag("group-preview:first.jpg").assertIsDisplayed()
+        compose.onNodeWithTag("group-preview:second.jpg").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("photo-viewer-image").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Close").performClick()
         compose.onNodeWithText("Cancel").performClick()
         compose.onNodeWithText("2 / 100 selected").assertIsDisplayed()
     }

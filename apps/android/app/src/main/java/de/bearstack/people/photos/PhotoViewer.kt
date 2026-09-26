@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 @Composable
 internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, photos: List<Photo>, path: String,
     onClose: () -> Unit = controller::closeViewer, standalone: Boolean = false,
+    onChoosePrimary: ((Photo) -> Unit)? = null,
     onOpenFolder: (Photo) -> Unit = controller::openPhotoFolder) {
     val text=uiStrings()
     if(photos.isEmpty()) return
@@ -169,20 +170,26 @@ internal fun PhotoViewer(controller: PhotosController, images: ImageLoader, phot
                                 }
                             }
                         }
-                        Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().testTag("photo-viewer-bottom-bar")
+                        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().testTag("photo-viewer-bottom-bar")
                             .background(Color.Black)
                             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom+WindowInsetsSides.Horizontal))
-                            .padding(horizontal=12.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween,
-                            verticalAlignment=Alignment.CenterVertically) {
-                            IconButton(onClick={scope.launch {move(-1)}},enabled=!moving && pendingPath==null && !pager.isScrollInProgress && (currentIndex>0 || (!standalone && catalog.mediaPages.hasPrevious))) {
-                                Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_previous))
+                            .padding(horizontal=12.dp,vertical=8.dp)) {
+                            onChoosePrimary?.let {choose ->
+                                Button(onClick={choose(current)},enabled=!moving && pendingPath==null && !pager.isScrollInProgress,
+                                    modifier=Modifier.fillMaxWidth()) {Text(stringResource(R.string.photos_group_make_primary))}
                             }
-                            if(!standalone) IconButton(onClick={mediaEnded=false;playing=!playing}) {
-                                Icon(painterResource(if(playing) R.drawable.ic_pause else R.drawable.ic_play),stringResource(if(playing) R.string.photos_pause else R.string.photos_play))
-                            }
-                            Text(stringResource(R.string.photos_of,if(standalone) currentIndex+1 else catalog.mediaPages.position(current.path),if(standalone) photos.size else catalog.total),style=MaterialTheme.typography.labelSmall)
-                            IconButton(onClick={scope.launch {move(1)}},enabled=!moving && pendingPath==null && !pager.isScrollInProgress && (currentIndex<photos.lastIndex || (!standalone && catalog.hasNext))) {
-                                Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_next),Modifier.rotate(180f))
+                            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,
+                                verticalAlignment=Alignment.CenterVertically) {
+                                IconButton(onClick={scope.launch {move(-1)}},enabled=!moving && pendingPath==null && !pager.isScrollInProgress && (currentIndex>0 || (!standalone && catalog.mediaPages.hasPrevious))) {
+                                    Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_previous))
+                                }
+                                if(!standalone) IconButton(onClick={mediaEnded=false;playing=!playing}) {
+                                    Icon(painterResource(if(playing) R.drawable.ic_pause else R.drawable.ic_play),stringResource(if(playing) R.string.photos_pause else R.string.photos_play))
+                                }
+                                Text(stringResource(R.string.photos_of,if(standalone) currentIndex+1 else catalog.mediaPages.position(current.path),if(standalone) photos.size else catalog.total),style=MaterialTheme.typography.labelSmall)
+                                IconButton(onClick={scope.launch {move(1)}},enabled=!moving && pendingPath==null && !pager.isScrollInProgress && (currentIndex<photos.lastIndex || (!standalone && catalog.hasNext))) {
+                                    Icon(painterResource(R.drawable.ic_back),stringResource(R.string.photos_next),Modifier.rotate(180f))
+                                }
                             }
                         }
                     } else if(frame && settings.frameCaptions) {

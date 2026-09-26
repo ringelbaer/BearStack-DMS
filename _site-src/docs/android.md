@@ -9,7 +9,7 @@ Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.
 
-Diese Anleitung beschreibt **Android-App 0.23.1**. Beginne mit den
+Diese Anleitung beschreibt **Android-App 0.23.2**. Beginne mit den
 [ersten Schritten](#erste-schritte); die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die [technische Referenz](android-technik.md).
@@ -174,7 +174,10 @@ ebenfalls verändern.
 
 Ab **App 0.23.0 / BearStack 1.15.0** kannst du BearStack-Bilder gruppieren.
 Markiere zwei bis 100 Bilder per Mehrfachauswahl und wähle **Gruppieren**.
-Im Dialog bestimmst du das Hauptbild; nur dieses erscheint anschließend in den
+Der Dialog zeigt Vorschaubilder. Tippe eines an, um es groß anzusehen, zu zoomen
+und durch die markierten Bilder zu blättern. **Als Hauptbild verwenden** übernimmt
+das gerade angezeigte Bild in die Auswahl. Erst **Speichern** legt die Gruppe an;
+Abbrechen verwirft die Auswahl. Nur das Hauptbild erscheint anschließend in den
 Galerielisten. Markierst du ein bestehendes Gruppenbild und ungruppierte Bilder,
 werden die neuen Bilder zur Gruppe hinzugefügt. Zwei bestehende Gruppen lassen
 sich damit nicht zusammenführen. Videos, Audio und Gerätefotos sind ausgeschlossen.

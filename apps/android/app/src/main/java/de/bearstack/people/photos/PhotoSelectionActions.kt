@@ -22,7 +22,7 @@ import kotlinx.coroutines.*
 
 internal const val MAX_PHOTO_SELECTION = 100
 
-@Composable internal fun PhotoSelectionActions(controller: PhotosController, state: PhotosState) {
+@Composable internal fun PhotoSelectionActions(controller: PhotosController, state: PhotosState, images: coil3.ImageLoader) {
     BackHandler(state.selecting) { controller.clearSelection() }
     val photos = state.selection.values.toList()
     val context = LocalContext.current
@@ -69,7 +69,7 @@ internal const val MAX_PHOTO_SELECTION = 100
                     }
                 }
                 if(controller.session.imageGroups && controller.session.canManagePeople && controller.service !is DevicePhotosService)
-                    PhotoGroupSelectionAction(controller,photos)
+                    PhotoGroupSelectionAction(controller,photos,images)
                 if(controller.service is DevicePhotosService)
                     DevicePhotoDeleteAction(controller, photos, controller::clearSelection)
             }

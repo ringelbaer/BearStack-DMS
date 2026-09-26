@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.15.1** · Android-App: **0.23.1**.
+Aktuelle Version: **1.15.2** · Android-App: **0.23.2**.
+
+**Android-Gruppierung:** Die Hauptbildauswahl zeigt Vorschaubilder. Antippen öffnet die Großansicht mit Zoom und Blättern; dort lässt sich das angezeigte Bild als Hauptbild übernehmen. Erst „Speichern“ legt die Gruppe an.
 
 **Abhängigkeiten aktualisiert:** Go-Module einschließlich SQLite 1.59.0 und x/crypto 0.57.0, Kotlin 2.4.20, Gradle 9.8.0, Coil 3.6.3, Playwright 1.63.0, NumPy 2.5.3 und OpenCV 5.0.0.93. Die Android-Bildpipeline behält Authentifizierung, getrennte Kartenverbindungen und begrenzte Caches. Originalfotos und Datenformate bleiben unverändert.
 

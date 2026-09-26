@@ -7,7 +7,7 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.23.1** (`versionCode 50`), BearStack **1.15.1**.
+bis zur Personenverwaltung. Stand: App **0.23.2** (`versionCode 51`), BearStack **1.15.2**.
 
 ## Bauen und installieren
 
@@ -489,3 +489,18 @@ Der eigene Thumbnail-Fetcher verwendet Coil-3-Quellen; beschädigte Decodierunge
 entfernen weiterhin den betroffenen Cache-Eintrag. Die Originalvorschauen behalten
 ihren auf 16 MiB begrenzten Speicher und die feste Lebensdauer von drei Minuten.
 Die Migration ändert weder den Thumbnail-Cache auf Disk noch die Originaldateien.
+
+## Vorschau bei der Gruppierung ab Android 0.23.2
+
+Die Hauptbildauswahl rendert sichtbare Vorschauen in einer begrenzten LazyColumn
+über den bestehenden authentifizierten ImageLoader und Thumbnail-Cache. Die
+Großansicht verwendet denselben Viewer mit Zoom und einer auf die ausgewählten
+Bilder begrenzten Navigation. Die Hauptbildwahl ändert nur den Dialogzustand;
+erst Speichern führt den bestehenden Gruppenaufruf aus. Auch beim Hinzufügen
+zu einer Gruppe können die ausgewählten Bilder angesehen werden. Das vorhandene
+Hauptbild bleibt dabei erhalten. HTTP-Verträge und Originaldateien ändern sich nicht.
+
+Regressionen prüfen das tatsächliche Decodieren beider Vorschauen, die Hauptbildwahl
+nach dem Blättern, das Schließen ohne Auswahländerung und Abbrechen ohne Schreiben.
+Der Weg über die Galerie-Auswahlleiste und die Gruppenerweiterung sind ebenfalls
+abgedeckt. 126 JVM-Tests, 38 Emulatorfälle, Debug-Build und Lint bestehen.
