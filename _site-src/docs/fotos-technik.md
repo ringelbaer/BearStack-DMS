@@ -303,7 +303,7 @@ und Darstellungsgrenzen stehen in der [Android-Referenz](android-technik.md).
 ## Gesichtserkennung einrichten
 
 Die optionale automatische Erkennung ist standardmäßig ausgeschaltet. Sie läuft
-in einem separaten lokalen Dienst mit **OpenCV, YuNet und SFace**. Dieser hat
+in einem separaten lokalen Dienst mit **OpenCV 5.0.0.93, NumPy 2.5.3, YuNet und SFace**. Dieser hat
 weder Zugriff auf den Foto-Root noch auf die Datenbank. BearStack überträgt
 ausgerichtete JPEGs mit höchstens **1.600 Pixeln** Kantenlänge an ihn.
 

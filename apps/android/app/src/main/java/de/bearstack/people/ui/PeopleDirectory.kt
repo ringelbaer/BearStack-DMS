@@ -27,7 +27,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextOverflow
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import de.bearstack.people.people.PeopleState
 import de.bearstack.people.people.PeopleViewModel
 

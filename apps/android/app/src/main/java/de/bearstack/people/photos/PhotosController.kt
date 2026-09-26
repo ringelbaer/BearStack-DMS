@@ -281,7 +281,7 @@ class PhotosController(parent: CoroutineScope, val service: PhotosService, val s
             catch(e: Exception) {if(generation==expected) mutable.update {it.copy(seekLoading=false,error=failureText(e))}}
         }
     }
-    suspend fun prefetch(photo: Photo?, images: coil.ImageLoader) {
+    suspend fun prefetch(photo: Photo?, images: coil3.ImageLoader) {
         val context=application ?: return
         if(photo==null || photo.type!="image") return
         val request=photoPreviewRequest(context,photo,service,session)

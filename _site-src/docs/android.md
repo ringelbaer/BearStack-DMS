@@ -9,7 +9,7 @@ Mit BearStack Fotos kannst du deine Sammlung auf dem BearStack-Server ansehen,
 Bilder suchen und teilen sowie erkannte Personen benennen und zuordnen. Du kannst
 auch ausschließlich die Fotos auf deinem Android-Gerät öffnen.
 
-Diese Anleitung beschreibt **Android-App 0.23.0**. Beginne mit den
+Diese Anleitung beschreibt **Android-App 0.23.1**. Beginne mit den
 [ersten Schritten](#erste-schritte); die folgenden Kapitel erklären die einzelnen
 Arbeitsabläufe. Für Installation aus dem Quellcode, API und Speicherverwaltung gibt
 es die [technische Referenz](android-technik.md).

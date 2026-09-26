@@ -1,5 +1,6 @@
 package de.bearstack.people
 
+import de.bearstack.people.media.networkClient
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.*
@@ -14,11 +15,11 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
-import coil.ImageLoader
-import coil.EventListener
-import coil.request.ImageRequest
-import coil.request.SuccessResult
-import coil.request.ErrorResult
+import coil3.ImageLoader
+import coil3.EventListener
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.ErrorResult
 import de.bearstack.people.data.remote.*
 import de.bearstack.people.photos.PhotoMap
 import de.bearstack.people.photos.mapTileClient
@@ -56,8 +57,8 @@ class PhotoMapTest {
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
                 .header("Cache-Control","max-age=60").body(bytes.toResponseBody("image/png".toMediaType())).build()
         }.build()
-        val images=ImageLoader.Builder(context).okHttpClient(client).diskCache(null)
-            .eventListener(object:EventListener {
+        val images=ImageLoader.Builder(context).networkClient(client).diskCache(null)
+            .eventListener(object:EventListener() {
                 override fun onSuccess(request: ImageRequest,result: SuccessResult) {loaded.add(request.data.toString())}
                 override fun onError(request: ImageRequest,result: ErrorResult) {tileError.set(result.throwable)}
             }).build()

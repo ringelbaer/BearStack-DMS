@@ -16,7 +16,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
-import coil.ImageLoader
+import coil3.ImageLoader
 import de.bearstack.people.data.remote.*
 import de.bearstack.people.photos.*
 import kotlinx.coroutines.*

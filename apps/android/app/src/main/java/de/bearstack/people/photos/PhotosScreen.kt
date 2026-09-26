@@ -33,9 +33,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.ImageLoader
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import coil3.ImageLoader
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import de.bearstack.people.R
 import de.bearstack.people.data.remote.*
 import java.time.OffsetDateTime

@@ -34,8 +34,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.ImageLoader
-import coil.memory.MemoryCache
+import coil3.ImageLoader
+import coil3.memory.MemoryCache
 import de.bearstack.people.R
 import de.bearstack.people.data.remote.PhotoQuery
 import de.bearstack.people.text.uiStrings
@@ -204,7 +204,7 @@ private fun DevicePhotosScreen(access: DevicePhotoAccess, foreground: Boolean, r
     }
     val images = remember(local) {
         local?.let { ImageLoader.Builder(context).diskCache(null)
-            .memoryCache { MemoryCache.Builder(context).maxSizeBytes(16 * 1024 * 1024).build() }.build() }
+            .memoryCache { MemoryCache.Builder().maxSizeBytes(16 * 1024 * 1024).build() }.build() }
     }
     DisposableEffect(local, images) { onDispose { local?.close(); images?.memoryCache?.clear(); images?.shutdown() } }
     LaunchedEffect(state?.query?.path, state?.loading) {

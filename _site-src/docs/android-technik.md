@@ -7,7 +7,7 @@ description: Build, Signierung, Verbindung, API, Datenhaltung und Tests der Andr
 
 Diese Referenz richtet sich an Betreiber und Entwickler. Die
 [Android-Anleitung](android.md) erklärt Einrichtung und Bedienung vom ersten Start
-bis zur Personenverwaltung. Stand: App **0.23.0** (`versionCode 49`), BearStack **1.15.0**.
+bis zur Personenverwaltung. Stand: App **0.23.1** (`versionCode 50`), BearStack **1.15.1**.
 
 ## Bauen und installieren
 
@@ -413,8 +413,9 @@ Kontowechsel stoppt zuerst die Feature-Aufgaben und schließt dann die Sitzungsr
 Die Personenlogik liegt im Go-Backend unter `internal/photos`, HTTP-Adapter und
 Rechte unter `internal/server`.
 
-Für die Buildpflege: Die App verwendet das in AGP integrierte Kotlin und KSP für
-den Room-Compiler. Das exportierte Datenbankschema bleibt unverändert.
+Für die Buildpflege: Gradle 9.8.0 und AGP 9.4.1 verwenden Kotlin 2.4.20;
+der explizite KGP-Classpath hält AGPs integrierten Compiler und das Compose-Plugin
+auf demselben Stand. KSP 2.3.12 verarbeitet den Room-Compiler. Das exportierte Datenbankschema bleibt unverändert.
 `room-ktx` und `ui-tooling-preview` sind keine zusätzlichen Abhängigkeiten.
 Release-Builds verkleinern Code und Ressourcen gemeinsam. Compose-Gerätetests
 verwenden die aktuelle v2-Testregel. Verbindlich sind die Gradle-Dateien im Repository.
@@ -476,3 +477,15 @@ geprüft; geschützte und in Gruppen ausgeblendete Medien werden nicht lokalisie
 Android validiert das Ziel anhand der geladenen Seite und verwirft überholte
 Antworten nach Navigation. `display_path` und `folder_name` stammen aus der
 zentralen Serverformatierung; technische Pfade bleiben Navigationsschlüssel.
+
+
+## Bildpipeline ab Android 0.23.1
+
+Coil 3.6.3 verwendet explizit `coil-network-okhttp` und
+`coil-network-cache-control`. `networkClient` registriert den bestehenden
+OkHttp-Client samt Authentifizierung, Zertifikatsprüfung und Verbindungspool.
+Karten behalten ihren eigenen Client ohne BearStack-Zugangsdaten.
+Der eigene Thumbnail-Fetcher verwendet Coil-3-Quellen; beschädigte Decodierungen
+entfernen weiterhin den betroffenen Cache-Eintrag. Die Originalvorschauen behalten
+ihren auf 16 MiB begrenzten Speicher und die feste Lebensdauer von drei Minuten.
+Die Migration ändert weder den Thumbnail-Cache auf Disk noch die Originaldateien.

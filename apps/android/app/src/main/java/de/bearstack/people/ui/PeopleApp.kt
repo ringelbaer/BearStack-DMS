@@ -36,8 +36,8 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.ImageLoader
-import coil.compose.AsyncImage
+import coil3.ImageLoader
+import coil3.compose.AsyncImage
 import de.bearstack.people.R
 import de.bearstack.people.statistics.StatisticsPanel
 import de.bearstack.people.data.remote.Person

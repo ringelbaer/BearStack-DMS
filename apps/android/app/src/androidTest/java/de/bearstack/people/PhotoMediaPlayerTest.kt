@@ -1,5 +1,6 @@
 package de.bearstack.people
 
+import de.bearstack.people.media.networkClient
 import android.util.Base64
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
@@ -12,7 +13,7 @@ import android.view.ViewGroup
 import android.view.inspector.WindowInspector
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
-import coil.ImageLoader
+import coil3.ImageLoader
 import de.bearstack.people.connection.Connections
 import de.bearstack.people.connection.Profile
 import de.bearstack.people.data.remote.*
@@ -105,7 +106,7 @@ class PhotoMediaPlayerTest {
         server.start()
         val address=server.url("/prefix/").toString()
         val client=Connections.client(Profile(address,"reader","secret",Base64.encodeToString(certificate.certificate.encoded,Base64.NO_WRAP)))
-        val images=ImageLoader.Builder(InstrumentationRegistry.getInstrumentation().targetContext).okHttpClient(client).build()
+        val images=ImageLoader.Builder(InstrumentationRegistry.getInstrumentation().targetContext).networkClient(client).build()
         val owner=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
         lateinit var controller:PhotosController
         compose.runOnUiThread {controller=PhotosController(owner,PhotosApi(client,address),PhotoSession("media",false,240,240,1280,2048,5,8))}

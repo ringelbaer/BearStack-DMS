@@ -14,8 +14,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.ImageLoader
-import coil.compose.AsyncImage
+import coil3.ImageLoader
+import coil3.compose.AsyncImage
 import de.bearstack.people.R
 import de.bearstack.people.data.remote.FaceMatch
 import de.bearstack.people.people.MergeFaceMatches

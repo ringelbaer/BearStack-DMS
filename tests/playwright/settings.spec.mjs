@@ -46,7 +46,9 @@ for (const theme of ["default", "design2"]) {
     const { context, page } = await adminPage(browser);
     await page.goto(baseURL + "/settings");
     const navigation = page.getByRole("navigation", { name: "Einstellungen", exact: true });
-    await expect(navigation.locator("a")).toHaveCount(7);
+    await expect(navigation.locator("a")).toHaveText([
+      "Allgemein", "Dokumente", "E-Mail-Import", "Fotos", "Gesichtserkennung", "Stammbaum", "Externe Speicher", "Nutzer",
+    ]);
     await navigation.getByRole("link", { name: "Allgemein", exact: true }).click();
     await page.locator(`input[name="theme_mode"][value="${theme}"]`).check();
     await page.getByRole("button", { name: "Speichern", exact: true }).click();

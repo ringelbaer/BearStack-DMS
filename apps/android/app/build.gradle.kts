@@ -18,7 +18,7 @@ android {
         // Keep the tested target until that flow and denial/retry tests exist.
         //noinspection OldTargetApi
         targetSdk = 36
-        versionCode = 49
+        versionCode = 50
         versionName = rootProject.file("VERSION").readText().trim()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -58,7 +58,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
     implementation("com.squareup.okhttp3:okhttp:5.5.0")
-    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("io.coil-kt.coil3:coil-compose:3.6.3")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.3")
+    implementation("io.coil-kt.coil3:coil-network-cache-control:3.6.3")
     implementation("androidx.media3:media3-exoplayer:1.11.1")
     implementation("androidx.media3:media3-ui:1.11.1")
     implementation("androidx.media3:media3-datasource-okhttp:1.11.1")

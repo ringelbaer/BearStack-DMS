@@ -18,7 +18,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
-import coil.ImageLoader
+import coil3.ImageLoader
 import de.bearstack.people.data.remote.*
 import de.bearstack.people.photos.*
 import kotlinx.coroutines.*

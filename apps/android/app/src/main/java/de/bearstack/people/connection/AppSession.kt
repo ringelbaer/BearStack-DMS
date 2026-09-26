@@ -1,9 +1,10 @@
 package de.bearstack.people.connection
 
+import de.bearstack.people.media.networkClient
 import android.content.Context
-import coil.ImageLoader
-import coil.memory.MemoryCache
-import coil.request.CachePolicy
+import coil3.ImageLoader
+import coil3.memory.MemoryCache
+import coil3.request.CachePolicy
 import de.bearstack.people.data.remote.*
 import de.bearstack.people.media.OriginalMemoryCache
 import de.bearstack.people.media.ThumbnailCache
@@ -87,9 +88,9 @@ class AppSession(private val context: Context, private val scope: CoroutineScope
                 try { ThumbnailCache.open(context, profile.url, client, gallery, it, scope) }
                 catch (_: java.io.IOException) { null } // Keep the gallery usable; settings report unavailable storage.
             }
-            images = ImageLoader.Builder(context).okHttpClient(client).diskCachePolicy(CachePolicy.DISABLED)
+            images = ImageLoader.Builder(context).networkClient(client).diskCachePolicy(CachePolicy.DISABLED)
                 .components { thumbnails?.let { add(ThumbnailCache.Factory(it)); add(ThumbnailCache.Keys()); add(ThumbnailCache.Integrity(it)) } }
-                .memoryCache { OriginalMemoryCache(MemoryCache.Builder(context).maxSizeBytes(16 * 1024 * 1024)
+                .memoryCache { OriginalMemoryCache(MemoryCache.Builder().maxSizeBytes(16 * 1024 * 1024)
                     .weakReferencesEnabled(false).build()) }.build()
             photos = gallerySession?.let { PhotosController(scope, gallery, it, context) }
             photos?.thumbnailCache = thumbnails

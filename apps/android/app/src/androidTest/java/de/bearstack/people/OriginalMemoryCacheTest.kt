@@ -1,15 +1,17 @@
 package de.bearstack.people
 
+import de.bearstack.people.media.networkClient
 import de.bearstack.people.media.*
 import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
+import coil3.BitmapImage
+import coil3.asImage
 import androidx.test.platform.app.InstrumentationRegistry
-import coil.ImageLoader
-import coil.decode.DataSource
-import coil.memory.MemoryCache
-import coil.request.CachePolicy
-import coil.request.ErrorResult
-import coil.request.SuccessResult
+import coil3.ImageLoader
+import coil3.decode.DataSource
+import coil3.memory.MemoryCache
+import coil3.request.CachePolicy
+import coil3.request.ErrorResult
+import coil3.request.SuccessResult
 import de.bearstack.people.ui.originalPhotoRequest
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,8 +35,8 @@ class OriginalMemoryCacheTest {
         val client=OkHttpClient.Builder().sslSocketFactory(clientCertificates.sslSocketFactory(),clientCertificates.trustManager).build()
         val server=MockWebServer().apply {useHttps(serverCertificates.sslSocketFactory(),false);start()}
         val now=AtomicLong(0)
-        val cache=OriginalMemoryCache(MemoryCache.Builder(context).maxSizeBytes(16*1024*1024).weakReferencesEnabled(false).build(),now::get)
-        val loader=ImageLoader.Builder(context).okHttpClient(client).memoryCache(cache).diskCachePolicy(CachePolicy.DISABLED).build()
+        val cache=OriginalMemoryCache(MemoryCache.Builder().maxSizeBytes(16*1024*1024).weakReferencesEnabled(false).build(),now::get)
+        val loader=ImageLoader.Builder(context).networkClient(client).memoryCache(cache).diskCachePolicy(CachePolicy.DISABLED).build()
         val bitmap=Bitmap.createBitmap(64,32,Bitmap.Config.ARGB_8888)
         val data=ByteArrayOutputStream().also {bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}.toByteArray()
         fun response()=MockResponse().setHeader("Content-Type","image/png").setHeader("Cache-Control","private, no-store").setBody(Buffer().write(data))
@@ -53,7 +55,7 @@ class OriginalMemoryCacheTest {
             now.set(ORIGINAL_CACHE_TTL_MS-1)
             val otherFace=load(2,"account:photo-a") as SuccessResult
             assertEquals(DataSource.MEMORY_CACHE,otherFace.dataSource)
-            assertSame((first.drawable as BitmapDrawable).bitmap,(otherFace.drawable as BitmapDrawable).bitmap)
+            assertSame((first.image as BitmapImage).bitmap,(otherFace.image as BitmapImage).bitmap)
             assertEquals(1,server.requestCount)
             // The preceding hit must not reset the three-minute deadline.
             now.set(ORIGINAL_CACHE_TTL_MS)
@@ -80,21 +82,21 @@ class OriginalMemoryCacheTest {
     @Test fun boundedCacheDoesNotResurrectEvictedOriginalsAndLegacyUrlsStaySeparate() {
         val context=InstrumentationRegistry.getInstrumentation().targetContext
         var now=0L
-        val cache=OriginalMemoryCache(MemoryCache.Builder(context).maxSizeBytes(256).weakReferencesEnabled(false).build(),{now})
+        val cache=OriginalMemoryCache(MemoryCache.Builder().maxSizeBytes(256).weakReferencesEnabled(false).build(),{now})
         val a=Bitmap.createBitmap(8,8,Bitmap.Config.ARGB_8888)
         val b=Bitmap.createBitmap(8,8,Bitmap.Config.ARGB_8888)
         val first=MemoryCache.Key(ORIGINAL_CACHE_PREFIX+"a")
         val second=MemoryCache.Key(ORIGINAL_CACHE_PREFIX+"b")
         try {
-            cache[first]=MemoryCache.Value(a)
-            cache[second]=MemoryCache.Value(b)
-            assertTrue(cache.size<=256);assertNull(cache[first]);assertSame(b,cache[second]!!.bitmap)
+            cache[first]=MemoryCache.Value(a.asImage())
+            cache[second]=MemoryCache.Value(b.asImage())
+            assertTrue(cache.size<=256);assertNull(cache[first]);assertSame(b,(cache[second]!!.image as BitmapImage).bitmap)
             now=ORIGINAL_CACHE_TTL_MS
-            assertNull(cache[second]);assertEquals(0,cache.size)
+            assertNull(cache[second]);assertEquals(0L,cache.size)
             val thumbnail=MemoryCache.Key("thumbnail")
-            cache[thumbnail]=MemoryCache.Value(a)
+            cache[thumbnail]=MemoryCache.Value(a.asImage())
             now+=ORIGINAL_CACHE_TTL_MS
-            assertSame(a,cache[thumbnail]!!.bitmap)
+            assertSame(a,(cache[thumbnail]!!.image as BitmapImage).bitmap)
             val oldA=originalPhotoRequest(context,"https://example.test/faces/1/original")
             val oldB=originalPhotoRequest(context,"https://example.test/faces/2/original")
             assertNotEquals(oldA.memoryCacheKey,oldB.memoryCacheKey)

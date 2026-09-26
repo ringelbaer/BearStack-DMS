@@ -66,7 +66,7 @@ internal fun canGroupSelection(photos: List<Photo>): Boolean {
         dismissButton={TextButton(enabled=!busy,onClick={if(error!=null) controller.open(controller.state.value.query);onClose()}) {Text(stringResource(R.string.photos_cancel))}})
 }
 
-@Composable internal fun ImageGroupDialog(controller: PhotosController, id: Long, images: coil.ImageLoader?, onFolder: ((Photo) -> Unit)?, onClose: () -> Unit, onChanged: () -> Unit) {
+@Composable internal fun ImageGroupDialog(controller: PhotosController, id: Long, images: coil3.ImageLoader?, onFolder: ((Photo) -> Unit)?, onClose: () -> Unit, onChanged: () -> Unit) {
     var viewed by remember(id) {mutableStateOf<Photo?>(null)}
     if(images!=null) viewed?.let {photo -> PhotoViewer(controller,images,listOf(photo),photo.path,onClose={viewed=null},standalone=true,onOpenFolder={target ->viewed=null;onClose();onFolder?.invoke(target)})}
     var group by remember(id) {mutableStateOf<ImageGroup?>(null)}

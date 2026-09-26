@@ -1,8 +1,9 @@
 package de.bearstack.people.photos
 
+import de.bearstack.people.media.networkClient
 import android.content.Context
-import coil.ImageLoader
-import coil.memory.MemoryCache
+import coil3.ImageLoader
+import coil3.memory.MemoryCache
 import de.bearstack.people.BuildConfig
 import okhttp3.Cache
 import okhttp3.Dispatcher
@@ -34,8 +35,8 @@ internal object MapTiles {
     @Volatile private var loader: ImageLoader? = null
     fun images(context: Context): ImageLoader = loader ?: synchronized(this) {
         loader ?: ImageLoader.Builder(context.applicationContext)
-            .okHttpClient(mapTileClient(Cache(File(context.cacheDir,"map-tiles"),64L*1024*1024)))
-            .diskCache(null).memoryCache {MemoryCache.Builder(context).maxSizeBytes(8*1024*1024).build()}
-            .respectCacheHeaders(true).build().also {loader=it}
+            .networkClient(mapTileClient(Cache(File(context.cacheDir,"map-tiles"),64L*1024*1024)))
+            .diskCache(null).memoryCache {MemoryCache.Builder().maxSizeBytes(8*1024*1024).build()}
+            .build().also {loader=it}
     }
 }

@@ -18,7 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
-import coil.ImageLoader
+import coil3.ImageLoader
 import de.bearstack.people.R
 import de.bearstack.people.data.remote.*
 import de.bearstack.people.text.*

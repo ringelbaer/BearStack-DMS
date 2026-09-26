@@ -5,6 +5,9 @@ person groups and embeddings in its photo database. This process receives only
 upright JPEG bytes and returns bounded face boxes and normalized 128-dimensional
 vectors. No filesystem paths or external image URLs are accepted. Python release artifacts
 are pinned with pip-enforced SHA-256 hashes in `requirements.txt`.
+The current runtime uses NumPy **2.5.3** and OpenCV **5.0.0.93**. The pinned YuNet
+and SFace models, model ID and HTTP contract are unchanged. Rebuild the service
+image or reinstall the requirements in its virtual environment to apply updates.
 
 Detection runs at the supplied resolution and, for inputs larger than 320 pixels,
 also on a 320-pixel overview. YuNet's documented training scale is approximately
@@ -82,7 +85,7 @@ vectors from different generations are never compared.
 
 - https://github.com/opencv/opencv_zoo/tree/47534e27c9851bb1128ccc0102f1145e27f23f98/models/face_detection_yunet
 - https://github.com/opencv/opencv_zoo/tree/47534e27c9851bb1128ccc0102f1145e27f23f98/models/face_recognition_sface
-- https://docs.opencv.org/4.13.0/d0/dd4/tutorial_dnn_face.html
+- https://docs.opencv.org/5.0.0/d0/dd4/tutorial_dnn_face.html
 
 Detection uses confidence >= 0.9. Automatic grouping requires cosine similarity
 >= 0.55 and a margin >= 0.08 over the second distinct candidate person, with exact

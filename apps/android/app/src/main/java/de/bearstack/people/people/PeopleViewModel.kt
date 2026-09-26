@@ -6,8 +6,8 @@ import de.bearstack.people.R
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import coil.ImageLoader
-import coil.request.ImageRequest
+import coil3.ImageLoader
+import coil3.request.ImageRequest
 import de.bearstack.people.connection.*
 import de.bearstack.people.data.local.*
 import de.bearstack.people.data.remote.*
@@ -44,7 +44,7 @@ class PeopleViewModel private constructor(application: Application, private val 
     private var faceSearchGeneration = 0
     private var directorySearch: Job? = null
     private var statsJob: Job? = null
-    private val preloads = mutableListOf<coil.request.Disposable>()
+    private val preloads = mutableListOf<coil3.request.Disposable>()
     private var excludedMergePair: Pair<Long,Long>? = null
     internal var mergeFaceSearch: MergeFaceSearch? = null
         private set

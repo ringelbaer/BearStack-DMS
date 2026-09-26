@@ -2,12 +2,12 @@ package de.bearstack.people
 
 import android.graphics.Bitmap
 import androidx.test.platform.app.InstrumentationRegistry
-import coil.ImageLoader
-import coil.decode.DataSource
-import coil.request.CachePolicy
-import coil.request.ImageRequest
-import coil.request.ErrorResult
-import coil.request.SuccessResult
+import coil3.ImageLoader
+import coil3.decode.DataSource
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import coil3.request.ErrorResult
+import coil3.request.SuccessResult
 import de.bearstack.people.data.remote.*
 import de.bearstack.people.media.*
 import java.io.ByteArrayOutputStream

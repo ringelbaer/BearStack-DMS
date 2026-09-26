@@ -3,15 +3,15 @@ package de.bearstack.people.media
 import androidx.core.content.edit
 import android.content.Context
 import android.graphics.BitmapFactory
-import coil.ImageLoader
-import coil.decode.DataSource
-import coil.decode.ImageSource
-import coil.fetch.Fetcher
-import coil.fetch.SourceResult
-import coil.key.Keyer
-import coil.intercept.Interceptor
-import coil.request.ErrorResult
-import coil.request.Options
+import coil3.ImageLoader
+import coil3.decode.DataSource
+import coil3.decode.ImageSource
+import coil3.fetch.Fetcher
+import coil3.fetch.SourceFetchResult
+import coil3.key.Keyer
+import coil3.intercept.Interceptor
+import coil3.request.ErrorResult
+import coil3.request.Options
 import de.bearstack.people.data.remote.*
 import java.io.File
 import java.io.IOException
@@ -124,7 +124,7 @@ internal class ThumbnailCache(private val disk: ThumbnailDiskCache, private val 
     class Factory(private val cache: ThumbnailCache) : Fetcher.Factory<CachedThumbnail> {
         override fun create(data: CachedThumbnail, options: Options, imageLoader: ImageLoader) = Fetcher {
             val (bytes, source) = cache.load(data)
-            SourceResult(ImageSource(Buffer().write(bytes), options.context), null, source)
+            SourceFetchResult(ImageSource(Buffer().write(bytes), options.fileSystem), null, source)
         }
     }
     class Keys : Keyer<CachedThumbnail> {
@@ -133,8 +133,8 @@ internal class ThumbnailCache(private val disk: ThumbnailDiskCache, private val 
     // Header validation bounds allocations, but cannot detect all corrupt pixel
     // data. A decoder failure must not leave a permanently broken disk entry.
     class Integrity(private val cache: ThumbnailCache) : Interceptor {
-        override suspend fun intercept(chain: Interceptor.Chain): coil.request.ImageResult {
-            val result = chain.proceed(chain.request)
+        override suspend fun intercept(chain: Interceptor.Chain): coil3.request.ImageResult {
+            val result = chain.proceed()
             val data = chain.request.data as? CachedThumbnail
             if (data != null && result is ErrorResult) withContext(Dispatchers.IO) {
                 cache.disk.remove(data.key)

@@ -36,6 +36,36 @@ Die wichtigsten Vorkehrungen entstehen direkt in der Anwendung:
 
 ## Tests
 
+### Abhängigkeiten / BearStack 1.15.1 und Android 0.23.1
+
+Die aktualisierten Go-Module bestehen die vollständige Testsuite, `go vet`,
+`go mod tidy -diff` und Produktionsbuilds ohne CGO für Linux amd64 und arm64.
+Gezielte Race-Tests prüfen Fotokatalog und Bildgruppen; drei Tests mit tatsächlich
+schreibgeschütztem Foto-Mount sichern Originaldateien und Transfers ab.
+
+Alle 142 Playwright-Fälle bestehen mit Chromium. Drei zunächst fehlgeschlagene
+Navigationsprüfungen erwarteten noch sieben statt der vorhandenen acht Bereiche;
+die Erwartungen prüfen jetzt auch „Stammbaum“. Die JavaScript-/DOM-Suite besteht.
+Der Python-Dienst besteht 13 Tests einschließlich echter YuNet-/SFace-Modelle
+sowie die Go-Integration zur Gesichtsverfeinerung.
+
+Ein lokaler Vergleich derselben Gesichtsvorlage mit unveränderten Modellen ergibt
+zwischen OpenCV 4.13 und 5.0 eine Kosinusähnlichkeit der normalisierten Embeddings
+von 0,999937. Der Median von zehn warmen Analysen sank in dieser einzelnen
+Stichprobe von 33,7 auf 22,9 ms. Dies ist kein allgemeiner Leistungsnachweis.
+Für Python 3.12 sind passende NumPy-/OpenCV-Binärpakete für Linux amd64 und arm64
+verfügbar. Ein vollständiger Containerbuild wurde wegen fehlendem Zugriff auf
+den lokalen Docker-Socket nicht ausgeführt.
+
+Android besteht je 126 JVM-Tests für Debug und Release sowie Lint und beide
+APK-Builds. 236 Emulatorfälle wurden über mehrere Läufe erfolgreich geprüft.
+Eine unterbrochene Sitzung erforderte die Wiederholung offener Klassen; die
+Serverintegration bestand mit einer frischen Fixture nach Zustandskonflikten
+in wiederverwendeten Testdaten. Der Bedienungstest der minifizierten Release-App
+prüft erfolgreich Anmeldung, Galerie, Bildinfos, Sitzungswiederherstellung,
+Kontowechsel, Rollen und Abmeldung. Die Website wurde mit Zensical 0.0.65 neu erzeugt und auf vorhandene
+lokale JavaScript-/CSS-Dateien geprüft.
+
 ### Go 1.27.1 / BearStack 1.13.3
 
 Die Toolchain-Umstellung wurde mit der vollständigen Go-Testsuite, `go vet`, `go mod tidy -diff` und Produktionsbuilds ohne CGO für Linux amd64 und arm64 geprüft. Die Abhängigkeiten benötigen keine Versionsänderung. Die Vorprüfung verwendete bereits eine temporäre Moduldatei mit `go 1.27.1`.
@@ -105,7 +135,7 @@ Android-Release-Tests, Lint und die minimierte APK. Android-Emulatortests bleibe
 als `make test-android-integration` beziehungsweise `make test-android-release-integration`
 separat, da sie einen dedizierten gestarteten Testemulator benötigen.
 
-Voraussetzungen: Go gemäß `go.mod`, Node/npm, der in `playwright.config.mjs`
+Voraussetzungen: Go gemäß `go.mod`, Node.js ab Version 20 mit npm, der in `playwright.config.mjs`
 konfigurierte Browser (standardmäßig Chrome), JDK 17 und Android-SDK sowie eine
 Python-Umgebung mit `services/faces/requirements.txt`. Beispiel:
 
@@ -171,7 +201,7 @@ Reine Testhelfer bleiben in `_test.go`-Dateien. Ab 0.52.1 gilt das auch für `ne
 | Bereich | Befehl | Voraussetzung / Umfang |
 | --- | --- | --- |
 | Backend und Browser-DOM | `make test` | Go und Node; einschließlich fester Parserkorpora |
-| Browser-Integration | `make test-playwright` | Node, Playwright und Browser; temporärer Go-Server |
+| Browser-Integration | `make test-playwright` | Node.js ≥ 20, Playwright und Browser; temporärer Go-Server |
 | Parser-Korpora | `make test-parsers` | EXIF-IFDs, GPX-Abschnitte und XMP einschließlich defekter Eingaben |
 | Parser-Fuzzing | `make fuzz-parsers FUZZTIME=30s` | Zeitbudget je Parser, begrenzte Eingaben; gefundene Fehler als feste Regression übernehmen |
 | Faces-Dienst | `make test-faces PYTHON=/pfad/venv/bin/python` | Hashgesicherte `services/faces/requirements.txt`; echte Modelle optional über `BEARSTACK_TEST_FACE_MODELS_DIR` |

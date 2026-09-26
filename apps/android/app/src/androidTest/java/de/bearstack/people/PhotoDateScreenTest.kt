@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.lifecycle.Lifecycle
-import coil.ImageLoader
+import coil3.ImageLoader
 import de.bearstack.people.data.remote.*
 import de.bearstack.people.photos.*
 import kotlinx.coroutines.*

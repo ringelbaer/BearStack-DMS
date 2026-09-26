@@ -1,7 +1,7 @@
 package de.bearstack.people.media
 
 import android.os.SystemClock
-import coil.memory.MemoryCache
+import coil3.memory.MemoryCache
 
 internal const val ORIGINAL_CACHE_PREFIX = "bearstack-original-v1:"
 internal const val ORIGINAL_CACHE_TTL_MS = 180_000L
@@ -30,7 +30,7 @@ internal class OriginalMemoryCache(
 
     @Synchronized override fun remove(key: MemoryCache.Key) = delegate.remove(key)
     @Synchronized override fun clear() = delegate.clear()
-    @Synchronized override fun trimMemory(level: Int) = delegate.trimMemory(level)
+    @Synchronized override fun trimToSize(size: Long) = delegate.trimToSize(size)
 
     private companion object { const val INSERTED = "bearstack.original.inserted" }
 }

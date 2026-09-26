@@ -11,7 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import coil.ImageLoader
+import coil3.ImageLoader
 import de.bearstack.people.R
 import de.bearstack.people.data.remote.*
 import kotlinx.coroutines.CancellationException

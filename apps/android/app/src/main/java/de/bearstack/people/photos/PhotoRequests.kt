@@ -1,9 +1,9 @@
 package de.bearstack.people.photos
 
 import android.content.Context
-import coil.request.CachePolicy
-import coil.request.ImageRequest
-import coil.size.Scale
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import coil3.size.Scale
 import de.bearstack.people.data.remote.Photo
 import de.bearstack.people.data.remote.PhotoSession
 import de.bearstack.people.data.remote.PhotosService

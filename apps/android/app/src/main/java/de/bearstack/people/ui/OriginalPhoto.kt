@@ -25,14 +25,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
-import coil.ImageLoader
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import coil.size.Scale
+import coil3.ImageLoader
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.size.Scale
 import de.bearstack.people.data.remote.FaceBounds
 import de.bearstack.people.media.ORIGINAL_CACHE_PREFIX
 import android.content.Context
-import coil.request.CachePolicy
+import coil3.request.CachePolicy
 
 internal fun originalPhotoRequest(context: Context, model: Any?, cacheKey: String? = null): ImageRequest =
     ImageRequest.Builder(context).data(model).size(2048).scale(Scale.FIT)
@@ -83,7 +83,7 @@ internal fun OriginalPhoto(model: Any?, images: ImageLoader, bounds: FaceBounds?
             onSuccess={
                 loading=false;failed=false
                 // Coil applies EXIF before reporting drawable dimensions, just like face detection.
-                imageSize=Size(it.result.drawable.intrinsicWidth.toFloat(),it.result.drawable.intrinsicHeight.toFloat())
+                imageSize=Size(it.result.image.width.toFloat(),it.result.image.height.toFloat())
             },onError={loading=false;failed=true;imageSize=Size.Zero})
         if(!loading && !failed) transform.face?.let { face ->
             Canvas(Modifier.fillMaxSize().testTag("original-face-box")) {

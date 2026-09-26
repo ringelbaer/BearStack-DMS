@@ -4,6 +4,15 @@ Alle wesentlichen Änderungen an BearStack werden in dieser Datei dokumentiert.
 
 ## Unveröffentlicht
 
+### BearStack 1.15.1 / Android 0.23.1 (50)
+
+- Direkte und genutzte transitive Go-Abhängigkeiten aktualisiert, darunter SQLite 1.59.0, x/crypto 0.57.0, x/image 0.46.0, x/sys 0.48.0, x/text 0.42.0, YAML 3.0.5 und der PDF-Parser.
+- Android auf Kotlin 2.4.20, Gradle 9.8.0 und Coil 3.6.3 migriert. Explizite OkHttp-Fetcher behalten Authentifizierung und getrennte Kartenverbindungen; der eigene Thumbnail-Fetcher und der begrenzte Originalcache verwenden die neuen Bild- und Cache-APIs.
+- Playwright 1.63.0, NumPy 2.5.3, OpenCV 5.0.0.93, Zensical 0.0.65 und Pygments 2.21.0. Python-Artefakthashes erneuert; Gesichtsmodelle und HTTP-Verträge bleiben unverändert.
+- PATCH für interne Abhängigkeitsupdates ohne Datenmigration oder neue Bedienabläufe. README, Website und API-Version aktualisiert.
+- Geprüft: vollständige Go- und JavaScript-/DOM-Suiten, 142 Browserfälle, 13 Python-Tests mit echten Gesichtsmodellen, je 126 Android-JVM-Tests für Debug/Release, Lint, APKs, gezielte Race-Tests und drei Read-only-Mount-Tests. Veraltete Browsererwartungen zur Einstellungsnavigation um den vorhandenen Stammbaum-Bereich korrigiert.
+- 236 Android-Emulatorfälle über mehrere Läufe erfolgreich geprüft. Nach einer unterbrochenen Sitzung wurden offene Klassen wiederholt; die Serverintegration bestand mit frischen Testdaten. Bedienungstest der minifizierten Release-App für Anmeldung, Galerie, Bildinfos, Sitzungswiederherstellung und Kontowechsel erfolgreich. Linux-amd64-/arm64-Produktionsbuilds und Website erfolgreich; vollständiger Containerbuild mangels Docker-Socket-Zugriff nicht durchgeführt.
+
 ### BearStack 1.15.0 / Android 0.23.0 (49)
 
 - Android: BearStack-Bilder über die vorhandene Mehrfachauswahl gruppieren, Hauptbild wählen und bestehende Gruppen erweitern. Infopanel mit Gruppenvorschauen, Hauptbildwechsel, Entfernen und Auflösen. Gerätefotos bleiben ausgeschlossen; Serverberechtigungen und Revisionsprüfungen gelten weiterhin.

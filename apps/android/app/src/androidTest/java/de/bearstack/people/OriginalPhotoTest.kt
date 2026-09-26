@@ -13,7 +13,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import android.media.ExifInterface
-import coil.ImageLoader
+import coil3.ImageLoader
 import de.bearstack.people.data.remote.FaceBounds
 import de.bearstack.people.data.remote.Person
 import de.bearstack.people.ui.FaceGrid

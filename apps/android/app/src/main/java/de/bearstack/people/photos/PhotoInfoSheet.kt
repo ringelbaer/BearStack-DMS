@@ -32,7 +32,7 @@ internal fun photoTimeLabel(date: String, locale: Locale): String? = runCatching
 }.getOrNull()
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable internal fun PhotoInfoSheet(photo: Photo, service: PhotosService, controller: PhotosController? = null, images: coil.ImageLoader? = null, onFolder: ((Photo) -> Unit)? = null, onClose: () -> Unit) {
+@Composable internal fun PhotoInfoSheet(photo: Photo, service: PhotosService, controller: PhotosController? = null, images: coil3.ImageLoader? = null, onFolder: ((Photo) -> Unit)? = null, onClose: () -> Unit) {
     val text=uiStrings()
     val context=LocalContext.current
     val configuration=LocalResources.current.configuration

@@ -1,5 +1,6 @@
 package de.bearstack.people
 
+import de.bearstack.people.media.networkClient
 import android.graphics.Bitmap
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -8,7 +9,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.espresso.Espresso.pressBack
 import androidx.test.platform.app.InstrumentationRegistry
-import coil.ImageLoader
+import coil3.ImageLoader
 import de.bearstack.people.data.remote.*
 import de.bearstack.people.photos.*
 import kotlinx.coroutines.*
@@ -65,7 +66,7 @@ class MapTracksScreenTest {
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
                 .header("Cache-Control","max-age=60").body(bytes.toResponseBody("image/png".toMediaType())).build()
         }.build()
-        val images=ImageLoader.Builder(app).okHttpClient(client).build()
+        val images=ImageLoader.Builder(app).networkClient(client).build()
         val owner=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
         val source=Source()
         lateinit var controller: PhotosController

@@ -1,6 +1,8 @@
 # BearStack
 
-Aktuelle Version: **1.15.0** · Android-App: **0.23.0**.
+Aktuelle Version: **1.15.1** · Android-App: **0.23.1**.
+
+**Abhängigkeiten aktualisiert:** Go-Module einschließlich SQLite 1.59.0 und x/crypto 0.57.0, Kotlin 2.4.20, Gradle 9.8.0, Coil 3.6.3, Playwright 1.63.0, NumPy 2.5.3 und OpenCV 5.0.0.93. Die Android-Bildpipeline behält Authentifizierung, getrennte Kartenverbindungen und begrenzte Caches. Originalfotos und Datenformate bleiben unverändert.
 
 **Android 0.23.0 / BearStack 1.15.0:** BearStack-Bilder per Mehrfachauswahl gruppieren oder einer bestehenden Bildgruppe hinzufügen. Das Infopanel öffnet die Bildgruppe und springt direkt zum Bild im Galerieordner, auch aus Fotostream und Personenordnern. Gerätefotos sind von der Gruppierung ausgenommen; Originale bleiben schreibgeschützt.
 
@@ -325,7 +327,7 @@ make test-js
 make test-playwright
 ```
 
-`make test-parsers` führt die festen EXIF-, GPX- und XMP-Testkorpora aus, `make fuzz-parsers FUZZTIME=30s` zusätzlich zeitlich begrenzte Mutationstests pro Parser. `make test-faces PYTHON=/pfad/zur/venv/bin/python` prüft den Python-Dienst mit den festgelegten Abhängigkeiten aus `services/faces/requirements.txt`; echte Modelltests werden mit `BEARSTACK_TEST_FACE_MODELS_DIR` aktiviert. Die vollständige [Testmatrix](_site-src/docs/tests-und-audit.md#testmatrix) trennt Go, Browser, Python und Android.
+`make test-parsers` führt die festen EXIF-, GPX- und XMP-Testkorpora aus, `make fuzz-parsers FUZZTIME=30s` zusätzlich zeitlich begrenzte Mutationstests pro Parser. `make test-faces PYTHON=/pfad/zur/venv/bin/python` prüft den Python-Dienst mit den festgelegten Abhängigkeiten aus `services/faces/requirements.txt`; echte Modelltests werden mit `BEARSTACK_TEST_FACE_MODELS_DIR` aktiviert. Playwright benötigt Node.js ab Version 20. Die vollständige [Testmatrix](_site-src/docs/tests-und-audit.md#testmatrix) trennt Go, Browser, Python und Android.
 
 `make test-go` fuehrt `go test ./...` aus. `make test-js` nutzt `scripts/check-js.sh` und fuehrt `node --check` fuer alle Browser-Skripte unter `internal/server/static/*.js` aus. `make test-playwright` installiert bei Bedarf die fest versionierte Testabhängigkeit und prüft Dokumenten-Upload, Benutzerverwaltung und Foto-Galerie. Die Make-Variablen `GO`, `NODE` und `NPM` koennen bei Bedarf ueberschrieben werden, z. B. `NODE=/opt/node/bin/node make test-js`. Falls kein lokaler Chrome-Channel verfuegbar ist, kann Playwright wie ueblich mit eigenem Browser-Download verwendet werden, z. B. `npx playwright install chromium` und `PLAYWRIGHT_BROWSER_CHANNEL=chromium make test-playwright`.
 
